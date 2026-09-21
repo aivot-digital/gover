@@ -49,25 +49,28 @@ Example tool arguments (field IDs must come from the actual node layout):
 {
   "nodeId": 123,
   "properties": {"name": "Zähler"},
-  "values": {
-    "/amount": {"type": "Literal", "value": 1},
-    "/description": {"type": "Literal", "value": null}
-  },
+  "configurationChanges": [
+    {"valuePath": "/amount", "mode": "Literal", "value": 1},
+    {"valuePath": "/description", "mode": "Literal", "value": null}
+  ],
   "removePaths": ["/obsoleteValue"]
 }
 ```
 
-Keys in `values` and `removePaths` are the returned JSON-pointer `valuePath`s,
-not Java configuration property names. Ordinary layout groups do not nest the
-stored values; repeating rows do. A row looks like
+`configurationChanges[].valuePath` and entries in `removePaths` are the returned
+JSON-pointer paths, not Java configuration property names. `value` is the raw
+mode payload: a literal value, a variable reference, a No-Code operand, or
+Low-Code JavaScript. Ordinary layout groups do not nest the stored values;
+repeating rows do. A row looks like
 `{"values":{"fieldId":{"type":"Literal","value":"text"}}}`.
 The nested path is `/rows/value/0/values/fieldId`. A `*` in a returned template
 path is not writable: create a concrete row first and fetch its actual paths.
-A batch may create rows and subsequently configure their children in JSON entry order.
+A batch may create rows and subsequently configure their children in `configurationChanges` order.
 
-Omitted values remain unchanged. `Literal.value: null` persists a null literal;
-`removePaths` removes authored entries. Unsupported fields, invalid envelope types
-and incompatible JSON shapes fail the whole call. Incomplete or semantically
+Omitted values remain unchanged. `mode: Literal` with `value: null` persists a null literal;
+`removePaths` removes authored entries. Unsupported fields, invalid modes
+and incompatible JSON shapes fail the whole call and return path-specific errors.
+Incomplete or semantically
 invalid configurations can be saved with `savedWithErrors` and validation messages,
 as in the existing node editor. Dynamic values are checked in authoring mode,
 without evaluating them against runtime process data.

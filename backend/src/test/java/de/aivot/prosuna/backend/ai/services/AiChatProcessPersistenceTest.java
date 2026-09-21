@@ -82,7 +82,9 @@ class AiChatProcessPersistenceTest {
         when(users.retrieve("owner")).thenReturn(Optional.of(new UserEntity().setId("owner")));
         var definition = mock(ProcessNodeDefinition.class);
         when(definitions.getProcessNodeDefinition(any(ProcessNodeEntity.class))).thenReturn(Optional.of(definition));
-        when(configuration.patch(any(), any(), any(), any())).thenAnswer(i -> ((ProcessNodeEntity) i.getArgument(0)).getConfiguration());
+        when(configuration.patch(any(), any(), any(), any())).thenAnswer(i ->
+                new AiProcessConfigurationService.PatchResult(
+                        ((ProcessNodeEntity) i.getArgument(0)).getConfiguration(), List.of()));
         when(nodeService.validate(any(), any(), anyBoolean(), any())).thenReturn(Optional.empty());
         when(nodeService.updateForAuthoring(anyInt(), any(), any(), any())).thenAnswer(i -> {
             ProcessNodeEntity candidate = i.getArgument(1);
@@ -101,14 +103,14 @@ class AiChatProcessPersistenceTest {
 
     @Test
     void commitsImmediatelyAndReloadsCurrentStateOnEachCall() throws Exception {
-        service.updateNode(scope, id, Map.of("name", "Saved"), Map.of(), List.of());
+        service.updateNode(scope, id, Map.of("name", "Saved"), List.of(), List.of());
         assertThat(nodes.findById(id).orElseThrow().getName()).isEqualTo("Saved");
         new TransactionTemplate(transactions).executeWithoutResult(status -> {
             var node = nodes.findById(id).orElseThrow();
             node.getConfiguration().putLiteral("external", "Concurrent editor");
             nodes.saveAndFlush(node);
         });
-        service.updateNode(scope, id, Map.of("name", "Changed again"), Map.of(), List.of());
+        service.updateNode(scope, id, Map.of("name", "Changed again"), List.of(), List.of());
         var loaded = nodes.findById(id).orElseThrow();
         assertThat(loaded.getName()).isEqualTo("Changed again");
         assertThat(loaded.getConfiguration().getLiteral("external")).isEqualTo("Concurrent editor");
@@ -117,7 +119,7 @@ class AiChatProcessPersistenceTest {
 
     @Test
     void rollsBackCheckedFailuresAfterFlushWithoutUndoingPreviousCall() throws Exception {
-        service.updateNode(scope, id, Map.of("name", "Successful earlier call"), Map.of(), List.of());
+        service.updateNode(scope, id, Map.of("name", "Successful earlier call"), List.of(), List.of());
         clearInvocations(auditLogs);
         doAnswer(i -> {
             ProcessNodeEntity existing = i.getArgument(2);
@@ -125,7 +127,7 @@ class AiChatProcessPersistenceTest {
             nodes.saveAndFlush(existing);
             throw ResponseException.badRequest("Fehler nach dem Schreiben");
         }).when(nodeService).updateForAuthoring(anyInt(), any(), any(), any());
-        assertThatThrownBy(() -> service.updateNode(scope, id, Map.of("name", "Failed call"), Map.of(), List.of()))
+        assertThatThrownBy(() -> service.updateNode(scope, id, Map.of("name", "Failed call"), List.of(), List.of()))
                 .isInstanceOf(ResponseException.class);
         assertThat(nodes.findById(id).orElseThrow().getName()).isEqualTo("Successful earlier call");
         verifyNoInteractions(auditLogs);

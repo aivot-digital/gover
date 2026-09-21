@@ -292,7 +292,7 @@ class AiChatToolCallingTest {
                 case 2 -> List.of(new AssistantMessage.ToolCall("read", "function", "hole-prozessstruktur", "{}"));
                 case 3 -> List.of(new AssistantMessage.ToolCall("edge", "function", "speichere-prozessverbindung", "{\"fromNodeId\":10,\"toNodeId\":10,\"port\":\"next\"}"));
                 case 4 -> List.of(new AssistantMessage.ToolCall("fields", "function", "liste-knotenkonfigurationsfelder", "{\"nodeId\":10}"));
-                case 5 -> List.of(new AssistantMessage.ToolCall("configure", "function", "aktualisiere-prozessknoten", "{\"nodeId\":10,\"values\":{\"/amount\":{\"type\":\"Literal\",\"value\":1}}}"));
+                case 5 -> List.of(new AssistantMessage.ToolCall("configure", "function", "aktualisiere-prozessknoten", "{\"nodeId\":10,\"configurationChanges\":[{\"valuePath\":\"/amount\",\"mode\":\"Literal\",\"value\":1}]}"));
                 case 6 -> List.of(new AssistantMessage.ToolCall("validate", "function", "pruefe-prozess", "{}"));
                 default -> List.<AssistantMessage.ToolCall>of();
             };

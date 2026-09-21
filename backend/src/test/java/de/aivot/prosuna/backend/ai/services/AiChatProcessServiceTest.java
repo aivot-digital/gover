@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.ai.services;
 
 import de.aivot.prosuna.backend.ai.entities.AiChatSessionEntity;
 import de.aivot.prosuna.backend.ai.models.AiProcessChatContext;
+import de.aivot.prosuna.backend.ai.models.AiProcessConfigurationChange;
 import de.aivot.prosuna.backend.ai.permissions.AiChatPermissionProvider;
 import de.aivot.prosuna.backend.ai.repositories.AiChatSessionRepository;
 import de.aivot.prosuna.backend.audit.services.*;
@@ -9,6 +10,7 @@ import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.repositories.DepartmentRepository;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.repositories.*;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -72,7 +74,9 @@ class AiChatProcessServiceTest {
         when(definitions.getProcessNodeDefinition(any(ProcessNodeEntity.class))).thenReturn(Optional.of(definition));
         when(nodeService.validate(any(), any(), eq(false), eq(actor))).thenReturn(Optional.empty());
         when(nodeService.updateForAuthoring(anyInt(), any(), any(), eq(actor))).thenAnswer(i -> i.getArgument(1));
-        when(configuration.patch(any(), eq(actor), any(), any())).thenAnswer(i -> ((ProcessNodeEntity) i.getArgument(0)).getConfiguration());
+        when(configuration.patch(any(), eq(actor), any(), any())).thenAnswer(i ->
+                new AiProcessConfigurationService.PatchResult(
+                        ((ProcessNodeEntity) i.getArgument(0)).getConfiguration(), List.of()));
         when(audits.createScopedAuditService(any(), anyString())).thenReturn(new ScopedAuditService(getClass(), "Prozesse", auditLogs));
         service = new AiChatProcessService(permissions, sessions, users, versions, nodes, edges, nodeService, edgeService, versionService,
                 definitions, configuration, mock(AiProcessOptionsService.class), new AiProcessFormService(mapper), mapper, em,
@@ -93,10 +97,10 @@ class AiChatProcessServiceTest {
     void enforcesCorrectProcessGrantAndSystemOverride() throws Exception {
         when(processes.hasPermission("owner", 7, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE)).thenReturn(false);
         when(processes.hasPermission("owner", 8, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE)).thenReturn(true);
-        assertThatThrownBy(() -> service.updateNode(scope, 10, Map.of("name", "New"), Map.of(), List.of())).isInstanceOf(ResponseException.class);
+        assertThatThrownBy(() -> service.updateNode(scope, 10, Map.of("name", "New"), List.of(), List.of())).isInstanceOf(ResponseException.class);
         verifyNoInteractions(nodeService, auditLogs);
         when(systemPermissions.hasPermission("owner", ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE)).thenReturn(true);
-        service.updateNode(scope, 10, Map.of("name", "New"), Map.of(), List.of());
+        service.updateNode(scope, 10, Map.of("name", "New"), List.of(), List.of());
         verify(nodeService).updateForAuthoring(eq(10), argThat(n -> n.getName().equals("New")), eq(node), eq(actor));
         verify(em).refresh(version, LockModeType.PESSIMISTIC_WRITE);
         verify(em).refresh(node, LockModeType.PESSIMISTIC_WRITE);
@@ -124,9 +128,9 @@ class AiChatProcessServiceTest {
 
     @Test
     void rejectsImmutablePropertiesAndDuplicateKeysWithoutMutation() throws Exception {
-        assertThatThrownBy(() -> service.updateNode(scope, 10, Map.of("processId", 8), Map.of(), List.of())).isInstanceOf(ResponseException.class);
+        assertThatThrownBy(() -> service.updateNode(scope, 10, Map.of("processId", 8), List.of(), List.of())).isInstanceOf(ResponseException.class);
         when(nodes.findAllByProcessIdAndProcessVersion(7, 2)).thenReturn(List.of(node, node(11, 7, 2).setDataKey("taken")));
-        assertThatThrownBy(() -> service.updateNode(scope, 10, Map.of("dataKey", "taken"), Map.of(), List.of())).isInstanceOf(ResponseException.class);
+        assertThatThrownBy(() -> service.updateNode(scope, 10, Map.of("dataKey", "taken"), List.of(), List.of())).isInstanceOf(ResponseException.class);
         verify(nodeService, never()).updateForAuthoring(anyInt(), any(), any(), any());
         verifyNoInteractions(auditLogs);
         assertThat(node.getDataKey()).isEqualTo("node10");
@@ -137,10 +141,30 @@ class AiChatProcessServiceTest {
         var problem = new ProcessNodeProblems(node, List.of("Pflichtfeld fehlt"), Map.of(), new DerivedRuntimeElementData());
         when(nodeService.validate(any(), any(), eq(false), eq(actor))).thenReturn(Optional.of(problem));
         when(nodeService.updateForAuthoring(anyInt(), any(), any(), eq(actor))).thenAnswer(i -> ((ProcessNodeEntity) i.getArgument(1)).setSavedWithErrors(true));
-        var result = service.updateNode(scope, 10, Map.of("name", "Titel"), Map.of(), List.of());
+        var result = service.updateNode(scope, 10, Map.of("name", "Titel"), List.of(), List.of());
         assertThat(JsonMapperTestUtils.createMapper().valueToTree(result).path("savedWithErrors").asBoolean()).isTrue();
         verify(nodeService).updateForAuthoring(eq(10), argThat(n -> n.getDescription().equals("Keep") && n.getName().equals("Titel")), eq(node), eq(actor));
         verify(auditLogs, times(1)).create(any());
+    }
+
+    @Test
+    void returnsAllConfigurationErrorsWithoutSavingPropertiesOrWritingAnAudit() throws Exception {
+        var change = new AiProcessConfigurationChange("/amount", InputMode.Literal, "wrong");
+        var error = new AiProcessConfigurationService.ConfigurationError(
+                "INVALID_LITERAL_TYPE", "/amount", "Literal", "Der JSON-Typ passt nicht.",
+                List.of("number"), "string", List.of());
+        when(configuration.patch(any(), eq(actor), eq(List.of(change)), eq(List.of())))
+                .thenAnswer(i -> new AiProcessConfigurationService.PatchResult(
+                        ((ProcessNodeEntity) i.getArgument(0)).getConfiguration(), List.of(error)));
+
+        var result = service.updateNode(scope, 10, Map.of("name", "Must not be saved"), List.of(change), List.of());
+
+        assertThat(JsonMapperTestUtils.createMapper().valueToTree(result).path("saved").asBoolean()).isFalse();
+        assertThat(JsonMapperTestUtils.createMapper().valueToTree(result).at("/errors/0/valuePath").asString())
+                .isEqualTo("/amount");
+        verify(nodeService, never()).updateForAuthoring(anyInt(), any(), any(), any());
+        verifyNoInteractions(auditLogs);
+        assertThat(node.getName()).isEqualTo("Node");
     }
 
     @Test

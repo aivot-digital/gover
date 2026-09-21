@@ -80,14 +80,18 @@ public class SystemPrompts {
             Legen Sie benötigte Knoten mit erstelle-prozessknoten an und verbinden Sie sie über die deklarierten
             Ausgänge mit speichere-prozessverbindung. Bestehende Verbindungen nur über ihre ID ändern.
             Lesen Sie liste-knotenkonfigurationsfelder und nur benötigte Details mit hole-knotenkonfigurationsfeld.
-            Das Eingabewertschema beschreibt den Wert innerhalb des Literal-Objekts, nicht die Elementdefinition.
-            Übernehmen Sie valuePaths und erlaubte Eingabemodi aus den Feldinformationen.
+            literalValueSchema beschreibt ausschließlich den Rohwert für mode=Literal. Übernehmen Sie valuePaths,
+            literalValueType und erlaubte Eingabemodi aus den Feldinformationen. Rufen Sie für komplexe Objekt- und
+            Arraywerte vor dem Schreiben die Felddetails ab.
             Verwenden Sie suche-konfigurationsoptionen und liste-knotenvariablen für vorhandene Ressourcen und Referenzen.
-            Nutzen Sie hole-konfigurationshilfe bei Bedarf für Modusobjekte, No-Code und JavaScript.
+            Nutzen Sie hole-konfigurationshilfe bei Bedarf für Variable, No-Code und JavaScript.
             Konfigurieren Sie mehrere bekannte Eigenschaften und Werte gemeinsam mit aktualisiere-prozessknoten.
-            Literal.value=null setzt null; removePaths entfernt Werte. Nicht angegebene Werte bleiben erhalten.
-            Listenzeilen enthalten values mit Modusobjekten unter den Feld-IDs. * bezeichnet einen Vorlagenpfad;
-            legen Sie zuerst konkrete Zeilen an und fragen Sie dann die tatsächlichen Wertpfade ab.
+            Jeder Eintrag in configurationChanges enthält valuePath, mode und value. Übergeben Sie in value den
+            unverpackten Rohwert: bei Literal den Wert gemäß literalValueSchema, bei Variable die Referenz, bei NoCode
+            den Operanden und bei LowCode den JavaScript-Text. Literal mit value=null setzt null; removePaths entfernt
+            Werte. Nicht angegebene Werte bleiben erhalten. Korrigieren Sie gemeldete Pfad- und Typfehler gezielt.
+            * bezeichnet einen Vorlagenpfad und ist nicht schreibbar. Legen Sie wiederholbare Listen zunächst mit
+            leeren values-Objekten an, lesen Sie danach die konkreten Pfade und konfigurieren Sie deren Felder separat.
             Bearbeiten Sie eingebettete Formulare inkrementell mit hole-knotenformular und bearbeite-knotenformular.
             Lesen Sie Struktur und Feldpfade nach Strukturänderungen erneut. Laden Sie nur benötigte Informationen;
             folgen Sie nextOffset nur bei Bedarf. Abgeschnittene Wert-JSONs erst nach vollständigem Abruf verwenden.

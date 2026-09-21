@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.ai.services;
 
 import de.aivot.prosuna.backend.ai.models.AiProcessChatContext;
+import de.aivot.prosuna.backend.ai.models.AiProcessConfigurationChange;
 import de.aivot.prosuna.backend.ai.permissions.AiChatPermissionProvider;
 import de.aivot.prosuna.backend.ai.repositories.AiChatSessionRepository;
 import de.aivot.prosuna.backend.audit.enums.AuditAction;
@@ -241,7 +242,8 @@ public class AiChatProcessService {
     @Nonnull
     @Transactional(rollbackFor = ResponseException.class)
     public Object updateNode(@Nonnull AiProcessChatContext context, int id, @Nonnull Map<String, Object> properties,
-                             @Nonnull Map<String, Object> values, @Nonnull List<String> removals) throws ResponseException {
+                             @Nonnull List<AiProcessConfigurationChange> configurationChanges,
+                             @Nonnull List<String> removals) throws ResponseException {
         scope(context, true);
         var existing = node(context, id, true);
         var actor = user(context);
@@ -250,7 +252,11 @@ public class AiChatProcessService {
         var tree = (ObjectNode) mapper.valueToTree(existing);
         properties.forEach((key, value) -> tree.set(key, mapper.valueToTree(value)));
         var candidate = mapper.treeToValue(tree, ProcessNodeEntity.class);
-        candidate.setConfiguration(configuration.patch(candidate, actor, values, removals));
+        var patch = configuration.patch(candidate, actor, configurationChanges, removals);
+        if (!patch.valid()) {
+            return Map.of("id", id, "saved", false, "errors", patch.errors());
+        }
+        candidate.setConfiguration(patch.configuration());
         return save(context, actor, candidate, existing, before);
     }
 

@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.ai.tools;
 
 import de.aivot.prosuna.backend.ai.models.AiProcessChatContext;
+import de.aivot.prosuna.backend.ai.models.AiProcessConfigurationChange;
 import de.aivot.prosuna.backend.ai.services.AiChatProcessService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import jakarta.annotation.Nonnull;
@@ -155,16 +156,18 @@ public class AiChatProcessTools {
     }
 
     @Nonnull
-    @Tool(name = "aktualisiere-prozessknoten", description = "Knoteneigenschaften und Konfiguration gemeinsam atomar in der Datenbank speichern. properties erlaubt name, description, dataKey, outputMappings, timeLimitDays, notes, requirements. values ordnet exakten valuePaths vollständige Modusobjekte zu, z. B. {\"/titel\":{\"type\":\"Literal\",\"value\":\"Titel\"}}. Nicht angegebene Werte bleiben erhalten. removePaths entfernt Einträge; Literal.value=null setzt ausdrücklich null. Unvollständige fachliche Konfiguration wird mit savedWithErrors gespeichert.")
+    @Tool(name = "aktualisiere-prozessknoten", description = "Knoteneigenschaften und Konfiguration gemeinsam atomar speichern. properties erlaubt name, description, dataKey, outputMappings, timeLimitDays, notes, requirements. configurationChanges enthält valuePath, mode und value: Literal nutzt den Rohwert, Variable eine Referenz, NoCode einen Operanden und LowCode JavaScript-Text. Nicht angegebene Werte bleiben erhalten. removePaths entfernt Einträge; Literal mit value=null setzt ausdrücklich null. Bei Typfehlern wird nichts gespeichert.")
     public Object updateNode(
             @ToolParam(description = "Knoten-ID", required = true) int nodeId,
             @ToolParam(description = "Zu ändernde allgemeine Knoteneigenschaften", required = false) @Nullable Map<String, Object> properties,
-            @ToolParam(description = "Zu setzende authored Werte nach exaktem valuePath", required = false) @Nullable Map<String, Object> values,
+            @ToolParam(description = "Geordnete Konfigurationsänderungen mit valuePath, mode und modeabhängigem value", required = false) @Nullable List<AiProcessConfigurationChange> configurationChanges,
             @ToolParam(description = "Ausdrücklich zu entfernende valuePaths", required = false) @Nullable List<String> removePaths,
             @Nonnull ToolContext context) {
         return execute(() -> {
             var scope = AiProcessChatContext.from(context);
-            return service.updateNode(scope, nodeId, properties == null ? Map.of() : properties, values == null ? Map.of() : values, removePaths == null ? List.of() : removePaths);
+            return service.updateNode(scope, nodeId, properties == null ? Map.of() : properties,
+                    configurationChanges == null ? List.of() : configurationChanges,
+                    removePaths == null ? List.of() : removePaths);
         });
     }
 

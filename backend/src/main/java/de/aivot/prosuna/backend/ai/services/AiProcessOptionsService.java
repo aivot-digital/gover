@@ -205,10 +205,10 @@ public class AiProcessOptionsService {
     public Object help(@Nonnull String topic, @Nullable String key, @Nullable Integer offset, @Nullable Integer limit) throws ResponseException {
         return switch (topic) {
             case "modes" -> Map.of(
-                    "Literal", Map.of("type", "Literal", "value", "Wert gemäß Feldschema; null ist erlaubt"),
-                    "Variable", Map.of("type", "Variable", "reference", Map.of("source", "ProcessData", "path", "Pfad aus liste-knotenvariablen")),
-                    "NoCode", Map.of("type", "NoCode", "operand", Map.of("type", "NoCodeExpression", "operatorIdentifier", "Kennung aus nocode-operators", "operands", List.of())),
-                    "LowCode", Map.of("type", "LowCode", "code", "JavaScript-Funktionskörper mit return"),
+                    "Literal", Map.of("mode", "Literal", "value", "Rohwert gemäß literalValueSchema; null ist erlaubt"),
+                    "Variable", Map.of("mode", "Variable", "value", Map.of("source", "ProcessData", "path", "Pfad aus liste-knotenvariablen")),
+                    "NoCode", Map.of("mode", "NoCode", "value", Map.of("type", "NoCodeExpression", "operatorIdentifier", "Kennung aus nocode-operators", "operands", List.of())),
+                    "LowCode", Map.of("mode", "LowCode", "value", "JavaScript-Funktionskörper mit return"),
                     "note", "Nur erlaubte Feldmodi verwenden. Konfigurationswerte werden über valuePath gesetzt; removePaths entfernt Einträge ausdrücklich. Dynamische Werte werden beim Bearbeiten nicht mit Vorgangsdaten ausgeführt.");
             case "nocode-operators" -> AiToolResults.page(noCode.stream().flatMap(NoCodeOperatorDetailsDTO::fromSPI)
                     .filter(operator -> AiToolResults.matches(key, operator.identifier() + " " + operator.label()))

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.ai.services;
 
+import de.aivot.prosuna.backend.ai.models.AiProcessConfigurationChange;
 import de.aivot.prosuna.backend.elements.models.*;
 import de.aivot.prosuna.backend.elements.models.elements.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
@@ -15,6 +16,7 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.JsonPointer;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JavaType;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -38,6 +40,15 @@ public class AiProcessConfigurationService {
 
     public record Field(@Nonnull BaseInputElement<?> element, @Nonnull String fieldPath,
                         @Nonnull String valuePath, @Nonnull ComputedElementState state, boolean template) {}
+
+    public record ConfigurationError(@Nonnull String code, @Nonnull String valuePath, @Nullable String mode,
+                                     @Nonnull String message, @Nonnull List<String> expectedJsonTypes,
+                                     @Nullable String actualJsonType, @Nonnull List<String> violations) {}
+
+    public record PatchResult(@Nonnull AuthoredElementValues configuration,
+                              @Nonnull List<ConfigurationError> errors) {
+        public boolean valid() { return errors.isEmpty(); }
+    }
 
     @Nonnull
     public List<Field> fields(@Nonnull ProcessNodeEntity node, @Nonnull UserEntity user) throws ResponseException {
@@ -102,7 +113,8 @@ public class AiProcessConfigurationService {
         result.put("disabled", field.state().getDisabled());
         result.put("error", field.state().getError());
         result.put("allowedModes", input.getInputModePolicy() == null ? List.of(InputMode.Literal) : input.getInputModePolicy().allowedModes());
-        result.put("value", AiToolResults.value(mapper, mapper.valueToTree(node.getConfiguration()).at(field.valuePath()), 0, 240));
+        result.put("literalValueType", compactType(inputValueType(input)));
+        result.put("currentValue", AiToolResults.value(mapper, currentValue(node, field.valuePath()), 0, 240));
         return result;
     }
 
@@ -114,39 +126,87 @@ public class AiProcessConfigurationService {
     @Nonnull
     public Map<String, Object> details(@Nonnull Field field, @Nonnull ProcessNodeEntity node, int valueOffset, int constraintsOffset) {
         var result = summary(field, node);
-        result.put("valueSchema", schemas.forElement(field.element()));
+        result.put("literalValueSchema", schemas.forElement(field.element()));
+        result.put("writeContract", writeContract(field));
         result.put("inputModePolicy", field.element().getInputModePolicy());
         result.put("hint", field.element().getHint());
         var definition = (ObjectNode) mapper.valueToTree(field.element());
         // Functions, nested forms and option lists are fetched separately, never recursively expanded here.
         definition.remove(List.of("children", "options", "value", "validation", "visibility", "override", "metadata"));
         result.put("constraints", AiToolResults.value(mapper, definition, constraintsOffset, 3000));
-        result.put("value", AiToolResults.value(mapper, mapper.valueToTree(node.getConfiguration()).at(field.valuePath()), valueOffset, 4000));
+        result.put("currentValue", AiToolResults.value(mapper, currentValue(node, field.valuePath()), valueOffset, 4000));
         return result;
     }
 
     @Nonnull
-    public AuthoredElementValues patch(@Nonnull ProcessNodeEntity node, @Nonnull UserEntity user,
-                                      @Nonnull Map<String, Object> changes, @Nonnull List<String> removals) throws ResponseException {
+    public PatchResult patch(@Nonnull ProcessNodeEntity node, @Nonnull UserEntity user,
+                             @Nonnull List<AiProcessConfigurationChange> changes,
+                             @Nonnull List<String> removals) throws ResponseException {
         var tree = (ObjectNode) mapper.valueToTree(node.getConfiguration());
-        if (removals.stream().anyMatch(changes::containsKey)) throw ResponseException.badRequest("Ein Feld darf nicht zugleich gesetzt und entfernt werden.");
-        // Resolve sequentially against the candidate so a batch can create rows and then configure their children.
         var candidate = mapper.convertValue(node, ProcessNodeEntity.class);
+        var errors = new ArrayList<ConfigurationError>();
+        var removalPaths = new HashSet<String>();
         for (var path : removals) {
+            if (path == null || path.isBlank()) {
+                errors.add(error("INVALID_PATH", Objects.requireNonNullElse(path, ""), null,
+                        "Der valuePath darf nicht leer sein."));
+                continue;
+            }
+            if (!removalPaths.add(path)) {
+                errors.add(error("DUPLICATE_PATH", path, null,
+                        "Der valuePath ist in removePaths mehrfach enthalten."));
+                continue;
+            }
             candidate.setConfiguration(mapper.treeToValue(tree, AuthoredElementValues.class));
-            var field = field(candidate, user, path);
-            requireConcrete(field);
-            parent(tree, path).remove(JsonPointer.compile(path).last().getMatchingProperty());
+            try {
+                var field = field(candidate, user, path);
+                requireConcrete(field);
+                parent(tree, path).remove(JsonPointer.compile(path).last().getMatchingProperty());
+            } catch (ResponseException | IllegalArgumentException exception) {
+                errors.add(error("FIELD_NOT_AVAILABLE", path, null, exception.getMessage()));
+            }
         }
-        for (var change : changes.entrySet()) {
+
+        // Resolve sequentially against the candidate so a batch can create rows and then configure their children.
+        var changedPaths = new HashSet<String>();
+        for (var change : changes) {
+            var path = change == null ? null : change.valuePath();
+            var mode = change == null ? null : change.mode();
+            if (path == null || path.isBlank()) {
+                errors.add(error("INVALID_PATH", Objects.requireNonNullElse(path, ""), mode,
+                        "Der valuePath darf nicht leer sein."));
+                continue;
+            }
+            if (!changedPaths.add(path)) {
+                errors.add(error("DUPLICATE_PATH", path, mode,
+                        "Der valuePath ist in configurationChanges mehrfach enthalten."));
+                continue;
+            }
+            if (removalPaths.contains(path)) {
+                errors.add(error("SET_AND_REMOVE", path, mode,
+                        "Ein Feld darf nicht zugleich gesetzt und entfernt werden."));
+                continue;
+            }
+            if (mode == null) {
+                errors.add(error("UNKNOWN_MODE", path, null,
+                        "Für die Konfigurationsänderung fehlt der Eingabemodus."));
+                continue;
+            }
             candidate.setConfiguration(mapper.treeToValue(tree, AuthoredElementValues.class));
-            var field = field(candidate, user, change.getKey());
-            requireConcrete(field);
-            var raw = mapper.valueToTree(change.getValue());
-            validateEnvelope(field.element(), raw);
-            parent(tree, change.getKey()).set(JsonPointer.compile(change.getKey()).last().getMatchingProperty(), raw);
+            try {
+                var field = field(candidate, user, path);
+                requireConcrete(field);
+                var raw = envelope(change);
+                validateEnvelopeDetailed(field.element(), raw);
+                parent(tree, path).set(JsonPointer.compile(path).last().getMatchingProperty(), raw);
+            } catch (ValueValidationFailure failure) {
+                errors.add(new ConfigurationError(failure.code, path, mode.name(), failure.getMessage(),
+                        failure.expectedJsonTypes, failure.actualJsonType, failure.violations));
+            } catch (ResponseException | IllegalArgumentException exception) {
+                errors.add(error("FIELD_NOT_AVAILABLE", path, mode, exception.getMessage()));
+            }
         }
-        return mapper.treeToValue(tree, AuthoredElementValues.class);
+        return new PatchResult(mapper.treeToValue(tree, AuthoredElementValues.class), List.copyOf(errors));
     }
 
     private void requireConcrete(Field field) throws ResponseException {
@@ -160,22 +220,36 @@ public class AiProcessConfigurationService {
     }
 
     public void validateEnvelope(@Nonnull BaseInputElement<?> input, @Nonnull JsonNode raw) throws ResponseException {
-        if (!raw.isObject()) throw ResponseException.badRequest("Ein Konfigurationswert muss ein Objekt mit type und den zugehörigen Modusdaten sein.");
+        try {
+            validateEnvelopeDetailed(input, raw);
+        } catch (ValueValidationFailure failure) {
+            throw ResponseException.badRequest(failure.getMessage());
+        }
+    }
+
+    private void validateEnvelopeDetailed(BaseInputElement<?> input, JsonNode raw) {
+        if (!raw.isObject()) throw failure("INVALID_MODE_VALUE",
+                "Der Konfigurationswert hat keine gültige Modusstruktur.", List.of(), jsonType(raw));
         final AuthoredInputValue value;
         try {
             value = mapper.readerFor(AuthoredInputValue.class).with(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).readValue(raw);
         } catch (IllegalArgumentException | tools.jackson.core.JacksonException exception) {
-            throw ResponseException.badRequest("Der Aufbau des Konfigurationswertes ist ungültig.");
+            throw failure("INVALID_MODE_VALUE", "Der Wert passt nicht zur Struktur des Eingabemodus.",
+                    List.of(), jsonType(raw));
         }
         var modes = input.getInputModePolicy() == null ? List.of(InputMode.Literal) : input.getInputModePolicy().allowedModes();
-        if (modes.stream().noneMatch(mode -> mode.name().equals(value.type()))) throw ResponseException.badRequest("Dieser Eingabemodus ist für das Feld nicht erlaubt.");
+        if (modes.stream().noneMatch(mode -> mode.name().equals(value.type()))) {
+            throw new ValueValidationFailure("MODE_NOT_ALLOWED", "Dieser Eingabemodus ist für das Feld nicht erlaubt.",
+                    modes.stream().map(Enum::name).toList(), null, List.of());
+        }
         if (value instanceof VariableAuthoredInputValue variable
                 && (variable.reference() == null || !input.getInputModePolicy().allowedVariableSources().contains(variable.reference().source()))) {
-            throw ResponseException.badRequest("Diese Variablenquelle ist für das Feld nicht erlaubt.");
+            throw new ValueValidationFailure("VARIABLE_SOURCE_NOT_ALLOWED", "Diese Variablenquelle ist für das Feld nicht erlaubt.",
+                    input.getInputModePolicy().allowedVariableSources().stream().map(Enum::name).toList(), null, List.of());
         }
         if (value instanceof LiteralAuthoredInputValue literal && literal.value() != null) {
-            var valueType = mapper.constructType(input.getClass()).findSuperType(InputElement.class).containedType(0);
             var rawValue = raw.path("value");
+            var valueType = inputValueType(input);
             var cls = valueType.getRawClass();
             boolean valid = cls == String.class ? rawValue.isString()
                     : cls == Boolean.class ? rawValue.isBoolean()
@@ -183,31 +257,153 @@ public class AiProcessConfigurationService {
                     : Collection.class.isAssignableFrom(cls) ? rawValue.isArray()
                     : java.time.temporal.TemporalAccessor.class.isAssignableFrom(cls) ? rawValue.isString()
                     : rawValue.isObject();
-            if (!valid) throw ResponseException.badRequest("Der JSON-Typ passt nicht zum Eingabefeld.");
+            var expectedTypes = schemaTypes(schemas.forElement(input));
+            if (!valid) throw failure("INVALID_LITERAL_TYPE", "Der JSON-Typ passt nicht zum Eingabefeld.",
+                    expectedTypes, jsonType(rawValue));
             if (!(input instanceof ReplicatingContainerLayoutElement)) {
                 var schema = com.networknt.schema.SchemaRegistry.withDefaultDialect(com.networknt.schema.SpecificationVersion.DRAFT_2020_12)
                         .getSchema(schemas.forElement(input));
-                if (!schema.validate(rawValue).isEmpty()) throw ResponseException.badRequest("Der Aufbau des Literal-Wertes passt nicht zum Eingabewertschema.");
+                var violations = schema.validate(rawValue).stream().limit(3).map(com.networknt.schema.Error::getMessage).toList();
+                if (!violations.isEmpty()) throw new ValueValidationFailure("INVALID_LITERAL_SCHEMA",
+                        "Der Literal-Wert entspricht nicht dem Eingabewertschema.", expectedTypes,
+                        jsonType(rawValue), violations);
             }
             if (input instanceof de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement) {
                 try {
                     mapper.treeToValue(rawValue, BaseElement.class);
                 } catch (IllegalArgumentException | tools.jackson.core.JacksonException exception) {
-                    throw ResponseException.badRequest("Die eingebettete Formularstruktur enthält ungültige Elemente oder Kindelemente.");
+                    throw failure("INVALID_EMBEDDED_FORM",
+                            "Die eingebettete Formularstruktur enthält ungültige Elemente oder Kindelemente.",
+                            expectedTypes, jsonType(rawValue));
                 }
             }
             if (input instanceof ReplicatingContainerLayoutElement repeat) {
                 var allowed = new HashMap<String, BaseInputElement<?>>();
                 collectInputs(repeat, allowed);
                 for (var row : rawValue) {
-                    if (!row.isObject() || !row.path("values").isObject()) throw ResponseException.badRequest("Listenzeilen benötigen ein values-Objekt.");
+                    if (!row.isObject() || !row.path("values").isObject()) throw failure("INVALID_REPEAT_ROW",
+                            "Listenzeilen benötigen ein values-Objekt.", expectedTypes, jsonType(row));
                     for (var entry : row.path("values").properties()) {
                         var child = allowed.get(entry.getKey());
-                        if (child == null) throw ResponseException.badRequest("Die Listenzeile enthält ein unbekanntes Eingabefeld.");
-                        validateEnvelope(child, entry.getValue());
+                        if (child == null) throw failure("INVALID_REPEAT_ROW",
+                                "Die Listenzeile enthält ein unbekanntes Eingabefeld.", expectedTypes, jsonType(row));
+                        try {
+                            validateEnvelopeDetailed(child, entry.getValue());
+                        } catch (ValueValidationFailure failure) {
+                            throw new ValueValidationFailure("INVALID_REPEAT_ROW",
+                                    "Ein Wert in der Listenzeile ist ungültig.", expectedTypes, jsonType(row),
+                                    failure.violations.isEmpty()
+                                            ? List.of(entry.getKey() + ": " + failure.getMessage())
+                                            : failure.violations.stream().map(item -> entry.getKey() + ": " + item).toList());
+                        }
                     }
                 }
             }
+        }
+    }
+
+    private ObjectNode envelope(AiProcessConfigurationChange change) {
+        var result = mapper.createObjectNode().put("type", change.mode().name());
+        var property = switch (change.mode()) {
+            case Literal -> "value";
+            case Variable -> "reference";
+            case NoCode -> "operand";
+            case LowCode -> "code";
+        };
+        result.set(property, mapper.valueToTree(change.value()));
+        return result;
+    }
+
+    private JsonNode currentValue(ProcessNodeEntity node, String path) {
+        var raw = mapper.valueToTree(node.getConfiguration()).at(path);
+        if (!raw.isObject() || !raw.path("type").isTextual()) return mapper.valueToTree(null);
+        var mode = raw.path("type").asString();
+        var property = switch (mode) {
+            case "Literal" -> "value";
+            case "Variable" -> "reference";
+            case "NoCode" -> "operand";
+            case "LowCode" -> "code";
+            default -> null;
+        };
+        if (property == null) return raw;
+        var result = mapper.createObjectNode().put("mode", mode);
+        result.set("value", raw.has(property) ? raw.get(property) : mapper.valueToTree(null));
+        return result;
+    }
+
+    private Map<String, Object> writeContract(Field field) {
+        var input = field.element();
+        var policy = input.getInputModePolicy();
+        var modes = policy == null ? List.of(InputMode.Literal) : policy.allowedModes();
+        var values = new LinkedHashMap<String, Object>();
+        for (var mode : modes) {
+            values.put(mode.name(), switch (mode) {
+                case Literal -> "Rohwert gemäß literalValueSchema; null ist erlaubt";
+                case Variable -> Map.of("source", policy.allowedVariableSources(), "path", "Pfad aus liste-knotenvariablen", "nodeDataKey", "optional");
+                case NoCode -> "Operand aus hole-konfigurationshilfe";
+                case LowCode -> "JavaScript-Text mit return";
+            });
+        }
+        return Map.of("valuePath", field.valuePath(), "modeValues", values);
+    }
+
+    private JavaType inputValueType(BaseInputElement<?> input) {
+        return mapper.constructType(input.getClass()).findSuperType(InputElement.class).containedType(0);
+    }
+
+    private String compactType(JavaType type) {
+        if (type == null) return "any";
+        var cls = type.getRawClass();
+        if (cls == String.class || cls.isEnum() || java.time.temporal.TemporalAccessor.class.isAssignableFrom(cls)) return "string";
+        if (cls == Boolean.class || cls == boolean.class) return "boolean";
+        if (Number.class.isAssignableFrom(cls) || cls.isPrimitive() && cls != boolean.class && cls != char.class) return "number";
+        if (type.isArrayType() || Collection.class.isAssignableFrom(cls)) return "array<" + compactType(type.getContentType()) + ">";
+        return "object";
+    }
+
+    private List<String> schemaTypes(JsonNode schema) {
+        var type = schema.path("type");
+        if (type.isTextual()) return List.of(type.asString());
+        if (type.isArray()) {
+            var result = new ArrayList<String>();
+            type.forEach(item -> result.add(item.asString()));
+            return List.copyOf(result);
+        }
+        return List.of();
+    }
+
+    private String jsonType(JsonNode value) {
+        if (value == null || value.isNull() || value.isMissingNode()) return "null";
+        if (value.isObject()) return "object";
+        if (value.isArray()) return "array";
+        if (value.isTextual()) return "string";
+        if (value.isBoolean()) return "boolean";
+        if (value.isNumber()) return "number";
+        return value.getNodeType().name().toLowerCase(Locale.ROOT);
+    }
+
+    private ConfigurationError error(String code, String path, @Nullable InputMode mode, String message) {
+        return new ConfigurationError(code, path, mode == null ? null : mode.name(), message,
+                List.of(), null, List.of());
+    }
+
+    private ValueValidationFailure failure(String code, String message, List<String> expected, String actual) {
+        return new ValueValidationFailure(code, message, expected, actual, List.of());
+    }
+
+    private static final class ValueValidationFailure extends RuntimeException {
+        private final String code;
+        private final List<String> expectedJsonTypes;
+        private final String actualJsonType;
+        private final List<String> violations;
+
+        private ValueValidationFailure(String code, String message, List<String> expectedJsonTypes,
+                                       String actualJsonType, List<String> violations) {
+            super(message);
+            this.code = code;
+            this.expectedJsonTypes = expectedJsonTypes;
+            this.actualJsonType = actualJsonType;
+            this.violations = violations;
         }
     }
 

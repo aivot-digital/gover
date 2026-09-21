@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.ai.services;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.ai.models.AiProcessConfigurationChange;
 import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.*;
@@ -44,43 +45,49 @@ class AiProcessConfigurationServiceTest {
     @Test
     void preservesOmittedValuesAndDistinguishesNullFromRemoval() throws Exception {
         node.getConfiguration().putLiteral("rows", List.of());
-        var changes = new LinkedHashMap<String, Object>();
-        changes.put("/title~1~0", Map.of("type", "Literal", "value", "Title"));
-        var result = service.patch(node, user, changes, List.of());
+        var result = service.patch(node, user,
+                List.of(change("/title~1~0", InputMode.Literal, "Title")), List.of()).configuration();
         assertThat(result).containsKeys("rows", "title/~");
         assertThat(node.getConfiguration()).doesNotContainKey("title/~");
         node.setConfiguration(result);
-        var nullValue = mapper.readValue("{\"type\":\"Literal\",\"value\":null}", Map.class);
-        result = service.patch(node, user, Map.of("/title~1~0", nullValue), List.of());
+        result = service.patch(node, user,
+                Collections.singletonList(change("/title~1~0", InputMode.Literal, null)), List.of()).configuration();
         assertThat(result.get("title/~")).isEqualTo(new LiteralAuthoredInputValue(null));
         node.setConfiguration(result);
-        assertThat(service.patch(node, user, Map.of(), List.of("/title~1~0"))).containsKey("rows").doesNotContainKey("title/~");
+        assertThat(service.patch(node, user, List.of(), List.of("/title~1~0")).configuration())
+                .containsKey("rows").doesNotContainKey("title/~");
     }
 
     @Test
     void acceptsDynamicModesButRejectsDisallowedSourcesAndMalformedEnvelopes() throws Exception {
-        for (var json : List.of(
-                "{\"type\":\"Variable\",\"reference\":{\"source\":\"ProcessData\",\"path\":\"counter\"}}",
-                "{\"type\":\"NoCode\",\"operand\":{\"type\":\"NoCodeStaticValue\",\"value\":\"hello\"}}",
-                "{\"type\":\"LowCode\",\"code\":\"return 'hello';\"}")) {
-            assertThat(service.patch(node, user, Map.of("/title~1~0", mapper.readValue(json, Map.class)), List.of())).containsKey("title/~");
+        var changes = List.of(
+                change("/title~1~0", InputMode.Variable, Map.of("source", "ProcessData", "path", "counter")),
+                change("/title~1~0", InputMode.NoCode, Map.of("type", "NoCodeStaticValue", "value", "hello")),
+                change("/title~1~0", InputMode.LowCode, "return 'hello';"));
+        for (var change : changes) {
+            assertThat(service.patch(node, user, List.of(change), List.of()).configuration()).containsKey("title/~");
         }
-        assertThatThrownBy(() -> service.patch(node, user, Map.of("/title~1~0", Map.of("type", "Variable", "reference", Map.of("source", "ElementData", "path", "x"))), List.of())).isInstanceOf(ResponseException.class);
-        assertThatThrownBy(() -> service.patch(node, user, Map.of("/title~1~0", "raw"), List.of())).isInstanceOf(ResponseException.class);
-        assertThatThrownBy(() -> service.patch(node, user, Map.of("/missing", Map.of("type", "Literal", "value", "x")), List.of())).isInstanceOf(ResponseException.class);
+        assertThat(service.patch(node, user, List.of(change("/title~1~0", InputMode.Variable,
+                Map.of("source", "ElementData", "path", "x"))), List.of()).errors())
+                .extracting(AiProcessConfigurationService.ConfigurationError::code)
+                .containsExactly("VARIABLE_SOURCE_NOT_ALLOWED");
+        assertThat(service.patch(node, user, List.of(change("/missing", InputMode.Literal, "x")), List.of()).errors())
+                .extracting(AiProcessConfigurationService.ConfigurationError::code)
+                .containsExactly("FIELD_NOT_AVAILABLE");
     }
 
     @Test
     void addressesRepeatedChildrenAndRejectsUnknownFieldsAtomically() throws Exception {
-        var batch = new LinkedHashMap<String, Object>();
-        batch.put("/rows", Map.of("type", "Literal", "value", List.of(Map.of("values", Map.of()))));
-        batch.put("/rows/value/0/values/count", Map.of("type", "Literal", "value", 3));
-        var result = service.patch(node, user, batch, List.of());
+        var batch = List.of(
+                change("/rows", InputMode.Literal, List.of(Map.of("values", Map.of()))),
+                change("/rows/value/0/values/count", InputMode.Literal, 3));
+        var result = service.patch(node, user, batch, List.of()).configuration();
         assertThat(mapper.valueToTree(result).at("/rows/value/0/values/count/value").asInt()).isEqualTo(3);
         node.setConfiguration(result);
         assertThat(service.fields(node, user)).anyMatch(f -> f.valuePath().equals("/rows/value/*/values/count") && f.template());
-        batch.put("/rows/value/0/values/missing", Map.of("type", "Literal", "value", 2));
-        assertThatThrownBy(() -> service.patch(node, user, batch, List.of())).isInstanceOf(ResponseException.class);
+        var invalid = new ArrayList<>(batch);
+        invalid.add(change("/rows/value/0/values/missing", InputMode.Literal, 2));
+        assertThat(service.patch(node, user, invalid, List.of()).valid()).isFalse();
         assertThat(node.getConfiguration()).isEqualTo(result);
     }
 
@@ -92,10 +99,45 @@ class AiProcessConfigurationServiceTest {
         when(nodes.deriveConfigurationForAuthoring(any(), any(), eq(user), any(), any())).thenReturn(derived);
         var details = service.details(service.field(node, user, "/title~1~0"), node, 0);
         assertThat(details).containsEntry("visible", false).containsEntry("disabled", true).containsEntry("error", "Fehler");
-        assertThat((AiToolResults.Value) details.get("value")).satisfies(value -> {
+        assertThat(details).containsEntry("literalValueType", "string").containsKeys("literalValueSchema", "writeContract");
+        assertThat((AiToolResults.Value) details.get("currentValue")).satisfies(value -> {
             assertThat(value.truncated()).isTrue(); assertThat(value.nextOffset()).isEqualTo(4000);
         });
     }
+
+    @Test
+    void reportsAllTypeErrorsWithoutMutatingTheNode() throws Exception {
+        node.getConfiguration().putLiteral("rows", List.of(Map.of("values", Map.of())));
+        var before = mapper.writeValueAsString(node.getConfiguration());
+
+        var result = service.patch(node, user, List.of(
+                change("/title~1~0", InputMode.Literal, 42),
+                change("/rows/value/0/values/count", InputMode.Literal, "3"),
+                change("/missing", InputMode.Literal, "x")
+        ), List.of());
+
+        assertThat(result.valid()).isFalse();
+        assertThat(result.errors()).extracting(AiProcessConfigurationService.ConfigurationError::code)
+                .containsExactly("INVALID_LITERAL_TYPE", "INVALID_LITERAL_TYPE", "FIELD_NOT_AVAILABLE");
+        assertThat(result.errors().get(1)).satisfies(error -> {
+            assertThat(error.valuePath()).isEqualTo("/rows/value/0/values/count");
+            assertThat(error.expectedJsonTypes()).contains("number");
+            assertThat(error.actualJsonType()).isEqualTo("string");
+        });
+        assertThat(mapper.writeValueAsString(node.getConfiguration())).isEqualTo(before);
+    }
+
+    @Test
+    void rejectsDuplicateAndConflictingPaths() throws Exception {
+        var result = service.patch(node, user, List.of(
+                change("/title~1~0", InputMode.Literal, "first"),
+                change("/title~1~0", InputMode.Literal, "second")
+        ), List.of("/title~1~0"));
+
+        assertThat(result.errors()).extracting(AiProcessConfigurationService.ConfigurationError::code)
+                .containsExactly("SET_AND_REMOVE", "DUPLICATE_PATH");
+    }
+
     @Test
     void rejectsNestedLiteralTypeErrorsAndInvalidEmbeddedForms() {
         var chips = new ChipInputElement();
@@ -104,6 +146,10 @@ class AiProcessConfigurationServiceTest {
         var ui = new UiDefinitionInputElement().setElementType(de.aivot.prosuna.backend.enums.ElementType.FormLayout);
         assertThatThrownBy(() -> service.validateEnvelope(ui, mapper.readTree("{\"type\":\"Literal\",\"value\":{\"id\":\"root\",\"type\":0,\"children\":[{\"type\":999}]}}")))
                 .isInstanceOf(ResponseException.class);
+    }
+
+    private static AiProcessConfigurationChange change(String path, InputMode mode, Object value) {
+        return new AiProcessConfigurationChange(path, mode, value);
     }
 
 }
