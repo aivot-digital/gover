@@ -111,7 +111,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     <Typography
                         variant="body2"
                         sx={{
-                            mt: -0.75,
+                            mt: -0.5,
                             fontSize: '0.875rem',
                             lineHeight: '1.5rem',
                         }}
@@ -131,7 +131,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     <Typography
                         variant="body2"
                         sx={{
-                            mt: -0.75,
+                            mt: -0.5,
                             fontSize: '0.875rem',
                             lineHeight: '1.5rem',
                             textOverflow: 'ellipsis',
