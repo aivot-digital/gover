@@ -1,7 +1,8 @@
-import React, {type ReactNode, useMemo} from 'react';
+import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {Box, Button, Link, Skeleton, Tooltip, Typography} from '@mui/material';
-import {Link as RouterLink} from 'react-router-dom';
-import FingerprintOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Fingerprint';
+import {Link as RouterLink, useSearchParams} from 'react-router-dom';
+import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
+import Flag from '@aivot/mui-material-symbols-400-n25-outlined/Flag';
 import SellOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Sell';
 import RouteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Route';
 import EventAvailableOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/EventAvailable';
@@ -29,6 +30,61 @@ import {
     formatInstantInApplicationTimeZone,
     formatRelativeInstantInApplicationTimeZone,
 } from '../../../../utils/temporal-utils';
+
+import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../enums/process-task-status';
+import {UsersApiService} from '../../../users/users-api-service';
+import {resolveUserName} from '../../../users/utils/resolve-user-name';
+import {type User} from '../../../users/models/user';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectUser} from '../../../../slices/user-slice';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {type IdentityDataMap} from '../../../identity/models/identity-data';
+
+function TaskAssignee({userId}: {userId: string | null}): ReactNode {
+    const currentUser = useAppSelector(selectUser);
+    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
+    const [lookup, setLookup] = useState<{id: string; user: User | null} | null>(null);
+    const isSelf = userId != null && currentUser?.id === userId;
+
+    useEffect(() => {
+        let cancelled = false;
+        setLookup(null);
+        if (userId != null && !isSelf && canReadUsers) {
+            new UsersApiService().retrieve(userId).then(
+                (user) => {
+                    if (!cancelled) {
+                        setLookup({id: userId, user});
+                    }
+                },
+                () => {
+                    if (!cancelled) {
+                        setLookup({id: userId, user: null});
+                    }
+                },
+            );
+        }
+        return () => {
+            cancelled = true;
+        };
+    }, [userId, isSelf, canReadUsers]);
+
+    if (userId == null) return 'Nicht zugewiesen';
+    if (isSelf) return resolveUserName(currentUser);
+    if (!canReadUsers) return 'Zugewiesen · Name nicht verfügbar';
+    if (lookup?.id !== userId) return 'Name wird geladen …';
+    return lookup.user == null ? 'Zugewiesen · Name nicht verfügbar' : resolveUserName(lookup.user);
+}
+
+function getExternalAssigneeLabel(identityId: string, identities?: IdentityDataMap): string {
+    const identity = Object.values(identities ?? {}).find((value) => value.identityId === identityId);
+    if (identity == null) return 'Zugewiesen · Angaben nicht verfügbar';
+
+    const attributes = identity.attributes;
+    const name = attributes.name?.trim() || [attributes.given_name, attributes.family_name]
+        .map((part) => part?.trim()).filter(Boolean).join(' ');
+    return name || identity.emailAddress?.trim() || 'Zugewiesen · Name nicht hinterlegt';
+}
 
 function formatDateTimeWithRelative(value?: string | null, fallback = 'Nicht hinterlegt'): ReactNode {
     if (value == null || value.trim().length === 0) {
@@ -109,6 +165,11 @@ export function ProcessTaskViewPageIndex(): ReactNode {
         item,
     } = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
 
+    const [searchParams] = useSearchParams();
+    // Temporary display-only preview; never changes the task or persists example data.
+    const previewMetadata = import.meta.env.DEV && searchParams.get('previewTaskMetadata') === '1';
+    const previewFinished = useMemo(() => new Date(Date.now() - 60 * 60 * 1000).toISOString(), []);
+
     const generalInfoItems = useMemo<StatusTablePropsItem[]>(() => {
         if (item == null) {
             return [];
@@ -171,7 +232,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
             return [];
         }
 
-        return [
+        const entries: StatusTablePropsItem[] = [
             {
                 label: 'Prozesselement',
                 icon: getProcessTaskNodeIcon(item),
@@ -183,8 +244,49 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                 alignTop: true,
                 children: getProcessTaskDescription(item),
             },
+            {
+                label: 'Aufgabenstatus',
+                icon: <Flag />,
+                children: item.task.statusOverride?.trim() || ProcessTaskStatusLabels[item.task.status],
+            },
+            {
+                label: 'Zuständige Person',
+                icon: <AssignmentIndOutlinedIcon />,
+                children: <TaskAssignee userId={item.task.assignedUserId} />,
+            },
+            {
+                label: 'Zuletzt aktualisiert',
+                icon: <ScheduleOutlinedIcon />,
+                children: formatDateTimeWithRelative(item.task.updated),
+            },
         ];
-    }, [item]);
+
+        if (previewMetadata || item.task.assignedCustomerIdentityId != null) {
+            entries.push({
+                label: 'Externe Beteiligung',
+                icon: <AccountCircle />,
+                children: previewMetadata
+                    ? 'Erika Muster (Beispiel)'
+                    : getExternalAssigneeLabel(item.task.assignedCustomerIdentityId!, item.instance?.identities),
+            });
+        }
+
+        if (previewMetadata || item.task.finished != null) {
+            entries.push({
+                label: previewMetadata || item.task.status === ProcessTaskStatus.Completed
+                    ? 'Abgeschlossen am'
+                    : item.task.status === ProcessTaskStatus.Aborted
+                        ? 'Abgebrochen am'
+                        : item.task.status === ProcessTaskStatus.Failed
+                            ? 'Fehlgeschlagen am'
+                            : 'Beendet am',
+                icon: <EventAvailableOutlinedIcon />,
+                children: formatDateTimeWithRelative(previewMetadata ? previewFinished : item.task.finished),
+            });
+        }
+
+        return entries;
+    }, [item, previewMetadata, previewFinished]);
 
     if (item == null) {
         return (
@@ -225,7 +327,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                 variant="h5"
                 sx={{mt: 4}}
             >
-                Zugewiesene Aufgabe
+                Details zur Aufgabe
             </Typography>
 
             <StatusTable
