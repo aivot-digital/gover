@@ -27,7 +27,8 @@ import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFacto
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
@@ -36,8 +37,9 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProcessWorkerTest {
-    @Test
-    void doWork_MarksProcessInstanceFailed_WhenInitThrowsRuntimeException() {
+    @ParameterizedTest
+    @EnumSource(ExecutionFailure.class)
+    void doWork_MarksProcessInstanceAndTaskFailed_WhenExecutionFails(ExecutionFailure executionFailure) {
         var processInstance = new ProcessInstanceEntity(
                 42L,
                 null,
@@ -129,7 +131,7 @@ class ProcessWorkerTest {
                         JsonMapperTestUtils.createMapper()
                 ),
                 new TestProcessNodeExecutionLoggerFactory(),
-                new TestProcessNodeService()
+                new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION)
         );
 
         worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11));
@@ -142,11 +144,13 @@ class ProcessWorkerTest {
         var failedTask = savedTasks.getLast();
         assertEquals(ProcessTaskStatus.Failed, failedTask.getStatus());
         assertNotNull(failedTask.getFinished());
+        assertEquals(executionFailure == ExecutionFailure.PROVIDER, processNodeDefinition.wasInitCalled());
         assertFalse(resultHandler.wasHandleResultCalled());
     }
 
-    @Test
-    void resumeWork_MarksProcessInstanceFailed_WhenResumeThrowsRuntimeException() {
+    @ParameterizedTest
+    @EnumSource(ExecutionFailure.class)
+    void resumeWork_MarksProcessInstanceAndTaskFailed_WhenExecutionFails(ExecutionFailure executionFailure) {
         var processInstance = new ProcessInstanceEntity(
                 42L,
                 null,
@@ -264,7 +268,7 @@ class ProcessWorkerTest {
                         JsonMapperTestUtils.createMapper()
                 ),
                 new TestProcessNodeExecutionLoggerFactory(),
-                new TestProcessNodeService()
+                new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION)
         );
 
         worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
@@ -278,7 +282,13 @@ class ProcessWorkerTest {
         assertEquals(currentTask, failedTask);
         assertEquals(ProcessTaskStatus.Failed, failedTask.getStatus());
         assertNotNull(failedTask.getFinished());
+        assertEquals(executionFailure == ExecutionFailure.PROVIDER, processNodeDefinition.wasResumeCalled());
         assertFalse(resultHandler.wasHandleResultCalled());
+    }
+
+    private enum ExecutionFailure {
+        RUNTIME_CONFIGURATION,
+        PROVIDER,
     }
 
     private interface ProxyHandler {
@@ -309,6 +319,9 @@ class ProcessWorkerTest {
     }
 
     private static final class ThrowingProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
+        private boolean initCalled;
+        private boolean resumeCalled;
+
         @Override
         public String getParentPluginKey() {
             return "test";
@@ -359,12 +372,22 @@ class ProcessWorkerTest {
 
         @Override
         public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+            initCalled = true;
             throw new RuntimeException("init failure");
         }
 
         @Override
         public ProcessNodeExecutionResult resume(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+            resumeCalled = true;
             throw new RuntimeException("resume failure");
+        }
+
+        private boolean wasInitCalled() {
+            return initCalled;
+        }
+
+        private boolean wasResumeCalled() {
+            return resumeCalled;
         }
 
         @Nonnull
@@ -375,8 +398,11 @@ class ProcessWorkerTest {
     }
 
     private static final class TestProcessNodeService extends ProcessNodeService {
-        private TestProcessNodeService() {
+        private final boolean invalidRuntimeConfiguration;
+
+        private TestProcessNodeService(boolean invalidRuntimeConfiguration) {
             super(null, null, null, null, null, null, null, new ProsunaConfig(), null);
+            this.invalidRuntimeConfiguration = invalidRuntimeConfiguration;
         }
 
         @Nonnull
@@ -390,7 +416,11 @@ class ProcessWorkerTest {
         ) {
             @SuppressWarnings("unchecked")
             var configuration = (NodeConfig) new AuthoredElementValues();
-            return new ProcessConfigurationDetails<>(configuration, new DerivedRuntimeElementData());
+            var derivedRuntimeElementData = new DerivedRuntimeElementData();
+            if (invalidRuntimeConfiguration) {
+                derivedRuntimeElementData.putError("configuration", "invalid runtime configuration");
+            }
+            return new ProcessConfigurationDetails<>(configuration, derivedRuntimeElementData);
         }
     }
 
