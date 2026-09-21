@@ -12,7 +12,7 @@ import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountC
 import {generateId} from '../utils/id-utils';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
-import {RichTextInputComponent} from '../components/rich-text-input-component/rich-text-input-component';
+import {RichTextInputWithVariablePicker} from '../components/rich-text-input-component/rich-text-input-with-variable-picker';
 import {IdentityProviderType} from '../modules/identity/enums/identity-provider-type';
 import {DialogList, DialogListPropsDialogContentComponent} from '../components/dialog-list/dialog-list';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
@@ -334,7 +334,7 @@ function IdentityConfigSlot(props: {
                     </Grid>
 
                     <Grid size={{xs: 12}}>
-                        <RichTextInputComponent
+                        <RichTextInputWithVariablePicker
                             label="Beschreibung"
                             hint="Optionale Beschreibung, die Nutzer:innen angezeigt wird. Sie kann erklären, warum eine Anmeldung mit dieser Identität sinnvoll oder notwendig ist."
                             value={item.description}

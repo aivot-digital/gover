@@ -4,24 +4,13 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {ImageSelector} from '../../modules/assets/components/image-selector';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {
-    RichTextInputComponent,
-    type RichTextInputComponentMethods,
-} from '../rich-text-input-component/rich-text-input-component';
+import {RichTextInputWithVariablePicker} from '../rich-text-input-component/rich-text-input-with-variable-picker';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {VStorageIndexItemWithAssetEntity} from '../../modules/storage/entities/storage-index-item-entity';
 import {DialogProps} from '@mui/material/Dialog';
 import {HtmlTemplateInputValue} from '../../models/elements/form/input/html-template-input-element';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {MarkdownContent} from '../markdown-content/markdown-content';
-import {useViewDispatcherContext} from "../view-dispatcher/view-dispatcher.context";
-import {
-    getInputModeVariableCategoryLabel,
-    getInputModeVariableReference, InputModeVariable,
-    VariablePickerDialog
-} from "../input-mode-field/input-mode-field";
-import {getInputVariableReference, InputVariableSource} from "../../models/input-mode";
-import DataObject from "@aivot/mui-material-symbols-400-n25-outlined/DataObject";
 
 const contentIframeId = 'html-template-input-component-dialog-content';
 
@@ -44,12 +33,6 @@ interface SlotToEdit {
     defaultValue: string;
 }
 
-const InputVariableSources: InputVariableSource[] = [
-    InputVariableSource.ElementMetadata,
-    InputVariableSource.ProcessData,
-    InputVariableSource.ProtectedProcessData,
-];
-
 export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTemplateInputComponentDialogProps) {
     const theme = useTheme();
 
@@ -59,13 +42,9 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
         slots,
         onChangeSlots,
         onClose,
+        readOnly,
         ...rest
     } = props;
-
-
-    const {
-        inputModeVariables,
-    } = useViewDispatcherContext();
 
     const [originalHeader, setOriginalHeader] = useState<string | null>(null);
     const [originalContent, setOriginalContent] = useState<string | null>(null);
@@ -74,12 +53,10 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
     const [showSlotToEdit, setShowSlotToEdit] = useState(false);
     const [slotToEdit, setSlotToEdit] = useState<SlotToEdit | null>(null);
     const [editedSlotValue, setEditedSlotValue] = useState<string | null | undefined>(undefined);
-    const [showVariablePickerDialog, setShowVariablePickerDialog] = useState(false);
 
     const headerRef = useRef<HTMLIFrameElement | null>(null);
     const contentRef = useRef<HTMLIFrameElement | null>(null);
     const footerRef = useRef<HTMLIFrameElement | null>(null);
-    const richTextInputRef = useRef<RichTextInputComponentMethods | null>(null);
 
     useEffect(() => {
         // Reset the edited slot value if the slot to edit changes to prevent old value display.
@@ -242,18 +219,6 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                 : editedSlotValue
         );
 
-    const dynamicTextVariableMetadata: InputModeVariable[] = (inputModeVariables ?? [])
-        .filter((variable) => InputVariableSources.includes(variable.source))
-        .map((variable) => ({
-            source: variable.source,
-            path: variable.path,
-            reference: getInputModeVariableReference(variable),
-            label: variable.label,
-            category: getInputModeVariableCategoryLabel(variable.source),
-            origin: variable.origin?.name ?? undefined,
-            description: variable.description ?? undefined,
-        }));
-
     return (
         <>
             <Dialog
@@ -400,22 +365,14 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
 
                             {
                                 slotToEdit.type == 'richtext' &&
-                                <RichTextInputComponent
-                                    ref={richTextInputRef}
+                                <RichTextInputWithVariablePicker
                                     label={slotToEdit.label}
                                     hint={slotToEdit.hint}
                                     value={value}
                                     onChange={(val) => {
                                         setEditedSlotValue(val);
                                     }}
-                                    dynamicText={true}
-                                    endAction={{
-                                        icon: <DataObject/>,
-                                        onClick: () => {
-                                            setShowVariablePickerDialog(true);
-                                        },
-                                        tooltip: "Variable referenzieren",
-                                    }}
+                                    readOnly={readOnly}
                                 />
                             }
 
@@ -458,33 +415,6 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                 </DialogActions>
             </Dialog>
 
-            <VariablePickerDialog
-                open={showVariablePickerDialog}
-                variables={dynamicTextVariableMetadata}
-                allowedSources={InputVariableSources}
-                selectedReference={null}
-                allowClear={false}
-                readOnly={props.readOnly ?? false}
-                title="Variable referenzieren"
-                onClose={() => {
-                    setShowVariablePickerDialog(false);
-                }}
-                onClear={() => {
-                    // Do nothing
-                }}
-                onSelect={(reference) => {
-                    setShowVariablePickerDialog(false);
-
-                    const insertReference = () => richTextInputRef.current?.insertVariableReference(
-                        getInputVariableReference(reference),
-                    );
-                    if (typeof requestAnimationFrame === 'function') {
-                        requestAnimationFrame(insertReference);
-                    } else {
-                        insertReference();
-                    }
-                }}
-            />
         </>
     );
 }
