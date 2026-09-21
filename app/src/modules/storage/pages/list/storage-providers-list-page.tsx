@@ -117,7 +117,8 @@ export function StorageProvidersListPage(): ReactNode {
             value={selectedDefinitionKey}
             onChange={(value) => setSelectedDefinitionKey(value ?? undefined)}
             options={definitionOptions}
-            placeholder="Alle Speichertypen"
+            emptyOptionLabel="Alle Speichertypen"
+            showOptionalIndicator={false}
             size="small"
         />,
     ], [definitionOptions, selectedDefinitionKey]);
