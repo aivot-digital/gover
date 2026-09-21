@@ -13,9 +13,11 @@ import jakarta.annotation.Nullable;
 import java.util.regex.Pattern;
 
 public class NoCodeRegexMatchOperator extends NoCodeOperator {
+    public static final String OPERATOR_ID = "regex-match";
+
     @Override
     public String getIdentifier() {
-        return "regex-match";
+        return OPERATOR_ID;
     }
 
     @Override

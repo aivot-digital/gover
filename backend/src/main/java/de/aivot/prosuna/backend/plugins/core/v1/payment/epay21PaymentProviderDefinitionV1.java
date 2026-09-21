@@ -5,13 +5,16 @@ import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentMissingDataException;
@@ -19,6 +22,7 @@ import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -36,6 +40,7 @@ import java.util.*;
 
 @Component
 public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinition {
+    private static final String URL_REGEX = "^(https?):\\/\\/([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$";
     private final static String ORIGINATOR_ID_FIELD = "originatorId";
     private final static String ENDPOINT_ID_FIELD = "endpointId";
     private final static String PASSWORD_SECRET_KEY_FIELD = "passwordSecretKey";
@@ -145,10 +150,6 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         passwordInput.setWeight(6.0d);
         list.add(passwordInput);
 
-        TextInputElementPattern urlPattern = new TextInputElementPattern();
-        urlPattern.setRegex(TextInputElementPattern.URL_REGEX);
-        urlPattern.setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
-
         var paymentTransactionUrlInput = new TextInputElement();
         paymentTransactionUrlInput.setType(ElementType.Text);
         paymentTransactionUrlInput.setId(PAYMENT_TRANSACTION_URL_FIELD);
@@ -156,7 +157,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         paymentTransactionUrlInput.setLabel("Basis-URL");
         paymentTransactionUrlInput.setPlaceholder("https://epay-qs.ekom21.de/xbezahldienste/api/v1.0.0/");
         paymentTransactionUrlInput.setHint("Die Basis-URL des Zielsystems gemäß XBezahldienste-Standard. Diese wird vom Zahlungsdienstleister bereitgestellt.");
-        paymentTransactionUrlInput.setPattern(urlPattern);
+        paymentTransactionUrlInput.setValidation(urlValidation(PAYMENT_TRANSACTION_URL_FIELD));
         list.add(paymentTransactionUrlInput);
 
         var group = new GroupLayoutElement();
@@ -165,6 +166,17 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         group.setChildren(list);
 
         return group;
+    }
+
+    private static ElementValidationFunctions urlValidation(@Nonnull String fieldId) {
+        return ElementValidationFunctions.of(
+                NoCodeExpression.of(
+                        NoCodeRegexMatchOperator.OPERATOR_ID,
+                        NoCodeReference.of(fieldId),
+                        NoCodeStaticValue.of(URL_REGEX)
+                ),
+                "Bitte geben Sie eine gültige URL ein (z. B. https://example.com)."
+        );
     }
 
     @Nonnull

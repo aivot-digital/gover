@@ -9,7 +9,9 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderContex
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
+import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
@@ -20,6 +22,10 @@ import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -34,8 +40,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -192,10 +199,13 @@ class FitConnectZbpCommunicationProviderV1Test {
         );
         assertEquals("Postfach-ID", postfachId.getLabel());
         assertTrue(postfachId.getRequired());
-        assertNotNull(postfachId.getPattern());
-        assertDoesNotThrow(() -> postfachId.validate("123e4567-e89b-12d3-a456-426614174000"));
+        assertRegexValidation(
+                postfachId,
+                "Bitte geben Sie eine gültige UUID ein.",
+                "123e4567-e89b-12d3-a456-426614174000",
+                "not-a-uuid"
+        );
         assertThrows(ValidationException.class, () -> postfachId.validate(""));
-        assertThrows(ValidationException.class, () -> postfachId.validate("not-a-uuid"));
     }
 
     @Test
@@ -481,5 +491,27 @@ class FitConnectZbpCommunicationProviderV1Test {
         var inputs = new AuthoredElementValues();
         inputs.putLiteral(FitConnectZbpCommunicationProviderV1.TEST_POSTFACH_ID_FIELD_ID, postfachId);
         return inputs;
+    }
+
+    private static void assertRegexValidation(TextInputElement field,
+                                              String expectedMessage,
+                                              String acceptedValue,
+                                              String rejectedValue) throws Exception {
+        var validation = field.getValidation();
+        assertNotNull(validation);
+        assertEquals(ValidationFunctionType.NoCode, validation.getType());
+        assertEquals(List.of(field.getId()), List.copyOf(validation.getReferencedIds()));
+
+        var wrapper = validation.getNoCodeList().getFirst();
+        assertEquals(expectedMessage, wrapper.getMessage());
+        var expression = assertInstanceOf(NoCodeExpression.class, wrapper.getNoCode());
+        assertEquals(NoCodeRegexMatchOperator.OPERATOR_ID, expression.getOperatorIdentifier());
+
+        var operands = List.copyOf(expression.getOperands());
+        assertEquals(NoCodeReference.of(field.getId()), operands.getFirst());
+        var regex = assertInstanceOf(String.class, assertInstanceOf(NoCodeStaticValue.class, operands.get(1)).getValue());
+        var operator = new NoCodeRegexMatchOperator();
+        assertTrue(operator.performEvaluation(DerivedRuntimeElementData.empty(), acceptedValue, regex).getValueAsBoolean());
+        assertFalse(operator.performEvaluation(DerivedRuntimeElementData.empty(), rejectedValue, regex).getValueAsBoolean());
     }
 }

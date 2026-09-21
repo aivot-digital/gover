@@ -51,9 +51,6 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
     private String copyValueTemplate;
 
     @Nullable
-    private TextInputElementPattern pattern;
-
-    @Nullable
     private List<String> suggestions;
 
     public TextInputElement() {
@@ -88,16 +85,6 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
 
         if (minCharacters != null && minCharacters > 0 && value.length() < minCharacters) {
             throw new ValidationException(this, "Zu wenige Zeichen. Mindestens " + minCharacters + " Zeichen erforderlich.");
-        }
-
-        if (pattern != null && pattern.getRegex() != null && !pattern.getRegex().isEmpty()) {
-            try {
-                if (!value.matches(pattern.getRegex())) {
-                    throw new ValidationException(this, pattern.getMessage() != null ? pattern.getMessage() : "Das Format der Eingabe ist ungültig.");
-                }
-            } catch (PatternSyntaxException ex) {
-                throw new ValidationException(this, "Fehlerhaftes Regex-Pattern: " + ex.getMessage());
-            }
         }
     }
 
@@ -196,7 +183,6 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
                 && Objects.equals(prefix, textField.prefix)
                 && Objects.equals(copyable, textField.copyable)
                 && Objects.equals(copyValueTemplate, textField.copyValueTemplate)
-                && Objects.equals(pattern, textField.pattern)
                 && Objects.equals(suggestions, textField.suggestions)
                 && Objects.equals(dynamicTextPolicy, textField.dynamicTextPolicy);
     }
@@ -212,7 +198,6 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         result = 31 * result + Objects.hashCode(prefix);
         result = 31 * result + Objects.hashCode(copyable);
         result = 31 * result + Objects.hashCode(copyValueTemplate);
-        result = 31 * result + Objects.hashCode(pattern);
         result = 31 * result + Objects.hashCode(suggestions);
         result = 31 * result + Objects.hashCode(dynamicTextPolicy);
         return result;
@@ -283,16 +268,6 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
 
     public TextInputElement setMinCharacters(@Nullable Integer minCharacters) {
         this.minCharacters = minCharacters;
-        return this;
-    }
-
-    @Nullable
-    public TextInputElementPattern getPattern() {
-        return pattern;
-    }
-
-    public TextInputElement setPattern(@Nullable TextInputElementPattern pattern) {
-        this.pattern = pattern;
         return this;
     }
 
