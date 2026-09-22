@@ -210,8 +210,8 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
 
         var emailAttribute = new SelectInputElement();
         emailAttribute.setId(EMAIL_ATTRIBUTE_FIELD_ID);
-        emailAttribute.setLabel("E-Mail-Attribut");
-        emailAttribute.setHint("Optionales Attribut des Identitätsanbieters. Fehlt es in den Anmeldedaten, wird die E-Mail-Adresse von der Kund:in abgefragt.");
+        emailAttribute.setLabel("E-Mail-Adresse");
+        emailAttribute.setHint("Wählen Sie hier das Attribut des Identitätsanbieters aus, welches die E-Mail-Adresse beinhaltet. Wird die E-Mail-Adresse durch den Identitätsanbieter nicht übertragen oder wird kein Attribut ausgewählt, so wird die E-Mail-Adresse von der ausfüllenden Person abgefragt.");
         emailAttribute.setRequired(false);
         emailAttribute.setOptions(attributeOptions);
 
