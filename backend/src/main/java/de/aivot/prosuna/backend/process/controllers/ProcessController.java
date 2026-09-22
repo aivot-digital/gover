@@ -215,6 +215,22 @@ public class ProcessController {
 
         processDefinitionNodeService.validateNewProcessNodeBatch(exportData.nodes());
 
+        for (var node : exportData.nodes()) {
+            var provider = processNodeProviderService
+                    .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
+                    .orElseThrow(() -> ResponseException
+                            .badRequest("Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ ist nicht verfügbar."
+                                    .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())));
+            node.setConfiguration(provider.prefillConfigurationOnImport(node.getConfiguration()));
+            processDefinitionNodeService.requireReadableDepartmentSelections(
+                    execUser,
+                    node,
+                    provider,
+                    exportData.process(),
+                    exportData.version()
+            );
+        }
+
         var newProcess = processDefinitionService
                 .create(
                         exportData
@@ -242,20 +258,10 @@ public class ProcessController {
         for (var node : exportData.nodes()) {
             var originalId = node.getId();
 
-            var provider = processNodeProviderService
-                    .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
-                    .orElseThrow(() -> ResponseException
-                            .badRequest("Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ ist nicht verfügbar."
-                                    .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())));
-
-            var config = provider
-                    .prefillConfigurationOnImport(node.getConfiguration());
-
             var addedNode = processDefinitionNodeService
                     .create(node
                             .setProcessId(newProcess.getId())
                             .setProcessVersion(newVersion.getProcessVersion())
-                            .setConfiguration(config)
                     );
 
             savedNodeIdMap

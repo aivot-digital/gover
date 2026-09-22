@@ -481,6 +481,21 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                     .append(HtmlUtils.htmlEscape(title))
                     .append("</a></p>");
         }
+
+        var signature = message.signatureDepartment() == null
+                ? null
+                : message.signatureDepartment().getDefaultMailSignature();
+        if (signature != null && !signature.isBlank()) {
+            if (content.length() > 0) {
+                content.append('\n');
+            }
+            var signatureHtml = HtmlUtils
+                    .htmlEscape(signature.strip())
+                    .replace("\r\n", "<br>")
+                    .replace("\r", "<br>")
+                    .replace("\n", "<br>");
+            content.append("<div>").append(signatureHtml).append("</div>");
+        }
         return content.toString();
     }
 

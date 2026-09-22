@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -81,6 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -105,6 +108,7 @@ class PaymentRequestActionNodeV1Test {
     private PaymentProviderRepository paymentProviderRepository;
     private PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
+    private VDepartmentShadowedService vDepartmentShadowedService;
     private PaymentRequestActionNodeV1 node;
 
     @BeforeEach
@@ -114,6 +118,7 @@ class PaymentRequestActionNodeV1Test {
         paymentProviderRepository = mock(PaymentProviderRepository.class);
         paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
         assignmentContextAssigneeResolverService = mock(AssignmentContextAssigneeResolverService.class);
+        vDepartmentShadowedService = mock(VDepartmentShadowedService.class);
         node = new PaymentRequestActionNodeV1(
                 paymentPayloadCreationService,
                 paymentTransactionService,
@@ -122,7 +127,8 @@ class PaymentRequestActionNodeV1Test {
                 new TemplateRenderService(new JavascriptEngineFactoryService(List.of())),
                 prosunaConfig(),
                 JsonMapperTestUtils.createMapper(),
-                assignmentContextAssigneeResolverService
+                assignmentContextAssigneeResolverService,
+                vDepartmentShadowedService
         );
     }
 
@@ -215,6 +221,8 @@ class PaymentRequestActionNodeV1Test {
         var paymentProviderKey = UUID.randomUUID();
         var paymentConfig = paymentConfig(paymentProviderKey);
         var configuration = nodeConfiguration(paymentConfig, "automatic");
+        configuration.messageConfig.signatureDepartmentId = 17;
+        var signatureDepartment = new VDepartmentShadowedEntity().setId(17).setName("Bürgerbüro");
         var paymentProvider = paymentProvider(paymentProviderKey);
         var paymentPayload = paymentPayload();
         var transaction = paymentTransaction(paymentProviderKey, XBezahldienstStatus.INITIAL)
@@ -223,6 +231,7 @@ class PaymentRequestActionNodeV1Test {
         var identity = recipientIdentity();
 
         when(paymentProviderRepository.findById(paymentProviderKey)).thenReturn(Optional.of(paymentProvider));
+        when(vDepartmentShadowedService.retrieve(17)).thenReturn(Optional.of(signatureDepartment));
         when(paymentPayloadCreationService.createRequest(
                 eq(paymentConfig), any(DerivedRuntimeElementData.class), same(processData)
         )).thenReturn(Optional.of(paymentPayload));
@@ -250,6 +259,7 @@ class PaymentRequestActionNodeV1Test {
         assertEquals("Zahlung für Ada", communicationRequest.message().subject());
         assertEquals("Hallo **Ada**", communicationRequest.message().body());
         assertEquals("Hallo **Ada**", communicationRequest.message().htmlBody());
+        assertSame(signatureDepartment, communicationRequest.message().signatureDepartment());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(
                         "Zahlung durchführen",
@@ -260,6 +270,34 @@ class PaymentRequestActionNodeV1Test {
         verify(assignmentContextAssigneeResolverService, never()).resolveAssignee(
                 any(), any(), any(), any(), any(), any(), any(), any(), any()
         );
+    }
+
+    @Test
+    void missingSignatureDepartmentFailsBeforeCreatingPaymentTransaction() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var paymentConfig = paymentConfig(paymentProviderKey);
+        var configuration = nodeConfiguration(paymentConfig, "automatic");
+        configuration.messageConfig.signatureDepartmentId = 404;
+        when(paymentProviderRepository.findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider(paymentProviderKey)));
+        when(vDepartmentShadowedService.retrieve(404)).thenReturn(Optional.empty());
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(context(
+                        configuration,
+                        new ProcessExecutionData(),
+                        processInstance(recipientIdentity()),
+                        task()
+                ))
+        );
+
+        assertEquals(
+                "Die Organisationseinheit 404 für die E-Mail-Signatur wurde nicht gefunden.",
+                exception.getMessage()
+        );
+        verify(paymentTransactionService, never()).create(any(), any(), any());
+        verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
     }
 
     @Test
@@ -722,6 +760,8 @@ class PaymentRequestActionNodeV1Test {
                 Map.of("provider", "secret"),
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
                 Map.of("user", "staff-1"),
+                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID,
+                17,
                 "portableValue",
                 "kept"
         );
@@ -733,6 +773,7 @@ class PaymentRequestActionNodeV1Test {
         ));
         assertFalse(cleaned.containsKey(PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID));
         assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID));
         assertEquals("kept", cleaned.getLiteral("portableValue"));
     }
 

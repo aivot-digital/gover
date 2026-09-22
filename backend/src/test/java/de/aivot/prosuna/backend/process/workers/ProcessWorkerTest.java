@@ -376,7 +376,7 @@ class ProcessWorkerTest {
 
     private static final class TestProcessNodeService extends ProcessNodeService {
         private TestProcessNodeService() {
-            super(null, null, null, null, null, null, null, new ProsunaConfig(), null);
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null);
         }
 
         @Nonnull
