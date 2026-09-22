@@ -15,6 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProcessInstanceRepository extends JpaRepository<ProcessInstanceEntity, Long>, JpaSpecificationExecutor<ProcessInstanceEntity> {
+    // All ACL mutations and staff assignments lock the owning instance before checking rights.
+    // Return only the ID so acquiring the lock does not cache a potentially stale entity.
+    @Query(value = "SELECT id FROM process_instances WHERE id = :id FOR UPDATE", nativeQuery = true)
+    Optional<Long> lockAccessById(@Param("id") Long id);
+
     List<ProcessInstanceEntity> findAllByStatus(ProcessInstanceStatus status);
 
     Optional<ProcessInstanceEntity> findByAccessKey(String accessKey);

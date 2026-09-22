@@ -53,7 +53,7 @@ class ProcessInstanceTaskControllerTest {
                 userService,
                 processInstanceTaskService,
                 rabbitTemplate,
-                permissionService
+                permissionService, mock(de.aivot.prosuna.backend.process.services.ProcessAssignmentService.class)
         );
 
         jwt = new Jwt(

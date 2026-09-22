@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.repositories;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.projections.DashboardTaskCountsProjection;
+import de.aivot.prosuna.backend.process.projections.ProcessTaskAssignmentProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -25,7 +26,18 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
                                                                                                                Integer processDefinitionNodeId,
                                                                                                                Long excludedTaskId);
 
+    @Query("select task.processInstanceId from ProcessInstanceTaskEntity task where task.id = :id")
+    Optional<Long> findInstanceIdById(@Param("id") Long id);
+
     List<ProcessInstanceTaskEntity> findAllByProcessInstanceId(Long processInstanceId);
+
+    @Query("""
+            select new de.aivot.prosuna.backend.process.projections.ProcessTaskAssignmentProjection(
+                task.id, task.processNodeId, task.status, task.assignedUserId)
+            from ProcessInstanceTaskEntity task
+            where task.processInstanceId = :instanceId
+            """)
+    List<ProcessTaskAssignmentProjection> findAssignmentSnapshots(@Param("instanceId") Long instanceId);
 
     List<ProcessInstanceTaskEntity> findAllByAssignedUserIdInAndStatusIn(Collection<String> assignedUserIds,
                                                                          Collection<ProcessTaskStatus> statuses);
