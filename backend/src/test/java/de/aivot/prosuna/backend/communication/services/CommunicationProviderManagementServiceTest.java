@@ -1,5 +1,11 @@
 package de.aivot.prosuna.backend.communication.services;
 
+import de.aivot.prosuna.backend.audit.models.AuditLogPayload;
+import de.aivot.prosuna.backend.audit.services.AuditService;
+import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
+import de.aivot.prosuna.backend.communication.permissions.CommunicationProviderPermissionProvider;
+import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import org.springframework.security.oauth2.jwt.Jwt;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
@@ -28,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -42,18 +50,26 @@ class CommunicationProviderManagementServiceTest {
     private final IdentityProviderRepository identityProviderRepository = mock(IdentityProviderRepository.class);
     private final CommunicationProviderDefinition<Object, Object> definition = mock(CommunicationProviderDefinition.class);
 
+    private final PermissionService permissionService = mock(PermissionService.class);
+    private final AuditService auditService = mock(AuditService.class);
+    private final ScopedAuditService scopedAuditService = mock(ScopedAuditService.class);
+    private final Jwt jwt = Jwt.withTokenValue("test").header("alg", "none").subject("staff-1").build();
     private CommunicationProviderManagementService service;
     private CommunicationProviderEntity provider;
     private IdentityProviderEntity identityProvider;
 
     @BeforeEach
     void setUp() {
+        when(auditService.createScopedAuditService(CommunicationProviderManagementService.class, "Kommunikationsanbindungen")).thenReturn(scopedAuditService);
+        when(scopedAuditService.create()).thenAnswer(invocation -> AuditLogPayload.create(scopedAuditService));
         service = new CommunicationProviderManagementService(
                 providerRepository,
                 bindingRepository,
                 definitionService,
                 configurationService,
-                identityProviderRepository
+                identityProviderRepository,
+                permissionService,
+                auditService
         );
         provider = provider(7, true, false);
         identityProvider = identityProvider(true, false);
@@ -72,6 +88,89 @@ class CommunicationProviderManagementServiceTest {
         when(providerRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
+    private void mockReference(int id) {
+        var reference = mock(CommunicationProviderBindingRepository.BindingReference.class);
+        when(reference.getCommunicationProviderId()).thenReturn(provider.getId());
+        when(reference.getIdentityProviderKey()).thenReturn(identityProvider.getKey());
+        when(bindingRepository.findReferenceById(id)).thenReturn(Optional.of(reference));
+    }
+
+    @Test
+    void appendsAfterExistingBindingsAndNormalizesLegacyPositions() throws Exception {
+        var first = binding("First").setId(1).setPosition(4);
+        var second = binding("Second").setId(2).setPosition(4).setEnabled(false);
+        when(bindingRepository.findAllByIdentityProviderKeyOrderByPositionAscNameAscIdAsc(identityProvider.getKey())).thenReturn(List.of(first, second));
+        var created = service.createBinding(binding("Third").setPosition(-10));
+        assertEquals(0, first.getPosition());
+        assertEquals(1, second.getPosition());
+        assertEquals(2, created.getPosition());
+        var order = inOrder(identityProviderRepository, bindingRepository);
+        order.verify(identityProviderRepository).findByKeyForUpdate(identityProvider.getKey());
+        order.verify(bindingRepository).findAllByIdentityProviderKeyOrderByPositionAscNameAscIdAsc(identityProvider.getKey());
+    }
+
+    @Test
+    void editingDoesNotChangeTheSavedPosition() throws Exception {
+        var existing = binding("Mail").setId(12).setPosition(8);
+        mockReference(12);
+        when(bindingRepository.findByIdForUpdate(12)).thenReturn(Optional.of(existing));
+        service.updateBinding(12, binding("Updated").setPosition(0));
+        assertEquals(8, existing.getPosition());
+    }
+
+    @Test
+    void reordersActiveAndInactiveBindingsAndAuditsAfterSaving() throws Exception {
+        var first = binding("First").setId(1).setPosition(5);
+        var second = binding("Second").setId(2).setPosition(5).setEnabled(false);
+        when(bindingRepository.findAllByIdentityProviderKeyOrderByPositionAscNameAscIdAsc(identityProvider.getKey())).thenReturn(List.of(first, second));
+        var result = service.reorderBindings(jwt, identityProvider.getKey(), List.of(2, 1));
+        assertEquals(List.of(second, first), result);
+        assertEquals(0, second.getPosition());
+        assertEquals(1, first.getPosition());
+        var order = inOrder(permissionService, identityProviderRepository, bindingRepository, scopedAuditService);
+        order.verify(permissionService).requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_UPDATE);
+        order.verify(identityProviderRepository).findByKeyForUpdate(identityProvider.getKey());
+        order.verify(bindingRepository).findAllByIdentityProviderKeyOrderByPositionAscNameAscIdAsc(identityProvider.getKey());
+        order.verify(bindingRepository).saveAllAndFlush(result);
+        order.verify(scopedAuditService).create();
+        var payload = org.mockito.ArgumentCaptor.forClass(AuditLogPayload.class);
+        verify(scopedAuditService).addAuditEntry(payload.capture());
+        assertEquals("staff-1", payload.getValue().getActorId());
+        assertEquals(identityProvider.getKey().toString(), payload.getValue().getEntityRef());
+    }
+
+    @Test
+    void rejectsDuplicatesMissingAndForeignBindingsWithoutMutationOrAudit() {
+        var first = binding("First").setId(1).setPosition(7);
+        var second = binding("Second").setId(2).setPosition(8);
+        when(bindingRepository.findAllByIdentityProviderKeyOrderByPositionAscNameAscIdAsc(identityProvider.getKey())).thenReturn(List.of(first, second));
+        for (var ids : List.of(List.of(1, 1), List.of(1), List.of(1, 99), List.of(1, 2, 99))) {
+            var error = assertThrows(ResponseException.class, () -> service.reorderBindings(jwt, identityProvider.getKey(), ids));
+            assertEquals(HttpStatus.CONFLICT, error.getStatus());
+        }
+        assertEquals(7, first.getPosition());
+        assertEquals(8, second.getPosition());
+        verify(bindingRepository, never()).saveAllAndFlush(any());
+        verifyNoInteractions(scopedAuditService);
+    }
+
+    @Test
+    void rejectsReorderingWithoutPermissionBeforeReadingBindings() throws Exception {
+        doThrow(ResponseException.forbidden()).when(permissionService).requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_UPDATE);
+        assertThrows(ResponseException.class, () -> service.reorderBindings(jwt, identityProvider.getKey(), List.of()));
+        verifyNoInteractions(bindingRepository, scopedAuditService);
+        verify(identityProviderRepository, never()).findByKeyForUpdate(any());
+    }
+
+    @Test
+    void doesNotAuditFailedReorders() {
+        var first = binding("First").setId(1);
+        when(bindingRepository.findAllByIdentityProviderKeyOrderByPositionAscNameAscIdAsc(identityProvider.getKey())).thenReturn(List.of(first));
+        when(bindingRepository.saveAllAndFlush(any())).thenThrow(new IllegalStateException("Persistence failed"));
+        assertThrows(IllegalStateException.class, () -> service.reorderBindings(jwt, identityProvider.getKey(), List.of(1)));
+        verifyNoInteractions(scopedAuditService);
+    }
+
     @Test
     void sameCommunicationProviderCanBeAddedToAnIdentityProviderMultipleTimes() throws Exception {
         service.createBinding(binding("Primary"));
@@ -84,7 +183,7 @@ class CommunicationProviderManagementServiceTest {
     void disablingTheLastUsableBindingOfAnEnabledIdentityProviderIsAllowed() {
         var existing = binding("Mail").setId(12);
         var update = binding("Mail").setId(12).setEnabled(false);
-        when(bindingRepository.findById(12)).thenReturn(Optional.of(existing));
+        mockReference(12);
         when(bindingRepository.findByIdForUpdate(12)).thenReturn(Optional.of(existing));
         assertDoesNotThrow(() -> service.updateBinding(12, update));
         verify(bindingRepository).saveAndFlush(existing);
@@ -117,6 +216,30 @@ class CommunicationProviderManagementServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals("Die Konfiguration ist ungültig.", exception.getTitle());
         verify(providerRepository, never()).save(any());
+    }
+
+    @Test
+    void inactiveProvidersCannotBeAdded() {
+        provider.setEnabled(false);
+
+        var exception = assertThrows(ResponseException.class, () -> service.createBinding(binding("Mail")));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Wählen Sie einen aktiven Kommunikationsanbieter aus.", exception.getTitle());
+        verify(bindingRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void existingBindingsOfInactiveProvidersRemainEditable() throws Exception {
+        provider.setEnabled(false);
+        var existing = binding("Mail").setId(12);
+        mockReference(12);
+        when(bindingRepository.findByIdForUpdate(12)).thenReturn(Optional.of(existing));
+
+        service.updateBinding(12, binding("Neuer Anzeigename"));
+
+        assertEquals("Neuer Anzeigename", existing.getName());
+        verify(bindingRepository).saveAndFlush(existing);
     }
 
     @Test
