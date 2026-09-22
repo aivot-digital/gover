@@ -229,6 +229,7 @@ export function DepartmentsDetailsPageMembers() {
                     startIcon={<AddOutlinedIcon/>}
                     onClick={openSelectNewMemberDialog}
                     disabled={addDisabled}
+                    sx={{mt: 2.5}}
                 >
                     Mitarbeiter:in hinzufügen
                 </Button>
