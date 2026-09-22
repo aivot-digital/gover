@@ -2,7 +2,7 @@ import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {AiChatWindow} from './ai-chat-window';
-import {AiChatService} from '../../services/ai-chat-service';
+import {AiChatService, type AiChatMessage} from '../../services/ai-chat-service';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {type AnyElement} from '../../../../models/elements/any-element';
 
@@ -24,7 +24,10 @@ describe('AiChatWindow', () => {
         localStorage.clear();
         vi.clearAllMocks();
         vi.spyOn(AiChatService.prototype, 'startChatSession').mockResolvedValue({sessionId: 'new-session'});
-        vi.spyOn(AiChatService.prototype, 'sendMessage').mockImplementation(async (_id, _message, onStream) => {
+        vi.spyOn(AiChatService.prototype, 'sendMessage').mockImplementation(async (
+            _id, _message, onStream, _signal, _data, onAccepted,
+        ) => {
+            onAccepted?.();
             onStream('Abschnitt ');
             onStream('erstellt.');
         });
@@ -61,7 +64,8 @@ describe('AiChatWindow', () => {
 
         await waitFor(() => expect(onElementChange).toHaveBeenCalledWith(updated));
         expect(AiChatService.prototype.sendMessage).toHaveBeenCalledWith('new-session', 'Neuen Abschnitt erstellen',
-            expect.any(Function), expect.any(AbortSignal), {currentState: root, targetRootType: ElementType.FormLayout});
+            expect.any(Function), expect.any(AbortSignal),
+            {currentState: root, targetRootType: ElementType.FormLayout, attachment: undefined}, expect.any(Function));
         expect(AiChatService.prototype.getCurrentElement).toHaveBeenCalledWith('new-session');
         expect(localStorage.getItem('aiChatSessionId')).toBe('new-session');
         expect(screen.getByText('Abschnitt erstellt.')).toBeInTheDocument();
@@ -80,13 +84,13 @@ describe('AiChatWindow', () => {
         await waitFor(() => expect(onElementChange).toHaveBeenCalled());
         expect(AiChatService.prototype.startChatSession).not.toHaveBeenCalled();
         expect(AiChatService.prototype.sendMessage).toHaveBeenCalledWith('existing-session', expect.any(String),
-            expect.any(Function), expect.any(AbortSignal), expect.any(Object));
+            expect.any(Function), expect.any(AbortSignal), expect.any(Object), expect.any(Function));
         expect(AiChatService.prototype.getCurrentElement).toHaveBeenCalledWith('existing-session');
     });
 
     it('restores persisted messages before enabling the composer', async () => {
         localStorage.setItem('aiChatSessionId', 'existing-session');
-        let resolveHistory!: (messages: {role: 'user' | 'assistant'; content: string}[]) => void;
+        let resolveHistory!: (messages: AiChatMessage[]) => void;
         vi.mocked(AiChatService.prototype.getMessages).mockReturnValue(new Promise(resolve => {
             resolveHistory = resolve;
         }));
@@ -96,17 +100,86 @@ describe('AiChatWindow', () => {
         expect(screen.getByText('Chatverlauf wird geladen …')).toBeVisible();
         expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeDisabled();
         await act(async () => resolveHistory([
-            {role: 'user', content: 'Mein Hund heißt Bello.'},
+            {role: 'user', content: 'Mein Hund heißt Bello.', attachments: [{
+                name: 'formular.pdf', size: 1234, contentType: 'application/pdf',
+            }]},
             {role: 'assistant', content: 'Ich habe den Namen übernommen.'},
         ]));
 
         expect(await screen.findByText('Mein Hund heißt Bello.')).toBeVisible();
         expect(screen.getByText('Ich habe den Namen übernommen.')).toBeVisible();
+        expect(screen.getByText(/formular\.pdf/)).toBeVisible();
         expect(screen.queryByText('Chatverlauf wird geladen …')).not.toBeInTheDocument();
         expect(screen.getByRole('textbox', {name: 'Nachricht'})).toBeEnabled();
         expect(AiChatService.prototype.getMessages).toHaveBeenCalledWith(
             'existing-session', expect.any(AbortSignal),
         );
+    });
+
+    it('sends one supported file and clears it only after the request is accepted', async () => {
+        let acceptRequest!: () => void;
+        vi.mocked(AiChatService.prototype.sendMessage).mockImplementationOnce(
+            async (_id, _text, _onStream, _signal, _data, onAccepted) => {
+                await new Promise<void>(resolve => {
+                    acceptRequest = () => {
+                        onAccepted?.();
+                        resolve();
+                    };
+                });
+            },
+        );
+        mount();
+        const file = new File(['Formularinhalt'], 'formular.pdf', {type: 'application/pdf'});
+        const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+        expect(input).not.toBeNull();
+        fireEvent.change(input!, {target: {files: [file]}});
+
+        expect(screen.getByText('formular.pdf')).toBeVisible();
+        expect(screen.getByRole('button', {name: 'Datei entfernen'})).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
+        await waitFor(() => expect(AiChatService.prototype.sendMessage).toHaveBeenCalled());
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toHaveValue('Neuen Abschnitt erstellen');
+        expect(screen.getByText('formular.pdf')).toBeVisible();
+        expect(vi.mocked(AiChatService.prototype.sendMessage).mock.calls[0][4]?.attachment).toBe(file);
+
+        await act(async () => acceptRequest());
+
+        await waitFor(() => expect(screen.getByRole('textbox', {name: 'Nachricht'})).toHaveValue(''));
+        expect(screen.queryByRole('button', {name: 'Datei entfernen'})).not.toBeInTheDocument();
+        expect(screen.getByText(/formular\.pdf/)).toBeVisible();
+    });
+
+    it('rejects unsupported and oversized files before sending', () => {
+        mount();
+        const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+        fireEvent.change(input!, {target: {files: [new File(['image'], 'scan.png', {type: 'image/png'})]}});
+        expect(screen.getByRole('alert')).toHaveTextContent('Dieser Dateityp wird nicht unterstützt.');
+        expect(screen.queryByRole('button', {name: 'Datei entfernen'})).not.toBeInTheDocument();
+
+        const oversized = new File(['x'], 'large.pdf', {type: 'application/pdf'});
+        Object.defineProperty(oversized, 'size', {value: AppConfig.aiChatAttachments.maxFileSizeBytes + 1});
+        fireEvent.change(input!, {target: {files: [oversized]}});
+        expect(screen.getByRole('alert')).toHaveTextContent('Die Datei darf höchstens');
+        expect(AiChatService.prototype.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('keeps the message and file when the backend rejects the upload', async () => {
+        vi.mocked(AiChatService.prototype.sendMessage).mockRejectedValueOnce({
+            status: 400,
+            message: 'Aus der angehängten Datei konnte kein Text gelesen werden.',
+            details: null,
+            displayableToUser: true,
+        });
+        mount();
+        const file = new File(['content'], 'scan.pdf', {type: 'application/pdf'});
+        fireEvent.change(document.querySelector<HTMLInputElement>('input[type="file"]')!, {
+            target: {files: [file]},
+        });
+        fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
+
+        expect(await screen.findByText('Aus der angehängten Datei konnte kein Text gelesen werden.')).toBeVisible();
+        expect(screen.getByRole('textbox', {name: 'Nachricht'})).toHaveValue('Neuen Abschnitt erstellen');
+        expect(screen.getByRole('button', {name: 'Datei entfernen'})).toBeVisible();
     });
 
     it('discards a stale session and starts a new one with the next message', async () => {
@@ -129,6 +202,7 @@ describe('AiChatWindow', () => {
 
         await waitFor(() => expect(AiChatService.prototype.sendMessage).toHaveBeenCalledWith(
             'new-session', 'Neu beginnen', expect.any(Function), expect.any(AbortSignal), expect.any(Object),
+            expect.any(Function),
         ));
         expect(AiChatService.prototype.startChatSession).toHaveBeenCalledTimes(1);
     });
@@ -181,7 +255,8 @@ describe('AiChatWindow', () => {
 
         await waitFor(() => expect(AiChatService.prototype.sendMessage).toHaveBeenNthCalledWith(2,
             'new-session', 'Weiter ändern', expect.any(Function), expect.any(AbortSignal),
-            {currentState: {...updated, name: 'Lokale Änderung'}, targetRootType: ElementType.FormLayout}));
+            {currentState: {...updated, name: 'Lokale Änderung'}, targetRootType: ElementType.FormLayout,
+                attachment: undefined}, expect.any(Function)));
     });
 
     it('blocks duplicate sends while starting the session', async () => {
@@ -227,7 +302,8 @@ describe('AiChatWindow', () => {
 
     it('cancels an active turn, keeps partial content and reuses the session', async () => {
         vi.mocked(AiChatService.prototype.sendMessage).mockImplementationOnce(
-            async (_id, _text, onStream, signal) => {
+            async (_id, _text, onStream, signal, _data, onAccepted) => {
+                onAccepted?.();
                 onStream('Teilantwort');
                 await new Promise<void>((_resolve, reject) => signal?.addEventListener(
                     'abort', () => reject(signal.reason), {once: true},
@@ -254,6 +330,7 @@ describe('AiChatWindow', () => {
         expect(AiChatService.prototype.startChatSession).toHaveBeenCalledTimes(1);
         expect(AiChatService.prototype.sendMessage).toHaveBeenLastCalledWith(
             'new-session', 'Weiterarbeiten', expect.any(Function), expect.any(AbortSignal), expect.any(Object),
+            expect.any(Function),
         );
     });
 

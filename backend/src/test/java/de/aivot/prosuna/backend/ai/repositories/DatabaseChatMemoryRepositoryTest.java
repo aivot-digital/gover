@@ -97,6 +97,29 @@ class DatabaseChatMemoryRepositoryTest {
         assertThat(resumed.get("owner:session")).last().isEqualTo(new AssistantMessage("Answer 11"));
     }
 
+    @Test
+    void restoresAttachmentMetadataWithoutPersistingFileContent() {
+        addSession("owner", "session").setChatMessages(List.of(Map.of(
+                "role", "user",
+                "content", "Bauen Sie das Formular nach.",
+                "attachments", List.of(Map.of(
+                        "name", "formular.pdf",
+                        "size", 1234,
+                        "contentType", "application/pdf"
+                ))
+        )));
+
+        var message = repository.findByConversationId("owner:session").getFirst();
+
+        assertThat(message.getText()).isEqualTo("Bauen Sie das Formular nach.");
+        assertThat(message.getMetadata().get("attachments")).isEqualTo(List.of(Map.of(
+                "name", "formular.pdf",
+                "size", 1234,
+                "contentType", "application/pdf"
+        )));
+        assertThat(stored.get("owner:session").getChatMessages().toString()).doesNotContain("Dateiinhalt");
+    }
+
     private AiChatSessionEntity addSession(String userId, String sessionId) {
         var session = new AiChatSessionEntity().setUserId(userId).setSessionId(sessionId);
         stored.put(key(userId, sessionId), session);

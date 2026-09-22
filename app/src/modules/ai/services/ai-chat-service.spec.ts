@@ -98,7 +98,7 @@ describe('AiChatService.downloadTrace', () => {
 });
 
 describe('AiChatService.sendMessage', () => {
-    it.each([undefined, {}, {attachments: []}] satisfies (AiChatMessageData | undefined)[])(
+    it.each([undefined, {}, {attachment: undefined}] satisfies (AiChatMessageData | undefined)[])(
         'sends only required fields when optional data is absent (%j)',
         async (data) => {
             const service = new AiChatService();
@@ -117,26 +117,23 @@ describe('AiChatService.sendMessage', () => {
         },
     );
 
-    it('transmits form JSON parts, multiple files and the abort signal', async () => {
+    it('transmits form JSON parts, one file and the abort signal', async () => {
         const service = new AiChatService();
         const fetch = vi.spyOn(service, 'fetch').mockResolvedValue(streamResponse());
         const signal = new AbortController().signal;
         const currentState = {type: ElementType.Text, id: 'field', name: 'Straße'} as AnyElement;
-        const attachments = [
-            new File(['First'], 'first.txt', {type: 'text/plain'}),
-            new File(['Second'], 'second.txt', {type: 'text/plain'}),
-        ];
+        const attachment = new File(['First'], 'first.txt', {type: 'text/plain'});
 
         await service.sendMessage('session', 'Edit', vi.fn(), signal, {
             targetRootType: ElementType.FormLayout,
             currentState,
-            attachments,
+            attachment,
         });
 
         const body = fetch.mock.calls[0][2] as FormData;
         expect(Array.from(body.keys())).toEqual([
             'chatSessionId', 'userInput', 'targetRootType', 'currentState',
-            'attachments', 'attachments',
+            'attachments',
         ]);
         const rootTypePart = body.get('targetRootType') as Blob;
         const statePart = body.get('currentState') as Blob;
@@ -146,9 +143,30 @@ describe('AiChatService.sendMessage', () => {
         expect(JSON.parse(await readBlob(statePart))).toEqual(currentState);
         expect(body.has('processId')).toBe(false);
         expect(body.has('processVersion')).toBe(false);
-        expect(body.getAll('attachments')).toEqual(attachments);
-        expect(await Promise.all((body.getAll('attachments') as File[]).map(readBlob))).toEqual(['First', 'Second']);
+        expect(body.get('attachments')).toBe(attachment);
+        expect(await readBlob(body.get('attachments') as File)).toBe('First');
         expect(fetch.mock.calls[0][3]?.abort).toBe(signal);
+    });
+
+    it('reports acceptance only after an SSE response has been validated', async () => {
+        const service = new AiChatService();
+        const onAccepted = vi.fn();
+        vi.spyOn(service, 'fetch').mockResolvedValue(streamResponse());
+
+        await service.sendMessage('session', 'Hello', vi.fn(), undefined, undefined, onAccepted);
+
+        expect(onAccepted).toHaveBeenCalledOnce();
+    });
+
+    it('does not report acceptance for a rejected response', async () => {
+        const service = new AiChatService();
+        const onAccepted = vi.fn();
+        vi.spyOn(service, 'fetch').mockResolvedValue(Response.json({message: 'invalid'}));
+
+        await expect(service.sendMessage(
+            'session', 'Hello', vi.fn(), undefined, undefined, onAccepted,
+        )).rejects.toThrow('Expected an SSE response');
+        expect(onAccepted).not.toHaveBeenCalled();
     });
 
     it('sends process context without form JSON parts', async () => {

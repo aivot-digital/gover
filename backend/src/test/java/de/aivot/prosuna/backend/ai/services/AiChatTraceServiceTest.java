@@ -2,6 +2,8 @@ package de.aivot.prosuna.backend.ai.services;
 
 import de.aivot.prosuna.backend.ai.entities.AiChatSessionEntity;
 import de.aivot.prosuna.backend.ai.models.ChatContextModel;
+import de.aivot.prosuna.backend.ai.models.AiChatAttachmentContext;
+import de.aivot.prosuna.backend.ai.tools.AiChatAttachmentTools;
 import de.aivot.prosuna.backend.ai.permissions.AiChatPermissionProvider;
 import de.aivot.prosuna.backend.ai.properties.AiChatTraceProperties;
 import de.aivot.prosuna.backend.ai.repositories.AiChatSessionRepository;
@@ -183,6 +185,44 @@ class AiChatTraceServiceTest {
         var export = JsonMapperTestUtils.createMapper().readTree(json);
         assertThat(Instant.parse(export.path("expiresAt").asText()))
                 .isEqualTo(updated.plusSeconds(7 * 24 * 60 * 60));
+    }
+
+    @Test
+    void redactsInjectedAttachmentTextAndAttachmentToolResponses() {
+        var events = new ArrayList<Map<String, Object>>();
+        doAnswer(invocation -> {
+            events.add(new LinkedHashMap<>(invocation.getArgument(1)));
+            return null;
+        }).when(persistence).append(any(), any());
+        var context = service.startTurn("owner", "session", "Auftrag",
+                new ChatContextModel("session", null, null, null), null);
+        var user = UserMessage.builder()
+                .text("Auftrag\n\nGeheimer Dateiinhalt")
+                .metadata(Map.of(
+                        AiChatAttachmentContext.MESSAGE_METADATA_KEY, true,
+                        AiChatAttachmentContext.ORIGINAL_TEXT_METADATA_KEY, "Auftrag"
+                ))
+                .build();
+
+        service.recordModelRequest(context, ChatClientRequest.builder()
+                .prompt(new Prompt(user))
+                .context(Map.of())
+                .build());
+        var response = new ChatResponse(List.of(new Generation(AssistantMessage.builder().toolCalls(List.of(
+                new AssistantMessage.ToolCall("attachment", "function", AiChatAttachmentTools.TOOL_NAME, "{}")
+        )).build())));
+        service.recordToolExecution(context, response, ToolExecutionResult.builder()
+                .conversationHistory(List.of(ToolResponseMessage.builder().responses(List.of(
+                        new ToolResponseMessage.ToolResponse(
+                                "attachment", AiChatAttachmentTools.TOOL_NAME, "Noch mehr geheimer Dateiinhalt"
+                        )
+                )).build()))
+                .returnDirect(false)
+                .build(), 1);
+
+        assertThat(events.toString())
+                .contains("Auftrag", "attachmentContextRedacted", "[Dateiinhalt ausgeblendet]")
+                .doesNotContain("Geheimer Dateiinhalt", "Noch mehr geheimer Dateiinhalt");
     }
 
     @SuppressWarnings("unchecked")

@@ -4,14 +4,18 @@ import de.aivot.prosuna.backend.ai.cache.repositories.AiUiElementChatSessionCach
 import de.aivot.prosuna.backend.ai.configuration.AiChatMemoryConfiguration;
 import de.aivot.prosuna.backend.ai.entities.AiChatSessionEntity;
 import de.aivot.prosuna.backend.ai.models.AiChatTraceContext;
+import de.aivot.prosuna.backend.ai.models.AiChatAttachmentMetadata;
 import de.aivot.prosuna.backend.ai.repositories.AiChatSessionRepository;
 import de.aivot.prosuna.backend.ai.repositories.DatabaseChatMemoryRepository;
 import de.aivot.prosuna.backend.ai.services.AiChatElementService;
 import de.aivot.prosuna.backend.ai.services.AiChatTraceService;
+import de.aivot.prosuna.backend.ai.services.AiChatAttachmentService;
+import de.aivot.prosuna.backend.ai.properties.AiChatAttachmentProperties;
 import de.aivot.prosuna.backend.ai.tools.AiChatElementTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatSharedTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatProcessTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatElementSchemaTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatAttachmentTools;
 import de.aivot.prosuna.backend.ai.services.AiChatProcessService;
 import de.aivot.prosuna.backend.ai.services.AiInputValueSchemaService;
 import de.aivot.prosuna.backend.av.services.AVService;
@@ -29,8 +33,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.mock.web.MockMultipartFile;
@@ -55,7 +57,6 @@ class AiChatMemoryTest {
     private final ChatModel model = mock(ChatModel.class, CALLS_REAL_METHODS);
     private final AiChatSessionRepository sessions = mock(AiChatSessionRepository.class);
     private final PermissionService permissions = mock(PermissionService.class);
-    private final EmbeddingModel embeddings = mock(EmbeddingModel.class);
     private final AiChatTraceService traceService = mock(AiChatTraceService.class);
     private final Map<String, AiChatSessionEntity> stored = new HashMap<>();
     private final List<Prompt> prompts = new ArrayList<>();
@@ -118,8 +119,6 @@ class AiChatMemoryTest {
 
     @Test
     void persistsOriginalUserTextAndFinalAnswerWithoutToolOrDocumentData() throws Exception {
-        when(embeddings.embed(any(Document.class))).thenReturn(new float[]{1, 0});
-        when(embeddings.embed(anyString())).thenReturn(new float[]{1, 0});
         doAnswer(invocation -> {
             prompts.add(invocation.getArgument(0));
             if (prompts.size() == 1) {
@@ -136,9 +135,21 @@ class AiChatMemoryTest {
 
         assertThat(prompts).hasSize(2);
         assertThat(prompts.getFirst().getUserMessage().getText()).contains("Dokumentinhalt");
-        assertThat(repository().findByConversationId("owner:session")).containsExactly(new UserMessage("Auftrag"), new AssistantMessage("Fertig"));
+        var restored = repository().findByConversationId("owner:session");
+        assertThat(restored).hasSize(2);
+        assertThat(restored.getFirst().getText()).isEqualTo("Auftrag");
+        assertThat(restored.getFirst().getMetadata().get("attachments")).isEqualTo(List.of(
+                new AiChatAttachmentMetadata("document.txt", document.getSize(), "text/plain")
+        ));
+        assertThat(restored.getLast()).isEqualTo(new AssistantMessage("Fertig"));
         assertThat(stored.get("owner:session").getChatMessages()).containsExactly(
-                Map.of("role", "user", "content", "Auftrag"),
+                Map.of(
+                        "role", "user",
+                        "content", "Auftrag",
+                        "attachments", List.of(new AiChatAttachmentMetadata(
+                                "document.txt", document.getSize(), "text/plain"
+                        ))
+                ),
                 Map.of("role", "assistant", "content", "Fertig"));
     }
 
@@ -190,9 +201,11 @@ class AiChatMemoryTest {
     private AiChatController controller() {
         var mapper = JsonMapperTestUtils.createMapper();
         var elements = mock(AiUiElementChatSessionCacheRepository.class);
-        return new AiChatController(ChatClient.builder(model), new AiChatElementTools(mapper, elements), mock(AVService.class),
-                permissions, embeddings, sessions, new AiChatElementService(permissions, sessions, elements, mapper),
-                new AiChatSharedTools(), new AiChatElementSchemaTools(mapper, new AiInputValueSchemaService(mapper)), new AiChatProcessTools(mock(AiChatProcessService.class)), mock(AiChatProcessService.class), traceService, ToolCallingManager.builder().build(),
+        var antivirus = mock(AVService.class);
+        return new AiChatController(ChatClient.builder(model), new AiChatElementTools(mapper, elements),
+                permissions, sessions, new AiChatElementService(permissions, sessions, elements, mapper),
+                new AiChatSharedTools(), new AiChatElementSchemaTools(mapper, new AiInputValueSchemaService(mapper)), new AiChatProcessTools(mock(AiChatProcessService.class)), mock(AiChatProcessService.class),
+                new AiChatAttachmentService(antivirus, new AiChatAttachmentProperties(), mapper), new AiChatAttachmentTools(), traceService, ToolCallingManager.builder().build(),
                 new AiChatMemoryConfiguration().chatMemory(repository()), Duration.ofMinutes(10));
     }
 

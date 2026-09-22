@@ -5,17 +5,20 @@ import de.aivot.prosuna.backend.ai.cache.entities.AiUiElementChatSessionCacheEnt
 import de.aivot.prosuna.backend.ai.cache.repositories.AiUiElementChatSessionCacheRepository;
 import de.aivot.prosuna.backend.ai.entities.AiChatSessionEntity;
 import de.aivot.prosuna.backend.ai.models.AiChatTraceContext;
+import de.aivot.prosuna.backend.ai.models.AiChatAttachmentContext;
+import de.aivot.prosuna.backend.ai.models.AiChatAttachmentMetadata;
 import de.aivot.prosuna.backend.ai.permissions.AiChatPermissionProvider;
 import de.aivot.prosuna.backend.ai.repositories.AiChatSessionRepository;
 import de.aivot.prosuna.backend.ai.services.AiChatElementService;
 import de.aivot.prosuna.backend.ai.services.AiChatTraceService;
+import de.aivot.prosuna.backend.ai.services.AiChatAttachmentService;
 import de.aivot.prosuna.backend.ai.tools.AiChatElementTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatSharedTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatProcessTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatElementSchemaTools;
+import de.aivot.prosuna.backend.ai.tools.AiChatAttachmentTools;
 import de.aivot.prosuna.backend.ai.services.AiChatProcessService;
 import de.aivot.prosuna.backend.ai.services.AiInputValueSchemaService;
-import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -33,7 +36,6 @@ import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
@@ -64,8 +66,7 @@ class AiChatControllerTest {
     private final AiChatSessionRepository sessions = mock(AiChatSessionRepository.class);
     private final AiUiElementChatSessionCacheRepository cache = mock(AiUiElementChatSessionCacheRepository.class);
     private final ChatClient client = mock(ChatClient.class, RETURNS_DEEP_STUBS);
-    private final AVService antivirus = mock(AVService.class);
-    private final EmbeddingModel embeddings = mock(EmbeddingModel.class);
+    private final AiChatAttachmentService attachmentService = mock(AiChatAttachmentService.class);
     private final AiChatTraceService traceService = mock(AiChatTraceService.class);
     private final ChatMemory chatMemory = MessageWindowChatMemory.builder().maxMessages(20).build();
     private final Jwt jwt = Jwt.withTokenValue("token").header("alg", "none").subject(USER_ID).build();
@@ -81,8 +82,9 @@ class AiChatControllerTest {
         when(traceService.startTurn(anyString(), anyString(), anyString(), any(), any()))
                 .thenReturn(new AiChatTraceContext(USER_ID, SESSION_ID, "turn"));
         var service = new AiChatElementService(permissions, sessions, cache, mapper);
-        controller = new AiChatController(builder, new AiChatElementTools(mapper, cache), antivirus,
-                permissions, embeddings, sessions, service, new AiChatSharedTools(), new AiChatElementSchemaTools(mapper, new AiInputValueSchemaService(mapper)), new AiChatProcessTools(mock(AiChatProcessService.class)), mock(AiChatProcessService.class),
+        controller = new AiChatController(builder, new AiChatElementTools(mapper, cache),
+                permissions, sessions, service, new AiChatSharedTools(), new AiChatElementSchemaTools(mapper, new AiInputValueSchemaService(mapper)), new AiChatProcessTools(mock(AiChatProcessService.class)), mock(AiChatProcessService.class),
+                attachmentService, new AiChatAttachmentTools(),
                 traceService, ToolCallingManager.builder().build(), chatMemory,
                 Duration.ofMinutes(10));
         mvc = MockMvcBuilders.standaloneSetup(controller)
@@ -119,7 +121,10 @@ class AiChatControllerTest {
     @Test
     void retrievesVisibleMessagesForOwnedSession() throws Exception {
         chatMemory.add("owner:session", List.of(
-                new UserMessage("Mein Hund heißt Bello."),
+                UserMessage.builder().text("Mein Hund heißt Bello.").metadata(Map.of(
+                        AiChatAttachmentContext.ATTACHMENTS_METADATA_KEY,
+                        List.of(new AiChatAttachmentMetadata("formular.pdf", 1234, "application/pdf"))
+                )).build(),
                 new AssistantMessage("Ich habe den Namen übernommen.")));
 
         mvc.perform(get("/api/ai/chat/messages/").param("chatSessionId", SESSION_ID))
@@ -127,8 +132,12 @@ class AiChatControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].role").value("user"))
                 .andExpect(jsonPath("$[0].content").value("Mein Hund heißt Bello."))
+                .andExpect(jsonPath("$[0].attachments[0].name").value("formular.pdf"))
+                .andExpect(jsonPath("$[0].attachments[0].size").value(1234))
+                .andExpect(jsonPath("$[0].attachments[0].contentType").value("application/pdf"))
                 .andExpect(jsonPath("$[1].role").value("assistant"))
-                .andExpect(jsonPath("$[1].content").value("Ich habe den Namen übernommen."));
+                .andExpect(jsonPath("$[1].content").value("Ich habe den Namen übernommen."))
+                .andExpect(jsonPath("$[1].attachments").isEmpty());
 
         verify(permissions).requireSystemPermission(USER_ID, AiChatPermissionProvider.AI_CHAT_USE);
         verify(sessions).findByUserIdAndSessionId(USER_ID, SESSION_ID);
@@ -243,7 +252,7 @@ class AiChatControllerTest {
                         new TextInputElement(), null, null, new MockMultipartFile[]{attachment}));
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
-        verifyNoInteractions(cache, client, antivirus, embeddings);
+        verifyNoInteractions(cache, client, attachmentService);
     }
 
     @Test
@@ -255,6 +264,6 @@ class AiChatControllerTest {
                 () -> controller.send(jwt, SESSION_ID, "Hello", null, null, null, null, null));
 
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
-        verifyNoInteractions(sessions, cache, client, antivirus, embeddings);
+        verifyNoInteractions(sessions, cache, client, attachmentService);
     }
 }

@@ -8,12 +8,19 @@ export interface AiChatMessageData {
     currentState?: AnyElement;
     processId?: number;
     processVersion?: number;
-    attachments?: File[];
+    attachment?: File;
+}
+
+export interface AiChatAttachmentMetadata {
+    name: string;
+    size: number;
+    contentType: string | null;
 }
 
 export interface AiChatMessage {
     role: 'user' | 'assistant';
     content: string;
+    attachments?: AiChatAttachmentMetadata[];
 }
 
 export class AiChatService extends BaseApiService {
@@ -49,6 +56,7 @@ export class AiChatService extends BaseApiService {
         onStream: (chunk: string) => void,
         signal?: AbortSignal,
         data?: AiChatMessageData,
+        onAccepted?: () => void,
     ): Promise<void> {
         const body = new FormData();
         body.append('chatSessionId', sessionId);
@@ -66,8 +74,8 @@ export class AiChatService extends BaseApiService {
         if (data?.processVersion != null) {
             body.append('processVersion', String(data.processVersion));
         }
-        for (const attachment of data?.attachments ?? []) {
-            body.append('attachments', attachment);
+        if (data?.attachment != null) {
+            body.append('attachments', data.attachment);
         }
 
         const response = await this.fetch('POST', '/api/ai/chat/send/', body, {
@@ -89,6 +97,7 @@ export class AiChatService extends BaseApiService {
         if (contentType !== 'text/event-stream' || response.body == null) {
             throw new Error('Expected an SSE response with a body');
         }
+        onAccepted?.();
 
         const reader = response
             .body

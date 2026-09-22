@@ -71,7 +71,12 @@ describe('process editor AI chat integration', () => {
         vi.spyOn(ProcessNodeProviderApiService.prototype, 'getNodeProvider').mockResolvedValue({key: 'action', majorVersion: 1, type: ProcessNodeType.Action, name: 'Aktion', ports: []} as never);
         vi.spyOn(SearchItemService.prototype, 'recordRecentSearchItem').mockResolvedValue(undefined as never);
         vi.spyOn(AiChatService.prototype, 'startChatSession').mockResolvedValue({sessionId: 'chat'});
-        vi.spyOn(AiChatService.prototype, 'sendMessage').mockImplementation(async (_id, _text, chunk) => {chunk('Geändert.');});
+        vi.spyOn(AiChatService.prototype, 'sendMessage').mockImplementation(
+            async (_id, _text, chunk, _signal, _data, onAccepted) => {
+                onAccepted?.();
+                chunk('Geändert.');
+            },
+        );
         vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 

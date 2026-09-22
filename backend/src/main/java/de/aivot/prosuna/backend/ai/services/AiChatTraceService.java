@@ -1,10 +1,12 @@
 package de.aivot.prosuna.backend.ai.services;
 
 import de.aivot.prosuna.backend.ai.models.AiChatTraceContext;
+import de.aivot.prosuna.backend.ai.models.AiChatAttachmentContext;
 import de.aivot.prosuna.backend.ai.models.ChatContextModel;
 import de.aivot.prosuna.backend.ai.permissions.AiChatPermissionProvider;
 import de.aivot.prosuna.backend.ai.properties.AiChatTraceProperties;
 import de.aivot.prosuna.backend.ai.repositories.AiChatSessionRepository;
+import de.aivot.prosuna.backend.ai.tools.AiChatAttachmentTools;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import jakarta.annotation.Nonnull;
@@ -361,11 +363,21 @@ public class AiChatTraceService {
     private Map<String, Object> messageData(@Nonnull Message message) {
         var result = new LinkedHashMap<String, Object>();
         result.put("role", message.getMessageType().getValue());
-        putIfNotNull(result, "content", message.getText());
+        var attachmentContext = Boolean.TRUE.equals(
+                message.getMetadata().get(AiChatAttachmentContext.MESSAGE_METADATA_KEY)
+        );
+        putIfNotNull(result, "content", attachmentContext
+                ? message.getMetadata().get(AiChatAttachmentContext.ORIGINAL_TEXT_METADATA_KEY)
+                : message.getText());
+        if (attachmentContext) {
+            result.put("attachmentContextRedacted", true);
+        }
 
         var metadata = new LinkedHashMap<String, Object>();
         message.getMetadata().forEach((key, value) -> {
-            if (!"messageType".equals(key)) {
+            if (!"messageType".equals(key)
+                    && !AiChatAttachmentContext.MESSAGE_METADATA_KEY.equals(key)
+                    && !AiChatAttachmentContext.ORIGINAL_TEXT_METADATA_KEY.equals(key)) {
                 metadata.put(key, jsonValue(value));
             }
         });
@@ -415,7 +427,9 @@ public class AiChatTraceService {
         var result = new LinkedHashMap<String, Object>();
         putIfNotNull(result, "id", response.id());
         putIfNotNull(result, "name", response.name());
-        putIfNotNull(result, "responseData", response.responseData());
+        putIfNotNull(result, "responseData", AiChatAttachmentTools.TOOL_NAME.equals(response.name())
+                ? "[Dateiinhalt ausgeblendet]"
+                : response.responseData());
         return result;
     }
 

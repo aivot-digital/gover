@@ -1,12 +1,17 @@
 package de.aivot.prosuna.backend.ai.controllers;
 
 import de.aivot.prosuna.backend.ai.advisors.AiChatTraceAdvisor;
+import de.aivot.prosuna.backend.ai.advisors.AiChatAttachmentAdvisor;
 import de.aivot.prosuna.backend.ai.data.SystemPrompts;
 import de.aivot.prosuna.backend.ai.entities.AiChatSessionEntity;
 import de.aivot.prosuna.backend.ai.models.AiChatTraceContext;
+import de.aivot.prosuna.backend.ai.models.AiChatAttachmentContext;
+import de.aivot.prosuna.backend.ai.models.AiChatAttachmentMetadata;
 import de.aivot.prosuna.backend.ai.models.ChatContextModel;
 import de.aivot.prosuna.backend.ai.models.AiProcessChatContext;
 import de.aivot.prosuna.backend.ai.services.AiChatProcessService;
+import de.aivot.prosuna.backend.ai.services.AiChatAttachmentService;
+import de.aivot.prosuna.backend.ai.tools.AiChatAttachmentTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatProcessTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatElementSchemaTools;
 import de.aivot.prosuna.backend.ai.permissions.AiChatPermissionProvider;
@@ -18,7 +23,6 @@ import de.aivot.prosuna.backend.ai.tools.AiChatElementTools;
 import de.aivot.prosuna.backend.ai.tools.AiChatSharedTools;
 import de.aivot.prosuna.backend.ai.tools.RecoveringToolCallingManager;
 import de.aivot.prosuna.backend.ai.tools.TracingToolCallingManager;
-import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -34,24 +38,15 @@ import jakarta.annotation.Nullable;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.reader.tika.TikaDocumentReader;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -63,11 +58,8 @@ import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -84,9 +76,7 @@ import java.util.concurrent.atomic.AtomicReference;
 class AiChatController {
     private final ChatClient chatClient;
     private final AiChatElementTools aiChatElementTools;
-    private final AVService aVService;
     private final PermissionService permissionService;
-    private final EmbeddingModel embeddingModel;
     private final AiChatSessionRepository aiChatSessionRepository;
     private final AiChatElementService aiChatElementService;
     private final AiChatSharedTools aiChatSharedTools;
@@ -95,18 +85,20 @@ class AiChatController {
     private final AiChatProcessService aiChatProcessService;
     private final AiChatProcessTools aiChatProcessTools;
     private final AiChatElementSchemaTools aiChatElementSchemaTools;
+    private final AiChatAttachmentService aiChatAttachmentService;
+    private final AiChatAttachmentTools aiChatAttachmentTools;
 
     AiChatController(ChatClient.Builder chatClientBuilder,
                      AiChatElementTools aiChatElementTools,
-                     AVService aVService,
                      PermissionService permissionService,
-                     EmbeddingModel embeddingModel,
                      AiChatSessionRepository aiChatSessionRepository,
                      AiChatElementService aiChatElementService,
                      AiChatSharedTools aiChatSharedTools,
                      AiChatElementSchemaTools aiChatElementSchemaTools,
                      AiChatProcessTools aiChatProcessTools,
                      AiChatProcessService aiChatProcessService,
+                     AiChatAttachmentService aiChatAttachmentService,
+                     AiChatAttachmentTools aiChatAttachmentTools,
                      @Nonnull AiChatTraceService aiChatTraceService,
                      @Nonnull ToolCallingManager toolCallingManager,
                      @Nonnull ChatMemory chatMemory,
@@ -124,9 +116,7 @@ class AiChatController {
                         new AiChatTraceAdvisor(aiChatTraceService))
                 .build();
         this.aiChatElementTools = aiChatElementTools;
-        this.aVService = aVService;
         this.permissionService = permissionService;
-        this.embeddingModel = embeddingModel;
         this.aiChatSessionRepository = aiChatSessionRepository;
         this.aiChatElementService = aiChatElementService;
         this.aiChatSharedTools = aiChatSharedTools;
@@ -135,6 +125,8 @@ class AiChatController {
         this.aiChatElementSchemaTools = aiChatElementSchemaTools;
         this.aiChatProcessTools = aiChatProcessTools;
         this.aiChatProcessService = aiChatProcessService;
+        this.aiChatAttachmentService = aiChatAttachmentService;
+        this.aiChatAttachmentTools = aiChatAttachmentTools;
     }
 
     @PostMapping("start/")
@@ -187,10 +179,14 @@ class AiChatController {
         return chatMemory.get(DatabaseChatMemoryRepository.conversationId(userId, chatSessionId)).stream()
                 .map(message -> {
                     if (message instanceof UserMessage) {
-                        return new ChatMessageResponse("user", Objects.requireNonNullElse(message.getText(), ""));
+                        return new ChatMessageResponse(
+                                "user",
+                                Objects.requireNonNullElse(message.getText(), ""),
+                                attachmentMetadata(message.getMetadata().get(AiChatAttachmentContext.ATTACHMENTS_METADATA_KEY))
+                        );
                     }
                     if (message instanceof AssistantMessage) {
-                        return new ChatMessageResponse("assistant", Objects.requireNonNullElse(message.getText(), ""));
+                        return new ChatMessageResponse("assistant", Objects.requireNonNullElse(message.getText(), ""), List.of());
                     }
                     throw new IllegalStateException("Unsupported persisted chat message type");
                 })
@@ -224,7 +220,7 @@ class AiChatController {
             description = "Requires ai_chat.use. Accepts multipart form fields chatSessionId, userInput, "
                     + "and optional processId and processVersion. Optional application/json parts targetRootType "
                     + "and currentState contain the numeric form element type and the unsaved form draft respectively. "
-                    + "Files may be supplied as repeated attachments parts. "
+                    + "One supported text document may be supplied as an attachments part. "
                     + "A supplied currentState replaces the session's cached form draft and enables form editing. "
                     + "Without currentState, form editing tools are unavailable. processId and processVersion must be paired "
                     + "and cannot be combined with form editing. Process tools require process_definition.read, "
@@ -268,15 +264,20 @@ class AiChatController {
         var traceFinished = new AtomicBoolean(false);
 
         try {
-            VectorStore transientVectorStore = getTransientVectorStore(attachments);
+            var attachmentContext = aiChatAttachmentService.prepare(attachments);
             var toolContext = new HashMap<>(context.toMap());
             toolContext.put(AiChatTraceContext.CONTEXT_KEY, traceContext);
             if (processContext != null) toolContext.put(AiProcessChatContext.KEY, processContext);
+            if (attachmentContext != null) toolContext.put(AiChatAttachmentContext.CONTEXT_KEY, attachmentContext);
 
             var request = chatClient
                     .prompt()
                     .toolContext(toolContext)
                     .tools(aiChatSharedTools);
+
+            if (attachmentContext != null) {
+                request.tools(aiChatAttachmentTools);
+            }
 
             if (context.getAppContext() == ChatContextModel.AppContext.FormEditor) {
                 request.tools(aiChatElementSchemaTools, aiChatElementTools);
@@ -291,21 +292,24 @@ class AiChatController {
 
             return request
                     .system(SystemPrompts.getSystemPrompt(context))
-                    .user(userInput)
+                    .user(user -> {
+                        user.text(userInput);
+                        if (attachmentContext != null) {
+                            user.metadata(
+                                    AiChatAttachmentContext.ATTACHMENTS_METADATA_KEY,
+                                    List.of(attachmentContext.metadata())
+                            );
+                        }
+                    })
                     .advisors(a -> {
                         // Set the conversation ID.
                         a.param(ChatMemory.CONVERSATION_ID,
                                 DatabaseChatMemoryRepository.conversationId(userId, chatSessionId));
                         a.param(AiChatTraceContext.CONTEXT_KEY, traceContext);
 
-                        if (transientVectorStore != null) {
-                            var qaAdvisor = QuestionAnswerAdvisor.builder(transientVectorStore)
-                                    // Enrich the original request once, outside the tool-calling loop.
-                                    .order(Ordered.HIGHEST_PRECEDENCE + 100);
-                            if (context.getAppContext() == ChatContextModel.AppContext.FormEditor) {
-                                qaAdvisor.promptTemplate(new PromptTemplate(SystemPrompts.ELEMENT_DOCUMENT_CONTEXT_PROMPT));
-                            }
-                            a.advisors(qaAdvisor.build());
+                        if (attachmentContext != null) {
+                            a.param(AiChatAttachmentContext.CONTEXT_KEY, attachmentContext);
+                            a.advisors(new AiChatAttachmentAdvisor());
                         }
                     })
                     .stream()
@@ -373,53 +377,32 @@ class AiChatController {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
     }
 
-    @Nullable
-    private VectorStore getTransientVectorStore(@Nullable MultipartFile[] attachments) throws ResponseException {
-        if (attachments == null || attachments.length == 0) {
-            return null;
+    @Nonnull
+    private static List<AiChatAttachmentMetadata> attachmentMetadata(@Nullable Object value) {
+        if (!(value instanceof List<?> values)) {
+            return List.of();
         }
-        List<Document> documents = new ArrayList<>();
-        aVService.testMultipartFiles(attachments);
-        for (MultipartFile attachment : attachments) {
-            if (attachment.isEmpty()) {
-                continue;
+        return values.stream().map(item -> {
+            if (item instanceof AiChatAttachmentMetadata metadata) {
+                return metadata;
             }
-            InputStream attachmentInputStream;
-            try {
-                attachmentInputStream = attachment
-                        .getInputStream();
-            } catch (IOException e) {
-                throw ResponseException.internalServerError(
-                        "Failed to read attachment input stream", e
-                );
+            if (item instanceof java.util.Map<?, ?> map
+                    && map.get("name") instanceof String name
+                    && map.get("size") instanceof Number size) {
+                var contentType = map.get("contentType") instanceof String type ? type : null;
+                return new AiChatAttachmentMetadata(name, size.longValue(), contentType);
             }
-
-            // 1. Read document content from the upload stream
-            var resource = new InputStreamResource(attachmentInputStream);
-            var reader = new TikaDocumentReader(resource);
-            List<Document> rawDocuments = reader.get();
-
-            // 2. Split text into manageable chunks
-            var textSplitter = TokenTextSplitter
-                    .builder()
-                    .build();
-            List<Document> splitDocuments = textSplitter.split(rawDocuments);
-
-            splitDocuments.stream()
-                    .filter(document -> document.getText() != null && !document.getText().isBlank())
-                    .forEach(documents::add);
-        }
-        if (documents.isEmpty()) {
             return null;
-        }
-        VectorStore transientVectorStore = SimpleVectorStore.builder(embeddingModel).build();
-        transientVectorStore.add(documents);
-        return transientVectorStore;
+        }).filter(Objects::nonNull).toList();
     }
 
     public record SessionStartResponse(String sessionId) {
     }
 
-    public record ChatMessageResponse(@Nonnull String role, @Nonnull String content) {
+    public record ChatMessageResponse(
+            @Nonnull String role,
+            @Nonnull String content,
+            @Nonnull List<AiChatAttachmentMetadata> attachments
+    ) {
     }
 }

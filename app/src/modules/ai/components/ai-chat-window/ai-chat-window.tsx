@@ -11,8 +11,12 @@ import Send from "@aivot/mui-material-symbols-400-n25-outlined/Send";
 import StopCircle from "@aivot/mui-material-symbols-400-n25-outlined/StopCircle";
 import Download from "@aivot/mui-material-symbols-400-n25-outlined/Download";
 import Close from "@aivot/mui-material-symbols-400-n25-outlined/Close";
+import AttachFile from "@aivot/mui-material-symbols-400-n25-outlined/AttachFile";
+import Delete from "@aivot/mui-material-symbols-400-n25-outlined/Delete";
 import {downloadBlobFile} from '../../../../utils/download-utils';
 import {isApiError} from '../../../../models/api-error';
+import {FileUploadFileList} from '../../../../components/file-upload-field/file-upload-field-layout';
+import {humanizeFileSize} from '../../../../utils/humanization-utils';
 
 interface AiChatWindowPropsElementEditing {
     mode?: 'element';
@@ -62,6 +66,9 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
     }, []);
 
     const [message, setMessage] = useState<string | null>(null);
+    const [attachment, setAttachment] = useState<File | null>(null);
+    const [attachmentError, setAttachmentError] = useState<string | null>(null);
+    const attachmentInputRef = useRef<HTMLInputElement>(null);
 
     const sendingRef = useRef(false);
     const cancelRequestedRef = useRef(false);
@@ -139,6 +146,7 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
         requestRef.current = controller;
         const service = new AiChatService();
         const outgoingMessage = message;
+        const outgoingAttachment = attachment;
         let activeSessionId = sessionId;
         let turnStarted = false;
         let editorReloaded = false;
@@ -200,12 +208,6 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                 localStorage.setItem(sessionKey, activeSessionId);
             }
 
-            setMessageBuffer((prevBuffer) => [
-                ...prevBuffer,
-                {role: 'user', content: outgoingMessage},
-            ]);
-            setMessage(null);
-
             let receivedAssistantContent = false;
             try {
                 turnStarted = true;
@@ -227,9 +229,29 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                 }, controller.signal, props.mode === 'process' ? {
                     processId: props.processId,
                     processVersion: props.processVersion,
+                    attachment: outgoingAttachment ?? undefined,
                 } : {
                     currentState: props.rootElement,
                     targetRootType: props.targetRootType,
+                    attachment: outgoingAttachment ?? undefined,
+                }, () => {
+                    if (!mountedRef.current) return;
+                    setMessageBuffer((prevBuffer) => [
+                        ...prevBuffer,
+                        {
+                            role: 'user',
+                            content: outgoingMessage,
+                            attachments: outgoingAttachment == null ? [] : [{
+                                name: outgoingAttachment.name,
+                                size: outgoingAttachment.size,
+                                contentType: outgoingAttachment.type || null,
+                            }],
+                        },
+                    ]);
+                    setMessage(null);
+                    setAttachment(null);
+                    setAttachmentError(null);
+                    if (attachmentInputRef.current != null) attachmentInputRef.current.value = '';
                 });
                 if (controller.signal.aborted) return;
 
@@ -251,7 +273,9 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                     ...prevBuffer,
                     {
                         role: 'error',
-                        content: props.mode === 'process'
+                        content: isApiError(error) && error.displayableToUser
+                            ? error.message
+                            : props.mode === 'process'
                             ? 'Die KI-Anfrage wurde mit einem Fehler beendet. Bereits ausgeführte Änderungen bleiben gespeichert. Prüfen Sie den Prozess, bevor Sie die Anfrage erneut senden.'
                             : 'Die KI-Anfrage wurde mit einem Fehler beendet. Prüfen Sie den aktuellen Formularentwurf, bevor Sie die Anfrage erneut senden.',
                     },
@@ -299,6 +323,26 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
         setIsCancelling(true);
         setIsCancellable(false);
         request.abort();
+    };
+
+    const handleAttachment = (file: File | null) => {
+        setAttachmentError(null);
+        if (file == null) return;
+
+        const extension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : null;
+        if (extension == null || !AppConfig.aiChatAttachments.extensions.includes(extension)) {
+            setAttachmentError('Dieser Dateityp wird nicht unterstützt.');
+            return;
+        }
+        if (file.size > AppConfig.aiChatAttachments.maxFileSizeBytes) {
+            setAttachmentError(`Die Datei darf höchstens ${humanizeFileSize(AppConfig.aiChatAttachments.maxFileSizeBytes)} groß sein.`);
+            return;
+        }
+        if (file.size === 0) {
+            setAttachmentError('Die Datei ist leer.');
+            return;
+        }
+        setAttachment(file);
     };
 
     const handleDownloadTrace = async () => {
@@ -406,6 +450,14 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                         <Box key={index} sx={{marginBottom: 2}}>
                             <strong>{msg.role === 'user' ? 'Sie' : msg.role === 'error' ? 'Hinweis' : 'KI'}:</strong>
                             <MarkdownContent markdown={msg.content}/>
+                            {msg.role === 'user' && msg.attachments?.map(file => (
+                                <Stack key={`${file.name}-${file.size}`} direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
+                                    <AttachFile fontSize="small"/>
+                                    <Typography variant="caption">
+                                        {file.name} ({humanizeFileSize(file.size)})
+                                    </Typography>
+                                </Stack>
+                            ))}
                         </Box>
                     ))
                 }
@@ -432,6 +484,40 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                         flexShrink: 0,
                     }}
                 >
+                    <input
+                        ref={attachmentInputRef}
+                        type="file"
+                        aria-label="Datei anhängen"
+                        accept={AppConfig.aiChatAttachments.extensions.map(extension => `.${extension}`).join(',')}
+                        disabled={disabled || isThinking || isLoadingHistory}
+                        onChange={event => {
+                            handleAttachment(event.target.files?.[0] ?? null);
+                            event.target.value = '';
+                        }}
+                        style={{display: 'none'}}
+                    />
+                    {attachment != null && (
+                        <FileUploadFileList items={[{
+                            key: `${attachment.name}-${attachment.size}-${attachment.lastModified}`,
+                            name: attachment.name,
+                            size: humanizeFileSize(attachment.size),
+                            contentType: attachment.type || null,
+                            detail: 'Nur für diese Nachricht',
+                            actionLabel: 'Datei entfernen',
+                            actionIcon: <Delete/>,
+                            actionDisabled: isThinking,
+                            onAction: () => setAttachment(null),
+                        }]}/>
+                    )}
+                    {attachmentError != null && (
+                        <Typography color="error" variant="caption" role="alert" sx={{display: 'block', mb: 1}}>
+                            {attachmentError}
+                        </Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.5}}>
+                        Textbasierte Dokumente bis {humanizeFileSize(AppConfig.aiChatAttachments.maxFileSizeBytes)};
+                        gescannte PDFs ohne Text werden nicht unterstützt.
+                    </Typography>
                     <TextFieldComponent
                         label="Nachricht"
                         value={message}
@@ -449,22 +535,30 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                             bottom: 0,
                             mr: 2,
                             mb: 2,
+                            height: 'fit-content',
                             width: 'fit-content',
                         }}
-                        direction="column"
+                        direction="row"
                         tooltipPlacement="top"
                         dense={true}
                         size="small"
                         actions={[
                             {
-                                icon: <Download/>,
+                                icon: <AttachFile fontSize="small"/>,
+                                tooltip: "Datei anhängen",
+                                onClick: () => attachmentInputRef.current?.click(),
+                                visible: !isThinking && attachment == null,
+                                disabled: disabled || isLoadingHistory,
+                            },
+                            {
+                                icon: <Download fontSize="small"/>,
                                 tooltip: "KI-Diagnose herunterladen",
                                 onClick: handleDownloadTrace,
                                 visible: sessionId != null,
                                 disabled: isThinking || isLoadingHistory || isDownloadingTrace,
                             },
                             {
-                                icon: <StopCircle/>,
+                                icon: <StopCircle fontSize="small"/>,
                                 tooltip: "Anfrage abbrechen",
                                 disabledTooltip: "Abbruch wird abgeschlossen …",
                                 onClick: handleCancelMessage,
@@ -472,7 +566,7 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                                 disabled: isCancelling,
                             },
                             {
-                                icon: <Send/>,
+                                icon: <Send fontSize="small"/>,
                                 tooltip: "Absenden",
                                 onClick: handleSendMessage,
                                 visible: !isThinking,

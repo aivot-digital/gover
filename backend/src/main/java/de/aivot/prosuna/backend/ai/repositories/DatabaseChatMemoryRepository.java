@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -80,7 +81,16 @@ public class DatabaseChatMemoryRepository implements ChatMemoryRepository {
     @Nonnull
     private static Map<String, Object> toStoredMessage(@Nonnull Message message) {
         var role = message instanceof UserMessage ? USER_ROLE : ASSISTANT_ROLE;
-        return Map.of("role", role, "content", Objects.requireNonNullElse(message.getText(), ""));
+        var stored = new LinkedHashMap<String, Object>();
+        stored.put("role", role);
+        stored.put("content", Objects.requireNonNullElse(message.getText(), ""));
+        if (message instanceof UserMessage) {
+            var attachments = message.getMetadata().get("attachments");
+            if (attachments instanceof List<?> values && !values.isEmpty()) {
+                stored.put("attachments", values);
+            }
+        }
+        return stored;
     }
 
     @Nonnull
@@ -91,7 +101,14 @@ public class DatabaseChatMemoryRepository implements ChatMemoryRepository {
             throw new IllegalStateException("Stored chat message is invalid");
         }
         return switch (storedRole) {
-            case USER_ROLE -> new UserMessage(text);
+            case USER_ROLE -> {
+                var builder = UserMessage.builder().text(text);
+                var attachments = storedMessage.get("attachments");
+                if (attachments instanceof List<?> values && !values.isEmpty()) {
+                    builder.metadata(Map.of("attachments", values));
+                }
+                yield builder.build();
+            }
             case ASSISTANT_ROLE -> new AssistantMessage(text);
             default -> throw new IllegalStateException("Unsupported stored chat message role: " + storedRole);
         };

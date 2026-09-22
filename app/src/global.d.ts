@@ -39,4 +39,9 @@ declare var AppConfig: {
     moduleFlags: Array<'FORM' | 'PROCESS' | 'PORTAL'>,
     processNodeLimits: Record<string, number>;
     aiEnabled: boolean;
+    aiChatAttachments: {
+        maxFiles: number;
+        maxFileSizeBytes: number;
+        extensions: string[];
+    };
 };

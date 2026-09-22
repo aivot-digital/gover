@@ -222,6 +222,11 @@ prosuna:
     chat:
       trace:
         retention-days: "${PROSUNA_AI_CHAT_TRACE_RETENTION_DAYS:7}"
+      attachments:
+        max-files: "${PROSUNA_AI_CHAT_ATTACHMENTS_MAX_FILES:1}"
+        max-file-size-bytes: "${PROSUNA_AI_CHAT_ATTACHMENTS_MAX_FILE_SIZE_BYTES:10485760}"
+        max-extracted-characters: "${PROSUNA_AI_CHAT_ATTACHMENTS_MAX_EXTRACTED_CHARACTERS:100000}"
+        extensions: "${PROSUNA_AI_CHAT_ATTACHMENTS_EXTENSIONS:pdf,txt,csv,doc,docx,xls,xlsx,ppt,pptx,odt,fodt,ods,fods,odp,fodp,odg,fodg,odf,xml,bpmn}"
     completion:
       maxTokens: "${PROSUNA_AI_COMPLETION_MAX_TOKENS:1000}"
     processDataTransformation:

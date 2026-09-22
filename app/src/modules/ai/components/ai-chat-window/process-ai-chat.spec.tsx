@@ -27,7 +27,12 @@ describe('process chat lifecycle', () => {
         refresh.mockReset().mockResolvedValue();
         reload.mockReset().mockImplementation(async selected => { await selected?.refresh(); });
         vi.spyOn(AiChatService.prototype, 'startChatSession').mockResolvedValue({sessionId: 'process-session'});
-        vi.spyOn(AiChatService.prototype, 'sendMessage').mockImplementation(async (_id, _text, chunk) => { chunk('Prozess geändert.'); });
+        vi.spyOn(AiChatService.prototype, 'sendMessage').mockImplementation(
+            async (_id, _text, chunk, _signal, _data, onAccepted) => {
+                onAccepted?.();
+                chunk('Prozess geändert.');
+            },
+        );
         vi.spyOn(AiChatService.prototype, 'getMessages').mockResolvedValue([]);
         vi.spyOn(AiChatService.prototype, 'getCurrentElement').mockResolvedValue({} as never);
         vi.spyOn(AiChatService.prototype, 'downloadTrace').mockResolvedValue(new Blob(['{}']));
@@ -71,7 +76,7 @@ describe('process chat lifecycle', () => {
         expect(screen.getByRole('button', {name: 'Manuell bearbeiten'})).toBeDisabled();
         expect(AiChatService.prototype.sendMessage).toHaveBeenCalledExactlyOnceWith(
             'process-session', 'Prozess modellieren', expect.any(Function), expect.any(AbortSignal),
-            {processId: 42, processVersion: 2},
+            {processId: 42, processVersion: 2, attachment: undefined}, expect.any(Function),
         );
         expect(AiChatService.prototype.getCurrentElement).not.toHaveBeenCalled();
         await act(async () => reloading.resolve());
@@ -135,7 +140,8 @@ describe('process chat lifecycle', () => {
         const reloading = deferred();
         refresh.mockReturnValueOnce(reloading.promise);
         vi.mocked(AiChatService.prototype.sendMessage).mockImplementationOnce(
-            async (_id, _text, chunk, signal) => {
+            async (_id, _text, chunk, signal, _data, onAccepted) => {
+                onAccepted?.();
                 chunk('Teilweise geändert.');
                 await new Promise<void>((_resolve, reject) => signal?.addEventListener(
                     'abort', () => reject(signal.reason), {once: true},
@@ -203,9 +209,12 @@ describe('process chat lifecycle', () => {
         const response = deferred();
         let oldChunk!: (text: string) => void;
         let signal!: AbortSignal;
-        vi.mocked(AiChatService.prototype.sendMessage).mockImplementationOnce(async (_id, _text, chunk, abort) => {
+        vi.mocked(AiChatService.prototype.sendMessage).mockImplementationOnce(async (
+            _id, _text, chunk, abort, _data, onAccepted,
+        ) => {
             signal = abort!;
             oldChunk = chunk;
+            onAccepted?.();
             await response.promise;
         });
         const view = render(<Editor/>);

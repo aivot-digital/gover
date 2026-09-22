@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.system.controllers;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
+import de.aivot.prosuna.backend.ai.properties.AiChatAttachmentProperties;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
@@ -35,6 +36,7 @@ public class AppConfigController {
     private final AssetService assetService;
     private final SystemService systemService;
     private final KnownExtensionsService knownExtensionsService;
+    private final AiChatAttachmentProperties aiChatAttachmentProperties;
 
     @Value("${keycloak.hostname}")
     private String oidcIssuerURI;
@@ -53,12 +55,14 @@ public class AppConfigController {
                                SystemConfigService systemConfigService,
                                AssetService assetService,
                                SystemService systemService,
-                               KnownExtensionsService knownExtensionsService) {
+                               KnownExtensionsService knownExtensionsService,
+                               AiChatAttachmentProperties aiChatAttachmentProperties) {
         this.prosunaConfig = prosunaConfig;
         this.systemConfigService = systemConfigService;
         this.assetService = assetService;
         this.systemService = systemService;
         this.knownExtensionsService = knownExtensionsService;
+        this.aiChatAttachmentProperties = aiChatAttachmentProperties;
     }
 
     private static final String KNOWN_EXTENSIONS_CONFIG_KEY = "knownFileExtensions";
@@ -77,6 +81,7 @@ public class AppConfigController {
     private static final String MODULE_FLAGS_KEY = "moduleFlags";
     private static final String PROCESS_NODE_LIMITS_KEY = "processNodeLimits";
     private static final String AI_ENABLED = "aiEnabled";
+    private static final String AI_CHAT_ATTACHMENTS = "aiChatAttachments";
 
     private static final String OIDC_KEY = "oidc";
     private static final String OIDC_REALM_KEY = "realm";
@@ -129,6 +134,11 @@ public class AppConfigController {
         // This is a simple check to determine if the AI features should be available in the frontend.
         boolean aiEnabled = StringUtils.isNotNullOrEmpty(openAiApiKey);
         appConfig.put(AI_ENABLED, aiEnabled);
+        appConfig.put(AI_CHAT_ATTACHMENTS, new AiChatAttachmentConfig(
+                aiChatAttachmentProperties.getMaxFiles(),
+                aiChatAttachmentProperties.getMaxFileSizeBytes(),
+                aiChatAttachmentProperties.getExtensions()
+        ));
 
         // TODO: This data should not be required in the fronted because the backend handles the authentication flow
         var oidc = new HashMap<String, String>();
@@ -175,5 +185,8 @@ public class AppConfigController {
     private ThemeEntity getSystemTheme() throws ResponseException {
         return systemService
                 .retrieveDefaultTheme();
+    }
+
+    private record AiChatAttachmentConfig(int maxFiles, long maxFileSizeBytes, java.util.List<String> extensions) {
     }
 }
