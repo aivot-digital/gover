@@ -24,8 +24,22 @@ public record CommunicationMessage(
         @Nullable
         UserEntity sendingUser,
         @Nullable
-        DepartmentEntity sendingDepartment
+        DepartmentEntity sendingDepartment,
+        @Nullable String reference
 ) {
+    public CommunicationMessage(@Nonnull String subject, @Nonnull String body, @Nonnull String htmlBody,
+                                @Nullable List<CommunicationMessageCallToAction> callToActions, @Nonnull Instant timestamp,
+                                @Nullable List<CommunicationMessageAttachment> attachments, @Nullable UserEntity sendingUser,
+                                @Nullable DepartmentEntity sendingDepartment) {
+        this(subject, body, htmlBody, callToActions, timestamp, attachments, sendingUser, sendingDepartment, null);
+    }
+
+    @Nonnull
+    public CommunicationMessage withReference(@Nullable String reference) {
+        return new CommunicationMessage(subject, body, htmlBody, callToActions, timestamp,
+                attachments, sendingUser, sendingDepartment, reference);
+    }
+
     public CommunicationMessage {
         callToActions = callToActions == null ? List.of() : callToActions;
         attachments = attachments == null ? List.of() : attachments;
@@ -71,7 +85,8 @@ public record CommunicationMessage(
                 timestamp,
                 attachments,
                 sendingUser,
-                sendingDepartment
+                sendingDepartment,
+                reference
         );
     }
 }

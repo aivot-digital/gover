@@ -31,6 +31,7 @@ import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
 import org.junit.jupiter.api.Test;
+import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -59,11 +60,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FitConnectZbpCommunicationProviderV1Test {
+    private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
     private final SecretService secretService = mock(SecretService.class);
     private final AssetContentResolverService assetContentResolverService = mock(AssetContentResolverService.class);
     private final FitConnectZbpCommunicationProviderV1 definition = new FitConnectZbpCommunicationProviderV1(
             assetContentResolverService,
-            secretService
+            secretService, systemConfigService
     );
 
     @Test
@@ -94,6 +96,23 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
+    void rendersParagraphsSoftBreaksAndMarkdownWithoutChangingHtml() throws Exception {
+        var message = CommunicationMessage.of("Betreff", "", "Hallo Max,\r\n\r\nbitte **Daten** senden.\r\nDanke!\r\n\r\nGrüße & <span>Stadt</span>");
+        assertEquals("<p>Hallo Max,</p>\n<p>bitte <strong>Daten</strong> senden.<br>\nDanke!</p>\n<p>Grüße &amp; <span>Stadt</span></p>",
+                FitConnectZbpCommunicationProviderV1.renderMessageHtml(message));
+    }
+
+    @Test
+    void passesCaseNumberAsReferenceWithoutInventingApplicationId() throws Exception {
+        var message = CommunicationMessage.of("Betreff", "Text", "Text").withReference("VG-2026-123")
+                .withSendingContext(null, null);
+        var result = FitConnectZbpCommunicationProviderV1.createZbpMessage(message, UUID.randomUUID(),
+                AuthenticationLevel.ONE, List.of(), "Musterstadt");
+        assertEquals("VG-2026-123", result.reference());
+        assertNull(result.applicationId());
+    }
+
+    @Test
     void rejectsIncompleteCallToActions() {
         var message = CommunicationMessage.of(
                 "Subject",
@@ -110,7 +129,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
-    void createsZbpMessageWithDepartmentAsSenderAndProsunaAsService() throws Exception {
+    void createsZbpMessageWithDepartmentAsSenderAndOperatorAsService() throws Exception {
         var department = new DepartmentEntity()
                 .setId(17)
                 .setName(" Fachbereich Leistungen ");
@@ -123,11 +142,11 @@ class FitConnectZbpCommunicationProviderV1Test {
                 message,
                 mailboxId,
                 AuthenticationLevel.THREE,
-                List.of()
+                List.of(), "Musterstadt"
         );
 
         assertEquals("Fachbereich Leistungen", zbpMessage.sender());
-        assertEquals("Prosuna", zbpMessage.service());
+        assertEquals("Musterstadt", zbpMessage.service());
         assertEquals("<p>Body</p>", zbpMessage.content());
         assertEquals("Subject", zbpMessage.title());
         assertEquals(mailboxId, zbpMessage.mailboxUuid());
@@ -135,7 +154,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
-    void createsZbpMessageWithProsunaSenderWhenOnlySendingUserIsSet() throws Exception {
+    void createsZbpMessageWithOperatorSenderWhenOnlySendingUserIsSet() throws Exception {
         var user = new UserEntity().setId("user-1").setFullName("Sender User");
         var message = CommunicationMessage
                 .of("Subject", "Body", "<p>Body</p>")
@@ -145,11 +164,11 @@ class FitConnectZbpCommunicationProviderV1Test {
                 message,
                 UUID.randomUUID(),
                 AuthenticationLevel.ONE,
-                List.of()
+                List.of(), "Musterstadt"
         );
 
-        assertEquals("Prosuna", zbpMessage.sender());
-        assertEquals("Prosuna", zbpMessage.service());
+        assertEquals("Musterstadt", zbpMessage.sender());
+        assertEquals("Musterstadt", zbpMessage.service());
         assertEquals("<p>Body</p>", zbpMessage.content());
     }
 
@@ -213,7 +232,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     void testSendBuildsTemporaryIdentityAndDelegatesToSendMessage() throws Exception {
         var testDefinition = spy(new FitConnectZbpCommunicationProviderV1(
                 mock(AssetContentResolverService.class),
-                mock(SecretService.class)
+                mock(SecretService.class), systemConfigService
         ));
         var provider = provider();
         var config = config("sender-client", UUID.randomUUID().toString());
@@ -280,7 +299,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     void testSendRejectsMissingInvalidAndNonStringPostfachIds() throws Exception {
         var testDefinition = spy(new FitConnectZbpCommunicationProviderV1(
                 mock(AssetContentResolverService.class),
-                mock(SecretService.class)
+                mock(SecretService.class), systemConfigService
         ));
         var provider = provider();
         var config = config("sender-client", UUID.randomUUID().toString());
@@ -318,7 +337,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     void testSendPropagatesCommunicationFailure() throws Exception {
         var testDefinition = spy(new FitConnectZbpCommunicationProviderV1(
                 mock(AssetContentResolverService.class),
-                mock(SecretService.class)
+                mock(SecretService.class), systemConfigService
         ));
         var failure = new CommunicationException("FIT-Connect test failed");
         doThrow(failure).when(testDefinition).sendMessage(any(), any(), any());

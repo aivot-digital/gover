@@ -277,7 +277,7 @@ public class ProcessNodeExecutionResultHandler {
         var message = communicationRequest.message().withSendingContext(
                 context.triggeringUser,
                 resolveSendingDepartment(context)
-        );
+        ).withReference(context.processInstance.getCaseNumber());
 
         final Map<String, Object> sendResult;
         try {

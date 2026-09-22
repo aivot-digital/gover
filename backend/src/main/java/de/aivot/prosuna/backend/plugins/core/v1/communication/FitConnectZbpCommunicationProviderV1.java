@@ -6,6 +6,10 @@ import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefinition;
+import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
@@ -71,7 +75,6 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     private static final int TEST_BINDING_ID = -1;
     private static final String UUID_REGEX = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
     private static final String MESSAGE_SENDING_IDENTIFIER = "urn:schema-fitko-de:fit-connect:id.bund.de:message_v6";
-    private static final String PROSUNA_NAME = "Prosuna";
     private static final URI ZBP_MESSAGE_SCHEMA_URI = URI.create(
             "https://schema.fitko.de/fit-connect/id.bund.de/message_v6/1.0.0/zbp-message.schema.json"
     );
@@ -81,11 +84,14 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
     private final AssetContentResolverService assetContentResolverService;
     private final SecretService secretService;
+    private final SystemConfigService systemConfigService;
 
     public FitConnectZbpCommunicationProviderV1(AssetContentResolverService assetContentResolverService,
-                                                SecretService secretService) {
+                                                SecretService secretService,
+                                                SystemConfigService systemConfigService) {
         this.assetContentResolverService = assetContentResolverService;
         this.secretService = secretService;
+        this.systemConfigService = systemConfigService;
     }
 
     @Nonnull
@@ -369,7 +375,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                         .build();
 
                 fitConnectAttachments.add(fitConnectAttachment);
-                attachmentMetadata.add(ZBPAttachmentMetadata.from(fileName, attachmentData));
+                attachmentMetadata.add(ZBPAttachmentMetadata.from(fitConnectAttachment.getFileName(), attachmentData));
                 attachmentIndex++;
             }
         }
@@ -380,7 +386,8 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 message,
                 postfachId,
                 mappedAuthenticationLevel,
-                attachmentMetadata
+                attachmentMetadata,
+                getOperatorName()
         );
 
         final OutgoingSubmission submission = OutgoingSubmission
@@ -429,24 +436,39 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     }
 
     @Nonnull
+    private String getOperatorName() throws CommunicationException {
+        try {
+            var name = systemConfigService.retrieve(ProviderNameSystemConfigDefinition.KEY).getValue();
+            if (name == null || name.isBlank()) {
+                throw new CommunicationException("Bitte hinterlegen Sie in den Systemeinstellungen den Namen des Anbieters.");
+            }
+            return name.trim();
+        } catch (ResponseException e) {
+            throw new CommunicationException("Der Name des Anbieters konnte nicht geladen werden.", e);
+        }
+    }
+
+    @Nonnull
     static CreateMessage createZbpMessage(
             @Nonnull CommunicationMessage message,
             @Nonnull UUID postfachId,
             @Nonnull AuthenticationLevel authenticationLevel,
-            @Nonnull List<ZBPAttachmentMetadata> attachmentMetadata
+            @Nonnull List<ZBPAttachmentMetadata> attachmentMetadata,
+            @Nonnull String operatorName
     ) throws CommunicationException {
         var departmentName = message.sendingDepartment() == null
                 ? null
                 : message.sendingDepartment().getName();
         var sender = departmentName == null || departmentName.isBlank()
-                ? PROSUNA_NAME
+                ? operatorName
                 : departmentName.trim();
 
         return CreateMessage
                 .builder()
                 .content(renderMessageHtml(message))
                 .sender(sender)
-                .service(PROSUNA_NAME)
+                .service(operatorName)
+                .reference(message.reference())
                 .title(message.subject())
                 //.retrievalConfirmationAddress("retrieval@mail.net")
                 //.replyAddress("reply@mail.net")
@@ -458,7 +480,8 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
     @Nonnull
     static String renderMessageHtml(@Nonnull CommunicationMessage message) throws CommunicationException {
-        var content = new StringBuilder(message.htmlBody());
+        var document = Parser.builder().build().parse(message.htmlBody());
+        var content = new StringBuilder(HtmlRenderer.builder().softbreak("<br>\n").build().render(document).stripTrailing());
         for (var callToAction : message.callToActions()) {
             if (callToAction == null) {
                 throw new CommunicationException("Eine Aktion der Nachricht darf nicht leer sein.");
