@@ -337,6 +337,7 @@ export function CustomerInstanceTaskView() {
                 onDeriveOverride={handleDerive}
                 onEvent={taskIsActive ? handleInlineEvent : undefined}
                 taskViewMode="customer"
+                showErrorSummary
                 readOnly={!taskIsActive}
             />
 

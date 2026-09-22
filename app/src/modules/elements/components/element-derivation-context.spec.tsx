@@ -164,6 +164,37 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
 }));
 
 describe('ElementDerivationContext', () => {
+    it.each(['staff', 'customer'] as const)('keeps the %s task error summary in sync with field errors', async (taskViewMode) => {
+        const element = createRootElement();
+        const computedErrors: ComputedElementErrors = {field: {error: 'Bitte prüfen Sie diese Angabe.'}};
+        const derivedData = createDerivedRuntimeElementData({elementStates: {root: {}, field: {}}});
+        const derive = vi.fn().mockResolvedValue(derivedData);
+        function TaskHarness({errors}: {errors: ComputedElementErrors}) {
+            const [values, setValues] = React.useState<AuthoredElementValues>({});
+            return <ElementDerivationContext
+                element={element}
+                authoredElementValues={values}
+                onAuthoredElementValuesChange={setValues}
+                computedErrors={errors}
+                onDeriveOverride={derive}
+                taskViewMode={taskViewMode}
+                showErrorSummary
+            />;
+        }
+        const {rerender} = render(<TaskHarness errors={computedErrors}/>);
+        expect(await screen.findByRole('alert')).toHaveTextContent('Bitte prüfen Sie diese Angabe.');
+        expect(screen.getByTestId('field-error')).toHaveTextContent('Bitte prüfen Sie diese Angabe.');
+
+        fireEvent.click(screen.getByRole('button', {name: 'Wert setzen'}));
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByTestId('field-error')).toBeEmptyDOMElement();
+        expect(derive).toHaveBeenCalledTimes(1);
+
+        rerender(<TaskHarness errors={{field: {error: 'Die Angabe ist weiterhin ungültig.'}}}/>);
+        expect(await screen.findByRole('alert')).toHaveTextContent('Die Angabe ist weiterhin ungültig.');
+        expect(screen.getByTestId('field-error')).toHaveTextContent('Die Angabe ist weiterhin ungültig.');
+    });
+
     it.each(dynamicChanges)('preserves an unchanged %j result when another field changes', async (value) => {
         const initial = {field: value, comment: literalAuthoredValue('Before')};
         const previous = createDerivedRuntimeElementData({

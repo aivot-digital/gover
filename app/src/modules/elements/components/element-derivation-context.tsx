@@ -53,6 +53,7 @@ import {
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {deepEquals} from '../../../utils/equality-utils';
 import {type InputVariableSuggestion} from '../../../models/input-mode';
+import {ErrorAlert} from '../../../components/error-alert/error-alert';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -76,10 +77,12 @@ interface ElementDerivationContextProps {
     inputModesEnabled?: boolean;
     inputModeVariables?: InputVariableSuggestion[];
     deriveOnMount?: boolean;
+    showErrorSummary?: boolean;
 }
 
 export interface ElementDerivationContextHandle {
     replaceAuthoredElementValues: (newData: AuthoredElementValues) => Promise<DerivedRuntimeElementData>;
+    validate: () => Promise<DerivedRuntimeElementData>;
 }
 
 interface ElementDerivationContextType {
@@ -151,6 +154,7 @@ export const ElementDerivationContext = forwardRef<
         inputModesEnabled = false,
         inputModeVariables = [],
         deriveOnMount = true,
+        showErrorSummary = false,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -409,6 +413,10 @@ export const ElementDerivationContext = forwardRef<
 
     useImperativeHandle(ref, () => ({
         replaceAuthoredElementValues,
+        validate: () => {
+            setErrorSuppressionTargets([]);
+            return deriveWithMinimumVisibleDuration(authoredElementValues, []);
+        },
     }));
 
     return (
@@ -428,6 +436,7 @@ export const ElementDerivationContext = forwardRef<
                     inputModesEnabled,
                     inputModeVariables,
                     readOnly,
+                    showErrorSummary,
                 }}
             >
                 <ViewDispatcherComponent
@@ -465,6 +474,16 @@ export const ElementDerivationContext = forwardRef<
                     }}
                     suppressErrors={suppressErrors ?? false}
                 />
+                {showErrorSummary && !suppressErrors && (
+                    <ErrorAlert
+                        element={element}
+                        authoredElementValues={authoredElementValues}
+                        derivedData={derivedData}
+                        description={renderMode === ViewDispatcherMode.Editor
+                            ? 'Bitte korrigieren Sie Ihre Angaben und klicken Sie erneut auf „Eingaben validieren“.'
+                            : undefined}
+                    />
+                )}
             </ViewDispatcherContextProvider>
         </ElementDerivationContextProvider>
     );

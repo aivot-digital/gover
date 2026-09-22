@@ -59,6 +59,7 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
     const {
         mode,
         scrollContainerRef,
+        showErrorSummary,
     } = useViewDispatcherContext();
 
     const theme = useTheme();
@@ -276,11 +277,11 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
                                             {...props}
                                             element={step}
                                             isBusy={isBusy || isBusyNavigating}
-                                            suppressErrors={!hasSteppedOnce}
+                                            suppressErrors={!hasSteppedOnce && !showErrorSummary}
                                         />
 
                                         {
-                                            hasSteppedOnce &&
+                                            hasSteppedOnce && !showErrorSummary &&
                                             <ErrorAlert
                                                 element={step}
                                                 authoredElementValues={authoredElementValues}
