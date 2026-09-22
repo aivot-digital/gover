@@ -272,10 +272,10 @@ export function DashboardSettingsPage() {
                     <Typography variant="subtitle1" component="h2" sx={{mt: 4}}>
                         Relevante Links
                     </Typography>
-                    <Typography sx={{maxWidth: 900, mb: 1.6}}>
+                    <Typography sx={{maxWidth: 900, mb: 3}}>
                         Stellen Sie Mitarbeiter:innen Links zu internen Leitfäden, zum Intranet, zu einer Statusseite oder zu häufig genutzten Diensten bereit. Aktivierte Links erscheinen auf der Übersicht.
                     </Typography>
-                    <Box sx={{mt: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden'}}>
+                    <Box sx={{border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden'}}>
                         {links == null && !linksLoadFailed && (
                             <Box sx={{display: 'grid', placeItems: 'center', minHeight: 160}}>
                                 <CircularProgress size={28}/>
