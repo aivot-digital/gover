@@ -1,10 +1,12 @@
+import {type ProcessAssignmentOption} from '../entities/process-assignment-option';
 import {BaseReadApiService} from '../../../services/base-read-api-service';
-import {ProcessInstanceTaskEntity} from "../entities/process-instance-task-entity";
-import {ProcessTaskStatus} from "../enums/process-task-status";
-import {GroupLayout} from "../../../models/elements/form/layout/group-layout";
+import {ProcessInstanceTaskEntity} from '../entities/process-instance-task-entity';
+import {ProcessTaskStatus} from '../enums/process-task-status';
+import {GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {AuthoredElementValues, DerivedRuntimeElementData} from '../../../models/element-data';
 import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
 import type {CustomerTaskViewResponse} from '../models/customer-task-view';
+import {type ProcessTaskDetails} from '../entities/process-task-details';
 
 interface ProcessInstanceTaskFilter {
     id: number;
@@ -79,9 +81,13 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         super('/api/process-instance-tasks/');
     }
 
+    public assignmentOptions(id: number): Promise<ProcessAssignmentOption[]> {
+        return this.get(`${this.buildPath(id)}assignment-options/`);
+    }
+
     initialize(): ProcessInstanceTaskEntity {
         return {
-            accessKey: "",
+            accessKey: '',
             assignedUserId: null,
             assignedCustomerIdentityId: null,
             finished: null,
@@ -110,6 +116,10 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         return this.get(`/api/processes/${instanceId}/tasks/${taskId}/`);
     }
 
+    public retrieveDetails(taskId: number): Promise<ProcessTaskDetails> {
+        return this.get(`/api/process-instance-tasks/${taskId}/details/`);
+    }
+
     public deriveStaffTaskView(
         instanceId: number,
         taskId: number,
@@ -134,7 +144,12 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         });
     }
 
-    public async putStaffTaskView(instanceId: number, taskId: number, payload: AuthoredElementValues, event?: string): Promise<TaskView> {
+    public async putStaffTaskView(
+        instanceId: number,
+        taskId: number,
+        payload: AuthoredElementValues,
+        event?: string,
+    ): Promise<TaskView> {
         const formData = new FormData();
         formData.set('inputs', JSON.stringify(payload));
         await appendTaskViewFiles(formData, payload);
@@ -146,17 +161,32 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         });
     }
 
-    public async putCustomerTaskView(instanceAccessKey: string, taskAccessKey: string, payload: AuthoredElementValues, event: string): Promise<CustomerTaskViewResponse> {
+    public async putCustomerTaskView(
+        instanceAccessKey: string,
+        taskAccessKey: string,
+        payload: AuthoredElementValues,
+        event: string,
+    ): Promise<CustomerTaskViewResponse> {
         const formData = new FormData();
         formData.set('inputs', JSON.stringify(payload));
         await appendTaskViewFiles(formData, payload);
 
-        return this.putFormData<CustomerTaskViewResponse>(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`, formData, {
-            query: {
-                event: event,
+        return this.putFormData<CustomerTaskViewResponse>(
+            `/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`,
+            formData,
+            {
+                query: {
+                    event: event,
+                },
+                skipAuthCheck: true,
+                doNotHandleStatusCodes: true,
             },
-            skipAuthCheck: true,
-            doNotHandleStatusCodes: true,
+        );
+    }
+
+    public reassign(id: number, assignedUserId: string | null): Promise<ProcessInstanceTaskEntity> {
+        return this.put<{assignedUserId: string | null}, ProcessInstanceTaskEntity>(`${this.buildPath(id)}reassign/`, {
+            assignedUserId,
         });
     }
 
@@ -165,7 +195,7 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
     }
 
     public async getAssignedTaskCount(): Promise<number> {
-        const response = await this.get<{ count: number }>('/api/process-instance-tasks/assigned-count/');
+        const response = await this.get<{count: number}>('/api/process-instance-tasks/assigned-count/');
         return response.count;
     }
 }
