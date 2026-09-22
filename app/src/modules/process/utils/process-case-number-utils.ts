@@ -48,11 +48,11 @@ export function validateCaseNumberTemplate(caseNumberTemplate: string | null | u
     const template = caseNumberTemplate?.trim() ?? '';
 
     if (template.length === 0) {
-        return 'Bitte geben Sie eine Vorgangsschlüssel-Formatvorlage an.';
+        return 'Bitte geben Sie eine Formatvorlage für die Vorgangskennung an.';
     }
 
     if (template.length > CASE_NUMBER_TEMPLATE_MAX_LENGTH) {
-        return `Die Vorgangsschlüssel-Formatvorlage darf maximal ${CASE_NUMBER_TEMPLATE_MAX_LENGTH} Zeichen lang sein.`;
+        return `Die Formatvorlage für die Vorgangskennung darf maximal ${CASE_NUMBER_TEMPLATE_MAX_LENGTH} Zeichen lang sein.`;
     }
 
     let renderedLength = 0;
@@ -83,7 +83,7 @@ export function validateCaseNumberTemplate(caseNumberTemplate: string | null | u
         }
 
         if (template[index] === '%') {
-            return 'Die Vorgangsschlüssel-Formatvorlage enthält einen unbekannten Platzhalter.';
+            return 'Die Formatvorlage für die Vorgangskennung enthält einen unbekannten Platzhalter.';
         }
 
         const codePoint = template.codePointAt(index);
@@ -92,11 +92,11 @@ export function validateCaseNumberTemplate(caseNumberTemplate: string | null | u
     }
 
     if (incrementCount !== 1) {
-        return 'Die Vorgangsschlüssel-Formatvorlage muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten.';
+        return 'Die Formatvorlage für die Vorgangskennung muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten.';
     }
 
     if (renderedLength > CASE_NUMBER_MAX_RENDERED_LENGTH) {
-        return `Der erzeugte Vorgangsschlüssel darf maximal ${CASE_NUMBER_MAX_RENDERED_LENGTH} Zeichen lang sein.`;
+        return `Die erzeugte Vorgangskennung darf maximal ${CASE_NUMBER_MAX_RENDERED_LENGTH} Zeichen lang sein.`;
     }
 
     return undefined;

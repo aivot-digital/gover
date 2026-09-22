@@ -43,12 +43,12 @@ export interface ProcessSettingsDialogVersionTabHandle {
 const caseNumberTypeOptions = [
     {
         label: 'UUID',
-        subLabel: 'Erzeugt einen technischen UUID-Vorgangsschlüssel, z. B. 550e8400-e29b-41d4-a716-446655440000.',
+        subLabel: 'Erzeugt eine technische UUID-Vorgangskennung, z. B. 550e8400-e29b-41d4-a716-446655440000.',
         value: CASE_NUMBER_TYPE_UUID,
     },
     {
         label: 'Formatvorlage',
-        subLabel: 'Erzeugt fortlaufende Vorgangsschlüssel nach einem Muster, z. B. VG-%YYY-%I(6).',
+        subLabel: 'Erzeugt fortlaufende Vorgangskennungen nach einem Muster, z. B. VG-%YYY-%I(6).',
         value: CASE_NUMBER_TYPE_TEMPLATE,
     },
 ];
@@ -551,17 +551,17 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
             </Grid>
 
             <ElementEditorSectionHeader
-                title="Vorgangsschlüssel"
+                title="Vorgangskennung"
                 variant="h6"
                 disableMarginTop
                 disableMarginBottom
                 maxWidth={680}
             >
-                Legen Sie fest, wie neue Vorgänge dieser Version einen Vorgangsschlüssel erhalten.
+                Legen Sie fest, wie neue Vorgänge dieser Version eine Vorgangskennung erhalten.
             </ElementEditorSectionHeader>
 
             <RadioFieldComponent
-                label="Vorgangsschlüssel-Typ"
+                label="Typ der Vorgangskennung"
                 value={caseNumberType}
                 onChange={(val) => {
                     setDraft({
@@ -577,7 +577,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
             {
                 caseNumberType === CASE_NUMBER_TYPE_TEMPLATE &&
                 <TextFieldComponent
-                    label="Vorgangsschlüssel-Formatvorlage"
+                    label="Formatvorlage für die Vorgangskennung"
                     value={draft.caseNumberTemplate}
                     onChange={(val) => {
                         setDraft({

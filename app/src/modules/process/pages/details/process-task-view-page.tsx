@@ -245,16 +245,39 @@ export function ProcessTaskViewPage() {
                                     <Typography
                                         variant="body1"
                                         component="p"
+                                        sx={{marginBottom: 2}}
                                     >
-                                        In der Aufgabenansicht sehen Sie die wichtigsten Metadaten der aktuell zugewiesenen Aufgabe
-                                        und können diese im Bearbeitungs-Tab fachlich abarbeiten.
+                                        Eine Aufgabe ist ein einzelner Bearbeitungsschritt innerhalb eines Vorgangs.
+                                        Der zugehörige Prozess legt fest, welche Schritte erforderlich sind und wie sie
+                                        zusammenhängen. In einem Vorgang können dadurch mehrere Aufgaben entstehen,
+                                        die von unterschiedlichen zuständigen Personen bearbeitet werden.
+                                    </Typography>
+                                    <Typography
+                                        variant="body1"
+                                        component="p"
+                                        sx={{marginBottom: 2}}
+                                    >
+                                        Unter „Allgemeine Informationen“ sehen Sie, zu welchem Vorgang Ihre Aufgabe gehört,
+                                        was zu tun ist und bis wann sie erledigt sein soll. Die Vorgangskennung und hinterlegte
+                                        Aktenzeichen helfen Ihnen bei der Zuordnung. Über „Vorgang aufrufen“ öffnen Sie
+                                        den Vorgang und können die Aufgabe in den gesamten Ablauf einordnen.
+                                    </Typography>
+                                    <Typography
+                                        variant="body1"
+                                        component="p"
+                                        sx={{marginBottom: 2}}
+                                    >
+                                        Unter „Aufgabe bearbeiten“ führen Sie den vorgesehenen Bearbeitungsschritt aus.
+                                        Im Bereich „Kommunikation“ tauschen Sie Nachrichten zur Aufgabe aus, etwa um
+                                        offene Fragen zu klären und die weitere Bearbeitung abzustimmen.
                                     </Typography>
                                     <Typography
                                         variant="body1"
                                         component="p"
                                     >
-                                        Noch nicht implementierte Funktionen wie Kommunikation, Wiedervorlage oder Neu-Zuweisung
-                                        sind bereits vorgesehen, bleiben aber vorerst deaktiviert.
+                                        Wenn Sie die Bearbeitung später fortsetzen möchten, richten Sie eine Wiedervorlage
+                                        ein. Soll eine andere zuständige Person die Bearbeitung übernehmen, geben Sie
+                                        die Aufgabe über „Aufgabe neu zuweisen“ weiter.
                                     </Typography>
                                 </>
                             ),

@@ -156,7 +156,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
 
                 if (processInstanceRepository.existsByCaseNumber(entity.getCaseNumber())) {
                     if (attempt == MAX_CASE_NUMBER_GENERATION_ATTEMPTS) {
-                        throw ResponseException.conflict("Es konnte kein eindeutiger Vorgangsschlüssel erzeugt werden. Bitte versuchen Sie es erneut.");
+                        throw ResponseException.conflict("Es konnte keine eindeutige Vorgangskennung erzeugt werden. Bitte versuchen Sie es erneut.");
                     }
                     continue;
                 }
@@ -165,6 +165,6 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
             }
         }
 
-        throw ResponseException.conflict("Es konnte kein eindeutiger Vorgangsschlüssel erzeugt werden. Bitte versuchen Sie es erneut.");
+        throw ResponseException.conflict("Es konnte keine eindeutige Vorgangskennung erzeugt werden. Bitte versuchen Sie es erneut.");
     }
 }
