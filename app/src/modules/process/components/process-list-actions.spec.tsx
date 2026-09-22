@@ -90,7 +90,7 @@ describe('Process list actions', () => {
         );
         expect(screen.queryByRole('menuitem', {name: 'Vorgang zuweisen'})).not.toBeInTheDocument();
         expect(screen.queryByRole('menuitem', {name: 'Vorgang löschen'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('menuitem', {name: 'Prozessmodell aufrufen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Im Prozessmodell ansehen'})).not.toBeInTheDocument();
     });
     it.each(['instance', 'system'] as const)('allows mutations with the matching %s grant', (scope) => {
         grant(scope);
@@ -98,8 +98,14 @@ describe('Process list actions', () => {
         expect(screen.getByRole('menuitem', {name: 'Vorgang zuweisen'})).toBeInTheDocument();
         expect(screen.getByRole('menuitem', {name: 'Vorgang löschen'})).toBeInTheDocument();
         expect(screen.getByRole('menuitem', {name: 'Erneut starten'})).toBeInTheDocument();
-        if (scope === 'system')
-            expect(screen.getByRole('menuitem', {name: 'Prozessmodell aufrufen'})).toBeInTheDocument();
+        if (scope === 'system') {
+            expect(screen.getByRole('menuitem', {name: 'Im Prozessmodell ansehen'})).toHaveAttribute(
+                'href',
+                '/processes/10/versions/2/?instanceId=17',
+            );
+        } else {
+            expect(screen.queryByRole('menuitem', {name: 'Im Prozessmodell ansehen'})).not.toBeInTheDocument();
+        }
     });
     it('does not use grants for another instance', () => {
         grant('instance', 18);
