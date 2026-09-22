@@ -130,7 +130,7 @@ class ProcessWorkerTest {
                 ),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestProcessNodeService()
-        );
+        , null);
 
         worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11));
 
@@ -265,7 +265,7 @@ class ProcessWorkerTest {
                 ),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestProcessNodeService()
-        );
+        , null);
 
         worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
 
@@ -450,7 +450,7 @@ class ProcessWorkerTest {
         private boolean handleResultCalled;
 
         private TestProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override

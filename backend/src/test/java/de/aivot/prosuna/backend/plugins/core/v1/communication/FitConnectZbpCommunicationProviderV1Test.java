@@ -31,7 +31,11 @@ import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.communication.services.CommunicationDeliveryStore;
+import de.aivot.prosuna.backend.communication.entities.CommunicationDeliveryEntity;
+import de.aivot.prosuna.backend.communication.models.CommunicationTestResult;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -60,12 +64,20 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FitConnectZbpCommunicationProviderV1Test {
-    private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
     private final SecretService secretService = mock(SecretService.class);
     private final AssetContentResolverService assetContentResolverService = mock(AssetContentResolverService.class);
+    private final CommunicationDeliveryStore deliveryStore = mock(CommunicationDeliveryStore.class);
+    private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
+
+    @BeforeEach
+    void setupDelivery() {
+        when(deliveryStore.begin(any(), org.mockito.ArgumentMatchers.isNull(), any()))
+                .thenReturn(new CommunicationDeliveryEntity().setId(UUID.randomUUID()));
+    }
+
     private final FitConnectZbpCommunicationProviderV1 definition = new FitConnectZbpCommunicationProviderV1(
             assetContentResolverService,
-            secretService, systemConfigService
+            secretService, systemConfigService, deliveryStore
     );
 
     @Test
@@ -232,7 +244,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     void testSendBuildsTemporaryIdentityAndDelegatesToSendMessage() throws Exception {
         var testDefinition = spy(new FitConnectZbpCommunicationProviderV1(
                 mock(AssetContentResolverService.class),
-                mock(SecretService.class), systemConfigService
+                mock(SecretService.class), systemConfigService, deliveryStore
         ));
         var provider = provider();
         var config = config("sender-client", UUID.randomUUID().toString());
@@ -287,19 +299,18 @@ class FitConnectZbpCommunicationProviderV1Test {
                 .findChild("fit-connect-zbp-testing-result-alert", AlertContentElement.class)
                 .orElseThrow();
         assertEquals("fit-connect-zbp-testing-result", result.getId());
-        assertEquals(AlertType.Success, alert.getAlertType());
-        assertEquals("Testnachricht erfolgreich übermittelt", alert.getTitle());
-        assertEquals(
-                "Postfach-ID: %s\nSubmission-ID: %s\nStatus: ACCEPTED".formatted(postfachId, submissionId),
-                alert.getText()
-        );
+        assertEquals(AlertType.Info, alert.getAlertType());
+        assertEquals("Versandstatus wird geprüft", alert.getTitle());
+        assertEquals("Die Zustellbestätigung wird im Hintergrund abgefragt.", alert.getText());
+        assertNotNull(assertInstanceOf(CommunicationTestResult.class, result).getDeliveryId());
+        verify(deliveryStore).submitted(any(), any());
     }
 
     @Test
     void testSendRejectsMissingInvalidAndNonStringPostfachIds() throws Exception {
         var testDefinition = spy(new FitConnectZbpCommunicationProviderV1(
                 mock(AssetContentResolverService.class),
-                mock(SecretService.class), systemConfigService
+                mock(SecretService.class), systemConfigService, deliveryStore
         ));
         var provider = provider();
         var config = config("sender-client", UUID.randomUUID().toString());
@@ -334,24 +345,25 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
-    void testSendPropagatesCommunicationFailure() throws Exception {
+    void testSendPersistsCommunicationFailureForStatusQuery() throws Exception {
         var testDefinition = spy(new FitConnectZbpCommunicationProviderV1(
-                mock(AssetContentResolverService.class),
-                mock(SecretService.class), systemConfigService
-        ));
-        var failure = new CommunicationException("FIT-Connect test failed");
-        doThrow(failure).when(testDefinition).sendMessage(any(), any(), any());
+                mock(AssetContentResolverService.class), mock(SecretService.class), systemConfigService, deliveryStore));
+        doThrow(new CommunicationException("FIT-Connect test failed")).when(testDefinition).sendMessage(any(), any(), any());
+        var result = testDefinition.handleTest(provider(), config("sender", UUID.randomUUID().toString()),
+                testInputs(UUID.randomUUID().toString()));
+        assertInstanceOf(CommunicationTestResult.class, result);
+        verify(deliveryStore).failed(any(), org.mockito.ArgumentMatchers.eq(false), org.mockito.ArgumentMatchers.eq("FIT-Connect test failed"));
+    }
 
-        var result = assertThrows(
-                CommunicationException.class,
-                () -> testDefinition.handleTest(
-                        provider(),
-                        config("sender-client", UUID.randomUUID().toString()),
-                        testInputs(UUID.randomUUID().toString())
-                )
-        );
-
-        assertSame(failure, result);
+    @Test
+    void testSendReturnsAttemptWhenReceiptPersistenceFails() throws Exception {
+        var provider = spy(definition);
+        doReturn(Map.of("submissionId", UUID.randomUUID().toString())).when(provider).sendMessage(any(), any(), any());
+        doThrow(new RuntimeException("Database unavailable")).when(deliveryStore).submitted(any(), any());
+        var result = provider.handleTest(provider(), config("sender", UUID.randomUUID().toString()),
+                testInputs(UUID.randomUUID().toString()));
+        assertNotNull(assertInstanceOf(CommunicationTestResult.class, result).getDeliveryId());
+        verify(provider).sendMessage(any(), any(), any());
     }
 
     @Test
@@ -440,6 +452,61 @@ class FitConnectZbpCommunicationProviderV1Test {
     @Test
     void authenticationLevelFallsBackWhenIdentityAttributeIsMissing() {
         assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel("qaa", Map.of()));
+    }
+
+    @Test
+    void retainsRejectionProblemsEvenWhenDeletionIsNewer() throws Exception {
+        var submission = UUID.randomUUID();
+        var rejection = dev.fitko.fitconnect.sdk.api.event.CaseEvent.builder()
+                .submissionId(submission).eventId(UUID.randomUUID()).issueTime(new java.util.Date(2000))
+                .event(dev.fitko.fitconnect.rest.model.event.Event.REJECT_SUBMISSION)
+                .problems(List.of(new dev.fitko.fitconnect.rest.model.event.problems.Problem(
+                        "schema-violation", "Schema violation", "Submission metadata does not comply to schema.", "metadata"))).build();
+        var deleted = dev.fitko.fitconnect.sdk.api.event.CaseEvent.builder()
+                .submissionId(submission).eventId(UUID.randomUUID()).issueTime(new java.util.Date(3000))
+                .event(dev.fitko.fitconnect.rest.model.event.Event.DELETE_SUBMISSION).build();
+        var result = queryEvents(submission, List.of(deleted, rejection));
+        assertEquals(de.aivot.prosuna.backend.communication.models.CommunicationDeliveryStatus.Rejected, result.status());
+        assertEquals(rejection.eventId().toString(), result.details().get("eventId"));
+        assertEquals("metadata", ((Map<?, ?>) ((List<?>) result.details().get("problems")).getFirst()).get("instance"));
+    }
+
+    @Test
+    void doesNotTreatNotificationOrAnotherSubmissionsAcceptanceAsDelivery() throws Exception {
+        var submission = UUID.randomUUID();
+        var notification = dev.fitko.fitconnect.sdk.api.event.CaseEvent.builder()
+                .submissionId(submission).eventId(UUID.randomUUID()).issueTime(new java.util.Date(2000))
+                .event(dev.fitko.fitconnect.rest.model.event.Event.NOTIFY_SUBMISSION).build();
+        var other = dev.fitko.fitconnect.sdk.api.event.CaseEvent.builder()
+                .submissionId(UUID.randomUUID()).eventId(UUID.randomUUID()).issueTime(new java.util.Date(3000))
+                .event(dev.fitko.fitconnect.rest.model.event.Event.ACCEPT_SUBMISSION).build();
+        assertEquals(de.aivot.prosuna.backend.communication.models.CommunicationDeliveryStatus.Submitted,
+                queryEvents(submission, List.of(other, notification)).status());
+    }
+
+    private de.aivot.prosuna.backend.communication.models.CommunicationSendResult queryEvents(
+            UUID submission, List<dev.fitko.fitconnect.sdk.api.event.CaseEvent> events) throws Exception {
+        var provider = spy(definition);
+        var secretId = UUID.randomUUID();
+        var secret = mock(SecretEntity.class);
+        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret));
+        when(secretService.decrypt(secret)).thenReturn("secret");
+        var client = mock(dev.fitko.fitconnect.sdk.clients.OnlineService.class);
+        var cases = mock(dev.fitko.fitconnect.sdk.clients.OnlineServiceCases.class);
+        when(client.cases()).thenReturn(cases);
+        when(cases.logOf(any(dev.fitko.fitconnect.rest.model.submission.SentSubmission.class))).thenReturn(new dev.fitko.fitconnect.sdk.api.event.TransferLog(events));
+        doReturn(client).when(provider).createOnlineService(any(), any(), any());
+        var tags = new dev.fitko.fitconnect.rest.model.event.authtags.AuthenticationTags("metadata-tag", "data-tag", Map.of(UUID.randomUUID(), "attachment-tag"));
+        var receipt = Map.<String, Object>of(
+                "submissionId", submission.toString(), "caseId", UUID.randomUUID().toString(),
+                "destinationId", UUID.randomUUID().toString(), "senderDestinationId", UUID.randomUUID().toString(),
+                "authenticationTags", tags);
+        var mapper = de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper();
+        var restored = mapper.readValue(mapper.writeValueAsString(receipt), Map.class);
+        var result = provider.checkDelivery(config("client", secretId.toString()), restored);
+        verify(cases).logOf(org.mockito.ArgumentMatchers.argThat((dev.fitko.fitconnect.rest.model.submission.SentSubmission sent) -> tags.equals(sent.authenticationTags())));
+        assertFalse(de.aivot.prosuna.backend.communication.models.CommunicationDeliveryView.publicReceipt(result.details()).containsKey("authenticationTags"));
+        return result;
     }
 
     private String resolveSenderClientSecret(FitConnectZbpCommunicationProviderV1.Config config) throws CommunicationException {

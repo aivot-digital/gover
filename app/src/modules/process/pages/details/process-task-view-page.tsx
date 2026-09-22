@@ -49,6 +49,7 @@ const PROCESS_TASK_STATUS_COLORS: Record<ProcessTaskStatus, 'default' | 'info' |
     [ProcessTaskStatus.Paused]: 'warning',
     [ProcessTaskStatus.AwaitingPayment]: 'warning',
     [ProcessTaskStatus.AwaitingCustomer]: 'warning',
+    [ProcessTaskStatus.AwaitingCommunication]: 'warning',
     [ProcessTaskStatus.Completed]: 'success',
     [ProcessTaskStatus.Aborted]: 'error',
     [ProcessTaskStatus.Failed]: 'error',
@@ -113,6 +114,8 @@ export function getProcessTaskDescription(item?: ProcessTaskDetailsPageItem | nu
 }
 
 export function getProcessTaskStatusLabel(item?: ProcessTaskDetailsPageItem | null): string {
+    if (item?.task.status === ProcessTaskStatus.AwaitingCommunication
+        && (item.instance == null || item.instance.status === ProcessInstanceStatus.Running)) return ProcessTaskStatusLabels[item.task.status];
     if (item?.instance?.statusOverride != null && item.instance.statusOverride.trim().length > 0) {
         return item.instance.statusOverride;
     }
@@ -129,6 +132,8 @@ export function getProcessTaskStatusLabel(item?: ProcessTaskDetailsPageItem | nu
 }
 
 export function getProcessTaskStatusColor(item?: ProcessTaskDetailsPageItem | null): 'default' | 'info' | 'success' | 'warning' | 'error' {
+    if (item?.task.status === ProcessTaskStatus.AwaitingCommunication
+        && (item.instance == null || item.instance.status === ProcessInstanceStatus.Running)) return 'warning';
     if (item?.instance != null) {
         return PROCESS_INSTANCE_STATUS_COLORS[item.instance.status];
     }

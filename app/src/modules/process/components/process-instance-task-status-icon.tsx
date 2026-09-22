@@ -22,7 +22,7 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
     } = props;
 
 
-    if (statusOverride != null) {
+    if (statusOverride != null && status !== ProcessTaskStatus.AwaitingCommunication) {
         return (
             <Tooltip
                 title={statusOverride}
@@ -39,6 +39,12 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
                     title="Wird ausgeführt"
                 >
                     <PlayCircle color="info"/>
+                </Tooltip>
+            );
+        case ProcessTaskStatus.AwaitingCommunication:
+            return (
+                <Tooltip title="Wartet auf Zustellbestätigung">
+                    <PauseCircle color="info"/>
                 </Tooltip>
             );
         case ProcessTaskStatus.AwaitingPayment:

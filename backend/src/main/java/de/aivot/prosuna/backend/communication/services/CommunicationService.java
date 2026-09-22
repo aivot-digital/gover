@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import de.aivot.prosuna.backend.communication.models.DeliveryTrackingCommunicationProvider;
 import java.util.UUID;
 
 @Service
@@ -74,6 +76,26 @@ public class CommunicationService {
 
         var resolved = resolveSelected(identityData);
         return sendResolved(resolved, identityData, message);
+    }
+
+    @Nonnull
+    public Optional<PreparedTrackedSend> prepareTrackedSend(@Nonnull IdentityData identity) throws CommunicationException {
+        if (identity.type() == IdentityType.Email) return Optional.empty();
+        var resolved = resolveSelected(identity);
+        if (!(resolved.definition() instanceof DeliveryTrackingCommunicationProvider<?, ?>)) return Optional.empty();
+        return Optional.of(new PreparedTrackedSend(resolved));
+    }
+
+    @Nonnull
+    public Map<String, Object> sendPreparedTracked(@Nonnull PreparedTrackedSend prepared,
+                                                   @Nonnull IdentityData identity,
+                                                   @Nonnull CommunicationMessage message) throws CommunicationException {
+        return sendResolved(prepared.resolved(), identity, message);
+    }
+
+    public record PreparedTrackedSend(@Nonnull ResolvedCommunicationProvider resolved) {
+        @Nonnull
+        public CommunicationProviderEntity provider() { return resolved.context().communicationProvider(); }
     }
 
     @Nonnull
@@ -340,7 +362,7 @@ public class CommunicationService {
     ) {
     }
 
-    private record ResolvedCommunicationProvider(
+    public record ResolvedCommunicationProvider(
             @Nonnull CommunicationProviderDefinition<?, ?> definition,
             @Nonnull CommunicationProviderContext<?, ?> context
     ) {

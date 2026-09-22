@@ -677,7 +677,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 processService,
                 departmentService
-        );
+        , null, new tools.jackson.databind.json.JsonMapper());
     }
 
     private static ProcessInstanceRepository createInstanceRepository(

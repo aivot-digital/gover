@@ -1,11 +1,20 @@
 package de.aivot.prosuna.backend.plugins.core.v1.communication;
 
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import dev.fitko.fitconnect.rest.model.event.authtags.AuthenticationTags;
+import dev.fitko.fitconnect.core.common.data.ObjectMappingHelper;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
-import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefinition;
+import de.aivot.prosuna.backend.communication.models.DeliveryTrackingCommunicationProvider;
+import de.aivot.prosuna.backend.communication.models.CommunicationDeliveryStatus;
+import de.aivot.prosuna.backend.communication.models.CommunicationSendResult;
+import de.aivot.prosuna.backend.communication.models.CommunicationTestResult;
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationDispatchException;
+import de.aivot.prosuna.backend.communication.services.CommunicationDeliveryStore;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
 import org.commonmark.parser.Parser;
@@ -67,7 +76,7 @@ import java.util.UUID;
 
 /** Sends identity-bound messages and attachments to ZBP through the FIT-Connect bridge service. */
 @Component
-public class FitConnectZbpCommunicationProviderV1 implements CommunicationProviderDefinition<FitConnectZbpCommunicationProviderV1.Config, FitConnectZbpCommunicationProviderV1.IdentityBinding> {
+public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCommunicationProvider<FitConnectZbpCommunicationProviderV1.Config, FitConnectZbpCommunicationProviderV1.IdentityBinding> {
     public static final String COMPONENT_KEY = "fit_connect_zbp_communication_provider";
     public static final String TEST_POSTFACH_ID_FIELD_ID = "postfachId";
     private static final String TESTING_LAYOUT_ID = "fit-connect-zbp-testing-config";
@@ -85,13 +94,16 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     private final AssetContentResolverService assetContentResolverService;
     private final SecretService secretService;
     private final SystemConfigService systemConfigService;
+    private final CommunicationDeliveryStore deliveryStore;
 
     public FitConnectZbpCommunicationProviderV1(AssetContentResolverService assetContentResolverService,
                                                 SecretService secretService,
-                                                SystemConfigService systemConfigService) {
+                                                SystemConfigService systemConfigService,
+                                                CommunicationDeliveryStore deliveryStore) {
         this.assetContentResolverService = assetContentResolverService;
         this.secretService = secretService;
         this.systemConfigService = systemConfigService;
+        this.deliveryStore = deliveryStore;
     }
 
     @Nonnull
@@ -316,19 +328,29 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 "<p>Dies ist eine Testnachricht.</p>"
         );
 
-        var result = sendMessage(testContext, testIdentity, testMessage);
+        var delivery = deliveryStore.begin(providerEntity, null, Map.of());
+        try {
+            var result = sendMessage(testContext, testIdentity, testMessage);
+            deliveryStore.submitted(delivery.getId(), result);
+        } catch (CommunicationException e) {
+            try {
+                deliveryStore.failed(delivery.getId(), e instanceof CommunicationDispatchException, e.getMessage());
+            } catch (RuntimeException persistenceFailure) {
+                org.slf4j.LoggerFactory.getLogger(getClass()).error("Failed to persist test delivery status {}", delivery.getId(), persistenceFailure);
+            }
+        } catch (RuntimeException e) {
+            // Return the durable attempt ID even when the receipt could not be stored, so the UI
+            // continues monitoring this uncertain send instead of offering an immediate retry.
+            org.slf4j.LoggerFactory.getLogger(getClass()).error("Uncertain test delivery {}", delivery.getId(), e);
+        }
 
         var alert = new AlertContentElement();
         alert.setId("fit-connect-zbp-testing-result-alert");
-        alert.setAlertType(AlertType.Success);
-        alert.setTitle("Testnachricht erfolgreich übermittelt");
-        alert.setText("Postfach-ID: %s\nSubmission-ID: %s\nStatus: %s".formatted(
-                result.get("postfachId"),
-                result.get("submissionId"),
-                result.get("status")
-        ));
+        alert.setAlertType(AlertType.Info);
+        alert.setTitle("Versandstatus wird geprüft");
+        alert.setText("Die Zustellbestätigung wird im Hintergrund abgefragt.");
 
-        var layout = new GroupLayoutElement();
+        var layout = new CommunicationTestResult(delivery.getId());
         layout.setId("fit-connect-zbp-testing-result");
         layout.setChildren(List.of(alert));
         return layout;
@@ -416,23 +438,75 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         }
 
         final SentSubmission sentSubmission;
-        final CaseEvent status;
         try {
             sentSubmission = onlineService.send(submission);
-            status = onlineService.cases().logOf(sentSubmission).latest();
+            var receipt = new LinkedHashMap<String, Object>(Map.of(
+                    "postfachId", postfachId.toString(),
+                    "submissionId", sentSubmission.submissionId().toString(),
+                    "caseId", sentSubmission.caseId().toString(),
+                    "senderDestinationId", senderDestinationId.toString(),
+                    "destinationId", destinationId.toString(),
+                    "status", EventState.SUBMITTED.name()
+            ));
+            if (sentSubmission.authenticationTags() != null) {
+                receipt.put("authenticationTags", sentSubmission.authenticationTags());
+            }
+            return receipt;
         } catch (Exception e) {
-            throw new CommunicationException("Failed to send message via FIT-Connect.", e);
+            // The server may already have accepted the submission despite a lost or invalid response.
+            throw new CommunicationDispatchException(e);
         }
+    }
 
-        if (status.state() != EventState.ACCEPTED && status.state() != EventState.SUBMITTED) {
-            throw new CommunicationException("Failed to send message via FIT-Connect. Status: " + status);
+    @Nonnull
+    @Override
+    public CommunicationSendResult checkDelivery(@Nonnull Config config, @Nonnull Map<String, Object> receipt)
+            throws CommunicationException {
+        try {
+            var service = createOnlineService(config.senderClientId, resolveSenderClientSecret(config),
+                    UUID.fromString((String) receipt.get("senderDestinationId")));
+            var sent = SentSubmission.builder()
+                    .submissionId(UUID.fromString((String) receipt.get("submissionId")))
+                    .caseId(UUID.fromString((String) receipt.get("caseId")))
+                    .destinationId(UUID.fromString((String) receipt.get("destinationId")))
+                    .fromDestinationId(UUID.fromString((String) receipt.get("senderDestinationId")))
+                    .authenticationTags(receipt.get("authenticationTags") == null ? null
+                            : ObjectMappingHelper.toObject(receipt.get("authenticationTags"),
+                            AuthenticationTags.class))
+                    .build();
+            var events = service.cases().logOf(sent).entries().stream()
+                    .filter(event -> sent.submissionId().equals(event.submissionId()))
+                    .sorted(Comparator.comparing(CaseEvent::issueTime))
+                    .toList();
+            // A later deletion or notification must not erase the adapter's terminal decision.
+            var event = events.stream()
+                    .filter(entry -> entry.state() == EventState.ACCEPTED || entry.state() == EventState.REJECTED)
+                    .findFirst().orElse(events.isEmpty() ? null : events.getLast());
+            if (event == null) throw new CommunicationException("Die Zustellbestätigung ist noch nicht abrufbar.");
+            var details = new LinkedHashMap<String, Object>(receipt);
+            details.put("status", event.state().name());
+            details.put("eventId", event.eventId().toString());
+            details.put("eventTime", event.issueTime().toInstant().toString());
+            details.put("problems", event.problems() == null ? List.of() : event.problems().stream().map(problem -> {
+                var values = new LinkedHashMap<String, Object>();
+                values.put("type", problem.getType());
+                values.put("title", problem.getTitle());
+                values.put("detail", problem.getDetail());
+                values.put("instance", problem.getInstance());
+                return values;
+            }).toList());
+            var status = switch (event.state()) {
+                case ACCEPTED -> CommunicationDeliveryStatus.Accepted;
+                case REJECTED -> CommunicationDeliveryStatus.Rejected;
+                case SUBMITTED, NOTIFIED, FORWARDED -> CommunicationDeliveryStatus.Submitted;
+                default -> CommunicationDeliveryStatus.Unknown;
+            };
+            return new CommunicationSendResult(status, details);
+        } catch (CommunicationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CommunicationException("Die Zustellbestätigung konnte nicht abgefragt werden.", e);
         }
-
-        return Map.of(
-                "postfachId", postfachId.toString(),
-                "submissionId", sentSubmission.submissionId().toString(),
-                "status", status.state().name()
-        );
     }
 
     @Nonnull

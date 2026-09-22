@@ -7,6 +7,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
@@ -15,6 +18,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProcessInstanceRepository extends JpaRepository<ProcessInstanceEntity, Long>, JpaSpecificationExecutor<ProcessInstanceEntity> {
+    @Nonnull
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select instance from ProcessInstanceEntity instance where instance.id = :id")
+    Optional<ProcessInstanceEntity> findByIdForUpdate(@Nonnull @Param("id") Long id);
+
     List<ProcessInstanceEntity> findAllByStatus(ProcessInstanceStatus status);
 
     Optional<ProcessInstanceEntity> findByAccessKey(String accessKey);

@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.communication.services.CommunicationDeliveryStore;
+import java.util.Map;
+import java.util.function.Supplier;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -53,6 +56,7 @@ public class ProcessWorker {
     private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final ProcessNodeService processNodeService;
+    private final CommunicationDeliveryStore deliveryStore;
 
     @Autowired
     public ProcessWorker(ProcessInstanceRepository processInstanceRepository,
@@ -62,7 +66,8 @@ public class ProcessWorker {
                          ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                          ProcessDataService processDataService,
                          ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
-                         ProcessNodeService processNodeService) {
+                         ProcessNodeService processNodeService,
+                         CommunicationDeliveryStore deliveryStore) {
         this.processInstanceRepository = processInstanceRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
@@ -71,6 +76,7 @@ public class ProcessWorker {
         this.processDataService = processDataService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.processNodeService = processNodeService;
+        this.deliveryStore = deliveryStore;
     }
 
     @Bean
@@ -107,7 +113,8 @@ public class ProcessWorker {
                     currentProcessInstance,
                     payload.previousTaskId,
                     payload.previousNodeId,
-                    payload.previousNodePortKey
+                    payload.previousNodePortKey,
+                    payload.communicationDeliveryId
             );
         } catch (Exception exception) {
             logger.logException(exception);
@@ -147,6 +154,8 @@ public class ProcessWorker {
             processInstanceRepository.save(currentProcessInstance);
             return;
         }
+
+        if (currentTask.getStatus() == ProcessTaskStatus.AwaitingCommunication) return;
 
         try {
             resumeWorkOnCurrentProcessTask(
@@ -217,14 +226,15 @@ public class ProcessWorker {
                                                     @Nonnull ProcessInstanceEntity processInstance,
                                                     @Nullable Long previousTaskId,
                                                     @Nullable Integer previousNodeId,
-                                                    @Nullable String previousNodePortKey) throws ProcessNodeExecutionException {
+                                                    @Nullable String previousNodePortKey,
+                                                    @Nullable UUID communicationDeliveryId) throws ProcessNodeExecutionException {
         var deadline = currentNode.getTimeLimitDays() != null ?
                 // Preserve the local same-wall-clock-time behavior when task deadlines cross DST changes.
                 ZonedDateTime.now(ApplicationTimeZone.getZoneId()).plusDays(currentNode.getTimeLimitDays()).toInstant() :
                 null;
         var startedAt = Instant.now();
 
-        var taskEntity = processInstanceTaskRepository.save(
+        Supplier<ProcessInstanceTaskEntity> createTask = () -> processInstanceTaskRepository.save(
                 new ProcessInstanceTaskEntity(
                         null,
                         RandomUtils.generateRandomString(ProcessInstanceTaskEntity.ACCESS_KEY_LENGTH),
@@ -253,6 +263,10 @@ public class ProcessWorker {
                         null
                 )
         );
+
+        var taskEntity = communicationDeliveryId == null ? createTask.get()
+                : deliveryStore.claimNextTask(communicationDeliveryId, createTask);
+        if (taskEntity == null) return;
 
         logger = logger
                 .withTaskId(taskEntity.getId());
@@ -338,6 +352,31 @@ public class ProcessWorker {
         }
 
         handleResult(currentNode, currentNodeProvider, logger, processInstance, taskEntity.getPreviousProcessInstanceTaskId(), taskEntity.getPreviousProcessNodeId(), resumeResult, taskEntity);
+    }
+
+    /** Reconcile a payment callback that may have arrived while its notification was awaiting acceptance. */
+    public <C> void resumeAfterConfirmedCommunication(
+            @Nonnull ProcessNodeExecutionLogger logger,
+            @Nonnull ProcessInstanceEntity instance,
+            @Nonnull ProcessInstanceTaskEntity task,
+            @Nonnull ProcessNodeEntity node,
+            @Nonnull ProcessNodeDefinition<C> definition,
+            @Nonnull java.util.function.Consumer<DoWorkWorkerPayload> nextWork) throws ProcessNodeExecutionException {
+        ProcessNodeExecutionResult result;
+        try {
+            result = definition.resume(getRuntimeContext(logger, instance, task, node, definition));
+        } catch (ProcessNodeExecutionException e) {
+            task.setStatus(ProcessTaskStatus.Failed).setFinished(Instant.now());
+            processInstanceTaskRepository.save(task);
+            instance.setStatus(ProcessInstanceStatus.Failed);
+            processInstanceRepository.save(instance);
+            logger.logException(e);
+            return;
+        }
+        var previous = task.getPreviousProcessInstanceTaskId() == null ? null
+                : processInstanceTaskRepository.findById(task.getPreviousProcessInstanceTaskId()).orElse(null);
+        processNodeExecutionResultHandler.handleConfirmedCommunication(logger, null, definition, node, instance,
+                task, previous, result, Map.of(), nextWork);
     }
 
     @Nonnull
@@ -451,9 +490,13 @@ public class ProcessWorker {
             @Nullable Long previousTaskId,
             @Nullable Integer previousNodeId,
             @Nullable String previousNodePortKey,
-            @Nonnull Integer nextNodeId
+            @Nonnull Integer nextNodeId,
+            @Nullable UUID communicationDeliveryId
     ) implements Serializable {
-
+        public DoWorkWorkerPayload(Long processInstanceId, Long previousTaskId, Integer previousNodeId,
+                                   String previousNodePortKey, Integer nextNodeId) {
+            this(processInstanceId, previousTaskId, previousNodeId, previousNodePortKey, nextNodeId, null);
+        }
     }
 
     public record ResumeWorkWorkerPayload(

@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.process.repositories;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.projections.DashboardTaskCountsProjection;
@@ -15,6 +17,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInstanceTaskEntity, Long>, JpaSpecificationExecutor<ProcessInstanceTaskEntity> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from ProcessInstanceTaskEntity t where t.id = :id")
+    Optional<ProcessInstanceTaskEntity> findByIdForUpdate(@Param("id") Long id);
+
     Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdOrderByStartedDescIdDesc(Long processInstanceId);
 
     Optional<ProcessInstanceTaskEntity> findByProcessInstanceIdAndAccessKey(Long processInstanceId, String accessKey);

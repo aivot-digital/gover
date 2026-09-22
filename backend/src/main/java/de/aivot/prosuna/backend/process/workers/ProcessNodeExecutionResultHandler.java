@@ -1,8 +1,15 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationAlreadyPendingException;
+import de.aivot.prosuna.backend.communication.models.CommunicationDeliveryView;
+import java.util.function.Consumer;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
+import de.aivot.prosuna.backend.communication.services.CommunicationDeliveryStore;
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationDispatchException;
+import de.aivot.prosuna.backend.process.models.CommunicationContinuation;
+import tools.jackson.databind.json.JsonMapper;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
@@ -46,6 +53,8 @@ import java.util.Optional;
 
 @Service
 public class ProcessNodeExecutionResultHandler {
+    private final CommunicationDeliveryStore deliveryStore;
+    private final JsonMapper jsonMapper;
     private final RabbitTemplate rabbitTemplate;
     private final CommunicationService communicationService;
     private final ProcessInstanceRepository processInstanceRepository;
@@ -69,7 +78,11 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessNodeRepository processNodeRepository,
                                              ProcessNodeDefinitionService processNodeDefinitionService,
                                              ProcessService processService,
-                                             DepartmentService departmentService) {
+                                             DepartmentService departmentService,
+                                             CommunicationDeliveryStore deliveryStore,
+                                             JsonMapper jsonMapper) {
+        this.deliveryStore = deliveryStore;
+        this.jsonMapper = jsonMapper;
         this.rabbitTemplate = rabbitTemplate;
         this.communicationService = communicationService;
         this.processInstanceRepository = processInstanceRepository;
@@ -100,7 +113,7 @@ public class ProcessNodeExecutionResultHandler {
                 processInstanceTask,
                 previousTask,
                 executionResult,
-                Map.of()
+                Map.of(), null
         );
     }
 
@@ -124,8 +137,22 @@ public class ProcessNodeExecutionResultHandler {
                 processInstanceTask,
                 previousTask,
                 executionResult,
-                additionalIdentities
+                additionalIdentities, null
         );
+    }
+
+    public void handleConfirmedCommunication(@Nonnull ProcessNodeExecutionLogger logger,
+                                              @Nullable UserEntity triggeringUser,
+                                              @Nonnull ProcessNodeDefinition<?> provider,
+                                              @Nonnull ProcessNodeEntity currentNode,
+                                              @Nonnull ProcessInstanceEntity processInstance,
+                                              @Nonnull ProcessInstanceTaskEntity task,
+                                              @Nullable ProcessInstanceTaskEntity previousTask,
+                                              @Nonnull ProcessNodeExecutionResult result,
+                                              @Nonnull Map<String, IdentityData> additionalIdentities,
+                                              @Nonnull Consumer<ProcessWorker.DoWorkWorkerPayload> nextWork) throws ProcessNodeExecutionException {
+        handleResultInternal(logger, triggeringUser, provider, currentNode, processInstance, task,
+                previousTask, result, additionalIdentities, nextWork);
     }
 
     private void handleResultInternal(
@@ -137,7 +164,8 @@ public class ProcessNodeExecutionResultHandler {
             @Nonnull ProcessInstanceTaskEntity processInstanceTask,
             @Nullable ProcessInstanceTaskEntity previousTask,
             @Nullable ProcessNodeExecutionResult executionResult,
-            @Nonnull Map<String, IdentityData> additionalIdentities
+            @Nonnull Map<String, IdentityData> additionalIdentities,
+            @Nullable Consumer<ProcessWorker.DoWorkWorkerPayload> nextWork
     ) throws ProcessNodeExecutionException {
         if (executionResult == null) {
             var err = String.format(
@@ -175,10 +203,10 @@ public class ProcessNodeExecutionResultHandler {
                 processInstanceTask,
                 previousTask,
                 executionResult,
-                additionalIdentities
+                additionalIdentities, nextWork
         );
 
-        handleCommunicationRequest(context);
+        if (!handleCommunicationRequest(context)) return;
 
         switch (executionResult) {
             case ProcessNodeExecutionResultPaymentRequested paymentRequested ->
@@ -253,10 +281,10 @@ public class ProcessNodeExecutionResultHandler {
         processIdentities.putAll(additionalIdentities);
     }
 
-    private void handleCommunicationRequest(@Nonnull HandlerContext<?> context) throws ProcessNodeExecutionException {
+    private boolean handleCommunicationRequest(@Nonnull HandlerContext<?> context) throws ProcessNodeExecutionException {
         var communicationRequest = context.result.getCommunicationRequest();
         if (communicationRequest == null) {
-            return;
+            return true;
         }
 
         var processIdentities = context.processInstance.getIdentities();
@@ -279,6 +307,55 @@ public class ProcessNodeExecutionResultHandler {
                 resolveSendingDepartment(context)
         ).withReference(context.processInstance.getCaseNumber());
 
+        try {
+            var prepared = communicationService.prepareTrackedSend(recipientIdentity);
+            if (prepared.isPresent()) {
+                var details = new LinkedHashMap<String, Object>();
+                details.put("subject", message.subject());
+                details.put("body", message.body());
+                details.put("htmlBody", message.htmlBody());
+                details.put("reference", message.reference());
+                details.put("recipientIdentityId", recipientIdentity.identityId());
+                details.put("sendingUser", createSendingUserDetails(message.sendingUser()));
+                details.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));
+                var continuation = CommunicationContinuation.from(context.result,
+                        context.previousTask == null ? null : context.previousTask.getId(),
+                        context.triggeringUser == null ? null : context.triggeringUser.getId(),
+                        context.additionalIdentities, details);
+                var delivery = deliveryStore.begin(prepared.get().provider(), context.processInstanceTask.getId(),
+                        jsonMapper.convertValue(continuation, Map.class));
+                context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingCommunication);
+                try {
+                    var receipt = communicationService.sendPreparedTracked(prepared.get(), recipientIdentity, message);
+                    deliveryStore.submitted(delivery.getId(), receipt);
+                    context.logger.logf(ProcessNodeExecutionLogLevel.Info, false, true,
+                            "An FIT-Connect übergeben", Map.of("deliveryId", delivery.getId(), "sendResult", CommunicationDeliveryView.publicReceipt(receipt), "message", details),
+                            "Die Nachricht wurde an FIT-Connect übergeben. Die Zustellbestätigung steht noch aus.");
+                } catch (CommunicationException e) {
+                    try {
+                        deliveryStore.failed(delivery.getId(), e instanceof CommunicationDispatchException, e.getMessage());
+                    } catch (RuntimeException persistenceFailure) {
+                        context.logger.logf(ProcessNodeExecutionLogLevel.Error, true, true,
+                                "Versandstatus ungeklärt", Map.of("deliveryId", delivery.getId()),
+                                "Der Versandstatus konnte nicht gespeichert werden. Bitte prüfen Sie den Versand vor einer Wiederholung.");
+                    }
+                } catch (RuntimeException e) {
+                    // A receipt may exist remotely even if persisting it failed. The durable Sending attempt
+                    // is reconciled as Unknown; throwing here would enable a misleading failed-task retry.
+                    context.logger.logf(ProcessNodeExecutionLogLevel.Error, true, true,
+                            "Versandstatus ungeklärt", Map.of("deliveryId", delivery.getId()),
+                            "Der Versandstatus konnte nicht gespeichert werden. Bitte prüfen Sie den Versand vor einer Wiederholung.");
+                }
+                return false;
+            }
+        } catch (CommunicationAlreadyPendingException e) {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingCommunication);
+            return false;
+        } catch (CommunicationException e) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionUnknown(e, "Die Kommunikationsanbindung konnte nicht vorbereitet werden: %s", e.getMessage());
+        }
+
         final Map<String, Object> sendResult;
         try {
             sendResult = communicationService.sendMessage(recipientIdentity, message);
@@ -295,7 +372,7 @@ public class ProcessNodeExecutionResultHandler {
         logCommunicationSent(context, recipientIdentity, message, sendResult);
 
         if (communicationRequest.nodeDataOutputKey() == null) {
-            return;
+            return true;
         }
 
         var nodeData = context.result.getNodeData() == null
@@ -303,6 +380,7 @@ public class ProcessNodeExecutionResultHandler {
                 : new LinkedHashMap<>(context.result.getNodeData());
         nodeData.put(communicationRequest.nodeDataOutputKey(), sendResult);
         context.result.setNodeData(nodeData);
+        return true;
     }
 
     private void logCommunicationSent(@Nonnull HandlerContext<?> context,
@@ -708,7 +786,11 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
-        rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
+        if (context.nextWork != null) {
+            context.nextWork.accept(nextPayload);
+        } else {
+            rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
+        }
     }
 
     private void handleInstanceComplete(@Nonnull HandlerContext<ProcessNodeExecutionResultInstanceCompleted> context) {
@@ -834,7 +916,8 @@ public class ProcessNodeExecutionResultHandler {
             @Nonnull ProcessInstanceTaskEntity processInstanceTask,
             @Nullable ProcessInstanceTaskEntity previousTask,
             @Nonnull T result,
-            @Nonnull Map<String, IdentityData> additionalIdentities
+            @Nonnull Map<String, IdentityData> additionalIdentities,
+            @Nullable Consumer<ProcessWorker.DoWorkWorkerPayload> nextWork
     ) {
         public <S extends ProcessNodeExecutionResult> HandlerContext<S> withResult(@Nonnull S newResult) {
             return new HandlerContext<>(
@@ -846,7 +929,7 @@ public class ProcessNodeExecutionResultHandler {
                     processInstanceTask,
                     previousTask,
                     newResult,
-                    additionalIdentities
+                    additionalIdentities, nextWork
             );
         }
     }
