@@ -1,4 +1,4 @@
-import {useEffect, useMemo} from 'react';
+import {type RefObject, useEffect, useMemo, useRef} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {
@@ -21,12 +21,17 @@ import {API_EVENT_UNREACHABLE} from '../../services/base-api-service';
 import {StaffShellError} from '../staff/staff-shell-error';
 import {DuplicatePageWarning} from '../../components/duplicate-page-warning/duplicate-page-warning';
 
+export interface CustomerShellOutletContext {
+    scrollContainerRef: RefObject<HTMLDivElement | null>;
+}
+
 export function CustomerShell() {
     const routerError = useRouteError();
     const dispatch = useAppDispatch();
     const status = useAppSelector(selectStatus);
     const appError = useAppSelector(selectErrorMessage);
     const location = useLocation();
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Display a message if the API becomes unreachable.
     useEffect(() => {
@@ -96,6 +101,7 @@ export function CustomerShell() {
                         }}
                     >
                         <Box
+                            ref={scrollContainerRef}
                             sx={{
                                 flex: 1,
                                 position: 'relative',
@@ -110,7 +116,7 @@ export function CustomerShell() {
                             }
                             {
                                 error == null &&
-                                <Outlet/>
+                                <Outlet context={{scrollContainerRef} satisfies CustomerShellOutletContext}/>
                             }
                         </Box>
                     </Box>
