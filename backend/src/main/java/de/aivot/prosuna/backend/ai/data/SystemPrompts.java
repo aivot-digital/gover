@@ -58,6 +58,13 @@ public class SystemPrompts {
             Wenn ein Abschnitt angelegt wird, für die darin enthaltene Eingabefelder an, es sei denn, du sollst das explizit nicht tun.
             Innerhalb von Abschnitten nutze Gruppen um die Eingabefelder in logische Gruppen zu unterteilen.
             Nutze Fließtexte und Überschriften, um Informationen für die ausfüllenden Personen bereitzustellen.
+            
+            Wenn du JavaScript Low-Code für die Element-Funktionen wie Sichtbarkeit, Validierung, Dynamische Struktur oder Dynamischer Wert schreiben musst, verwende ausschließlich die IDs der Elemente um auf deren Werte zuzugreifen.
+            Über `ctx.effectiveValues.<elementId>` kannst du auf den aktuellen Wert eines Elements zugreifen.
+            No-Code ist jedoch, wenn möglich, Low-Code vorzuziehen, da es einfacher zu warten ist und weniger Fehleranfällig ist.
+            
+            Nutze die Eigenschaft `destinationKey` um die Werte von Eingabefeldern in Angeschlossene Prozesse zu übertragen.
+            Diese Eigenschaft ist nur für Eingabefelder relevant und sollte nur gesetzt werden, wenn der Wert des Eingabefeldes in einem Prozess verwendet wird.
             """;
 
     private static final String PROCESS_EDITING_MODE_PROMPT = """
@@ -75,8 +82,10 @@ public class SystemPrompts {
             literalValueSchema beschreibt ausschließlich den Rohwert für mode=Literal. Übernehmen Sie valuePaths,
             literalValueType und erlaubte Eingabemodi aus den Feldinformationen. Rufen Sie für komplexe Objekt- und
             Arraywerte vor dem Schreiben die Felddetails ab.
+            
             Verwenden Sie suche-konfigurationsoptionen und liste-knotenvariablen für vorhandene Ressourcen und Referenzen.
             Nutzen Sie hole-konfigurationshilfe bei Bedarf für Variable, No-Code und JavaScript.
+            
             Konfigurieren Sie mehrere bekannte Eigenschaften und Werte gemeinsam mit aktualisiere-prozessknoten.
             Jeder Eintrag in configurationChanges enthält valuePath, mode und value. Übergeben Sie in value den
             unverpackten Rohwert: bei Literal den Wert gemäß literalValueSchema, bei Variable die Referenz, bei NoCode
@@ -93,10 +102,44 @@ public class SystemPrompts {
             offenen fachlichen Fehlern, nicht fehlgeschlagen. Wiederholen Sie erfolgreiche Änderungen nicht.
             Bestätigen Sie Änderungen nur nach erfolgreicher Tool-Rückmeldung. Behaupten Sie keine Veröffentlichung
             oder vollständige fachliche Prüfung. Fehler späterer Aufrufe nehmen frühere erfolgreiche Änderungen nicht zurück.
+            
+            Prozesse haben während ihrer Ausführung drei Orte, wo Daten leben.
+            Zum einen die Elementdaten, die aus den Prozesselementen resultieren und über `_.<dataKey>.<property>` referenziert werden können.
+            Der `dataKey` ist der vergebene Schlüssel des Prozesselements, das die Daten erzeugt hat. Die `property` ist der Name der Eigenschaft, die den Wert enthält.
+            Welche Eigenschaften verfügbar sind, hängt vom Typ des Prozesselements ab. Die Elementdaten sind lokal und werden nicht von einem Prozesselement zum nächsten weitergegeben.
+            Die verfügbaren Eigenschaften können in den entsprechenden knotendefinitionen Nachgeschlagen werden.
+            Über die Output Mappings der Prozesselemente können die Elementdaten an die Prozessdaten weitergegeben werden.
+            
+            Zum anderen existieren die Prozessdaten, welche über `$.<property>` referenziert werden können. Die `property` ist der Name der Eigenschaft, die den Wert enthält.
+            Prozessdaten sind global und werden von einem Prozesselement zum nächsten weitergegeben.
+            Prozesselemente können die Prozessdaten lesen und schreiben, um Informationen zwischen den Elementen zu übertragen.
+            
+            Schließlich existieren noch die geschützten Prozessdaten, die über `$$.<property>` referenziert werden können. Die `property` ist der Name der Eigenschaft, die den Wert enthält.
+            Die folgenden Geschützten Prozessdaten sind verfügbar:
+            - `$$.processInstanceId`
+            - `$$.accessKey`
+            - `$$.caseNumber`
+            - `$$.started`
+            - `$$.initialPayload`
+            - `$$.assignedFileNumbers`
+            - `$$.identities`
+            - `$$.assignedUserId`
+            - `$$.initialNodeDataKey`
+            - `$$.previousNodeDataKey`
+            - `$$.attachmentSets`
+            - `$$.taskMetadata`
+            - `$$.currentTaskId`
+            
+            Innerhalb von Textfeldern, welche dynamische Texte unterstützen kannst du mit zwei geschweiften Klammern `{{ }}` auf die Werte der Elementdaten, Prozessdaten und geschützten Prozessdaten zugreifen.
+            Darüber hinaus kannst du if-else-Blöcke mit `{% if <Low-Code-Ausdruck> %} ... {% else %} ... {% endif %}` nutzen, um die Anzeige von Texten abhängig von Bedingungen zu steuern.
+            Außerdem kannst du mit `{% for item in <Low-Code-Ausdruck> %} ... {% endfor %}` Schleifen nutzen, um die Anzeige von Texten abhängig von Listen zu steuern.
+            Diese dynamischen Text-Blöcke können niemals mehrzeilig sein.
             """;
 
     private static final String GENERAL_CHAT_MODE_PROMPT = """
-            Du befindest dich im allgemeinen Modus. Biete allgemeine Unterstützung an.
+            Du befindest dich im allgemeinen Modus. Biete allgemeine Unterstützung zu Prosuna an.
+            Nutze die bereitgestellten Tools um Informationen zu erhalten.
+            Erfinde keine Informationen.
             """;
 
     public static String getSystemPrompt(ChatContextModel contextModel) {
