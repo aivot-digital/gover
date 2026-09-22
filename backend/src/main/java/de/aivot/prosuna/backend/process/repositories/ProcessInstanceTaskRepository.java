@@ -49,7 +49,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
             SELECT task.*
             FROM process_instance_tasks task
             WHERE task.assigned_user_id = :userId
-              AND task.status = :status
+              AND task.status in (:statuses)
               AND (
                     :hasSystemAccess = true
                     OR EXISTS (
@@ -64,7 +64,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
             ORDER BY task.deadline ASC NULLS LAST, task.started ASC, task.id ASC
             """, nativeQuery = true)
     List<ProcessInstanceTaskEntity> findDashboardTasks(@Param("userId") String userId,
-                                                       @Param("status") short status,
+                                                       @Param("statuses") Collection<Short> statuses,
                                                        @Param("hasSystemAccess") boolean hasSystemAccess,
                                                        @Param("permission") String permission,
                                                        Pageable pageable);
@@ -74,7 +74,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
                    COUNT(*) FILTER (WHERE task.deadline IS NOT NULL AND task.deadline < :now) AS "overdueCount"
             FROM process_instance_tasks task
             WHERE task.assigned_user_id = :userId
-              AND task.status = :status
+              AND task.status in (:statuses)
               AND (
                     :hasSystemAccess = true
                     OR EXISTS (
@@ -87,7 +87,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
               )
             """, nativeQuery = true)
     DashboardTaskCountsProjection getDashboardTaskCounts(@Param("userId") String userId,
-                                                          @Param("status") short status,
+                                                          @Param("statuses") Collection<Short> statuses,
                                                           @Param("hasSystemAccess") boolean hasSystemAccess,
                                                           @Param("permission") String permission,
                                                           @Param("now") Instant now);

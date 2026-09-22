@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceTaskService;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
+import de.aivot.prosuna.backend.process.services.ProcessListService;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceReassignRequestDTO;
 import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.workers.ProcessWorker;
@@ -51,17 +52,20 @@ public class ProcessInstanceTaskController {
     private final RabbitTemplate rabbitTemplate;
     private final PermissionService permissionService;
     private final ProcessAssignmentService assignmentService;
+    private final ProcessListService listService;
 
     @Autowired
     public ProcessInstanceTaskController(UserService userService,
                                          ProcessInstanceTaskService processInstanceTaskService,
                                          RabbitTemplate rabbitTemplate,
-                                         PermissionService permissionService, ProcessAssignmentService assignmentService) {
+                                         PermissionService permissionService, ProcessAssignmentService assignmentService,
+                                         ProcessListService listService) {
         this.userService = userService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.rabbitTemplate = rabbitTemplate;
         this.permissionService = permissionService;
         this.assignmentService = assignmentService;
+        this.listService = listService;
     }
 
     @GetMapping("")
@@ -106,7 +110,7 @@ public class ProcessInstanceTaskController {
     @GetMapping("assigned-count/")
     @Operation(
             summary = "Count Assigned Process Instance Tasks",
-            description = "Returns the number of currently assigned running tasks for the authenticated user."
+            description = "Returns the number of currently assigned open tasks in readable process instances for the authenticated user."
     )
     public Map<String, Long> countAssignedTasks(
             @Nullable @AuthenticationPrincipal Jwt jwt
@@ -117,10 +121,7 @@ public class ProcessInstanceTaskController {
 
         return Map.of(
                 "count",
-                processInstanceTaskService.countAssignedTasks(
-                        execUser.getId(),
-                        List.of(ProcessTaskStatus.Running)
-                )
+                listService.countOpenAssignedTasks(execUser.getId())
         );
     }
 
