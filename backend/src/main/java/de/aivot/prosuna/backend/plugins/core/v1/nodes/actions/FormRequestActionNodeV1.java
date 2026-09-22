@@ -39,7 +39,6 @@ import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -70,18 +69,15 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private static final String STAFF_TASK_SEND_EVENT = "send";
     private static final String CUSTOMER_TASK_SUBMIT_EVENT = "submit";
 
-    private final TemplateRenderService templateRenderService;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
     private final ProsunaConfig prosunaConfig;
     private final ElementDataTransformService elementDataTransformService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
 
-    public FormRequestActionNodeV1(TemplateRenderService templateRenderService,
-                                   AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
+    public FormRequestActionNodeV1(AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
                                    ProsunaConfig prosunaConfig,
                                    ElementDataTransformService elementDataTransformService,
                                    ProcessInstanceAttachmentService processInstanceAttachmentService) {
-        this.templateRenderService = templateRenderService;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
         this.prosunaConfig = prosunaConfig;
         this.elementDataTransformService = elementDataTransformService;
@@ -252,18 +248,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             @Nonnull NodeConfig configuration
     ) throws ProcessNodeExecutionException {
         var automaticContent = requireAutomaticContent(configuration);
-
-        var subject = renderRequiredTemplate(
-                context.getCurrentProcessExecutionData(),
-                automaticContent.subject,
-                "Betreff"
-        );
-
-        var content = renderRequiredTemplate(
-                context.getCurrentProcessExecutionData(),
-                automaticContent.content,
-                "Nachrichtentext"
-        );
+        var subject = automaticContent.subject.trim();
+        var content = automaticContent.content.trim();
 
         return createCustomerAssignmentResult(
                 context.getThisProcessInstance(),
@@ -329,22 +315,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
         var taskViewData = new AuthoredElementValues();
 
-        try {
-            taskViewData.putLiteral(
-                    STAFF_TASK_SUBJECT_FIELD_ID,
-                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.subject)
-            );
-            taskViewData.putLiteral(
-                    STAFF_TASK_CONTENT_FIELD_ID,
-                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.content)
-            );
-        } catch (RuntimeException e) {
-            throw ResponseException.internalServerError(
-                    e,
-                    "Die Nachrichtenvorlage der Aufforderung konnte nicht gerendert werden: %s",
-                    e.getMessage()
-            );
-        }
+        taskViewData.putLiteral(STAFF_TASK_SUBJECT_FIELD_ID, manualContent.subject.trim());
+        taskViewData.putLiteral(STAFF_TASK_CONTENT_FIELD_ID, manualContent.content.trim());
 
         return ProcessNodeStaffView.of(
                 context,
@@ -445,26 +417,30 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
         var effectiveValues = derived.getEffectiveValues();
         var configuration = context.getConfigurationOfExecutingNode();
+        var payload = elementDataTransformService.buildPayload(
+                configuration.uiDefinition,
+                effectiveValues,
+                derived.getElementStates()
+        );
+        var updatedProcessData = elementDataTransformService.buildUpdatedProcessData(
+                configuration.uiDefinition,
+                derived,
+                context.getThisTask().getProcessData()
+        );
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(
                 OUTPUT_RECIPIENT_IDENTITY_ID,
                 requireRecipientIdentity(configuration.recipientIdentityId)
         );
-        nodeData.put(
-                OUTPUT_PAYLOAD,
-                elementDataTransformService.buildPayload(
-                        configuration.uiDefinition,
-                        effectiveValues,
-                        derived.getElementStates()
-                )
-        );
+        nodeData.put(OUTPUT_PAYLOAD, payload);
         nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
         nodeData.put(OUTPUT_ATTACHMENTS, resolveSubmittedAttachments(context, effectiveValues));
         nodeData.put(OUTPUT_STARTED, Instant.now());
 
         var result = new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_SUBMITTED)
-                .setNodeData(nodeData);
+                .setNodeData(nodeData)
+                .setProcessData(updatedProcessData);
 
         return Optional.of(result);
     }
@@ -612,35 +588,6 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
             throw ResponseException.internalServerError(e, e.getMessage());
         }
-    }
-
-    @Nonnull
-    private String renderRequiredTemplate(
-            @Nonnull ProcessExecutionData processExecutionData,
-            @Nonnull String template,
-            @Nonnull String fieldName
-    ) throws ProcessNodeExecutionException {
-        final String rendered;
-        try {
-            rendered = StringUtils.toNullableTrimmedString(
-                    templateRenderService.interpolate(processExecutionData, template)
-            );
-        } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Vorlage für %s konnte nicht gerendert werden: %s",
-                    fieldName,
-                    e.getMessage()
-            );
-        }
-
-        if (rendered == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der gerenderte Wert für %s ist leer.",
-                    fieldName
-            );
-        }
-        return rendered;
     }
 
     private static void validateStaffMessage(

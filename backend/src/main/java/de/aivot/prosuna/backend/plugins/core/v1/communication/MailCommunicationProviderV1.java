@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
@@ -22,7 +23,6 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputEl
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
@@ -39,6 +39,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -171,10 +172,10 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 });
         layout
                 .findChild(CUSTOM_SENDER_ADDRESS_FIELD_ID, TextInputElement.class)
-                .ifPresent(field -> field.setPattern(emailPattern()));
+                .ifPresent(field -> field.setValidation(emailValidation(CUSTOM_SENDER_ADDRESS_FIELD_ID)));
         layout
                 .findChild(REPLY_TO_ADDRESS_FIELD_ID, TextInputElement.class)
-                .ifPresent(field -> field.setPattern(optionalEmailPattern()));
+                .ifPresent(field -> field.setValidation(optionalEmailValidation(REPLY_TO_ADDRESS_FIELD_ID)));
 
         return layout;
     }
@@ -231,10 +232,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         email.setLabel("E-Mail-Adresse");
         email.setAutocomplete("email");
         email.setRequired(true);
-        email.setPattern(TextInputElementPattern.of(
-                EmailAddressUtils.EMAIL_PATTERN_VALUE,
-                "Bitte geben Sie eine gültige E-Mail-Adresse ein."
-        ));
+        email.setValidation(emailValidation(CUSTOMER_EMAIL_FIELD_ID));
         if (mappedEmail == null) {
             email.setHint("An diese Adresse werden Nachrichten zu Ihrem Vorgang gesendet.");
         } else {
@@ -258,10 +256,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         recipient.setHint("E-Mail-Adresse, an die eine Testnachricht gesendet wird.");
         recipient.setAutocomplete("email");
         recipient.setRequired(true);
-        recipient.setPattern(TextInputElementPattern.of(
-                EmailAddressUtils.EMAIL_PATTERN_VALUE,
-                "Bitte geben Sie eine gültige E-Mail-Adresse ein."
-        ));
+        recipient.setValidation(emailValidation(TEST_RECIPIENT_FIELD_ID));
 
         var layout = new GroupLayoutElement();
         layout.setId(TESTING_LAYOUT_ID);
@@ -422,16 +417,21 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         )).recalculateReferencedIds();
     }
 
-    private static TextInputElementPattern emailPattern() {
-        return TextInputElementPattern.of(
-                EmailAddressUtils.EMAIL_PATTERN_VALUE,
-                "Bitte geben Sie eine gültige E-Mail-Adresse ein."
-        );
+    private static ElementValidationFunctions emailValidation(@Nonnull String fieldId) {
+        return regexValidation(fieldId, EmailAddressUtils.EMAIL_PATTERN_VALUE);
     }
 
-    private static TextInputElementPattern optionalEmailPattern() {
-        return TextInputElementPattern.of(
-                "^(?:$|[^\\s@]+@[^\\s@]+\\.[^\\s@]+)$",
+    private static ElementValidationFunctions optionalEmailValidation(@Nonnull String fieldId) {
+        return regexValidation(fieldId, "^(?:$|[^\\s@]+@[^\\s@]+\\.[^\\s@]+)$");
+    }
+
+    private static ElementValidationFunctions regexValidation(@Nonnull String fieldId, @Nonnull String regex) {
+        return ElementValidationFunctions.of(
+                NoCodeExpression.of(
+                        NoCodeRegexMatchOperator.OPERATOR_ID,
+                        NoCodeReference.of(fieldId),
+                        NoCodeStaticValue.of(regex)
+                ),
                 "Bitte geben Sie eine gültige E-Mail-Adresse ein."
         );
     }

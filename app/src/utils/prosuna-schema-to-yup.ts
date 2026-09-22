@@ -239,16 +239,6 @@ function textFieldToYup(elem: TextFieldElement): Schema {
             .nullable();
     }
 
-    if (elem.pattern?.regex) {
-        try {
-            const regex = new RegExp(elem.pattern.regex);
-            textFieldSchema = textFieldSchema
-                .matches(regex, elem.pattern.message || 'Das Format der Eingabe ist ungültig.');
-        } catch (error) {
-            console.warn(`Ungültige Regex im Schema für Feld ${elem.id}:`, error);
-        }
-    }
-
     return textFieldSchema;
 }
 

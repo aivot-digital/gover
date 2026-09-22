@@ -9,10 +9,6 @@ export interface TextFieldElement extends BaseInputElement<ElementType.Text> {
     isMultiline: boolean | null | undefined;
     maxCharacters: number | null | undefined;
     minCharacters: number | null | undefined;
-    pattern: {
-        regex: string;
-        message: string;
-    } | null | undefined;
     prefix: string | null | undefined;
     copyable: boolean | null | undefined;
     copyValueTemplate: string | null | undefined;

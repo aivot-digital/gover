@@ -13,6 +13,7 @@ import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
@@ -25,7 +26,11 @@ import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
 import dev.fitko.fitconnect.rest.model.event.EventState;
@@ -216,8 +221,12 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         postfachId.setLabel("Postfach-ID");
         postfachId.setHint("Postfach-ID des Testnutzers, an den die Testnachricht gesendet wird.");
         postfachId.setRequired(true);
-        postfachId.setPattern(TextInputElementPattern.of(
-                UUID_REGEX,
+        postfachId.setValidation(ElementValidationFunctions.of(
+                NoCodeExpression.of(
+                        NoCodeRegexMatchOperator.OPERATOR_ID,
+                        NoCodeReference.of(TEST_POSTFACH_ID_FIELD_ID),
+                        NoCodeStaticValue.of(UUID_REGEX)
+                ),
                 "Bitte geben Sie eine gültige UUID ein."
         ));
 

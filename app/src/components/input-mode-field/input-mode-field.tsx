@@ -493,7 +493,7 @@ interface VariablePickerDialogProps {
     onClose: () => void;
 }
 
-function VariablePickerDialog(props: VariablePickerDialogProps) {
+export function VariablePickerDialog(props: VariablePickerDialogProps) {
     const [search, setSearch] = useState('');
     const [selectedSource, setSelectedSource] = useState<InputVariableSource | 'all'>('all');
     const [draftSelectedKey, setDraftSelectedKey] = useState<string | null>(null);

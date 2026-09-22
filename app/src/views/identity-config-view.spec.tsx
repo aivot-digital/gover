@@ -1,9 +1,17 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type {ReactNode} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {createDerivedRuntimeElementData} from '../models/element-data';
 import type {IdentityConfigElement} from '../models/elements/form/input/identity-config-element';
+import {InputVariableSource} from '../models/input-mode';
 import {ConfirmProvider} from '../providers/confirm-provider';
+import {generateElementWithDefaultValues} from '../utils/generate-element-with-default-values';
+import {
+    ViewDispatcherContextProvider,
+    ViewDispatcherMode,
+} from '../components/view-dispatcher/view-dispatcher.context';
 import {IdentityConfigView} from './identity-config-view';
 
 vi.mock('../modules/identity/identity-providers-api-service', () => ({
@@ -126,32 +134,34 @@ describe('IdentityConfigView', () => {
         } as IdentityConfigElement;
 
         render(
-            <ConfirmProvider>
-                <IdentityConfigView
-                    element={element}
-                    value={[{
-                        id: 'applicant',
-                        title: 'Antragstellende Person',
-                        description: null,
-                        allowsMail: false,
-                        isOptional: false,
-                        options: [],
-                    }]}
-                    setValue={vi.fn()}
-                    onBlur={vi.fn()}
-                    errors={null}
-                    isBusy
-                    isDeriving={false}
-                    authoredElementValues={{}}
-                    onAuthoredElementValuesChange={vi.fn()}
-                    derivedData={createDerivedRuntimeElementData()}
-                    onDerive={async () => createDerivedRuntimeElementData()}
-                    onEvent={async () => undefined}
-                    onResetErrors={vi.fn()}
-                    suppressErrors={false}
-                    derivationTriggerIdQueue={[]}
-                />
-            </ConfirmProvider>,
+            <TestViewDispatcherProvider>
+                <ConfirmProvider>
+                    <IdentityConfigView
+                        element={element}
+                        value={[{
+                            id: 'applicant',
+                            title: 'Antragstellende Person',
+                            description: null,
+                            allowsMail: false,
+                            isOptional: false,
+                            options: [],
+                        }]}
+                        setValue={vi.fn()}
+                        onBlur={vi.fn()}
+                        errors={null}
+                        isBusy
+                        isDeriving={false}
+                        authoredElementValues={{}}
+                        onAuthoredElementValuesChange={vi.fn()}
+                        derivedData={createDerivedRuntimeElementData()}
+                        onDerive={async () => createDerivedRuntimeElementData()}
+                        onEvent={async () => undefined}
+                        onResetErrors={vi.fn()}
+                        suppressErrors={false}
+                        derivationTriggerIdQueue={[]}
+                    />
+                </ConfirmProvider>
+            </TestViewDispatcherProvider>,
         );
 
         const addButton = screen.getByRole('button', {name: 'Hinzufügen'});
@@ -163,7 +173,88 @@ describe('IdentityConfigView', () => {
         fireEvent.click(viewButton);
 
         expect(screen.getByText('Identität ansehen')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Variable referenzieren'})).toBeDisabled();
         expect(screen.getAllByRole('button', {name: 'Schließen'})).toHaveLength(2);
         expect(screen.queryByRole('button', {name: 'Übernehmen'})).not.toBeInTheDocument();
     });
+
+    it('inserts a variable reference into an identity description', async () => {
+        const setValue = vi.fn();
+        const user = userEvent.setup();
+        const element = {
+            type: ElementType.IdentityConfigElement,
+            id: 'identity-config',
+            label: 'Benötigte Identitäten',
+            required: false,
+            disabled: false,
+        } as IdentityConfigElement;
+
+        render(
+            <TestViewDispatcherProvider>
+                <ConfirmProvider>
+                    <IdentityConfigView
+                        element={element}
+                        value={[{
+                            id: 'applicant',
+                            title: 'Antragstellende Person',
+                            description: null,
+                            allowsMail: false,
+                            isOptional: false,
+                            options: [],
+                        }]}
+                        setValue={setValue}
+                        onBlur={vi.fn()}
+                        errors={null}
+                        isBusy={false}
+                        isDeriving={false}
+                        authoredElementValues={{}}
+                        onAuthoredElementValuesChange={vi.fn()}
+                        derivedData={createDerivedRuntimeElementData()}
+                        onDerive={async () => createDerivedRuntimeElementData()}
+                        onEvent={async () => undefined}
+                        onResetErrors={vi.fn()}
+                        suppressErrors={false}
+                        derivationTriggerIdQueue={[]}
+                    />
+                </ConfirmProvider>
+            </TestViewDispatcherProvider>,
+        );
+
+        const editButton = screen.getByText('Antragstellende Person').closest('button')!;
+        await waitFor(() => expect(editButton).toBeEnabled());
+        await user.click(editButton);
+        await user.click(await screen.findByRole('button', {name: 'Variable referenzieren'}));
+        await user.click(await screen.findByText('Name der Person'));
+        await user.click(screen.getByTestId('use-variable-reference'));
+        await waitFor(() => {
+            expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
+        });
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+
+        expect(setValue).toHaveBeenCalledWith([
+            expect.objectContaining({
+                id: 'applicant',
+                description: expect.stringContaining('{{ $.person.name }}'),
+            }),
+        ]);
+    });
 });
+
+function TestViewDispatcherProvider(props: {children: ReactNode}) {
+    const rootElement = generateElementWithDefaultValues(ElementType.FormLayout);
+
+    return <ViewDispatcherContextProvider value={{
+        mode: ViewDispatcherMode.Editor,
+        rootElement,
+        allElements: [rootElement],
+        rootAuthoredElementValues: {},
+        rootDerivedData: createDerivedRuntimeElementData(),
+        inputModeVariables: [{
+            source: InputVariableSource.ProcessData,
+            path: 'person.name',
+            label: 'Name der Person',
+        }],
+    }}>
+        {props.children}
+    </ViewDispatcherContextProvider>;
+}

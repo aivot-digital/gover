@@ -41,10 +41,6 @@ import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolv
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
-import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
-import de.aivot.prosuna.backend.elements.models.input.InputModePolicy;
-import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
@@ -180,18 +176,6 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                         context.thisNode().getProcessId(),
                         context.thisNode().getProcessVersion()
                 ));
-        // Preserve this node's existing policies after moving its fields into the shared message layout.
-        for (var fieldId : List.of(
-                SemiAutomaticMessageConfig.AutomaticContent.SUBJECT_FIELD_ID,
-                SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID,
-                SemiAutomaticMessageConfig.ManualContent.SUBJECT_FIELD_ID,
-                SemiAutomaticMessageConfig.ManualContent.CONTENT_FIELD_ID
-        )) {
-            layout.findChild(fieldId, BaseInputElement.class).ifPresent(field -> {
-                field.setInputModePolicy(new InputModePolicy(List.of(InputMode.values()), InputMode.Literal));
-                ((DynamicTextElement) field).setDynamicTextPolicy(new DynamicTextPolicy());
-            });
-        }
         return layout;
     }
 

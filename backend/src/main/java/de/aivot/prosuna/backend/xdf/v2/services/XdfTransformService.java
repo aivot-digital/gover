@@ -18,6 +18,10 @@ import de.aivot.prosuna.backend.enums.DateType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.functions.conditions.Condition;
 import de.aivot.prosuna.backend.models.functions.conditions.ConditionSet;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.xdf.v2.data.XdfFieldType;
 import de.aivot.prosuna.backend.xdf.v2.models.*;
@@ -310,13 +314,18 @@ public class XdfTransformService {
                                 }
                             }
 
-                            if (praezisierung.getPattern() != null) {
-                                textField.setPattern(
-                                        TextInputElementPattern.of(
-                                                praezisierung.getPattern(),
-                                                String.format("Bitte geben Sie einen Wert an, der dem Muster \"%s\" entspricht.", praezisierung.getPattern())
+                            if (praezisierung.getPattern() != null && !praezisierung.getPattern().isEmpty()) {
+                                textField.setValidation(ElementValidationFunctions.of(
+                                        NoCodeExpression.of(
+                                                NoCodeRegexMatchOperator.OPERATOR_ID,
+                                                NoCodeReference.of(id),
+                                                NoCodeStaticValue.of(praezisierung.getPattern())
+                                        ),
+                                        String.format(
+                                                "Bitte geben Sie einen Wert an, der dem Muster \"%s\" entspricht.",
+                                                praezisierung.getPattern()
                                         )
-                                );
+                                ));
                             }
                         }
                         fields.add(textField);

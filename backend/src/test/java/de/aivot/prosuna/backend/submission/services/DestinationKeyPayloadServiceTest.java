@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.submission.services;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.ComputedElementSubState;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
@@ -29,6 +30,7 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +88,42 @@ class DestinationKeyPayloadServiceTest {
                 ),
                 payload
         );
+    }
+
+    @Test
+    void shouldBuildUpdatedProcessDataWithoutMutatingCurrentProcessData() {
+        var name = new TextInputElement();
+        name.setId("name");
+        name.setDestinationKey("person.name");
+
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.put("name", "Ada");
+        var derivedRuntimeData = new DerivedRuntimeElementData()
+                .setEffectiveValues(effectiveValues);
+
+        var person = new LinkedHashMap<String, Object>();
+        person.put("name", "Vorheriger Name");
+        person.put("reference", "bleibt erhalten");
+        var currentProcessData = new LinkedHashMap<String, Object>();
+        currentProcessData.put("person", person);
+        currentProcessData.put("optional", null);
+
+        var updatedProcessData = service.buildUpdatedProcessData(
+                createRoot(name),
+                derivedRuntimeData,
+                currentProcessData
+        );
+
+        var expectedPerson = new LinkedHashMap<String, Object>();
+        expectedPerson.put("name", "Ada");
+        expectedPerson.put("reference", "bleibt erhalten");
+        var expectedProcessData = new LinkedHashMap<String, Object>();
+        expectedProcessData.put("person", expectedPerson);
+        expectedProcessData.put("optional", null);
+        assertEquals(expectedProcessData, updatedProcessData);
+        assertEquals("Vorheriger Name", person.get("name"));
+        assertNull(currentProcessData.get("optional"));
+        assertNotSame(currentProcessData, updatedProcessData);
     }
 
     @Test

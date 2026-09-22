@@ -210,7 +210,6 @@ const addressStreetElement: TextFieldElement = {
     isMultiline: false,
     maxCharacters: null,
     minCharacters: null,
-    pattern: null,
     prefix: null,
     copyable: false,
     copyValueTemplate: null,

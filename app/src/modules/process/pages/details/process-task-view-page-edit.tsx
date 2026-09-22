@@ -57,7 +57,6 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     } = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
 
     const pushUpdateTimeoutRef = useRef<number | null>(null);
-    const saveCycleRef = useRef(0);
     const taskSessionRef = useRef(0);
     const inFlightSavePromiseRef = useRef<Promise<boolean> | null>(null);
     const latestTaskInputDataRef = useRef<AuthoredElementValues>({});
@@ -246,7 +245,6 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         setLastPersistedTaskInputData({});
         setTaskInputDataSaveState(ProcessTaskInputSaveState.Saved);
         setLastSavedAt(null);
-        saveCycleRef.current = 0;
         latestTaskInputDataRef.current = {};
         lastPersistedTaskInputDataRef.current = {};
 
@@ -520,14 +518,12 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             return;
         }
 
-        latestTaskInputDataRef.current = authoredValues;
-        setTaskInputData(authoredValues);
-        const currentSaveCycle = ++saveCycleRef.current;
-
-        // Do not save the first
-        if (currentSaveCycle <= 1) {
+        if (deepEquals(authoredValues, latestTaskInputDataRef.current)) {
             return;
         }
+
+        latestTaskInputDataRef.current = authoredValues;
+        setTaskInputData(authoredValues);
 
         if (pushUpdateTimeoutRef.current != null) {
             window.clearTimeout(pushUpdateTimeoutRef.current);
@@ -543,11 +539,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         pushUpdateTimeoutRef.current = window.setTimeout(() => {
             pushUpdateTimeoutRef.current = null;
 
-            void saveTaskInputData(authoredValues).finally(() => {
-                if (saveCycleRef.current !== currentSaveCycle) {
-                    return;
-                }
-            });
+            void saveTaskInputData(authoredValues);
         }, TASK_INPUT_DATA_PUSH_DELAY_MS);
 
         setTaskInputDataSaveState(ProcessTaskInputSaveState.Waiting);

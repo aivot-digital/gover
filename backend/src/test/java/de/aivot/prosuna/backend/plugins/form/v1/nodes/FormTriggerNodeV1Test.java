@@ -1,9 +1,11 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
-import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
@@ -19,6 +21,9 @@ import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -33,6 +38,7 @@ import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
@@ -46,7 +52,6 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
-import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
@@ -253,6 +258,22 @@ class FormTriggerNodeV1Test {
 
         assertEquals(true, slugField.getCopyable());
         assertEquals("https://example.test/form/antrag-prozess/{value}/", slugField.getCopyValueTemplate());
+        var slugValidation = slugField.getValidation();
+        assertNotNull(slugValidation);
+        assertEquals(ValidationFunctionType.NoCode, slugValidation.getType());
+        assertEquals(List.of(FormTriggerConfigV1.FORM_SLUG), List.copyOf(slugValidation.getReferencedIds()));
+        var slugExpression = assertInstanceOf(
+                NoCodeExpression.class,
+                slugValidation.getNoCodeList().getFirst().getNoCode()
+        );
+        assertEquals(NoCodeRegexMatchOperator.OPERATOR_ID, slugExpression.getOperatorIdentifier());
+        assertEquals(
+                List.of(
+                        NoCodeReference.of(FormTriggerConfigV1.FORM_SLUG),
+                        NoCodeStaticValue.of("^[a-z0-9-]+$")
+                ),
+                List.copyOf(slugExpression.getOperands())
+        );
     }
 
     @Test

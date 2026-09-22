@@ -1,6 +1,7 @@
 import {describe, expect, it, vi, beforeEach, type Mock, type MockInstance} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {PaymentConfigView} from './payment-config-view';
 import {ElementType} from '../data/element-type/element-type';
 import {createDerivedRuntimeElementData} from '../models/element-data';
@@ -20,8 +21,10 @@ import {
 import type {FormLayoutElement} from '../models/elements/form-layout-element';
 import type {PaymentProviderResponseDTO} from '../modules/payment/dtos/payment-provider-response-dto';
 import type {PaymentProviderDefinitionResponseDTO} from '../modules/payment/dtos/payment-provider-definition-response-dto';
+import {InputVariableSource} from '../models/input-mode';
 
 vi.mock('./process-data-key-input-field-view', () => ({
+    ProcessDataKeyInputFieldView: () => null,
     ProcessDataKeyInputComponent: (props: {
         label?: string | null;
         error?: string | null;
@@ -60,23 +63,45 @@ vi.mock('../components/rich-text-input-component/rich-text-input-component', asy
     const React = await import('react');
 
     return {
-        RichTextInputComponent: (props: {
+        RichTextInputComponent: React.forwardRef((props: {
             label?: string | null;
             value?: string | null;
             onChange: (value: string | null) => void;
             disabled?: boolean | null;
             readOnly?: boolean | null;
+            busy?: boolean | null;
             error?: string | null;
-        }) => React.createElement('div', {}, [
-            React.createElement('textarea', {
-                key: 'input',
-                'aria-label': props.label ?? undefined,
-                value: props.value ?? '',
-                disabled: Boolean(props.disabled) || Boolean(props.readOnly),
-                onChange: (event: { target: { value: string } }) => props.onChange(event.target.value === '' ? null : event.target.value),
-            }),
-            props.error != null ? React.createElement('span', {key: 'error'}, props.error) : null,
-        ]),
+            endAction?: {
+                ariaLabel?: string;
+                tooltip?: string;
+                onClick: () => void;
+            };
+        }, ref) => {
+            React.useImperativeHandle(ref, () => ({
+                focus: () => undefined,
+                insertMarkdown: (markdown: string) => props.onChange(`${props.value ?? ''}${markdown}`),
+                insertVariableReference: (reference: string) => props.onChange(`${props.value ?? ''}{{ ${reference} }}`),
+            }), [props.onChange, props.value]);
+
+            const disabled = Boolean(props.disabled) || Boolean(props.readOnly) || Boolean(props.busy);
+            return React.createElement('div', {}, [
+                React.createElement('textarea', {
+                    key: 'input',
+                    'aria-label': props.label ?? undefined,
+                    value: props.value ?? '',
+                    disabled,
+                    onChange: (event: { target: { value: string } }) => props.onChange(event.target.value === '' ? null : event.target.value),
+                }),
+                props.endAction != null ? React.createElement('button', {
+                    key: 'action',
+                    type: 'button',
+                    'aria-label': props.endAction.ariaLabel ?? props.endAction.tooltip,
+                    disabled,
+                    onClick: props.endAction.onClick,
+                }, props.endAction.tooltip) : null,
+                props.error != null ? React.createElement('span', {key: 'error'}, props.error) : null,
+            ]);
+        }),
     };
 });
 
@@ -226,6 +251,41 @@ describe('PaymentConfigView', () => {
         expect(setValue).toHaveBeenCalledWith(expect.objectContaining({
             successMessage: '# Danke\n**{{ $.name }}**',
             failureMessage: '# Nicht bezahlt\nDie Zahlung fuer **{{ $.name }}** wurde nicht abgeschlossen.',
+        }));
+    });
+
+    it('should insert variable references into success and failure messages', async () => {
+        const setValue = vi.fn();
+        const user = userEvent.setup();
+
+        renderPaymentConfigView({setValue});
+
+        await waitFor(() => {
+            expect(listAllMock).toHaveBeenCalledWith({isEnabled: true});
+        });
+        await user.click(screen.getByText('Neue Zahlungskonfiguration'));
+
+        await user.click(screen.getAllByRole('button', {name: 'Variable referenzieren'})[0]);
+        await user.click(await screen.findByText('Name der Person'));
+        await user.click(screen.getByTestId('use-variable-reference'));
+        await waitFor(() => {
+            expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
+            expect(screen.getByLabelText('Erfolgsmeldung nach Zahlung')).toHaveValue('{{ $.person.name }}');
+        });
+
+        await user.click(screen.getAllByRole('button', {name: 'Variable referenzieren'})[1]);
+        await user.click(await screen.findByText('Name der Person'));
+        await user.click(screen.getByTestId('use-variable-reference'));
+        await waitFor(() => {
+            expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
+            expect(screen.getByLabelText('Fehlermeldung bei Zahlungsfehler')).toHaveValue('{{ $.person.name }}');
+        });
+
+        await user.click(screen.getByText('Übernehmen'));
+
+        expect(setValue).toHaveBeenCalledWith(expect.objectContaining({
+            successMessage: '{{ $.person.name }}',
+            failureMessage: '{{ $.person.name }}',
         }));
     });
 
@@ -475,6 +535,11 @@ function renderPaymentConfigView(options?: {
                     allElements: [rootElement],
                     rootAuthoredElementValues: {},
                     rootDerivedData: createDerivedRuntimeElementData(),
+                    inputModeVariables: [{
+                        source: InputVariableSource.ProcessData,
+                        path: 'person.name',
+                        label: 'Name der Person',
+                    }],
                 }}
             >
                 <PaymentConfigView

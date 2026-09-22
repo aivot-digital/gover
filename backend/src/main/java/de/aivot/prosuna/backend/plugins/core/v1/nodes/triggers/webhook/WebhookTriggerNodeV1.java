@@ -5,12 +5,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.elements.enums.OverrideFunctionType;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.elements.ElementOverrideFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
@@ -22,6 +22,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeOrOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
@@ -199,10 +200,14 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
         configLayout
                 .findChild(WebhookTriggerConfigV1.SLUG_CONFIG_KEY, TextInputElement.class)
                 .ifPresent(field -> {
-                    var pattern = new TextInputElementPattern()
-                            .setRegex("^[a-z0-9-]+$")
-                            .setMessage("Das URL-Segment des Webhooks darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.");
-                    field.setPattern(pattern);
+                    field.setValidation(ElementValidationFunctions.of(
+                            NoCodeExpression.of(
+                                    NoCodeRegexMatchOperator.OPERATOR_ID,
+                                    NoCodeReference.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY),
+                                    NoCodeStaticValue.of("^[a-z0-9-]+$")
+                            ),
+                            "Das URL-Segment des Webhooks darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                    ));
 
                     field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
                     field.setCopyable(true);

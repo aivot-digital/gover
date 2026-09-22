@@ -40,7 +40,7 @@ import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/Payme
 import {DisabledTooltip} from '../components/disabled-tooltip/disabled-tooltip';
 import {pluralize} from '../utils/humanization-utils';
 import {RadioFieldComponent} from '../components/radio-field/radio-field-component';
-import {RichTextInputComponent} from '../components/rich-text-input-component/rich-text-input-component';
+import {RichTextInputWithVariablePicker} from '../components/rich-text-input-component/rich-text-input-with-variable-picker';
 import {FormFieldGroup} from '../components/form-field';
 import {FormFieldTokens} from '../theming/form-field-tokens';
 
@@ -534,7 +534,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     mt: 3,
                 }}
             >
-                <RichTextInputComponent
+                <RichTextInputWithVariablePicker
                     label="Erfolgsmeldung nach Zahlung"
                     value={currentValue.successMessage}
                     onChange={(successMessage) => updateValue({
@@ -551,7 +551,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     mt: 2,
                 }}
             >
-                <RichTextInputComponent
+                <RichTextInputWithVariablePicker
                     label="Fehlermeldung bei Zahlungsfehler"
                     value={currentValue.failureMessage}
                     onChange={(failureMessage) => updateValue({

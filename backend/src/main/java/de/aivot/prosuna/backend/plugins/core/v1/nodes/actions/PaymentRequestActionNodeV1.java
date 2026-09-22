@@ -314,16 +314,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 context.getThisProcessInstance()
         );
         var automaticContent = requireAutomaticContent(configuration);
-        var subject = renderRequiredTemplate(
-                context.getCurrentProcessExecutionData(),
-                automaticContent.subject,
-                "Betreff"
-        );
-        var content = renderRequiredTemplate(
-                context.getCurrentProcessExecutionData(),
-                automaticContent.content,
-                "Nachrichtentext"
-        );
+        var subject = automaticContent.subject.trim();
+        var content = automaticContent.content.trim();
         var paymentPayload = createPaymentPayload(
                 resolvedConfiguration.paymentConfig(),
                 context.getCurrentProcessExecutionData()
@@ -407,22 +399,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
         var taskViewData = new AuthoredElementValues();
 
-        try {
-            taskViewData.putLiteral(
-                    STAFF_TASK_SUBJECT_FIELD_ID,
-                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.subject)
-            );
-            taskViewData.putLiteral(
-                    STAFF_TASK_CONTENT_FIELD_ID,
-                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.content)
-            );
-        } catch (RuntimeException e) {
-            throw ResponseException.internalServerError(
-                    e,
-                    "Die Nachrichtenvorlage der Zahlungsaufforderung konnte nicht gerendert werden: %s",
-                    e.getMessage()
-            );
-        }
+        taskViewData.putLiteral(STAFF_TASK_SUBJECT_FIELD_ID, manualContent.subject.trim());
+        taskViewData.putLiteral(STAFF_TASK_CONTENT_FIELD_ID, manualContent.content.trim());
 
         return ProcessNodeStaffView.of(
                 context,
@@ -680,35 +658,6 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
             throw ResponseException.internalServerError(e, e.getMessage());
         }
-    }
-
-    @Nonnull
-    private String renderRequiredTemplate(
-            @Nonnull ProcessExecutionData processExecutionData,
-            @Nonnull String template,
-            @Nonnull String fieldName
-    ) throws ProcessNodeExecutionException {
-        final String rendered;
-        try {
-            rendered = StringUtils.toNullableTrimmedString(
-                    templateRenderService.interpolate(processExecutionData, template)
-            );
-        } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Vorlage für %s konnte nicht gerendert werden: %s",
-                    fieldName,
-                    e.getMessage()
-            );
-        }
-
-        if (rendered == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der gerenderte Wert für %s ist leer.",
-                    fieldName
-            );
-        }
-        return rendered;
     }
 
     private static void validateStaffMessage(

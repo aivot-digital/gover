@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
 import de.aivot.prosuna.backend.elements.utils.ElementReferenceUtils;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.models.functions.conditions.ConditionSet;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -55,6 +56,18 @@ public class ElementValidationFunctions implements Serializable {
                         ));
             }
         }
+    }
+
+    @Nonnull
+    public static ElementValidationFunctions of(@Nonnull NoCodeOperand noCode, @Nullable String message) {
+        var validation = new ElementValidationFunctions()
+                .setNoCodeList(List.of(
+                        new ValidationNoCodeWrapper()
+                                .setNoCode(noCode)
+                                .setMessage(message)
+                ));
+        validation.recalculateReferencedIds();
+        return validation;
     }
 
     // region Hash & Equals

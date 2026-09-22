@@ -6,11 +6,11 @@ import de.aivot.prosuna.backend.elements.enums.ElementDisplayContext;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
@@ -23,6 +23,9 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
@@ -33,6 +36,7 @@ import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsServi
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.plugins.form.FormPlugin;
 import de.aivot.prosuna.backend.plugins.form.v1.services.FormLayoutCleanerService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -313,10 +317,14 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         config
                 .findChild(FormTriggerConfigV1.FORM_SLUG, TextInputElement.class)
                 .ifPresent(field -> {
-                    var pattern = new TextInputElementPattern()
-                            .setRegex("^[a-z0-9-]+$")
-                            .setMessage("Das URL-Segment des Formulars darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.");
-                    field.setPattern(pattern);
+                    field.setValidation(ElementValidationFunctions.of(
+                            NoCodeExpression.of(
+                                    NoCodeRegexMatchOperator.OPERATOR_ID,
+                                    NoCodeReference.of(FormTriggerConfigV1.FORM_SLUG),
+                                    NoCodeStaticValue.of("^[a-z0-9-]+$")
+                            ),
+                            "Das URL-Segment des Formulars darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                    ));
 
                     field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
                     field.setCopyable(true);

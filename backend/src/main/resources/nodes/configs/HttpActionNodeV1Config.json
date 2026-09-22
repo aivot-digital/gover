@@ -76,7 +76,6 @@
       "minCharacters": null,
       "prefix": null,
       "copyable": false,
-      "pattern": null,
       "suggestions": null
     },
     {
@@ -193,7 +192,6 @@
           "minCharacters": null,
           "prefix": null,
           "copyable": false,
-          "pattern": null,
           "suggestions": null
         },
         {
@@ -286,7 +284,6 @@
           "minCharacters": null,
           "prefix": null,
           "copyable": false,
-          "pattern": null,
           "suggestions": null
         }
       ],
@@ -799,7 +796,6 @@
           "prefix": null,
           "copyable": false,
           "copyValueTemplate": null,
-          "pattern": null,
           "suggestions": null
         }
       ],

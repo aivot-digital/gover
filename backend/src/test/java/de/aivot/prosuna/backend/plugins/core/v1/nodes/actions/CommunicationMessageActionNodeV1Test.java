@@ -35,7 +35,6 @@ import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import org.junit.jupiter.api.Test;
 
@@ -68,7 +67,7 @@ class CommunicationMessageActionNodeV1Test {
 
     @Test
     void metadataExposesAutomaticAndSemiAutomaticExecutionAndTypedOutputs() {
-        var node = createNode(mock(TemplateRenderService.class), mock(AssignmentContextAssigneeResolverService.class));
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
 
         assertArrayEquals(
                 new ProcessNodeExecutionType[]{
@@ -97,7 +96,7 @@ class CommunicationMessageActionNodeV1Test {
 
     @Test
     void configurationUsesSharedSemiAutomaticMessageLayout() throws Exception {
-        var node = createNode(mock(TemplateRenderService.class), mock(AssignmentContextAssigneeResolverService.class));
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
         var processNode = mock(ProcessNodeEntity.class);
         when(processNode.getProcessId()).thenReturn(PROCESS_ID);
         when(processNode.getProcessVersion()).thenReturn(PROCESS_VERSION);
@@ -182,21 +181,11 @@ class CommunicationMessageActionNodeV1Test {
 
     @Test
     void initAutomaticReturnsCommunicationRequestForConfiguredIdentity() throws Exception {
-        var templateRenderService = mock(TemplateRenderService.class);
-        var node = createNode(templateRenderService, mock(AssignmentContextAssigneeResolverService.class));
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
         var configuration = configuration("automatic");
         var processInstance = processInstance();
         var executionData = new ProcessExecutionData().addProcessData(Map.of("caseNumber", "123"));
         var context = initContext(configuration, executionData, processInstance, mock(ProcessInstanceTaskEntity.class));
-
-        when(templateRenderService.interpolate(
-                same(executionData),
-                eq(configuration.messageConfig.automaticContent.subject)
-        )).thenReturn("  Subject 123  ");
-        when(templateRenderService.interpolate(
-                same(executionData),
-                eq(configuration.messageConfig.automaticContent.content)
-        )).thenReturn("  Hello  ");
 
         var result = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.init(context));
 
@@ -214,7 +203,7 @@ class CommunicationMessageActionNodeV1Test {
     @Test
     void initManualAssignsStaffWithoutSending() throws Exception {
         var assignmentResolver = mock(AssignmentContextAssigneeResolverService.class);
-        var node = createNode(mock(TemplateRenderService.class), assignmentResolver);
+        var node = createNode(assignmentResolver);
         var configuration = configuration("manual");
         var processInstance = processInstance();
         var processNode = processNode();
@@ -245,21 +234,11 @@ class CommunicationMessageActionNodeV1Test {
     }
 
     @Test
-    void staffTaskProvidesRenderedDefaultsAndSendsEditedValues() throws Exception {
-        var templateRenderService = mock(TemplateRenderService.class);
-        var node = createNode(templateRenderService, mock(AssignmentContextAssigneeResolverService.class));
+    void staffTaskProvidesResolvedDefaultsAndSendsEditedValues() throws Exception {
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
         var configuration = configuration("manual");
         var executionData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var context = staffContext(configuration, executionData, processInstance(), task());
-
-        when(templateRenderService.interpolate(
-                same(executionData),
-                eq(configuration.messageConfig.manualContent.subject)
-        )).thenReturn("Entwurf für Ada");
-        when(templateRenderService.interpolate(
-                same(executionData),
-                eq(configuration.messageConfig.manualContent.content)
-        )).thenReturn("Hallo Ada");
 
         var view = node.getStaffTaskView(context);
         var layout = (GroupLayoutElement) view.layout();
@@ -282,7 +261,7 @@ class CommunicationMessageActionNodeV1Test {
 
     @Test
     void staffTaskRejectsBlankValuesAndUnknownEvents() {
-        var node = createNode(mock(TemplateRenderService.class), mock(AssignmentContextAssigneeResolverService.class));
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
         var context = staffContext(configuration("manual"), new ProcessExecutionData(), processInstance(), task());
 
         assertThrows(
@@ -301,7 +280,7 @@ class CommunicationMessageActionNodeV1Test {
 
     @Test
     void invalidExecutionTypeFailsAndExportRemovesSystemReferences() {
-        var node = createNode(mock(TemplateRenderService.class), mock(AssignmentContextAssigneeResolverService.class));
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
         var invalidConfiguration = configuration("unexpected");
 
         assertThrows(
@@ -334,11 +313,11 @@ class CommunicationMessageActionNodeV1Test {
         configuration.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
         configuration.messageConfig.executionType = executionType;
         configuration.messageConfig.automaticContent = new SemiAutomaticMessageConfig.AutomaticContent();
-        configuration.messageConfig.automaticContent.subject = "Subject {{ $.caseNumber }}";
+        configuration.messageConfig.automaticContent.subject = "Subject 123";
         configuration.messageConfig.automaticContent.content = "Hello";
         configuration.messageConfig.manualContent = new SemiAutomaticMessageConfig.ManualContent();
-        configuration.messageConfig.manualContent.subject = "Entwurf für {{ $.name }}";
-        configuration.messageConfig.manualContent.content = "Hallo {{ $.name }}";
+        configuration.messageConfig.manualContent.subject = "Entwurf für Ada";
+        configuration.messageConfig.manualContent.content = "Hallo Ada";
         configuration.messageConfig.manualContent.assignmentContext = new AssignmentContextInputElementValue();
         return configuration;
     }
@@ -432,11 +411,9 @@ class CommunicationMessageActionNodeV1Test {
     }
 
     private static CommunicationMessageActionNodeV1 createNode(
-            TemplateRenderService templateRenderService,
             AssignmentContextAssigneeResolverService assignmentResolver
     ) {
         return new CommunicationMessageActionNodeV1(
-                templateRenderService,
                 mock(ProcessInstanceAttachmentSetService.class),
                 mock(ProcessInstanceAttachmentService.class),
                 mock(StorageService.class),

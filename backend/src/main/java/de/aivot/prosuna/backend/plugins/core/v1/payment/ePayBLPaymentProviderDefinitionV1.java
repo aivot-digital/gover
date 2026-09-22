@@ -6,13 +6,16 @@ import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
@@ -20,6 +23,7 @@ import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -45,6 +49,7 @@ import java.util.UUID;
 
 @Component
 public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinition, PluginComponent {
+    private static final String URL_REGEX = "^(https?):\\/\\/([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$";
     private final static String ORIGINATOR_ID_FIELD = "originatorId";
     private final static String ENDPOINT_ID_FIELD = "endpointId";
     private final static String CERTIFICATE_FIELD = "certificate";
@@ -171,10 +176,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         paymentTransactionUrlInput.setLabel("Basis-URL");
         paymentTransactionUrlInput.setPlaceholder("https://epayment-stage.dataport.de/konnektor/epayment/");
         paymentTransactionUrlInput.setHint("Die Basis-URL des Zielsystems gemäß XBezahldienste-Standard. Diese wird vom Zahlungsdienstleister bereitgestellt.");
-        TextInputElementPattern urlPattern = new TextInputElementPattern()
-                .setRegex(TextInputElementPattern.URL_REGEX)
-                .setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
-        paymentTransactionUrlInput.setPattern(urlPattern);
+        paymentTransactionUrlInput.setValidation(urlValidation(PAYMENT_TRANSACTION_URL_FIELD));
         list.add(paymentTransactionUrlInput);
 
         var group = new GroupLayoutElement();
@@ -183,6 +185,17 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         group.setChildren(list);
 
         return group;
+    }
+
+    private static ElementValidationFunctions urlValidation(@Nonnull String fieldId) {
+        return ElementValidationFunctions.of(
+                NoCodeExpression.of(
+                        NoCodeRegexMatchOperator.OPERATOR_ID,
+                        NoCodeReference.of(fieldId),
+                        NoCodeStaticValue.of(URL_REGEX)
+                ),
+                "Bitte geben Sie eine gültige URL ein (z. B. https://example.com)."
+        );
     }
 
     @Nonnull

@@ -477,15 +477,11 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         var payloadUpdate = config.uiDefinition() != null
                 ? elementDataTransformService.buildPayload(config.uiDefinition(), effectiveUiUpdate, derivedUiUpdate.getElementStates())
                 : Map.<String, Object>of();
-        var originalProcessData = JsonMapperFactory.Utils.convertToMapPreservingNulls(context.getThisTask().getProcessData());
-        var updatedProcessData = config.uiDefinition() != null
-                ? elementDataTransformService.buildPayload(
-                        config.uiDefinition(),
-                        effectiveUiUpdate,
-                        derivedUiUpdate.getElementStates(),
-                        JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
-                )
-                : JsonMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData);
+        var updatedProcessData = elementDataTransformService.buildUpdatedProcessData(
+                config.uiDefinition(),
+                derivedUiUpdate,
+                context.getThisTask().getProcessData()
+        );
         var remark = normalizeRemark(update.getLiteral(TASK_VIEW_REMARK_FIELD_ID));
 
         var nodeData = new LinkedHashMap<String, Object>();

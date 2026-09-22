@@ -41,7 +41,6 @@ import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
-import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -77,20 +76,17 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     private static final String STAFF_TASK_CONTENT_FIELD_ID = "body";
     private static final String STAFF_TASK_SEND_EVENT = "send";
 
-    private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentSetService attachmentSetService;
     private final ProcessInstanceAttachmentService attachmentService;
     private final StorageService storageService;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
 
     public CommunicationMessageActionNodeV1(
-            TemplateRenderService templateRenderService,
             ProcessInstanceAttachmentSetService attachmentSetService,
             ProcessInstanceAttachmentService attachmentService,
             StorageService storageService,
             AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService
     ) {
-        this.templateRenderService = templateRenderService;
         this.attachmentSetService = attachmentSetService;
         this.attachmentService = attachmentService;
         this.storageService = storageService;
@@ -239,16 +235,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
             @Nonnull Configuration configuration
     ) throws ProcessNodeExecutionException {
         var automaticContent = requireAutomaticContent(configuration);
-        var subject = renderRequiredTemplate(
-                context.getCurrentProcessExecutionData(),
-                automaticContent.subject,
-                "Betreff"
-        );
-        var content = renderRequiredTemplate(
-                context.getCurrentProcessExecutionData(),
-                automaticContent.content,
-                "Nachrichtentext"
-        );
+        var subject = automaticContent.subject.trim();
+        var content = automaticContent.content.trim();
 
         return createCommunicationResult(
                 configuration,
@@ -310,22 +298,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
         var taskViewData = new AuthoredElementValues();
 
-        try {
-            taskViewData.putLiteral(
-                    STAFF_TASK_SUBJECT_FIELD_ID,
-                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.subject)
-            );
-            taskViewData.putLiteral(
-                    STAFF_TASK_CONTENT_FIELD_ID,
-                    templateRenderService.interpolate(context.getCurrentProcessExecutionData(), manualContent.content)
-            );
-        } catch (RuntimeException e) {
-            throw ResponseException.internalServerError(
-                    e,
-                    "Die Nachrichtenvorlage konnte nicht gerendert werden: %s",
-                    e.getMessage()
-            );
-        }
+        taskViewData.putLiteral(STAFF_TASK_SUBJECT_FIELD_ID, manualContent.subject.trim());
+        taskViewData.putLiteral(STAFF_TASK_CONTENT_FIELD_ID, manualContent.content.trim());
 
         return ProcessNodeStaffView.of(
                 context,
@@ -471,35 +445,6 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
             throw ResponseException.internalServerError(e, e.getMessage());
         }
-    }
-
-    @Nonnull
-    private String renderRequiredTemplate(
-            @Nonnull ProcessExecutionData processExecutionData,
-            @Nonnull String template,
-            @Nonnull String fieldName
-    ) throws ProcessNodeExecutionException {
-        final String rendered;
-        try {
-            rendered = StringUtils.toNullableTrimmedString(
-                    templateRenderService.interpolate(processExecutionData, template)
-            );
-        } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Vorlage für %s konnte nicht gerendert werden: %s",
-                    fieldName,
-                    e.getMessage()
-            );
-        }
-
-        if (rendered == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der gerenderte Wert für %s ist leer.",
-                    fieldName
-            );
-        }
-        return rendered;
     }
 
     private static void validateStaffMessage(

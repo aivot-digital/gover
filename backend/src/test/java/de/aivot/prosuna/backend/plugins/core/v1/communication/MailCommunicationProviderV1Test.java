@@ -8,7 +8,9 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderContex
 import de.aivot.prosuna.backend.communication.models.MailCommunicationSendOptions;
 import de.aivot.prosuna.backend.communication.services.DefaultMailCommunicationService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -21,7 +23,10 @@ import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.mail.dtos.MailConfigurationResponseDTO;
 import de.aivot.prosuna.backend.mail.services.MailConfigurationService;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -29,9 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -101,8 +106,18 @@ class MailCommunicationProviderV1Test {
         assertFalse(replyToAddress.getRequired());
         assertEquals("email", replyToAddress.getAutocomplete());
         assertEquals(254, replyToAddress.getMaxCharacters());
-        assertNotNull(customSenderAddress.getPattern());
-        assertNotNull(replyToAddress.getPattern());
+        assertRegexValidation(
+                customSenderAddress,
+                "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+                List.of("sender@example.test"),
+                List.of("keine-email", "first@example.test,second@example.test")
+        );
+        assertRegexValidation(
+                replyToAddress,
+                "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+                List.of("", "replies@example.test"),
+                List.of("keine-email", "first@example.test,second@example.test")
+        );
         assertNotNull(defaultSenderGroup.getVisibility());
         assertNotNull(customSenderGroup.getVisibility());
         assertEquals(AlertType.Warning, customSenderAlert.getAlertType());
@@ -112,13 +127,6 @@ class MailCommunicationProviderV1Test {
         assertTrue(customSenderAlert.getText().contains("Spam"));
 
         assertThrows(ValidationException.class, () -> customSenderName.validate(" "));
-        assertDoesNotThrow(() -> customSenderAddress.validate("sender@example.test"));
-        assertThrows(ValidationException.class, () -> customSenderAddress.validate("keine-email"));
-        assertThrows(ValidationException.class, () -> customSenderAddress.validate("first@example.test,second@example.test"));
-        assertDoesNotThrow(() -> replyToAddress.validate(""));
-        assertDoesNotThrow(() -> replyToAddress.validate("replies@example.test"));
-        assertThrows(ValidationException.class, () -> replyToAddress.validate("keine-email"));
-        assertThrows(ValidationException.class, () -> replyToAddress.validate("first@example.test,second@example.test"));
     }
 
     @Test
@@ -151,10 +159,13 @@ class MailCommunicationProviderV1Test {
         assertEquals("Testempfänger", recipient.getLabel());
         assertEquals("email", recipient.getAutocomplete());
         assertTrue(recipient.getRequired());
-        assertNotNull(recipient.getPattern());
-        assertDoesNotThrow(() -> recipient.validate("customer@example.test"));
+        assertRegexValidation(
+                recipient,
+                "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+                List.of("customer@example.test"),
+                List.of("invalid")
+        );
         assertThrows(ValidationException.class, () -> recipient.validate(""));
-        assertThrows(ValidationException.class, () -> recipient.validate("invalid"));
     }
 
     @Test
@@ -403,6 +414,32 @@ class MailCommunicationProviderV1Test {
 
     private static Object staticValue(de.aivot.prosuna.backend.elements.models.elements.BaseInputElement<?> input) {
         return ((NoCodeStaticValue) input.getValue().getNoCode()).getValue();
+    }
+
+    private static void assertRegexValidation(TextInputElement field,
+                                              String expectedMessage,
+                                              List<String> acceptedValues,
+                                              List<String> rejectedValues) throws Exception {
+        var validation = field.getValidation();
+        assertNotNull(validation);
+        assertEquals(ValidationFunctionType.NoCode, validation.getType());
+        assertEquals(List.of(field.getId()), List.copyOf(validation.getReferencedIds()));
+
+        var wrapper = validation.getNoCodeList().getFirst();
+        assertEquals(expectedMessage, wrapper.getMessage());
+        var expression = assertInstanceOf(NoCodeExpression.class, wrapper.getNoCode());
+        assertEquals(NoCodeRegexMatchOperator.OPERATOR_ID, expression.getOperatorIdentifier());
+
+        var operands = List.copyOf(expression.getOperands());
+        assertEquals(NoCodeReference.of(field.getId()), operands.getFirst());
+        var regex = assertInstanceOf(String.class, assertInstanceOf(NoCodeStaticValue.class, operands.get(1)).getValue());
+        var operator = new NoCodeRegexMatchOperator();
+        for (var value : acceptedValues) {
+            assertTrue(operator.performEvaluation(DerivedRuntimeElementData.empty(), value, regex).getValueAsBoolean());
+        }
+        for (var value : rejectedValues) {
+            assertFalse(operator.performEvaluation(DerivedRuntimeElementData.empty(), value, regex).getValueAsBoolean());
+        }
     }
 
     private static MailConfigurationResponseDTO mailConfiguration(String senderName, String senderAddress) {

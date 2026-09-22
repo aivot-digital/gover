@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.elements.uiPresets;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -96,11 +97,15 @@ public class SemiAutomaticMessageConfig {
          * Dispatch mode. Only {@link #EXECUTION_TYPE_AUTOMATIC} and {@link #EXECUTION_TYPE_MANUAL} are accepted;
          * missing or unknown values fail execution.
          */
-        @InputElementPOJOBinding(id = EXECUTION_TYPE_FIELD_ID, type = ElementType.Radio, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob die Nachricht automatisch versendet oder vorher durch eine Mitarbeiter:in bearbeitet wird."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
+        @InputElementPOJOBinding(
+                id = EXECUTION_TYPE_FIELD_ID,
+                type = ElementType.Radio,
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob die Nachricht automatisch versendet oder vorher durch eine Mitarbeiter:in bearbeitet wird."),
+                        @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                }
+        )
         public String executionType;
 
         /**
@@ -126,21 +131,43 @@ public class SemiAutomaticMessageConfig {
         /**
          * Subject template rendered against the process data immediately before dispatch.
          */
-        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der Nachricht"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
+        @InputElementPOJOBinding(
+                id = SUBJECT_FIELD_ID,
+                type = ElementType.Text,
+                dynamicText = true,
+                allowedInputModes = {
+                        InputMode.Literal,
+                        InputMode.Variable,
+                        InputMode.NoCode,
+                        InputMode.LowCode
+                },
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der Nachricht"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                }
+        )
         public String subject;
 
         /**
          * Rich-text template rendered against the process data immediately before dispatch.
          */
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Nachricht"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
+        @InputElementPOJOBinding(
+                id = CONTENT_FIELD_ID,
+                type = ElementType.RichTextInput,
+                dynamicText = true,
+                allowedInputModes = {
+                        InputMode.Literal,
+                        InputMode.Variable,
+                        InputMode.NoCode,
+                        InputMode.LowCode
+                },
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachricht"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                }
+        )
         public String content;
     }
 
@@ -157,21 +184,43 @@ public class SemiAutomaticMessageConfig {
         /**
          * Required subject template rendered once to initialize the editable staff task.
          */
-        @InputElementPOJOBinding(id = SUBJECT_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für den Betreff"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung des bearbeitbaren Betreffs. Unterstützt Template-Tags mit Vorgangsdaten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
+        @InputElementPOJOBinding(
+                id = SUBJECT_FIELD_ID,
+                type = ElementType.Text,
+                dynamicText = true,
+                allowedInputModes = {
+                        InputMode.Literal,
+                        InputMode.Variable,
+                        InputMode.NoCode,
+                        InputMode.LowCode
+                },
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für den Betreff"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung des bearbeitbaren Betreffs. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                }
+        )
         public String subject;
 
         /**
          * Required rich-text template rendered once to initialize the editable staff task.
          */
-        @InputElementPOJOBinding(id = CONTENT_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für die Nachricht"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung der bearbeitbaren Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
+        @InputElementPOJOBinding(
+                id = CONTENT_FIELD_ID,
+                type = ElementType.RichTextInput,
+                dynamicText = true,
+                allowedInputModes = {
+                        InputMode.Literal,
+                        InputMode.Variable,
+                        InputMode.NoCode,
+                        InputMode.LowCode
+                },
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für die Nachricht"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung der bearbeitbaren Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                }
+        )
         public String content;
 
         /**

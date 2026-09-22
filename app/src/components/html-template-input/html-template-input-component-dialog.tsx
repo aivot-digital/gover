@@ -4,7 +4,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {ImageSelector} from '../../modules/assets/components/image-selector';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
+import {RichTextInputWithVariablePicker} from '../rich-text-input-component/rich-text-input-with-variable-picker';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {VStorageIndexItemWithAssetEntity} from '../../modules/storage/entities/storage-index-item-entity';
 import {DialogProps} from '@mui/material/Dialog';
@@ -20,6 +20,7 @@ interface HtmlTemplateInputComponentDialogProps {
     slots: HtmlTemplateInputValue['slots'];
     onChangeSlots: (slots: HtmlTemplateInputValue['slots']) => void;
     onClose: () => void;
+    readOnly?: boolean;
 }
 
 type SlotType = 'text' | 'richtext' | 'image';
@@ -41,6 +42,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
         slots,
         onChangeSlots,
         onClose,
+        readOnly,
         ...rest
     } = props;
 
@@ -363,13 +365,14 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
 
                             {
                                 slotToEdit.type == 'richtext' &&
-                                <RichTextInputComponent
+                                <RichTextInputWithVariablePicker
                                     label={slotToEdit.label}
                                     hint={slotToEdit.hint}
                                     value={value}
                                     onChange={(val) => {
                                         setEditedSlotValue(val);
                                     }}
+                                    readOnly={readOnly}
                                 />
                             }
 
@@ -411,6 +414,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                     </Button>
                 </DialogActions>
             </Dialog>
+
         </>
     );
 }
