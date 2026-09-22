@@ -411,10 +411,18 @@ export const ElementDerivationContext = forwardRef<
         return await deriveWithMinimumVisibleDuration(normalizedNewData, ['ALL']);
     };
 
+    const resetErrorsBeforeValidation = () => {
+        const clearedData = clearDerivedErrorsRecursively(baseDerivedData);
+        setInternalDerivedData(clearedData);
+        // Clear externally managed results too before lifting edit-time error suppression.
+        onDerivedDataChange?.(clearedData);
+        setErrorSuppressionTargets([]);
+    };
+
     useImperativeHandle(ref, () => ({
         replaceAuthoredElementValues,
         validate: () => {
-            setErrorSuppressionTargets([]);
+            resetErrorsBeforeValidation();
             return deriveWithMinimumVisibleDuration(authoredElementValues, []);
         },
     }));
@@ -448,10 +456,7 @@ export const ElementDerivationContext = forwardRef<
                     onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
                     derivationTriggerIdQueue={derivationTriggerIdQueue}
                     onDerive={(authoredValues, _, skipErrorsForElements) => {
-                        setInternalDerivedData((current) => {
-                            return clearDerivedErrorsRecursively(current);
-                        });
-                        setErrorSuppressionTargets([]);
+                        resetErrorsBeforeValidation();
                         return deriveWithMinimumVisibleDuration(authoredValues, skipErrorsForElements);
                     }}
                     onEvent={(data, event) => {

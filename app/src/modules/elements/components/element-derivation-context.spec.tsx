@@ -164,6 +164,101 @@ vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => (
 }));
 
 describe('ElementDerivationContext', () => {
+    it.each(['editor button', 'form navigation', 'customer form navigation'] as const)(
+        'keeps stale errors hidden while %s revalidates and shows fresh errors afterwards',
+        async (trigger) => {
+            const ref = React.createRef<ElementDerivationContextHandle>();
+            const element = createRootElement();
+            const valid = createDerivedRuntimeElementData({
+                effectiveValues: {field: 'valid'},
+                elementStates: {root: {}, field: {visible: true}},
+            });
+            const invalid = createDerivedRuntimeElementData({elementStates: {
+                root: {}, field: {error: 'Bitte prüfen Sie diese Angabe.'},
+            }});
+            let resolveValidation!: (result: DerivedRuntimeElementData) => void;
+            const pending = new Promise<DerivedRuntimeElementData>(resolve => { resolveValidation = resolve; });
+            const derive = vi.fn().mockResolvedValueOnce(invalid).mockReturnValueOnce(pending).mockResolvedValue(invalid);
+            function Harness() {
+                const [values, setValues] = React.useState<AuthoredElementValues>({});
+                const [controlledData, setControlledData] = React.useState(valid);
+                return <ElementDerivationContext
+                    ref={ref}
+                    element={element}
+                    authoredElementValues={values}
+                    onAuthoredElementValuesChange={setValues}
+                    derivedData={trigger === 'customer form navigation' ? controlledData : undefined}
+                    onDerivedDataChange={trigger === 'customer form navigation' ? setControlledData : undefined}
+                    onDeriveOverride={derive}
+                    deriveOnMount={false}
+                    showErrorSummary
+                />;
+            }
+            render(<Harness/>);
+            const validate = () => trigger === 'editor button'
+                ? ref.current!.validate()
+                : observeViewProps.mock.lastCall![0].onDerive(
+                    observeViewProps.mock.lastCall![0].authoredElementValues, [], [],
+                );
+
+            await act(async () => { await validate(); });
+            expect(screen.getByRole('alert')).toHaveTextContent('Bitte prüfen Sie diese Angabe.');
+            fireEvent.click(screen.getByRole('button', {name: 'Wert setzen'}));
+            expect(screen.getByTestId('field-error')).toBeEmptyDOMElement();
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+            let revalidation!: Promise<DerivedRuntimeElementData>;
+            act(() => { revalidation = validate(); });
+            expect(screen.getByTestId('field-error')).toBeEmptyDOMElement();
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            expect(screen.getByTestId('field-effective-value')).toHaveTextContent('"valid"');
+            expect(derive).toHaveBeenLastCalledWith({field: literalAuthoredValue('valid')}, []);
+            await act(async () => {
+                resolveValidation(valid);
+                await revalidation;
+            });
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+            await act(async () => { await validate(); });
+            expect(screen.getByTestId('field-error')).toHaveTextContent('Bitte prüfen Sie diese Angabe.');
+            expect(screen.getByRole('alert')).toHaveTextContent('Bitte prüfen Sie diese Angabe.');
+        },
+    );
+
+    it.each([false, true])('keeps edits made during validation error-free (controlled: %s)', async (controlled) => {
+        const element = createRootElement();
+        let resolveValidation!: (result: DerivedRuntimeElementData) => void;
+        const pending = new Promise<DerivedRuntimeElementData>(resolve => { resolveValidation = resolve; });
+        function Harness() {
+            const [values, setValues] = React.useState<AuthoredElementValues>({});
+            const [data, setData] = React.useState(createDerivedRuntimeElementData());
+            return <ElementDerivationContext
+                element={element}
+                authoredElementValues={values}
+                onAuthoredElementValuesChange={setValues}
+                derivedData={controlled ? data : undefined}
+                onDerivedDataChange={controlled ? setData : undefined}
+                onDeriveOverride={() => pending}
+                deriveOnMount={false}
+                showErrorSummary
+            />;
+        }
+        render(<Harness/>);
+        let validation!: Promise<DerivedRuntimeElementData>;
+        act(() => {
+            validation = observeViewProps.mock.lastCall![0].onDerive({}, [], []);
+        });
+        fireEvent.click(screen.getByRole('button', {name: 'Wert setzen'}));
+        await act(async () => {
+            resolveValidation(createDerivedRuntimeElementData({elementStates: {
+                root: {}, field: {error: 'Fehler für die vorherige Eingabe'},
+            }}));
+            await validation;
+        });
+        expect(screen.getByTestId('field-error')).toBeEmptyDOMElement();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
     it.each(['staff', 'customer'] as const)('keeps the %s task error summary in sync with field errors', async (taskViewMode) => {
         const element = createRootElement();
         const computedErrors: ComputedElementErrors = {field: {error: 'Bitte prüfen Sie diese Angabe.'}};
