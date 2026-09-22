@@ -41,8 +41,8 @@ class ProcessNodeInputModePolicyTest {
 
     @Test
     void runtimeValueFields_ShouldExposeAllInputModesAndVariableSources() throws Exception {
-        assertDynamicFields(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.class, "model", "prompt");
-        assertDynamicFields(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.class, "model", "prompt");
+        assertDynamicFields(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.class, "prompt");
+        assertDynamicFields(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.class, "prompt");
         assertDynamicFields(ApprovalActionNodeV1.ApprovalConfiguration.class, "criteria", "customContent");
         assertDynamicFields(
                 EMailActionNodeV1.EMailActionNodeConfig.class,
@@ -70,8 +70,6 @@ class ProcessNodeInputModePolicyTest {
     @Test
     void structuralAndSecurityFields_ShouldRemainLiteralOnly() throws Exception {
         // These values influence editor structure, metadata, credentials, assignments or durable data destinations.
-        // In particular, the AI endpoint and secret are needed during authoring to load the literal model options.
-        assertLiteralOnlyFields(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.class, "endpointUrl", "apiKeySecret");
         assertLiteralOnlyFields(ApprovalActionNodeV1.ApprovalConfiguration.class, "contentMode", "dataContent", "assignmentContext");
         assertLiteralOnlyFields(
                 EMailActionNodeV1.EMailActionNodeConfig.class,

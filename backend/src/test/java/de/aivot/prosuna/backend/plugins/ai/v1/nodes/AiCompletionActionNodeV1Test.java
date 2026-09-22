@@ -1,6 +1,5 @@
 package de.aivot.prosuna.backend.plugins.ai.v1.nodes;
 
-import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -13,9 +12,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.prosuna.backend.process.models.InputVariableSuggestion;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
@@ -25,7 +22,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -56,19 +52,19 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class AiProcessDataTransformationActionNodeV1Test {
+class AiCompletionActionNodeV1Test {
     private static final Integer PROCESS_ID = 42;
     private static final Integer PROCESS_VERSION = 3;
     private static final Integer NODE_ID = 123;
     private static final Long PROCESS_INSTANCE_ID = 99L;
     private static final Long TASK_ID = 456L;
-    private static final int CONFIGURED_TRANSFORMATION_MAX_TOKENS = 4096;
+    private static final int CONFIGURED_COMPLETION_MAX_TOKENS = 1337;
     private static final String CENTRAL_MODEL = "central-model";
     private static final Duration CHAT_TIMEOUT = Duration.ofMinutes(2);
 
     private final List<Prompt> prompts = new ArrayList<>();
     private ChatModel chatModel;
-    private AiProcessDataTransformationActionNodeV1 node;
+    private AiCompletionActionNodeV1 node;
 
     @BeforeEach
     void setUp() {
@@ -79,95 +75,63 @@ class AiProcessDataTransformationActionNodeV1Test {
                 .build());
         when(chatModel.call(any(Prompt.class))).thenAnswer(invocation -> {
             prompts.add(invocation.getArgument(0));
-            return completionResponse("{\"decision\":\"approve\",\"person\":{\"name\":\"Ada Lovelace\"}}");
+            return completionResponse("First completion");
         });
-        node = createNode(createAiPluginProperties(1000, 1337, CONFIGURED_TRANSFORMATION_MAX_TOKENS));
+        node = createNode(createAiPluginProperties(1000, CONFIGURED_COMPLETION_MAX_TOKENS, 4000));
     }
 
     @Test
-    void init_ShouldUseCentralSpringAiModelAndTransformProcessData() throws Exception {
+    void init_ShouldUseCentralSpringAiModelAndExposeOutputs() throws Exception {
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(context(configuration("Use formalized applicant data.")))
+                node.init(context(configuration("Rendered prompt")))
         );
 
         assertEquals("success", result.getViaPort());
-        assertEquals(
-                Map.of(
-                        "decision", "approve",
-                        "person", Map.of("name", "Ada Lovelace")
-                ),
-                result.getProcessData()
-        );
-        assertEquals("Use formalized applicant data.", result.getNodeData().get("prompt"));
+        assertNull(result.getProcessData());
+        assertEquals("Rendered prompt", result.getNodeData().get("prompt"));
+        assertEquals("First completion", result.getNodeData().get("completion"));
         assertEquals("stop", result.getNodeData().get("finishReason"));
         assertEquals("response-model", result.getNodeData().get("responseModel"));
         assertEquals(
                 Map.of(
-                        "prompt_tokens", 42,
-                        "completion_tokens", 17,
-                        "total_tokens", 59
+                        "prompt_tokens", 11,
+                        "completion_tokens", 7,
+                        "total_tokens", 18
                 ),
                 result.getNodeData().get("usage")
         );
-        assertEquals(List.of("decision", "person"), result.getNodeData().get("topLevelKeys"));
+        assertEquals(
+                List.of("prompt", "completion", "finishReason", "responseModel", "usage"),
+                List.copyOf(result.getNodeData().keySet())
+        );
 
         var prompt = prompts.getFirst();
-        assertEquals(2, prompt.getInstructions().size());
-        var systemMessage = assertInstanceOf(SystemMessage.class, prompt.getInstructions().get(0));
-        assertTrue(systemMessage.getText().contains("Return exactly one valid JSON object"));
-        var userMessage = assertInstanceOf(UserMessage.class, prompt.getInstructions().get(1));
-        assertTrue(userMessage.getText().contains("Use formalized applicant data."));
-        assertTrue(userMessage.getText().contains("\"$\""));
-        assertTrue(userMessage.getText().contains("\"$$\""));
-        assertTrue(userMessage.getText().contains("\"_\""));
-        assertTrue(userMessage.getText().contains("\"workflow\":\"intake\""));
+        assertEquals(1, prompt.getInstructions().size());
+        var message = assertInstanceOf(UserMessage.class, prompt.getInstructions().getFirst());
+        assertEquals("Rendered prompt", message.getText());
 
         var options = assertInstanceOf(OpenAiChatOptions.class, prompt.getOptions());
         assertEquals(CENTRAL_MODEL, options.getModel());
         assertEquals(0.01d, options.getTemperature());
         assertEquals(0.9d, options.getTopP());
         assertEquals(1, options.getN());
-        assertEquals(CONFIGURED_TRANSFORMATION_MAX_TOKENS, options.getMaxTokens());
+        assertEquals(CONFIGURED_COMPLETION_MAX_TOKENS, options.getMaxTokens());
         assertEquals(CHAT_TIMEOUT, options.getTimeout());
+
+        assertEquals("KI-Anfrage", node.getName());
+        assertEquals(1, node.getPorts().size());
+        assertEquals("success", node.getPorts().getFirst().key());
     }
 
     @Test
-    void init_ShouldAcceptJsonCodeFenceResponses() throws Exception {
-        when(chatModel.call(any(Prompt.class))).thenReturn(completionResponse("""
-                ```json
-                {"status":"updated"}
-                ```
-                """));
-
-        var result = assertInstanceOf(
-                ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(context(configuration("Prompt")))
-        );
-
-        assertEquals(Map.of("status", "updated"), result.getProcessData());
-    }
-
-    @Test
-    void init_ShouldUsePluginDefaultMaxTokensWhenTransformationOverrideIsMissing() throws Exception {
-        var defaultOnlyNode = createNode(createAiPluginProperties(2222, 1337, null));
+    void init_ShouldUsePluginDefaultMaxTokensWhenCompletionOverrideIsMissing() throws Exception {
+        var defaultOnlyNode = createNode(createAiPluginProperties(2222, null, 4000));
 
         defaultOnlyNode.init(context(configuration("Prompt")));
 
         var options = assertInstanceOf(OpenAiChatOptions.class, prompts.getFirst().getOptions());
         assertEquals(2222, options.getMaxTokens());
-    }
-
-    @Test
-    void init_ShouldThrowWhenResponseIsNotAJsonObject() {
-        when(chatModel.call(any(Prompt.class))).thenReturn(completionResponse("[1, 2, 3]"));
-
-        var exception = assertThrows(
-                ProcessNodeExecutionExceptionUnknown.class,
-                () -> node.init(context(configuration("Prompt")))
-        );
-
-        assertTrue(exception.getMessage().contains("JSON-Objekt"));
     }
 
     @Test
@@ -185,11 +149,43 @@ class AiProcessDataTransformationActionNodeV1Test {
     }
 
     @Test
+    void init_ShouldRejectMissingCompletionText() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(
+                new Generation(new AssistantMessage("   "))
+        )));
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(configuration("Prompt")))
+        );
+
+        assertEquals("Die KI hat keinen Antworttext zurückgegeben.", exception.getMessage());
+    }
+
+    @Test
+    void init_ShouldExposeNullUsageWhenTheProviderDoesNotReportUsage() throws Exception {
+        when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(
+                List.of(new Generation(
+                        new AssistantMessage("Completion"),
+                        ChatGenerationMetadata.builder().finishReason("STOP").build()
+                )),
+                ChatResponseMetadata.builder().model("response-model").build()
+        ));
+
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(context(configuration("Prompt")))
+        );
+
+        assertNull(result.getNodeData().get("usage"));
+    }
+
+    @Test
     void validateConfiguration_ShouldDeferPromptChecksOnlyDuringAuthoring() throws Exception {
         var configuration = configuration(null);
         var derivedData = new DerivedRuntimeElementData();
         derivedData.getElementStates().put(
-                AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID,
+                AiCompletionActionNodeV1.AiCompletionActionNodeConfig.PROMPT_FIELD_ID,
                 new ComputedElementState().setInputValueDeferred(true)
         );
 
@@ -208,9 +204,7 @@ class AiProcessDataTransformationActionNodeV1Test {
 
         assertNull(authoringErrors);
         assertNotNull(runtimeErrors);
-        assertTrue(runtimeErrors.containsKey(
-                AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID
-        ));
+        assertTrue(runtimeErrors.containsKey(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.PROMPT_FIELD_ID));
     }
 
     @Test
@@ -229,38 +223,8 @@ class AiProcessDataTransformationActionNodeV1Test {
         assertEquals("Prompt", cleaned.getLiteral("prompt"));
     }
 
-    @Test
-    void getMetadata_ShouldForwardAllPreviousMetadata() {
-        var origin = processNode(Map.of());
-        var previousMetadata = ProcessNodeDefinitionMetadata.empty()
-                .addInputVariable(new InputVariableSuggestion(
-                        InputVariableSource.ProcessData,
-                        "person.name",
-                        null,
-                        "Name",
-                        null,
-                        origin
-                ))
-                .addInputVariable(new InputVariableSuggestion(
-                        InputVariableSource.ElementData,
-                        "result",
-                        "previousNode",
-                        "Ergebnis",
-                        null,
-                        origin
-                ));
-
-        var metadata = node.getMetadata(
-                origin,
-                new AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig(),
-                previousMetadata
-        );
-
-        assertEquals(previousMetadata, metadata);
-    }
-
-    private AiProcessDataTransformationActionNodeV1 createNode(AiPluginProperties properties) {
-        return new AiProcessDataTransformationActionNodeV1(ChatClient.builder(chatModel), properties, CHAT_TIMEOUT);
+    private AiCompletionActionNodeV1 createNode(AiPluginProperties properties) {
+        return new AiCompletionActionNodeV1(ChatClient.builder(chatModel), properties, CHAT_TIMEOUT);
     }
 
     private static ChatResponse completionResponse(String content) {
@@ -271,24 +235,24 @@ class AiProcessDataTransformationActionNodeV1Test {
                 )),
                 ChatResponseMetadata.builder()
                         .model("response-model")
-                        .usage(new DefaultUsage(42, 17, 59))
+                        .usage(new DefaultUsage(11, 7, 18))
                         .build()
         );
     }
 
-    private static AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig configuration(String prompt) {
-        var configuration = new AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig();
+    private static AiCompletionActionNodeV1.AiCompletionActionNodeConfig configuration(String prompt) {
+        var configuration = new AiCompletionActionNodeV1.AiCompletionActionNodeConfig();
         configuration.prompt = prompt;
         return configuration;
     }
 
-    private static ProcessNodeExecutionInitContext<AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig> context(
-            AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig configuration
+    private static ProcessNodeExecutionInitContext<AiCompletionActionNodeV1.AiCompletionActionNodeConfig> context(
+            AiCompletionActionNodeV1.AiCompletionActionNodeConfig configuration
     ) {
         var processData = new ProcessExecutionData();
         processData.put("$", Map.of("person", Map.of("name", "Ada")));
-        processData.put("_", Map.of("previous", Map.of("result", "kept")));
-        processData.put("$$", Map.of("workflow", "intake"));
+        processData.put("_", Map.of());
+        processData.put("$$", Map.of());
 
         return new ProcessNodeExecutionInitContext<>(
                 logger(),
@@ -306,9 +270,9 @@ class AiProcessDataTransformationActionNodeV1Test {
                 .setId(NODE_ID)
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)
-                .setName("KI-Vorgangsdaten")
-                .setDataKey("aiProcessDataNode")
-                .setProcessNodeDefinitionKey("de.aivot.ai.ai_process_data_transformation")
+                .setName("KI-Anfrage")
+                .setDataKey("aiNode")
+                .setProcessNodeDefinitionKey("de.aivot.ai.ai_completion")
                 .setProcessNodeDefinitionVersion(1)
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(outputMappings);
