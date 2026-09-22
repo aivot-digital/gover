@@ -44,6 +44,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -121,8 +122,21 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         initialConfiguration.putAll(entity.getConfiguration());
         entity.setConfiguration(initialConfiguration);
 
-        // Save the process node.
-        return processNodeRepository.save(entity);
+        try {
+            return processNodeRepository.saveAndFlush(entity);
+        } catch (DataIntegrityViolationException exception) {
+            // A failed flush can leave the surrounding transaction unusable. Inspect the constraint instead
+            // of issuing another query; only this specific violation permits retrying with a new data key.
+            for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+                if (cause instanceof org.hibernate.exception.ConstraintViolationException constraint
+                        && "process_nodes_process_id_process_version_data_key_key".equals(constraint.getConstraintName())) {
+                    throw ResponseException.conflictWithDetails(
+                            "Dieser Datenschlüssel wird in der Prozessversion bereits verwendet.",
+                            Map.of("reason", "process_node_data_key_conflict"));
+                }
+            }
+            throw exception;
+        }
     }
 
     @Nullable

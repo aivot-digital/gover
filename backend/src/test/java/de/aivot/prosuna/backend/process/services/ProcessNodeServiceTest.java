@@ -412,9 +412,26 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void createReportsOnlyDataKeyCollisionsAsRetryable() {
+        var node = createNode(2, "existing");
+        var constraint = new org.hibernate.exception.ConstraintViolationException("duplicate",
+                new java.sql.SQLException("duplicate", "23505"), "process_nodes_process_id_process_version_data_key_key");
+        var failure = new org.springframework.dao.DataIntegrityViolationException("duplicate", constraint);
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class))).thenThrow(failure);
+        var error = assertThrows(ResponseException.class, () -> service.create(node));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT, error.getStatus());
+        assertEquals(Map.of("reason", "process_node_data_key_conflict"), error.getDetails());
+        var unrelated = new org.springframework.dao.DataIntegrityViolationException("foreign key",
+                new org.hibernate.exception.ConstraintViolationException("foreign key",
+                        new java.sql.SQLException("foreign key", "23503"), "process_nodes_process_id_fkey"));
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class))).thenThrow(unrelated);
+        assertEquals(unrelated, assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> service.create(node)));
+    }
+
+    @Test
     void create_ShouldAllowNegativeNodeTypeLimit() throws Exception {
         prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, -1));
-        when(processNodeRepository.save(any(ProcessNodeEntity.class)))
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         var result = service.create(createNode(2, "new"));
@@ -426,7 +443,7 @@ class ProcessNodeServiceTest {
     void create_ShouldAllowLimitedNodeTypeWhenProcessFlagIsSet() throws Exception {
         prosunaConfig.setModuleFlags(List.of(ModuleFlags.PROCESS));
         prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, 0));
-        when(processNodeRepository.save(any(ProcessNodeEntity.class)))
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         var result = service.create(createNode(2, "new"));
@@ -440,7 +457,7 @@ class ProcessNodeServiceTest {
                 .setProcessNodeDefinitionKey("test.process.initial-configuration-node");
         node.getConfiguration()
                 .putLiteral("overridden", null);
-        when(processNodeRepository.save(any(ProcessNodeEntity.class)))
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         var result = service.create(node);
