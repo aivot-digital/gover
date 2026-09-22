@@ -1,16 +1,11 @@
+import {CaseNumberType} from '../../enums/case-number-type';
 import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
 import {Alert, Box, Grid, Skeleton, Stack} from '@mui/material';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
 import {ElementEditorSectionHeader} from '../../../../components/element-editor-section-header/element-editor-section-header';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {RadioFieldComponent} from '../../../../components/radio-field/radio-field-component';
-import {
-    CASE_NUMBER_TEMPLATE_MAX_LENGTH,
-    CASE_NUMBER_TYPE_TEMPLATE,
-    CASE_NUMBER_TYPE_UUID,
-    getCaseNumberType,
-    validateCaseNumberTemplate,
-} from '../../utils/process-case-number-utils';
+import {CASE_NUMBER_TEMPLATE_MAX_LENGTH, validateCaseNumberTemplate} from '../../utils/process-case-number-utils';
 import {ProcessStatus} from '../../enums/process-status';
 import {deepEquals} from '../../../../utils/equality-utils';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -42,20 +37,30 @@ export interface ProcessSettingsDialogVersionTabHandle {
 
 const caseNumberTypeOptions = [
     {
-        label: 'UUID',
-        subLabel: 'Erzeugt eine technische UUID-Vorgangskennung, z. B. 550e8400-e29b-41d4-a716-446655440000.',
-        value: CASE_NUMBER_TYPE_UUID,
+        label: 'Kompakte Zufallskennung (Crockford Base32)',
+        subLabel:
+            'Empfohlen. Zwölf zufällige Buchstaben und Ziffern, übersichtlich gruppiert, zum Beispiel 7K3M-9X2Q-4R8T. Leicht verwechselbare Buchstaben wie O, I und L werden nicht verwendet. Das erleichtert das Ablesen und Weitergeben, etwa am Telefon. Bei der Suche sind Groß- und Kleinschreibung sowie Bindestriche unerheblich.',
+        value: CaseNumberType.CrockfordBase32,
     },
     {
-        label: 'Formatvorlage',
-        subLabel: 'Erzeugt fortlaufende Vorgangskennungen nach einem Muster, z. B. VG-%YYY-%I(6).',
-        value: CASE_NUMBER_TYPE_TEMPLATE,
+        label: 'Universelle Kennung (UUID v4)',
+        subLabel: 'Zufällig erzeugte Kennung nach dem UUID-v4-Standard mit 36 Zeichen einschließlich Bindestrichen.',
+        value: CaseNumberType.UuidV4,
+    },
+    {
+        label: 'Eigene Formatvorlage',
+        subLabel:
+            'Kennung mit selbst festgelegtem Aufbau, beispielsweise aus einem Präfix, dem Jahr und einer fortlaufenden Nummer.',
+        value: CaseNumberType.Template,
     },
 ];
 
 const PROCESS_VERSION_NOTES_MAX_LENGTH = 2048;
 
-export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogVersionTabHandle, ProcessSettingsDialogVersionTabProps>(function ProcessSettingsDialogVersionTab(props, ref) {
+export const ProcessSettingsDialogVersionTab = forwardRef<
+    ProcessSettingsDialogVersionTabHandle,
+    ProcessSettingsDialogVersionTabProps
+>(function ProcessSettingsDialogVersionTab(props, ref) {
     const dispatch = useAppDispatch();
 
     const {
@@ -73,7 +78,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
     const [isSaving, setIsSaving] = useState(false);
 
     const isEditable = version.status === ProcessStatus.Drafted;
-    const caseNumberType = getCaseNumberType(draft.caseNumberTemplate);
+    const caseNumberType = draft.caseNumberType;
     const themeOptions = useMemo<SelectFieldComponentOption[]>(() => {
         return (themes ?? []).map((theme) => ({
             value: theme.id.toString(),
@@ -81,10 +86,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         }));
     }, [themes]);
     const departmentsById = useMemo(() => {
-        return new Map(departments.map((department) => [
-            department.id,
-            department,
-        ]));
+        return new Map(departments.map((department) => [department.id, department]));
     }, [departments]);
     const getDepartmentById = (departmentId: number | null | undefined) => {
         return departmentId != null ? departmentsById.get(departmentId) : undefined;
@@ -120,7 +122,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
     }, [draft.publicTitle]);
 
     const caseNumberTemplateError = useMemo(() => {
-        if (caseNumberType !== CASE_NUMBER_TYPE_TEMPLATE) {
+        if (caseNumberType !== CaseNumberType.Template) {
             return undefined;
         }
 
@@ -135,15 +137,13 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         return undefined;
     }, [draft.notes]);
 
-    const hasValidationError =
-        publicTitleError != null ||
-        caseNumberTemplateError != null ||
-        notesError != null;
+    const hasValidationError = publicTitleError != null || caseNumberTemplateError != null || notesError != null;
 
     const hasUnsavedChanges = useMemo(() => {
         return !deepEquals(
             {
                 publicTitle: version.publicTitle,
+                caseNumberType: version.caseNumberType,
                 caseNumberTemplate: version.caseNumberTemplate,
                 notes: version.notes,
                 themeId: version.themeId,
@@ -157,6 +157,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
             },
             {
                 publicTitle: draft.publicTitle,
+                caseNumberType: draft.caseNumberType,
                 caseNumberTemplate: draft.caseNumberTemplate,
                 notes: draft.notes,
                 themeId: draft.themeId,
@@ -171,6 +172,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         );
     }, [
         draft.accessibilityDepartmentId,
+        draft.caseNumberType,
         draft.caseNumberTemplate,
         draft.imprintDepartmentId,
         draft.legalSupportDepartmentId,
@@ -182,6 +184,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         draft.technicalSupportDepartmentId,
         draft.themeId,
         version.accessibilityDepartmentId,
+        version.caseNumberType,
         version.caseNumberTemplate,
         version.imprintDepartmentId,
         version.legalSupportDepartmentId,
@@ -232,46 +235,76 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         const nextVersion: ProcessVersionEntity = {
             ...version,
             publicTitle: draft.publicTitle.trim(),
-            caseNumberTemplate: caseNumberType === CASE_NUMBER_TYPE_TEMPLATE ? draft.caseNumberTemplate?.trim() ?? '' : null,
-            notes: draft.notes?.trim() === '' ? null : draft.notes?.trim() ?? null,
+            caseNumberType,
+            caseNumberTemplate:
+                caseNumberType === CaseNumberType.Template ? (draft.caseNumberTemplate?.trim() ?? '') : null,
+            notes: draft.notes?.trim() === '' ? null : (draft.notes?.trim() ?? null),
             themeId: draft.themeId,
             legalSupportDepartmentId: draft.legalSupportDepartmentId,
             technicalSupportDepartmentId: draft.technicalSupportDepartmentId,
             imprintDepartmentId: draft.imprintDepartmentId,
             privacyDepartmentId: draft.privacyDepartmentId,
             accessibilityDepartmentId: draft.accessibilityDepartmentId,
-            processSpecificPrivacyStatement: draft.processSpecificPrivacyStatement?.trim() === '' ? null : draft.processSpecificPrivacyStatement?.trim() ?? null,
-            processSpecificAccessibilityStatement: draft.processSpecificAccessibilityStatement?.trim() === '' ? null : draft.processSpecificAccessibilityStatement?.trim() ?? null,
+            processSpecificPrivacyStatement:
+                draft.processSpecificPrivacyStatement?.trim() === ''
+                    ? null
+                    : (draft.processSpecificPrivacyStatement?.trim() ?? null),
+            processSpecificAccessibilityStatement:
+                draft.processSpecificAccessibilityStatement?.trim() === ''
+                    ? null
+                    : (draft.processSpecificAccessibilityStatement?.trim() ?? null),
         };
 
         setIsSaving(true);
 
         new ProcessDefinitionVersionApiService()
-            .update({
-                processDefinitionId: version.processId,
-                processDefinitionVersion: version.processVersion,
-            }, nextVersion)
+            .update(
+                {
+                    processDefinitionId: version.processId,
+                    processDefinitionVersion: version.processVersion,
+                },
+                nextVersion,
+            )
             .then((updatedVersion) => {
                 onVersionChange(updatedVersion);
                 setDraft(updatedVersion);
                 dispatch(showSuccessSnackbar('Die versionsspezifischen Einstellungen wurden gespeichert.'));
             })
             .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Die versionsspezifischen Einstellungen konnten nicht gespeichert werden.'));
+                dispatch(
+                    showApiErrorSnackbar(
+                        error,
+                        'Die versionsspezifischen Einstellungen konnten nicht gespeichert werden.',
+                    ),
+                );
             })
             .finally(() => {
                 setIsSaving(false);
             });
-    }, [caseNumberType, dispatch, draft, hasUnsavedChanges, hasValidationError, isEditable, isSaving, onVersionChange, version]);
+    }, [
+        caseNumberType,
+        dispatch,
+        draft,
+        hasUnsavedChanges,
+        hasValidationError,
+        isEditable,
+        isSaving,
+        onVersionChange,
+        version,
+    ]);
 
     const handleReset = useCallback(() => {
         setDraft(version);
     }, [version]);
 
-    useImperativeHandle(ref, () => ({
-        save: handleSave,
-        reset: handleReset,
-    }), [handleReset, handleSave]);
+    useImperativeHandle(
+        ref,
+        () => ({
+            save: handleSave,
+            reset: handleReset,
+        }),
+        [handleReset, handleSave],
+    );
 
     return (
         <Stack spacing={3}>
@@ -281,15 +314,15 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 disableMarginTop
                 maxWidth={680}
             >
-                Diese Angaben gelten nur für die aktuell geöffnete Prozessversion und werden erst wirksam, wenn diese Version veröffentlicht wird.
+                Diese Angaben gelten nur für die aktuell geöffnete Prozessversion und werden erst wirksam, wenn diese
+                Version veröffentlicht wird.
             </ElementEditorSectionHeader>
 
-            {
-                !isEditable &&
+            {!isEditable && (
                 <Alert severity="info">
                     Versionsspezifische Einstellungen können nur in Entwurfsversionen geändert werden.
                 </Alert>
-            }
+            )}
 
             <TextFieldComponent
                 label="Öffentliche Bezeichnung"
@@ -337,15 +370,13 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                     maxWidth: 680,
                 }}
             >
-                {
-                    themes == null &&
+                {themes == null && (
                     <Skeleton
                         width="100%"
                         height={80}
                     />
-                }
-                {
-                    themes != null &&
+                )}
+                {themes != null && (
                     <SelectFieldComponent
                         label="Erscheinungsbild"
                         value={draft.themeId?.toString() ?? null}
@@ -362,18 +393,25 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                                 details={
                                     <>
                                         <p>
-                                            Erscheinungsbilder werden nach folgendem Prioritätsprinzip angewendet. Der erste passende
-                                            Eintrag in der folgenden Liste wird verwendet:
+                                            Erscheinungsbilder werden nach folgendem Prioritätsprinzip angewendet. Der
+                                            erste passende Eintrag in der folgenden Liste wird verwendet:
                                         </p>
                                         <ol>
                                             <li>Das Erscheinungsbild der Prozessversion</li>
-                                            <li>Das Erscheinungsbild der zuständigen Organisationseinheit (Nur in Formularen)</li>
-                                            <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit (Nur in Formularen)</li>
+                                            <li>
+                                                Das Erscheinungsbild der zuständigen Organisationseinheit (Nur in
+                                                Formularen)
+                                            </li>
+                                            <li>
+                                                Das Erscheinungsbild der bewirtschaftenden Organisationseinheit (Nur in
+                                                Formularen)
+                                            </li>
                                             <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
                                             <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
                                         </ol>
                                         <p>
-                                            Das Erscheinungsbild legt Farben, Logo und Favicon aller Formulare der Prozessversion fest.
+                                            Das Erscheinungsbild legt Farben, Logo und Favicon aller Formulare der
+                                            Prozessversion fest.
                                         </p>
                                     </>
                                 }
@@ -382,8 +420,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                         options={themeOptions}
                         disabled={!isEditable || isSaving}
                     />
-                }
-
+                )}
             </Box>
 
             <ElementEditorSectionHeader
@@ -393,7 +430,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 disableMarginBottom
                 maxWidth={680}
             >
-                Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Diese Angaben gelten für alle Formulare dieser Prozessversion.
+                Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Diese Angaben gelten
+                für alle Formulare dieser Prozessversion.
             </ElementEditorSectionHeader>
 
             <Grid
@@ -503,7 +541,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 disableMarginBottom
                 maxWidth={680}
             >
-                Kontaktinformationen werden auf Ebene der Organisationseinheit hinterlegt und verwaltet. Diese Angaben gelten für alle Formulare dieser Prozessversion.
+                Kontaktinformationen werden auf Ebene der Organisationseinheit hinterlegt und verwaltet. Diese Angaben
+                gelten für alle Formulare dieser Prozessversion.
             </ElementEditorSectionHeader>
 
             <Grid
@@ -564,9 +603,11 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 label="Typ der Vorgangskennung"
                 value={caseNumberType}
                 onChange={(val) => {
+                    if (val == null) return;
                     setDraft({
                         ...draft,
-                        caseNumberTemplate: val === CASE_NUMBER_TYPE_TEMPLATE ? draft.caseNumberTemplate ?? '' : null,
+                        caseNumberType: val as CaseNumberType,
+                        caseNumberTemplate: val === CaseNumberType.Template ? (draft.caseNumberTemplate ?? '') : null,
                     });
                 }}
                 options={caseNumberTypeOptions}
@@ -574,8 +615,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 disabled={!isEditable || isSaving}
             />
 
-            {
-                caseNumberType === CASE_NUMBER_TYPE_TEMPLATE &&
+            {caseNumberType === CaseNumberType.Template && (
                 <TextFieldComponent
                     label="Formatvorlage für die Vorgangskennung"
                     value={draft.caseNumberTemplate}
@@ -592,7 +632,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                     maxCharacters={CASE_NUMBER_TEMPLATE_MAX_LENGTH}
                     hint="Unterstützte Platzhalter: %YYY, %Y, %M, %D, %h, %m und genau einmal %I(n) mit 4 bis 12 Stellen, z. B. VG-%YYY-%I(6)."
                 />
-            }
+            )}
         </Stack>
     );
 });

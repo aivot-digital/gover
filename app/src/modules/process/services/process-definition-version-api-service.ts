@@ -1,3 +1,4 @@
+import {CaseNumberType} from '../enums/case-number-type';
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {ProcessVersionEntity} from '../entities/process-version-entity';
 import {ProcessStatus} from '../enums/process-status';
@@ -39,6 +40,7 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
             processId: 0,
             processVersion: 0,
             publicTitle: '',
+            caseNumberType: CaseNumberType.CrockfordBase32,
             caseNumberTemplate: null,
             notes: null,
             themeId: null,

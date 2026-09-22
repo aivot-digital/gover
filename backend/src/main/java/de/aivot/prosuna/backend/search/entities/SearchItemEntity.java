@@ -26,6 +26,10 @@ public class SearchItemEntity {
     @Column(name = "search_text")
     private String searchText;
 
+    // Search-only fields preserve the original display label and API response.
+    private String caseNumber;
+    private String compactCaseNumber;
+
     @Id
     private String userId;
 

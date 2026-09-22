@@ -1,3 +1,4 @@
+import {CaseNumberType} from '../enums/case-number-type';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
@@ -1201,6 +1202,7 @@ const EmptyProcess: ProcessExport = {
         processVersion: 0,
         status: ProcessStatus.Drafted,
         publicTitle: 'Neuer Prozess',
+        caseNumberType: CaseNumberType.CrockfordBase32,
         caseNumberTemplate: null,
         notes: null,
         themeId: null,

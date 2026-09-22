@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.search.filters;
 
 import de.aivot.prosuna.backend.permissions.models.PermissionProvider;
+import de.aivot.prosuna.backend.process.utils.CrockfordCaseNumber;
 import de.aivot.prosuna.backend.search.entities.SearchItemEntity;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.utils.specification.SpecificationBuilderArrayContains;
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 public final class SearchItemSpecifications {
     private static final double MIN_SIMILARITY = 0.1;
@@ -72,14 +74,25 @@ public final class SearchItemSpecifications {
                     criteriaBuilder.literal(search)
             );
 
-            predicates.add(criteriaBuilder.greaterThan(similarity, MIN_SIMILARITY));
+            var literalMatch = criteriaBuilder.equal(criteriaBuilder.lower(root.get("caseNumber")), search.trim().toLowerCase(Locale.ROOT));
+            var normalized = CrockfordCaseNumber.normalizeSearch(search);
+            var compactMatch = normalized == null ? criteriaBuilder.disjunction()
+                    : criteriaBuilder.like(root.get("compactCaseNumber"), "%" + normalized + "%");
+            var completeCompactMatch = normalized == null || normalized.length() != 12 ? criteriaBuilder.disjunction()
+                    : criteriaBuilder.equal(root.get("compactCaseNumber"), normalized);
+            predicates.add(criteriaBuilder.or(literalMatch, compactMatch,
+                    criteriaBuilder.greaterThan(similarity, MIN_SIMILARITY)));
 
             if (StringUtils.isNotNullOrEmpty(originTable)) {
                 predicates.add(criteriaBuilder.equal(root.get("originTable"), originTable));
             }
 
             if (!Long.class.equals(query.getResultType()) && !long.class.equals(query.getResultType())) {
-                query.orderBy(criteriaBuilder.desc(similarity));
+                query.orderBy(
+                        criteriaBuilder.asc(criteriaBuilder.<Integer>selectCase()
+                                .when(literalMatch, 0).when(completeCompactMatch, 1).when(compactMatch, 2).otherwise(3)),
+                        criteriaBuilder.desc(similarity),
+                        criteriaBuilder.asc(root.get("originTable")), criteriaBuilder.asc(root.get("id")));
             }
 
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));

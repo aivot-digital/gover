@@ -1,8 +1,3 @@
-export const CASE_NUMBER_TYPE_UUID = 'uuid';
-export const CASE_NUMBER_TYPE_TEMPLATE = 'template';
-
-export type CaseNumberType = typeof CASE_NUMBER_TYPE_UUID | typeof CASE_NUMBER_TYPE_TEMPLATE;
-
 export const CASE_NUMBER_TEMPLATE_MAX_LENGTH = 64;
 
 const CASE_NUMBER_MAX_RENDERED_LENGTH = 36;
@@ -39,10 +34,6 @@ const PLACEHOLDERS: Array<{
         renderedLength: 2,
     },
 ];
-
-export function getCaseNumberType(caseNumberTemplate: string | null | undefined): CaseNumberType {
-    return caseNumberTemplate == null ? CASE_NUMBER_TYPE_UUID : CASE_NUMBER_TYPE_TEMPLATE;
-}
 
 export function validateCaseNumberTemplate(caseNumberTemplate: string | null | undefined): string | undefined {
     const template = caseNumberTemplate?.trim() ?? '';

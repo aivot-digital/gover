@@ -8,6 +8,9 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRe
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import de.aivot.prosuna.backend.process.enums.CaseNumberType;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
@@ -22,8 +25,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ProcessInstanceServiceTest {
-    @Test
-    void create_RetriesWhenTheGeneratedCaseNumberCollides() throws ResponseException {
+    @ParameterizedTest
+    @EnumSource(CaseNumberType.class)
+    void create_RetriesWhenTheGeneratedCaseNumberCollides(CaseNumberType type) throws ResponseException {
+        var template = type == CaseNumberType.TEMPLATE ? "AZ-%YYY-%I(4)" : null;
         var processInstanceRepository = mock(ProcessInstanceRepository.class);
         when(processInstanceRepository.saveAndFlush(any(ProcessInstanceEntity.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate case number"))
@@ -36,11 +41,12 @@ class ProcessInstanceServiceTest {
                         new ProcessVersionEntity()
                                 .setProcessId(7)
                                 .setProcessVersion(1)
-                                .setCaseNumberTemplate("AZ-%YYY-%I(4)")
+                                .setCaseNumberType(type)
+                                .setCaseNumberTemplate(template)
                 ));
 
         var caseNumberGeneratorService = mock(CaseNumberGeneratorService.class);
-        when(caseNumberGeneratorService.generateCaseNumber("AZ-%YYY-%I(4)"))
+        when(caseNumberGeneratorService.generateCaseNumber(type, template))
                 .thenReturn("AZ-2026-0001")
                 .thenReturn("AZ-2026-0002");
 
@@ -59,7 +65,7 @@ class ProcessInstanceServiceTest {
 
         var result = service.create(entity);
 
-        verify(caseNumberGeneratorService, times(2)).generateCaseNumber("AZ-%YYY-%I(4)");
+        verify(caseNumberGeneratorService, times(2)).generateCaseNumber(type, template);
         verify(processInstanceRepository, times(2)).saveAndFlush(entity);
         verify(processInstanceRepository).existsByCaseNumber("AZ-2026-0001");
         assertEquals("AZ-2026-0002", result.getCaseNumber());
@@ -67,7 +73,7 @@ class ProcessInstanceServiceTest {
     }
 
     @Test
-    void create_UsesTheGeneratorFallbackWhenNoTemplateExists() throws ResponseException {
+    void create_UsesTheExplicitUuidSetting() throws ResponseException {
         var processInstanceRepository = mock(ProcessInstanceRepository.class);
         when(processInstanceRepository.saveAndFlush(any(ProcessInstanceEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -78,11 +84,12 @@ class ProcessInstanceServiceTest {
                         new ProcessVersionEntity()
                                 .setProcessId(7)
                                 .setProcessVersion(1)
+                                .setCaseNumberType(CaseNumberType.UUID_V4)
                                 .setCaseNumberTemplate(null)
                 ));
 
         var caseNumberGeneratorService = mock(CaseNumberGeneratorService.class);
-        when(caseNumberGeneratorService.generateCaseNumber(null)).thenReturn("generated-uuid");
+        when(caseNumberGeneratorService.generateCaseNumber(de.aivot.prosuna.backend.process.enums.CaseNumberType.UUID_V4, null)).thenReturn("generated-uuid");
 
         var service = new ProcessInstanceService(
                 processInstanceRepository,
@@ -99,7 +106,7 @@ class ProcessInstanceServiceTest {
 
         var result = service.create(entity);
 
-        verify(caseNumberGeneratorService).generateCaseNumber(null);
+        verify(caseNumberGeneratorService).generateCaseNumber(de.aivot.prosuna.backend.process.enums.CaseNumberType.UUID_V4, null);
         verify(processInstanceRepository).saveAndFlush(entity);
         assertEquals("generated-uuid", result.getCaseNumber());
     }

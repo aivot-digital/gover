@@ -49,9 +49,13 @@ create table process_versions
     -- The public title of this process definition version
     public_title         varchar(192) not null,
 
-    -- Case number template for this process definition version.
-    -- This is used to generate the case number for process instances of this process definition version.
+    -- Generation format for new process instances of this version.
+    case_number_type     varchar(32)  not null default 'CROCKFORD_BASE32'
+        constraint process_versions_case_number_type_check
+            check (case_number_type in ('CROCKFORD_BASE32', 'UUID_V4', 'TEMPLATE')),
     case_number_template varchar(96)  null,
+    constraint process_versions_case_number_template_check
+        check ((case_number_type = 'TEMPLATE') = (case_number_template is not null)),
 
     -- Additional notes for this process definition version.
     notes                text         null,
