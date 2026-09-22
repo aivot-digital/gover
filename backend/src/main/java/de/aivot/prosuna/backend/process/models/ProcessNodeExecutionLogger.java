@@ -74,17 +74,25 @@ public class ProcessNodeExecutionLogger {
         saveEvent(level, isTechnical, isAuditable, title, message, eventDetails);
     }
 
-    public void logException(ProcessNodeExecutionException exception) {
-        logger
-                .atError()
-                .setMessage(exception.getMessage())
-                .setCause(exception)
-                .log();
+    public void logException(@Nonnull ProcessNodeExecutionException exception) {
+        if (exception.isAlreadyLogged()) {
+            return;
+        }
 
-        saveExceptionEvent(exception);
+        exception.setAlreadyLogged(true);
+        logExceptionInternal(exception);
     }
 
-    public void logException(Exception exception) {
+    public void logException(@Nonnull Exception exception) {
+        if (exception instanceof ProcessNodeExecutionException processNodeExecutionException) {
+            logException(processNodeExecutionException);
+            return;
+        }
+
+        logExceptionInternal(exception);
+    }
+
+    private void logExceptionInternal(@Nonnull Exception exception) {
         logger
                 .atError()
                 .setMessage(exception.getMessage())

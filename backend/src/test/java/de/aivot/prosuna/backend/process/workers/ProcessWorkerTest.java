@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -13,7 +14,6 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
@@ -75,6 +75,7 @@ class ProcessWorkerTest {
 
         var savedProcessInstances = new ArrayList<ProcessInstanceEntity>();
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedEvents = new ArrayList<ProcessInstanceEventEntity>();
 
         var processInstanceRepository = createProxy(ProcessInstanceRepository.class, (methodName, args) -> switch (methodName) {
             case "findById" -> Optional.of(processInstance);
@@ -114,6 +115,14 @@ class ProcessWorkerTest {
             case "findAllByProcessInstanceId" -> List.of();
             default -> defaultValue(args);
         });
+        var processInstanceHistoryEventRepository = createProxy(ProcessInstanceHistoryEventRepository.class, (methodName, args) -> switch (methodName) {
+            case "save" -> {
+                var event = (ProcessInstanceEventEntity) args[0];
+                savedEvents.add(event);
+                yield event;
+            }
+            default -> defaultValue(args);
+        });
 
         var resultHandler = new TestProcessNodeExecutionResultHandler();
 
@@ -130,7 +139,7 @@ class ProcessWorkerTest {
                         processInstanceAttachmentSetRepository,
                         JsonMapperTestUtils.createMapper()
                 ),
-                new TestProcessNodeExecutionLoggerFactory(),
+                new ProcessNodeExecutionLoggerFactory(processInstanceHistoryEventRepository),
                 new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION)
         );
 
@@ -146,6 +155,12 @@ class ProcessWorkerTest {
         assertNotNull(failedTask.getFinished());
         assertEquals(executionFailure == ExecutionFailure.PROVIDER, processNodeDefinition.wasInitCalled());
         assertFalse(resultHandler.wasHandleResultCalled());
+
+        var errorEvents = savedEvents.stream()
+                .filter(event -> event.getLevel() == ProcessNodeExecutionLogLevel.Error)
+                .toList();
+        assertEquals(1, errorEvents.size());
+        assertEquals(failedTask.getId(), errorEvents.getFirst().getProcessInstanceTaskId());
     }
 
     @ParameterizedTest
@@ -214,6 +229,7 @@ class ProcessWorkerTest {
 
         var savedProcessInstances = new ArrayList<ProcessInstanceEntity>();
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedEvents = new ArrayList<ProcessInstanceEventEntity>();
 
         var processInstanceRepository = createProxy(ProcessInstanceRepository.class, (methodName, args) -> switch (methodName) {
             case "findById" -> Optional.of(processInstance);
@@ -251,6 +267,14 @@ class ProcessWorkerTest {
             case "findAllByProcessInstanceId" -> List.of();
             default -> defaultValue(args);
         });
+        var processInstanceHistoryEventRepository = createProxy(ProcessInstanceHistoryEventRepository.class, (methodName, args) -> switch (methodName) {
+            case "save" -> {
+                var event = (ProcessInstanceEventEntity) args[0];
+                savedEvents.add(event);
+                yield event;
+            }
+            default -> defaultValue(args);
+        });
 
         var resultHandler = new TestProcessNodeExecutionResultHandler();
 
@@ -267,7 +291,7 @@ class ProcessWorkerTest {
                         processInstanceAttachmentSetRepository,
                         JsonMapperTestUtils.createMapper()
                 ),
-                new TestProcessNodeExecutionLoggerFactory(),
+                new ProcessNodeExecutionLoggerFactory(processInstanceHistoryEventRepository),
                 new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION)
         );
 
@@ -284,6 +308,12 @@ class ProcessWorkerTest {
         assertNotNull(failedTask.getFinished());
         assertEquals(executionFailure == ExecutionFailure.PROVIDER, processNodeDefinition.wasResumeCalled());
         assertFalse(resultHandler.wasHandleResultCalled());
+
+        var errorEvents = savedEvents.stream()
+                .filter(event -> event.getLevel() == ProcessNodeExecutionLogLevel.Error)
+                .toList();
+        assertEquals(1, errorEvents.size());
+        assertEquals(failedTask.getId(), errorEvents.getFirst().getProcessInstanceTaskId());
     }
 
     private enum ExecutionFailure {
@@ -421,58 +451,6 @@ class ProcessWorkerTest {
                 derivedRuntimeElementData.putError("configuration", "invalid runtime configuration");
             }
             return new ProcessConfigurationDetails<>(configuration, derivedRuntimeElementData);
-        }
-    }
-
-    private static final class TestProcessNodeExecutionLoggerFactory extends ProcessNodeExecutionLoggerFactory {
-        private TestProcessNodeExecutionLoggerFactory() {
-            super(null);
-        }
-
-        @Override
-        public ProcessNodeExecutionLogger create(Long processInstanceId,
-                                                 Long processInstanceTaskId,
-                                                 String userId,
-                                                 String identityId) {
-            return new TestProcessNodeExecutionLogger(processInstanceId, processInstanceTaskId, userId, identityId);
-        }
-    }
-
-    private static final class TestProcessNodeExecutionLogger extends ProcessNodeExecutionLogger {
-        private final Long processInstanceId;
-        private final String userId;
-        private final String identityId;
-
-        private TestProcessNodeExecutionLogger(Long processInstanceId,
-                                               Long processInstanceTaskId,
-                                               String userId,
-                                               String identityId) {
-            super(processInstanceId, processInstanceTaskId, userId, identityId, null);
-            this.processInstanceId = processInstanceId;
-            this.userId = userId;
-            this.identityId = identityId;
-        }
-
-        @Override
-        public ProcessNodeExecutionLogger withTaskId(Long taskId) {
-            return new TestProcessNodeExecutionLogger(processInstanceId, taskId, userId, identityId);
-        }
-
-        @Override
-        public void logf(ProcessNodeExecutionLogLevel level,
-                         Boolean isTechnical,
-                         Boolean isAuditable,
-                         String title,
-                         String format,
-                         Object... args) {
-        }
-
-        @Override
-        public void logException(ProcessNodeExecutionException exception) {
-        }
-
-        @Override
-        public void logException(Exception exception) {
         }
     }
 
