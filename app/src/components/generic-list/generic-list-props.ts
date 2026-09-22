@@ -4,6 +4,7 @@ import {GridColDef, GridRowModel} from '@mui/x-data-grid';
 import {Api} from '../../hooks/use-api';
 import {GenericListRowModel} from './generic-list-row-models';
 import {Action} from '../actions/actions-props';
+import {type StorageKey} from '../../data/storage-key';
 import {Page} from '../../models/dtos/page';
 
 export type GenericListColDef<T extends GridRowModel> = GridColDef<T> & {
@@ -44,7 +45,10 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
     rowActions?: (item: ItemType) => Action[];
     rowActionsCount?: number;
     defaultSortField?: keyof ItemType;
-    // TODO: We should add a defaultSortOrder too
+    defaultSortOrder?: 'asc' | 'desc';
+    enableColumnSelection?: boolean;
+    initialColumnVisibilityModel?: Record<string, boolean>;
+    columnSettingsStorageKey?: StorageKey;
     filters?: GenericListFilter[];
     defaultFilter?: string;
     fetch: (options: GenericListPropsFetchOptions<ItemType>) => Promise<Page<ItemType>>;
