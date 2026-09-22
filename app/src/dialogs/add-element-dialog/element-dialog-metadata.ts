@@ -61,6 +61,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.ProcessIdentityIdInput]: ElementTypeGroups.Input,
     [ElementType.SecretSelectInput]: ElementTypeGroups.Input,
     [ElementType.AssetSelectInput]: ElementTypeGroups.Input,
+    [ElementType.DepartmentSelectInput]: null,
     [ElementType.HtmlTemplateInput]: ElementTypeGroups.Input,
     [ElementType.StoragePathSelector]: ElementTypeGroups.Input,
     [ElementType.IntroductionStep]: ElementTypeGroups.Step,

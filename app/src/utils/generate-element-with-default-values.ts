@@ -56,6 +56,7 @@ import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import {SecretSelectInputElement} from '../models/elements/form/input/secret-select-input-element';
 import {AssetSelectInputElement} from '../models/elements/form/input/asset-select-input-element';
+import {DepartmentSelectInputElement} from '../models/elements/form/input/department-select-input-element';
 import {AssetVisibility} from '../modules/assets/models/asset-visibility';
 import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
@@ -151,6 +152,7 @@ const elementConstructors: {
     [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
     [ElementType.SecretSelectInput]: (id: string) => SecretSelectInputElement;
     [ElementType.AssetSelectInput]: (id: string) => AssetSelectInputElement;
+    [ElementType.DepartmentSelectInput]: (id: string) => DepartmentSelectInputElement;
     [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
     [ElementType.StoragePathSelector]: (id: string) => StoragePathSelectorInputElement;
     [ElementType.PaymentConfigElement]: (id: string) => PaymentConfigElement;
@@ -528,6 +530,12 @@ const elementConstructors: {
         dialogTitle: 'Datei auswählen',
         allowedMimeTypes: undefined,
         assetVisibility: AssetVisibility.All,
+    }),
+    [ElementType.DepartmentSelectInput]: (id) => ({
+        ...makeInputBase(ElementType.DepartmentSelectInput, id),
+        label: 'Organisationseinheit',
+        placeholder: 'Keine Organisationseinheit ausgewählt',
+        dialogTitle: 'Organisationseinheit auswählen',
     }),
     [ElementType.HtmlTemplateInput]: (id) => ({
         ...makeInputBase(ElementType.HtmlTemplateInput, id),
