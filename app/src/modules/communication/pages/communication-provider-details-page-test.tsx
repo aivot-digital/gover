@@ -1,3 +1,5 @@
+import {CommunicationDeliveryStatus} from '../communication-deliveries-api-service';
+import {CommunicationDeliveryStatusPanel} from '../components/communication-delivery-status-panel';
 import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import {Box, Button, Skeleton, Typography} from '@mui/material';
 import {useEffect, useState} from 'react';
@@ -43,6 +45,9 @@ export function CommunicationProviderDetailsPageTest() {
     const [computedErrors, setComputedErrors] = useState<ComputedElementErrors | null>(null);
     const [testResult, setTestResult] = useState<CommunicationTestResultLayout | null>(null);
     const [isTesting, setIsTesting] = useState(false);
+    const [deliveryStatus, setDeliveryStatus] = useState<CommunicationDeliveryStatus | null>(null);
+    const deliveryPending = deliveryStatus === CommunicationDeliveryStatus.Sending
+        || deliveryStatus === CommunicationDeliveryStatus.Submitted || deliveryStatus === CommunicationDeliveryStatus.Unknown;
     const [loadAttempt, setLoadAttempt] = useState(0);
 
     useEffect(() => {
@@ -51,6 +56,7 @@ export function CommunicationProviderDetailsPageTest() {
         setInputs(EMPTY_TEST_INPUTS);
         setComputedErrors(null);
         setTestResult(null);
+        setDeliveryStatus(null);
         setLayoutState({status: 'loading'});
 
         if (provider == null || provider.id === 0) {
@@ -104,7 +110,7 @@ export function CommunicationProviderDetailsPageTest() {
     }
 
     const handleTest = async () => {
-        if (layoutState.status !== 'ready' || isTesting) {
+        if (layoutState.status !== 'ready' || isTesting || deliveryPending) {
             return;
         }
 
@@ -138,6 +144,7 @@ export function CommunicationProviderDetailsPageTest() {
             setComputedErrors(null);
             const result = await new CommunicationProvidersApiService().testProvider(provider.id, inputs);
             setTestResult(result);
+            setDeliveryStatus(result.deliveryId ? CommunicationDeliveryStatus.Sending : null);
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Kommunikationsanbieter konnte nicht getestet werden.'));
         } finally {
@@ -193,7 +200,7 @@ export function CommunicationProviderDetailsPageTest() {
                                     setTestResult(null);
                                 }}
                                 computedErrors={computedErrors}
-                                disabled={isTesting}
+                                disabled={isTesting || deliveryPending}
                             />
                         )}
 
@@ -202,13 +209,16 @@ export function CommunicationProviderDetailsPageTest() {
                             variant="contained"
                             startIcon={<ScienceOutlinedIcon/>}
                             onClick={() => void handleTest()}
-                            disabled={isTesting}
+                            disabled={isTesting || deliveryPending}
                         >
                             Kommunikationsanbieter testen
                         </Button>
                     </Box>
 
-                    {testResult != null && (
+                    {testResult?.deliveryId != null && (
+                        <CommunicationDeliveryStatusPanel providerId={provider.id} deliveryId={testResult.deliveryId} onStatusChange={setDeliveryStatus}/>
+                    )}
+                    {testResult != null && testResult.deliveryId == null && (
                         <ElementDerivationContext
                             element={testResult}
                             authoredElementValues={EMPTY_TEST_INPUTS}

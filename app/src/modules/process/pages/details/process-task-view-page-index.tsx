@@ -1,3 +1,4 @@
+import {CommunicationDeliveryStatusPanel} from '../../../communication/components/communication-delivery-status-panel';
 import React, {type ReactNode, useMemo} from 'react';
 import {Box, Button, Link, Skeleton, Tooltip, Typography} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
@@ -215,6 +216,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                 Allgemeine Informationen
             </Typography>
 
+            <CommunicationDeliveryStatusPanel key={`${item.task.id}-${item.task.status}`} taskId={item.task.id}/>
             <StatusTable
                 sx={{mt: 2}}
                 cardVariant="outlined"
