@@ -1,0 +1,49 @@
+<mjml lang="de">
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-html-attributes>
+            <mj-selector path=".primary-action a">
+                <mj-html-attribute name="th:href">${base.config.createUrl(instancePath)}</mj-html-attribute>
+            </mj-selector>
+        </mj-html-attributes>
+
+        <mj-preview>Mitteilung über einen zugewiesenen Vorgang</mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        <span th:text="${intro}">Ihnen wurde in Prosuna ein Vorgang zugewiesen.</span>
+                        <br/>
+                        <br/>
+                        Prozess: <b th:text="${process.internalTitle}">Beispielprozess</b>
+                        <br/>
+                        Vorgangsschlüssel: <b th:text="${processInstance.caseNumber}">123</b>
+                        <span th:if="${fileNumbersDisplay != null}">
+                            <br/>
+                            Aktenzeichen: <b th:text="${fileNumbersDisplay}">AZ-123</b>
+                        </span>
+                        <br/>
+                        Zugewiesen durch: <b th:text="${changeSource}">System</b>
+                    </p>
+                </mj-text>
+
+                <mj-button align="left"
+                           css-class="primary-action"
+                           href="#"
+                           padding="24px 0 0">
+                    Vorgang öffnen
+                </mj-button>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/default-mail-signature.mjml"/>
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

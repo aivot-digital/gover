@@ -676,7 +676,8 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 null,
                 processService,
-                departmentService
+                departmentService,
+                null
         );
     }
 

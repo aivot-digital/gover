@@ -1,0 +1,15 @@
+Hallo,
+
+[(${intro})]
+Prozess: [(${process.internalTitle})]
+Vorgangsschlüssel: [(${processInstance.caseNumber})]
+[# th:if="${fileNumbersDisplay != null}"]Aktenzeichen: [(${fileNumbersDisplay})]
+[/]
+Geändert durch: [(${changeSource})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

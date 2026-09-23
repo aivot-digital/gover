@@ -8,11 +8,12 @@ import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.mail.services.ProcessInstanceMailService;
 import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
@@ -33,17 +34,15 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
+@Slf4j
 @Service
 public class ProcessNodeExecutionResultHandler {
     private final RabbitTemplate rabbitTemplate;
@@ -57,6 +56,7 @@ public class ProcessNodeExecutionResultHandler {
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final ProcessService processService;
     private final DepartmentService departmentService;
+    private final ProcessInstanceMailService processInstanceMailService;
 
     @Autowired
     public ProcessNodeExecutionResultHandler(RabbitTemplate rabbitTemplate,
@@ -69,7 +69,7 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessNodeRepository processNodeRepository,
                                              ProcessNodeDefinitionService processNodeDefinitionService,
                                              ProcessService processService,
-                                             DepartmentService departmentService) {
+                                             DepartmentService departmentService, ProcessInstanceMailService processInstanceMailService) {
         this.rabbitTemplate = rabbitTemplate;
         this.communicationService = communicationService;
         this.processInstanceRepository = processInstanceRepository;
@@ -81,6 +81,7 @@ public class ProcessNodeExecutionResultHandler {
         this.processNodeDefinitionService = processNodeDefinitionService;
         this.processService = processService;
         this.departmentService = departmentService;
+        this.processInstanceMailService = processInstanceMailService;
     }
 
     public void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
@@ -189,6 +190,8 @@ public class ProcessNodeExecutionResultHandler {
                     handleTaskComplete(context.withResult(taskCompleted));
             case ProcessNodeExecutionResultInstanceCompleted instanceCompleted ->
                     handleInstanceComplete(context.withResult(instanceCompleted));
+            case ProcessNodeExecutionResultInstanceAssigned instanceAssigned ->
+                    handleAssignedInstance(context.withResult(instanceAssigned));
             case ProcessNodeExecutionResultTaskAssigned assigned -> handleAssigned(context.withResult(assigned));
             case ProcessNodeExecutionResultTaskAssignedCustomer assignedCustomer ->
                     handleAssignedCustomer(context.withResult(assignedCustomer));
@@ -498,17 +501,18 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
+
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(context.processInstance);
+        }
+
         if (Objects.equals(previousAssignedUserId, assignedUser.getId())) {
             return;
         }
 
         if (context.triggeringUser != null && assignedUser.getId().equals(context.triggeringUser.getId())) {
             return;
-        }
-
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            context.processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(context.processInstance);
         }
 
         try {
@@ -524,16 +528,188 @@ public class ProcessNodeExecutionResultHandler {
         } catch (Exception e) {
             context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an '%s' konnte nicht versendet werden.",
-                    assignedUser.getFullName()
+                    "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an %s konnte nicht versendet werden.",
+                    StringUtils.quote(assignedUser.getFullName())
             ));
         }
     }
 
+    private static boolean isSameUser(@Nullable UserEntity user1, @Nullable UserEntity user2) {
+        if (user1 == null && user2 == null) {
+            return true;
+        }
+
+        if (user1 == null || user2 == null) {
+            return false;
+        }
+
+        return Objects.equals(user1.getId(), user2.getId());
+    }
+
+    private void handleAssignedInstance(HandlerContext<ProcessNodeExecutionResultInstanceAssigned> context) throws ProcessNodeExecutionException {
+        var previousAssignedUser = requireOptionalUser(context, context.processInstance.getAssignedUserId());
+        var newlyAssignedUser = requireOptionalUser(context, context.result.getAssignedUserId());
+        var triggeringUser = Optional.ofNullable(context.triggeringUser);
+
+        context
+                .processInstance
+                .setAssignedUserId(
+                        newlyAssignedUser
+                                .map(UserEntity::getId)
+                                .orElse(null)
+                );
+        assignAndSaveDataLayersAndStatusOverride(context, false);
+
+
+        String logMessageTitle;
+        StringBuilder logMessageDetailsBuilder = new StringBuilder();
+        boolean sendAssignedEmail = false;
+        boolean sendUnassignedEmail = false;
+
+        // Determine the log message based on the previous and newly assigned users
+        if (previousAssignedUser.isEmpty()) {
+
+            // Determine the log message based on the newly assigned user
+            if (newlyAssignedUser.isEmpty()) {
+                logMessageTitle = "Zuweisung zu Vorgang unverändert";
+                logMessageDetailsBuilder
+                        .append("Die Zuweisung zu diesem Vorgang wurde nicht geändert. Es war keine Mitarbeiter:in zugewiesen und es ist weiterhin keine Mitarbeiter:in zugewiesen.");
+            } else {
+                logMessageTitle = "Vorgang zugewiesen";
+                logMessageDetailsBuilder
+                        .append(String.format(
+                                "Die Zuweisung zu diesem Vorgang wurde auf die Mitarbeiter:in %s geändert.",
+                                StringUtils.quote(newlyAssignedUser.get().getFullName())
+                        ));
+                sendAssignedEmail = true;
+            }
+        } else {
+
+            // Determine the log message based on the newly assigned user
+            if (newlyAssignedUser.isEmpty()) {
+                logMessageTitle = "Zuweisung zu Vorgang entfernt";
+                logMessageDetailsBuilder
+                        .append(String.format(
+                                "Die Zuweisung zu diesem Vorgang zur Mitarbeiter:in %s wurde entfernt.",
+                                StringUtils.quote(previousAssignedUser.get().getFullName())
+                        ));
+                sendUnassignedEmail = true;
+            } else {
+                if (isSameUser(previousAssignedUser.get(), newlyAssignedUser.get())) {
+                    logMessageTitle = "Zuweisung zu Vorgang unverändert";
+                    logMessageDetailsBuilder
+                            .append(String.format(
+                                    "Die Zuweisung zu diesem Vorgang wurde nicht geändert. Es war die Mitarbeiter:in %s zugewiesen und es ist weiterhin die Mitarbeiter:in %s zugewiesen.",
+                                    StringUtils.quote(previousAssignedUser.get().getFullName()),
+                                    StringUtils.quote(newlyAssignedUser.get().getFullName())
+                            ));
+                } else {
+                    logMessageTitle = "Vorgang neu zugewiesen";
+                    logMessageDetailsBuilder
+                            .append(String.format(
+                                    "Die Zuweisung zu diesem Vorgang wurde von der Mitarbeiter:in %s auf die Mitarbeiter:in %s geändert.",
+                                    StringUtils.quote(previousAssignedUser.get().getFullName()),
+                                    StringUtils.quote(newlyAssignedUser.get().getFullName())
+                            ));
+                    sendAssignedEmail = true;
+                    sendUnassignedEmail = true;
+                }
+            }
+        }
+
+        if (triggeringUser.isEmpty()) {
+            logMessageDetailsBuilder
+                    .append(" Die Änderung wurde automatisch vorgenommen.");
+        } else {
+            logMessageDetailsBuilder
+                    .append(String.format(
+                            " Die Änderung wurde durch %s vorgenommen.",
+                            StringUtils.quote(triggeringUser.get().getFullName())
+                    ));
+        }
+
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                logMessageTitle,
+                logMessageDetailsBuilder.toString()
+        );
+
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(context.processInstance);
+        }
+
+
+        if (sendAssignedEmail) {
+            try {
+                processInstanceMailService.sendAssigned(
+                        triggeringUser.orElse(null),
+                        newlyAssignedUser.get(),
+                        context.processInstance,
+                        previousAssignedUser.isPresent()
+                );
+            } catch (Exception e) {
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die E-Mail-Benachrichtigung über den zugewiesenen Vorgang an %s konnte nicht versendet werden.",
+                        StringUtils.quote(newlyAssignedUser.get().getFullName())
+                ));
+            }
+        }
+
+        if (sendUnassignedEmail) {
+            try {
+                processInstanceMailService.sendUnassigned(
+                        triggeringUser.orElse(null),
+                        previousAssignedUser.get(),
+                        context.processInstance,
+                        newlyAssignedUser.isPresent()
+                );
+            } catch (Exception e) {
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die E-Mail-Benachrichtigung über das Ende der Vorgangszuweisung an %s konnte nicht versendet werden.",
+                        StringUtils.quote(previousAssignedUser.get().getFullName())
+                ));
+            }
+        }
+    }
+
+    /**
+     * Require an optional user.
+     * If the user ID is null, no user is present but if the user id is given, the system MUST be able to retrieve the user.
+     * If the user cannot be retrieved, an exception is thrown.
+     *
+     * @param context
+     * @param userId
+     * @return
+     * @throws ProcessNodeExecutionExceptionInvalidAssignment
+     */
+    private Optional<UserEntity> requireOptionalUser(@Nonnull HandlerContext<?> context,
+                                                     @Nullable String userId) throws ProcessNodeExecutionExceptionInvalidAssignment {
+        Optional<UserEntity> user = Optional.empty();
+        if (userId != null) {
+            try {
+                user = userService.retrieve(userId);
+            } catch (ResponseException e) {
+                throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                        e,
+                        """
+                                Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine ungültige Mitarbeiter:in-ID „%s“ zurückgegeben.
+                                Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                                """,
+                        context.provider.getName(),
+                        context.currentNode.resolveName(context.provider),
+                        userId
+                );
+            }
+        }
+        return user;
+    }
 
     private void handleAssignedCustomer(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskAssignedCustomer> context) throws ProcessNodeExecutionException {
-        String previousAssignedUserId = context.processInstanceTask.getAssignedCustomerIdentityId();
-
         final IdentityData assignedCustomer = context
                 .processInstance()
                 .getIdentities()
