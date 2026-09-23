@@ -81,25 +81,56 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Sends identity-bound messages and attachments to ZBP through the FIT-Connect bridge service. */
+/** FIT-Connect accepts a submission before ZBP delivery is decided, so this provider retains the data needed to track the later decision. */
 @Component
 public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCommunicationProvider<FitConnectZbpCommunicationProviderV1.Config, FitConnectZbpCommunicationProviderV1.IdentityBinding> {
     public static final String COMPONENT_KEY = "fit_connect_zbp_communication_provider";
     public static final String TEST_POSTFACH_ID_FIELD_ID = "postfachId";
+    private static final String COMPONENT_VERSION = "1.0.0";
+    private static final String CONFIG_LAYOUT_ID = "fit-connect-provider-config";
+    private static final String IDENTITY_BINDING_LAYOUT_ID = "fit-connect-identity-provider-binding-config";
     private static final String TESTING_LAYOUT_ID = "fit-connect-zbp-testing-config";
+    private static final String TEST_RESULT_LAYOUT_ID = "fit-connect-zbp-testing-result";
+    private static final String TEST_RESULT_ALERT_ID = "fit-connect-zbp-testing-result-alert";
     private static final String TEST_CONTEXT_ID = "communication-provider-test";
+    private static final String TEST_IDENTITY_UNIQUE_ID_ATTRIBUTE = "id";
     private static final int TEST_BINDING_ID = -1;
+    private static final int TEST_BINDING_POSITION = 0;
     private static final String UUID_REGEX = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
     private static final String MESSAGE_SENDING_IDENTIFIER = "urn:schema-fitko-de:fit-connect:id.bund.de:message_v6";
+    private static final String MESSAGE_FORWARDING_SERVICE = "ZBP Message Forwarding";
     private static final URI ZBP_MESSAGE_SCHEMA_URI = URI.create(
             "https://schema.fitko.de/fit-connect/id.bund.de/message_v6/1.0.0/zbp-message.schema.json"
     );
 
+    private static final String CERTIFICATE_TYPE = "X.509";
+    private static final String SIGNATURE_ALGORITHM = "SHA512withRSA";
     private static final String KEY_MIME_TYPE = "application/pkcs8";
     private static final String CERT_MIME_TYPE = "application/x-x509-ca-cert";
+    private static final String DEFAULT_ATTACHMENT_MIME_TYPE = "application/octet-stream";
+    private static final String DEFAULT_ATTACHMENT_NAME_PREFIX = "attachment-";
+    private static final int FIRST_ATTACHMENT_INDEX = 1;
     private static final int ZBP_RSA_KEY_BITS = 4096;
     private static final int ZBP_SIGNATURE_BASE64_LENGTH = 684;
     private static final byte[] SIGNATURE_TEST_CONTENT = "ZBP-Signaturtest".getBytes(StandardCharsets.UTF_8);
+    private static final String STORK_QAA_LEVEL_TWO = "level2";
+    private static final String STORK_QAA_LEVEL_THREE = "level3";
+    private static final String STORK_QAA_LEVEL_FOUR = "level4";
+
+    private static final String RECEIPT_POSTFACH_ID = "postfachId";
+    private static final String RECEIPT_SUBMISSION_ID = "submissionId";
+    private static final String RECEIPT_CASE_ID = "caseId";
+    private static final String RECEIPT_SENDER_DESTINATION_ID = "senderDestinationId";
+    private static final String RECEIPT_DESTINATION_ID = "destinationId";
+    private static final String RECEIPT_STATUS = "status";
+    private static final String RECEIPT_AUTHENTICATION_TAGS = "authenticationTags";
+    private static final String RECEIPT_EVENT_ID = "eventId";
+    private static final String RECEIPT_EVENT_TIME = "eventTime";
+    private static final String RECEIPT_PROBLEMS = "problems";
+    private static final String PROBLEM_TYPE = "type";
+    private static final String PROBLEM_TITLE = "title";
+    private static final String PROBLEM_DETAIL = "detail";
+    private static final String PROBLEM_INSTANCE = "instance";
 
     private final AssetContentResolverService assetContentResolverService;
     private final SecretService secretService;
@@ -131,7 +162,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
     @Nonnull
     @Override
     public String getComponentVersion() {
-        return "1.0.0";
+        return COMPONENT_VERSION;
     }
 
     @Nonnull
@@ -164,7 +195,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
         var keyPair = getAuthorKeyPair(config);
         final RSAPublicKey publicKey;
         try {
-            var certificate = CertificateFactory.getInstance("X.509").generateCertificate(
+            var certificate = CertificateFactory.getInstance(CERTIFICATE_TYPE).generateCertificate(
                     new ByteArrayInputStream(keyPair.authorCertificateAsPem().getBytes(StandardCharsets.UTF_8))
             );
             if (!(certificate.getPublicKey() instanceof RSAPublicKey rsaPublicKey)) {
@@ -175,13 +206,14 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
             throw new CommunicationException("Das BundID-Postfach-Zertifikat ist kein gültiges X.509-Zertifikat.", e);
         }
 
-        // The ZBP schema's fixed 684-character signature requires a 4096-bit RSA key.
+        // ZBP's fixed signature length requires a 4096-bit RSA key; reject other sizes before dispatch.
         if (publicKey.getModulus().bitLength() != ZBP_RSA_KEY_BITS) {
             throw new CommunicationException("Das BundID-Postfach-Zertifikat muss einen RSA-Schlüssel mit 4096 Bit enthalten.");
         }
 
+        // Check both the signature size and the key pair now, before a mismatched pair reaches ZBP.
         try {
-            var signer = Signature.getInstance("SHA512withRSA");
+            var signer = Signature.getInstance(SIGNATURE_ALGORITHM);
             signer.initSign(keyPair.authorPrivateKey().toPrivateKey());
             signer.update(SIGNATURE_TEST_CONTENT);
             var signature = signer.sign();
@@ -189,7 +221,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 throw new CommunicationException("Der private Schlüssel muss eine ZBP-Signatur mit 684 Zeichen erzeugen.");
             }
 
-            var verifier = Signature.getInstance("SHA512withRSA");
+            var verifier = Signature.getInstance(SIGNATURE_ALGORITHM);
             verifier.initVerify(publicKey);
             verifier.update(SIGNATURE_TEST_CONTENT);
             if (!verifier.verify(signature)) {
@@ -322,15 +354,17 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
         } catch (IllegalArgumentException e) {
             throw new CommunicationException("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.", e);
         }
+        // UUID.fromString also accepts shortened groups, while the test form promises canonical UUIDs.
         if (!postfachId.toString().equalsIgnoreCase(normalizedPostfachId)) {
             throw new CommunicationException("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.");
         }
 
+        // A synthetic identity and binding exercise the normal send path without creating persistent test records.
         var identityProviderKey = UUID.randomUUID();
         var testIdentityProvider = new IdentityProviderEntity()
                 .setKey(identityProviderKey)
                 .setMetadataIdentifier(TEST_CONTEXT_ID)
-                .setUniqueIdAttribute("id")
+                .setUniqueIdAttribute(TEST_IDENTITY_UNIQUE_ID_ATTRIBUTE)
                 .setType(IdentityProviderType.Custom)
                 .setName("Kommunikationsanbieter-Test")
                 .setDescription("Temporärer Identitätsanbieter für einen Kommunikationstest.")
@@ -349,7 +383,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 .setName("Kommunikationsanbieter-Test")
                 .setDescription("Temporäre Anbindung für einen Kommunikationstest.")
                 .setEnabled(true)
-                .setPosition(0)
+                .setPosition(TEST_BINDING_POSITION)
                 .setConfiguration(new AuthoredElementValues());
         var testIdentityBinding = new IdentityBinding();
         testIdentityBinding.bpk2Attribute = TEST_POSTFACH_ID_FIELD_ID;
@@ -396,13 +430,13 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
         }
 
         var alert = new AlertContentElement();
-        alert.setId("fit-connect-zbp-testing-result-alert");
+        alert.setId(TEST_RESULT_ALERT_ID);
         alert.setAlertType(AlertType.Info);
         alert.setTitle("Versandstatus wird geprüft");
         alert.setText("Die Zustellbestätigung wird im Hintergrund abgefragt.");
 
         var layout = new CommunicationTestResult(delivery.getId());
-        layout.setId("fit-connect-zbp-testing-result");
+        layout.setId(TEST_RESULT_LAYOUT_ID);
         layout.setChildren(List.of(alert));
         return layout;
     }
@@ -420,13 +454,14 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
         final List<Attachment> fitConnectAttachments = new ArrayList<>();
         final List<ZBPAttachmentMetadata> attachmentMetadata = new ArrayList<>();
         if (message.attachments() != null) {
-            var attachmentIndex = 1;
+            var attachmentIndex = FIRST_ATTACHMENT_INDEX;
             for (var att : message.attachments()) {
                 var attachmentContent = att.getContent();
                 if (attachmentContent == null) {
                     throw new CommunicationException("Attachment content is null for attachment: " + att.getName());
                 }
 
+                // FIT-Connect's attachment and ZBP's metadata must describe the same bytes.
                 final byte[] attachmentData;
                 try (attachmentContent) {
                     attachmentData = attachmentContent.readAllBytes();
@@ -434,9 +469,9 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                     throw new CommunicationException("Failed to read attachment: " + att.getName(), e);
                 }
 
-                final String contentType = att.getContentType() != null ? att.getContentType() : "application/octet-stream";
+                final String contentType = att.getContentType() != null ? att.getContentType() : DEFAULT_ATTACHMENT_MIME_TYPE;
                 final String fileName = att.getName() == null || att.getName().isBlank()
-                        ? "attachment-" + attachmentIndex
+                        ? DEFAULT_ATTACHMENT_NAME_PREFIX + attachmentIndex
                         : att.getName();
 
                 final Attachment fitConnectAttachment = Attachment
@@ -466,7 +501,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
         final OutgoingSubmission submission = OutgoingSubmission
                 .to(Participant.of(
                         destinationId,
-                        Addressing.toService(MESSAGE_SENDING_IDENTIFIER, "ZBP Message Forwarding")
+                        Addressing.toService(MESSAGE_SENDING_IDENTIFIER, MESSAGE_FORWARDING_SERVICE)
                 ))
                 .setData(SubmissionData.json(
                         ZBPEnvelopeBuilder.fromAuthorPayload(zbpMessage, authorKeyPair),
@@ -491,16 +526,17 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
         final SentSubmission sentSubmission;
         try {
             sentSubmission = onlineService.send(submission);
+            // These identifiers and tags reconstruct the SDK submission for later case-log queries.
             var receipt = new LinkedHashMap<String, Object>(Map.of(
-                    "postfachId", postfachId.toString(),
-                    "submissionId", sentSubmission.submissionId().toString(),
-                    "caseId", sentSubmission.caseId().toString(),
-                    "senderDestinationId", senderDestinationId.toString(),
-                    "destinationId", destinationId.toString(),
-                    "status", EventState.SUBMITTED.name()
+                    RECEIPT_POSTFACH_ID, postfachId.toString(),
+                    RECEIPT_SUBMISSION_ID, sentSubmission.submissionId().toString(),
+                    RECEIPT_CASE_ID, sentSubmission.caseId().toString(),
+                    RECEIPT_SENDER_DESTINATION_ID, senderDestinationId.toString(),
+                    RECEIPT_DESTINATION_ID, destinationId.toString(),
+                    RECEIPT_STATUS, EventState.SUBMITTED.name()
             ));
             if (sentSubmission.authenticationTags() != null) {
-                receipt.put("authenticationTags", sentSubmission.authenticationTags());
+                receipt.put(RECEIPT_AUTHENTICATION_TAGS, sentSubmission.authenticationTags());
             }
             return receipt;
         } catch (Exception e) {
@@ -515,14 +551,14 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
             throws CommunicationException {
         try {
             var service = createOnlineService(config.senderClientId, resolveSenderClientSecret(config),
-                    UUID.fromString((String) receipt.get("senderDestinationId")));
+                    UUID.fromString((String) receipt.get(RECEIPT_SENDER_DESTINATION_ID)));
             var sent = SentSubmission.builder()
-                    .submissionId(UUID.fromString((String) receipt.get("submissionId")))
-                    .caseId(UUID.fromString((String) receipt.get("caseId")))
-                    .destinationId(UUID.fromString((String) receipt.get("destinationId")))
-                    .fromDestinationId(UUID.fromString((String) receipt.get("senderDestinationId")))
-                    .authenticationTags(receipt.get("authenticationTags") == null ? null
-                            : ObjectMappingHelper.toObject(receipt.get("authenticationTags"),
+                    .submissionId(UUID.fromString((String) receipt.get(RECEIPT_SUBMISSION_ID)))
+                    .caseId(UUID.fromString((String) receipt.get(RECEIPT_CASE_ID)))
+                    .destinationId(UUID.fromString((String) receipt.get(RECEIPT_DESTINATION_ID)))
+                    .fromDestinationId(UUID.fromString((String) receipt.get(RECEIPT_SENDER_DESTINATION_ID)))
+                    .authenticationTags(receipt.get(RECEIPT_AUTHENTICATION_TAGS) == null ? null
+                            : ObjectMappingHelper.toObject(receipt.get(RECEIPT_AUTHENTICATION_TAGS),
                             AuthenticationTags.class))
                     .build();
             var events = service.cases().logOf(sent).entries().stream()
@@ -535,15 +571,15 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                     .findFirst().orElse(events.isEmpty() ? null : events.getLast());
             if (event == null) throw new CommunicationException("Die Zustellbestätigung ist noch nicht abrufbar.");
             var details = new LinkedHashMap<String, Object>(receipt);
-            details.put("status", event.state().name());
-            details.put("eventId", event.eventId().toString());
-            details.put("eventTime", event.issueTime().toInstant().toString());
-            details.put("problems", event.problems() == null ? List.of() : event.problems().stream().map(problem -> {
+            details.put(RECEIPT_STATUS, event.state().name());
+            details.put(RECEIPT_EVENT_ID, event.eventId().toString());
+            details.put(RECEIPT_EVENT_TIME, event.issueTime().toInstant().toString());
+            details.put(RECEIPT_PROBLEMS, event.problems() == null ? List.of() : event.problems().stream().map(problem -> {
                 var values = new LinkedHashMap<String, Object>();
-                values.put("type", problem.getType());
-                values.put("title", problem.getTitle());
-                values.put("detail", problem.getDetail());
-                values.put("instance", problem.getInstance());
+                values.put(PROBLEM_TYPE, problem.getType());
+                values.put(PROBLEM_TITLE, problem.getTitle());
+                values.put(PROBLEM_DETAIL, problem.getDetail());
+                values.put(PROBLEM_INSTANCE, problem.getInstance());
                 return values;
             }).toList());
             var status = switch (event.state()) {
@@ -584,6 +620,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
         var departmentName = message.sendingDepartment() == null
                 ? null
                 : message.sendingDepartment().getName();
+        // ZBP may display the responsible department as sender, while the service identifies the operator.
         var sender = departmentName == null || departmentName.isBlank()
                 ? operatorName
                 : departmentName.trim();
@@ -595,8 +632,6 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 .service(operatorName)
                 .reference(message.reference())
                 .title(message.subject())
-                //.retrievalConfirmationAddress("retrieval@mail.net")
-                //.replyAddress("reply@mail.net")
                 .mailboxUuid(postfachId)
                 .stork_qaa_level(authenticationLevel)
                 .attachmentMetadata(attachmentMetadata)
@@ -634,6 +669,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
 
     private AuthenticationLevel mapAuthenticationLevel(CommunicationProviderContext<Config, IdentityBinding> context,
                                                        IdentityData identity) {
+        // Missing or unknown identity-provider values must not overstate the user's authentication level.
         var attributeKey = context.identityProviderBindingConfiguration().storkQaaLevel;
         if (attributeKey == null || attributeKey.isBlank()) {
             return AuthenticationLevel.ONE;
@@ -645,9 +681,9 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
         }
 
         return switch (authenticationLevel) {
-            case "level2" -> AuthenticationLevel.TWO;
-            case "level3" -> AuthenticationLevel.THREE;
-            case "level4" -> AuthenticationLevel.FOUR;
+            case STORK_QAA_LEVEL_TWO -> AuthenticationLevel.TWO;
+            case STORK_QAA_LEVEL_THREE -> AuthenticationLevel.THREE;
+            case STORK_QAA_LEVEL_FOUR -> AuthenticationLevel.FOUR;
             default -> AuthenticationLevel.ONE;
         };
     }
@@ -763,8 +799,9 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
         );
     }
 
-    @LayoutElementPOJOBinding(id = "fit-connect-provider-config", type = ElementType.ConfigLayout)
+    @LayoutElementPOJOBinding(id = CONFIG_LAYOUT_ID, type = ElementType.ConfigLayout)
     public static class Config {
+        private static final double CONFIG_FIELD_WEIGHT = 6.0;
         public static final String ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID = "zbpCertificatePrivateKeyAssetKey";
         public static final String ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID = "zbpCertificateClientCertAssetKey";
         public static final String DESTINATION_ID_FIELD_ID = "destinationId";
@@ -778,7 +815,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "BundID-Postfach-Zertifikat auswählen"),
                 @ElementPOJOBindingProperty(key = "placeholder", strValue = "Kein BundID-Postfach-Zertifikat ausgewählt"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = CONFIG_FIELD_WEIGHT),
         })
         public String zbpCertificateClientCertAssetKey;
 
@@ -788,7 +825,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Privaten Schlüssel auswählen"),
                 @ElementPOJOBindingProperty(key = "placeholder", strValue = "Kein privater Schlüssel ausgewählt"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = CONFIG_FIELD_WEIGHT),
         })
         public String zbpCertificatePrivateKeyAssetKey;
 
@@ -796,7 +833,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID (Empfänger)"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Die ID des Zustellpunktes (Destination), welcher als ZBP-Adapter fungiert und die Nachricht empfängt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = CONFIG_FIELD_WEIGHT),
         })
         public String destinationId;
 
@@ -804,7 +841,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID (Sender)"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Die ID des Zustellpunktes (Destination), von welchem aus die Nachricht an den ZBP-Adapter versendet wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = CONFIG_FIELD_WEIGHT),
         })
         public String senderDestinationId;
 
@@ -812,7 +849,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zugangs-Kennung"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Die Zugangs-Kennung (ID) der Zugangsdaten (Client) in FIT-Connect. Diesen Zugangsdaten (Client) muss die hier angegebene Zustellpunkt-ID (Sender) zugeordnet sein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = CONFIG_FIELD_WEIGHT),
         })
         public String senderClientId;
 
@@ -820,12 +857,12 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zugangs-Geheimnis"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Das Zugangs-Geheimnis (Secret) der Zugangsdaten (Client) in FIT-Connect. Diesen Zugangsdaten (Client) muss die hier angegebene Zustellpunkt-ID (Sender) zugeordnet sein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = CONFIG_FIELD_WEIGHT),
         })
         public String senderClientSecret;
     }
 
-    @LayoutElementPOJOBinding(id = "fit-connect-identity-provider-binding-config", type = ElementType.ConfigLayout)
+    @LayoutElementPOJOBinding(id = IDENTITY_BINDING_LAYOUT_ID, type = ElementType.ConfigLayout)
     public static class IdentityBinding {
         public static final String BPK2_ATTRIBUTE_FIELD_ID = "bpk2Attribute";
         @InputElementPOJOBinding(id = BPK2_ATTRIBUTE_FIELD_ID, type = ElementType.Select, properties = {
