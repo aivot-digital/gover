@@ -1,7 +1,7 @@
 [(${messageText})]
 
 [# th:if="${mailSignature != null}"]
----
+
 [(${mailSignature})]
 
 [/]
