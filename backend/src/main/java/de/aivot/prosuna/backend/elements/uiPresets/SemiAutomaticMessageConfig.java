@@ -81,7 +81,17 @@ public class SemiAutomaticMessageConfig {
             @Nullable final LayoutConfig config,
             @Nonnull final VDepartmentShadowedService departmentService
     ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var departmentId = config == null ? null : config.signatureDepartmentId;
+        if (config == null) {
+            return null;
+        }
+
+        Integer departmentId;
+        if (isAutomatic(config)) {
+            departmentId = config.automaticContent == null ? null : config.automaticContent.signatureDepartmentId;
+        } else {
+            departmentId = config.manualContent == null ? null : config.manualContent.signatureDepartmentId;
+        }
+
         if (departmentId == null) {
             return null;
         }
@@ -104,7 +114,6 @@ public class SemiAutomaticMessageConfig {
                 ))
                 .recalculateReferencedIds();
     }
-
 
     public static final String GROUP_ID = "semi_automatic_message_config";
 
@@ -139,20 +148,6 @@ public class SemiAutomaticMessageConfig {
          * Configuration used only when a staff member edits and dispatches the message.
          */
         public ManualContent manualContent;
-
-        @InputElementPOJOBinding(
-                id = SIGNATURE_DEPARTMENT_FIELD_ID,
-                type = ElementType.DepartmentSelectInput,
-                allowedInputModes = InputMode.Literal,
-                properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Organisationseinheit für die Signatur"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Organisationseinheit, deren Standard-E-Mail-Signatur beim Versand an die Nachricht angehängt wird."),
-                        @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Organisationseinheit ausgewählt"),
-                        @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Organisationseinheit für die Signatur auswählen")
-                }
-        )
-        public Integer signatureDepartmentId;
-
     }
 
     /**
@@ -205,6 +200,19 @@ public class SemiAutomaticMessageConfig {
                 }
         )
         public String content;
+
+        @InputElementPOJOBinding(
+                id = LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID,
+                type = ElementType.DepartmentSelectInput,
+                allowedInputModes = InputMode.Literal,
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Organisationseinheit für die Signatur"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Organisationseinheit, deren Standard-E-Mail-Signatur beim Versand an die Nachricht angehängt wird."),
+                        @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Organisationseinheit ausgewählt"),
+                        @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Organisationseinheit für die Signatur auswählen")
+                }
+        )
+        public Integer signatureDepartmentId;
     }
 
     /**
@@ -258,6 +266,19 @@ public class SemiAutomaticMessageConfig {
                 }
         )
         public String content;
+
+        @InputElementPOJOBinding(
+                id = LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID,
+                type = ElementType.DepartmentSelectInput,
+                allowedInputModes = InputMode.Literal,
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Organisationseinheit für die Signatur"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Organisationseinheit, deren Standard-E-Mail-Signatur beim Versand an die Nachricht angehängt wird."),
+                        @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Organisationseinheit ausgewählt"),
+                        @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Organisationseinheit für die Signatur auswählen")
+                }
+        )
+        public Integer signatureDepartmentId;
 
         /**
          * Staff assignment context used when the node enters manual mode; null or unresolved values fail assignment.
