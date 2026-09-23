@@ -25,6 +25,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
@@ -40,6 +41,8 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.UndeclaredThrowableException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,6 +82,95 @@ class FitConnectZbpCommunicationProviderV1Test {
             assetContentResolverService,
             secretService, systemConfigService, deliveryStore
     );
+
+    @Test
+    void acceptsMatching4096BitAuthorKeyAndCertificate() throws Exception {
+        var config = configWithAuthorAssets();
+        authorAssets(config, "valid-4096-key.pem", "valid-4096-cert.pem");
+
+        definition.validateConfiguration(config);
+    }
+
+    @Test
+    void rejects2048BitCertificate() throws Exception {
+        var config = configWithAuthorAssets();
+        authorAssets(config, "short-2048-key.pem", "short-2048-cert.pem");
+
+        var error = assertThrows(CommunicationException.class, () -> definition.validateConfiguration(config));
+
+        assertEquals("Das BundID-Postfach-Zertifikat muss einen RSA-Schlüssel mit 4096 Bit enthalten.", error.getMessage());
+    }
+
+    @Test
+    void rejects2048BitPrivateKeyEvenWith4096BitCertificate() throws Exception {
+        var config = configWithAuthorAssets();
+        authorAssets(config, "short-2048-key.pem", "valid-4096-cert.pem");
+
+        var error = assertThrows(CommunicationException.class, () -> definition.validateConfiguration(config));
+
+        assertEquals("Der private Schlüssel muss eine ZBP-Signatur mit 684 Zeichen erzeugen.", error.getMessage());
+    }
+
+    @Test
+    void rejectsMismatchedAuthorKeyAndCertificate() throws Exception {
+        var config = configWithAuthorAssets();
+        authorAssets(config, "other-4096-key.pem", "valid-4096-cert.pem");
+
+        var error = assertThrows(CommunicationException.class, () -> definition.validateConfiguration(config));
+
+        assertEquals("Der private Schlüssel passt nicht zum BundID-Postfach-Zertifikat.", error.getMessage());
+    }
+
+    @Test
+    void rejectsMalformedAuthorCertificate() throws Exception {
+        var config = configWithAuthorAssets();
+        when(assetContentResolverService.resolveContent(config.zbpCertificatePrivateKeyAssetKey,
+                AssetVisibility.Private, "Der private Schlüssel des FIT-Connect-Zertifikats"))
+                .thenReturn(testPem("valid-4096-key.pem"));
+        when(assetContentResolverService.resolveContent(config.zbpCertificateClientCertAssetKey,
+                AssetVisibility.Private, "Das Client-Zertifikat des FIT-Connect-Zertifikats"))
+                .thenReturn("invalid certificate".getBytes(StandardCharsets.UTF_8));
+
+        var error = assertThrows(CommunicationException.class, () -> definition.validateConfiguration(config));
+
+        assertTrue(error.getMessage().contains("Zertifikat"));
+    }
+
+    @Test
+    void rejectsUnreadableAuthorKey() throws Exception {
+        var config = configWithAuthorAssets();
+        when(assetContentResolverService.resolveContent(config.zbpCertificatePrivateKeyAssetKey,
+                AssetVisibility.Private, "Der private Schlüssel des FIT-Connect-Zertifikats"))
+                .thenThrow(ResponseException.internalServerError("Asset fehlt."));
+
+        var error = assertThrows(CommunicationException.class, () -> definition.validateConfiguration(config));
+
+        assertEquals("Der private Schlüssel konnte nicht gelesen werden. Prüfen Sie die ausgewählte Datei.", error.getMessage());
+    }
+
+    private static FitConnectZbpCommunicationProviderV1.Config configWithAuthorAssets() {
+        var config = new FitConnectZbpCommunicationProviderV1.Config();
+        config.zbpCertificatePrivateKeyAssetKey = "test-key";
+        config.zbpCertificateClientCertAssetKey = "test-cert";
+        return config;
+    }
+
+    private void authorAssets(FitConnectZbpCommunicationProviderV1.Config config,
+                              String keyFile, String certificateFile) throws Exception {
+        when(assetContentResolverService.resolveContent(config.zbpCertificatePrivateKeyAssetKey,
+                AssetVisibility.Private, "Der private Schlüssel des FIT-Connect-Zertifikats"))
+                .thenReturn(testPem(keyFile));
+        when(assetContentResolverService.resolveContent(config.zbpCertificateClientCertAssetKey,
+                AssetVisibility.Private, "Das Client-Zertifikat des FIT-Connect-Zertifikats"))
+                .thenReturn(testPem(certificateFile));
+    }
+
+    private static byte[] testPem(String name) throws IOException {
+        try (var resource = FitConnectZbpCommunicationProviderV1Test.class
+                .getResourceAsStream("/fit-connect/zbp-keys/" + name)) {
+            return java.util.Objects.requireNonNull(resource).readAllBytes();
+        }
+    }
 
     @Test
     void rendersCallToActionsAsEscapedHtmlLinks() throws Exception {

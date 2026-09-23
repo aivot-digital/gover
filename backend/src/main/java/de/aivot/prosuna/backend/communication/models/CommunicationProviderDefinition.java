@@ -30,6 +30,9 @@ public interface CommunicationProviderDefinition<C, I> extends PluginComponent {
     @Nonnull
     ConfigLayoutElement getConfigLayout() throws ResponseException;
 
+    default void validateConfiguration(@Nonnull C config) throws CommunicationException {
+    }
+
     @Nonnull
     List<IdentityProviderType> getSupportedIdentityProviderTypes();
 

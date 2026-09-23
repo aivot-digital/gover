@@ -66,10 +66,17 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.HtmlUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.Signature;
+import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateException;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -90,6 +97,9 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
 
     private static final String KEY_MIME_TYPE = "application/pkcs8";
     private static final String CERT_MIME_TYPE = "application/x-x509-ca-cert";
+    private static final int ZBP_RSA_KEY_BITS = 4096;
+    private static final int ZBP_SIGNATURE_BASE64_LENGTH = 684;
+    private static final byte[] SIGNATURE_TEST_CONTENT = "ZBP-Signaturtest".getBytes(StandardCharsets.UTF_8);
 
     private final AssetContentResolverService assetContentResolverService;
     private final SecretService secretService;
@@ -147,6 +157,47 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
     @Override
     public Class<Config> getConfigClass() {
         return Config.class;
+    }
+
+    @Override
+    public void validateConfiguration(@Nonnull Config config) throws CommunicationException {
+        var keyPair = getAuthorKeyPair(config);
+        final RSAPublicKey publicKey;
+        try {
+            var certificate = CertificateFactory.getInstance("X.509").generateCertificate(
+                    new ByteArrayInputStream(keyPair.authorCertificateAsPem().getBytes(StandardCharsets.UTF_8))
+            );
+            if (!(certificate.getPublicKey() instanceof RSAPublicKey rsaPublicKey)) {
+                throw new CommunicationException("Das BundID-Postfach-Zertifikat muss einen RSA-Schlüssel enthalten.");
+            }
+            publicKey = rsaPublicKey;
+        } catch (CertificateException e) {
+            throw new CommunicationException("Das BundID-Postfach-Zertifikat ist kein gültiges X.509-Zertifikat.", e);
+        }
+
+        // The ZBP schema's fixed 684-character signature requires a 4096-bit RSA key.
+        if (publicKey.getModulus().bitLength() != ZBP_RSA_KEY_BITS) {
+            throw new CommunicationException("Das BundID-Postfach-Zertifikat muss einen RSA-Schlüssel mit 4096 Bit enthalten.");
+        }
+
+        try {
+            var signer = Signature.getInstance("SHA512withRSA");
+            signer.initSign(keyPair.authorPrivateKey().toPrivateKey());
+            signer.update(SIGNATURE_TEST_CONTENT);
+            var signature = signer.sign();
+            if (Base64.getEncoder().encodeToString(signature).length() != ZBP_SIGNATURE_BASE64_LENGTH) {
+                throw new CommunicationException("Der private Schlüssel muss eine ZBP-Signatur mit 684 Zeichen erzeugen.");
+            }
+
+            var verifier = Signature.getInstance("SHA512withRSA");
+            verifier.initVerify(publicKey);
+            verifier.update(SIGNATURE_TEST_CONTENT);
+            if (!verifier.verify(signature)) {
+                throw new CommunicationException("Der private Schlüssel passt nicht zum BundID-Postfach-Zertifikat.");
+            }
+        } catch (GeneralSecurityException | com.nimbusds.jose.JOSEException e) {
+            throw new CommunicationException("Der private Schlüssel und das BundID-Postfach-Zertifikat konnten nicht geprüft werden.", e);
+        }
     }
 
     @Nonnull
@@ -681,7 +732,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                     "Der private Schlüssel des FIT-Connect-Zertifikats"
             );
         } catch (ResponseException e) {
-            throw new CommunicationException("Failed to resolve private key for FIT-Connect communication provider.", e);
+            throw new CommunicationException("Der private Schlüssel konnte nicht gelesen werden. Prüfen Sie die ausgewählte Datei.", e);
         }
 
         String clientCertPem;
@@ -691,7 +742,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                     "Das Client-Zertifikat des FIT-Connect-Zertifikats"
             );
         } catch (ResponseException e) {
-            throw new CommunicationException("Failed to resolve client certificate for FIT-Connect communication provider.", e);
+            throw new CommunicationException("Das BundID-Postfach-Zertifikat konnte nicht gelesen werden. Prüfen Sie die ausgewählte Datei.", e);
         }
 
         try {
@@ -701,7 +752,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                     .authorCertificateAsPem(clientCertPem)
                     .build();
         } catch (RuntimeException e) {
-            throw new CommunicationException("Failed to parse the ZBP author certificate or private key.", e);
+            throw new CommunicationException("Der private Schlüssel oder das BundID-Postfach-Zertifikat hat kein gültiges PEM-Format.", e);
         }
     }
 

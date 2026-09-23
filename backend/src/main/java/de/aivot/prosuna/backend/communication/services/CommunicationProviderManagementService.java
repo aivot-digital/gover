@@ -244,7 +244,8 @@ public class CommunicationProviderManagementService {
             @Nonnull CommunicationProviderEntity provider,
             @Nonnull CommunicationProviderDefinition<C, ?> definition
     ) throws CommunicationException {
-        configurationService.mapProviderConfiguration(provider, definition);
+        var configuration = configurationService.mapProviderConfiguration(provider, definition);
+        definition.validateConfiguration(configuration);
     }
 
     @Nonnull

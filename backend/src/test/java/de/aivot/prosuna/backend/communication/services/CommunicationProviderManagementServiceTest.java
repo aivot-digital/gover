@@ -120,6 +120,37 @@ class CommunicationProviderManagementServiceTest {
     }
 
     @Test
+    void providerSpecificValidationRunsBeforeCreateSaveForDisabledProvider() throws Exception {
+        provider.setEnabled(false);
+        var configuration = new Object();
+        when(configurationService.mapProviderConfiguration(provider, definition)).thenReturn(configuration);
+
+        service.createProvider(provider);
+
+        verify(definition).validateConfiguration(configuration);
+        verify(providerRepository).save(provider);
+    }
+
+    @Test
+    void providerSpecificValidationFailurePreventsCreateAndUpdate() throws Exception {
+        var configuration = new Object();
+        when(configurationService.mapProviderConfiguration(provider, definition)).thenReturn(configuration);
+        doThrow(new CommunicationException("Das Zertifikat ist ungültig."))
+                .when(definition).validateConfiguration(configuration);
+
+        var createError = assertThrows(ResponseException.class, () -> service.createProvider(provider));
+        var updateError = assertThrows(ResponseException.class,
+                () -> service.updateProvider(provider.getId(), provider(7, true, false)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, createError.getStatus());
+        assertEquals("Das Zertifikat ist ungültig.", createError.getTitle());
+        assertEquals(HttpStatus.BAD_REQUEST, updateError.getStatus());
+        assertEquals("Das Zertifikat ist ungültig.", updateError.getTitle());
+        verify(providerRepository, never()).save(any());
+        verify(providerRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void testAndProductionProvidersCanBeBound() throws Exception {
         provider.setTestProvider(true);
 
