@@ -143,6 +143,7 @@ import {isApiError} from '../../../models/api-error';
 import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
 import {RichtextComponent} from '../../../components/richtext/richtext.component';
 import {AiChatWindow} from "../../ai/components/ai-chat-window/ai-chat-window";
+import Chat from "@aivot/mui-material-symbols-400-n25-outlined/Chat";
 
 export const DialogSearchParam = 'dialog';
 
@@ -987,7 +988,7 @@ export function FormNodeEditorPage() {
         {
             type: 'toggle',
             label: 'KI-Chat anzeigen',
-            icon: <AccountTree/>,
+            icon: <Chat/>,
             checked: !hideAiChat,
             visible: AppConfig.aiEnabled,
             onToggle: () => {
@@ -1519,6 +1520,9 @@ export function FormNodeEditorPage() {
                                             }}
                                             onThinking={(isThinking) => {
                                                 setLockEditing(isThinking);
+                                            }}
+                                            onClose={() => {
+                                                dispatch(toggleAiChat());
                                             }}
                                         />
                                     </Allotment.Pane>

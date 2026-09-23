@@ -94,7 +94,11 @@ import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
-import {useHasProcessPermission, useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {
+    useHasProcessPermission,
+    useHasSystemPermission,
+    useRefreshPermissionSet
+} from '../../../permissions/hooks/use-permissions';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 import {
     buildProcessInstanceAttachmentSetItems,
@@ -730,9 +734,11 @@ export function ProcessDetailsPage(): ReactNode {
                     nodeProblems,
                 ));
             }).catch(error => {
-                if (!cancelled) dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht geprüft werden.'));
-            });
-        return () => { cancelled = true; };
+            if (!cancelled) dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht geprüft werden.'));
+        });
+        return () => {
+            cancelled = true;
+        };
     }, [processId, processVersion, processFlow?.nodes, processFlow?.edges]);
 
     const instanceId = useMemo(() => {
@@ -1893,6 +1899,9 @@ export function ProcessDetailsPage(): ReactNode {
             case 'notes':
                 setShowProcessNotesOverviewDialog(true);
                 break;
+            case 'toggle-ai-chat':
+                setShowAiChat(previous => !previous);
+                break;
             default:
                 notImplemented();
                 break;
@@ -2237,14 +2246,6 @@ export function ProcessDetailsPage(): ReactNode {
         ];
 
         return [
-            {
-                label: 'KI-Chat',
-                tooltip: showAiChat ? 'KI-Chat schließen' : 'KI-Chat öffnen',
-                icon: <Chat/>,
-                visible: canUseAiChat && canReadProcess && canUpdateProcess,
-                disabled: !aiChatAvailable || processChat.locked,
-                onClick: () => setShowAiChat(previous => !previous),
-            },
             ...testClaimInstanceActions,
             ...runtimeActions,
             ...(!isInTestMode ? [
@@ -2428,306 +2429,309 @@ export function ProcessDetailsPage(): ReactNode {
                 }}
             >
                 <Box sx={{height: '100%', minWidth: showAiChat ? DISPLAYABLE_AREA + 380 : DISPLAYABLE_AREA}}>
-                <Allotment
-                    onDragStart={() => setHideEditorPaneExpandButton(true)}
-                    onDragEnd={handleEditorPaneDragEnd}
-                >
-                    <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
-                        <Box inert={processChat.locked}
-                            sx={{
-                                px: 2,
-                                py: 2,
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                            }}
-                        >
-                            <GenericPageHeader
-                                title={'Prozess: ' + processFlow.definition.internalTitle}
-                                badge={{
-                                    color: 'default',
-                                    label: `Version ${processFlow.version.processVersion}`,
-                                }}
-                                icon={ModuleIcons.processes}
-                                actions={processChat.locked ? headerActions.map(action => action === 'separator' ? action : {...action, disabled: true}) : headerActions}
-                            />
-
-                            <Box
-                                sx={{
-                                    flex: 1,
-                                    minHeight: 0,
-                                    borderRadius: 1,
-                                    mt: 2,
-                                    mb: -2, // compensate for parent `py: 2`
-                                    ml: -2, // compensate for parent `px: 2`
-                                    mr: -2, // compensate for parent `px: 2`
-                                }}
+                    <Allotment
+                        onDragStart={() => setHideEditorPaneExpandButton(true)}
+                        onDragEnd={handleEditorPaneDragEnd}
+                    >
+                        <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
+                            <Box inert={processChat.locked}
+                                 sx={{
+                                     px: 2,
+                                     py: 2,
+                                     height: '100%',
+                                     display: 'flex',
+                                     flexDirection: 'column',
+                                 }}
                             >
-                                {
-                                    isFlowEditorReady || shouldKeepFlowEditorMounted ?
-                                        <ReactFlowProvider>
-                                            <ProcessFlowEditor
-                                                editable={isProcessStructureEditable}
-                                                processFlow={processFlow}
-                                                nodeProviders={flowNodeProviders}
-                                                onDownloadAttachment={handleDownloadAttachment}
-                                                onAddTrigger={handleOpenAddTriggerDialog}
-                                                topLeftPanel={
-                                                    currentTestClaim == null ? undefined : (
-                                                        <Box
-                                                            sx={{
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                                alignItems: 'flex-start',
-                                                                gap: 0,
-                                                            }}
-                                                        >
+                                <GenericPageHeader
+                                    title={'Prozess: ' + processFlow.definition.internalTitle}
+                                    badge={{
+                                        color: 'default',
+                                        label: `Version ${processFlow.version.processVersion}`,
+                                    }}
+                                    icon={ModuleIcons.processes}
+                                    actions={processChat.locked ? headerActions.map(action => action === 'separator' ? action : {
+                                        ...action,
+                                        disabled: true
+                                    }) : headerActions}
+                                />
+
+                                <Box
+                                    sx={{
+                                        flex: 1,
+                                        minHeight: 0,
+                                        borderRadius: 1,
+                                        mt: 2,
+                                        mb: -2, // compensate for parent `py: 2`
+                                        ml: -2, // compensate for parent `px: 2`
+                                        mr: -2, // compensate for parent `px: 2`
+                                    }}
+                                >
+                                    {
+                                        isFlowEditorReady || shouldKeepFlowEditorMounted ?
+                                            <ReactFlowProvider>
+                                                <ProcessFlowEditor
+                                                    editable={isProcessStructureEditable}
+                                                    processFlow={processFlow}
+                                                    nodeProviders={flowNodeProviders}
+                                                    onDownloadAttachment={handleDownloadAttachment}
+                                                    onAddTrigger={handleOpenAddTriggerDialog}
+                                                    topLeftPanel={
+                                                        currentTestClaim == null ? undefined : (
                                                             <Box
                                                                 sx={{
-                                                                    width: '100%',
                                                                     display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 0.75,
+                                                                    flexDirection: 'column',
+                                                                    alignItems: 'flex-start',
+                                                                    gap: 0,
                                                                 }}
                                                             >
                                                                 <Box
-                                                                    className="process-flow-editor-status-dot"
                                                                     sx={{
-                                                                        width: 10,
-                                                                        height: 10,
-                                                                        borderRadius: '50%',
-                                                                        color: 'warning.main',
-                                                                        bgcolor: 'currentColor',
-                                                                        flexShrink: 0,
-                                                                        transform: 'translateY(-1px)',
-                                                                        mr: 0.25,
+                                                                        width: '100%',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 0.75,
+                                                                    }}
+                                                                >
+                                                                    <Box
+                                                                        className="process-flow-editor-status-dot"
+                                                                        sx={{
+                                                                            width: 10,
+                                                                            height: 10,
+                                                                            borderRadius: '50%',
+                                                                            color: 'warning.main',
+                                                                            bgcolor: 'currentColor',
+                                                                            flexShrink: 0,
+                                                                            transform: 'translateY(-1px)',
+                                                                            mr: 0.25,
+                                                                        }}
+                                                                    />
+                                                                    <Typography
+                                                                        variant="caption"
+                                                                        sx={{
+                                                                            color: 'warning.dark',
+                                                                            fontWeight: 700,
+                                                                            letterSpacing: 0.3,
+                                                                            textTransform: 'uppercase',
+                                                                            mr: 2,
+                                                                        }}
+                                                                    >
+                                                                        Testmodus
+                                                                    </Typography>
+                                                                    <Button
+                                                                        size="small"
+                                                                        color="warning"
+                                                                        variant="text"
+                                                                        onClick={handleEndTestClaim}
+                                                                        sx={{
+                                                                            minWidth: 0,
+                                                                            ml: 'auto',
+                                                                            px: 0.5,
+                                                                            py: 0.125,
+                                                                            borderRadius: 1,
+                                                                            fontSize: '0.75rem',
+                                                                            fontWeight: 600,
+                                                                            lineHeight: 1.2,
+                                                                            textTransform: 'none',
+                                                                            transform: 'translateY(-1px)',
+                                                                        }}
+                                                                    >
+                                                                        Beenden
+                                                                    </Button>
+                                                                </Box>
+                                                                <Divider
+                                                                    sx={{
+                                                                        width: 'calc(100% + 24px)',
+                                                                        mx: '-12px',
+                                                                        mt: 1,
+                                                                        mb: 1.25,
+                                                                        borderColor: 'divider',
                                                                     }}
                                                                 />
                                                                 <Typography
+                                                                    variant="body2"
+                                                                    title={currentTestClaimOwnerName}
+                                                                    sx={{
+                                                                        maxWidth: '100%',
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap',
+                                                                        color: 'text.secondary',
+                                                                        fontSize: '0.8125rem',
+                                                                        fontWeight: 500,
+                                                                        lineHeight: 1.3,
+                                                                    }}
+                                                                >
+                                                                    Im Test durch {currentTestClaimOwnerName}
+                                                                </Typography>
+                                                            </Box>
+                                                        )
+                                                    }
+                                                    topRightPanel={
+                                                        showRuntimePendingStartHint ? (
+                                                            <Box
+                                                                sx={{
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    alignItems: 'flex-start',
+                                                                    gap: 0.75,
+                                                                }}
+                                                            >
+                                                                <Typography
                                                                     variant="caption"
                                                                     sx={{
-                                                                        color: 'warning.dark',
+                                                                        color: 'info.dark',
                                                                         fontWeight: 700,
                                                                         letterSpacing: 0.3,
                                                                         textTransform: 'uppercase',
-                                                                        mr: 2,
-                                                                    }}
-                                                                >
-                                                                    Testmodus
-                                                                </Typography>
-                                                                <Button
-                                                                    size="small"
-                                                                    color="warning"
-                                                                    variant="text"
-                                                                    onClick={handleEndTestClaim}
-                                                                    sx={{
-                                                                        minWidth: 0,
-                                                                        ml: 'auto',
-                                                                        px: 0.5,
-                                                                        py: 0.125,
-                                                                        borderRadius: 1,
-                                                                        fontSize: '0.75rem',
-                                                                        fontWeight: 600,
                                                                         lineHeight: 1.2,
-                                                                        textTransform: 'none',
-                                                                        transform: 'translateY(-1px)',
                                                                     }}
                                                                 >
-                                                                    Beenden
-                                                                </Button>
+                                                                    Hinweis
+                                                                </Typography>
+                                                                <Typography
+                                                                    variant="body2"
+                                                                    sx={{
+                                                                        color: 'text.secondary',
+                                                                        fontSize: '0.8125rem',
+                                                                        fontWeight: 500,
+                                                                        lineHeight: 1.45,
+                                                                    }}
+                                                                >
+                                                                    Der Vorgang wartet auf den Start der automatischen
+                                                                    Abwicklung.
+                                                                </Typography>
                                                             </Box>
-                                                            <Divider
-                                                                sx={{
-                                                                    width: 'calc(100% + 24px)',
-                                                                    mx: '-12px',
-                                                                    mt: 1,
-                                                                    mb: 1.25,
-                                                                    borderColor: 'divider',
-                                                                }}
-                                                            />
-                                                            <Typography
-                                                                variant="body2"
-                                                                title={currentTestClaimOwnerName}
-                                                                sx={{
-                                                                    maxWidth: '100%',
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap',
-                                                                    color: 'text.secondary',
-                                                                    fontSize: '0.8125rem',
-                                                                    fontWeight: 500,
-                                                                    lineHeight: 1.3,
-                                                                }}
-                                                            >
-                                                                Im Test durch {currentTestClaimOwnerName}
-                                                            </Typography>
-                                                        </Box>
-                                                    )
-                                                }
-                                                topRightPanel={
-                                                    showRuntimePendingStartHint ? (
-                                                        <Box
-                                                            sx={{
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                                alignItems: 'flex-start',
-                                                                gap: 0.75,
-                                                            }}
-                                                        >
-                                                            <Typography
-                                                                variant="caption"
-                                                                sx={{
-                                                                    color: 'info.dark',
-                                                                    fontWeight: 700,
-                                                                    letterSpacing: 0.3,
-                                                                    textTransform: 'uppercase',
-                                                                    lineHeight: 1.2,
-                                                                }}
-                                                            >
-                                                                Hinweis
-                                                            </Typography>
-                                                            <Typography
-                                                                variant="body2"
-                                                                sx={{
-                                                                    color: 'text.secondary',
-                                                                    fontSize: '0.8125rem',
-                                                                    fontWeight: 500,
-                                                                    lineHeight: 1.45,
-                                                                }}
-                                                            >
-                                                                Der Vorgang wartet auf den Start der automatischen
-                                                                Abwicklung.
-                                                            </Typography>
-                                                        </Box>
-                                                    ) : undefined
-                                                }
-                                                selectedNode={selectedNode}
-                                                onSelectNode={handleSelectNode}
-                                                onAddFollowUpNode={(fromNodeId, viaPort) => {
-                                                    setNewNodeFor({
-                                                        fromNodeId,
-                                                        viaPort,
-                                                    });
-                                                }}
-                                                onAddInbetweenNode={(forEdgeId) => {
-                                                    setNewNodeOnEdgeId(forEdgeId);
-                                                }}
-                                                onAddEdge={handleCreateEdge}
-                                                onConnectNodeToExisting={(node, preferredPortKey) => {
-                                                    setConnectExistingNodeRequest({
-                                                        sourceNodeId: node.id,
-                                                        preferredPortKey: preferredPortKey ?? null,
-                                                    });
-                                                }}
-                                                onStartReplaceNode={handleOpenReplaceNodeDialog}
-                                                onStartCloneNode={handleCloneNode}
-                                                onDeleteEdge={(edgeId) => {
-                                                    new ProcessDefinitionEdgeApiService()
-                                                        .destroy(edgeId)
-                                                        .then(() => {
-                                                            setProcessFlow((prevProcess) => {
-                                                                if (prevProcess == null) {
-                                                                    return prevProcess;
-                                                                }
-
-                                                                return {
-                                                                    ...prevProcess,
-                                                                    edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
-                                                                };
-                                                            });
+                                                        ) : undefined
+                                                    }
+                                                    selectedNode={selectedNode}
+                                                    onSelectNode={handleSelectNode}
+                                                    onAddFollowUpNode={(fromNodeId, viaPort) => {
+                                                        setNewNodeFor({
+                                                            fromNodeId,
+                                                            viaPort,
                                                         });
+                                                    }}
+                                                    onAddInbetweenNode={(forEdgeId) => {
+                                                        setNewNodeOnEdgeId(forEdgeId);
+                                                    }}
+                                                    onAddEdge={handleCreateEdge}
+                                                    onConnectNodeToExisting={(node, preferredPortKey) => {
+                                                        setConnectExistingNodeRequest({
+                                                            sourceNodeId: node.id,
+                                                            preferredPortKey: preferredPortKey ?? null,
+                                                        });
+                                                    }}
+                                                    onStartReplaceNode={handleOpenReplaceNodeDialog}
+                                                    onStartCloneNode={handleCloneNode}
+                                                    onDeleteEdge={(edgeId) => {
+                                                        new ProcessDefinitionEdgeApiService()
+                                                            .destroy(edgeId)
+                                                            .then(() => {
+                                                                setProcessFlow((prevProcess) => {
+                                                                    if (prevProcess == null) {
+                                                                        return prevProcess;
+                                                                    }
+
+                                                                    return {
+                                                                        ...prevProcess,
+                                                                        edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
+                                                                    };
+                                                                });
+                                                            });
+                                                    }}
+                                                    onDeleteNode={handleDeleteNode}
+                                                    runtimeData={runtimeData}
+                                                    onReloadRuntimeData={loadRuntimeData}
+                                                    nodeProblems={processNodeProblems}
+                                                    showNodeProblemsForNodes={showProcessNodeProblemsForNodes}
+                                                />
+                                            </ReactFlowProvider> :
+                                            <Paper
+                                                sx={{
+                                                    height: '100%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    p: 2,
                                                 }}
-                                                onDeleteNode={handleDeleteNode}
-                                                runtimeData={runtimeData}
-                                                onReloadRuntimeData={loadRuntimeData}
-                                                nodeProblems={processNodeProblems}
-                                                showNodeProblemsForNodes={showProcessNodeProblemsForNodes}
-                                            />
-                                        </ReactFlowProvider> :
-                                        <Paper
-                                            sx={{
-                                                height: '100%',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                p: 2,
-                                            }}
-                                        >
-                                            <Typography sx={{
-                                                color: "text.secondary"
-                                            }}>
-                                                {
-                                                    hasFlowNodeProviderLoadError ?
-                                                        'Die versionierten Prozesselemente konnten nicht geladen werden.' :
-                                                        isLoadingFlowNodeProviders ?
-                                                            'Lade versionierte Prozesselemente...' :
-                                                            'Bereite Prozesselemente vor...'
-                                                }
-                                            </Typography>
-                                        </Paper>
-                                }
+                                            >
+                                                <Typography sx={{
+                                                    color: "text.secondary"
+                                                }}>
+                                                    {
+                                                        hasFlowNodeProviderLoadError ?
+                                                            'Die versionierten Prozesselemente konnten nicht geladen werden.' :
+                                                            isLoadingFlowNodeProviders ?
+                                                                'Lade versionierte Prozesselemente...' :
+                                                                'Bereite Prozesselemente vor...'
+                                                    }
+                                                </Typography>
+                                            </Paper>
+                                    }
+                                </Box>
+
                             </Box>
+                        </Allotment.Pane>
 
-                        </Box>
-                    </Allotment.Pane>
-
-                    <Allotment.Pane
-                        minSize={MIN_EDITOR_DRAWER_WIDTH_PX}
-                        preferredSize={MIN_EDITOR_DRAWER_WIDTH_PX}
-                        visible={!isEditorPaneCollapsed}
-                    >
-                        <Paper
-                            inert={processChat.locked}
-                            sx={{
-                                px: 0,
-                                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                borderLeft: '1px solid',
-                                borderLeftColor: 'divider',
-                                borderRadius: 0,
-                                position: 'relative',
-                                height: '100%',
-                                overflow: 'hidden',
-                            }}
+                        <Allotment.Pane
+                            minSize={MIN_EDITOR_DRAWER_WIDTH_PX}
+                            preferredSize={MIN_EDITOR_DRAWER_WIDTH_PX}
+                            visible={!isEditorPaneCollapsed}
                         >
-                            <ProcessDetailsPageProvider
-                                value={{
-                                    registerChatEditor: processChat.registerEditor,
-                                    editable: isProcessEditable,
-                                    structureEditable: isProcessStructureEditable,
-                                    onSave: handleSaveNode,
-                                    onDelete: handleDeleteNode,
-                                    onStartReplaceNode: handleOpenReplaceNodeDialog,
-                                    nodeRefreshSignal: nodeRefreshSignal,
-                                    testClaim: currentTestClaim?.claim ?? null,
-                                    nodeProblems: processNodeProblems,
-                                    showNodeProblemsForNodes: showProcessNodeProblemsForNodes,
+                            <Paper
+                                inert={processChat.locked}
+                                sx={{
+                                    px: 0,
+                                    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                    borderLeft: '1px solid',
+                                    borderLeftColor: 'divider',
+                                    borderRadius: 0,
+                                    position: 'relative',
+                                    height: '100%',
+                                    overflow: 'hidden',
                                 }}
                             >
-                                <Outlet/>
-                            </ProcessDetailsPageProvider>
-                        </Paper>
+                                <ProcessDetailsPageProvider
+                                    value={{
+                                        registerChatEditor: processChat.registerEditor,
+                                        editable: isProcessEditable,
+                                        structureEditable: isProcessStructureEditable,
+                                        onSave: handleSaveNode,
+                                        onDelete: handleDeleteNode,
+                                        onStartReplaceNode: handleOpenReplaceNodeDialog,
+                                        nodeRefreshSignal: nodeRefreshSignal,
+                                        testClaim: currentTestClaim?.claim ?? null,
+                                        nodeProblems: processNodeProblems,
+                                        showNodeProblemsForNodes: showProcessNodeProblemsForNodes,
+                                    }}
+                                >
+                                    <Outlet/>
+                                </ProcessDetailsPageProvider>
+                            </Paper>
 
 
-                    </Allotment.Pane>
-                    {showAiChat && user != null && <Allotment.Pane minSize={380} preferredSize={380}>
-                        <AiChatWindow
-                            mode="process"
-                            userId={user.id}
-                            processId={processId}
-                            processVersion={processVersion}
-                            beforeSend={processChat.beforeSend}
-                            afterTurn={processChat.afterTurn}
-                            onThinking={processChat.onThinking}
-                            disabled={!aiChatAvailable || processChat.reloadFailed || processChat.busy}
-                            reloadFailed={processChat.reloadFailed}
-                            onRetry={() => void processChat.retry()}
-                            isRetrying={processChat.busy}
-                            unavailable={!aiChatAvailable}
-                            onClose={() => setShowAiChat(false)}
-                            closeDisabled={processChat.locked}
-                        />
-                    </Allotment.Pane>}
-                </Allotment>
+                        </Allotment.Pane>
+                        {showAiChat && user != null && <Allotment.Pane minSize={380} preferredSize={380}>
+                            <AiChatWindow
+                                mode="process"
+                                userId={user.id}
+                                processId={processId}
+                                processVersion={processVersion}
+                                beforeSend={processChat.beforeSend}
+                                afterTurn={processChat.afterTurn}
+                                onThinking={processChat.onThinking}
+                                disabled={!aiChatAvailable || processChat.reloadFailed || processChat.busy}
+                                reloadFailed={processChat.reloadFailed}
+                                onRetry={() => void processChat.retry()}
+                                isRetrying={processChat.busy}
+                                unavailable={!aiChatAvailable}
+                                onClose={() => setShowAiChat(false)}
+                                closeDisabled={processChat.locked}
+                            />
+                        </Allotment.Pane>}
+                    </Allotment>
                 </Box>
 
                 {
@@ -2900,6 +2904,9 @@ export function ProcessDetailsPage(): ReactNode {
                 onClose={() => {
                     setShowMenuAtEl(null);
                 }}
+                showAiChat={showAiChat}
+                aiChatVisible={canUseAiChat && canReadProcess && canUpdateProcess}
+                aiChatDisabled={!aiChatAvailable || processChat.locked}
                 onMenuEvent={handleMenuEvent}
             />
 

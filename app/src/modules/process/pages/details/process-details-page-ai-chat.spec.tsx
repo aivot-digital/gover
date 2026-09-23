@@ -48,7 +48,6 @@ vi.mock('../../dialogs/process-test-claim-process-instances-dialog', () => ({Pro
 vi.mock('../../dialogs/process-versions-dialog', () => ({ProcessVersionsDialog: () => null}));
 vi.mock('../../dialogs/process-publish-dialog', () => ({ProcessPublishDialog: () => null}));
 vi.mock('./components/process-notes-overview-dialog', () => ({ProcessNotesOverviewDialog: () => null}));
-vi.mock('./components/process-details-page-more-menu', () => ({ProcessDetailsPageMoreMenu: () => null}));
 
 function SelectedNode() {
     const {registerChatEditor} = useProcessDetailsPageContext();
@@ -90,8 +89,15 @@ describe('process editor AI chat integration', () => {
         return router;
     }
 
+    function openMenu() {
+        fireEvent.click(screen.getByRole('button', {name: 'Weitere Optionen'}));
+    }
+
     async function send() {
-        fireEvent.click(screen.getByRole('button', {name: 'KI-Chat'}));
+        openMenu();
+        fireEvent.click(screen.getByRole('menuitem', {name: 'KI-Chat anzeigen'}));
+        expect(screen.getByRole('switch', {name: 'KI-Chat anzeigen'})).toBeChecked();
+        fireEvent.keyDown(screen.getByRole('menu'), {key: 'Escape'});
         fireEvent.change(screen.getByRole('textbox', {name: 'Nachricht'}), {target: {value: 'Ändern'}});
         fireEvent.click(screen.getByRole('button', {name: 'Absenden'}));
         await waitFor(() => expect(AiChatService.prototype.sendMessage).toHaveBeenCalledTimes(1));
@@ -101,14 +107,16 @@ describe('process editor AI chat integration', () => {
         'does not offer the chat without %s', async permission => {
             mocks.permissions.delete(permission);
             await mount();
-            expect(screen.queryByRole('button', {name: 'KI-Chat'})).not.toBeInTheDocument();
+            openMenu();
+            expect(screen.queryByRole('menuitem', {name: 'KI-Chat anzeigen'})).not.toBeInTheDocument();
         },
     );
 
     it('does not offer editing of a published version', async () => {
         vi.mocked(ProcessDefinitionVersionApiService.prototype.retrieve).mockResolvedValue({processVersion: 2, status: ProcessStatus.Published} as never);
         await mount();
-        expect(screen.getByRole('button', {name: 'KI-Chat'})).toBeDisabled();
+        openMenu();
+        expect(screen.getByRole('menuitem', {name: 'KI-Chat anzeigen'})).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('disables the chat while a process test is active', async () => {
@@ -116,7 +124,22 @@ describe('process editor AI chat integration', () => {
             content: [{id: 9, owningUserId: 'user', processId: 42, processVersion: 2}],
         } as never);
         await mount();
-        expect(screen.getByRole('button', {name: 'KI-Chat'})).toBeDisabled();
+        openMenu();
+        expect(screen.getByRole('menuitem', {name: 'KI-Chat anzeigen'})).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('passes the chat toggle state through the open menu in both directions', async () => {
+        await mount();
+        openMenu();
+
+        const chatSwitch = screen.getByRole('switch', {name: 'KI-Chat anzeigen'});
+        expect(chatSwitch).not.toBeChecked();
+        fireEvent.click(chatSwitch);
+        expect(chatSwitch).toBeChecked();
+        expect(screen.getByRole('menuitem', {name: 'KI-Chat anzeigen'})).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('menuitem', {name: 'KI-Chat anzeigen'}));
+        expect(chatSwitch).not.toBeChecked();
     });
 
     it('locks structure changes, publication and chat closing until the turn finishes', async () => {

@@ -1,4 +1,4 @@
-import React, {type ReactNode, useMemo} from 'react';
+import React, {type ReactNode} from 'react';
 import History from '@aivot/mui-material-symbols-400-n25-outlined/History';
 import Comment from '@aivot/mui-material-symbols-400-n25-outlined/Comment';
 import FileExport from '@aivot/mui-material-symbols-400-n25-outlined/FileExport';
@@ -7,13 +7,16 @@ import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';
 import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
+import Chat from '@aivot/mui-material-symbols-400-n25-outlined/Chat';
 
-export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'notes';
+export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'notes' | 'toggle-ai-chat';
 
 interface ProcessDetailsPageMoreMenuProps {
     anchorEl: null | HTMLElement;
     onClose: () => void;
-
+    showAiChat: boolean;
+    aiChatVisible: boolean;
+    aiChatDisabled: boolean;
     onMenuEvent: (event: ProcessDetailsPageMoreMenuEvent) => void;
 }
 
@@ -21,7 +24,9 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
     const {
         anchorEl,
         onClose,
-
+        showAiChat,
+        aiChatVisible,
+        aiChatDisabled,
         onMenuEvent,
     } = props;
 
@@ -33,19 +38,34 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
         } else {
             notImplemented();
         }
-        onClose();
     };
 
-    const items = useMemo<ProcessActionMenuItem[]>(() => {
-        return entries.map((entry) => entry === 'separator' ? entry : ({
+    const items: ProcessActionMenuItem[] = entries.map((entry) => {
+        if (entry === 'separator') {
+            return entry;
+        }
+
+        if (entry.type === 'toggle') {
+            return {
+                type: 'toggle',
+                label: entry.label,
+                icon: entry.icon,
+                checked: showAiChat,
+                visible: aiChatVisible,
+                disabled: aiChatDisabled,
+                onToggle: () => onMenuEvent(entry.event),
+            };
+        }
+
+        return {
             label: entry.label,
             icon: entry.icon,
             isDangerous: entry.isDangerous,
             onClick: () => {
                 dispatchEvent(entry.event);
             },
-        }));
-    }, [dispatchEvent]);
+        };
+    });
 
     return (
         <ProcessActionMenu
@@ -57,12 +77,20 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
 }
 
 
-const entries: Array<{
+type ProcessDetailsPageMoreMenuEntry = {
     icon: ReactNode;
     label: string;
-    event?: ProcessDetailsPageMoreMenuEvent;
+    event?: Exclude<ProcessDetailsPageMoreMenuEvent, 'toggle-ai-chat'>;
     isDangerous?: boolean;
-} | 'separator'> = [
+    type?: 'action';
+} | {
+    icon: ReactNode;
+    label: string;
+    event: 'toggle-ai-chat';
+    type: 'toggle';
+} | 'separator';
+
+const entries: ProcessDetailsPageMoreMenuEntry[] = [
     {
         icon: <History/>,
         label: 'Änderungsverlauf anzeigen',
@@ -92,5 +120,11 @@ const entries: Array<{
     {
         icon: <BugReport/>,
         label: 'Entwicklerwerkzeuge öffnen',
+    },
+    {
+        icon: <Chat/>,
+        label: 'KI-Chat anzeigen',
+        event: 'toggle-ai-chat',
+        type: 'toggle',
     },
 ];
