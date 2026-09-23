@@ -1,5 +1,5 @@
 import {AnyElement} from "../../../../models/elements/any-element";
-import {Alert, Box, Button, IconButton, Paper, Stack, Typography} from "@mui/material";
+import {Alert, Box, Button, Divider, IconButton, Paper, Stack, Typography} from "@mui/material";
 import {TextFieldComponent} from "../../../../components/text-field/text-field-component";
 import {MarkdownContent} from "../../../../components/markdown-content/markdown-content";
 import {useEffect, useRef, useState} from "react";
@@ -17,6 +17,11 @@ import {downloadBlobFile} from '../../../../utils/download-utils';
 import {isApiError} from '../../../../models/api-error';
 import {FileUploadFileList} from '../../../../components/file-upload-field/file-upload-field-layout';
 import {humanizeFileSize} from '../../../../utils/humanization-utils';
+import AccountCircle from "@aivot/mui-material-symbols-400-n25-outlined/AccountCircle";
+import Error from "@aivot/mui-material-symbols-400-n25-outlined/Error";
+import {useAppSelector} from "../../../../hooks/use-app-selector";
+import {selectUser} from "../../../../slices/user-slice";
+import SentimentCalm from "@aivot/mui-material-symbols-400-n25-outlined/SentimentCalm";
 
 interface AiChatWindowPropsElementEditing {
     mode?: 'element';
@@ -64,6 +69,8 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
             requestRef.current?.abort();
         };
     }, []);
+
+    const user = useAppSelector(selectUser);
 
     const [message, setMessage] = useState<string | null>(null);
     const [attachment, setAttachment] = useState<File | null>(null);
@@ -447,8 +454,47 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                 >
                 {
                     messageBuffer.map((msg, index) => (
-                        <Box key={index} sx={{marginBottom: 2}}>
-                            <strong>{msg.role === 'user' ? 'Sie' : msg.role === 'error' ? 'Hinweis' : 'KI'}:</strong>
+                        <Paper
+                            key={index}
+                            variant="outlined"
+                            sx={{
+                                marginBottom: 3,
+                                p: 1.5,
+                            }}
+                        >
+                            <Stack
+                                direction="row"
+                                sx={{
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    mb: 1,
+                                }}
+                            >
+                                {
+                                    msg.role === 'user'
+                                        ? <AccountCircle/>
+                                        : msg.role === 'error'
+                                            ? <Error/>
+                                            : <SentimentCalm/>
+                                }
+
+                                <strong>
+                                    {
+                                        msg.role === 'user'
+                                            ? user?.fullName ?? 'Benutzer'
+                                            : msg.role === 'error'
+                                                ? <i>Fehlermeldung</i>
+                                                : 'KI-Agent'
+                                    }
+                                </strong>
+                            </Stack>
+
+                            <Divider
+                                sx={{
+                                    my: 1,
+                                }}
+                            />
+
                             <MarkdownContent markdown={msg.content}/>
                             {msg.role === 'user' && msg.attachments?.map(file => (
                                 <Stack key={`${file.name}-${file.size}`} direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
@@ -458,7 +504,7 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                                     </Typography>
                                 </Stack>
                             ))}
-                        </Box>
+                        </Paper>
                     ))
                 }
 
