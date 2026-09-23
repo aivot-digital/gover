@@ -178,8 +178,8 @@ class CommunicationMessageActionNodeV1Test {
         assertEquals("applicant", configuration.identityId);
         assertNotNull(configuration.messageConfig);
         assertEquals("automatic", configuration.messageConfig.executionType);
-        assertEquals(17, configuration.messageConfig.signatureDepartmentId);
         assertNotNull(configuration.messageConfig.automaticContent);
+        assertEquals(17, configuration.messageConfig.automaticContent.signatureDepartmentId);
         assertEquals("Subject", configuration.messageConfig.automaticContent.subject);
         assertEquals("Content", configuration.messageConfig.automaticContent.content);
     }
@@ -189,7 +189,7 @@ class CommunicationMessageActionNodeV1Test {
         var departmentService = mock(VDepartmentShadowedService.class);
         var node = createNode(mock(AssignmentContextAssigneeResolverService.class), departmentService);
         var configuration = configuration("automatic");
-        configuration.messageConfig.signatureDepartmentId = 17;
+        configuration.messageConfig.automaticContent.signatureDepartmentId = 17;
         var signatureDepartment = new VDepartmentShadowedEntity().setId(17).setName("Bürgerbüro");
         when(departmentService.retrieve(17)).thenReturn(Optional.of(signatureDepartment));
         var processInstance = processInstance();
@@ -245,8 +245,12 @@ class CommunicationMessageActionNodeV1Test {
 
     @Test
     void staffTaskProvidesResolvedDefaultsAndSendsEditedValues() throws Exception {
-        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
+        var departmentService = mock(VDepartmentShadowedService.class);
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class), departmentService);
         var configuration = configuration("manual");
+        configuration.messageConfig.manualContent.signatureDepartmentId = 17;
+        var signatureDepartment = new VDepartmentShadowedEntity().setId(17).setName("Bürgerbüro");
+        when(departmentService.retrieve(17)).thenReturn(Optional.of(signatureDepartment));
         var executionData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var context = staffContext(configuration, executionData, processInstance(), task());
 
@@ -267,6 +271,7 @@ class CommunicationMessageActionNodeV1Test {
         );
         assertEquals("Bearbeitet", result.getCommunicationRequest().message().subject());
         assertEquals("Finaler Inhalt", result.getCommunicationRequest().message().body());
+        assertSame(signatureDepartment, result.getCommunicationRequest().message().signatureDepartment());
     }
 
     @Test

@@ -113,7 +113,9 @@ class FormRequestActionNodeV1Test {
         var configuration = new FormRequestActionNodeV1.NodeConfig();
         configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
         configuration.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
-        configuration.messageConfig.signatureDepartmentId = 17;
+        configuration.messageConfig.executionType = SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC;
+        configuration.messageConfig.automaticContent = new SemiAutomaticMessageConfig.AutomaticContent();
+        configuration.messageConfig.automaticContent.signatureDepartmentId = 17;
         var signatureDepartment = new VDepartmentShadowedEntity().setId(17).setName("Bürgerbüro");
         when(vDepartmentShadowedService.retrieve(17)).thenReturn(java.util.Optional.of(signatureDepartment));
         var processInstance = new ProcessInstanceEntity().setAccessKey("instance-access");

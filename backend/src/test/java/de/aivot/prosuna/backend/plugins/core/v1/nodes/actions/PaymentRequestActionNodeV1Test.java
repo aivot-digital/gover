@@ -221,7 +221,7 @@ class PaymentRequestActionNodeV1Test {
         var paymentProviderKey = UUID.randomUUID();
         var paymentConfig = paymentConfig(paymentProviderKey);
         var configuration = nodeConfiguration(paymentConfig, "automatic");
-        configuration.messageConfig.signatureDepartmentId = 17;
+        configuration.messageConfig.automaticContent.signatureDepartmentId = 17;
         var signatureDepartment = new VDepartmentShadowedEntity().setId(17).setName("Bürgerbüro");
         var paymentProvider = paymentProvider(paymentProviderKey);
         var paymentPayload = paymentPayload();
@@ -277,7 +277,7 @@ class PaymentRequestActionNodeV1Test {
         var paymentProviderKey = UUID.randomUUID();
         var paymentConfig = paymentConfig(paymentProviderKey);
         var configuration = nodeConfiguration(paymentConfig, "automatic");
-        configuration.messageConfig.signatureDepartmentId = 404;
+        configuration.messageConfig.automaticContent.signatureDepartmentId = 404;
         when(paymentProviderRepository.findById(paymentProviderKey))
                 .thenReturn(Optional.of(paymentProvider(paymentProviderKey)));
         when(vDepartmentShadowedService.retrieve(404)).thenReturn(Optional.empty());

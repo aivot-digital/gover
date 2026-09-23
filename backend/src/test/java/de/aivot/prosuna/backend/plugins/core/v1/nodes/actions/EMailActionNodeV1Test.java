@@ -185,7 +185,7 @@ class EMailActionNodeV1Test {
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         configuration.messageConfig.automaticContent.subject = "  Nachricht für Ada  ";
         configuration.messageConfig.automaticContent.content = "  Hallo **Ada**  ";
-        configuration.messageConfig.signatureDepartmentId = SIGNATURE_DEPARTMENT_ID;
+        configuration.messageConfig.automaticContent.signatureDepartmentId = SIGNATURE_DEPARTMENT_ID;
         configuration.to = "customer@example.test";
         var signatureDepartment = new VDepartmentShadowedEntity()
                 .setId(SIGNATURE_DEPARTMENT_ID)
@@ -399,7 +399,7 @@ class EMailActionNodeV1Test {
     @Test
     void rejectsSendingWhenSelectedSignatureDepartmentNoLongerExists() throws Exception {
         var configuration = configuration("automatic");
-        configuration.messageConfig.signatureDepartmentId = SIGNATURE_DEPARTMENT_ID;
+        configuration.messageConfig.automaticContent.signatureDepartmentId = SIGNATURE_DEPARTMENT_ID;
         var processData = new ProcessExecutionData();
         stubAutomaticMessage(configuration, processData);
         when(vDepartmentShadowedService.retrieve(SIGNATURE_DEPARTMENT_ID)).thenReturn(Optional.empty());
