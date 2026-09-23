@@ -460,6 +460,7 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                             sx={{
                                 marginBottom: 3,
                                 p: 1.5,
+                                borderStyle: msg.role === 'user' ? 'dashed' : 'solid',
                             }}
                         >
                             <Stack
