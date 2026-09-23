@@ -130,6 +130,16 @@ public class SemiAutomaticMessageConfig {
         )
         public String executionType;
 
+        /**
+         * Configuration used only for automatic dispatch.
+         */
+        public AutomaticContent automaticContent;
+
+        /**
+         * Configuration used only when a staff member edits and dispatches the message.
+         */
+        public ManualContent manualContent;
+
         @InputElementPOJOBinding(
                 id = SIGNATURE_DEPARTMENT_FIELD_ID,
                 type = ElementType.DepartmentSelectInput,
@@ -143,15 +153,6 @@ public class SemiAutomaticMessageConfig {
         )
         public Integer signatureDepartmentId;
 
-        /**
-         * Configuration used only for automatic dispatch.
-         */
-        public AutomaticContent automaticContent;
-
-        /**
-         * Configuration used only when a staff member edits and dispatches the message.
-         */
-        public ManualContent manualContent;
     }
 
     /**
