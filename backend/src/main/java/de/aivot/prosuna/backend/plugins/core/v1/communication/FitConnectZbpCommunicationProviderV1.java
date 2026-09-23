@@ -2,6 +2,8 @@ package de.aivot.prosuna.backend.plugins.core.v1.communication;
 
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+
+import de.aivot.prosuna.backend.utils.StringUtils;
 import dev.fitko.fitconnect.rest.model.event.authtags.AuthenticationTags;
 import dev.fitko.fitconnect.core.common.data.ObjectMappingHelper;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
@@ -470,7 +472,7 @@ public class FitConnectZbpCommunicationProviderV1 implements DeliveryTrackingCom
                 }
 
                 final String contentType = att.getContentType() != null ? att.getContentType() : DEFAULT_ATTACHMENT_MIME_TYPE;
-                final String fileName = att.getName() == null || att.getName().isBlank()
+                final String fileName = StringUtils.isNullOrEmpty(att.getName())
                         ? DEFAULT_ATTACHMENT_NAME_PREFIX + attachmentIndex
                         : att.getName();
 
