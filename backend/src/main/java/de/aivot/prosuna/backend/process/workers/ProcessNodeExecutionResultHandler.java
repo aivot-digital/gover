@@ -480,57 +480,108 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setAssignedUserId(context.result.getAssignedUserId());
         assignAndSaveDataLayersAndStatusOverride(context, false);
 
-        if (context.triggeringUser != null) {
-            context.logger.logf(
-                    ProcessNodeExecutionLogLevel.Info,
-                    false,
-                    true,
-                    "Aufgabe neu zugewiesen",
-                    "Die Aufgabe wurde durch %s der Mitarbeiter:in %s zugewiesen.",
-                    StringUtils.quote(context.triggeringUser.getFullName()),
-                    StringUtils.quote(assignedUser.getFullName())
-            );
-        } else {
-            context.logger.logf(
-                    ProcessNodeExecutionLogLevel.Info,
-                    true,
-                    true,
-                    "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " automatisch zugewiesen",
-                    "Die Aufgabe wurde automatisch der Mitarbeiter:in %s zugewiesen.",
-                    StringUtils.quote(assignedUser.getFullName())
-            );
+        boolean unchanged = Objects.equals(previousAssignedUserId, assignedUser.getId());
+        UserEntity previousAssignedUser = null;
+        if (previousAssignedUserId != null && !unchanged) {
+            boolean lookupFailed = false;
+            try {
+                previousAssignedUser = userService.retrieve(previousAssignedUserId).orElse(null);
+            } catch (ResponseException e) {
+                lookupFailed = true;
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die bisherige Aufgabenzuweisung an die Person mit der ID %s konnte nicht aufgelöst werden.",
+                        StringUtils.quote(previousAssignedUserId)
+                ));
+            }
+            if (previousAssignedUser == null && !lookupFailed) {
+                context.logger.logf(
+                        ProcessNodeExecutionLogLevel.Warn,
+                        true,
+                        true,
+                        "Bisherige Aufgabenzuweisung nicht auflösbar",
+                        "Die bisher zugewiesene Person mit der ID %s konnte nicht per E-Mail informiert werden.",
+                        StringUtils.quote(previousAssignedUserId)
+                );
+            }
         }
 
+        String assignedUserLabel = StringUtils.quote(assignedUser.getFullName());
+        String logMessageTitle;
+        String logMessageDetails;
+        if (unchanged) {
+            logMessageTitle = "Zuweisung zur Aufgabe unverändert";
+            logMessageDetails = "Die Aufgabe ist weiterhin %s zugewiesen.".formatted(assignedUserLabel);
+        } else if (previousAssignedUserId == null) {
+            logMessageTitle = "Aufgabe zugewiesen";
+            logMessageDetails = "Die Aufgabe wurde %s zugewiesen.".formatted(assignedUserLabel);
+        } else {
+            logMessageTitle = "Aufgabe neu zugewiesen";
+            String previousUserLabel = previousAssignedUser != null
+                    ? StringUtils.quote(previousAssignedUser.getFullName())
+                    : "der Person mit der ID " + StringUtils.quote(previousAssignedUserId);
+            logMessageDetails = "Die Aufgabe wurde von %s auf %s neu zugewiesen."
+                    .formatted(previousUserLabel, assignedUserLabel);
+        }
+        logMessageDetails += context.triggeringUser != null
+                ? " Ausgelöst durch %s.".formatted(StringUtils.quote(context.triggeringUser.getFullName()))
+                : " Die Ausführung erfolgte automatisch.";
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                context.triggeringUser == null,
+                true,
+                logMessageTitle,
+                "%s",
+                logMessageDetails
+        );
 
         if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
             context.processInstance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(context.processInstance);
         }
 
-        if (Objects.equals(previousAssignedUserId, assignedUser.getId())) {
+        if (unchanged) {
             return;
         }
 
-        if (context.triggeringUser != null && assignedUser.getId().equals(context.triggeringUser.getId())) {
-            return;
+        if (context.triggeringUser == null || !assignedUser.getId().equals(context.triggeringUser.getId())) {
+            try {
+                processTaskMailService.sendAssigned(
+                        context.triggeringUser,
+                        assignedUser,
+                        context.processInstance,
+                        context.processInstanceTask,
+                        context.currentNode,
+                        context.provider,
+                        previousAssignedUserId != null
+                );
+            } catch (Exception e) {
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an %s konnte nicht versendet werden.",
+                        StringUtils.quote(assignedUser.getFullName())
+                ));
+            }
         }
 
-        try {
-            processTaskMailService.sendAssigned(
-                    context.triggeringUser,
-                    assignedUser,
-                    context.processInstance,
-                    context.processInstanceTask,
-                    context.currentNode,
-                    context.provider,
-                    previousAssignedUserId != null
-            );
-        } catch (Exception e) {
-            context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
-                    e,
-                    "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an %s konnte nicht versendet werden.",
-                    StringUtils.quote(assignedUser.getFullName())
-            ));
+        if (previousAssignedUser != null && (context.triggeringUser == null
+                || !previousAssignedUser.getId().equals(context.triggeringUser.getId()))) {
+            try {
+                processTaskMailService.sendUnassigned(
+                        context.triggeringUser,
+                        previousAssignedUser,
+                        context.processInstance,
+                        context.processInstanceTask,
+                        context.currentNode,
+                        context.provider
+                );
+            } catch (Exception e) {
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die E-Mail-Benachrichtigung über das Ende der Aufgabenzuweisung an %s konnte nicht versendet werden.",
+                        StringUtils.quote(previousAssignedUser.getFullName())
+                ));
+            }
         }
     }
 

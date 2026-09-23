@@ -42,13 +42,13 @@ public class ProcessNotificationTaskAssignedUserConfigDefinition implements User
     @Nonnull
     @Override
     public String getLabel() {
-        return "Aufgabe zugewiesen";
+        return "Aufgabenzuweisung geändert";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen in Prosuna eine Aufgabe innerhalb eines Prozesses zugewiesen oder neu zugewiesen wird.";
+        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen eine Aufgabe zugewiesen wird oder Ihre Zuweisung endet.";
     }
 
     @Override
