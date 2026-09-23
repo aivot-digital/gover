@@ -166,7 +166,8 @@ class CommunicationMessageActionNodeV1Test {
                 SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_FIELD_ID,
                 SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC
         );
-        values.put(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID, 17);
+        values.put(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1, 17);
+        values.put(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2, 29);
         values.put(SemiAutomaticMessageConfig.AutomaticContent.SUBJECT_FIELD_ID, "Subject");
         values.put(SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID, "Content");
 
@@ -182,6 +183,8 @@ class CommunicationMessageActionNodeV1Test {
         assertEquals(17, configuration.messageConfig.automaticContent.signatureDepartmentId);
         assertEquals("Subject", configuration.messageConfig.automaticContent.subject);
         assertEquals("Content", configuration.messageConfig.automaticContent.content);
+        assertNotNull(configuration.messageConfig.manualContent);
+        assertEquals(29, configuration.messageConfig.manualContent.signatureDepartmentId);
     }
 
     @Test
@@ -313,15 +316,18 @@ class CommunicationMessageActionNodeV1Test {
                 "applicant",
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
                 Map.of("user", "staff-1"),
-                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID,
+                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1,
                 17,
+                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2,
+                29,
                 "portableValue",
                 "kept"
         );
         var cleaned = node.cleanConfigurationForExport(exported);
         assertFalse(cleaned.containsKey(CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID));
         assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
-        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2));
         assertEquals("kept", cleaned.getLiteral("portableValue"));
     }
 

@@ -582,7 +582,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         configuration.remove(PaymentRequestActionNodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID);
         configuration.remove(PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID);
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
-        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2);
         return configuration;
     }
 

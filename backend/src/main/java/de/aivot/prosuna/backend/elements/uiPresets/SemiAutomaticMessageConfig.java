@@ -120,7 +120,8 @@ public class SemiAutomaticMessageConfig {
     @LayoutElementPOJOBinding(id = GROUP_ID, type = ElementType.GroupLayout)
     public static class LayoutConfig {
         public static final String EXECUTION_TYPE_FIELD_ID = "execution_type";
-        public static final String SIGNATURE_DEPARTMENT_FIELD_ID = "signature_department_id";
+        public static final String SIGNATURE_DEPARTMENT_FIELD_ID_1 = "signature_department_id_1";
+        public static final String SIGNATURE_DEPARTMENT_FIELD_ID_2 = "signature_department_id_2";
         public static final String EXECUTION_TYPE_AUTOMATIC = "automatic";
         public static final String EXECUTION_TYPE_MANUAL = "manual";
 
@@ -202,7 +203,7 @@ public class SemiAutomaticMessageConfig {
         public String content;
 
         @InputElementPOJOBinding(
-                id = LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID,
+                id = LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1,
                 type = ElementType.DepartmentSelectInput,
                 allowedInputModes = InputMode.Literal,
                 properties = {
@@ -268,7 +269,7 @@ public class SemiAutomaticMessageConfig {
         public String content;
 
         @InputElementPOJOBinding(
-                id = LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID,
+                id = LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2,
                 type = ElementType.DepartmentSelectInput,
                 allowedInputModes = InputMode.Literal,
                 properties = {
