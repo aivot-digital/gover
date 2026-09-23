@@ -361,7 +361,7 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
             return metadata == null ? Map.of() : metadata;
         } catch (Exception e) {
             throw ResponseException.internalServerError(
-                    "Die FIT-Connect-Metadaten konnten nicht für die Prozessinstanz aufbereitet werden.",
+                    "Die FIT-Connect-Metadaten konnten nicht für den Vorgang aufbereitet werden.",
                     e
             );
         }

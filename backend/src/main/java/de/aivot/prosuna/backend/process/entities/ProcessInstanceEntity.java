@@ -48,7 +48,7 @@ public class ProcessInstanceEntity {
     private Integer initialProcessVersion;
 
     @Nonnull
-    @NotNull(message = "Der Prozessinstanz-Status darf nicht null sein.")
+    @NotNull(message = "Der Vorgangsstatus darf nicht null sein.")
     @Column(columnDefinition = "int2")
     private ProcessInstanceStatus status;
 

@@ -355,7 +355,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var identity = processInstance.getIdentities().get(identityId);
         if (identity == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die konfigurierte Identität %s ist in der Prozessinstanz nicht vorhanden.",
+                    "Die konfigurierte Identität %s ist im Vorgang nicht vorhanden.",
                     StringUtils.quote(identityId)
             );
         }

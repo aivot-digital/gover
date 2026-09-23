@@ -167,7 +167,7 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
     protected String buildCreateAuditMessage(@Nonnull UserEntity execUser,
                                              @Nonnull ProcessInstanceAccessControlEntity createdItem) {
         return String.format(
-                "Die Instanz-Zugriffsregel mit der ID %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s erstellt.",
+                "Die Instanz-Zugriffsregel mit der ID %s für den Vorgang %s wurde von der Mitarbeiter:in %s erstellt.",
                 StringUtils.quote(String.valueOf(createdItem.getId())),
                 StringUtils.quote(String.valueOf(createdItem.getTargetProcessInstanceId())),
                 StringUtils.quote(execUser.getFullName())
@@ -180,7 +180,7 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
                                              @Nonnull Integer id,
                                              @Nonnull ProcessInstanceAccessControlEntity updatedItem) {
         return String.format(
-                "Die Instanz-Zugriffsregel mit der ID %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                "Die Instanz-Zugriffsregel mit der ID %s für den Vorgang %s wurde von der Mitarbeiter:in %s aktualisiert.",
                 StringUtils.quote(String.valueOf(id)),
                 StringUtils.quote(String.valueOf(updatedItem.getTargetProcessInstanceId())),
                 StringUtils.quote(execUser.getFullName())
@@ -193,7 +193,7 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
                                              @Nonnull Integer id,
                                              @Nonnull ProcessInstanceAccessControlEntity deletedItem) {
         return String.format(
-                "Die Instanz-Zugriffsregel mit der ID %s für die Prozessinstanz %s wurde von der Mitarbeiter:in %s gelöscht.",
+                "Die Instanz-Zugriffsregel mit der ID %s für den Vorgang %s wurde von der Mitarbeiter:in %s gelöscht.",
                 StringUtils.quote(String.valueOf(id)),
                 StringUtils.quote(String.valueOf(deletedItem.getTargetProcessInstanceId())),
                 StringUtils.quote(execUser.getFullName())
