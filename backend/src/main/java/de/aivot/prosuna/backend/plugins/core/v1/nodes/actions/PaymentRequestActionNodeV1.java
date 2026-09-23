@@ -590,7 +590,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var recipientIdentity = processInstance.getIdentities().get(recipientIdentityId);
         if (recipientIdentity == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die konfigurierte Empfängeridentität %s ist in der Prozessinstanz nicht vorhanden.",
+                    "Die konfigurierte Empfängeridentität %s ist im Vorgang nicht vorhanden.",
                     StringUtils.quote(recipientIdentityId)
             );
         }

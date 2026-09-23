@@ -97,7 +97,7 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                 .findById(entity.getProcessInstanceId())
                 .orElseThrow(() -> ResponseException
                         .badRequest(
-                                "Die Prozess-Instanz mit der ID %s existiert nicht.",
+                                "Der Vorgang mit der ID %s existiert nicht.",
                                 entity.getProcessInstanceId()
                         )
                 );

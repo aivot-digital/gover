@@ -179,7 +179,7 @@ public class ProcessInstanceController {
                 "id", result.getId(),
                 "processDefinitionId", result.getProcessId()
         )).withMessage(
-                "Die Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s neu zugewiesen.",
+                "Der Vorgang mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s neu zugewiesen.",
                 StringUtils.quote(String.valueOf(result.getId())),
                 StringUtils.quote(String.valueOf(result.getProcessId())),
                 StringUtils.quote(execUser.getFullName())
@@ -282,7 +282,7 @@ public class ProcessInstanceController {
                 "id", updatedInstance.getId(),
                 "processDefinitionId", updatedInstance.getProcessId()
         )).withMessage(
-                "Die fehlgeschlagene Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s neu gestartet.",
+                "Der fehlgeschlagene Vorgang mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s neu gestartet.",
                 StringUtils.quote(String.valueOf(updatedInstance.getId())),
                 StringUtils.quote(String.valueOf(updatedInstance.getProcessId())),
                 StringUtils.quote(user.getFullName())
@@ -319,7 +319,7 @@ public class ProcessInstanceController {
                 "id", deleted.getId(),
                 "processDefinitionId", deleted.getProcessId()
         )).withMessage(
-                "Die Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s gelöscht.",
+                "Der Vorgang mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s gelöscht.",
                 StringUtils.quote(String.valueOf(deleted.getId())),
                 StringUtils.quote(String.valueOf(deleted.getProcessId())),
                 StringUtils.quote(user.getFullName())
