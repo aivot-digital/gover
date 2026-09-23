@@ -15,7 +15,7 @@ import {showDialog} from '../../../slices/app-slice';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {
     selectDevToolsTab,
-    setDevToolsTab,
+    setDevToolsTab, toggleAiChat,
     toggleAutoScrollForSteps,
     toggleComponentTree,
     toggleElementContextMenu,
@@ -544,7 +544,6 @@ export function FormNodeEditorPage() {
     const [showPrefillDialog, setShowPrefillDialog] = useState(false);
     const [showMoreMenuAtEl, setShowMoreMenuAtEl] = useState<HTMLElement | null>(null);
     const showDeveloperTools = useAppSelector(selectDevToolsTab);
-    const showAiChat = localStorage.getItem("showAiChat") === "true";
     const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
     const [highlightElementSignal, setHighlightElementSignal] = useState(0);
     const [hoveredTreeElementId, setHoveredTreeElementId] = useState<string | null>(null);
@@ -565,6 +564,7 @@ export function FormNodeEditorPage() {
         disableAutoScrollForSteps,
         disableElementContextMenu,
         hideComponentTree,
+        hideAiChat,
     } = useAppSelector((state: RootState) => state.adminSettings);
 
     const [pastLoadedForm, setPastLoadedForm] = useState<FormLayoutElement[]>([]);
@@ -982,6 +982,16 @@ export function FormNodeEditorPage() {
             checked: !hideComponentTree,
             onToggle: () => {
                 dispatch(toggleComponentTree());
+            },
+        },
+        {
+            type: 'toggle',
+            label: 'KI-Chat anzeigen',
+            icon: <AccountTree/>,
+            checked: !hideAiChat,
+            visible: AppConfig.aiEnabled,
+            onToggle: () => {
+                dispatch(toggleAiChat());
             },
         },
         {
@@ -1492,8 +1502,8 @@ export function FormNodeEditorPage() {
                             }
                             {/* AI Chat */}
                             {
-                                !hideComponentTree &&
-                                showAiChat &&
+                                !hideAiChat &&
+                                AppConfig.aiEnabled &&
                                 (
                                     <Allotment.Pane
                                         minSize={380}
