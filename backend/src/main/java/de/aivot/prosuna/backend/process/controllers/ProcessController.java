@@ -61,6 +61,7 @@ public class ProcessController {
     private final ProcessInstanceAccessControlPresetService processInstanceAccessControlPresetService;
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final JsonMapper objectMapper;
+    private final ProcessDefinitionCountService processCounts;
 
     @Autowired
     public ProcessController(AuditService auditService,
@@ -75,7 +76,8 @@ public class ProcessController {
                              ProcessEdgeService processDefinitionEdgeService,
                              ProcessInstanceAccessControlPresetService processInstanceAccessControlPresetService,
                              ProcessNodeDefinitionService processNodeProviderService,
-                             JsonMapper objectMapper) {
+                             JsonMapper objectMapper,
+                             ProcessDefinitionCountService processCounts) {
         this.auditService = auditService.createScopedAuditService(ProcessController.class, "Prozesse");
 
         this.userService = userService;
@@ -90,6 +92,7 @@ public class ProcessController {
         this.processInstanceAccessControlPresetService = processInstanceAccessControlPresetService;
         this.processNodeProviderService = processNodeProviderService;
         this.objectMapper = objectMapper;
+        this.processCounts = processCounts;
     }
 
     @GetMapping("")
@@ -112,6 +115,14 @@ public class ProcessController {
                         execUser.getId(),
                         filter.build()
                 );
+    }
+
+    @GetMapping("counts/")
+    @Operation(summary = "Count draft and published process definitions", description = "Counts readable processes with a draft or published version independently of the selected tab, title search and department filter. Processes with both versions contribute to both categories.")
+    @Nonnull
+    public Map<String, Long> counts(@Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return processCounts.count(user.getId());
     }
 
     @GetMapping("slug-availability/")

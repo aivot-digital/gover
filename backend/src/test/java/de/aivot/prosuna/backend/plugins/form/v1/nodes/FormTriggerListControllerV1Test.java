@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.plugins.form.services.FormOverviewCountService;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -59,7 +60,8 @@ class FormTriggerListControllerV1Test {
                 processNodeService,
                 processVersionService,
                 formTriggerNode,
-                publicUrlService
+                publicUrlService,
+                mock(FormOverviewCountService.class)
         );
 
         when(formTriggerNode.getKey()).thenReturn("form:form:1");

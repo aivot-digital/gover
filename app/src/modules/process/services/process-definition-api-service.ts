@@ -1,3 +1,4 @@
+import {type ListFilterCounts} from '../../../components/generic-list/generic-list-props';
 import {BaseCrudApiService} from "../../../services/base-crud-api-service";
 import {ProcessEntity} from "../entities/process-entity";
 import {ProcessExport} from "../entities/process-export";
@@ -34,6 +35,10 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
 
     initialize(): ProcessEntity {
         return ProcessDefinitionApiService.initialize();
+    }
+
+    public counts(abort?: AbortSignal): Promise<ListFilterCounts> {
+        return this.get('/api/processes/counts/', {abort});
     }
 
     public static initialize(): ProcessEntity {

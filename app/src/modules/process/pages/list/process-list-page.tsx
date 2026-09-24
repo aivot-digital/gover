@@ -13,7 +13,11 @@ import {GridColDef} from '@mui/x-data-grid';
 import {Link} from 'react-router-dom';
 import HomeStorage from '@aivot/mui-material-symbols-400-n25-outlined/HomeStorage';
 import NewWindow from '@aivot/mui-material-symbols-400-n25-outlined/NewWindow';
-import {GenericListPropsFetchOptions, ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import {
+    GenericListPropsFetchOptions,
+    ListControlRef,
+    type FetchListFilterCounts,
+} from '../../../../components/generic-list/generic-list-props';
 import {Page} from '../../../../models/dtos/page';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
@@ -41,6 +45,7 @@ const availableFilter = [
     {
         label: 'Alle Prozesse',
         value: 'all',
+        showCount: false,
     },
     {
         label: 'Entwürfe',
@@ -53,6 +58,7 @@ const availableFilter = [
     {
         label: 'Zurückgezogen',
         value: 'revoked',
+        showCount: false,
     },
 ];
 
@@ -334,6 +340,11 @@ export function ProcessListPage() {
         },
     }), []);
 
+    const fetchFilterCounts = useCallback<FetchListFilterCounts>(
+        ({signal}) => new ProcessDefinitionApiService().counts(signal),
+        [],
+    );
+
     const fetch = useCallback(async (options: GenericListPropsFetchOptions<ProcessListEntry>) => {
         const processesPage = await new ProcessDefinitionApiService()
             .list(options.page, options.size, options.sort as any, options.order, {
@@ -455,6 +466,7 @@ export function ProcessListPage() {
                     searchLabel="Prozess suchen"
                     searchPlaceholder="Titel des Prozesses eingeben…"
                     fetch={fetch}
+                    fetchFilterCounts={fetchFilterCounts}
                     preSearchElements={preSearchElements}
                     hasActiveAdditionalFilters={departmentId != null}
                     columnDefinitions={columns}

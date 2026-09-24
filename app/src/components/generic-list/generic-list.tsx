@@ -43,6 +43,8 @@ import {CellContentWrapper} from '../cell-content-wrapper/cell-content-wrapper';
 import WidthWide from '@aivot/mui-material-symbols-400-n25-outlined/WidthWide';
 import ViewColumn from '@aivot/mui-material-symbols-400-n25-outlined/ViewColumn';
 import FitPageWidth from '@aivot/mui-material-symbols-400-n25-outlined/FitPageWidth';
+import {useListFilterCounts} from './use-list-filter-counts';
+import {GenericListFilterLabel} from './generic-list-filter-label';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 const UrlParamKeys = {
@@ -69,6 +71,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         defaultFilter,
         fetch: fetchFunc,
         columnIcon,
+        refreshKey,
     } = props;
 
     const api = useApi();
@@ -133,6 +136,12 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     const paginationModel = paginationModelFromSearchParams(searchParams);
     const search = searchParams.get(UrlParamKeys.search) ?? '';
     const currentFilter = searchParams.get(UrlParamKeys.filter) as FilterOption | null;
+    const {
+        counts,
+        failed: countsFailed,
+        busy: countsBusy,
+        refresh: refreshCounts,
+    } = useListFilterCounts(props.fetchFilterCounts, currentFilter ?? defaultFilter, refreshKey);
 
     /**
      * Handles changes to the sorting model by updating the URL parameters.
@@ -268,6 +277,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         fetchFunc,
         paginationModel.page,
         paginationModel.pageSize,
+        refreshKey,
     ]);
 
     useEffect(() => {
@@ -282,9 +292,10 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         props.controlRef.current = {
             refresh: () => {
                 handleRefresh();
+                refreshCounts();
             },
         };
-    }, [handleRefresh]);
+    }, [handleRefresh, refreshCounts, props.controlRef]);
 
     useEffect(() => {
         return () => {
@@ -497,7 +508,16 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                                 <Tab
                                     key={'' + filter.value}
                                     value={filter.value}
-                                    label={filter.label}
+                                    label={
+                                        props.fetchFilterCounts == null || filter.showCount === false ? filter.label : (
+                                            <GenericListFilterLabel
+                                                filter={filter}
+                                                count={counts?.[filter.value]}
+                                                failed={countsFailed || (counts != null && counts[filter.value] == null)}
+                                                busy={countsBusy}
+                                            />
+                                        )
+                                    }
                                 />
                             ))}
                         </Tabs>

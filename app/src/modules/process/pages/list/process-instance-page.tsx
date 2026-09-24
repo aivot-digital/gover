@@ -2,7 +2,12 @@ import {useCallback, useMemo, useRef, useState} from 'react';
 import {Alert, Typography} from '@mui/material';
 import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
-import {GenericListPropsFetchOptions, ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import {
+    GenericListPropsFetchOptions,
+    ListControlRef,
+    type FetchListFilterCounts,
+    type GenericListFilter,
+} from '../../../../components/generic-list/generic-list-props';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {ProcessInstanceListEntry} from '../../entities/process-list';
@@ -14,10 +19,11 @@ import {processListColumns} from '../../components/process-list-columns';
 import {useListFilter} from '../../../../components/generic-list/use-list-filter';
 import {ProcessListFilterMenu} from '../../components/process-list-filter-menu';
 
-const filters = [
+const filters: GenericListFilter[] = [
     {
         value: 'all',
         label: 'Alle Vorgänge',
+        showCount: false,
     },
     {
         value: 'active',
@@ -26,10 +32,12 @@ const filters = [
     {
         value: 'ended',
         label: 'Beendete Vorgänge',
+        showCount: false,
     },
     {
         value: 'failed',
         label: 'Fehlerhafte Vorgänge',
+        countColor: 'error',
     },
 ];
 const visibility = {
@@ -50,6 +58,10 @@ export function ProcessInstanceListPage() {
         refreshOptions();
     }, [refreshOptions]);
     const columns = useMemo(() => processListColumns<ProcessInstanceListEntry>(false, refresh), [refresh]);
+    const fetchFilterCounts = useCallback<FetchListFilterCounts>(
+        ({signal}) => new ProcessListApiService().instancesCounts(signal),
+        [],
+    );
     const fetch = useCallback(
         async (options: GenericListPropsFetchOptions<ProcessInstanceListEntry>) => {
             try {
@@ -158,6 +170,7 @@ export function ProcessInstanceListPage() {
                         : []),
                 ]}
                 fetch={fetch}
+                fetchFilterCounts={fetchFilterCounts}
                 filters={filters}
                 defaultFilter="active"
                 searchLabel="Vorgangskennung / Aktenzeichen"

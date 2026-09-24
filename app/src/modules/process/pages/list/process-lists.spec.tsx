@@ -48,6 +48,9 @@ function Navigation() {
 describe('Process lists', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
+        vi.spyOn(ProcessListApiService.prototype, 'instancesCounts').mockResolvedValue({active: 6, failed: 2});
+        vi.spyOn(ProcessListApiService.prototype, 'tasksCounts').mockResolvedValue({open: 4, overdue: 1, failed: 1});
+        vi.spyOn(ProcessDefinitionApiService.prototype, 'counts').mockResolvedValue({drafted: 2, published: 3});
         vi.spyOn(ProcessListApiService.prototype, 'options').mockResolvedValue({
             processes: [
                 {
@@ -75,8 +78,14 @@ describe('Process lists', () => {
                 <Navigation />
             </MemoryRouter>,
         );
+        await waitFor(() => expect(ProcessDefinitionApiService.prototype.counts).toHaveBeenCalledWith(
+            expect.any(AbortSignal),
+        ));
+        expect(await screen.findByRole('tab', {name: 'Entwürfe 2'})).toBeInTheDocument();
+        expect(screen.getByRole('tab', {name: 'Veröffentlicht 3'})).toBeInTheDocument();
         expect(screen.getByRole('tab', {name: 'Alle Prozesse'})).toBeInTheDocument();
         expect(screen.getByRole('tab', {name: 'Zurückgezogen'})).toBeInTheDocument();
+        expect(screen.queryByLabelText('Anzahl nicht verfügbar')).not.toBeInTheDocument();
         const input = screen.getByRole('combobox', {name: 'Verwaltende Organisationseinheit'});
         await waitFor(() => expect(input).toHaveValue('Bürgerbüro'));
         const user = userEvent.setup();
@@ -90,6 +99,10 @@ describe('Process lists', () => {
                 expect.objectContaining({departmentId: undefined, internalTitle: 'Anmeldung'}),
             ),
         );
+        await waitFor(() => expect(ProcessDefinitionApiService.prototype.counts).toHaveBeenLastCalledWith(
+            expect.any(AbortSignal),
+        ));
+        expect(ProcessDefinitionApiService.prototype.counts).toHaveBeenCalledTimes(1);
         expect(input).toHaveValue('Alle Organisationseinheiten');
         expect(screen.getByLabelText('URL')).not.toHaveTextContent('departmentId');
         expect(screen.getByLabelText('URL')).toHaveTextContent('page=1');
@@ -127,6 +140,10 @@ describe('Process lists', () => {
                 }),
             ),
         );
+        await waitFor(() => expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenCalledWith(
+            undefined, expect.any(AbortSignal),
+        ));
+        expect(await screen.findByRole('tab', {name: 'Offene Aufgaben 4'})).toHaveAttribute('aria-selected', 'true');
         expect(screen.getByRole('tab', {name: 'Alle Aufgaben'})).toBeInTheDocument();
         const user = userEvent.setup();
         await user.click(screen.getByRole('combobox', {name: 'Zugewiesen an'}));
@@ -145,6 +162,10 @@ describe('Process lists', () => {
                 }),
             ),
         );
+        await waitFor(() => expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenLastCalledWith(
+            undefined, expect.any(AbortSignal),
+        ));
+        expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenCalledTimes(1);
         expect(fetch.mock.calls.filter((call) => call[4].assignee === 'all').every((call) => call[0] === 0)).toBe(true);
         fireEvent.click(screen.getByRole('tab', {name: /Überfällige Aufgaben/}));
         await waitFor(() =>
@@ -186,6 +207,9 @@ describe('Process lists', () => {
                 }),
             ),
         );
+        await waitFor(() => expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenCalledWith(
+            17, expect.any(AbortSignal),
+        ));
         expect(ProcessListApiService.prototype.options).toHaveBeenCalledWith(true, 17);
         expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute('data-field', 'icon');
         expect(screen.queryByRole('combobox', {name: 'Prozess'})).not.toBeInTheDocument();
@@ -198,6 +222,7 @@ describe('Process lists', () => {
                 instanceId: 17, assignee: 'all', view: 'all', includeTests: false,
             }),
         ));
+        expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenCalledTimes(1);
     });
 
     it('defaults to active instances and clears a version restriction when changing process', async () => {
@@ -222,6 +247,11 @@ describe('Process lists', () => {
                 }),
             ),
         );
+        await waitFor(() => expect(ProcessListApiService.prototype.instancesCounts).toHaveBeenCalledWith(
+            expect.any(AbortSignal),
+        ));
+        expect(await screen.findByRole('tab', {name: 'Laufende Vorgänge 6'})).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByRole('tab', {name: 'Fehlerhafte Vorgänge 2'})).toBeInTheDocument();
         expect(screen.getByRole('tab', {name: 'Alle Vorgänge'})).toBeInTheDocument();
         expect(screen.getByRole('tab', {name: 'Beendete Vorgänge'})).toBeInTheDocument();
         const user = userEvent.setup();
@@ -240,13 +270,18 @@ describe('Process lists', () => {
                 }),
             ),
         );
+        await waitFor(() => expect(ProcessListApiService.prototype.instancesCounts).toHaveBeenLastCalledWith(
+            expect.any(AbortSignal),
+        ));
+        expect(ProcessListApiService.prototype.instancesCounts).toHaveBeenCalledTimes(1);
         expect(screen.getByLabelText('URL')).not.toHaveTextContent('processVersion');
         expect(screen.getByRole('button', {name: 'Spalten'})).toBeInTheDocument();
         expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute('data-field', 'icon');
     });
 
-    it.each([false, true])('toggles test visibility while preserving filters (tasks=%s)', async (tasks) => {
+    it.each([false, true])('toggles test visibility, preserving filters and refreshing only rows (tasks=%s)', async (tasks) => {
         const fetch = vi.spyOn(ProcessListApiService.prototype, tasks ? 'tasks' : 'instances').mockResolvedValue(page);
+        const counts = tasks ? ProcessListApiService.prototype.tasksCounts : ProcessListApiService.prototype.instancesCounts;
         const sort = tasks ? 'deadline' : 'started';
         const order = tasks ? 'ASC' : 'DESC';
         const menuLabel = tasks ? 'Testaufgaben anzeigen' : 'Testvorgänge anzeigen';
@@ -261,6 +296,7 @@ describe('Process lists', () => {
         await waitFor(() => expect(fetch).toHaveBeenCalledWith(
             2, 12, sort, order, expect.objectContaining({includeTests: true}),
         ));
+        await screen.findByRole('tab', {name: tasks ? 'Offene Aufgaben 4' : 'Laufende Vorgänge 6'});
         await user.click(screen.getByRole('button', {name: 'Weitere Filter'}));
         expect(screen.getByRole('menuitemcheckbox', {name: menuLabel})).toHaveAttribute('aria-checked', 'true');
         await user.click(screen.getByRole('menuitemcheckbox', {name: menuLabel}));
@@ -271,6 +307,7 @@ describe('Process lists', () => {
         ));
         expect(fetch.mock.calls.filter(call => call[4].includeTests === false).every(call => call[0] === 0)).toBe(true);
         expect(screen.getByLabelText('URL')).toHaveTextContent('includeTests=false');
+        expect(counts).toHaveBeenCalledTimes(1);
 
         const activeButton = screen.getByRole('button', {name: activeButtonLabel});
         await waitFor(() => expect(activeButton).toHaveFocus());
@@ -288,6 +325,7 @@ describe('Process lists', () => {
             0, 12, sort, order, expect.objectContaining({includeTests: false}),
         ));
         expect(screen.getByRole('button', {name: activeButtonLabel})).toBeInTheDocument();
+        expect(counts).toHaveBeenCalledTimes(1);
     });
 
     it.each([false, true])('restores test exclusion from the URL and displays the filtered empty state (tasks=%s)', async (tasks) => {

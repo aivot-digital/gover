@@ -4,6 +4,8 @@ import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
+import de.aivot.prosuna.backend.plugins.form.services.FormOverviewCountService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
@@ -16,6 +18,9 @@ import de.aivot.prosuna.backend.process.services.ProcessVersionService;
 import de.aivot.prosuna.backend.process.services.PublicUrlService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
@@ -24,7 +29,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -35,8 +39,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
+
+import static de.aivot.prosuna.backend.plugins.form.filters.FormOverviewSpecifications.currentProcessVersionSpecification;
+import static de.aivot.prosuna.backend.plugins.form.filters.FormOverviewSpecifications.searchSpecification;
 
 @RestController
 public class FormTriggerListControllerV1 {
@@ -46,6 +52,7 @@ public class FormTriggerListControllerV1 {
     private final ProcessVersionService processVersionService;
     private final FormTriggerNodeV1 formTriggerNodeV1;
     private final PublicUrlService publicUrlService;
+    private final FormOverviewCountService overviewCounts;
 
     @Autowired
     public FormTriggerListControllerV1(UserService userService,
@@ -53,13 +60,15 @@ public class FormTriggerListControllerV1 {
                                        ProcessNodeService processNodeService,
                                        ProcessVersionService processVersionService,
                                        FormTriggerNodeV1 formTriggerNodeV1,
-                                       PublicUrlService publicUrlService) {
+                                       PublicUrlService publicUrlService,
+                                       FormOverviewCountService overviewCounts) {
         this.userService = userService;
         this.processService = processService;
         this.processNodeService = processNodeService;
         this.processVersionService = processVersionService;
         this.formTriggerNodeV1 = formTriggerNodeV1;
         this.publicUrlService = publicUrlService;
+        this.overviewCounts = overviewCounts;
     }
 
     @GetMapping("/api/forms/v1/")
@@ -102,6 +111,16 @@ public class FormTriggerListControllerV1 {
     }
 
 
+    @GetMapping("/api/forms/v1/counts/")
+    @Tag(name = "Form overview")
+    @SecurityRequirement(name = OpenApiConfiguration.Security)
+    @Operation(summary = "Count forms by overview category", description = "Counts forms in the current published and draft versions of readable processes independently of the overview search.")
+    @Nonnull
+    public Map<String, Long> counts(@Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return overviewCounts.count(user.getId());
+    }
+
     @GetMapping("/api/public/forms/")
     public Page<FormListItem> listPublic(
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
@@ -131,63 +150,6 @@ public class FormTriggerListControllerV1 {
                 .list(pageable, filter);
 
         return buildPage(nodes);
-    }
-
-    @Nonnull
-    private Specification<ProcessNodeEntity> currentProcessVersionSpecification(@Nonnull FormOverviewMode view) {
-        var versionField = view == FormOverviewMode.Published ? "publishedVersion" : "draftedVersion";
-
-        // Process nodes are copied per version. Correlating against the process pointers prevents outdated copies
-        // from appearing in either overview without loading and filtering the complete result in memory.
-        return (root, query, builder) -> {
-            var subquery = query.subquery(ProcessEntity.class);
-            var processRoot = subquery.from(ProcessEntity.class);
-
-            subquery.select(processRoot).where(
-                    builder.equal(processRoot.get("id"), root.get("processId")),
-                    builder.isNotNull(processRoot.get(versionField)),
-                    builder.equal(processRoot.get(versionField), root.get("processVersion"))
-            );
-
-            return builder.exists(subquery);
-        };
-    }
-
-    @Nonnull
-    private Specification<ProcessNodeEntity> searchSpecification(@Nonnull String search) {
-        var pattern = "%" + search.toLowerCase(Locale.ROOT) + "%";
-
-        return (root, query, builder) -> {
-            var publicTitle = builder.function(
-                    "jsonb_extract_path_text",
-                    String.class,
-                    root.get("configuration"),
-                    builder.literal(FormTriggerConfigV1.FORM_LAYOUT),
-                    builder.literal(AuthoredElementValues.LITERAL_VALUE_PROPERTY),
-                    builder.literal("publicTitle")
-            );
-            var formSlug = builder.function(
-                    "jsonb_extract_path_text",
-                    String.class,
-                    root.get("configuration"),
-                    builder.literal(FormTriggerConfigV1.FORM_SLUG),
-                    builder.literal(AuthoredElementValues.LITERAL_VALUE_PROPERTY)
-            );
-
-            var processSubquery = query.subquery(ProcessEntity.class);
-            var processRoot = processSubquery.from(ProcessEntity.class);
-            processSubquery.select(processRoot).where(
-                    builder.equal(processRoot.get("id"), root.get("processId")),
-                    builder.like(builder.lower(processRoot.get("internalTitle")), pattern)
-            );
-
-            return builder.or(
-                    builder.like(builder.lower(root.get("name")), pattern),
-                    builder.like(builder.lower(publicTitle), pattern),
-                    builder.like(builder.lower(formSlug), pattern),
-                    builder.exists(processSubquery)
-            );
-        };
     }
 
     private Page<FormOverviewItem> buildOverviewPage(Page<ProcessNodeEntity> nodes) throws ResponseException {

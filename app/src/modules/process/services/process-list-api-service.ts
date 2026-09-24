@@ -1,3 +1,4 @@
+import {type ListFilterCounts} from '../../../components/generic-list/generic-list-props';
 import {BaseApiService} from '../../../services/base-api-service';
 import {Page} from '../../../models/dtos/page';
 import {
@@ -40,6 +41,14 @@ export class ProcessListApiService extends BaseApiService {
                 ...filter,
             },
         });
+    }
+
+    public instancesCounts(abort?: AbortSignal): Promise<ListFilterCounts> {
+        return this.get('/api/process-lists/instances/counts/', {abort});
+    }
+
+    public tasksCounts(instanceId?: number, abort?: AbortSignal): Promise<ListFilterCounts> {
+        return this.get('/api/process-lists/tasks/counts/', {query: {instanceId}, abort});
     }
 
     public options(tasks: boolean, instanceId?: number): Promise<ProcessListOptions> {
