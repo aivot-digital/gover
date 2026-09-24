@@ -7,6 +7,9 @@ public class ProcessNodeExecutionResultInstanceAssigned extends ProcessNodeExecu
     @Nullable
     private String assignedUserId;
 
+    @Nullable
+    private String viaPort;
+
     // region constructor
 
     private ProcessNodeExecutionResultInstanceAssigned(@Nullable String assignedUserId) {
@@ -19,6 +22,10 @@ public class ProcessNodeExecutionResultInstanceAssigned extends ProcessNodeExecu
 
     public static ProcessNodeExecutionResultInstanceAssigned assign(@Nonnull String userId) {
         return new ProcessNodeExecutionResultInstanceAssigned(userId);
+    }
+
+    public static ProcessNodeExecutionResultInstanceAssigned assignAndContinue(@Nonnull String userId, @Nonnull String viaPort) {
+        return new ProcessNodeExecutionResultInstanceAssigned(userId).setViaPort(viaPort);
     }
 
     public static ProcessNodeExecutionResultInstanceAssigned clear() {
@@ -36,6 +43,16 @@ public class ProcessNodeExecutionResultInstanceAssigned extends ProcessNodeExecu
 
     public ProcessNodeExecutionResultInstanceAssigned setAssignedUserId(@Nullable String assignedUserId) {
         this.assignedUserId = assignedUserId;
+        return this;
+    }
+
+    @Nullable
+    public String getViaPort() {
+        return viaPort;
+    }
+
+    public ProcessNodeExecutionResultInstanceAssigned setViaPort(@Nullable String viaPort) {
+        this.viaPort = viaPort;
         return this;
     }
 

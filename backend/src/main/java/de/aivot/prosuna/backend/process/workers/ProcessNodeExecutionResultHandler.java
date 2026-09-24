@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.services.ProcessInstanceMailService;
 import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -25,6 +26,7 @@ import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
+import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
@@ -623,6 +625,28 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleAssignedInstance(HandlerContext<ProcessNodeExecutionResultInstanceAssigned> context) throws ProcessNodeExecutionException {
+        var viaPort = context.result.getViaPort();
+        if (viaPort != null) {
+            requireCompletionPath(context.provider, context.currentNode, viaPort);
+            var processData = context.result.getProcessData() != null
+                    ? context.result.getProcessData()
+                    : context.previousTask != null
+                    ? context.previousTask.getProcessData()
+                    : context.processInstance.getInitialPayload();
+            applyOutputMappings(context.provider, context.currentNode.getOutputMappings(),
+                    context.result.getNodeData() != null ? context.result.getNodeData() : Map.of(), processData);
+        }
+
+        if (context.result.getAssignedUserId() != null) {
+            try {
+                assignmentService.requireRuntimeInstanceAssignee(
+                        context.processInstance.getId(), context.result.getAssignedUserId());
+            } catch (ResponseException e) {
+                throw new ProcessNodeExecutionExceptionInvalidAssignment(e,
+                        "Die ausgewählte Person kann diesem Vorgang nicht zugewiesen werden.");
+            }
+        }
+
         var previousAssignedUser = requireOptionalUser(context, context.processInstance.getAssignedUserId());
         var newlyAssignedUser = requireOptionalUser(context, context.result.getAssignedUserId());
         var triggeringUser = Optional.ofNullable(context.triggeringUser);
@@ -634,7 +658,11 @@ public class ProcessNodeExecutionResultHandler {
                                 .map(UserEntity::getId)
                                 .orElse(null)
                 );
-        assignAndSaveDataLayersAndStatusOverride(context, false);
+        if (viaPort == null) {
+            assignAndSaveDataLayersAndStatusOverride(context, false);
+        }
+        context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        processInstanceRepository.save(context.processInstance);
 
 
         String logMessageTitle;
@@ -712,9 +740,12 @@ public class ProcessNodeExecutionResultHandler {
                 logMessageDetailsBuilder.toString()
         );
 
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            context.processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(context.processInstance);
+        if (viaPort != null) {
+            var completionResult = new ProcessNodeExecutionResultTaskCompleted(viaPort);
+            completionResult.setRuntimeData(context.result.getRuntimeData());
+            completionResult.setNodeData(context.result.getNodeData());
+            completionResult.setProcessData(context.result.getProcessData());
+            handleTaskComplete(context.withResult(completionResult));
         }
 
 
@@ -863,42 +894,9 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleTaskComplete(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskCompleted> context) throws ProcessNodeExecutionException {
-        var port = context
-                .provider
-                .getPorts()
-                .stream()
-                .filter(processNodePort -> processNodePort.key().equals(context.result.getViaPort()))
-                .findFirst();
-
-        if (port.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    """
-                            Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein ausgehender Port mit dem Schlüssel %s bereitgestellt.
-                            Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters.
-                            """,
-                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
-                    StringUtils.quote(context.provider.getName()),
-                    StringUtils.quote(context.result.getViaPort())
-            );
-        }
-
-        var outEdge = processDefinitionEdgeRepository
-                .findByFromNodeIdAndViaPort(
-                        context.currentNode.getId(),
-                        context.result.getViaPort()
-                );
-
-        if (outEdge.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    """
-                            Für das Prozesselement %s wurde kein ausgehender Pfad für den Port %s definiert.
-                            Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters.
-                            Bitte prüfen Sie den Aufbau Ihres Prozessmodells.
-                            """,
-                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
-                    StringUtils.quote(port.get().label())
-            );
-        }
+        var completionPath = requireCompletionPath(context.provider, context.currentNode, context.result.getViaPort());
+        var port = completionPath.port();
+        var outEdge = completionPath.edge();
 
         context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         context.processInstanceTask.setFinished(Instant.now());
@@ -916,11 +914,11 @@ public class ProcessNodeExecutionResultHandler {
                 context.processInstanceTask.getId(),
                 context.currentNode.getId(),
                 context.result.getViaPort(),
-                outEdge.get().getToNodeId()
+                outEdge.getToNodeId()
         );
 
         var nextNode = processNodeRepository
-                .findById(outEdge.get().getToNodeId())
+                .findById(outEdge.getToNodeId())
                 .map(node -> processNodeDefinitionService
                         .getProcessNodeDefinition(node)
                         .map(node::resolveName)
@@ -940,7 +938,7 @@ public class ProcessNodeExecutionResultHandler {
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
                     StringUtils.quote(context.triggeringUser.getFullName()),
-                    StringUtils.quote(port.get().label()),
+                    StringUtils.quote(port.label()),
                     StringUtils.quote(nextNode)
             );
         } else {
@@ -955,12 +953,37 @@ public class ProcessNodeExecutionResultHandler {
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
-                    StringUtils.quote(port.get().label()),
+                    StringUtils.quote(port.label()),
                     StringUtils.quote(nextNode)
             );
         }
 
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
+    }
+
+    private CompletionPath requireCompletionPath(@Nonnull ProcessNodeDefinition<?> provider,
+                                                 @Nonnull ProcessNodeEntity currentNode,
+                                                 @Nonnull String viaPort) throws ProcessNodeExecutionExceptionBrokenImplementation {
+        var port = provider.getPorts().stream()
+                .filter(candidate -> candidate.key().equals(viaPort))
+                .findFirst()
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein ausgehender Port mit dem Schlüssel %s bereitgestellt.",
+                        StringUtils.quote(currentNode.resolveName(provider)),
+                        StringUtils.quote(provider.getName()),
+                        StringUtils.quote(viaPort)
+                ));
+
+        var edge = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(currentNode.getId(), viaPort)
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Für das Prozesselement %s wurde kein ausgehender Pfad für den Port %s definiert. Bitte prüfen Sie den Aufbau Ihres Prozessmodells.",
+                        StringUtils.quote(currentNode.resolveName(provider)),
+                        StringUtils.quote(port.label())
+                ));
+        return new CompletionPath(port, edge);
+    }
+
+    private record CompletionPath(ProcessNodePort port, ProcessEdgeEntity edge) {
     }
 
     private void handleInstanceComplete(@Nonnull HandlerContext<ProcessNodeExecutionResultInstanceCompleted> context) {

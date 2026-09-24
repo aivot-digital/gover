@@ -714,12 +714,21 @@ function assignmentContextFieldToYup(elem: AssignmentContextFieldElement): Schem
                 'previousProcessStepAssignee',
                 'uninvolvedUser',
                 'processInstanceAssignee',
-            ]).nullable(),
+            ]).nullable().test(
+                'process-instance-assignee-option-enabled',
+                'Die Bevorzugung der dem Vorgang zugewiesenen Person ist hier nicht zulässig.',
+                (value) => elem.disableProcessInstanceAssigneeOption !== true || value !== 'processInstanceAssignee',
+            ),
             repeatExecutionAssigneePreference: yup.string().oneOf([
                 'none',
                 'previousIterationAssignee',
                 'differentFromPreviousIterationAssignee',
-            ]).nullable(),
+            ]).nullable().test(
+                'repeat-execution-assignee-preference-options-enabled',
+                'Eine Bevorzugung bei erneuter Ausführung ist hier nicht zulässig.',
+                (value) => elem.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions !== true ||
+                    value == null || value === 'none',
+            ),
         })
         .test(
             'assignment-context-preference-requires-selection',

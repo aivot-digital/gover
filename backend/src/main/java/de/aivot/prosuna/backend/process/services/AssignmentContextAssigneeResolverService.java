@@ -52,6 +52,27 @@ public class AssignmentContextAssigneeResolverService {
             @Nullable AssignmentContextInputElementValue assignmentContext,
             @Nullable List<String> requiredPermissions
     ) {
+        return resolveAssignee(
+                processId, processVersion, processInstanceId, currentProcessNodeId,
+                currentProcessInstanceTaskId, previousProcessNodeId, processInstanceAssignedUserId,
+                assignmentContext, requiredPermissions, null
+        );
+    }
+
+    /** Uses current instance eligibility when a node needs more than the definition-level access view can express. */
+    @Nonnull
+    public java.util.Optional<String> resolveAssignee(
+            @Nonnull Integer processId,
+            @Nonnull Integer processVersion,
+            @Nonnull Long processInstanceId,
+            @Nullable Integer currentProcessNodeId,
+            @Nullable Long currentProcessInstanceTaskId,
+            @Nullable Integer previousProcessNodeId,
+            @Nullable String processInstanceAssignedUserId,
+            @Nullable AssignmentContextInputElementValue assignmentContext,
+            @Nullable List<String> requiredPermissions,
+            @Nullable Set<String> currentlyEligibleUserIds
+    ) {
         var selection = assignmentContext != null ? assignmentContext.getDomainAndUserSelection() : null;
         if (selection == null || selection.isEmpty()) {
             return java.util.Optional.empty();
@@ -70,10 +91,12 @@ public class AssignmentContextAssigneeResolverService {
                 .filter(PotentialAccessRow::isUserRow)
                 .filter(row -> Boolean.TRUE.equals(row.userIsEnabled()))
                 .filter(row -> Boolean.TRUE.equals(row.userIsDirectMember()))
-                .filter(row -> hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
+                .filter(row -> currentlyEligibleUserIds != null
+                        ? currentlyEligibleUserIds.contains(row.userId())
+                        : hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
                 .toList();
 
-        if (eligibleUserRows.isEmpty()) {
+        if (eligibleUserRows.isEmpty() && currentlyEligibleUserIds == null) {
             return java.util.Optional.empty();
         }
 
@@ -82,6 +105,10 @@ public class AssignmentContextAssigneeResolverService {
                 .map(PotentialAccessRow::userId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (currentlyEligibleUserIds != null) {
+            // Explicitly selected users can have system-level or instance-specific access without a view row.
+            eligibleUserIds.addAll(currentlyEligibleUserIds);
+        }
 
         var candidateUserIds = collectCandidateUserIds(selection, eligibleUserRows, eligibleUserIds);
         if (candidateUserIds.isEmpty()) {

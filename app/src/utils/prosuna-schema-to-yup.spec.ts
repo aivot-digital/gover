@@ -320,6 +320,45 @@ describe('department selection validation', () => {
     });
 });
 
+describe('assignment context preference restrictions', () => {
+    const selection = [{type: 'user', id: 'recipient'}];
+
+    function schema(disableProcessInstanceAssigneeOption: boolean,
+                    disableAssignmentContextRepeatExecutionAssigneePreferenceOptions: boolean) {
+        return prosunaSchemaToYup({
+            id: 'assignmentContext',
+            type: ElementType.AssignmentContext,
+            label: 'Personenkreis',
+            disableProcessInstanceAssigneeOption,
+            disableAssignmentContextRepeatExecutionAssigneePreferenceOptions,
+        } as any, {}).assignmentContext;
+    }
+
+    it('rejects only the disabled general preference', async () => {
+        const value = literalAuthoredValue({
+            domainAndUserSelection: selection,
+            generalAssigneePreference: 'processInstanceAssignee',
+            repeatExecutionAssigneePreference: null,
+        });
+
+        await expect(schema(true, false).validate(value))
+            .rejects.toThrow('Die Bevorzugung der dem Vorgang zugewiesenen Person ist hier nicht zulässig.');
+        await expect(schema(false, false).validate(value)).resolves.toBeDefined();
+    });
+
+    it('rejects a repeat preference when the complete selection is disabled', async () => {
+        const value = literalAuthoredValue({
+            domainAndUserSelection: selection,
+            generalAssigneePreference: null,
+            repeatExecutionAssigneePreference: 'previousIterationAssignee',
+        });
+
+        await expect(schema(false, true).validate(value))
+            .rejects.toThrow('Eine Bevorzugung bei erneuter Ausführung ist hier nicht zulässig.');
+        await expect(schema(false, false).validate(value)).resolves.toBeDefined();
+    });
+});
+
 function createGroupLayout(children: any[]): any {
     return {
         id: 'root',

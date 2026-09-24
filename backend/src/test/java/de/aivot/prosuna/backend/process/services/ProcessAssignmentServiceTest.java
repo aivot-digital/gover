@@ -156,6 +156,27 @@ class ProcessAssignmentServiceTest {
         verifyNoInteractions(audit);
     }
 
+    @Test
+    void runtimeOptionsFilterCurrentRightsForAutomaticRecipientAndManualDispatcher() throws Exception {
+        grant("recipient", PROCESS_INSTANCE_READ);
+        grant("dispatcher", PROCESS_INSTANCE_READ);
+        grant("dispatcher", PROCESS_INSTANCE_EDIT_TASK);
+        grant("dispatcher", PROCESS_INSTANCE_REASSIGN);
+        var dispatcher = user("dispatcher");
+        when(users.findAllByEnabledTrueAndDeletedInIdpFalseOrderByFullNameAsc())
+                .thenReturn(List.of(recipient, dispatcher));
+
+        assertEquals(List.of("recipient", "dispatcher"), service.runtimeInstanceOptions(17L, List.of())
+                .stream().map(option -> option.id()).toList());
+        assertEquals(List.of("dispatcher"), service.runtimeInstanceOptions(17L,
+                        List.of(PROCESS_INSTANCE_EDIT_TASK, PROCESS_INSTANCE_REASSIGN))
+                .stream().map(option -> option.id()).toList());
+
+        service.requireRuntimeInstanceAssignee(17L, "recipient");
+        when(instances.hasPermission("recipient", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
+        assertThrows(ResponseException.class, () -> service.requireRuntimeInstanceAssignee(17L, "recipient"));
+    }
+
     @ParameterizedTest
     @EnumSource(value = ProcessTaskStatus.class, names = {"Completed", "Aborted", "Failed", "Restarted"})
     void preservesAssignmentsOnFinishedTasks(ProcessTaskStatus status) throws Exception {
