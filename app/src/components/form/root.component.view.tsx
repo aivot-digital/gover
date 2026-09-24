@@ -277,7 +277,7 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
                                             {...props}
                                             element={step}
                                             isBusy={isBusy || isBusyNavigating}
-                                            suppressErrors={!hasSteppedOnce && !showErrorSummary}
+                                            suppressErrors={!hasSteppedOnce}
                                         />
 
                                         {
