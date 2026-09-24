@@ -14,6 +14,8 @@ import {useProcessListFilters} from '../../components/use-process-list-filters';
 import {processListColumns} from '../../components/process-list-columns';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
 import {Action} from '../../../../components/actions/actions-props';
+import {useListFilter} from '../../../../components/generic-list/use-list-filter';
+import {ProcessListFilterMenu} from '../../components/process-list-filter-menu';
 
 const filters = [
     {
@@ -49,6 +51,8 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
         true,
         instanceId,
     );
+    const {value: includeTestsValue, setValue: setIncludeTests} = useListFilter('includeTests');
+    const includeTests = includeTestsValue !== 'false';
     const [loadFailed, setLoadFailed] = useState(false);
     const refresh = useCallback(() => {
         listRef.current?.refresh();
@@ -72,6 +76,7 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
                         processId,
                         processVersion,
                         instanceId,
+                        includeTests,
                         search: options.search,
                         view: options.filter,
                     },
@@ -83,7 +88,7 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
                 throw error;
             }
         },
-        [assignee, processId, processVersion, instanceId],
+        [assignee, processId, processVersion, instanceId, includeTests],
     );
     const actions: Action[] = [
         ...(instanceId == null
@@ -110,6 +115,14 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
         >
             <GenericListPage<ProcessTaskListEntry>
                 {...filterProps}
+                hasActiveAdditionalFilters={filterProps.hasActiveAdditionalFilters || !includeTests}
+                filterActions={
+                    <ProcessListFilterMenu
+                        tasks
+                        includeTests={includeTests}
+                        onChange={(value) => setIncludeTests(value ? null : 'false')}
+                    />
+                }
                 controlRef={listRef}
                 header={{
                     icon: ModuleIcons.tasks,

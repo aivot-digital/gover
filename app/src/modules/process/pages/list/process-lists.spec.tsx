@@ -75,6 +75,8 @@ describe('Process lists', () => {
                 <Navigation />
             </MemoryRouter>,
         );
+        expect(screen.getByRole('tab', {name: 'Alle Prozesse'})).toBeInTheDocument();
+        expect(screen.getByRole('tab', {name: 'Zurückgezogen'})).toBeInTheDocument();
         const input = screen.getByRole('combobox', {name: 'Verwaltende Organisationseinheit'});
         await waitFor(() => expect(input).toHaveValue('Bürgerbüro'));
         const user = userEvent.setup();
@@ -121,9 +123,11 @@ describe('Process lists', () => {
                     assignee: 'mine',
                     view: 'open',
                     search: 'AZ-100',
+                    includeTests: true,
                 }),
             ),
         );
+        expect(screen.getByRole('tab', {name: 'Alle Aufgaben'})).toBeInTheDocument();
         const user = userEvent.setup();
         await user.click(screen.getByRole('combobox', {name: 'Zugewiesen an'}));
         expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
@@ -142,7 +146,7 @@ describe('Process lists', () => {
             ),
         );
         expect(fetch.mock.calls.filter((call) => call[4].assignee === 'all').every((call) => call[0] === 0)).toBe(true);
-        fireEvent.click(screen.getByRole('tab', {name: 'Überfällige Aufgaben'}));
+        fireEvent.click(screen.getByRole('tab', {name: /Überfällige Aufgaben/}));
         await waitFor(() =>
             expect(fetch).toHaveBeenLastCalledWith(
                 0,
@@ -178,12 +182,22 @@ describe('Process lists', () => {
                     instanceId: 17,
                     assignee: 'all',
                     view: 'all',
+                    includeTests: true,
                 }),
             ),
         );
         expect(ProcessListApiService.prototype.options).toHaveBeenCalledWith(true, 17);
         expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute('data-field', 'icon');
         expect(screen.queryByRole('combobox', {name: 'Prozess'})).not.toBeInTheDocument();
+
+        const user = userEvent.setup();
+        await user.click(screen.getByRole('button', {name: 'Weitere Filter'}));
+        await user.click(screen.getByRole('menuitemcheckbox', {name: 'Testaufgaben anzeigen'}));
+        await waitFor(() => expect(fetch).toHaveBeenLastCalledWith(
+            0, 12, 'started', 'DESC', expect.objectContaining({
+                instanceId: 17, assignee: 'all', view: 'all', includeTests: false,
+            }),
+        ));
     });
 
     it('defaults to active instances and clears a version restriction when changing process', async () => {
@@ -208,6 +222,8 @@ describe('Process lists', () => {
                 }),
             ),
         );
+        expect(screen.getByRole('tab', {name: 'Alle Vorgänge'})).toBeInTheDocument();
+        expect(screen.getByRole('tab', {name: 'Beendete Vorgänge'})).toBeInTheDocument();
         const user = userEvent.setup();
         await user.click(screen.getByRole('combobox', {name: 'Prozess'}));
         expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
@@ -227,5 +243,66 @@ describe('Process lists', () => {
         expect(screen.getByLabelText('URL')).not.toHaveTextContent('processVersion');
         expect(screen.getByRole('button', {name: 'Spalten'})).toBeInTheDocument();
         expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute('data-field', 'icon');
+    });
+
+    it.each([false, true])('toggles test visibility while preserving filters (tasks=%s)', async (tasks) => {
+        const fetch = vi.spyOn(ProcessListApiService.prototype, tasks ? 'tasks' : 'instances').mockResolvedValue(page);
+        const sort = tasks ? 'deadline' : 'started';
+        const order = tasks ? 'ASC' : 'DESC';
+        const menuLabel = tasks ? 'Testaufgaben anzeigen' : 'Testvorgänge anzeigen';
+        const activeButtonLabel = tasks ? 'Weitere Filter: Testaufgaben ausgeblendet' : 'Weitere Filter: Testvorgänge ausgeblendet';
+        const user = userEvent.setup();
+        render(
+            <MemoryRouter initialEntries={['/?processId=10&processVersion=2&assignee=person&page=3&search=AZ-100&filter=all']}>
+                {tasks ? <ProcessTaskList /> : <ProcessInstanceListPage />}
+                <Navigation />
+            </MemoryRouter>,
+        );
+        await waitFor(() => expect(fetch).toHaveBeenCalledWith(
+            2, 12, sort, order, expect.objectContaining({includeTests: true}),
+        ));
+        await user.click(screen.getByRole('button', {name: 'Weitere Filter'}));
+        expect(screen.getByRole('menuitemcheckbox', {name: menuLabel})).toHaveAttribute('aria-checked', 'true');
+        await user.click(screen.getByRole('menuitemcheckbox', {name: menuLabel}));
+        await waitFor(() => expect(fetch).toHaveBeenLastCalledWith(
+            0, 12, sort, order, expect.objectContaining({
+                includeTests: false, processId: 10, processVersion: 2, assignee: 'person', search: 'AZ-100', view: 'all',
+            }),
+        ));
+        expect(fetch.mock.calls.filter(call => call[4].includeTests === false).every(call => call[0] === 0)).toBe(true);
+        expect(screen.getByLabelText('URL')).toHaveTextContent('includeTests=false');
+
+        const activeButton = screen.getByRole('button', {name: activeButtonLabel});
+        await waitFor(() => expect(activeButton).toHaveFocus());
+        await user.keyboard('{Enter}');
+        const toggle = await screen.findByRole('menuitemcheckbox', {name: menuLabel});
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
+        await waitFor(() => expect(toggle).toHaveFocus());
+        await user.keyboard('{Enter}');
+        await waitFor(() => expect(fetch).toHaveBeenLastCalledWith(
+            0, 12, sort, order, expect.objectContaining({includeTests: true}),
+        ));
+        expect(screen.getByLabelText('URL')).not.toHaveTextContent('includeTests');
+        await user.click(screen.getByRole('button', {name: 'Zurück'}));
+        await waitFor(() => expect(fetch).toHaveBeenLastCalledWith(
+            0, 12, sort, order, expect.objectContaining({includeTests: false}),
+        ));
+        expect(screen.getByRole('button', {name: activeButtonLabel})).toBeInTheDocument();
+    });
+
+    it.each([false, true])('restores test exclusion from the URL and displays the filtered empty state (tasks=%s)', async (tasks) => {
+        const fetch = vi.spyOn(ProcessListApiService.prototype, tasks ? 'tasks' : 'instances').mockResolvedValue(page);
+        render(
+            <MemoryRouter initialEntries={['/?includeTests=false']}>
+                {tasks ? <ProcessTaskList /> : <ProcessInstanceListPage />}
+            </MemoryRouter>,
+        );
+        expect(screen.getByRole('button', {
+            name: tasks ? 'Weitere Filter: Testaufgaben ausgeblendet' : 'Weitere Filter: Testvorgänge ausgeblendet',
+        })).toBeInTheDocument();
+        await waitFor(() => expect(fetch).toHaveBeenCalledWith(
+            0, 12, tasks ? 'deadline' : 'started', tasks ? 'ASC' : 'DESC', expect.objectContaining({includeTests: false}),
+        ));
+        expect(await screen.findByText(tasks ? 'Keine passenden Aufgaben gefunden.' : 'Keine passenden Vorgänge gefunden.')).toBeInTheDocument();
     });
 });

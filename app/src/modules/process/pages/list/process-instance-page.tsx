@@ -11,6 +11,8 @@ import {useProcessListFilters} from '../../components/use-process-list-filters';
 import {StorageKey} from '../../../../data/storage-key';
 import {ProcessInstanceStatusIcon} from '../../components/process-instance-status-icon';
 import {processListColumns} from '../../components/process-list-columns';
+import {useListFilter} from '../../../../components/generic-list/use-list-filter';
+import {ProcessListFilterMenu} from '../../components/process-list-filter-menu';
 
 const filters = [
     {
@@ -40,6 +42,8 @@ const visibility = {
 export function ProcessInstanceListPage() {
     const listRef = useRef<ListControlRef | null>(null);
     const {assignee, processId, processVersion, refreshOptions, ...filterProps} = useProcessListFilters(false);
+    const {value: includeTestsValue, setValue: setIncludeTests} = useListFilter('includeTests');
+    const includeTests = includeTestsValue !== 'false';
     const [loadFailed, setLoadFailed] = useState(false);
     const refresh = useCallback(() => {
         listRef.current?.refresh();
@@ -58,6 +62,7 @@ export function ProcessInstanceListPage() {
                         assignee,
                         processId,
                         processVersion,
+                        includeTests,
                         search: options.search,
                         view: options.filter,
                     },
@@ -69,7 +74,7 @@ export function ProcessInstanceListPage() {
                 throw error;
             }
         },
-        [assignee, processId, processVersion],
+        [assignee, processId, processVersion, includeTests],
     );
 
     return (
@@ -80,6 +85,13 @@ export function ProcessInstanceListPage() {
         >
             <GenericListPage<ProcessInstanceListEntry>
                 {...filterProps}
+                hasActiveAdditionalFilters={filterProps.hasActiveAdditionalFilters || !includeTests}
+                filterActions={
+                    <ProcessListFilterMenu
+                        includeTests={includeTests}
+                        onChange={(value) => setIncludeTests(value ? null : 'false')}
+                    />
+                }
                 controlRef={listRef}
                 header={{
                     icon: ModuleIcons.submissions,

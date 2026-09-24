@@ -37,4 +37,5 @@ export interface ProcessListFilter {
     processVersion?: number;
     instanceId?: number;
     assignee?: string;
+    includeTests?: boolean;
 }

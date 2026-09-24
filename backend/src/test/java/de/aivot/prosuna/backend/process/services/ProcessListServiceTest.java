@@ -107,12 +107,12 @@ public class ProcessListServiceTest {
 
     @Test
     void filtersProcessesAndVersionsAndChecksExplicitInstanceScope() throws Exception {
-        var filter = new ProcessListFilter(null, "all", 10, 2, null, "all");
+        var filter = new ProcessListFilter(null, "all", 10, 2, null, "all", null);
         assertEquals(1, service.instances("me", PageRequest.of(0, 12), filter).getTotalElements());
         assertEquals(1, service.tasks("me", PageRequest.of(0, 12), filter).getTotalElements());
         var forbidden = ResponseException.forbidden("Kein Zugriff");
         doThrow(forbidden).when(permissions).requireProcessInstancePermission("me", 3L, PROCESS_INSTANCE_READ);
-        assertThrows(ResponseException.class, () -> service.tasks("me", PageRequest.of(0, 12), new ProcessListFilter(null, "all", null, null, 3L, "all")));
+        assertThrows(ResponseException.class, () -> service.tasks("me", PageRequest.of(0, 12), new ProcessListFilter(null, "all", null, null, 3L, "all", null)));
         assertThrows(ResponseException.class, () -> service.options("me", true, 3L));
     }
 
@@ -152,6 +152,39 @@ public class ProcessListServiceTest {
         assertEquals(0, service.instances("me", page, filter("all", "all", "7kom9xiq0044")).getTotalElements());
     }
 
+    @Test
+    void excludesTestInstancesBeforePagination() throws Exception {
+        sql("update process_instances set status = 1 where id = 2");
+        var page = PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "id"));
+        var included = new ProcessListFilter(null, "active", null, null, null, "all", true);
+        var excluded = new ProcessListFilter(null, "active", null, null, null, "all", false);
+        assertEquals(2, service.instances("me", page, filter("active", "all", null)).getTotalElements());
+        var all = service.instances("me", page, included);
+        assertEquals(2, all.getTotalElements());
+        assertTrue(all.getContent().getFirst().test());
+
+        var regular = service.instances("me", page, excluded);
+        assertEquals(1, regular.getTotalElements());
+        assertEquals(1L, regular.getContent().getFirst().id());
+        assertFalse(regular.getContent().getFirst().test());
+        assertTrue(service.instances("me", page.next(), excluded).isEmpty());
+    }
+
+    @Test
+    void testExclusionPreservesAccessScopeAndUsesTheParentInstanceForTasks() throws Exception {
+        var filter = new ProcessListFilter(null, "all", null, null, null, "all", false);
+        var page = PageRequest.of(0, 12, Sort.by("id"));
+        assertEquals(List.of(1L), service.instances("me", page, filter).getContent().stream().map(row -> row.id()).toList());
+        assertEquals(List.of(11L, 12L, 15L, 16L), service.tasks("me", page, filter).getContent().stream().map(row -> row.id()).toList());
+
+        when(permissions.getProcessInstancesWithPermission("me", PROCESS_INSTANCE_READ)).thenReturn(List.of());
+        assertEquals(0, service.instances("me", page, filter).getTotalElements());
+        assertEquals(0, service.tasks("me", page, filter).getTotalElements());
+        when(permissions.hasSystemPermission("me", PROCESS_INSTANCE_READ)).thenReturn(true);
+        assertEquals(List.of(1L, 3L), service.instances("me", page, filter).getContent().stream().map(row -> row.id()).toList());
+        assertEquals(5, service.tasks("me", page, filter).getTotalElements());
+    }
+
     public static String compactKey(String value) {
         return value != null && value.matches("[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}") ? value.replace("-", "") : null;
     }
@@ -161,7 +194,7 @@ public class ProcessListServiceTest {
     }
 
     private ProcessListFilter filter(String view, String assignee, String search) {
-        return new ProcessListFilter(search, view, null, null, null, assignee);
+        return new ProcessListFilter(search, view, null, null, null, assignee, null);
     }
 
     private void sql(String sql) {

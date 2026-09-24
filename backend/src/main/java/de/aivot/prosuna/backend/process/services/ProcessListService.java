@@ -79,7 +79,7 @@ public class ProcessListService {
 
     @Nonnull
     public ProcessListDTO.Options options(@Nonnull String userId, boolean tasks, @Nullable Long instanceId) throws ResponseException {
-        var filter = new ProcessListFilter(null, "all", null, null, instanceId, "all");
+        var filter = new ProcessListFilter(null, "all", null, null, instanceId, "all", null);
         var access = access(userId, instanceId);
         var cb = em.getCriteriaBuilder();
         var query = cb.createTupleQuery();
@@ -105,7 +105,7 @@ public class ProcessListService {
         var query = cb.createQuery(Long.class);
         var roots = roots(query, true);
         query.select(cb.count(roots.task)).where(predicates(cb, roots,
-                new ProcessListFilter(null, "open", null, null, null, "mine"), userId, access(userId, null), Instant.now()));
+                new ProcessListFilter(null, "open", null, null, null, "mine", null), userId, access(userId, null), Instant.now()));
         return em.createQuery(query).getSingleResult();
     }
 
@@ -194,6 +194,7 @@ public class ProcessListService {
         if (filter.instanceId() != null) result.add(cb.equal(r.instance.get("id"), filter.instanceId()));
         if (filter.processId() != null) result.add(cb.equal(r.process.get("id"), filter.processId()));
         if (filter.processVersion() != null) result.add(cb.equal(r.owner().get(r.task == null ? "initialProcessVersion" : "processVersion"), filter.processVersion()));
+        if (Boolean.FALSE.equals(filter.includeTests())) result.add(cb.isNull(r.instance.get("createdForTestClaimId")));
         var assignee = nonBlank(filter.assignee(), "all");
         if (assignee.equals("unassigned")) result.add(cb.isNull(r.owner().get("assignedUserId")));
         else if (!assignee.equals("all")) result.add(cb.equal(r.owner().get("assignedUserId"), assignee.equals("mine") ? userId : assignee));

@@ -43,6 +43,7 @@ import {CellContentWrapper} from '../cell-content-wrapper/cell-content-wrapper';
 import WidthWide from '@aivot/mui-material-symbols-400-n25-outlined/WidthWide';
 import ViewColumn from '@aivot/mui-material-symbols-400-n25-outlined/ViewColumn';
 import FitPageWidth from '@aivot/mui-material-symbols-400-n25-outlined/FitPageWidth';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 const UrlParamKeys = {
     search: 'search',
@@ -406,7 +407,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
 
     const lastColIndex = columnDefinitions.length - 1;
     const hasEmptyRows = (items?.content.length ?? 0) === 0;
-    const hasFilterFields = props.preSearchElements?.length || props.searchLabel || props.menuItems?.length;
+    const hasFilterFields = props.preSearchElements?.length || props.searchLabel || props.menuItems?.length || props.filterActions;
 
     const style: SxProps = useMemo(
         () => ({
@@ -573,6 +574,20 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                             placeholder={props.searchPlaceholder}
                             debounce={1000}
                         />
+                    </Box>
+                )}
+
+                {props.filterActions != null && (
+                    <Box
+                        sx={{
+                            flexShrink: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            height: FormFieldTokens.controlMinHeight,
+                            mt: (theme) => `calc(${FormFieldTokens.labelRowMinHeight}px + ${theme.spacing(FormFieldTokens.labelToControlGap)})`,
+                        }}
+                    >
+                        {props.filterActions}
                     </Box>
                 )}
 

@@ -34,7 +34,7 @@ public class ProcessListController {
     }
 
     @GetMapping("instances/")
-    @Operation(summary = "List process instance summaries", description = "Returns paged metadata filtered by effective process_instance.read permissions.")
+    @Operation(summary = "List process instance summaries", description = "Returns paged metadata filtered by effective process_instance.read permissions. Test instances are included by default and can be excluded with includeTests=false.")
     @Nonnull
     public Page<ProcessListDTO.Instance> instances(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                    @Nonnull @ParameterObject @PageableDefault(size = 12) Pageable page,
@@ -43,7 +43,7 @@ public class ProcessListController {
     }
 
     @GetMapping("tasks/")
-    @Operation(summary = "List task summaries", description = "Returns paged metadata for tasks in readable instances, including tasks assigned to others.")
+    @Operation(summary = "List task summaries", description = "Returns paged metadata for tasks in readable instances, including tasks assigned to others. Tasks belonging to test instances can be excluded with includeTests=false.")
     @Nonnull
     public Page<ProcessListDTO.Task> tasks(@Nullable @AuthenticationPrincipal Jwt jwt,
                                            @Nonnull @ParameterObject @PageableDefault(size = 12) Pageable page,
