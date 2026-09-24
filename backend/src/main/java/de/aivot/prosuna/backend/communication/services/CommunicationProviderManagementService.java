@@ -1,5 +1,12 @@
 package de.aivot.prosuna.backend.communication.services;
 
+import de.aivot.prosuna.backend.audit.enums.AuditAction;
+import de.aivot.prosuna.backend.audit.services.AuditService;
+import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
+import de.aivot.prosuna.backend.communication.permissions.CommunicationProviderPermissionProvider;
+import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.user.services.UserService;
+import org.springframework.security.oauth2.jwt.Jwt;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
@@ -21,6 +28,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,17 +41,23 @@ public class CommunicationProviderManagementService {
     private final CommunicationProviderDefinitionService definitionService;
     private final CommunicationProviderConfigurationService configurationService;
     private final IdentityProviderRepository identityProviderRepository;
+    private final PermissionService permissionService;
+    private final ScopedAuditService auditService;
 
     public CommunicationProviderManagementService(CommunicationProviderRepository providerRepository,
                                                   CommunicationProviderBindingRepository bindingRepository,
                                                   CommunicationProviderDefinitionService definitionService,
                                                   CommunicationProviderConfigurationService configurationService,
-                                                  IdentityProviderRepository identityProviderRepository) {
+                                                  IdentityProviderRepository identityProviderRepository,
+                                                  PermissionService permissionService,
+                                                  AuditService auditService) {
         this.providerRepository = providerRepository;
         this.bindingRepository = bindingRepository;
         this.definitionService = definitionService;
         this.configurationService = configurationService;
         this.identityProviderRepository = identityProviderRepository;
+        this.permissionService = permissionService;
+        this.auditService = auditService.createScopedAuditService(CommunicationProviderManagementService.class, "Kommunikationsanbindungen");
     }
 
     @Nonnull
@@ -102,8 +118,18 @@ public class CommunicationProviderManagementService {
     @Transactional(rollbackFor = ResponseException.class)
     public CommunicationProviderBindingEntity createBinding(@Nonnull CommunicationProviderBindingEntity binding) throws ResponseException {
         var provider = getProviderForUpdate(binding.getCommunicationProviderId());
+        if (!provider.getEnabled()) {
+            throw ResponseException.badRequest("Wählen Sie einen aktiven Kommunikationsanbieter aus.");
+        }
         var identityProvider = getIdentityProviderForUpdate(binding.getIdentityProviderKey());
         validateBinding(binding, provider, identityProvider);
+        var existing = bindingRepository.findAllByIdentityProviderKeyOrderByPositionAscNameAscIdAsc(binding.getIdentityProviderKey());
+        // The identity-provider lock serializes appends and reorders, including inactive bindings.
+        for (var position = 0; position < existing.size(); position++) {
+            existing.get(position).setPosition(position);
+        }
+        bindingRepository.saveAllAndFlush(existing);
+        binding.setPosition(existing.size());
         return bindingRepository.saveAndFlush(binding);
     }
 
@@ -111,7 +137,7 @@ public class CommunicationProviderManagementService {
     @Transactional(rollbackFor = ResponseException.class)
     public CommunicationProviderBindingEntity updateBinding(@Nonnull Integer id,
                                                             @Nonnull CommunicationProviderBindingEntity update) throws ResponseException {
-        var reference = bindingRepository.findById(id).orElseThrow(ResponseException::notFound);
+        var reference = bindingRepository.findReferenceById(id).orElseThrow(ResponseException::notFound);
         var provider = getProviderForUpdate(reference.getCommunicationProviderId());
         var identityProvider = getIdentityProviderForUpdate(reference.getIdentityProviderKey());
         var existing = bindingRepository.findByIdForUpdate(id).orElseThrow(ResponseException::notFound);
@@ -122,7 +148,6 @@ public class CommunicationProviderManagementService {
         existing.setName(update.getName());
         existing.setDescription(update.getDescription());
         existing.setEnabled(update.getEnabled());
-        existing.setPosition(update.getPosition());
         existing.setConfiguration(update.getConfiguration());
         validateBinding(existing, provider, identityProvider);
         return bindingRepository.saveAndFlush(existing);
@@ -130,12 +155,42 @@ public class CommunicationProviderManagementService {
 
     @Transactional(rollbackFor = ResponseException.class)
     public void deleteBinding(@Nonnull Integer id) throws ResponseException {
-        var reference = bindingRepository.findById(id).orElseThrow(ResponseException::notFound);
+        var reference = bindingRepository.findReferenceById(id).orElseThrow(ResponseException::notFound);
         getProviderForUpdate(reference.getCommunicationProviderId());
         var identityProvider = getIdentityProviderForUpdate(reference.getIdentityProviderKey());
         var binding = bindingRepository.findByIdForUpdate(id).orElseThrow(ResponseException::notFound);
         bindingRepository.delete(binding);
         bindingRepository.flush();
+    }
+
+    @Nonnull
+    @Transactional(rollbackFor = ResponseException.class)
+    public List<CommunicationProviderBindingEntity> reorderBindings(@Nullable Jwt jwt,
+                                                                    @Nonnull UUID identityProviderKey,
+                                                                    @Nonnull List<Integer> ids) throws ResponseException {
+        permissionService.requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_UPDATE);
+        getIdentityProviderForUpdate(identityProviderKey);
+        var bindings = bindingRepository.findAllByIdentityProviderKeyOrderByPositionAscNameAscIdAsc(identityProviderKey);
+        var idSet = new HashSet<>(ids);
+        // A complete permutation prevents cross-provider IDs and stale lists from dropping bindings.
+        if (idSet.size() != ids.size() || ids.size() != bindings.size()
+                || bindings.stream().anyMatch(binding -> !idSet.contains(binding.getId()))) {
+            throw ResponseException.conflict("Die Kommunikationsanbindungen haben sich geändert oder die Reihenfolge ist ungültig. Laden Sie die Liste erneut.");
+        }
+        var oldOrder = bindings.stream().map(CommunicationProviderBindingEntity::getId).toList();
+        var byId = bindings.stream().collect(Collectors.toMap(CommunicationProviderBindingEntity::getId, binding -> binding));
+        for (var position = 0; position < ids.size(); position++) {
+            byId.get(ids.get(position)).setPosition(position);
+        }
+        var ordered = ids.stream().map(byId::get).toList();
+        bindingRepository.saveAllAndFlush(ordered);
+        auditService.create()
+                .setActorId(UserService.getIdFromJWT(jwt))
+                .withAuditAction(AuditAction.Update, IdentityProviderEntity.class, identityProviderKey, "key")
+                .withDiff(Map.of("communicationBindingIds", oldOrder), Map.of("communicationBindingIds", ids))
+                .withMessage("Die Reihenfolge der Kommunikationsanbindungen wurde geändert.")
+                .log();
+        return ordered;
     }
 
     @Nonnull

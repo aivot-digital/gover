@@ -317,7 +317,7 @@ function IdentityConfigSlot(props: {
                     >
                         <TextFieldComponent
                             label="Titel"
-                            hint="Dieser Titel wird Nutzer:innen angezeigt."
+                            hint="Dieser Titel wird der ausfüllenden Person angezeigt."
                             value={item.title}
                             onChange={(val) => {
                                 onChange({
@@ -336,7 +336,7 @@ function IdentityConfigSlot(props: {
                     <Grid size={{xs: 12}}>
                         <RichTextInputWithVariablePicker
                             label="Beschreibung"
-                            hint="Optionale Beschreibung, die Nutzer:innen angezeigt wird. Sie kann erklären, warum eine Anmeldung mit dieser Identität sinnvoll oder notwendig ist."
+                            hint="Optionale Beschreibung, die der ausfüllenden Person angezeigt wird. Sie kann erklären, warum eine Anmeldung mit dieser Identität sinnvoll oder notwendig ist."
                             value={item.description}
                             onChange={(val) => {
                                 onChange({

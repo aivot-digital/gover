@@ -718,7 +718,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                             computedErrors={derivedErrors?.elementStates}
                             onEvent={handleInlineEvent}
                             taskViewMode="staff"
-                            onDeriveOverride={(aev, skipErrorsForElements) => {
+                            showErrorSummaryonDeriveOverride={(aev, skipErrorsForElements) => {
                                 if (item == null || item.instance == null || item.task == null) {
                                     return Promise.resolve({
                                         effectiveValues: {},

@@ -1,11 +1,11 @@
-import React, {useCallback, useMemo, useRef} from 'react';
-import {Box, Chip, type SxProps, type Theme, Typography} from '@mui/material';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
+import {Box, Typography} from '@mui/material';
 import {Link} from 'react-router-dom';
 import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
-import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
+import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {
     GenericListPage,
     type GenericListPagePermissionConfig,
@@ -33,32 +33,16 @@ import {type Action} from '../../../../components/actions/actions-props';
 import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {clearLoadingMessage, setLoadingMessage} from '../../../../slices/shell-slice';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {Permission} from '../../../../data/permissions/permission';
-
-const ellipsizedTextSx: SxProps<Theme> = {
-    display: 'block',
-    maxWidth: '100%',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-};
-
-const stackedCellSx: SxProps<Theme> = {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    minWidth: 0,
-    height: '100%',
-};
-
-const secondaryCellTextSx: SxProps<Theme> = {
-    ...ellipsizedTextSx,
-    lineHeight: 1.35,
-    mt: 0.25,
-};
+import {downloadBlobFile} from '../../../../utils/download-utils';
+import {downloadQrCode} from '../../../../utils/download-qrcode';
+import {FormsListRowMenu} from '../../components/forms-list-row-menu';
+import {resolvePrintablePdfFilename} from '../../utils/printable-pdf-filename';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 const overviewFilters = [
     {
@@ -76,6 +60,7 @@ const permissionCheck: GenericListPagePermissionConfig<FormOverviewItem> = {
         type: 'process',
         getResourceId: (item) => item.processId,
     },
+    read: Permission.PROCESS_DEFINITION_READ,
     update: Permission.PROCESS_DEFINITION_UPDATE,
 };
 
@@ -86,6 +71,56 @@ export function FormsListPage(): React.ReactElement {
         SystemConfigKeys.provider.listingPage.disableProsunaListingPage,
     )) === 'true';
     const listControlRef = useRef<ListControlRef>(null);
+    const [rowMenu, setRowMenu] = useState<{
+        anchorEl: HTMLElement;
+        form: FormOverviewItem;
+        canDownloadPrintablePdf: boolean;
+    } | null>(null);
+
+    const copyPublicLink = useCallback((form: FormOverviewItem) => {
+        if (form.publicUrl == null) {
+            return;
+        }
+
+        void copyToClipboardText(form.publicUrl).then((copied) => {
+            dispatch(copied
+                ? showSuccessSnackbar('Der öffentliche Link wurde kopiert.')
+                : showErrorSnackbar('Der öffentliche Link konnte nicht kopiert werden.'));
+        }).catch(() => {
+            dispatch(showErrorSnackbar('Der öffentliche Link konnte nicht kopiert werden.'));
+        });
+    }, [dispatch]);
+
+    const downloadPublicQrCode = useCallback(async (form: FormOverviewItem) => {
+        if (form.publicUrl == null) {
+            return;
+        }
+
+        try {
+            await downloadQrCode(form.publicUrl, `qr-code-${form.id}.png`);
+            dispatch(showSuccessSnackbar('Der QR-Code wurde heruntergeladen.'));
+        } catch (error) {
+            dispatch(showErrorSnackbar('Der QR-Code konnte nicht heruntergeladen werden.'));
+        }
+    }, [dispatch]);
+
+    const downloadPrintablePdf = useCallback(async (form: FormOverviewItem) => {
+        dispatch(setLoadingMessage({
+            blocking: false,
+            estimatedTime: 1500,
+            message: 'Vordruck wird generiert',
+        }));
+
+        try {
+            const blob = await new FormTriggerApiService().downloadPrintablePdf(form.id);
+            downloadBlobFile(resolvePrintablePdfFilename(form.formTitle, form.nodeName), blob);
+            dispatch(showSuccessSnackbar('Der Vordruck wurde erstellt und der Download gestartet.'));
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Der Vordruck konnte nicht erstellt werden.'));
+        } finally {
+            dispatch(clearLoadingMessage());
+        }
+    }, [dispatch]);
 
     const header: GenericPageHeaderProps = useMemo(() => ({
         icon: <DescriptionOutlinedIcon />,
@@ -112,43 +147,59 @@ export function FormsListPage(): React.ReactElement {
 
     const columns = useMemo<Array<GenericListColDef<FormOverviewItem>>>(() => [
         {
+            field: 'icon',
+            headerName: '',
+            width: 24,
+            sortable: false,
+            disableColumnMenu: true,
+            renderCell: () => (
+                <CellContentWrapper sx={{alignItems: 'start', py: 1}}>
+                    <DescriptionOutlinedIcon />
+                </CellContentWrapper>
+            ),
+        },
+        {
             field: 'formTitle',
             headerName: 'Formular',
             flex: 1.5,
             minWidth: 220,
             sortable: false,
-            renderCell: (params) => (
-                <Box sx={stackedCellSx}>
-                    <Typography
-                        component={Link}
-                        to={`/form-triggers/${params.row.id}`}
-                        title={params.row.formTitle}
-                        variant="body2"
-                        sx={{
-                            ...ellipsizedTextSx,
-                            'color': 'text.primary',
-                            'textDecoration': 'none',
-                            'fontWeight': 500,
-                            'lineHeight': 1.35,
-                            '&:hover': {
-                                textDecoration: 'underline',
-                                textDecorationColor: 'divider',
-                                textUnderlineOffset: 3,
-                            },
-                        }}
-                    >
-                        {params.row.formTitle}
-                    </Typography>
-                    <Typography
-                        variant="caption"
-                        title={params.row.nodeName}
-                        sx={[{
-                            color: "text.secondary"
-                        }, ...(Array.isArray(secondaryCellTextSx) ? secondaryCellTextSx : [secondaryCellTextSx])]}>
-                        {params.row.nodeName}
-                    </Typography>
-                </Box>
-            ),
+            renderCell: (params) => {
+                const secondaryLabel = params.row.formSlug == null
+                    ? params.row.nodeName
+                    : `${params.row.nodeName} · /${params.row.formSlug}`;
+
+                return (
+                    <Box sx={{py: 1, minWidth: 0, width: '100%'}}>
+                        <Typography
+                            variant="h5"
+                            noWrap
+                            sx={{mb: 0.5, fontSize: '1rem'}}
+                        >
+                            <Link
+                                style={{color: 'inherit', textDecoration: 'none'}}
+                                to={`/form-triggers/${params.row.id}`}
+                                title={params.row.formTitle}
+                            >
+                                {params.row.formTitle}
+                            </Link>
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            noWrap
+                            title={secondaryLabel}
+                            color="textSecondary"
+                            sx={{
+                                mt: -0.75,
+                                fontSize: '0.875rem',
+                                lineHeight: '1.5rem',
+                            }}
+                        >
+                            {secondaryLabel}
+                        </Typography>
+                    </Box>
+                );
+            },
         },
         {
             field: 'processTitle',
@@ -157,63 +208,64 @@ export function FormsListPage(): React.ReactElement {
             minWidth: 200,
             sortable: false,
             renderCell: (params) => (
-                <Box sx={stackedCellSx}>
+                <Box sx={{py: 1, minWidth: 0, width: '100%'}}>
                     <Typography
-                        component={Link}
-                        to={`/processes/${params.row.processId}/versions/${params.row.processVersion}`}
-                        title={params.row.processTitle}
-                        variant="body2"
-                        sx={{
-                            ...ellipsizedTextSx,
-                            'color': 'text.primary',
-                            'textDecoration': 'none',
-                            'lineHeight': 1.35,
-                            '&:hover': {
-                                textDecoration: 'underline',
-                                textDecorationColor: 'divider',
-                                textUnderlineOffset: 3,
-                            },
-                        }}
+                        variant="h5"
+                        noWrap
+                        sx={{mb: 0.5, fontSize: '1rem'}}
                     >
-                        {params.row.processTitle}
+                        <Link
+                            style={{color: 'inherit', textDecoration: 'none'}}
+                            to={`/processes/${params.row.processId}/versions/${params.row.processVersion}`}
+                            title={params.row.processTitle}
+                        >
+                            {params.row.processTitle}
+                        </Link>
                     </Typography>
                     <Typography
-                        variant="caption"
-                        sx={[{
-                            color: "text.secondary"
-                        }, ...(Array.isArray(secondaryCellTextSx) ? secondaryCellTextSx : [secondaryCellTextSx])]}>
+                        variant="body2"
+                        noWrap
+                        title={`Version ${params.row.processVersion}`}
+                        color="textSecondary"
+                        sx={{mt: -0.75, fontSize: '0.875rem', lineHeight: '1.5rem'}}
+                    >
                         Version {params.row.processVersion}
                     </Typography>
                 </Box>
             ),
         },
         {
-            field: 'availability',
-            headerName: 'Bereitstellung',
+            field: 'status',
+            headerName: 'Status',
             flex: 0.9,
-            minWidth: 170,
+            minWidth: 190,
             sortable: false,
             renderCell: (params) => {
-                if (params.row.status === 'Drafted') {
-                    return (
-                        <Chip
-                            label="In Bearbeitung"
-                            title="In Bearbeitung"
-                            size="small"
-                            variant="outlined"
-                        />
-                    );
-                }
+                const isPublished = params.row.status === 'Published';
+                const availabilityLabel = params.row.showOnFormIndexPage && !publicListingDisabled
+                    ? 'Im Formularverzeichnis'
+                    : 'Nur per Direktlink';
 
-                const visibleInListing = params.row.showOnFormIndexPage && !publicListingDisabled;
-                const availabilityLabel = visibleInListing ? 'Im Formularverzeichnis' : 'Nur per Direktlink';
                 return (
-                    <Chip
-                        label={availabilityLabel}
-                        title={availabilityLabel}
-                        size="small"
-                        variant="outlined"
-                    />
+                    <Box sx={{py: 1, display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%'}}>
+                        <Typography
+                            noWrap
+                            title={isPublished ? 'Veröffentlicht' : 'In Bearbeitung'}
+                            sx={{fontSize: '0.875rem'}}
+                        >
+                            {isPublished ? 'Veröffentlicht' : 'In Bearbeitung'}
+                        </Typography>
+                        {isPublished && (
+                            <Typography
+                                noWrap
+                                color="textSecondary"
+                                title={availabilityLabel}
+                                sx={{fontSize: '0.875rem'}}
+                            >
+                                {availabilityLabel}
+                            </Typography>
+                        )}
+                    </Box>
                 );
             },
         },
@@ -231,19 +283,17 @@ export function FormsListPage(): React.ReactElement {
                 );
 
                 return (
-                    <Box sx={stackedCellSx}>
-                        <Typography variant="body2" noWrap sx={{lineHeight: 1.35}}>
+                    <Box sx={{py: 1, display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%'}}>
+                        <Typography noWrap title={date != null ? `${date} Uhr` : 'Keine Angabe'} sx={{fontSize: '0.875rem'}}>
                             {date != null ? `${date} Uhr` : 'Keine Angabe'}
                         </Typography>
                         <Typography
-                            variant="caption"
                             noWrap
-                            sx={{
-                                color: "text.secondary",
-                                lineHeight: 1.35,
-                                mt: 0.25
-                            }}>
-                            {isPublished ? 'Veröffentlicht' : 'Zuletzt bearbeitet'}
+                            color="textSecondary"
+                            title={isPublished ? 'Veröffentlicht am' : 'Zuletzt bearbeitet'}
+                            sx={{fontSize: '0.875rem'}}
+                        >
+                            {isPublished ? 'Veröffentlicht am' : 'Zuletzt bearbeitet'}
                         </Typography>
                     </Box>
                 );
@@ -261,8 +311,7 @@ export function FormsListPage(): React.ReactElement {
             }}>
             Formulare werden als Einstiegspunkte innerhalb von Prozessen erstellt.
             <br/>
-            Diese Übersicht bündelt die
-            aktuell veröffentlichten Formulare und Formulare in Bearbeitung.
+            Diese zentrale Übersicht zeigt veröffentlichte Formulare und Formularentwürfe, auf die Sie Zugriff haben.
         </Typography>,
     ], []);
 
@@ -309,29 +358,10 @@ export function FormsListPage(): React.ReactElement {
                 visible: isPublished && item.publicUrl != null,
             },
             {
-                icon: <ContentCopy />,
-                tooltip: 'Öffentlichen Link kopieren',
-                ariaLabel: 'Öffentlichen Link kopieren',
-                visible: isPublished && item.publicUrl != null,
-                onClick: () => {
-                    if (item.publicUrl == null) {
-                        return;
-                    }
-
-                    void copyToClipboardText(item.publicUrl).then((copied) => {
-                        if (copied) {
-                            dispatch(showSuccessSnackbar('Der öffentliche Link wurde kopiert.'));
-                        } else {
-                            dispatch(showErrorSnackbar('Der öffentliche Link konnte nicht kopiert werden.'));
-                        }
-                    });
-                },
-            },
-            {
                 icon: !isPublished && canUpdate ? <Edit /> : <Visibility />,
                 to: `/form-triggers/${item.id}`,
-                tooltip: !isPublished && canUpdate ? 'Formular bearbeiten' : 'Formular im Editor ansehen',
-                ariaLabel: !isPublished && canUpdate ? 'Formular bearbeiten' : 'Formular im Editor ansehen',
+                tooltip: !isPublished && canUpdate ? 'Formular im Editor bearbeiten' : 'Formular im Editor ansehen',
+                ariaLabel: !isPublished && canUpdate ? 'Formular im Editor bearbeiten' : 'Formular im Editor ansehen',
             },
             {
                 icon: ModuleIcons.processes,
@@ -339,36 +369,61 @@ export function FormsListPage(): React.ReactElement {
                 tooltip: 'Prozess ansehen',
                 ariaLabel: 'Prozess ansehen',
             },
+            {
+                icon: <MoreVert />,
+                tooltip: 'Weitere Optionen',
+                ariaLabel: 'Weitere Optionen',
+                visible: (isPublished && item.publicUrl != null) || permissions.canRead(item),
+                onClick: (event) => {
+                    setRowMenu({
+                        anchorEl: event.currentTarget as HTMLElement,
+                        form: item,
+                        canDownloadPrintablePdf: permissions.canRead(item),
+                    });
+                },
+            },
         ];
-    }, [dispatch]);
+    }, []);
 
     return (
-        <PageWrapper
-            title="Formulare"
-            fullWidth
-            background
-        >
-            <GenericListPage<FormOverviewItem>
-                controlRef={listControlRef}
-                defaultFilter="Published"
-                filters={overviewFilters}
-                header={header}
-                searchLabel="Formulare suchen"
-                searchPlaceholder="Formular, Prozess oder URL-Segment eingeben…"
-                listContextElements={listContextElements}
-                fetch={fetch}
-                columnIcon={<DescriptionOutlinedIcon />}
-                columnDefinitions={columns}
-                getRowIdentifier={(row) => row.id.toString()}
-                noDataPlaceholder={noDataPlaceholder}
-                noSearchResultsPlaceholder="Keine Formulare gefunden"
-                rowActionsCount={4}
-                rowActions={rowActions}
-                permissionCheck={permissionCheck}
-                defaultSortField="id"
-                disableFullWidthToggle
-                rowHeight={68}
-            />
-        </PageWrapper>
+        <>
+            <PageWrapper
+                title="Formulare"
+                fullWidth
+                background
+            >
+                <GenericListPage<FormOverviewItem>
+                    controlRef={listControlRef}
+                    defaultFilter="Published"
+                    filters={overviewFilters}
+                    header={header}
+                    searchLabel="Formulare suchen"
+                    searchPlaceholder="Formular, Prozess oder URL-Segment eingeben…"
+                    listContextElements={listContextElements}
+                    fetch={fetch}
+                    columnDefinitions={columns}
+                    getRowIdentifier={(row) => row.id.toString()}
+                    noDataPlaceholder={noDataPlaceholder}
+                    noSearchResultsPlaceholder="Keine Formulare gefunden"
+                    rowActionsCount={4}
+                    rowActions={rowActions}
+                    permissionCheck={permissionCheck}
+                    defaultSortField="id"
+                    disableFullWidthToggle
+                    dynamicRowHeight
+                />
+            </PageWrapper>
+            {rowMenu != null && (
+                <FormsListRowMenu
+                    anchorEl={rowMenu.anchorEl}
+                    form={rowMenu.form}
+                    canDownloadPrintablePdf={rowMenu.canDownloadPrintablePdf}
+                    onClose={() => setRowMenu(null)}
+                    onCopyPublicLink={copyPublicLink}
+                    onDownloadQrCode={(form) => { void downloadPublicQrCode(form); }}
+                    onDownloadPrintablePdf={(form) => { void downloadPrintablePdf(form); }}
+                />
+            )}
+        </>
     );
 }

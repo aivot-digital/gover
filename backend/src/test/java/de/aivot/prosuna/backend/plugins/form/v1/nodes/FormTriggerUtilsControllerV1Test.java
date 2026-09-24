@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -78,9 +79,9 @@ class FormTriggerUtilsControllerV1Test {
 
         var response = fixture.controller().printPdf(null, fixture.node().getId());
 
-        verify(fixture.permissionService()).requireDepartmentPermission(
+        verify(fixture.permissionService()).requireProcessPermission(
                 fixture.user().getId(),
-                fixture.process().getDepartmentId(),
+                fixture.process().getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
         var printableFormCaptor = ArgumentCaptor.forClass(PrintableFormPdfData.class);
@@ -185,6 +186,28 @@ class FormTriggerUtilsControllerV1Test {
                 any(VDepartmentShadowedEntity.class),
                 any(),
                 any()
+        );
+    }
+
+    @Test
+    void printPdfShouldRejectUsersWithoutReadPermissionForTheProcess() throws Exception {
+        var fixture = createFixture(baseFormLayout());
+        doThrow(ResponseException.forbidden())
+                .when(fixture.permissionService())
+                .requireProcessPermission(
+                        fixture.user().getId(),
+                        fixture.process().getId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_READ
+                );
+
+        var error = assertThrows(ResponseException.class, () -> fixture.controller().printPdf(null, fixture.node().getId()));
+
+        assertEquals(org.springframework.http.HttpStatus.FORBIDDEN, error.getStatus());
+        verify(fixture.processNodeService(), never()).deriveConfiguration(
+                any(ProcessNodeEntity.class),
+                any(FormTriggerNodeV1.class),
+                any(UserEntity.class),
+                eq(true)
         );
     }
 
