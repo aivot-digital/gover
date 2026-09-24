@@ -67,8 +67,8 @@ export function CommunicationProviderDetailsPageIdentityProviders() {
     requireSystemPermission(permissions, Permission.IDENTITY_PROVIDER_READ);
 
     return (
-        <Box sx={{pt: 2}}>
-            <Typography variant="h5" sx={{mb: 1}}>
+        <Box>
+            <Typography variant="h5" sx={{mt: 1.5, mb: 1}}>
                 Verknüpfte Identitätsanbieter
             </Typography>
 
