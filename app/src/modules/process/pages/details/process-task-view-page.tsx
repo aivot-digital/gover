@@ -111,7 +111,8 @@ function buildProcessTaskHeaderBadges(item?: ProcessTaskDetailsPageItem): ReactN
             key="task-status"
             label={getProcessTaskStatusLabel(item)}
             title={
-                item.task.statusOverride?.trim()
+                item.task.statusOverride?.trim() &&
+                item.task.statusOverride.trim() !== ProcessTaskStatusLabels[item.task.status]
                     ? `Systemstatus: ${ProcessTaskStatusLabels[item.task.status]}`
                     : undefined
             }

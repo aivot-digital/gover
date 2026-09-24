@@ -102,7 +102,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                                 textDecoration: 'none',
                             }}
                             to={`/processes/${params.row.id}/versions/latest`}
-                            title="Prozess bearbeiten"
+                            title={params.row.internalTitle}
                         >
                             {params.row.internalTitle}
                         </Link>
@@ -130,6 +130,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
 
                     <Typography
                         variant="body2"
+                        title={`Verwaltet von: ${params.row.managingDepartmentName ?? 'Unbekannt'}`}
                         sx={{
                             mt: -0.5,
                             fontSize: '0.875rem',
@@ -151,7 +152,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
         headerName: 'Zuletzt bearbeitet',
         flex: 1,
         renderCell: (params) => {
-            const formatted = formatInstantInApplicationTimeZone(params.row.updated, 'dd.MM.yyyy — HH:mm');
+            const formatted = formatInstantInApplicationTimeZone(params.row.updated, 'dd.MM.yyyy – HH:mm');
             return (
                 <Box
                     sx={{
@@ -160,12 +161,16 @@ const columns: GridColDef<ProcessListEntry>[] = [
                         flexDirection: 'column',
                     }}
                 >
-                    <Typography sx={{fontSize: '0.875rem'}}>
+                    <Typography
+                        sx={{fontSize: '0.875rem'}}
+                        title={formatted != null ? `${formatted} Uhr` : undefined}
+                    >
                         {formatted != null ? `${formatted} Uhr` : '—'}
                     </Typography>
                     <Typography
                         color="textSecondary"
                         sx={{fontSize: '0.875rem'}}
+                        title={params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
                     >
                         {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
                     </Typography>

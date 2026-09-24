@@ -147,9 +147,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                 alignTop: true,
                 children: (
                     <>
-                        Es handelt sich bei dieser Aufgabe um einen Test.
-                        <br />
-                        Der zugehörige Vorgang wurde im Testmodus ausgelöst.
+                        Diese Aufgabe gehört zu einem Vorgang, der über den Testmodus des Prozesses gestartet wurde.
                     </>
                 ),
             });

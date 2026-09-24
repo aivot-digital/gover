@@ -48,7 +48,9 @@ export function ProcessInstanceDetailsPage() {
                                           ProcessInstanceStatusLabels[item.instance.status]
                                       }
                                       title={
-                                          item.instance.statusOverride?.trim()
+                                          item.instance.statusOverride?.trim() &&
+                                          item.instance.statusOverride.trim() !==
+                                              ProcessInstanceStatusLabels[item.instance.status]
                                               ? `Systemstatus: ${ProcessInstanceStatusLabels[item.instance.status]}`
                                               : undefined
                                       }
