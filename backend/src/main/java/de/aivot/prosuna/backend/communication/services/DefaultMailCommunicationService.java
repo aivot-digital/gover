@@ -116,21 +116,22 @@ public class DefaultMailCommunicationService {
             templateContext.put("callToActions", callToActions);
 
             var theme = systemService.retrieveDefaultTheme();
-            var includeDefaultMailSignature = false;
             if (message.sendingDepartment() != null) {
                 var department = resolveDepartment(message.sendingDepartment());
                 templateContext.put("department", department);
-                includeDefaultMailSignature = true;
 
                 var themeId = resolveThemeId(department);
                 if (themeId != null) {
                     theme = themeService.retrieve(themeId).orElse(theme);
                 }
             }
+            if (message.signatureDepartment() != null) {
+                templateContext.put("signatureDepartment", message.signatureDepartment());
+            }
 
             var attachments = readAttachments(message);
             var mailOptions = new MailSendOptions(
-                    includeDefaultMailSignature,
+                    message.signatureDepartment() != null,
                     senderName,
                     senderAddress,
                     replyToAddress

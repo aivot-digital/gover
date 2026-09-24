@@ -53,4 +53,5 @@ export enum ElementType {
     LinkButton = 51,
     SecretSelectInput = 52,
     AssetSelectInput = 53,
+    DepartmentSelectInput = 54,
 }

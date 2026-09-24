@@ -79,6 +79,10 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
         var communicationProviderUsages = new ArrayList<IdentityCommunicationAvailabilityService.IdentityProviderUsage>();
 
         for (var slot : value) {
+            if (slot == null || StringUtils.isNullOrEmpty(slot.getTitle())) {
+                validationErrors.add("Geben Sie für jede Identität einen Titel an.");
+            }
+
             if (!hasAcquisitionMethod(slot)) {
                 validationErrors.add("Für jede Identität muss mindestens ein Identitätsanbieter oder die direkte E-Mail-Eingabe aktiviert werden.");
                 continue;

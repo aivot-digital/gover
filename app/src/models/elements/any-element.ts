@@ -48,6 +48,7 @@ import {HtmlTemplateInputElement} from './form/input/html-template-input-element
 import {ConfigLayoutElement} from './form/layout/config-layout-element';
 import {StoragePathSelectorInputElement} from './form/input/storage-path-selector-input-element';
 import {AssetSelectInputElement} from './form/input/asset-select-input-element';
+import {DepartmentSelectInputElement} from './form/input/department-select-input-element';
 import {PaymentConfigElement} from './form/input/payment-config-element';
 import {LinkButtonElement} from './form/content/link-button-element';
 import {StepperLayoutElement} from './form/layout/stepper-layout-element';
@@ -109,6 +110,7 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                                                             T extends ElementType.HtmlTemplateInput ? HtmlTemplateInputElement :
                                                                                                                                                             T extends ElementType.StoragePathSelector ? StoragePathSelectorInputElement :
                                                                                                                                                                 T extends ElementType.AssetSelectInput ? AssetSelectInputElement :
+                                                                                                                                                                    T extends ElementType.DepartmentSelectInput ? DepartmentSelectInputElement :
                                                                                                                                                                 T extends ElementType.ProcessAttachmentDisplay ? ProcessAttachmentDisplayElement :
                                                                                                                                                                     T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
                                                                                                                                                                         T extends ElementType.IdentityConfigElement ? IdentityConfigElement :

@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
@@ -138,7 +139,11 @@ class ProcessNodeExecutionResultHandlerTest {
                 .withSendingContext(
                         user("stale-user", "Stale User"),
                         new DepartmentEntity().setId(99).setName("Stale Department")
-                );
+                )
+                .withSignatureDepartment(new VDepartmentShadowedEntity()
+                        .setId(23)
+                        .setName("Bürgerbüro")
+                        .setDefaultMailSignature("Viele Grüße"));
         var sendResult = Map.<String, Object>of(
                 "submissionId", "submission-1",
                 "status", "SUBMITTED"
@@ -186,6 +191,7 @@ class ProcessNodeExecutionResultHandlerTest {
         assertNull(sentMessage.sendingUser());
         assertEquals(17, sentMessage.sendingDepartment().getId());
         assertEquals("Fachbereich Leistungen", sentMessage.sendingDepartment().getName());
+        assertEquals(23, sentMessage.signatureDepartment().getId());
         assertEquals(sendResult, task.getNodeData().get("sendResult"));
         assertEquals(Map.of("delivery", sendResult), task.getProcessData());
         assertEquals(ProcessTaskStatus.Running, task.getStatus());
@@ -231,6 +237,10 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(
                 Map.of("id", 17, "name", "Fachbereich Leistungen"),
                 messageDetails.get("sendingDepartment")
+        );
+        assertEquals(
+                Map.of("id", 23, "name", "Bürgerbüro"),
+                messageDetails.get("signatureDepartment")
         );
         assertEquals(sendResult, event.details().get("sendResult"));
     }

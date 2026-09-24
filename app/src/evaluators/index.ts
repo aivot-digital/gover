@@ -75,6 +75,7 @@ export const evaluators: {
     [ElementType.ProcessIdentityIdInput]: SelectEvaluator,
     [ElementType.SecretSelectInput]: SelectEvaluator,
     [ElementType.AssetSelectInput]: SelectEvaluator,
+    [ElementType.DepartmentSelectInput]: NumberEvaluator,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputEvaluator,
     [ElementType.StoragePathSelector]: StoragePathSelectorInputEvaluator,
     [ElementType.ProcessAttachmentDisplay]: null,

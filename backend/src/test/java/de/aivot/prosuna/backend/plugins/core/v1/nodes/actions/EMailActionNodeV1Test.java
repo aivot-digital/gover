@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
@@ -72,6 +73,7 @@ class EMailActionNodeV1Test {
     private static final Integer PROCESS_VERSION = 3;
     private static final Integer NODE_ID = 17;
     private static final Integer DEPARTMENT_ID = 7;
+    private static final Integer SIGNATURE_DEPARTMENT_ID = 9;
     private static final Integer THEME_ID = 8;
     private static final Long PROCESS_INSTANCE_ID = 99L;
     private static final Long TASK_ID = 123L;
@@ -149,14 +151,16 @@ class EMailActionNodeV1Test {
                 RadioInputElementOption.of("manual", "Manuell bearbeiten und versenden")
         ), executionType.getOptions());
 
-        assertNotNull(layout.findChild(
+        var automaticGroup = layout.findChild(
                 SemiAutomaticMessageConfig.AutomaticContent.GROUP_ID,
                 GroupLayoutElement.class
-        ).orElseThrow().getVisibility());
-        assertNotNull(layout.findChild(
+        ).orElseThrow();
+        var manualGroup = layout.findChild(
                 SemiAutomaticMessageConfig.ManualContent.GROUP_ID,
                 GroupLayoutElement.class
-        ).orElseThrow().getVisibility());
+        ).orElseThrow();
+        assertNotNull(automaticGroup.getVisibility());
+        assertNotNull(manualGroup.getVisibility());
 
         var assignment = layout.findChild(
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
@@ -169,6 +173,18 @@ class EMailActionNodeV1Test {
                 List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK),
                 assignment.getProcessAccessConstraint().getRequiredPermissions()
         );
+        var signatureDepartment = automaticGroup.findChild(
+                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1,
+                DepartmentSelectInputElement.class
+        ).orElseThrow();
+        assertEquals("Organisationseinheit für die Signatur", signatureDepartment.getLabel());
+        assertFalse(signatureDepartment.getRequired());
+        var manualSignatureDepartment = manualGroup.findChild(
+                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2,
+                DepartmentSelectInputElement.class
+        ).orElseThrow();
+        assertEquals("Organisationseinheit für die Signatur", manualSignatureDepartment.getLabel());
+        assertFalse(manualSignatureDepartment.getRequired());
     }
 
     @Test
@@ -177,7 +193,14 @@ class EMailActionNodeV1Test {
         var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         configuration.messageConfig.automaticContent.subject = "  Nachricht für Ada  ";
         configuration.messageConfig.automaticContent.content = "  Hallo **Ada**  ";
+        configuration.messageConfig.automaticContent.signatureDepartmentId = SIGNATURE_DEPARTMENT_ID;
         configuration.to = "customer@example.test";
+        var signatureDepartment = new VDepartmentShadowedEntity()
+                .setId(SIGNATURE_DEPARTMENT_ID)
+                .setName("Bürgerbüro")
+                .setDefaultMailSignature("Viele Grüße");
+        when(vDepartmentShadowedService.retrieve(SIGNATURE_DEPARTMENT_ID))
+                .thenReturn(Optional.of(signatureDepartment));
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
@@ -196,6 +219,7 @@ class EMailActionNodeV1Test {
                                 && "Hallo **Ada**".equals(mailContext.get("messageText"))
                                 && mailContext.get("messageHtml").toString().contains("<strong>Ada</strong>")
                                 && department.equals(mailContext.get("department"))
+                                && signatureDepartment.equals(mailContext.get("signatureDepartment"))
                 ),
                 eq(Optional.empty()),
                 eq(Optional.empty()),
@@ -280,7 +304,7 @@ class EMailActionNodeV1Test {
                 ),
                 eq(Optional.empty()),
                 eq(Optional.empty()),
-                eq(MailSendOptions.defaults())
+                eq(new MailSendOptions(false))
         );
         assertEquals("Finaler Betreff", result.getNodeData().get("subject"));
     }
@@ -325,7 +349,7 @@ class EMailActionNodeV1Test {
                 any(),
                 eq(Optional.empty()),
                 attachmentsCaptor.capture(),
-                eq(MailSendOptions.defaults())
+                eq(new MailSendOptions(false))
         );
         var attachments = (Optional<Collection<MailAttachmentBytes>>) attachmentsCaptor.getValue();
         var mailAttachment = attachments.orElseThrow().iterator().next();
@@ -359,7 +383,7 @@ class EMailActionNodeV1Test {
                 any(),
                 any(),
                 any(),
-                eq(MailSendOptions.defaults())
+                eq(new MailSendOptions(false))
         );
         verify(themeService, never()).retrieve(anyInt());
     }
@@ -378,6 +402,28 @@ class EMailActionNodeV1Test {
 
         assertEquals("Der E-Mail-Versand ist nicht konfiguriert.", exception.getMessage());
         verifyNoInteractions(processService);
+    }
+
+    @Test
+    void rejectsSendingWhenSelectedSignatureDepartmentNoLongerExists() throws Exception {
+        var configuration = configuration("automatic");
+        configuration.messageConfig.automaticContent.signatureDepartmentId = SIGNATURE_DEPARTMENT_ID;
+        var processData = new ProcessExecutionData();
+        stubAutomaticMessage(configuration, processData);
+        when(vDepartmentShadowedService.retrieve(SIGNATURE_DEPARTMENT_ID)).thenReturn(Optional.empty());
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(configuration, processData, processInstance(), task()))
+        );
+
+        assertEquals(
+                "Die Organisationseinheit 9 für die E-Mail-Signatur wurde nicht gefunden.",
+                exception.getMessage()
+        );
+        verify(mailService, never()).sendMail(
+                any(), anyString(), any(), any(), anyString(), any(), any(), any(), any(), any()
+        );
     }
 
     @Test
@@ -410,12 +456,16 @@ class EMailActionNodeV1Test {
     }
 
     @Test
-    void exportRemovesSharedAssignment() {
+    void exportRemovesSharedAssignmentAndSignatureDepartment() {
         var configuration = authored(
                 EMailActionNodeV1.EMailActionNodeConfig.RECIPIENT_FIELD_ID,
                 "customer@example.test",
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
-                Map.of("user", "staff-1")
+                Map.of("user", "staff-1"),
+                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1,
+                SIGNATURE_DEPARTMENT_ID,
+                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2,
+                SIGNATURE_DEPARTMENT_ID + 1
         );
 
         var cleaned = node.cleanConfigurationForExport(configuration);
@@ -425,6 +475,8 @@ class EMailActionNodeV1Test {
                 cleaned.getLiteral(EMailActionNodeV1.EMailActionNodeConfig.RECIPIENT_FIELD_ID)
         );
         assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2));
     }
 
     private static EMailActionNodeV1.EMailActionNodeConfig configuration(String executionType) {

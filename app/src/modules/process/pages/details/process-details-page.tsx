@@ -1143,7 +1143,7 @@ export function ProcessDetailsPage(): ReactNode {
                 });
             })
             .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Die Prozessinstanz konnte nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(error, 'Der Vorgang konnte nicht geladen werden.'));
             })
             .finally(() => {
                 setIsRefreshingRuntimeData(false);

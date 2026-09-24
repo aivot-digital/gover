@@ -5,7 +5,7 @@ Organisationseinheit: [(${department.name})]
 Entfernt durch: [(${admin.getFullName()})]
 
 [# th:if="${mailSignature != null}"]
----
+
 [(${mailSignature})]
 
 [/]

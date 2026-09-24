@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -73,15 +74,18 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private final ProsunaConfig prosunaConfig;
     private final ElementDataTransformService elementDataTransformService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
 
     public FormRequestActionNodeV1(AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
                                    ProsunaConfig prosunaConfig,
                                    ElementDataTransformService elementDataTransformService,
-                                   ProcessInstanceAttachmentService processInstanceAttachmentService) {
+                                   ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                   VDepartmentShadowedService vDepartmentShadowedService) {
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
         this.prosunaConfig = prosunaConfig;
         this.elementDataTransformService = elementDataTransformService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
     }
 
     @Nonnull
@@ -378,7 +382,10 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 content,
                 List.of(new CommunicationMessageCallToAction("Daten einreichen", customerLink)),
                 List.of()
-        );
+        ).withSignatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
+                configuration.messageConfig,
+                vDepartmentShadowedService
+        ));
 
         var communicationRequest = new ProcessNodeExecutionResultCommunicationRequest(
                 recipientId,
@@ -541,6 +548,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         configuration.remove(NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID);
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2);
         return configuration;
     }
 

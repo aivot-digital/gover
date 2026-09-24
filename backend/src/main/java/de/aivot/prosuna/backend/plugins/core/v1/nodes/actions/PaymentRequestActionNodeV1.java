@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.zxing.WriterException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -107,6 +109,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private final ProsunaConfig prosunaConfig;
     private final JsonMapper jsonMapper;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
 
     public PaymentRequestActionNodeV1(PaymentPayloadCreationService paymentPayloadCreationService,
                                       PaymentTransactionService paymentTransactionService,
@@ -115,7 +118,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                                       TemplateRenderService templateRenderService,
                                       ProsunaConfig prosunaConfig,
                                       JsonMapper jsonMapper,
-                                      AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService) {
+                                      AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
+                                      VDepartmentShadowedService vDepartmentShadowedService) {
         this.paymentPayloadCreationService = paymentPayloadCreationService;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderRepository = paymentProviderRepository;
@@ -124,6 +128,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         this.prosunaConfig = prosunaConfig;
         this.jsonMapper = jsonMapper;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
     }
 
     @Nonnull
@@ -577,6 +582,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         configuration.remove(PaymentRequestActionNodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID);
         configuration.remove(PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID);
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2);
         return configuration;
     }
 
@@ -590,7 +597,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var recipientIdentity = processInstance.getIdentities().get(recipientIdentityId);
         if (recipientIdentity == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die konfigurierte Empfängeridentität %s ist in der Prozessinstanz nicht vorhanden.",
+                    "Die konfigurierte Empfängeridentität %s ist im Vorgang nicht vorhanden.",
                     StringUtils.quote(recipientIdentityId)
             );
         }
@@ -598,7 +605,11 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         return new ResolvedRequestConfiguration(
                 recipientIdentityId,
                 paymentConfig,
-                resolvePaymentProvider(paymentConfig)
+                resolvePaymentProvider(paymentConfig),
+                SemiAutomaticMessageConfig.resolveSignatureDepartment(
+                        configuration.messageConfig,
+                        vDepartmentShadowedService
+                )
         );
     }
 
@@ -770,7 +781,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                                         paymentUrl
                                 )),
                                 List.of()
-                        ),
+                        ).withSignatureDepartment(resolvedConfiguration.signatureDepartment()),
                         null
                 ));
     }
@@ -941,7 +952,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private record ResolvedRequestConfiguration(
             @Nonnull String recipientIdentityId,
             @Nonnull PaymentConfigElementValue paymentConfig,
-            @Nonnull PaymentProviderEntity paymentProvider
+            @Nonnull PaymentProviderEntity paymentProvider,
+            @Nullable VDepartmentShadowedEntity signatureDepartment
     ) {
     }
 

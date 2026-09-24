@@ -1,16 +1,19 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
-import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
+import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
-import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.input.LiteralAuthoredInputValue;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
@@ -18,9 +21,12 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.plugins.form.FormPlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
@@ -66,6 +72,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private final ProcessEdgeRepository processEdgeRepository;
     private final ProsunaConfig prosunaConfig;
     private final IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
+    private final PermissionService permissionService;
 
     @Autowired
     public ProcessNodeService(ProcessNodeRepository processNodeRepository,
@@ -76,7 +83,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                               ProcessVersionRepository processDefinitionVersionRepository,
                               ProcessEdgeRepository processEdgeRepository,
                               ProsunaConfig prosunaConfig,
-                              IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService) {
+                              IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService,
+                              PermissionService permissionService) {
         this.processNodeRepository = processNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.elementDerivationService = elementDerivationService;
@@ -86,6 +94,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         this.processEdgeRepository = processEdgeRepository;
         this.prosunaConfig = prosunaConfig;
         this.identityCommunicationAvailabilityService = identityCommunicationAvailabilityService;
+        this.permissionService = permissionService;
     }
 
     @Nonnull
@@ -342,6 +351,79 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
         return provider
                 .getConfigurationLayout(context);
+    }
+
+    public void requireReadableDepartmentSelections(@Nonnull UserEntity user,
+                                                    @Nonnull ProcessNodeEntity node) throws ResponseException {
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(node)
+                .orElseThrow(ResponseException::badRequest);
+        var layout = getConfigLayoutElement(node, provider, user);
+        requireReadableDepartmentSelections(user, node, provider, layout);
+    }
+
+    public <NodeConfig> void requireReadableDepartmentSelections(
+            @Nonnull UserEntity user,
+            @Nonnull ProcessNodeEntity node,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull ProcessEntity process,
+            @Nonnull ProcessVersionEntity processVersion
+    ) throws ResponseException {
+        var layout = provider.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
+                user,
+                process,
+                processVersion,
+                node
+        ));
+        requireReadableDepartmentSelections(user, node, provider, layout);
+    }
+
+    private <NodeConfig> void requireReadableDepartmentSelections(
+            @Nonnull UserEntity user,
+            @Nonnull ProcessNodeEntity node,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull ConfigLayoutElement layout
+    ) throws ResponseException {
+        var configuration = new AuthoredElementValues();
+        configuration.putAll(provider.getInitialConfiguration());
+        configuration.putAll(node.getConfiguration());
+
+        var departmentInputs = new LinkedList<DepartmentSelectInputElement>();
+        ElementStreamUtils.applyAction(layout, element -> {
+            if (element instanceof DepartmentSelectInputElement departmentInput) {
+                departmentInputs.add(departmentInput);
+            }
+        });
+
+        var departmentIds = new LinkedHashSet<Integer>();
+        for (var departmentInput : departmentInputs) {
+            var authoredValue = configuration.get(departmentInput.getId());
+            if (authoredValue == null) {
+                continue;
+            }
+            if (!(authoredValue instanceof LiteralAuthoredInputValue literalValue)) {
+                throw ResponseException.badRequest(
+                        "Die Organisationseinheits-Auswahl %s muss einen festen Wert verwenden.",
+                        StringUtils.quote(departmentInput.getId())
+                );
+            }
+
+            var departmentId = departmentInput.formatValue(literalValue.value());
+            if (literalValue.value() != null && departmentId != null && departmentId <= 0) {
+                throw ResponseException.badRequest("Bitte wählen Sie eine gültige Organisationseinheit aus.");
+            }
+            if (departmentId != null) {
+                departmentIds.add(departmentId);
+            }
+        }
+
+        for (var departmentId : departmentIds) {
+            permissionService.requireDepartmentPermission(
+                    user.getId(),
+                    departmentId,
+                    DepartmentPermissionProvider.DEPARTMENT_READ
+            );
+        }
     }
 
     public Set<String> getAllUsedDataKeys(@Nonnull Integer processId, @Nonnull Integer processVersion) {
