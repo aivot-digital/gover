@@ -292,6 +292,8 @@ describe('ElementDerivationContext', () => {
         rerender(<TaskHarness errors={{field: {error: 'Die Angabe ist weiterhin ungültig.'}}}/>);
         expect(await screen.findByRole('alert')).toHaveTextContent('Die Angabe ist weiterhin ungültig.');
         expect(screen.getByTestId('field-error')).toHaveTextContent('Die Angabe ist weiterhin ungültig.');
+    });
+
     it('passes the scroll container through both element contexts', () => {
         const scrollContainerRef = React.createRef<HTMLDivElement>();
         render(<ElementDerivationContext
