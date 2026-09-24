@@ -17,11 +17,9 @@ import {GenericListPropsFetchOptions, ListControlRef} from '../../../../componen
 import {Page} from '../../../../models/dtos/page';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
-import {DepartmentApiService} from '../../../departments/services/department-api-service';
 import {ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {NewProcessDialog} from '../../dialogs/new-process-dialog';
-import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import Route from '@aivot/mui-material-symbols-400-n25-outlined/Route';
 import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
 import {getFormStatus, ProcessStatusChipGroup} from '../../components/process-status/process-status-chip-group';
@@ -33,6 +31,11 @@ import {MoveProcessToDepartmentDialog} from '../../dialogs/move-process-to-depar
 import {ProcessListRowMenu} from '../../components/process-list-row-menu';
 import {useDeleteProcess} from '../../hooks/use-delete-process';
 import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
+
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {SelectFieldPresentation} from '../../../../models/elements/form/input/select-field-presentation';
+import {useListFilter} from '../../../../components/generic-list/use-list-filter';
+import {type ProcessDepartmentOptionDTO} from '../../dtos/process-department-option-dto';
 
 const availableFilter = [
     {
@@ -108,7 +111,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     <Typography
                         variant="body2"
                         sx={{
-                            mt: -0.75,
+                            mt: -0.5,
                             fontSize: '0.875rem',
                             lineHeight: '1.5rem',
                         }}
@@ -128,7 +131,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     <Typography
                         variant="body2"
                         sx={{
-                            mt: -0.75,
+                            mt: -0.5,
                             fontSize: '0.875rem',
                             lineHeight: '1.5rem',
                             textOverflow: 'ellipsis',
@@ -192,6 +195,13 @@ export function ProcessListPage() {
     const memberships = useAppSelector(selectMemberships);
     const listControlRef = useRef<ListControlRef>(null);
     const deleteProcess = useDeleteProcess();
+    const {value: departmentFilter, setValue: setDepartmentFilter} = useListFilter('departmentId');
+    const parsedDepartmentId = Number(departmentFilter);
+    const departmentId = Number.isSafeInteger(parsedDepartmentId) && parsedDepartmentId > 0 ? parsedDepartmentId : undefined;
+    const [departments, setDepartments] = useState<ProcessDepartmentOptionDTO[]>([]);
+    const [departmentsLoading, setDepartmentsLoading] = useState(true);
+    const [departmentsError, setDepartmentsError] = useState<string>();
+    const [departmentOptionsRevision, setDepartmentOptionsRevision] = useState(0);
 
     const [showAddDialog, setShowAddDialog] = useState(false);
     const [showVersionsDialogForProcess, setShowVersionsDialogForProcess] = useState<ProcessEntity | null>(null);
@@ -202,10 +212,42 @@ export function ProcessListPage() {
     }>();
 
     useEffect(() => {
-        new ProcessDefinitionVersionApiService()
-            .listAll()
-            .then(console.log);
-    }, []);
+        let cancelled = false;
+        setDepartmentsLoading(true);
+        setDepartmentsError(undefined);
+        new ProcessDefinitionApiService().listDepartmentOptions()
+            .then(options => {
+                if (!cancelled) setDepartments(options);
+            })
+            .catch(() => {
+                if (!cancelled) setDepartmentsError('Die Organisationseinheiten konnten nicht geladen werden.');
+            })
+            .finally(() => {
+                if (!cancelled) setDepartmentsLoading(false);
+            });
+        return () => { cancelled = true; };
+    }, [departmentOptionsRevision]);
+
+    const departmentOptions = useMemo(() => departments.map(department => ({
+        value: department.id,
+        label: department.name,
+    })), [departments]);
+    const preSearchElements = useMemo(() => [
+        <SelectFieldComponent
+            key="managing-department"
+            label="Verwaltende Organisationseinheit"
+            presentation={SelectFieldPresentation.Combobox}
+            options={departmentOptions}
+            value={departmentId}
+            onChange={id => setDepartmentFilter(id == null ? null : String(id))}
+            emptyOptionLabel="Alle Organisationseinheiten"
+            showOptionalIndicator={false}
+            margin="none"
+            busy={departmentsLoading}
+            error={departmentsError}
+            emptyStatePlaceholder={departmentsLoading ? 'Organisationseinheiten werden geladen …' : 'Keine Organisationseinheiten verfügbar'}
+        />,
+    ], [departmentOptions, departmentId, setDepartmentFilter, departmentsLoading, departmentsError]);
 
     const handleAddDraft = useCallback((process: number, version?: number) => {
         dispatch(setLoadingMessage({
@@ -233,6 +275,7 @@ export function ProcessListPage() {
     const handleDeleteProcess = useCallback((process: ProcessEntity) => {
         void deleteProcess(process, {
             onDeleted: () => {
+                setDepartmentOptionsRevision(revision => revision + 1);
                 listControlRef.current?.refresh();
             },
         });
@@ -284,11 +327,10 @@ export function ProcessListPage() {
     }), []);
 
     const fetch = useCallback(async (options: GenericListPropsFetchOptions<ProcessListEntry>) => {
-        const deps = (await new DepartmentApiService().listAll()).content;
-
         const processesPage = await new ProcessDefinitionApiService()
             .list(options.page, options.size, options.sort as any, options.order, {
                 internalTitle: options.search,
+                departmentId,
                 isPublished: options.filter === 'published',
                 isDrafted: options.filter === 'drafted',
                 isRevoked: options.filter === 'revoked',
@@ -298,13 +340,13 @@ export function ProcessListPage() {
             ...processesPage,
             content: processesPage.content.map(process => ({
                 ...process,
-                managingDepartmentName: deps.find(dep => dep.id === process.departmentId)?.name,
+                managingDepartmentName: departments.find(dep => dep.id === process.departmentId)?.name,
                 lastEditorName: '',
             })),
         };
 
         return extendedProcessesPage;
-    }, []);
+    }, [departmentId, departments]);
 
     const noDataPlaceholder = useMemo(() => (
         <Box
@@ -405,6 +447,8 @@ export function ProcessListPage() {
                     searchLabel="Prozess suchen"
                     searchPlaceholder="Titel des Prozesses eingeben…"
                     fetch={fetch}
+                    preSearchElements={preSearchElements}
+                    hasActiveAdditionalFilters={departmentId != null}
                     columnDefinitions={columns}
                     getRowIdentifier={getRowId}
                     noDataPlaceholder={noDataPlaceholder}
@@ -467,6 +511,8 @@ export function ProcessListPage() {
                     }}
                     onMoved={() => {
                         setProcessToMove(undefined);
+                        // Moving the last visible process can change both filter options and row labels.
+                        setDepartmentOptionsRevision(revision => revision + 1);
                         listControlRef.current?.refresh();
                     }}
                 />

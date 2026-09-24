@@ -1,6 +1,6 @@
 import React from 'react';
 import {describe, expect, it, vi, type Mock} from 'vitest';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {fireEvent, render, screen, within} from '@testing-library/react';
 import {ProcessIdentityIdInputFieldView} from './process-identity-id-input-field-view';
 import {ProcessNodeEditorProvider} from '../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
 import {ElementType} from '../data/element-type/element-type';
@@ -126,9 +126,13 @@ describe('ProcessIdentityIdInputFieldView', () => {
             },
         );
 
-        fireEvent.mouseDown(screen.getByRole('combobox', {name: /^Prozessidentitaeten/}));
+        const control = screen.getByRole('combobox', {name: /^Prozessidentitaeten/});
+        expect(control).toHaveTextContent('Keine Prozessidentitäten verfügbar');
+        fireEvent.mouseDown(control);
 
-        expect(await screen.findByText('Keine Prozessidentitäten verfügbar')).toBeInTheDocument();
+        const listbox = await screen.findByRole('listbox');
+        expect(within(listbox).getByRole('option', {name: 'Keine Prozessidentitäten verfügbar'}))
+            .toHaveAttribute('aria-disabled', 'true');
     });
 });
 

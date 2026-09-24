@@ -1,9 +1,6 @@
 import {
     DataGrid,
-    GridCallbackDetails,
     gridClasses,
-    gridPageCountSelector,
-    gridPageSelector,
     GridPaginationModel,
     GridSortModel
 } from '@mui/x-data-grid';
@@ -77,34 +74,15 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     // Ref to the current abort controller to cancel ongoing fetch requests when a new one is started
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Sorting Model - Default is retrieved from URL params or prop
-    const [sortModel, _setSortModel] = useState<GridSortModel>([]);
-    // Pagination Model - Default is retrieved from URL params
-    const [paginationModel, _setPaginationModel] = useState<GridPaginationModel>({
-        page: 0,
-        pageSize: 12,
-    });
-    const [search, _setSearch] = useState('');
-    const [currentFilter, _setCurrentFilter] = useState<FilterOption | null>(null);
-
-    // Set the internal state from the URL parameters
-    useEffect(() => {
-        const sortModel = sortModelFromSearchParams(searchParams, defaultSortField);
-        // Check if the sort model is truly different to avoid resetting the datagrid to page 0 whenever new search params are set.
-        // Just replacing the state caused a bug where the pagination was randomly resettet when reaching page 3.
-        _setSortModel((prev) => {
-            if (prev.length !== sortModel.length || prev[0]?.field !== sortModel[0]?.field || prev[0]?.sort !== sortModel[0]?.sort) {
-                return sortModel;
-            }
-            return prev;
-        });
-
-        const paginationModel = paginationModelFromSearchParams(searchParams);
-        _setPaginationModel(paginationModel);
-
-        _setSearch(searchParams.get(UrlParamKeys.search) || '');
-        _setCurrentFilter(searchParams.get(UrlParamKeys.filter) as FilterOption);
-    }, [searchParams]);
+    // Read the entire query in the same render. Mirrored state would briefly combine new
+    // additional filters with the previous page and issue an inconsistent request.
+    const sortField = searchParams.get(UrlParamKeys.sort) ?? defaultSortField?.toString();
+    const sortOrder = searchParams.get(UrlParamKeys.order) === 'desc' ? 'desc' : 'asc';
+    // Preserve model identity across page/filter changes: DataGrid treats a new sort model as a reset.
+    const sortModel = useMemo<GridSortModel>(() => sortField == null ? [] : [{field: sortField, sort: sortOrder}], [sortField, sortOrder]);
+    const paginationModel = paginationModelFromSearchParams(searchParams);
+    const search = searchParams.get(UrlParamKeys.search) ?? '';
+    const currentFilter = searchParams.get(UrlParamKeys.filter) as FilterOption | null;
 
     /**
      * Handles changes to the sorting model by updating the URL parameters.
@@ -116,35 +94,32 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         const field = sortItem?.field ?? defaultSortField?.toString();
         const order = sortItem?.sort ?? 'asc';
 
-        if (field == null || isStringNullOrEmpty(field)) {
-            searchParams.delete(UrlParamKeys.sort);
-            searchParams.delete(UrlParamKeys.order);
-        } else {
-            searchParams.set(UrlParamKeys.sort, field);
-            searchParams.set(UrlParamKeys.order, order);
-        }
-
-        setSearchParams(searchParams);
+        setSearchParams(current => {
+            const next = new URLSearchParams(current);
+            if (field == null || isStringNullOrEmpty(field)) {
+                next.delete(UrlParamKeys.sort);
+                next.delete(UrlParamKeys.order);
+            } else {
+                next.set(UrlParamKeys.sort, field);
+                next.set(UrlParamKeys.order, order);
+            }
+            return next;
+        });
     };
 
     /**
      * Handles changes to the pagination model by updating the URL parameters.
      */
-    const handlePaginationModelChange = (newPaginationModel: GridPaginationModel, details: GridCallbackDetails) => {
-        const _pageCount = gridPageCountSelector({
-            current: details.api,
-        } as any);
-        const _page = gridPageSelector({
-            current: details.api,
-        } as any);
-
+    const handlePaginationModelChange = (newPaginationModel: GridPaginationModel) => {
         const page = newPaginationModel.page ?? 0;
         const size = newPaginationModel.pageSize ?? 12;
 
-        searchParams.set(UrlParamKeys.page, (page + 1).toString());
-        searchParams.set(UrlParamKeys.size, size.toString());
-
-        setSearchParams(searchParams);
+        setSearchParams(current => {
+            const next = new URLSearchParams(current);
+            next.set(UrlParamKeys.page, (page + 1).toString());
+            next.set(UrlParamKeys.size, size.toString());
+            return next;
+        });
     };
 
     /**
@@ -153,18 +128,16 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
      * @param newSearch The new search term.
      */
     const handleSearchChange = (newSearch: string | undefined) => {
-        if (newSearch == null || isStringNullOrEmpty(newSearch)) {
-            searchParams.delete(UrlParamKeys.search);
-        } else {
-            searchParams.set(UrlParamKeys.search, newSearch);
-        }
-
-        // Reset to first page when search changes
-        searchParams.set(UrlParamKeys.page, '1');
-
-        setSearchParams(searchParams, {
-            replace: true,
-        });
+        setSearchParams(current => {
+            const next = new URLSearchParams(current);
+            if (newSearch == null || isStringNullOrEmpty(newSearch)) {
+                next.delete(UrlParamKeys.search);
+            } else {
+                next.set(UrlParamKeys.search, newSearch);
+            }
+            next.set(UrlParamKeys.page, '1');
+            return next;
+        }, {replace: true});
     };
 
     /**
@@ -173,16 +146,16 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
      * @param newFilter The new filter option.
      */
     const handleFilterChange = (newFilter: FilterOption | null) => {
-        if (newFilter == null) {
-            searchParams.delete(UrlParamKeys.filter);
-        } else {
-            searchParams.set(UrlParamKeys.filter, newFilter.toString());
-        }
-
-        // Reset to first page when filter changes
-        searchParams.set(UrlParamKeys.page, '1');
-
-        setSearchParams(searchParams);
+        setSearchParams(current => {
+            const next = new URLSearchParams(current);
+            if (newFilter == null) {
+                next.delete(UrlParamKeys.filter);
+            } else {
+                next.set(UrlParamKeys.filter, newFilter.toString());
+            }
+            next.set(UrlParamKeys.page, '1');
+            return next;
+        });
     };
 
     const handleRefresh = useCallback(() => {
@@ -231,57 +204,11 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     setIsBusy(false);
                 }
             });
-    }, [api, currentFilter, sortModel, defaultFilter, search, defaultSortField, fetchFunc, paginationModel.page]);
+    }, [api, currentFilter, sortModel, defaultFilter, search, defaultSortField, fetchFunc, paginationModel.page, paginationModel.pageSize]);
 
-    // Fetch data on dependency changes
-    // This is a duplicate of handleRefresh to combat outdated data in the closure
     useEffect(() => {
-        setIsBusy(true);
-
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-
-        const controller = new AbortController();
-        abortControllerRef.current = controller;
-
-        let sort: string | undefined = defaultSortField as string | undefined;
-        let direction: 'ASC' | 'DESC' | undefined = 'ASC';
-
-        if (sortModel != null && sortModel.length > 0) {
-            sort = sortModel[0].field;
-            direction = sortModel[0].sort === 'asc' ? 'ASC' : 'DESC';
-        }
-
-        withAsyncWrapper({
-            desiredMinRuntime: 800,
-            main: () => props.fetch({
-                api: api,
-                search: isStringNotNullOrEmpty(search) ? search : undefined,
-                page: paginationModel.page < 0 ? 0 : paginationModel.page,
-                size: paginationModel.pageSize,
-                sort: isStringNotNullOrEmpty(sort) ? sort : undefined,
-                order: isStringNotNullOrEmpty(sort) ? direction : undefined,
-                filter: currentFilter ?? props.defaultFilter,
-            }),
-            signal: controller.signal,
-        })
-            .then(page => {
-                if (!controller.signal.aborted) {
-                    setItems(page);
-                }
-            })
-            .catch(error => {
-                if (error.name !== 'AbortError') {
-                    console.error(error);
-                }
-            })
-            .finally(() => {
-                if (!controller.signal.aborted) {
-                    setIsBusy(false);
-                }
-            });
-    }, [api, currentFilter, sortModel, paginationModel, search, props.fetch, props.defaultFilter, defaultSortField]);
+        handleRefresh();
+    }, [handleRefresh]);
 
     useEffect(() => {
         if (props.controlRef == null) {
@@ -364,6 +291,9 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
 
     const showTopControls =
         ((props.filters != null && props.filters.length > 0) || props.disableFullWidthToggle !== true);
+    const hasActiveFilters = isStringNotNullOrEmpty(search)
+        || props.hasActiveAdditionalFilters === true
+        || (currentFilter != null && currentFilter !== defaultFilter);
 
     const NoRowsOverlay = useMemo(() => () => (
         <StyledGridOverlay>
@@ -374,16 +304,17 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 }}
             >
                 {
-                    isStringNotNullOrEmpty(search) ?
+                    hasActiveFilters ?
                         (noSearchResultsPlaceholder ?? 'Keine Suchergebnisse gefunden.') :
                         (noDataPlaceholder ?? 'Keine Daten vorhanden.')
                 }
             </Box>
         </StyledGridOverlay>
-    ), [search, noSearchResultsPlaceholder, noDataPlaceholder]);
+    ), [hasActiveFilters, noSearchResultsPlaceholder, noDataPlaceholder]);
 
     const lastColIndex = columnDefinitions.length - 1;
     const hasEmptyRows = (items?.content.length ?? 0) === 0;
+    const hasFilterFields = props.preSearchElements?.length || props.searchLabel || props.menuItems?.length;
 
     const style: SxProps = useMemo(() => ({
         width: '100%',
@@ -507,18 +438,22 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
             <Box
                 sx={{
                     display: 'flex',
-                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    alignItems: 'start',
                     paddingX: 2,
+                    pt: hasFilterFields ? 1 : 0,
+                    pb: hasFilterFields ? 2 : 0,
                     gap: 2.5,
                 }}
             >
                 {
-                    props.preSearchElements?.map((element, index) => (
+                    React.Children.toArray(props.preSearchElements).map((element, index) => (
                         <Box
-                            key={index}
+                            key={React.isValidElement(element) ? element.key : index}
                             sx={{
-                                flex: 1,
-                                padding: '4px 0 12px 0',
+                                flex: '1 1 16rem',
+                                minWidth: 0,
+                                maxWidth: '100%',
                             }}
                         >
                             {element}
@@ -529,9 +464,9 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     props.searchLabel != null &&
                     <Box
                         sx={{
-                            flex: 1,
-                            pt: 0.5,
-                            pb: 2.25,
+                            flex: '1 1 16rem',
+                            minWidth: 0,
+                            maxWidth: '100%',
                         }}
                     >
                         <SearchInput
@@ -639,33 +574,6 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
             }
         </Box>
     );
-}
-
-/**
- * Creates a sorting model from URL search parameters.
- *
- * When no sort field is specified, an empty model is returned to avoid sorting.
- *
- * @param searchParams The URLSearchParams object containing the search parameters.
- * @param defaultSortField An optional default sort field to use if none is specified in the URL.
- */
-function sortModelFromSearchParams(searchParams: URLSearchParams, defaultSortField?: any): GridSortModel {
-    let sortField = searchParams.get(UrlParamKeys.sort);
-    if (sortField == null && defaultSortField != null) {
-        sortField = defaultSortField.toString();
-    }
-
-    // When no sort field is specified, we return an empty model to avoid sorting
-    if (sortField == null) {
-        return [];
-    }
-
-    const sortOrder: 'asc' | 'desc' = searchParams.get(UrlParamKeys.order) === 'desc' ? 'desc' : 'asc';
-
-    return [{
-        field: sortField,
-        sort: sortOrder,
-    }];
 }
 
 /**

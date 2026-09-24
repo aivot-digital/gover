@@ -193,12 +193,19 @@ class ProcessServiceTest {
                 .thenReturn(List.of());
         when(repository.getProcessIdsWithPermission(USER_ID, READ_PERMISSION))
                 .thenReturn(List.of());
+        when(repository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(Page.empty(pageable));
 
         var result = service.listAllByAccessibleForUser(pageable, USER_ID, null);
 
         assertTrue(result.isEmpty());
         assertEquals(pageable, result.getPageable());
-        verify(repository, never()).findAll(any(Specification.class), eq(pageable));
+        var specificationCaptor = ArgumentCaptor.forClass(Specification.class);
+        verify(repository).findAll(specificationCaptor.capture(), eq(pageable));
+        var builder = mock(CriteriaBuilder.class);
+        var denied = mock(Predicate.class);
+        when(builder.disjunction()).thenReturn(denied);
+        assertSame(denied, specificationCaptor.getValue().toPredicate(mock(Root.class), mock(CriteriaQuery.class), builder));
     }
 
     @Test
