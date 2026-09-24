@@ -43,7 +43,7 @@ export function useDeleteProcess(): (process: ProcessEntity, options?: DeletePro
                     </Stack>
                 ),
                 confirmationText: process.internalTitle,
-                inputLabel: 'Interner Titel zur Bestätigung',
+                inputLabel: 'Interne Bezeichnung zur Bestätigung',
                 inputPlaceholder: process.internalTitle,
                 confirmButtonText: 'Prozess endgültig löschen',
                 isDestructive: true,
