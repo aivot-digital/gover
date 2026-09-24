@@ -701,6 +701,7 @@ export function ProcessDetailsPage(): ReactNode {
                 setShowProcessNodeProblemsForNodes((previousShownProblems) => includeNodeProblems(
                     previousShownProblems,
                     nodeProblems,
+                    processFlow.nodes,
                 ));
             });
     }, [processId, processVersion, processFlow?.nodes, processFlow?.edges]);
