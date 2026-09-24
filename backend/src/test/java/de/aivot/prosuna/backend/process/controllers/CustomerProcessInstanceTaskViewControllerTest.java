@@ -1157,7 +1157,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceTaskEntity task;
 
         private TestProcessInstanceTaskService(ProcessInstanceTaskEntity task) {
-            super(null);
+            super(null, null);
             this.task = task;
         }
 

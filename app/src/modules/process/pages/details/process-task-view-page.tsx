@@ -212,6 +212,9 @@ export function ProcessTaskViewPage() {
                     {
                         path: '/tasks/:instanceId/:taskId/edit',
                         label: 'Aufgabe bearbeiten',
+                        requiredPermission: {
+                            permission: Permission.PROCESS_INSTANCE_EDIT_TASK,
+                        },
                     },
                     {
                         path: '/tasks/:instanceId/:taskId/communication',
