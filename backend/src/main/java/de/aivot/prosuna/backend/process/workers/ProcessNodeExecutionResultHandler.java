@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -332,6 +333,7 @@ public class ProcessNodeExecutionResultHandler {
         messageDetails.put("htmlBody", message.htmlBody());
         messageDetails.put("sendingUser", createSendingUserDetails(message.sendingUser()));
         messageDetails.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));
+        messageDetails.put("signatureDepartment", createSignatureDepartmentDetails(message.signatureDepartment()));
 
         var eventDetails = new LinkedHashMap<String, Object>();
         eventDetails.put("processInstance", processInstanceDetails);
@@ -407,6 +409,19 @@ public class ProcessNodeExecutionResultHandler {
 
     @Nullable
     private static Map<String, Object> createSendingDepartmentDetails(@Nullable DepartmentEntity department) {
+        if (department == null) {
+            return null;
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("id", department.getId());
+        details.put("name", department.getName());
+        return details;
+    }
+
+    @Nullable
+    private static Map<String, Object> createSignatureDepartmentDetails(
+            @Nullable VDepartmentShadowedEntity department
+    ) {
         if (department == null) {
             return null;
         }

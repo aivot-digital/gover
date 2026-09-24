@@ -1171,7 +1171,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final ProcessNodeEntity node;
 
         private TestProcessNodeService(ProcessNodeEntity node) {
-            super(null, null, null, null, null, null, null, new ProsunaConfig(), null);
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null);
             this.node = node;
         }
 

@@ -127,7 +127,7 @@ class DefaultMailCommunicationServiceTest {
     }
 
     @Test
-    void usesInheritedDepartmentThemeAndSignatureWithoutChangingEnvelopeHeaders() throws Exception {
+    void usesSendingDepartmentThemeAndSelectedDepartmentSignatureWithoutChangingEnvelopeHeaders() throws Exception {
         configureSending();
         var department = new DepartmentEntity()
                 .setId(17)
@@ -136,6 +136,11 @@ class DefaultMailCommunicationServiceTest {
                 .setId(17)
                 .setName("Fachbereich")
                 .setThemeId(9)
+                .setDefaultMailSignature("Signatur des Versandbereichs");
+        var signatureDepartment = new VDepartmentShadowedEntity()
+                .setId(23)
+                .setName("Bürgerbüro")
+                .setThemeId(11)
                 .setDefaultMailSignature("Viele Grüße");
         var departmentTheme = new ThemeEntity();
         when(vDepartmentShadowedService.retrieve(17)).thenReturn(Optional.of(shadowedDepartment));
@@ -143,7 +148,9 @@ class DefaultMailCommunicationServiceTest {
 
         service.sendMessage(
                 "customer@example.test",
-                message().withSendingContext(null, department),
+                message()
+                        .withSendingContext(null, department)
+                        .withSignatureDepartment(signatureDepartment),
                 MailCommunicationSendOptions.customSender(
                         "Configured Sender",
                         "configured@example.test",
@@ -160,6 +167,7 @@ class DefaultMailCommunicationServiceTest {
                 eq(MailTemplate.GenericEmailMessage),
                 org.mockito.ArgumentMatchers.<Map<String, Object>>argThat(context ->
                         context.get("department") == shadowedDepartment
+                                && context.get("signatureDepartment") == signatureDepartment
                 ),
                 eq(Optional.empty()),
                 eq(Optional.empty()),

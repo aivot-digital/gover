@@ -20,7 +20,6 @@ public enum MailTemplate implements Identifiable<String> {
     ProcessTaskUnassigned("process-task-unassigned", ProcessNotificationTaskAssignedUserConfigDefinition.KEY),
     ProcessInstanceAssigned("process-instance-assigned", ProcessNotificationInstanceAssignmentChangedUserConfigDefinition.KEY),
     ProcessInstanceUnassigned("process-instance-unassigned", ProcessNotificationInstanceAssignmentChangedUserConfigDefinition.KEY),
-    ProcessPaymentRequested("process-payment-requested", null),
 
     UnhandledSystemException("unhandled-system-exception", null),
     ;

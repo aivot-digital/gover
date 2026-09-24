@@ -59,6 +59,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined,
         case ElementType.ProcessDataKeyInput:
         case ElementType.SecretSelectInput:
         case ElementType.AssetSelectInput:
+        case ElementType.DepartmentSelectInput:
         case ElementType.NoCodeInput:
         case ElementType.UiDefinitionInput:
         case ElementType.HtmlTemplateInput:
