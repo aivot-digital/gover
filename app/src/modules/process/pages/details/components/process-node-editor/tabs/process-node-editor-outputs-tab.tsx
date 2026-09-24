@@ -2,9 +2,9 @@ import {Box} from '@mui/material';
 import {useProcessNodeEditorContext} from '../process-node-editor-context';
 import {TextFieldComponent} from '../../../../../../../components/text-field/text-field-component';
 import Typography from '@mui/material/Typography';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import {ProcessNodeOutputCard} from '../../../../../components/process-node-output-card';
 import {ProcessDataKeyInputComponent} from '../../../../../../../views/process-data-key-input-field-view';
-import {quoteString} from '../../../../../../../utils/string-utils';
 
 export function ProcessNodeEditorOutputsTab() {
     const {
@@ -14,23 +14,7 @@ export function ProcessNodeEditorOutputsTab() {
         isEditable,
         problems,
     } = useProcessNodeEditorContext();
-
-    if (provider.outputs.length === 0) {
-        return (
-            <Box>
-                <Typography variant="h6">
-                    Ausgangsdaten
-                </Typography>
-                <Typography
-                    variant="body2"
-                    color="textSecondary"
-                >
-                    Dieses Element erzeugt keine Ausgangsdaten oder bietet einen alternativen Weg, um Vorgangsdaten zu
-                    schreiben.
-                </Typography>
-            </Box>
-        );
-    }
+    const hasOutputs = provider.outputs.length > 0;
 
     return (
         <Box
@@ -49,7 +33,8 @@ export function ProcessNodeEditorOutputsTab() {
                     mb: 2,
                     maxWidth: 400
                 }}>
-                Über den eindeutigen Datenschlüssel kann auf die erzeugten Elementdaten dieses Prozesselementes zugegriffen werden (siehe {quoteString('Datenstruktur der Ausgangsdaten')} weiter unten).
+                Mit dem Datenschlüssel greifen Sie auf die Elementdaten und Ausführungsmetadaten dieses Prozesselements
+                zu.
             </Typography>
 
             <TextFieldComponent
@@ -76,77 +61,122 @@ export function ProcessNodeEditorOutputsTab() {
             >
                 Ausgangsdaten
             </Typography>
-            <Typography
-                variant="body1"
-                sx={{
-                    mt: 1,
-                    mb: 2,
-                    maxWidth: 400
-                }}>
-                Die Zuweisung von Datenvariablen für die Ausgangsdaten ist optional.
-                Ohne Zuweisung sind Ergebnisse ausschließlich über die Elementdaten zugänglich.
-            </Typography>
+            {hasOutputs ? <>
+                <Typography
+                    variant="body1"
+                    sx={{
+                        mt: 1,
+                        mb: 2,
+                        maxWidth: 400
+                    }}>
+                    Sie können die Ausgangsdaten dieses Prozesselements optional in die Vorgangsdaten übernehmen.
+                    Ohne Zuordnung bleiben die Werte über die Elementdaten zugänglich.
+                </Typography>
 
-            {
-                provider.outputs.map((output) => (
-                    <ProcessDataKeyInputComponent
-                        key={output.key}
-                        label={output.label}
-                        hint={output.description}
-                        value={localNode.outputMappings?.[output.key] ?? ''}
-                        onChange={(val) => {
-                            setNode({
-                                ...localNode,
-                                outputMappings: {
-                                    ...localNode.outputMappings,
-                                    [output.key]: val,
-                                },
-                            }, false);
-                        }}
-                        disabled={!isEditable}
-                        disableWildCards={true}
-                    />
-                ))
-            }
-
-            <Typography
-                variant="h4"
-                sx={{
-                    mt: 4
-                }}
-            >
-                Datenstruktur der Ausgangsdaten
-            </Typography>
-            <Typography
-                variant="body1"
-                sx={{
-                    mt: 1,
-                    mb: 2,
-                    maxWidth: 400
-                }}>
-                Struktur und Übersicht der von diesem Element erzeugten und zur Verfügung gestellten Datenvariablen.
-            </Typography>
-
-            <Box sx={{
-                mt: 2
-            }}>
                 {
                     provider.outputs.map((output) => (
-                        <ProcessNodeOutputCard
+                        <ProcessDataKeyInputComponent
                             key={output.key}
                             label={output.label}
-                            outputKey={`_.${localNode.dataKey}.${output.key}`}
-                            description={output.description}
-                            sx={{
-                                mb: 1,
-                                '&:last-child': {
-                                    mb: 0,
-                                },
+                            hint={output.description}
+                            value={localNode.outputMappings?.[output.key] ?? ''}
+                            onChange={(val) => {
+                                setNode({
+                                    ...localNode,
+                                    outputMappings: {
+                                        ...localNode.outputMappings,
+                                        [output.key]: val,
+                                    },
+                                }, false);
                             }}
+                            disabled={!isEditable}
+                            disableWildCards={true}
                         />
                     ))
                 }
-            </Box>
+
+                <Typography
+                    variant="h4"
+                    sx={{
+                        mt: 4
+                    }}
+                >
+                    Datenstruktur der Ausgangsdaten
+                </Typography>
+                <Typography
+                    variant="body1"
+                    sx={{
+                        mt: 1,
+                        mb: 2,
+                        maxWidth: 400
+                    }}>
+                    Hier sehen Sie die verfügbaren Ausgangsdaten mit ihren Datenpfaden in den Elementdaten und einer
+                    Beschreibung der Werte.
+                </Typography>
+
+                <Box sx={{
+                    mt: 2
+                }}>
+                    {
+                        provider.outputs.map((output) => (
+                            <ProcessNodeOutputCard
+                                key={output.key}
+                                label={output.label}
+                                outputKey={`_.${localNode.dataKey}.${output.key}`}
+                                description={output.description}
+                                sx={{
+                                    mb: 1,
+                                    '&:last-child': {
+                                        mb: 0,
+                                    },
+                                }}
+                            />
+                        ))
+                    }
+                </Box>
+            </> :
+                <Box
+                    sx={{
+                        mt: 2,
+                        p: 2,
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 2.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 1.5,
+                        bgcolor: 'rgba(15, 23, 42, 0.035)',
+                    }}
+                >
+                    <Box
+                        aria-hidden="true"
+                        sx={{
+                            display: 'grid',
+                            placeItems: 'center',
+                            width: 40,
+                            height: 40,
+                            flexShrink: 0,
+                            borderRadius: '50%',
+                            bgcolor: 'action.selected',
+                            color: 'text.secondary',
+                        }}
+                    >
+                        <DataObject sx={{fontSize: 24}}/>
+                    </Box>
+                    <Box sx={{minWidth: 0}}>
+                        <Typography variant="body1" component="h5" sx={{fontWeight: 600}}>
+                            Keine zuweisbaren Ausgangsdaten
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{mt: 0.75}}>
+                            Dieses Prozesselement erzeugt keine Ausgangsdaten oder schreibt Vorgangsdaten auf anderem Weg.
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
+                            Über den Datenschlüssel können Sie dennoch auf Metadaten zu seiner Ausführung zugreifen.
+                        </Typography>
+                    </Box>
+                </Box>
+            }
         </Box>
     );
 }
