@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.elements.uiPresets;
 
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -12,6 +14,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -73,6 +76,34 @@ public class SemiAutomaticMessageConfig {
         return LayoutConfig.EXECUTION_TYPE_MANUAL.equals(executionType);
     }
 
+    @Nullable
+    public static VDepartmentShadowedEntity resolveSignatureDepartment(
+            @Nullable final LayoutConfig config,
+            @Nonnull final VDepartmentShadowedService departmentService
+    ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        if (config == null) {
+            return null;
+        }
+
+        Integer departmentId;
+        if (isAutomatic(config)) {
+            departmentId = config.automaticContent == null ? null : config.automaticContent.signatureDepartmentId;
+        } else {
+            departmentId = config.manualContent == null ? null : config.manualContent.signatureDepartmentId;
+        }
+
+        if (departmentId == null) {
+            return null;
+        }
+
+        return departmentService
+                .retrieve(departmentId)
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "Die Organisationseinheit %d für die E-Mail-Signatur wurde nicht gefunden.",
+                        departmentId
+                ));
+    }
+
     @Nonnull
     private static ElementVisibilityFunctions createExecutionTypeVisibility(@Nonnull String executionType) {
         return ElementVisibilityFunctions
@@ -84,12 +115,13 @@ public class SemiAutomaticMessageConfig {
                 .recalculateReferencedIds();
     }
 
-
     public static final String GROUP_ID = "semi_automatic_message_config";
 
     @LayoutElementPOJOBinding(id = GROUP_ID, type = ElementType.GroupLayout)
     public static class LayoutConfig {
         public static final String EXECUTION_TYPE_FIELD_ID = "execution_type";
+        public static final String SIGNATURE_DEPARTMENT_FIELD_ID_1 = "signature_department_id_1";
+        public static final String SIGNATURE_DEPARTMENT_FIELD_ID_2 = "signature_department_id_2";
         public static final String EXECUTION_TYPE_AUTOMATIC = "automatic";
         public static final String EXECUTION_TYPE_MANUAL = "manual";
 
@@ -169,6 +201,19 @@ public class SemiAutomaticMessageConfig {
                 }
         )
         public String content;
+
+        @InputElementPOJOBinding(
+                id = LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1,
+                type = ElementType.DepartmentSelectInput,
+                allowedInputModes = InputMode.Literal,
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Organisationseinheit für die Signatur"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Organisationseinheit, deren Standard-E-Mail-Signatur beim Versand an die Nachricht angehängt wird."),
+                        @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Organisationseinheit ausgewählt"),
+                        @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Organisationseinheit für die Signatur auswählen")
+                }
+        )
+        public Integer signatureDepartmentId;
     }
 
     /**
@@ -222,6 +267,19 @@ public class SemiAutomaticMessageConfig {
                 }
         )
         public String content;
+
+        @InputElementPOJOBinding(
+                id = LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2,
+                type = ElementType.DepartmentSelectInput,
+                allowedInputModes = InputMode.Literal,
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Organisationseinheit für die Signatur"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Organisationseinheit, deren Standard-E-Mail-Signatur beim Versand an die Nachricht angehängt wird."),
+                        @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Organisationseinheit ausgewählt"),
+                        @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Organisationseinheit für die Signatur auswählen")
+                }
+        )
+        public Integer signatureDepartmentId;
 
         /**
          * Staff assignment context used when the node enters manual mode; null or unresolved values fail assignment.

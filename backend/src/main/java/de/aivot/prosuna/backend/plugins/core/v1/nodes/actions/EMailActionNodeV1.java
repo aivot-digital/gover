@@ -452,6 +452,10 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         }
 
         final var process = retrieveProcess(processInstance);
+        final var signatureDepartment = SemiAutomaticMessageConfig.resolveSignatureDepartment(
+                config.messageConfig,
+                vDepartmentShadowedService
+        );
         final var department = vDepartmentShadowedService
                 .retrieve(process.getDepartmentId())
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
@@ -471,6 +475,9 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         mailContext.put("messageText", contentMarkdown);
         mailContext.put("messageHtml", contentHtml);
         mailContext.put("department", department);
+        if (signatureDepartment != null) {
+            mailContext.put("signatureDepartment", signatureDepartment);
+        }
 
         try {
             mailService.sendMail(
@@ -483,7 +490,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                     mailContext,
                     Optional.empty(),
                     mailAttachments.isEmpty() ? Optional.empty() : Optional.of(mailAttachments),
-                    MailSendOptions.defaults()
+                    new MailSendOptions(signatureDepartment != null)
             );
         } catch (MailException exception) {
             throw new ProcessNodeExecutionExceptionUnknown(
@@ -569,6 +576,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2);
         return configuration;
     }
 

@@ -162,6 +162,10 @@ class MailServiceTest {
         context.put("messageHtml", "<p>Hello <strong>customer</strong></p>");
         context.put("department", new VDepartmentShadowedEntity()
                 .setId(42)
+                .setDefaultMailSignature("Signatur des Prozessbereichs")
+        );
+        context.put("signatureDepartment", new VDepartmentShadowedEntity()
+                .setId(43)
                 .setDefaultMailSignature("Fachbereich Muster")
         );
 
@@ -196,9 +200,13 @@ class MailServiceTest {
 
         assertTrue(text.contains("Hello **customer**"));
         assertTrue(text.contains("Fachbereich Muster"));
+        assertFalse(text.contains("Signatur des Prozessbereichs"));
         assertTrue(text.contains("Diese Nachricht wurde über Prosuna versendet."));
         assertTrue(html.contains("<strong>customer</strong>"));
         assertTrue(html.contains("Fachbereich Muster"));
+        assertFalse(html.contains("Signatur des Prozessbereichs"));
+        assertTrue(html.indexOf("<strong>customer</strong>") < html.indexOf("Fachbereich Muster"));
+        assertTrue(html.indexOf("Fachbereich Muster") < html.indexOf("Diese Nachricht wurde über Prosuna versendet."));
         assertTrue(html.contains("Diese Nachricht wurde über Prosuna versendet."));
         assertFalse(html.contains("th:utext"));
         assertFalse(html.contains("th:text"));

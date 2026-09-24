@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
@@ -89,6 +90,29 @@ class FitConnectZbpCommunicationProviderV1Test {
                         <p>Body</p>
                         <p><a href="https://example.test/action?x=1&amp;y=2">Open &lt;portal&gt;</a></p>
                         <p><a href="https://example.test/status">Show status</a></p>""",
+                html
+        );
+    }
+
+    @Test
+    void appendsEscapedDepartmentSignatureAfterCallToActions() throws Exception {
+        var message = CommunicationMessage.of(
+                "Subject",
+                "Body",
+                "<p>Body</p>",
+                List.of(new CommunicationMessageCallToAction("Open", "https://example.test")),
+                List.of()
+        ).withSignatureDepartment(new VDepartmentShadowedEntity()
+                .setId(17)
+                .setDefaultMailSignature("Viele <Grüße>\nBürgerbüro"));
+
+        var html = FitConnectZbpCommunicationProviderV1.renderMessageHtml(message);
+
+        assertEquals(
+                """
+                        <p>Body</p>
+                        <p><a href="https://example.test">Open</a></p>
+                        <div>Viele &lt;Gr&uuml;&szlig;e&gt;<br>B&uuml;rgerb&uuml;ro</div>""",
                 html
         );
     }

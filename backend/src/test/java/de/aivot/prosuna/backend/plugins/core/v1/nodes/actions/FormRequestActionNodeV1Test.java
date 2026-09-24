@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
@@ -11,7 +13,6 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInpu
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
@@ -59,18 +60,21 @@ class FormRequestActionNodeV1Test {
 
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
     private ProsunaConfig prosunaConfig;
+    private VDepartmentShadowedService vDepartmentShadowedService;
     private FormRequestActionNodeV1 node;
 
     @BeforeEach
     void setUp() {
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
+        vDepartmentShadowedService = mock(VDepartmentShadowedService.class);
         prosunaConfig = new ProsunaConfig();
         prosunaConfig.setProsunaHostname("https://example.test");
         node = new FormRequestActionNodeV1(
                 mock(AssignmentContextAssigneeResolverService.class),
                 prosunaConfig,
                 new ElementDataTransformService(),
-                processInstanceAttachmentService
+                processInstanceAttachmentService,
+                vDepartmentShadowedService
         );
     }
 
@@ -107,6 +111,12 @@ class FormRequestActionNodeV1Test {
     void customerAssignmentMessageContainsAFormCallToAction() {
         var configuration = new FormRequestActionNodeV1.NodeConfig();
         configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
+        configuration.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        configuration.messageConfig.executionType = SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC;
+        configuration.messageConfig.automaticContent = new SemiAutomaticMessageConfig.AutomaticContent();
+        configuration.messageConfig.automaticContent.signatureDepartmentId = 17;
+        var signatureDepartment = new VDepartmentShadowedEntity().setId(17).setName("Bürgerbüro");
+        when(vDepartmentShadowedService.retrieve(17)).thenReturn(java.util.Optional.of(signatureDepartment));
         var processInstance = new ProcessInstanceEntity().setAccessKey("instance-access");
         var task = new ProcessInstanceTaskEntity().setAccessKey("task-access");
 
@@ -126,6 +136,7 @@ class FormRequestActionNodeV1Test {
         var message = result.getCommunicationRequest().message();
         assertEquals("Hallo **Ada**", message.body());
         assertEquals("Hallo **Ada**", message.htmlBody());
+        assertSame(signatureDepartment, message.signatureDepartment());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(
                         "Daten einreichen",
@@ -299,12 +310,16 @@ class FormRequestActionNodeV1Test {
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
                 Map.of("user", "staff-1")
         );
+        configuration.putLiteral(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1, 17);
+        configuration.putLiteral(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2, 29);
         configuration.putLiteral("portableValue", "kept");
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
         assertFalse(cleaned.containsKey(FormRequestActionNodeV1.NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID));
         assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2));
         assertEquals("kept", cleaned.getLiteral("portableValue"));
     }
 
