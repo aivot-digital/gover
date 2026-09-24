@@ -422,12 +422,17 @@ export const ElementDerivationContext = forwardRef<
         setErrorSuppressionTargets([]);
     };
 
+    const handleValidationDerive = (
+        validationAuthoredElementValues: AuthoredElementValues,
+        skipErrorsForElements?: string[],
+    ) => {
+        resetErrorsBeforeValidation();
+        return deriveWithMinimumVisibleDuration(validationAuthoredElementValues, skipErrorsForElements);
+    };
+
     useImperativeHandle(ref, () => ({
         replaceAuthoredElementValues,
-        validate: () => {
-            resetErrorsBeforeValidation();
-            return deriveWithMinimumVisibleDuration(authoredElementValues, []);
-        },
+        validate: () => handleValidationDerive(authoredElementValues, []),
     }));
 
     return (
@@ -459,10 +464,9 @@ export const ElementDerivationContext = forwardRef<
                     derivedData={derivedData}
                     onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
                     derivationTriggerIdQueue={derivationTriggerIdQueue}
-                    onDerive={(authoredValues, _, skipErrorsForElements) => {
-                        resetErrorsBeforeValidation();
-                        return deriveWithMinimumVisibleDuration(authoredValues, skipErrorsForElements);
-                    }}
+                    onDerive={(authoredValues, _, skipErrorsForElements) =>
+                        handleValidationDerive(authoredValues, skipErrorsForElements)
+                    }
                     onEvent={(data, event) => {
                         const normalizedData = normalizeReplicatingContainerValues(element, data);
 
