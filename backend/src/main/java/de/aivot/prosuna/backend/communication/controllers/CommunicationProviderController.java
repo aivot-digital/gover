@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -153,6 +154,19 @@ public class CommunicationProviderController {
         return BindingResponse.from(managementService.updateBinding(id, request.toEntity()));
     }
 
+    @PutMapping("bindings/order/")
+    @Operation(summary = "Reorder all communication bindings of an identity provider")
+    public List<BindingResponse> reorderBindings(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                                 @Nonnull @Valid @RequestBody BindingOrderRequest request) throws ResponseException {
+        return managementService.reorderBindings(jwt, request.identityProviderKey(), request.ids())
+                .stream().map(BindingResponse::from).toList();
+    }
+
+    public record BindingOrderRequest(
+            @Nonnull @NotNull UUID identityProviderKey,
+            @Nonnull @NotNull List<@NotNull Integer> ids
+    ) {}
+
     @DeleteMapping("bindings/{id}/")
     public void deleteBinding(@Nullable @AuthenticationPrincipal Jwt jwt,
                               @Nonnull @PathVariable Integer id) throws ResponseException {
@@ -205,7 +219,6 @@ public class CommunicationProviderController {
             @NotBlank @Size(max = 64) String name,
             @NotNull @Size(max = 255) String description,
             @NotNull Boolean isEnabled,
-            @NotNull Integer position,
             @NotNull AuthoredElementValues configuration
     ) {
         CommunicationProviderBindingEntity toEntity() {
@@ -215,7 +228,6 @@ public class CommunicationProviderController {
                     .setName(name)
                     .setDescription(description)
                     .setEnabled(isEnabled)
-                    .setPosition(position)
                     .setConfiguration(configuration);
         }
     }

@@ -66,6 +66,7 @@ export interface FormOverviewItem {
     id: number;
     nodeName: string;
     formTitle: string;
+    formSlug: string | null;
     processId: number;
     processTitle: string;
     processVersion: number;

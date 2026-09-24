@@ -9,7 +9,7 @@ import {
     type StepProps,
     useTheme,
 } from '@mui/material';
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {getStepIcon} from '../../data/step-icons';
 import {ElementType} from '../../data/element-type/element-type';
 import {isStepElement} from '../../models/elements/steps/step-element';
@@ -54,39 +54,66 @@ export function CustomStep(props: CustomStepProps & StepProps) {
 
     const ref = useRef<HTMLDivElement>(null);
     const headingRef = useRef<HTMLDivElement>(null);
+    const pendingScrollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     stepRefs.current[stepIndex] = ref;
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    const scrollToStep = useCallback((target: HTMLElement | null) => {
+        if (target == null) {
+            return;
+        }
+
+        const container = scrollContainerRef?.current;
+        if (scrollContainerRef != null && container == null) {
+            return;
+        }
+
+        // offsetTop is relative to the nearest positioned ancestor, which may be
+        // a form wrapper rather than the shell or editor's scrolling container.
+        const top = container != null
+            ? target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - container.clientTop
+            : target.getBoundingClientRect().top + window.scrollY;
+
+        (container ?? window).scrollTo({
+            top,
+            behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        });
+    }, [scrollContainerRef, prefersReducedMotion]);
+
+    const cancelPendingScroll = () => {
+        if (pendingScrollRef.current != null) {
+            clearTimeout(pendingScrollRef.current);
+            pendingScrollRef.current = null;
+        }
+    };
+
+    useEffect(() => cancelPendingScroll, []);
+
     const handleExit = () => {
+        cancelPendingScroll();
         if (!disableAutoScroll) {
             if (navDirection === 'next' && ref.current) {
                 // shift scrollTo to next render cycle for compatibility with the editor
-                setTimeout(() => {
-                    (scrollContainerRef?.current ?? window).scrollTo({
-                        top: ref.current?.offsetTop,
-                        behavior: prefersReducedMotion ? 'auto' : 'smooth',
-                    });
+                pendingScrollRef.current = setTimeout(() => {
+                    pendingScrollRef.current = null;
+                    scrollToStep(ref.current);
                 }, 0);
             }
         }
     };
 
     const handleEnter = () => {
+        cancelPendingScroll();
         if (!disableAutoScroll) {
             const previousStepIndex = stepIndex - 1;
-            headingRef.current?.focus();
+            // Keep keyboard focus in the new section without a competing browser scroll.
+            headingRef.current?.focus({preventScroll: true});
             if (navDirection === 'previous' && previousStepIndex >= 0 && stepRefs.current[previousStepIndex]?.current) {
-                (scrollContainerRef?.current ?? window).scrollTo({
-                    top: stepRefs.current[previousStepIndex].current?.offsetTop ?? 0,
-                    behavior: prefersReducedMotion ? 'auto' : 'smooth',
-                });
+                scrollToStep(stepRefs.current[previousStepIndex].current);
                 // Scrolling back to the first element if there are no preceding elements left
             } else if (navDirection === 'previous' && ref.current) {
-                (scrollContainerRef?.current ?? window).scrollTo({
-                    top: ref.current.offsetTop,
-                    behavior: prefersReducedMotion ? 'auto' : 'smooth',
-                });
+                scrollToStep(ref.current);
             }
         }
     };
@@ -94,15 +121,12 @@ export function CustomStep(props: CustomStepProps & StepProps) {
     // Scrolling to step title in submitted step
     useEffect(() => {
         if (active && !disableAutoScroll && stepIndex === -1 && ref.current) {
-            (scrollContainerRef?.current ?? window).scrollTo({
-                top: ref.current.offsetTop,
-                behavior: prefersReducedMotion ? 'auto' : 'smooth',
-            });
+            scrollToStep(ref.current);
             if (headingRef.current) {
-                headingRef.current.focus();
+                headingRef.current.focus({preventScroll: true});
             }
         }
-    }, [active, disableAutoScroll, stepIndex, ref]);
+    }, [active, disableAutoScroll, stepIndex, scrollToStep]);
 
     const Icon = getStepIcon(step);
     return (

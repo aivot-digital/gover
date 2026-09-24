@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     downloadBlobFile: vi.fn(),
     hasChanged: false,
     replaceAuthoredElementValues: vi.fn(),
+    observeScrollContainer: vi.fn(),
     submitValues: {} as Record<string, unknown>,
     uploadTextFile: vi.fn(),
 }));
@@ -141,9 +142,13 @@ vi.mock('../../forms/pages/details/components/form-details-page-more-menu', () =
 
 vi.mock('../components/element-derivation-context', () => ({
     ElementDerivationContext: React.forwardRef((
-        {onEvent}: {onEvent: (values: Record<string, unknown>, event: string) => Promise<void>},
+        {onEvent, scrollContainerRef}: {
+            onEvent: (values: Record<string, unknown>, event: string) => Promise<void>;
+            scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+        },
         ref,
     ) => {
+        mocks.observeScrollContainer(scrollContainerRef);
         React.useImperativeHandle(ref, () => ({
             replaceAuthoredElementValues: mocks.replaceAuthoredElementValues,
         }));
@@ -249,6 +254,14 @@ describe('FormNodeEditorPage error handling', () => {
 
         const submit = await screen.findByRole('button', {name: 'Testformular absenden'});
         expect(submit.parentElement).toHaveStyle({backgroundColor: mode === 'light' ? '#ffffff' : '#1c1c1c'});
+    });
+
+    it('passes the scrolling preview container to the form', async () => {
+        render(<FormNodeEditorPage/>);
+        const submit = await screen.findByRole('button', {name: 'Testformular absenden'});
+        const scrollContainer = mocks.observeScrollContainer.mock.lastCall?.[0]?.current;
+        expect(scrollContainer).toContainElement(submit);
+        expect(scrollContainer).toHaveStyle({overflowY: 'auto'});
     });
 
     it('sets a generic shell error when essential editor loading fails unexpectedly', async () => {

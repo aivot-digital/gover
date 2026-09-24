@@ -746,7 +746,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                 <Grid size={12}>
                     <TextFieldComponent
-                        label="Endpunkt für Informationen über die Nutzer:in"
+                        label="Endpunkt für Nutzerinformationen"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
                         value={identityProvider.userinfoEndpoint ?? undefined}
                         onChange={val => {
@@ -770,7 +770,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('endSessionEndpoint')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.endSessionEndpoint}
-                        hint="Pfad oder vollständige URL zum End-Session-Endpoint, über den Benutzer abgemeldet werden. Ohne diesen Endpoint bleibt die Single-Sign-On-Session bestehen und die Nutzer:inn kann sich mehrfach hintereinander authorisieren, ohne erneut Anmeldedaten eingeben zu müssen."
+                        hint="Pfad oder vollständige URL zum End-Session-Endpoint, über den die ausfüllende Person abgemeldet wird. Ohne diesen Endpunkt bleibt die Single-Sign-On-Sitzung bestehen und die Person kann sich erneut anmelden, ohne ihre Anmeldedaten noch einmal eingeben zu müssen."
                     />
                 </Grid>
 

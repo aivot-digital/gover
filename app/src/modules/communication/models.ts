@@ -33,7 +33,7 @@ export interface CommunicationProviderBinding {
 }
 
 export type CommunicationProviderRequest = Omit<CommunicationProvider, 'id'>;
-export type CommunicationProviderBindingRequest = Omit<CommunicationProviderBinding, 'id'>;
+export type CommunicationProviderBindingRequest = Omit<CommunicationProviderBinding, 'id' | 'position'>;
 export type CommunicationConfigurationLayout = ConfigLayoutElement;
 export type CommunicationTestingLayout = GroupLayout;
 export type CommunicationTestResultLayout = GroupLayout;

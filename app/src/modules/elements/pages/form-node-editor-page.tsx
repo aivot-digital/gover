@@ -53,7 +53,7 @@ import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {type Action} from '../../../components/actions/actions-props';
 import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
 import Link from '@aivot/mui-material-symbols-400-n25-outlined/Link';
-import Contract from '@aivot/mui-material-symbols-400-n25-outlined/Contract';
+import PictureAsPdf from '@aivot/mui-material-symbols-400-n25-outlined/PictureAsPdf';
 import Draw from '@aivot/mui-material-symbols-400-n25-outlined/Draw';
 import AccountTree from '@aivot/mui-material-symbols-400-n25-outlined/AccountTree';
 import SwipeVertical from '@aivot/mui-material-symbols-400-n25-outlined/SwipeVertical';
@@ -135,13 +135,12 @@ import {PaymentRequestOverview} from '../../payment/components/payment-request-o
 import {isApiError} from '../../../models/api-error';
 import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
 import {RichtextComponent} from '../../../components/richtext/richtext.component';
+import {resolvePrintablePdfFilename} from '../../forms/utils/printable-pdf-filename';
 
 export const DialogSearchParam = 'dialog';
 
 const FormLayoutFieldKey = 'formLayout';
 const IdentitiesFieldKey = 'identities';
-const PrintablePdfFallbackFilenameBase = 'Formulareingang';
-const PrintablePdfFilenameBaseMaxLength = 120;
 const EditorLoadErrorMessage = 'Der Formulareditor konnte nicht geladen werden.';
 
 function createEditorLoadError(error: unknown) {
@@ -159,44 +158,6 @@ function getIdentityDisplayName(identity: Pick<IdentityConfigElementSlot, 'title
 
 function cloneFormLayoutSnapshot<T extends FormLayoutElement>(element: T): T {
     return JSON.parse(JSON.stringify(element)) as T;
-}
-
-function sanitizePrintablePdfFilenameBase(value: string): string {
-    return value
-        .replace(/\.pdf$/i, '')
-        .replace(/[<>:"/\\|?*]/g, '')
-        .split('')
-        .filter((char) => char.charCodeAt(0) >= 32)
-        .join('')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .replace(/\.+$/g, '')
-        .slice(0, PrintablePdfFilenameBaseMaxLength)
-        .trim();
-}
-
-function resolvePrintablePdfFilename(layout: FormLayoutElement | null, node: ProcessNodeEntity): string {
-    const candidates = [
-        layout?.publicTitle,
-        node.name,
-        PrintablePdfFallbackFilenameBase,
-    ];
-
-
-    for (const candidate of candidates) {
-        if (typeof candidate !== 'string') {
-            continue;
-        }
-
-        console.log(layout, candidates);
-
-        const filenameBase = sanitizePrintablePdfFilenameBase(candidate);
-        if (filenameBase.length > 0) {
-            return `${filenameBase}.pdf`;
-        }
-    }
-
-    return `${PrintablePdfFallbackFilenameBase}.pdf`;
 }
 
 export function FormNodeEditorPage() {
@@ -749,7 +710,7 @@ export function FormNodeEditorPage() {
             return;
         }
 
-        const filename = resolvePrintablePdfFilename(filenameLayout, node);
+        const filename = resolvePrintablePdfFilename(filenameLayout?.publicTitle, node.name);
 
         dispatch(setLoadingMessage({
             blocking: false,
@@ -944,7 +905,7 @@ export function FormNodeEditorPage() {
         'separator',
         {
             label: 'Vordruck exportieren (.pdf)',
-            icon: <Contract/>,
+            icon: <PictureAsPdf/>,
             onClick: () => {
                 void handleDownloadPdfFile();
             },
@@ -1379,6 +1340,7 @@ export function FormNodeEditorPage() {
                                                     >
                                                         <ElementDerivationContext
                                                             ref={elementDerivationContextRef}
+                                                            scrollContainerRef={scrollContainerRef}
                                                             element={formLayout}
                                                             authoredElementValues={authoredElementValues}
                                                             onAuthoredElementValuesChange={setAuthoredElementValues}
