@@ -18,5 +18,6 @@ export async function downloadQrCode(url: string, filename: string = 'qr-code.pn
         document.body.removeChild(link);
     } catch (err) {
         console.error('Fehler beim Erstellen des QR-Codes:', err);
+        throw err;
     }
 }

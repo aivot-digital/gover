@@ -138,6 +138,7 @@ class FormTriggerListControllerV1Test {
         assertEquals(7, item.id());
         assertEquals("Online-Antrag", item.nodeName());
         assertEquals("Hundesteuer online beantragen", item.formTitle());
+        assertEquals("antrag", item.formSlug());
         assertEquals("Hundesteuer", item.processTitle());
         assertEquals(ProcessVersionStatus.Published, item.status());
         assertEquals("https://example.test/form/hundesteuer/antrag/", item.publicUrl());
@@ -233,6 +234,7 @@ class FormTriggerListControllerV1Test {
 
         var item = result.getContent().getFirst();
         assertEquals("Hundesteuer beantragen", item.formTitle());
+        assertEquals("antrag", item.formSlug());
         assertEquals(ProcessVersionStatus.Drafted, item.status());
         assertNull(item.publicUrl());
         assertNull(item.published());
