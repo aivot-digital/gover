@@ -594,7 +594,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         if (attachmentSets.isEmpty()) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Anlagensatz mit dem Datenschlüssel %s wurde in der Prozess-Instanz %d nicht gefunden.",
+                    "Der Anlagensatz mit dem Datenschlüssel %s wurde im Vorgang %d nicht gefunden.",
                     StringUtils.quote(normalizedDataKey),
                     processInstance.getId()
             );
@@ -647,7 +647,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze der Prozessinstanz, deren Anhänge später als E-Mail-Anhänge hinzugefügt werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze des Vorgangs, deren Anhänge später als E-Mail-Anhänge hinzugefügt werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public List<String> attachmentSetDataKeys;

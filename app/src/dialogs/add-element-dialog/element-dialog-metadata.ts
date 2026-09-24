@@ -112,7 +112,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.DataObjectSelect]: 'Wählt ein konkretes Datenobjekt aus.',
     [ElementType.NoCodeInput]: 'Erfasst Logik über einen No-Code-Ausdruck.',
     [ElementType.ProcessDataKeyInput]: 'Erfasst einen Prozessdaten-Schlüssel und schlägt vorhandene Pfade vor.',
-    [ElementType.ProcessInstanceAttachmentSetSelect]: 'Wählt einen oder mehrere Anlagensätze der Prozessinstanz aus.',
+    [ElementType.ProcessInstanceAttachmentSetSelect]: 'Wählt einen oder mehrere Anlagensätze des Vorgangs aus.',
     [ElementType.ProcessIdentityIdInput]: 'Wählt eine verfügbare Prozessidentität aus.',
     [ElementType.SecretSelectInput]: 'Wählt ein sicher hinterlegtes Geheimnis aus und speichert dessen Schlüssel.',
     [ElementType.AssetSelectInput]: 'Wählt eine Datei aus den Assets aus und speichert deren stabilen Schlüssel.',
