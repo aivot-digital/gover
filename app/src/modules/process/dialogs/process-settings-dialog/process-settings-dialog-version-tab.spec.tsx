@@ -1,3 +1,4 @@
+import {CaseNumberType} from '../../enums/case-number-type';
 import {configureStore} from '@reduxjs/toolkit';
 import {act, createRef} from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
@@ -20,6 +21,23 @@ vi.mock('../../../../components/rich-text-input-component/rich-text-input-compon
 }));
 
 describe('ProcessSettingsDialogVersionTab', () => {
+    it('defaults to compact identifiers and persists an explicit UUID choice', async () => {
+        const user = userEvent.setup();
+        const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        const version = {...ProcessDefinitionVersionApiService.initialize(), processId: 42, processVersion: 7, publicTitle: 'Bauantrag'};
+        const update = vi.spyOn(ProcessDefinitionVersionApiService.prototype, 'update')
+            .mockImplementation(async (_id, updated) => updated);
+        render(<Provider store={configureStore({reducer: () => ({})})}>
+            <ProcessSettingsDialogVersionTab ref={ref} open version={version} departments={[]} themes={[]} onVersionChange={vi.fn()} />
+        </Provider>);
+        expect(screen.getByRole('radio', {name: /Kompakte Zufallskennung/})).toBeChecked();
+        await user.click(screen.getByRole('radio', {name: /Universelle Kennung/}));
+        act(() => ref.current?.save());
+        await waitFor(() => expect(update).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+            caseNumberType: CaseNumberType.UuidV4, caseNumberTemplate: null,
+        })));
+    });
+
     it('saves the selected theme on the process version', async () => {
         const user = userEvent.setup();
         const ref = createRef<ProcessSettingsDialogVersionTabHandle>();

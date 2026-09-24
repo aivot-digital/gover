@@ -1,359 +1,171 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
-import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
-import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import {Typography} from '@mui/material';
-import {CellLink} from '../../../../components/cell-link/cell-link';
-import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
-import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
-import {
-    ProcessInstanceStatus,
-    ProcessInstanceStatusColor,
-    ProcessInstanceStatusLabels,
-} from '../../enums/process-instance-status';
+import {useCallback, useMemo, useRef, useState} from 'react';
+import {Alert, Typography} from '@mui/material';
 import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
-import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
-import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {
-    GenericListFilter,
-    type GenericListPropsFetchOptions,
-    type ListControlRef,
-} from '../../../../components/generic-list/generic-list-props';
-import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
-import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
-import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
-import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
-import {type Page} from '../../../../models/dtos/page';
-import {useSearchParams} from 'react-router-dom';
+import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {GenericListPropsFetchOptions, ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import {useConfirm} from '../../../../providers/confirm-provider';
-import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
-import {GridColDef} from '@mui/x-data-grid';
-import {Chip} from '../../../../components/chip/chip';
+import {ProcessInstanceListEntry} from '../../entities/process-list';
+import {ProcessListApiService} from '../../services/process-list-api-service';
+import {useProcessListFilters} from '../../components/use-process-list-filters';
+import {StorageKey} from '../../../../data/storage-key';
 import {ProcessInstanceStatusIcon} from '../../components/process-instance-status-icon';
-import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
+import {processListColumns} from '../../components/process-list-columns';
 
-
-const Filters: GenericListFilter[] = [
+const filters = [
     {
-        label: 'Nicht abgeschlossen',
-        value: 'notCompleted',
+        value: 'all',
+        label: 'Alle Vorgänge',
     },
     {
-        label: 'Alle',
-        value: 'all',
+        value: 'active',
+        label: 'Laufende Vorgänge',
+    },
+    {
+        value: 'ended',
+        label: 'Beendete Vorgänge',
+    },
+    {
+        value: 'failed',
+        label: 'Fehlerhafte Vorgänge',
     },
 ];
+const visibility = {
+    assignedFileNumbers: false,
+    finished: false,
+    processVersion: false,
+    test: false,
+};
 
-interface ProcessInstanceEntityWithProcessInfo extends ProcessInstanceEntity {
-    processName: string;
-}
-
-export function ProcessInstanceListPage(): ReactNode {
-    const dispatch = useAppDispatch();
-    const confirm = useConfirm();
-    const [searchParams] = useSearchParams();
-
-    const processIdParam = searchParams.get('processId');
-    const processVersionParam = searchParams.get('processVersion');
-    const processId = processIdParam !== null && processIdParam !== '' ? Number(processIdParam) : undefined;
-    const processVersion = processVersionParam !== null && processVersionParam !== '' ? Number(processVersionParam) : undefined;
-
-    // State for the process definition for the badge
-    const [processDefinition, setProcessDefinition] = useState<any | null>(null);
-
-    useEffect((): () => void => {
-        let cancelled = false;
-
-        async function fetchProcessDefinition(): Promise<void> {
-            if (processId !== undefined) {
-                const allProcesses = await new ProcessDefinitionApiService().listAll();
-                const found = allProcesses.content.find(
-                    (p) => p.id === processId,
-                );
-                if (!cancelled) {
-                    setProcessDefinition(found ?? null);
-                }
-            } else {
-                setProcessDefinition(null);
-            }
-        }
-
-        void fetchProcessDefinition();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [processId]);
-
+export function ProcessInstanceListPage() {
     const listRef = useRef<ListControlRef | null>(null);
-
-    const handleListRefresh = useCallback((): void => {
-        if (listRef.current != null) {
-            listRef.current.refresh();
-        }
-    }, []);
-
-    const handleDelete = useCallback((item: ProcessInstanceEntity): void => {
-        confirm({
-            title: 'Vorgang löschen',
-            isDestructive: true,
-            children: (
-                <Typography>
-                    Sind Sie sicher, dass Sie den Vorgang wirklich löschen wollen?
-                    Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.
-                </Typography>
-            ),
-        })
-            .then((conf) => {
-                if (!conf) {
-                    return false;
-                }
-
-                return new ProcessInstanceApiService()
-                    .destroy(item.id)
-                    .then(() => true);
-            })
-            .then((reload) => {
-                if (reload) {
-                    handleListRefresh();
-                }
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Vorgang konnte nicht gelöscht werden'));
-            });
-    }, [confirm, dispatch, handleListRefresh]);
-
-    const [showEventsForInstanceId, setShowEventsForInstanceId] = React.useState<number | null>(null);
-
-    const handleRestart = useCallback((item: ProcessInstanceEntity): void => {
-        confirm({
-            title: 'Vorgang neu starten',
-            children: (
-                <Typography>
-                    Wirklich neu starten? Der Neustart ist nur möglich, wenn der Vorgang noch keine Aufgaben hat oder die letzte Aufgabe fehlgeschlagen ist.
-                </Typography>
-            ),
-        })
-            .then((confirmed) => {
-                if (!confirmed) {
-                    return false;
-                }
-
-                return new ProcessInstanceApiService()
-                    .restartFailedInstance(item.id)
-                    .then(() => true);
-            })
-            .then((reload) => {
-                if (!reload) {
-                    return;
-                }
-
-                dispatch(showSuccessSnackbar('Der Vorgang wurde neu gestartet.'));
-                handleListRefresh();
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Der Vorgang konnte nicht neu gestartet werden.'));
-            });
-    }, [confirm, dispatch, handleListRefresh]);
-
-    // Wrap fetchData to inject processId and processVersion
-    const fetchDataWithParams = useCallback(async (options: GenericListPropsFetchOptions<ProcessInstanceEntityWithProcessInfo>): Promise<Page<ProcessInstanceEntityWithProcessInfo>> => {
-        const allProcesses = await new ProcessDefinitionApiService().listAll();
-        const filter: any = {
-            statusIsNot: options.filter === 'notCompleted' ? ProcessInstanceStatus.Completed : undefined,
-        };
-        if (processId !== undefined) {
-            filter.processId = processId;
-        }
-        if (processVersion !== undefined) {
-            filter.processVersion = processVersion;
-        }
-        const instances = await new ProcessInstanceApiService().list(
-            options.page,
-            options.size,
-            options.sort !== 'processName' ? options.sort : 'processId',
-            options.order,
-            filter,
-        );
-        return {
-            ...instances,
-            content: instances.content.map((instance) => {
-                const process = allProcesses.content.find((p) => p.id === instance.processId);
-                return {
-                    ...instance,
-                    processName: process != null ? process.internalTitle : `Prozess #${instance.processId}`,
-                };
-            }),
-        };
-    }, [processId, processVersion]);
-
-    const header: GenericPageHeaderProps = useMemo(() => ({
-        icon: ModuleIcons.submissions,
-        title: 'Vorgänge',
-        badge:
-            (processDefinition !== null && processVersion !== undefined) ?
-                {
-                    label: `${String(processDefinition.internalTitle)} (Version ${processVersion})`,
-                    color: 'primary',
-                } :
-                undefined,
-        actions: [
-            {
-                tooltip: 'Liste aktualisieren',
-                icon: <Refresh/>,
-                onClick: handleListRefresh,
-            },
-        ],
-        helpDialog: {
-            title: 'Hilfe zu Vorgängen',
-            tooltip: 'Hilfe anzeigen',
-            content: (
-                <>
-                    <Typography>
-                        Auf dieser Seite erhalten Sie einen Überblick über alle offenen bzw. laufenden
-                        Vorgänge. Klicken Sie auf einen Vorgang, um die zugehörigen Informationen
-                        einzusehen und Aufgaben zu bearbeiten.
-                    </Typography>
-                </>
-            ),
+    const {assignee, processId, processVersion, refreshOptions, ...filterProps} = useProcessListFilters(false);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const refresh = useCallback(() => {
+        listRef.current?.refresh();
+        refreshOptions();
+    }, [refreshOptions]);
+    const columns = useMemo(() => processListColumns<ProcessInstanceListEntry>(false, refresh), [refresh]);
+    const fetch = useCallback(
+        async (options: GenericListPropsFetchOptions<ProcessInstanceListEntry>) => {
+            try {
+                const result = await new ProcessListApiService().instances(
+                    options.page,
+                    options.size,
+                    options.sort,
+                    options.order,
+                    {
+                        assignee,
+                        processId,
+                        processVersion,
+                        search: options.search,
+                        view: options.filter,
+                    },
+                );
+                setLoadFailed(false);
+                return result;
+            } catch (error) {
+                setLoadFailed(true);
+                throw error;
+            }
         },
-    }), [handleListRefresh, processDefinition, processVersion]);
-
-    const columns: GridColDef<ProcessInstanceEntityWithProcessInfo>[] = useMemo(() => [
-        {
-            field: 'status',
-            headerName: 'Status',
-            width: 180,
-            renderCell: (params) => (
-                <Chip
-                    label={params.row.statusOverride != null ? params.row.statusOverride : ProcessInstanceStatusLabels[params.row.status]}
-                    size="small"
-                    mode="soft"
-                    color={ProcessInstanceStatusColor[params.row.status]}
-                />
-            ),
-        },
-        {
-            field: 'processName',
-            headerName: 'Prozess',
-            width: 180,
-            renderCell: (params) => (
-                <CellLink
-                    to={`/processes/${params.row.processId}/versions/${params.row.initialProcessVersion}/?instanceId=${params.row.id}`}
-                    title="Aufrufen"
-                >
-                    {String(params.value)}
-                </CellLink>
-            ),
-        },
-        {
-            field: 'caseNumber',
-            headerName: 'Schlüssel',
-            flex: 1,
-            renderCell: (params) => (
-                <CellLink
-                    to={`/processes/${params.row.processId}/versions/${params.row.initialProcessVersion}/instances/${params.row.id}/tasks`}
-                    title="Aufrufen"
-                >
-                    {String(params.value)}
-                </CellLink>
-            ),
-        },
-        {
-            field: 'started',
-            headerName: 'Gestartet am',
-            width: 200,
-            renderCell: (params) => {
-                if (params.row.started === undefined || params.row.started === null || params.row.started === '') return '—';
-                const formatted = formatInstantInApplicationTimeZone(params.row.started, 'dd.MM.yyyy – HH:mm');
-                return formatted != null ? `${formatted} Uhr` : '—';
-            },
-        },
-    ], []);
-
-    const columnIcon = useCallback((row: ProcessInstanceEntityWithProcessInfo) => (
-        <ProcessInstanceStatusIcon
-            status={row.status}
-            statusOverride={row.statusOverride}
-        />
-    ), []);
-
-    const rowActions = useCallback((item: ProcessInstanceEntityWithProcessInfo) => [
-        {
-            icon: <Replay/>,
-            tooltip: 'Fehlgeschlagenen Vorgang neu starten',
-            visible: item.status === ProcessInstanceStatus.Failed,
-            onClick: () => {
-                handleRestart(item);
-            },
-        },
-        {
-            icon: <Delete/>,
-            tooltip: 'Vorgang löschen',
-            onClick: () => {
-                handleDelete(item);
-            },
-        },
-        {
-            icon: <News/>,
-            tooltip: 'Ereignisse einsehen',
-            onClick: () => {
-                setShowEventsForInstanceId(item.id);
-            },
-        },
-        {
-            icon: ModuleIcons.processes,
-            tooltip: 'Prozessverlauf ansehen',
-            to: `/processes/${item.processId}/versions/${item.initialProcessVersion}/?instanceId=${item.id}`,
-        },
-    ], [handleDelete, handleRestart]);
+        [assignee, processId, processVersion],
+    );
 
     return (
-        <>
-            <PageWrapper
-                title="Vorgänge"
-                fullWidth
-                background
-            >
-                <GenericListPage<ProcessInstanceEntityWithProcessInfo>
-                    controlRef={listRef}
-                    defaultFilter="notCompleted"
-                    filters={Filters}
-                    header={header}
-                    searchLabel="Vorgang suchen"
-                    searchPlaceholder="Schlüssel des Vorgangs eingeben…"
-                    fetch={fetchDataWithParams}
-                    columnIcon={columnIcon}
-                    columnDefinitions={columns}
-                    getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder={
-                        <EmptyDataListPlaceholder
-                            title="Noch keine Vorgänge gestartet"
-                            description="Vorgänge sind konkrete Ausführungen (Instanzen) eines Prozesses, zum Beispiel eingereichte Anträge oder intern gestartete Abläufe."
-                        />
-                    }
-                    noSearchResultsPlaceholder="Keine Vorgänge gefunden"
-                    rowActionsCount={4}
-                    rowActions={rowActions}
-                    defaultSortField="started"
-                    disableFullWidthToggle={true}
-                />
-            </PageWrapper>
-
-            <ProcessInstanceEventDialog
-                open={showEventsForInstanceId != null}
-                onClose={() => {
-                    setShowEventsForInstanceId(null);
+        <PageWrapper
+            title="Vorgänge"
+            fullWidth
+            background
+        >
+            <GenericListPage<ProcessInstanceListEntry>
+                {...filterProps}
+                controlRef={listRef}
+                header={{
+                    icon: ModuleIcons.submissions,
+                    title: 'Vorgänge',
+                    actions: [
+                        {
+                            icon: <Refresh />,
+                            tooltip: 'Liste aktualisieren',
+                            onClick: refresh,
+                        },
+                    ],
+                    helpDialog: {
+                        title: 'Hilfe zur Vorgangsliste',
+                        tooltip: 'Hilfe anzeigen',
+                        content: (
+                            <>
+                                <Typography
+                                    component="p"
+                                    sx={{mb: 2}}
+                                >
+                                    Ein Vorgang ist die konkrete Ausführung eines Prozesses, zum Beispiel die
+                                    Bearbeitung eines eingereichten Antrags. Der Prozess legt fest, welche Schritte
+                                    erforderlich sind und wie sie zusammenhängen. In einem Vorgang können mehrere
+                                    Aufgaben entstehen, die unterschiedlichen Personen zugewiesen sind.
+                                </Typography>
+                                <Typography
+                                    component="p"
+                                    sx={{mb: 2}}
+                                >
+                                    Diese Liste gibt Ihnen einen Überblick über Ihre zugänglichen Vorgänge. Zunächst
+                                    sehen Sie laufende Vorgänge. Über die Ansichten und Filter grenzen Sie die Auswahl
+                                    nach Status, zugewiesener Person und Prozess ein. Die Suche findet Vorgangskennungen
+                                    und Aktenzeichen.
+                                </Typography>
+                                <Typography
+                                    component="p"
+                                    sx={{mb: 2}}
+                                >
+                                    Über die Vorgangskennung öffnen Sie die Details. Im Menü „Weitere Aktionen“ können
+                                    Sie unter anderem alle Aufgaben eines Vorgangs aufrufen oder seine Zuweisung ändern.
+                                    Die verfügbaren Aktionen richten sich nach Ihren Berechtigungen und dem Stand des
+                                    Vorgangs.
+                                </Typography>
+                                <Typography component="p">
+                                    Mit „Spalten“ passen Sie die angezeigten Angaben an. Spaltenauswahl, Breiten und die
+                                    Nutzung der vollen Bildschirmbreite werden pro Liste in Ihrem Browser gespeichert.
+                                    „Standardspalten wiederherstellen“ setzt Auswahl und Spaltenbreiten zurück.
+                                </Typography>
+                            </>
+                        ),
+                    },
                 }}
-                instanceId={showEventsForInstanceId ?? 0}
-                taskId={null}
+                listContextElements={[
+                    ...filterProps.listContextElements,
+                    ...(loadFailed
+                        ? [
+                              <Alert
+                                  key="load"
+                                  severity="error"
+                              >
+                                  Die Vorgänge konnten nicht geladen werden. Bitte aktualisieren Sie die Liste.
+                              </Alert>,
+                          ]
+                        : []),
+                ]}
+                fetch={fetch}
+                filters={filters}
+                defaultFilter="active"
+                searchLabel="Vorgangskennung / Aktenzeichen"
+                searchPlaceholder="Kennung oder Aktenzeichen eingeben…"
+                columnIcon={(row) => (
+                    <ProcessInstanceStatusIcon
+                        status={row.status}
+                        statusOverride={row.statusOverride?.trim() || null}
+                    />
+                )}
+                columnDefinitions={columns}
+                enableColumnSelection
+                initialColumnVisibilityModel={visibility}
+                columnSettingsStorageKey={StorageKey.ProcessInstanceListColumns}
+                getRowIdentifier={(row) => row.id.toString()}
+                defaultSortField="started"
+                defaultSortOrder="desc"
+                noDataPlaceholder="Keine laufenden Vorgänge vorhanden."
+                noSearchResultsPlaceholder="Keine passenden Vorgänge gefunden."
             />
-        </>
+        </PageWrapper>
     );
-}
-
-function getRowIdentifier(row: ProcessInstanceEntityWithProcessInfo) {
-    return row.id.toString();
 }

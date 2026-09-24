@@ -5,6 +5,7 @@ import {GenericPageHeader} from '../generic-page-header/generic-page-header';
 import {type GenericListColDef, type GenericListProps} from '../generic-list/generic-list-props';
 import {type GenericPageHeaderProps} from '../generic-page-header/generic-page-header-props';
 import {GenericList} from '../generic-list/generic-list';
+import {loadListFullWidth} from '../generic-list/generic-list-column-settings';
 import {type GenericListRowModel} from '../generic-list/generic-list-row-models';
 import {type Action} from '../actions/actions-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -65,7 +66,7 @@ export function GenericListPage<ItemType extends GenericListRowModel>(props: Gen
         rowActions,
         ...listProps
     } = props;
-    const [isFullWidth, setIsFullWidth] = useState(false);
+    const [isFullWidth, setIsFullWidth] = useState(() => props.disableFullWidthToggle !== true && loadListFullWidth(props.columnSettingsStorageKey));
     const [isBusy, setIsBusy] = useState(false);
     const permissionSet = useAppSelector(selectPermissions);
 

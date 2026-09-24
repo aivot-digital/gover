@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.entities;
 
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.enums.CaseNumberType;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -35,6 +36,11 @@ public class ProcessVersionEntity {
     @NotBlank(message = "Der öffentliche Title der Prozessdefinition-Version darf nicht leer sein.")
     @Length(min=3, max = 96, message = "Der öffentliche Title der Prozessdefinition-Version muss zwischen 3 und 96 Zeichen lang sein.")
     private String publicTitle;
+
+    @Nonnull
+    @NotNull(message = "Bitte wählen Sie einen Typ der Vorgangskennung aus.")
+    @Enumerated(EnumType.STRING)
+    private CaseNumberType caseNumberType = CaseNumberType.CROCKFORD_BASE32;
 
     @Nullable
     private String caseNumberTemplate;
@@ -229,6 +235,16 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setPublicTitle(@Nonnull String publicTitle) {
         this.publicTitle = publicTitle;
+        return this;
+    }
+
+    @Nonnull
+    public CaseNumberType getCaseNumberType() {
+        return caseNumberType;
+    }
+
+    public ProcessVersionEntity setCaseNumberType(@Nonnull CaseNumberType caseNumberType) {
+        this.caseNumberType = caseNumberType;
         return this;
     }
 

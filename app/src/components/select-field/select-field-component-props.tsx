@@ -23,6 +23,8 @@ export interface SelectFieldComponentProps<T extends SelectFieldValue = string> 
     options: SelectFieldComponentOption<T>[];
     presentation?: SelectFieldPresentation;
     emptyStatePlaceholder?: string;
+    /** Names a meaningful empty value (e.g. an unrestricted filter), not an input prompt. */
+    emptyOptionLabel?: string;
     includeEmptyOption?: boolean;
     controlSx?: SxProps<Theme>;
     startIcon?: ReactNode;

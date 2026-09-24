@@ -80,7 +80,6 @@ import {includeNodeProblems} from '../../utils/include-node-problems';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectUser} from '../../../../slices/user-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {generateId} from '../../../../utils/id-utils';
 import {
     PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY,
 } from './components/process-node-editor/process-node-editor-change-blocker';
@@ -1202,7 +1201,7 @@ export function ProcessDetailsPage(): ReactNode {
         setShowAddTriggerDialog(false);
 
         new ProcessNodeApiService()
-            .create({
+            .createWithGeneratedDataKey({
                 ...ProcessNodeApiService.initialize(),
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
@@ -1270,7 +1269,7 @@ export function ProcessDetailsPage(): ReactNode {
         ));
 
         const newNode = await new ProcessNodeApiService()
-            .create({
+            .createWithGeneratedDataKey({
                 ...ProcessNodeApiService.initialize(),
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
@@ -1429,7 +1428,7 @@ export function ProcessDetailsPage(): ReactNode {
         await edgeApi.destroy(existingEdge.id);
 
         const newNode = await new ProcessNodeApiService()
-            .create({
+            .createWithGeneratedDataKey({
                 ...ProcessNodeApiService.initialize(),
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
@@ -1888,9 +1887,8 @@ export function ProcessDetailsPage(): ReactNode {
         }));
 
         new ProcessNodeApiService()
-            .create({
+            .createWithGeneratedDataKey({
                 ...node,
-                dataKey: generateId(5),
             })
             .then((createdNode) => {
                 setProcessFlow((flow) => flow != null ? ({

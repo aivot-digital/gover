@@ -2,7 +2,8 @@ import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
 import {type ProcessNodeExport} from '../entities/process-node-export';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
-import {generateId} from '../../../utils/id-utils';
+import {generateProcessNodeDataKey} from '../utils/process-node-data-key';
+import {isApiError} from '../../../models/api-error';
 import {ProcessNodeProblems} from '../entities/process-node-problems';
 import {type ProcessNodeDefinitionMetadata} from '../entities/process-node-definition-metadata';
 import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../../../models/element-data';
@@ -18,12 +19,12 @@ interface ProcessDefinitionNodeFilter {
 }
 
 export class ProcessNodeApiService extends BaseCrudApiService<
-ProcessNodeEntity,
-ProcessNodeEntity,
-ProcessNodeEntity,
-ProcessNodeEntity,
-number,
-ProcessDefinitionNodeFilter
+    ProcessNodeEntity,
+    ProcessNodeEntity,
+    ProcessNodeEntity,
+    ProcessNodeEntity,
+    number,
+    ProcessDefinitionNodeFilter
 > {
     constructor() {
         super('/api/process-nodes/');
@@ -46,12 +47,31 @@ ProcessDefinitionNodeFilter
             processNodeDefinitionVersion: 0,
             name: null,
             description: null,
-            dataKey: generateId(5),
+            dataKey: generateProcessNodeDataKey(),
             configuration: {},
             savedWithErrors: false,
             created: '',
             updated: '',
         };
+    }
+
+    public async createWithGeneratedDataKey(node: ProcessNodeEntity): Promise<ProcessNodeEntity> {
+        for (let attempt = 0; ; attempt++) {
+            try {
+                return await this.create({
+                    ...node,
+                    dataKey: generateProcessNodeDataKey(),
+                });
+            } catch (error) {
+                if (
+                    attempt >= 4 ||
+                    !isApiError(error) ||
+                    error.status !== 409 ||
+                    error.details?.reason !== 'process_node_data_key_conflict'
+                )
+                    throw error;
+            }
+        }
     }
 
     public getConfigurationLayout(id: number): Promise<GroupLayout> {
@@ -67,7 +87,10 @@ ProcessDefinitionNodeFilter
         authoredElementValues: AuthoredElementValues,
         derivationOptions: ElementDerivationOptions,
     ): Promise<DerivedRuntimeElementData> {
-        return this.post(`${this.path}${id}/derive-configuration/`, {authoredElementValues, derivationOptions});
+        return this.post(`${this.path}${id}/derive-configuration/`, {
+            authoredElementValues,
+            derivationOptions,
+        });
     }
 
     public async getTesting(id: number): Promise<GroupLayout | null> {

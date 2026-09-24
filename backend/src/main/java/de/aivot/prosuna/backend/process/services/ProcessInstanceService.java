@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.enums.CaseNumberType;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
@@ -56,7 +57,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
                 .retrieve(ProcessVersionEntityId.of(entity.getProcessId(), entity.getInitialProcessVersion()))
                 .orElseThrow(ResponseException::badRequest);
 
-        return createWithUniqueCaseNumber(entity, processVersion.getCaseNumberTemplate());
+        return createWithUniqueCaseNumber(entity, processVersion.getCaseNumberType(), processVersion.getCaseNumberTemplate());
     }
 
     @Nullable
@@ -141,10 +142,11 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
      */
     @Nonnull
     private ProcessInstanceEntity createWithUniqueCaseNumber(@Nonnull ProcessInstanceEntity entity,
-                                                             @Nullable String caseNumberTemplate) throws ResponseException {
+                                                            @Nonnull CaseNumberType caseNumberType,
+                                                            @Nullable String caseNumberTemplate) throws ResponseException {
         for (int attempt = 1; attempt <= MAX_CASE_NUMBER_GENERATION_ATTEMPTS; attempt++) {
             entity.setId(null);
-            entity.setCaseNumber(caseNumberGeneratorService.generateCaseNumber(caseNumberTemplate));
+            entity.setCaseNumber(caseNumberGeneratorService.generateCaseNumber(caseNumberType, caseNumberTemplate));
 
             try {
                 return processInstanceRepository.saveAndFlush(entity);
@@ -156,7 +158,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
 
                 if (processInstanceRepository.existsByCaseNumber(entity.getCaseNumber())) {
                     if (attempt == MAX_CASE_NUMBER_GENERATION_ATTEMPTS) {
-                        throw ResponseException.conflict("Es konnte kein eindeutiger Vorgangsschlüssel erzeugt werden. Bitte versuchen Sie es erneut.");
+                        throw ResponseException.conflict("Es konnte keine eindeutige Vorgangskennung erzeugt werden. Bitte versuchen Sie es erneut.");
                     }
                     continue;
                 }
@@ -165,6 +167,6 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
             }
         }
 
-        throw ResponseException.conflict("Es konnte kein eindeutiger Vorgangsschlüssel erzeugt werden. Bitte versuchen Sie es erneut.");
+        throw ResponseException.conflict("Es konnte keine eindeutige Vorgangskennung erzeugt werden. Bitte versuchen Sie es erneut.");
     }
 }

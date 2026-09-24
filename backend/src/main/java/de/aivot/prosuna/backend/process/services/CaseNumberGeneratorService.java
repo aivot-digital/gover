@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.enums.CaseNumberType;
+import de.aivot.prosuna.backend.process.utils.CrockfordCaseNumber;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
@@ -67,18 +69,29 @@ public class CaseNumberGeneratorService {
     }
 
     /**
-     * Generates the next case number for the provided template.
+     * Generates a case number using the selected format.
      *
-     * <p>The database remains the final uniqueness guard, but the generator still reads the current maximum increment
+     * <p>The database remains the final uniqueness guard, but template generation still reads the current maximum increment
      * for the rendered prefix/suffix pair so numbering stays monotonic for the active time bucket.</p>
      */
     @Nonnull
-    public String generateCaseNumber(@Nullable String caseNumberTemplate) throws ResponseException {
-        if (caseNumberTemplate == null) {
-            return UUID.randomUUID().toString();
-        }
+    public String generateCaseNumber(@Nonnull CaseNumberType type, @Nullable String caseNumberTemplate) throws ResponseException {
+        validateConfiguration(type, caseNumberTemplate);
+        return switch (type) {
+            case CROCKFORD_BASE32 -> CrockfordCaseNumber.generate();
+            case UUID_V4 -> UUID.randomUUID().toString();
+            case TEMPLATE -> generateCaseNumber(caseNumberTemplate, ZonedDateTime.now(ApplicationTimeZone.getZoneId()));
+        };
+    }
 
-        return generateCaseNumber(caseNumberTemplate, ZonedDateTime.now(ApplicationTimeZone.getZoneId()));
+    public void validateConfiguration(@Nonnull CaseNumberType type, @Nullable String template) throws ResponseException {
+        if (type == null) throw ResponseException.badRequest("Bitte wählen Sie einen Typ der Vorgangskennung aus.");
+        if (type == CaseNumberType.TEMPLATE) {
+            if (template == null) throw ResponseException.badRequest("Bitte geben Sie eine Formatvorlage für die Vorgangskennung an.");
+            validateCaseNumberTemplate(template);
+        } else if (template != null) {
+            throw ResponseException.badRequest("Eine Formatvorlage kann nur für den Kennungstyp „Eigene Formatvorlage“ verwendet werden.");
+        }
     }
 
     @Nonnull
@@ -105,7 +118,7 @@ public class CaseNumberGeneratorService {
 
         if (caseNumber.codePointCount(0, caseNumber.length()) > MAX_CASE_NUMBER_LENGTH) {
             throw ResponseException.internalServerError(
-                    "Der erzeugte Vorgangsschlüssel überschreitet unerwartet das zulässige Limit von %d Zeichen.",
+                    "Die erzeugte Vorgangskennung überschreitet unerwartet das zulässige Limit von %d Zeichen.",
                     MAX_CASE_NUMBER_LENGTH
             );
         }
@@ -116,7 +129,7 @@ public class CaseNumberGeneratorService {
     @Nonnull
     private ParsedCaseNumberTemplate parseTemplate(@Nonnull String caseNumberTemplate) throws ResponseException {
         if (caseNumberTemplate.isBlank()) {
-            throw ResponseException.badRequest("Die Vorgangsschlüssel-Formatvorlage darf nicht leer sein.");
+            throw ResponseException.badRequest("Die Formatvorlage für die Vorgangskennung darf nicht leer sein.");
         }
 
         var incrementMatcher = CASE_NUMBER_INCREMENT_PATTERN.matcher(caseNumberTemplate);
@@ -160,7 +173,7 @@ public class CaseNumberGeneratorService {
             int codePoint = caseNumberTemplate.codePointAt(index);
             if (codePoint == '%') {
                 throw ResponseException.badRequest(
-                        "Die Vorgangsschlüssel-Formatvorlage enthält einen unbekannten Platzhalter an Position %d. Unterstützt werden %s.",
+                        "Die Formatvorlage für die Vorgangskennung enthält einen unbekannten Platzhalter an Position %d. Unterstützt werden %s.",
                         index + 1,
                         SUPPORTED_PLACEHOLDERS
                 );
@@ -172,13 +185,13 @@ public class CaseNumberGeneratorService {
 
         if (incrementMatchCount != 1) {
             throw ResponseException.badRequest(
-                    "Die Vorgangsschlüssel-Formatvorlage muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten."
+                    "Die Formatvorlage für die Vorgangskennung muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten."
             );
         }
 
         if (renderedLength > MAX_CASE_NUMBER_LENGTH) {
             throw ResponseException.badRequest(
-                    "Der erzeugte Vorgangsschlüssel würde das Limit von %d Zeichen überschreiten.",
+                    "Die erzeugte Vorgangskennung würde das Limit von %d Zeichen überschreiten.",
                     MAX_CASE_NUMBER_LENGTH
             );
         }
@@ -195,7 +208,7 @@ public class CaseNumberGeneratorService {
         var padding = Integer.parseInt(incrementMatcher.group(1));
         if (padding < CASE_NUMBER_PADDING_MIN || padding > CASE_NUMBER_PADDING_MAX) {
             throw ResponseException.badRequest(
-                    "Die Inkrement-Breite in der Vorgangsschlüssel-Formatvorlage muss zwischen %d und %d Stellen liegen.",
+                    "Die Inkrement-Breite in der Formatvorlage für die Vorgangskennung muss zwischen %d und %d Stellen liegen.",
                     CASE_NUMBER_PADDING_MIN,
                     CASE_NUMBER_PADDING_MAX
             );

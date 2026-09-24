@@ -42,6 +42,9 @@ class ProcessInstanceTaskControllerTest {
     @Mock
     private PermissionService permissionService;
 
+    @Mock
+    private de.aivot.prosuna.backend.process.services.ProcessListService listService;
+
     private ProcessInstanceTaskController controller;
     private Jwt jwt;
 
@@ -53,7 +56,8 @@ class ProcessInstanceTaskControllerTest {
                 userService,
                 processInstanceTaskService,
                 rabbitTemplate,
-                permissionService
+                permissionService, mock(de.aivot.prosuna.backend.process.services.ProcessAssignmentService.class),
+                listService
         );
 
         jwt = new Jwt(
@@ -63,6 +67,23 @@ class ProcessInstanceTaskControllerTest {
                 Map.of("alg", "none"),
                 Map.of("sub", "user-1")
         );
+    }
+
+    @Test
+    void assignedCountUsesPermissionScopedOpenTaskQuery() throws Exception {
+        var user = mock(UserEntity.class);
+        when(user.getId()).thenReturn("user-1");
+        when(userService.fromJWT(jwt)).thenReturn(java.util.Optional.of(user));
+        when(listService.countOpenAssignedTasks("user-1")).thenReturn(4L);
+        org.junit.jupiter.api.Assertions.assertEquals(Map.of("count", 4L), controller.countAssignedTasks(jwt));
+        verifyNoInteractions(processInstanceTaskService);
+    }
+
+    @Test
+    void assignedCountRequiresAuthentication() throws Exception {
+        when(userService.fromJWT(jwt)).thenReturn(java.util.Optional.empty());
+        org.junit.jupiter.api.Assertions.assertThrows(ResponseException.class, () -> controller.countAssignedTasks(jwt));
+        verifyNoInteractions(listService);
     }
 
     @Test

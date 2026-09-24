@@ -662,6 +662,7 @@ public class ProcessController {
                         null,
                         null
                 )
+                        .setCaseNumberType(originalProcessVersion.getCaseNumberType())
                         .setThemeId(originalProcessVersion.getThemeId())
                         .setLegalSupportDepartmentId(originalProcessVersion.getLegalSupportDepartmentId())
                         .setTechnicalSupportDepartmentId(originalProcessVersion.getTechnicalSupportDepartmentId())

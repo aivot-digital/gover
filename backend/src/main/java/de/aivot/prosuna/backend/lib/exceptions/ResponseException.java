@@ -172,6 +172,10 @@ public class ResponseException extends Exception {
         return ResponseException.conflict(String.format(message, args));
     }
 
+    public static ResponseException conflictWithDetails(@Nonnull String message, @Nonnull Map<String, ?> details) {
+        return new ResponseException(HttpStatus.CONFLICT, message, details);
+    }
+
     public static ResponseException conflict(String message) {
         return new ResponseException(HttpStatus.CONFLICT, message);
     }
