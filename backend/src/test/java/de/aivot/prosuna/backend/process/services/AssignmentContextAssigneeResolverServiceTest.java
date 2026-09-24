@@ -99,6 +99,22 @@ class AssignmentContextAssigneeResolverServiceTest {
     }
 
     @Test
+    void resolveAssignee_IgnoresDirectMembersWithOnlyDeputyPermission() {
+        accessRows = List.of(
+                userRow("deputy", null, 20, true, List.of("process_instance.read"), List.of(REQUIRED_PERMISSION)),
+                userRow("own-access", null, 20, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        activeTasks = List.of(activeTask("own-access"));
+
+        var result = service.resolveAssignee(
+                PROCESS_ID, PROCESS_VERSION, PROCESS_INSTANCE_ID, CURRENT_NODE_ID, CURRENT_TASK_ID,
+                null, null, assignmentContext(List.of(team("20"))), List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("own-access"), result);
+    }
+
+    @Test
     void resolveAssignee_PrefersPreviousTaskAssigneeWhenConfigured() {
         accessRows = List.of(
                 userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),

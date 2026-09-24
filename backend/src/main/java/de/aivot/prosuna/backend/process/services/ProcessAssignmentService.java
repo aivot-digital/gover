@@ -86,6 +86,10 @@ public class ProcessAssignmentService {
         instances.lockAccessById(instanceId).orElseThrow(ResponseException::notFound);
         // Load the task and evaluate both parties' rights only after acquiring the instance lock.
         var task = requireAssignableTask(actor.getId(), taskId);
+        // Staff may transfer tasks; clearing an assignment is reserved for internal lifecycle operations.
+        if (assignedUserId == null) {
+            throw ResponseException.badRequest("Die Zuweisung einer Aufgabe kann nicht aufgehoben werden. Bitte wählen Sie eine andere Person aus.");
+        }
         validateAssignee(assignedUserId, task.getProcessInstanceId(), true);
         var previousUserId = task.getAssignedUserId();
         task.setAssignedUserId(assignedUserId).setUpdated(Instant.now());
@@ -127,17 +131,17 @@ public class ProcessAssignmentService {
     }
 
     private void validateAssignee(@Nullable String userId, @Nonnull Long instanceId, boolean forTask) throws ResponseException {
-        // Clearing an assignment remains possible even when the previous assignee has lost access.
+        // Instance assignments can be cleared even when the previous assignee has lost access.
         if (userId == null) return;
         var user = users.findById(userId).orElseThrow(() -> ResponseException.badRequest("Die ausgewählte Person wurde nicht gefunden."));
         if (!canReceiveAssignment(user, instanceId, forTask)) {
-            throw ResponseException.badRequest("Die ausgewählte Person ist nicht aktiv oder hat nicht die erforderlichen Berechtigungen für diesen Vorgang.");
+            throw ResponseException.badRequest("Die ausgewählte Person ist nicht aktiv oder hat nicht die erforderlichen eigenen Berechtigungen für diesen Vorgang. Berechtigungen aus einer Stellvertretung reichen für eine Zuweisung nicht aus.");
         }
     }
 
     private boolean canReceiveAssignment(@Nonnull UserEntity user, @Nonnull Long instanceId, boolean forTask) {
         return Boolean.TRUE.equals(user.getEnabled()) && Boolean.FALSE.equals(user.getDeletedInIdp())
-                && permissions.hasProcessInstancePermission(user.getId(), instanceId, PROCESS_INSTANCE_READ)
-                && (!forTask || permissions.hasProcessInstancePermission(user.getId(), instanceId, PROCESS_INSTANCE_EDIT_TASK));
+                && permissions.hasProcessInstancePermissionWithoutDeputies(user.getId(), instanceId, PROCESS_INSTANCE_READ)
+                && (!forTask || permissions.hasProcessInstancePermissionWithoutDeputies(user.getId(), instanceId, PROCESS_INSTANCE_EDIT_TASK));
     }
 }

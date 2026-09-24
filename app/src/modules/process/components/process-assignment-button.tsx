@@ -101,10 +101,11 @@ export function ProcessAssignmentDialog({
             title={label}
             description={
                 isTask
-                    ? 'Mit der Zuweisung legen Sie fest, wer für die Bearbeitung dieser Aufgabe zuständig ist. Zur Auswahl stehen Mitarbeiter:innen mit aktivem Benutzerkonto, die den Vorgang anzeigen und seine Aufgaben bearbeiten dürfen. Die Zuständigkeit für den gesamten Vorgang und die Zuweisungen anderer Aufgaben bleiben unverändert.'
-                    : 'Mit der Zuweisung legen Sie fest, wer für den gesamten Vorgang zuständig ist. Einzelne Aufgaben können weiterhin von anderen Personen bearbeitet werden; ihre Zuweisungen bleiben unverändert. Zur Auswahl stehen Mitarbeiter:innen mit aktivem Benutzerkonto, die den Vorgang anzeigen dürfen.'
+                    ? 'Wählen Sie, wer diese Aufgabe bearbeiten soll. Sie können Mitarbeiter:innen mit aktivem Konto auswählen, die den Vorgang einsehen und Aufgaben bearbeiten dürfen. Diese Rechte müssen auch ohne Stellvertretung bestehen.'
+                    : 'Wählen Sie, wer für diesen Vorgang zuständig sein soll. Aufgaben werden separat zugewiesen. Sie können Mitarbeiter:innen mit aktivem Konto auswählen, die den Vorgang auch ohne Stellvertretung einsehen dürfen.'
             }
             assignedUserId={assignedUserId}
+            allowUnassign={!isTask}
             loadOptions={loadOptions}
             onSave={async (userId) => {
                 if (taskId == null) await new ProcessInstanceApiService().reassign(instanceId, userId);

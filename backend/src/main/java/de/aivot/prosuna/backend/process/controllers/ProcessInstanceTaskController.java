@@ -161,7 +161,7 @@ public class ProcessInstanceTaskController {
     }
 
     @PutMapping("{id}/reassign/")
-    @Operation(summary = "Reassign Process Instance Task", description = "Assign an active task to an eligible staff member or clear its assignment. Requires process_instance.edit_task.")
+    @Operation(summary = "Reassign Process Instance Task", description = "Assign an active task to an eligible staff member. An assignee is required; task assignments cannot be cleared through this endpoint. Requires process_instance.edit_task.")
     public ProcessInstanceTaskEntity reassign(
             @Nullable @AuthenticationPrincipal Jwt jwt, @Nonnull @PathVariable Long id,
             @Nonnull @RequestBody @Valid ProcessInstanceReassignRequestDTO request
