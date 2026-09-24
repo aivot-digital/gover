@@ -267,10 +267,9 @@ public class ProcessWorker {
                 currentNode.getId()
         );
 
-        var context = getRuntimeContext(logger, processInstance, taskEntity, currentNode, currentNodeProvider);
-
         ProcessNodeExecutionResult initResult;
         try {
+            var context = getRuntimeContext(logger, processInstance, taskEntity, currentNode, currentNodeProvider);
             initResult = currentNodeProvider.init(context);
         } catch (ProcessNodeExecutionException e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
@@ -312,10 +311,9 @@ public class ProcessWorker {
                 currentNode.getId()
         );
 
-        var context = getRuntimeContext(logger, processInstance, taskEntity, currentNode, currentNodeProvider);
-
         ProcessNodeExecutionResult resumeResult;
         try {
+            var context = getRuntimeContext(logger, processInstance, taskEntity, currentNode, currentNodeProvider);
             resumeResult = currentNodeProvider.resume(context);
         } catch (ProcessNodeExecutionException e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
