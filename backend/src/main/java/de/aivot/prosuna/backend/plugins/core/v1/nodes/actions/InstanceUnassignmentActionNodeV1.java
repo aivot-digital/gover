@@ -75,8 +75,11 @@ public class InstanceUnassignmentActionNodeV1 implements ProcessNodeDefinition<I
     @Nonnull
     @Override
     public List<ProcessNodePort> getPorts() {
-        return List.of(new ProcessNodePort(PORT_SUCCESS, "Erfolgreich",
-                "Der Vorgang hat nach der Ausführung keine zugewiesene Person."));
+        return List.of(new ProcessNodePort(
+                PORT_SUCCESS,
+                "Zuweisung entfernt",
+                "Der Vorgang hat nach der Ausführung keine zugewiesene Person."
+        ));
     }
 
     @Nonnull

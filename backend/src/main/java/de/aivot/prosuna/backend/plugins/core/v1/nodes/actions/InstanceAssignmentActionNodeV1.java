@@ -251,7 +251,11 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
     @Nonnull
     @Override
     public List<ProcessNodePort> getPorts() {
-        return List.of(new ProcessNodePort(PORT_SUCCESS, "Erfolgreich", "Der Vorgang wurde einer Person zugewiesen."));
+        return List.of(new ProcessNodePort(
+                PORT_SUCCESS,
+                "Zuweisung erfolgt",
+                "Der Vorgang wurde einer Person zugewiesen."
+        ));
     }
 
     @Nonnull
