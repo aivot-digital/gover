@@ -1379,6 +1379,7 @@ export function FormNodeEditorPage() {
                                                     >
                                                         <ElementDerivationContext
                                                             ref={elementDerivationContextRef}
+                                                            scrollContainerRef={scrollContainerRef}
                                                             element={formLayout}
                                                             authoredElementValues={authoredElementValues}
                                                             onAuthoredElementValuesChange={setAuthoredElementValues}
