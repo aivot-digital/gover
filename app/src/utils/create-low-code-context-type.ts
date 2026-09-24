@@ -124,6 +124,7 @@ function elementToValueType(element: AnyElement): string {
                 ?.map((option) => `'${typeof option === 'string' ? option : option.value}'`)
                 .join(' | ') ?? 'string';
         case ElementType.Number:
+        case ElementType.DepartmentSelectInput:
             return 'number';
         case ElementType.MultiCheckbox:
         case ElementType.ChipInput:

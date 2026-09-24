@@ -152,6 +152,54 @@ class AssignmentContextAssigneeResolverServiceTest {
     }
 
     @Test
+    void resolveAssignee_FallsBackWhenProcessInstanceHasNoAssignee() {
+        accessRows = List.of(
+                userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-2", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        activeTasks = List.of(activeTask("user-1"));
+
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                null,
+                null,
+                assignmentContext(List.of(orgUnit("10")))
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PROCESS_INSTANCE_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-2"), result);
+    }
+
+    @Test
+    void resolveAssignee_FallsBackWhenProcessInstanceAssigneeIsOutsideSelection() {
+        accessRows = List.of(
+                userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-2", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        activeTasks = List.of(activeTask("user-1"));
+
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                null,
+                "user-3",
+                assignmentContext(List.of(orgUnit("10")))
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PROCESS_INSTANCE_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-2"), result);
+    }
+
+    @Test
     void resolveAssignee_PrefersUninvolvedUserBeforeLoadBalancing() {
         accessRows = List.of(
                 userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),

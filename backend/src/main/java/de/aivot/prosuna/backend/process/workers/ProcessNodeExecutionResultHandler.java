@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -232,7 +233,7 @@ public class ProcessNodeExecutionResultHandler {
             }
             if (processIdentities != null && processIdentities.containsKey(entry.getKey())) {
                 throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Die neue Prozessidentität %s existiert bereits in der Prozessinstanz.",
+                        "Die neue Prozessidentität %s existiert bereits im Vorgang.",
                         StringUtils.quote(entry.getKey())
                 );
             }
@@ -269,7 +270,7 @@ public class ProcessNodeExecutionResultHandler {
         if (recipientIdentity == null) {
             markTaskFailed(context.processInstanceTask);
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die Empfängeridentität %s ist in der Prozessinstanz nicht vorhanden.",
+                    "Die Empfängeridentität %s ist im Vorgang nicht vorhanden.",
                     StringUtils.quote(communicationRequest.recipientIdentityId())
             );
         }
@@ -329,6 +330,7 @@ public class ProcessNodeExecutionResultHandler {
         messageDetails.put("htmlBody", message.htmlBody());
         messageDetails.put("sendingUser", createSendingUserDetails(message.sendingUser()));
         messageDetails.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));
+        messageDetails.put("signatureDepartment", createSignatureDepartmentDetails(message.signatureDepartment()));
 
         var eventDetails = new LinkedHashMap<String, Object>();
         eventDetails.put("processInstance", processInstanceDetails);
@@ -358,7 +360,7 @@ public class ProcessNodeExecutionResultHandler {
             markTaskFailed(context.processInstanceTask);
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der Prozess %s der Prozessinstanz konnte nicht geladen werden: %s",
+                    "Der Prozess %s des Vorgangs konnte nicht geladen werden: %s",
                     context.processInstance.getProcessId(),
                     e.getMessage()
             );
@@ -367,7 +369,7 @@ public class ProcessNodeExecutionResultHandler {
         if (process.isEmpty()) {
             markTaskFailed(context.processInstanceTask);
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Prozess %s der Prozessinstanz ist nicht vorhanden.",
+                    "Der Prozess %s des Vorgangs ist nicht vorhanden.",
                     context.processInstance.getProcessId()
             );
         }
@@ -404,6 +406,19 @@ public class ProcessNodeExecutionResultHandler {
 
     @Nullable
     private static Map<String, Object> createSendingDepartmentDetails(@Nullable DepartmentEntity department) {
+        if (department == null) {
+            return null;
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("id", department.getId());
+        details.put("name", department.getName());
+        return details;
+    }
+
+    @Nullable
+    private static Map<String, Object> createSignatureDepartmentDetails(
+            @Nullable VDepartmentShadowedEntity department
+    ) {
         if (department == null) {
             return null;
         }

@@ -19,9 +19,12 @@ import {
 import {
     ElementDerivationContext,
     type ElementDerivationContextHandle,
+    useElementDerivationContext,
 } from './element-derivation-context';
+import {useViewDispatcherContext} from '../../../components/view-dispatcher/view-dispatcher.context';
 
 const observeViewProps = vi.hoisted(() => vi.fn());
+const observeScrollContexts = vi.hoisted(() => vi.fn());
 
 const dynamicChanges: Array<[AuthoredInputValue<unknown>, AuthoredInputValue<unknown>, unknown]> = [
     [
@@ -48,6 +51,7 @@ vi.mock('../../../hooks/use-app-dispatch', () => ({
 vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => ({
     ViewDispatcherComponent: (props: any) => {
         observeViewProps(props);
+        observeScrollContexts(useElementDerivationContext().scrollContainerRef, useViewDispatcherContext().scrollContainerRef);
         return (
         <>
             <button
@@ -288,6 +292,16 @@ describe('ElementDerivationContext', () => {
         rerender(<TaskHarness errors={{field: {error: 'Die Angabe ist weiterhin ungültig.'}}}/>);
         expect(await screen.findByRole('alert')).toHaveTextContent('Die Angabe ist weiterhin ungültig.');
         expect(screen.getByTestId('field-error')).toHaveTextContent('Die Angabe ist weiterhin ungültig.');
+    it('passes the scroll container through both element contexts', () => {
+        const scrollContainerRef = React.createRef<HTMLDivElement>();
+        render(<ElementDerivationContext
+            element={createRootElement()}
+            scrollContainerRef={scrollContainerRef}
+            authoredElementValues={{}}
+            onAuthoredElementValuesChange={vi.fn()}
+            deriveOnMount={false}
+        />);
+        expect(observeScrollContexts).toHaveBeenLastCalledWith(scrollContainerRef, scrollContainerRef);
     });
 
     it.each(dynamicChanges)('preserves an unchanged %j result when another field changes', async (value) => {

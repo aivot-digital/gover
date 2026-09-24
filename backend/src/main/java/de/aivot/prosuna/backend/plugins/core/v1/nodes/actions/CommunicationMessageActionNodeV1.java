@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.communication.models.ByteArrayCommunicationMessageAttachment;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageAttachment;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -80,17 +81,20 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     private final ProcessInstanceAttachmentService attachmentService;
     private final StorageService storageService;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
 
     public CommunicationMessageActionNodeV1(
             ProcessInstanceAttachmentSetService attachmentSetService,
             ProcessInstanceAttachmentService attachmentService,
             StorageService storageService,
-            AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService
+            AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
+            VDepartmentShadowedService vDepartmentShadowedService
     ) {
         this.attachmentSetService = attachmentSetService;
         this.attachmentService = attachmentService;
         this.storageService = storageService;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
     }
 
     @Nonnull
@@ -355,7 +359,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var identity = processInstance.getIdentities().get(identityId);
         if (identity == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die konfigurierte Identität %s ist in der Prozessinstanz nicht vorhanden.",
+                    "Die konfigurierte Identität %s ist im Vorgang nicht vorhanden.",
                     StringUtils.quote(identityId)
             );
         }
@@ -389,7 +393,10 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                                 attachments,
                                 null,
                                 null
-                        ),
+                        ).withSignatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
+                                configuration.messageConfig,
+                                vDepartmentShadowedService
+                        )),
                         OUTPUT_SEND_RESULT
                 ));
     }
@@ -528,6 +535,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         configuration.remove(Configuration.IDENTITY_ID_FIELD_ID);
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2);
         return configuration;
     }
 

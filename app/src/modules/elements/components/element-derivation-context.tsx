@@ -57,6 +57,7 @@ import {ErrorAlert} from '../../../components/error-alert/error-alert';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
+    scrollContainerRef?: RefObject<HTMLDivElement | null>;
     authoredElementValues: AuthoredElementValues;
     onAuthoredElementValuesChange: (newData: AuthoredElementValues) => void;
     derivedData?: DerivedRuntimeElementData;
@@ -134,6 +135,7 @@ export const ElementDerivationContext = forwardRef<
 >(function ElementDerivationContext(props, ref) {
     const {
         element,
+        scrollContainerRef,
         authoredElementValues,
         onAuthoredElementValuesChange,
         derivedData: controlledDerivedData,
@@ -200,7 +202,7 @@ export const ElementDerivationContext = forwardRef<
             isEditable: !disabled && !readOnly,
             showInvisible: false,
             showTechnical: true,
-            scrollContainerRef: null,
+            scrollContainerRef: scrollContainerRef ?? null,
 
             rootElement: element,
             allElements: allElements,
@@ -220,6 +222,7 @@ export const ElementDerivationContext = forwardRef<
         computedErrors,
         suppressErrors,
         renderMode,
+        scrollContainerRef,
     ]);
 
     useEffect(() => {
@@ -433,6 +436,7 @@ export const ElementDerivationContext = forwardRef<
         >
             <ViewDispatcherContextProvider
                 value={{
+                    scrollContainerRef,
                     rootElement: element,
                     allElements: allElements,
                     mode: renderMode,

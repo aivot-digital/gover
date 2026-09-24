@@ -161,6 +161,7 @@ const YupSchemaMap: {
     [ElementType.ProcessIdentityIdInput]: dynamicSelectFieldToYup,
     [ElementType.SecretSelectInput]: dynamicSelectFieldToYup,
     [ElementType.AssetSelectInput]: dynamicSelectFieldToYup,
+    [ElementType.DepartmentSelectInput]: departmentSelectFieldToYup,
 };
 
 function genericFieldToYup(elem: AnyInputElement): Schema {
@@ -255,6 +256,23 @@ function numberFieldToYup(elem: AnyInputElement): Schema {
     }
 
     return numberFieldSchema;
+}
+
+function departmentSelectFieldToYup(elem: AnyInputElement): Schema {
+    let departmentSchema: NumberSchema<number | undefined | null> = yup
+        .number()
+        .strict()
+        .integer('Bitte wählen Sie eine gültige Organisationseinheit aus.')
+        .positive('Bitte wählen Sie eine gültige Organisationseinheit aus.');
+
+    if (elem.required) {
+        departmentSchema = departmentSchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    } else {
+        departmentSchema = departmentSchema.nullable();
+    }
+
+    return departmentSchema;
 }
 
 function selectFieldToYup(elem: SelectFieldElement | RadioFieldElement): Schema {

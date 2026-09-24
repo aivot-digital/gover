@@ -182,6 +182,8 @@ public class ProcessNodeController {
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
+        processDefinitionNodeService.requireReadableDepartmentSelections(execUser, newNode);
+
         var result = processDefinitionNodeService
                 .create(newNode);
 
@@ -297,6 +299,8 @@ public class ProcessNodeController {
                 }
             }
         }
+
+        processDefinitionNodeService.requireReadableDepartmentSelections(execUser, updateDTO);
 
         var result = processDefinitionNodeService
                 .update(id, updateDTO);
@@ -446,21 +450,23 @@ public class ProcessNodeController {
                                 .formatted(sourceNode.getProcessNodeDefinitionKey(), sourceNode.getProcessNodeDefinitionVersion())
                 ));
 
-        var importedNode = processDefinitionNodeService
-                .create(new ProcessNodeEntity()
-                        .setProcessId(processId)
-                        .setProcessVersion(processVersion)
-                        .setName(sourceNode.getName())
-                        .setDescription(sourceNode.getDescription())
-                        .setDataKey(createAvailableDataKey(sourceNode.getDataKey(), occupiedDataKeys))
-                        .setProcessNodeDefinitionKey(sourceNode.getProcessNodeDefinitionKey())
-                        .setProcessNodeDefinitionVersion(sourceNode.getProcessNodeDefinitionVersion())
-                        .setConfiguration(provider.prefillConfigurationOnImport(sourceNode.getConfiguration()))
-                        .setOutputMappings(sourceNode.getOutputMappings())
-                        .setTimeLimitDays(sourceNode.getTimeLimitDays())
-                        .setRequirements(sourceNode.getRequirements())
-                        .setNotes(sourceNode.getNotes())
-                );
+        var importedNodeCandidate = new ProcessNodeEntity()
+                .setProcessId(processId)
+                .setProcessVersion(processVersion)
+                .setName(sourceNode.getName())
+                .setDescription(sourceNode.getDescription())
+                .setDataKey(createAvailableDataKey(sourceNode.getDataKey(), occupiedDataKeys))
+                .setProcessNodeDefinitionKey(sourceNode.getProcessNodeDefinitionKey())
+                .setProcessNodeDefinitionVersion(sourceNode.getProcessNodeDefinitionVersion())
+                .setConfiguration(provider.prefillConfigurationOnImport(sourceNode.getConfiguration()))
+                .setOutputMappings(sourceNode.getOutputMappings())
+                .setTimeLimitDays(sourceNode.getTimeLimitDays())
+                .setRequirements(sourceNode.getRequirements())
+                .setNotes(sourceNode.getNotes());
+
+        processDefinitionNodeService.requireReadableDepartmentSelections(execUser, importedNodeCandidate);
+
+        var importedNode = processDefinitionNodeService.create(importedNodeCandidate);
 
         auditService.create()
                 .withUser(execUser)

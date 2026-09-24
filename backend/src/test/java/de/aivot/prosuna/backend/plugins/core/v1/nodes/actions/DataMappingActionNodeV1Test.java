@@ -15,6 +15,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -43,6 +44,54 @@ class DataMappingActionNodeV1Test {
     @BeforeEach
     void setUp() {
         node = new DataMappingActionNodeV1();
+    }
+
+    @Test
+    void getMetadata_ForwardsWrittenTargetsAndSkipsNonWritingRules() throws Exception {
+        var configuration = configuration(List.of(
+                Map.of("source", "source.one", "target", "mapped.value"),
+                Map.of("source", "source.two", "target", " items[*].name "),
+                Map.of("source", "source.three", "target", "ignored.deleted", "deleteOnly", true),
+                Map.of("source", "source.four", "target", " ")
+        ), false);
+        var processNode = processNode(configuration);
+        var nodeConfiguration = nodeConfiguration(configuration);
+        nodeConfiguration.rules = new ArrayList<>(nodeConfiguration.rules);
+        nodeConfiguration.rules.add(null);
+
+        var previousNode = new ProcessNodeEntity()
+                .setId(77)
+                .setName("Vorheriges Element");
+        var previousMetadata = ProcessNodeDefinitionMetadata
+                .empty()
+                .addForwardedProcessDataKey("existing", "Existing", null, previousNode);
+
+        var result = node.getMetadata(processNode, nodeConfiguration, previousMetadata);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
+                                "existing",
+                                "Existing",
+                                null,
+                                previousNode
+                        ),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
+                                "mapped.value",
+                                "mapped.value",
+                                null,
+                                processNode
+                        ),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
+                                "items[*].name",
+                                "items[*].name",
+                                null,
+                                processNode
+                        )
+                ),
+                result.forwardedProcessDataKeys()
+        );
+        assertEquals(1, previousMetadata.forwardedProcessDataKeys().size());
     }
 
     @Test

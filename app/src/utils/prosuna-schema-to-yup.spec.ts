@@ -305,6 +305,21 @@ describe('secret selection validation', () => {
     });
 });
 
+describe('department selection validation', () => {
+    it('should validate a scalar numeric department ID', async () => {
+        const schema = prosunaSchemaToYup({
+            id: 'department',
+            type: ElementType.DepartmentSelectInput,
+            label: 'Organisationseinheit',
+            required: true,
+        } as any, {}).department;
+
+        await expect(schema.validate(literalAuthoredValue(17))).resolves.toEqual(literalAuthoredValue(17));
+        await expect(schema.validate(literalAuthoredValue(['17']))).rejects.toThrow();
+        await expect(schema.validate(literalAuthoredValue(null))).rejects.toThrow('Organisationseinheit ist ein Pflichtfeld.');
+    });
+});
+
 function createGroupLayout(children: any[]): any {
     return {
         id: 'root',
