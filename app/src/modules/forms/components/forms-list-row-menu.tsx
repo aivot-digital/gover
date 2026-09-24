@@ -3,7 +3,6 @@ import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material
 import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import QrCode from '@aivot/mui-material-symbols-400-n25-outlined/QrCode';
 import PictureAsPdf from '@aivot/mui-material-symbols-400-n25-outlined/PictureAsPdf';
-import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import type {FormOverviewItem} from '../services/form-trigger-api-service';
 
 interface FormsListRowMenuProps {
@@ -14,7 +13,6 @@ interface FormsListRowMenuProps {
     onCopyPublicLink: (form: FormOverviewItem) => void;
     onDownloadQrCode: (form: FormOverviewItem) => void;
     onDownloadPrintablePdf: (form: FormOverviewItem) => void;
-    onShowInstances: () => void;
 }
 
 export function FormsListRowMenu({
@@ -25,7 +23,6 @@ export function FormsListRowMenu({
     onCopyPublicLink,
     onDownloadQrCode,
     onDownloadPrintablePdf,
-    onShowInstances,
 }: FormsListRowMenuProps): React.ReactElement {
     const hasPublicLink = form.status === 'Published' && form.publicUrl != null;
 
@@ -49,7 +46,7 @@ export function FormsListRowMenu({
                     <ListItemText>QR-Code mit öffentlichem Link herunterladen</ListItemText>
                 </MenuItem>
             )}
-            {hasPublicLink && <Divider />}
+            {hasPublicLink && canDownloadPrintablePdf && <Divider />}
             {canDownloadPrintablePdf && (
                 <MenuItem onClick={() => {
                     onClose();
@@ -59,13 +56,6 @@ export function FormsListRowMenu({
                     <ListItemText>Vordruck herunterladen (PDF)</ListItemText>
                 </MenuItem>
             )}
-            <MenuItem onClick={() => {
-                onClose();
-                onShowInstances();
-            }}>
-                <ListItemIcon>{ModuleIcons.submissions}</ListItemIcon>
-                <ListItemText>Vorgänge aus dem Formular anzeigen</ListItemText>
-            </MenuItem>
         </Menu>
     );
 }

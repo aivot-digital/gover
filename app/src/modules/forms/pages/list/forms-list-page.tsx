@@ -40,7 +40,6 @@ import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {Permission} from '../../../../data/permissions/permission';
 import {downloadBlobFile} from '../../../../utils/download-utils';
 import {downloadQrCode} from '../../../../utils/download-qrcode';
-import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {FormsListRowMenu} from '../../components/forms-list-row-menu';
 import {resolvePrintablePdfFilename} from '../../utils/printable-pdf-filename';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
@@ -67,7 +66,6 @@ const permissionCheck: GenericListPagePermissionConfig<FormOverviewItem> = {
 
 export function FormsListPage(): React.ReactElement {
     const dispatch = useAppDispatch();
-    const notImplemented = useNotImplemented();
     const memberships = useAppSelector(selectMemberships);
     const publicListingDisabled = useAppSelector(selectSystemConfigValue(
         SystemConfigKeys.provider.listingPage.disableProsunaListingPage,
@@ -375,6 +373,7 @@ export function FormsListPage(): React.ReactElement {
                 icon: <MoreVert />,
                 tooltip: 'Weitere Optionen',
                 ariaLabel: 'Weitere Optionen',
+                visible: (isPublished && item.publicUrl != null) || permissions.canRead(item),
                 onClick: (event) => {
                     setRowMenu({
                         anchorEl: event.currentTarget as HTMLElement,
@@ -423,7 +422,6 @@ export function FormsListPage(): React.ReactElement {
                     onCopyPublicLink={copyPublicLink}
                     onDownloadQrCode={(form) => { void downloadPublicQrCode(form); }}
                     onDownloadPrintablePdf={(form) => { void downloadPrintablePdf(form); }}
-                    onShowInstances={notImplemented}
                 />
             )}
         </>

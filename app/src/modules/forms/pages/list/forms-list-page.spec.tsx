@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
     downloadBlobFile: vi.fn(),
     downloadQrCode: vi.fn(),
     copyToClipboardText: vi.fn(),
-    notImplemented: vi.fn(),
     canRead: true,
     form: null as FormOverviewItem | null,
 }));
@@ -46,7 +45,6 @@ vi.mock('../../../../components/page-wrapper/page-wrapper', () => ({
 
 vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => mocks.dispatch}));
 vi.mock('../../../../hooks/use-app-selector', () => ({useAppSelector: () => []}));
-vi.mock('../../../../hooks/use-not-implemented', () => ({useNotImplemented: () => mocks.notImplemented}));
 vi.mock('../../../../utils/download-utils', () => ({downloadBlobFile: mocks.downloadBlobFile}));
 vi.mock('../../../../utils/download-qrcode', () => ({downloadQrCode: mocks.downloadQrCode}));
 vi.mock('../../../../utils/copy-to-clipboard', () => ({copyToClipboardText: mocks.copyToClipboardText}));
@@ -95,7 +93,7 @@ describe('FormsListPage actions', () => {
         download.mockRestore();
     });
 
-    it('offers the public link, QR code, and pending instance action in the row menu', async () => {
+    it('offers the public link and QR code in the row menu', async () => {
         mocks.copyToClipboardText.mockResolvedValue(true);
         mocks.downloadQrCode.mockResolvedValue(undefined);
         renderPage();
@@ -115,8 +113,7 @@ describe('FormsListPage actions', () => {
         ));
 
         fireEvent.click(screen.getByRole('button', {name: 'Weitere Optionen'}));
-        fireEvent.click(screen.getByRole('menuitem', {name: 'Vorgänge aus dem Formular anzeigen'}));
-        expect(mocks.notImplemented).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('menuitem', {name: 'Vorgänge aus dem Formular anzeigen'})).not.toBeInTheDocument();
     });
 
     it('does not offer a public link or QR code for a draft', () => {
@@ -133,7 +130,7 @@ describe('FormsListPage actions', () => {
         expect(screen.getByRole('menuitem', {name: 'Vordruck herunterladen (PDF)'})).toBeInTheDocument();
         expect(screen.queryByRole('menuitem', {name: 'Öffentlichen Link kopieren'})).not.toBeInTheDocument();
         expect(screen.queryByRole('menuitem', {name: 'QR-Code mit öffentlichem Link herunterladen'})).not.toBeInTheDocument();
-        expect(screen.getByRole('menuitem', {name: 'Vorgänge aus dem Formular anzeigen'})).toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Vorgänge aus dem Formular anzeigen'})).not.toBeInTheDocument();
     });
 
     it('does not offer the printable PDF without process read permission', () => {
@@ -143,7 +140,15 @@ describe('FormsListPage actions', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Weitere Optionen'}));
 
         expect(screen.queryByRole('menuitem', {name: 'Vordruck herunterladen (PDF)'})).not.toBeInTheDocument();
-        expect(screen.getByRole('menuitem', {name: 'Vorgänge aus dem Formular anzeigen'})).toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Vorgänge aus dem Formular anzeigen'})).not.toBeInTheDocument();
+    });
+
+    it('hides the row menu when no options are available', () => {
+        mocks.canRead = false;
+        mocks.form = {...mocks.form!, status: 'Drafted', publicUrl: null};
+        renderPage();
+
+        expect(screen.queryByRole('button', {name: 'Weitere Optionen'})).not.toBeInTheDocument();
     });
 
     it('shows when a published form is available only through its direct link', () => {
