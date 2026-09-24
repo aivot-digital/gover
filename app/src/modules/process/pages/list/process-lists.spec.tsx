@@ -5,6 +5,8 @@ import {MemoryRouter, useLocation, useNavigate} from 'react-router-dom';
 import {ProcessTaskList} from './process-task-list';
 import {ProcessInstanceListPage} from './process-instance-page';
 import {ProcessListApiService} from '../../services/process-list-api-service';
+import {ProcessListPage} from './process-list-page';
+import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 
 const mocks = vi.hoisted(() => ({
     api: {},
@@ -21,6 +23,8 @@ vi.mock('../../../../utils/with-async-wrapper', () => ({
 }));
 vi.mock('../../../../components/generic-page-header/generic-page-header', () => ({GenericPageHeader: () => null}));
 vi.mock('../../components/process-list-actions', () => ({ProcessListActions: () => null}));
+vi.mock('../../dialogs/new-process-dialog', () => ({NewProcessDialog: () => null}));
+vi.mock('../../hooks/use-delete-process', () => ({useDeleteProcess: () => vi.fn()}));
 const page = {
     content: [],
     page: {
@@ -60,6 +64,45 @@ describe('Process lists', () => {
         });
     });
 
+    it('offers all departments explicitly and removes the API restriction when selected', async () => {
+        vi.spyOn(ProcessDefinitionApiService.prototype, 'listDepartmentOptions').mockResolvedValue([
+            {id: 10, name: 'Bürgerbüro'},
+        ]);
+        const fetch = vi.spyOn(ProcessDefinitionApiService.prototype, 'list').mockResolvedValue(page);
+        render(
+            <MemoryRouter initialEntries={['/?departmentId=10&page=3&search=Anmeldung']}>
+                <ProcessListPage />
+                <Navigation />
+            </MemoryRouter>,
+        );
+        const input = screen.getByRole('combobox', {name: 'Verwaltende Organisationseinheit'});
+        await waitFor(() => expect(input).toHaveValue('Bürgerbüro'));
+        const user = userEvent.setup();
+        await user.click(input);
+        expect(screen.getAllByRole('option')[0]).toHaveTextContent('Alle Organisationseinheiten');
+        expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('option', {name: 'Alle Organisationseinheiten'}));
+        await waitFor(() =>
+            expect(fetch).toHaveBeenLastCalledWith(
+                0, 12, 'internalTitle', 'ASC',
+                expect.objectContaining({departmentId: undefined, internalTitle: 'Anmeldung'}),
+            ),
+        );
+        expect(input).toHaveValue('Alle Organisationseinheiten');
+        expect(screen.getByLabelText('URL')).not.toHaveTextContent('departmentId');
+        expect(screen.getByLabelText('URL')).toHaveTextContent('page=1');
+
+        await user.click(input);
+        await user.click(screen.getByRole('option', {name: 'Bürgerbüro'}));
+        await waitFor(() =>
+            expect(fetch).toHaveBeenLastCalledWith(
+                0, 12, 'internalTitle', 'ASC', expect.objectContaining({departmentId: 10}),
+            ),
+        );
+        await user.click(screen.getByRole('button', {name: 'Zurück'}));
+        await waitFor(() => expect(input).toHaveValue('Alle Organisationseinheiten'));
+    });
+
     it('defaults to my open tasks and applies assignment changes atomically with a page reset', async () => {
         const fetch = vi.spyOn(ProcessListApiService.prototype, 'tasks').mockResolvedValue(page);
         render(
@@ -83,6 +126,7 @@ describe('Process lists', () => {
         );
         const user = userEvent.setup();
         await user.click(screen.getByRole('combobox', {name: 'Zugewiesen an'}));
+        expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
         await user.click(await screen.findByRole('option', {name: 'Alle Mitarbeiter:innen'}));
         await waitFor(() =>
             expect(fetch).toHaveBeenLastCalledWith(
@@ -166,6 +210,7 @@ describe('Process lists', () => {
         );
         const user = userEvent.setup();
         await user.click(screen.getByRole('combobox', {name: 'Prozess'}));
+        expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
         await user.click(await screen.findByRole('option', {name: 'Alle Prozesse'}));
         await waitFor(() =>
             expect(fetch).toHaveBeenLastCalledWith(

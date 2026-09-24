@@ -233,19 +233,22 @@ export function ProcessListPage() {
         return () => { cancelled = true; };
     }, [departmentOptionsRevision]);
 
-    const departmentOptions = useMemo(() => departments.map(department => ({
-        value: department.id,
-        label: department.name,
-    })), [departments]);
+    const departmentOptions = useMemo(() => [
+        {value: 'all', label: 'Alle Organisationseinheiten'},
+        ...departments.map(department => ({
+            value: String(department.id),
+            label: department.name,
+        })),
+    ], [departments]);
     const preSearchElements = useMemo(() => [
         <SelectFieldComponent
             key="managing-department"
             label="Verwaltende Organisationseinheit"
             presentation={SelectFieldPresentation.Combobox}
             options={departmentOptions}
-            value={departmentId}
-            onChange={id => setDepartmentFilter(id == null ? null : String(id))}
-            emptyOptionLabel="Alle Organisationseinheiten"
+            value={departmentId == null ? 'all' : String(departmentId)}
+            onChange={id => setDepartmentFilter(id === 'all' ? null : id)}
+            includeEmptyOption={false}
             showOptionalIndicator={false}
             margin="none"
             busy={departmentsLoading}
