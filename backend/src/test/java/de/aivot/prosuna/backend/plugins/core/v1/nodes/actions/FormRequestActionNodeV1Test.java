@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -16,6 +17,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInpu
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
@@ -31,6 +33,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidation
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeCustomerView;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssignedCustomer;
@@ -87,6 +90,7 @@ class FormRequestActionNodeV1Test {
                 mock(AssignmentContextAssigneeResolverService.class),
                 prosunaConfig,
                 new ElementDataTransformService(),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
                 processInstanceAttachmentService,
                 vDepartmentShadowedService
         );
@@ -221,6 +225,74 @@ class FormRequestActionNodeV1Test {
         assertEquals(1, metadata.forwardedIdentities().size());
         assertEquals("representative", metadata.forwardedIdentities().getFirst().identityId());
         assertEquals("Vertretung", metadata.forwardedIdentities().getFirst().label());
+    }
+
+    @Test
+    void customerTaskViewPrefillsMappedFieldsFromTaskProcessData() throws Exception {
+        var mappedField = new TextInputElement();
+        mappedField.setId("name");
+        mappedField.setDestinationKey("applicant.name");
+        var unmappedField = new TextInputElement();
+        unmappedField.setId("internalNote");
+        var layout = new GroupLayoutElement();
+        layout.setId("form");
+        layout.setChildren(List.of(mappedField, unmappedField));
+
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
+        configuration.uiDefinition = layout;
+
+        var view = node.getCustomerTaskView(context(configuration, Map.of(
+                "applicant", Map.of("name", "Ada"),
+                "internalNote", "Nicht freigeben"
+        )));
+
+        assertEquals("Ada", view.data().getLiteral("name"));
+        assertFalse(view.data().containsKey("internalNote"));
+        assertEquals(RECIPIENT_IDENTITY_ID, view.requiredExistingIdentityId());
+    }
+
+    @Test
+    void customerTaskViewKeepsSavedInputsAheadOfMappedProcessData() throws Exception {
+        var nameField = new TextInputElement();
+        nameField.setId("name");
+        nameField.setDestinationKey("applicant.name");
+        var cityField = new TextInputElement();
+        cityField.setId("city");
+        cityField.setDestinationKey("applicant.city");
+        var layout = new GroupLayoutElement();
+        layout.setId("form");
+        layout.setChildren(List.of(nameField, cityField));
+
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
+        configuration.uiDefinition = layout;
+        var savedData = new AuthoredElementValues().putLiteral("name", null);
+
+        var view = node.getCustomerTaskView(context(
+                configuration,
+                Map.of("applicant", Map.of("name", "Ada", "city", "Berlin")),
+                Map.of(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY, savedData)
+        ));
+
+        assertTrue(view.data().containsKey("name"));
+        assertNull(view.data().getLiteral("name"));
+        assertEquals("Berlin", view.data().getLiteral("city"));
+    }
+
+    @Test
+    void customerTaskViewWithoutMappingHasNoPrefilledData() throws Exception {
+        var field = new TextInputElement();
+        field.setId("name");
+        var layout = new GroupLayoutElement();
+        layout.setId("form");
+        layout.setChildren(List.of(field));
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.uiDefinition = layout;
+
+        var view = node.getCustomerTaskView(context(configuration, Map.of("name", "Ada")));
+
+        assertTrue(view.data().isEmpty());
     }
 
     @Test
@@ -522,6 +594,15 @@ class FormRequestActionNodeV1Test {
             FormRequestActionNodeV1.NodeConfig configuration,
             Map<String, Object> processData
     ) {
+        return context(configuration, processData, Map.of());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ProcessNodeExecutionContextUICustomer<FormRequestActionNodeV1.NodeConfig> context(
+            FormRequestActionNodeV1.NodeConfig configuration,
+            Map<String, Object> processData,
+            Map<String, Object> runtimeData
+    ) {
         var context = mock(ProcessNodeExecutionContextUICustomer.class);
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
         when(context.getThisProcessInstance()).thenReturn(
@@ -530,7 +611,7 @@ class FormRequestActionNodeV1Test {
         when(context.getThisTask()).thenReturn(
                 new ProcessInstanceTaskEntity()
                         .setId(PROCESS_INSTANCE_TASK_ID)
-                        .setRuntimeData(Map.of())
+                        .setRuntimeData(runtimeData)
                         .setProcessData(processData)
         );
         return context;

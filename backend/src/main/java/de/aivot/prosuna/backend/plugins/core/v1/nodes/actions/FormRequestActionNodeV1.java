@@ -25,6 +25,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputEle
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.enums.InputMode;
@@ -95,17 +96,20 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
     private final ProsunaConfig prosunaConfig;
     private final ElementDataTransformService elementDataTransformService;
+    private final AuthoredInputValueService authoredInputValueService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final VDepartmentShadowedService vDepartmentShadowedService;
 
     public FormRequestActionNodeV1(AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
                                    ProsunaConfig prosunaConfig,
                                    ElementDataTransformService elementDataTransformService,
+                                   AuthoredInputValueService authoredInputValueService,
                                    ProcessInstanceAttachmentService processInstanceAttachmentService,
                                    VDepartmentShadowedService vDepartmentShadowedService) {
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
         this.prosunaConfig = prosunaConfig;
         this.elementDataTransformService = elementDataTransformService;
+        this.authoredInputValueService = authoredInputValueService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
     }
@@ -551,11 +555,19 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             existingIdentityId = configuration.recipientIdentityId;
             newIdentitySlot = null;
         }
+        var effectiveValues = elementDataTransformService.buildEffectiveValues(
+                configuration.uiDefinition,
+                context.getThisTask().getProcessData()
+        );
+        var initialData = authoredInputValueService.toLiteralAuthoredElementValues(
+                configuration.uiDefinition,
+                effectiveValues
+        );
         return ProcessNodeCustomerView.of(
                 context,
                 configuration.uiDefinition,
                 List.of(new TaskViewEvent("Daten einreichen", CUSTOMER_TASK_SUBMIT_EVENT)),
-                new AuthoredElementValues(),
+                initialData,
                 existingIdentityId,
                 newIdentitySlot
         );
