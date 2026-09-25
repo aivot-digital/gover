@@ -24,7 +24,7 @@
                         <br/>
                         Prozess: <b th:text="${process.internalTitle}">Beispielprozess</b>
                         <br/>
-                        Vorgangsschlüssel: <b th:text="${processInstance.caseNumber}">123</b>
+                        Vorgangskennung: <b th:text="${processInstance.caseNumber}">123</b>
                         <span th:if="${fileNumbersDisplay != null}">
                             <br/>
                             Aktenzeichen: <b th:text="${fileNumbersDisplay}">AZ-123</b>

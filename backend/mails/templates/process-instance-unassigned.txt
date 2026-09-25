@@ -2,7 +2,7 @@ Hallo,
 
 [(${intro})]
 Prozess: [(${process.internalTitle})]
-Vorgangsschlüssel: [(${processInstance.caseNumber})]
+Vorgangskennung: [(${processInstance.caseNumber})]
 [# th:if="${fileNumbersDisplay != null}"]Aktenzeichen: [(${fileNumbersDisplay})]
 [/]
 Geändert durch: [(${changeSource})]
