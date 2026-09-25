@@ -77,15 +77,15 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
         const title = draft.internalTitle.trim();
 
         if (title.length === 0) {
-            return 'Bitte geben Sie einen internen Titel an.';
+            return 'Bitte geben Sie eine interne Bezeichnung an.';
         }
 
         if (title.length < 3) {
-            return 'Der interne Titel muss mindestens 3 Zeichen lang sein.';
+            return 'Die interne Bezeichnung muss mindestens 3 Zeichen lang sein.';
         }
 
         if (title.length > 96) {
-            return 'Der interne Titel darf maximal 96 Zeichen lang sein.';
+            return 'Die interne Bezeichnung darf maximal 96 Zeichen lang sein.';
         }
 
         return undefined;
@@ -217,7 +217,7 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                 </ElementEditorSectionHeader>
 
                 <TextFieldComponent
-                    label="Interner Titel"
+                    label="Interne Bezeichnung"
                     value={draft.internalTitle}
                     onChange={(val) => {
                         setDraft({
@@ -229,7 +229,7 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                     error={internalTitleError}
                     minCharacters={3}
                     maxCharacters={96}
-                    hint="Nur intern sichtbar; dient zur Wiedererkennung des Prozesses in der Verwaltung."
+                    hint="Dient der internen Identifizierung des Prozesses; nicht öffentlich sichtbar."
                 />
 
                 <TextFieldComponent
