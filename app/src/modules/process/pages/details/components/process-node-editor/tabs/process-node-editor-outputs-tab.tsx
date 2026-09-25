@@ -33,8 +33,8 @@ export function ProcessNodeEditorOutputsTab() {
                     mb: 2,
                     maxWidth: 400
                 }}>
-                Mit dem Datenschlüssel greifen Sie auf die Elementdaten und Ausführungsmetadaten dieses Prozesselements
-                zu.
+                Über den Datenschlüssel greifen Sie auf Elementdaten sowie auf Ausführungsmetadaten in den geschützten
+                Vorgangsdaten zu.
             </Typography>
 
             <TextFieldComponent
@@ -169,10 +169,12 @@ export function ProcessNodeEditorOutputsTab() {
                             Keine zuweisbaren Ausgangsdaten
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{mt: 0.75}}>
-                            Dieses Prozesselement erzeugt keine Ausgangsdaten oder schreibt Vorgangsdaten auf anderem Weg.
+                            Dieses Prozesselement stellt keine Ausgangsdaten zur Zuordnung bereit. Es kann Vorgangsdaten
+                            dennoch auf anderem Weg verändern.
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-                            Über den Datenschlüssel können Sie dennoch auf Metadaten zu seiner Ausführung zugreifen.
+                            Metadaten zu seiner Ausführung finden Sie über den Datenschlüssel in den geschützten
+                            Vorgangsdaten.
                         </Typography>
                     </Box>
                 </Box>

@@ -22,11 +22,11 @@ describe('ProcessNodeEditorOutputsTab', () => {
 
         expect(dataKey).toHaveValue('copy_field');
         expect(dataKey).toBeEnabled();
-        expect(screen.getByText(/Mit dem Datenschlüssel greifen Sie auf die Elementdaten und Ausführungsmetadaten/)).toBeInTheDocument();
+        expect(screen.getByText(/Über den Datenschlüssel greifen Sie auf Elementdaten sowie auf Ausführungsmetadaten in den geschützten Vorgangsdaten zu/)).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: 'Ausgangsdaten'})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: 'Keine zuweisbaren Ausgangsdaten'})).toBeInTheDocument();
-        expect(screen.getByText(/erzeugt keine Ausgangsdaten oder schreibt Vorgangsdaten auf anderem Weg/)).toBeInTheDocument();
-        expect(screen.getByText(/Über den Datenschlüssel können Sie dennoch auf Metadaten zu seiner Ausführung zugreifen/)).toBeInTheDocument();
+        expect(screen.getByText(/stellt keine Ausgangsdaten zur Zuordnung bereit. Es kann Vorgangsdaten dennoch auf anderem Weg verändern/)).toBeInTheDocument();
+        expect(screen.getByText(/Metadaten zu seiner Ausführung finden Sie über den Datenschlüssel in den geschützten Vorgangsdaten/)).toBeInTheDocument();
         expect(screen.queryByRole('heading', {name: 'Datenstruktur der Ausgangsdaten'})).not.toBeInTheDocument();
 
         fireEvent.change(dataKey, {target: {value: 'copied_field'}});
@@ -48,7 +48,7 @@ describe('ProcessNodeEditorOutputsTab', () => {
         }]});
 
         expect(screen.getByRole('textbox', {name: /Datenschlüssel/})).toHaveValue('copy_field');
-        expect(screen.getByText(/Mit dem Datenschlüssel greifen Sie auf die Elementdaten und Ausführungsmetadaten/)).toBeInTheDocument();
+        expect(screen.getByText(/Über den Datenschlüssel greifen Sie auf Elementdaten sowie auf Ausführungsmetadaten in den geschützten Vorgangsdaten zu/)).toBeInTheDocument();
         expect(screen.getByRole('textbox', {name: /Ergebnis/})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: 'Datenstruktur der Ausgangsdaten'})).toBeInTheDocument();
         expect(screen.getByText('_.copy_field.result')).toBeInTheDocument();
