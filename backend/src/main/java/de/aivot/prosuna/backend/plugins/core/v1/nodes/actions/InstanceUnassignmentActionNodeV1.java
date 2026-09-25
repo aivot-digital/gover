@@ -56,7 +56,7 @@ public class InstanceUnassignmentActionNodeV1 implements ProcessNodeDefinition<I
     @Override
     public String getDescription() {
         return """
-                Entfernt die zentrale Zuweisung des aktuellen Vorgangs. Ist bereits keine Person zugewiesen, bleibt die Zuweisung leer und der Prozess wird fortgesetzt.
+                Entfernt die zentrale Zuweisung des aktuellen Vorgangs. Ist keine Person zugewiesen, bleibt die Zuweisung leer und der Prozess wird fortgesetzt.
                 """;
     }
 
