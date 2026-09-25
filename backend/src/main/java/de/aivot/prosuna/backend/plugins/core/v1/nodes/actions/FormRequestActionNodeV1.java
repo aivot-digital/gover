@@ -318,16 +318,20 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
                                                      @Nonnull NodeConfig configuration,
                                                      @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        var metadata = ProcessNodeDefinitionMetadata
+                .reuse(previousMetadata)
+                .withLayout(configuration.uiDefinition, processNodeEntity);
+
         if (!RECIPIENT_MODE_NEW.equals(configuration.recipientMode)
                 || configuration.newIdentities == null
                 || configuration.newIdentities.size() != 1) {
-            return previousMetadata;
+            return metadata;
         }
         var identity = configuration.newIdentities.getFirst();
         if (identity == null || !isValidNewIdentityId(identity.getId()) || StringUtils.isNullOrEmpty(identity.getTitle())) {
-            return previousMetadata;
+            return metadata;
         }
-        return ProcessNodeDefinitionMetadata.reuse(previousMetadata).addForwardedIdentity(
+        return metadata.addForwardedIdentity(
                 identity.getId(),
                 identity.getTitle().trim(),
                 identity.getDescription(),

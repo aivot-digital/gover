@@ -224,6 +224,76 @@ class FormRequestActionNodeV1Test {
     }
 
     @Test
+    void getMetadata_ExposesFormAndPreservesPreviousMetadataForExistingRecipient() {
+        var previousOrigin = mock(ProcessNodeEntity.class);
+        var previousLayout = new GroupLayoutElement();
+        previousLayout.setName("Vorherige Oberfläche");
+        var previousField = new TextInputElement();
+        previousField.setId("previousField");
+        previousLayout.setChildren(List.of(previousField));
+        var previousMetadata = ProcessNodeDefinitionMetadata.empty().withLayout(previousLayout, previousOrigin);
+
+        var formField = new TextInputElement();
+        formField.setId("name");
+        formField.setDestinationKey("applicant.name");
+        var form = new GroupLayoutElement();
+        form.setName("Angeforderte Daten");
+        form.setChildren(List.of(formField));
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = "existing";
+        configuration.uiDefinition = form;
+        var processNode = mock(ProcessNodeEntity.class);
+
+        var metadata = node.getMetadata(processNode, configuration, previousMetadata);
+
+        assertEquals(2, metadata.reusableUiDefinitions().size());
+        assertEquals("Vorherige Oberfläche", metadata.reusableUiDefinitions().get(0).label());
+        assertSame(previousOrigin, metadata.reusableUiDefinitions().get(0).origin());
+        assertEquals("Angeforderte Daten", metadata.reusableUiDefinitions().get(1).label());
+        assertSame(form, metadata.reusableUiDefinitions().get(1).uiDefinition());
+        assertSame(processNode, metadata.reusableUiDefinitions().get(1).origin());
+        assertEquals("applicant.name", metadata.forwardedProcessDataKeys().getFirst().processDataKey());
+        assertEquals(1, previousMetadata.reusableUiDefinitions().size());
+        assertTrue(previousMetadata.forwardedProcessDataKeys().isEmpty());
+    }
+
+    @Test
+    void getMetadata_ExposesFormAlongsideNewRecipientIdentity() {
+        var form = new GroupLayoutElement();
+        var formField = new TextInputElement();
+        formField.setId("name");
+        form.setChildren(List.of(formField));
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = "new";
+        configuration.newIdentities = List.of(new IdentityConfigElementSlot()
+                .setId("representative")
+                .setTitle("Vertretung"));
+        configuration.uiDefinition = form;
+        var processNode = mock(ProcessNodeEntity.class);
+
+        var metadata = node.getMetadata(processNode, configuration, ProcessNodeDefinitionMetadata.empty());
+
+        assertEquals(1, metadata.reusableUiDefinitions().size());
+        assertSame(form, metadata.reusableUiDefinitions().getFirst().uiDefinition());
+        assertSame(processNode, metadata.reusableUiDefinitions().getFirst().origin());
+        assertEquals("representative", metadata.forwardedIdentities().getFirst().identityId());
+    }
+
+    @Test
+    void getMetadata_SkipsMissingOrEmptyForm() {
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = "existing";
+        var processNode = mock(ProcessNodeEntity.class);
+
+        assertTrue(node.getMetadata(processNode, configuration, ProcessNodeDefinitionMetadata.empty())
+                .reusableUiDefinitions().isEmpty());
+
+        configuration.uiDefinition = new GroupLayoutElement();
+        assertTrue(node.getMetadata(processNode, configuration, ProcessNodeDefinitionMetadata.empty())
+                .reusableUiDefinitions().isEmpty());
+    }
+
+    @Test
     void newRecipientModeRejectsMissingOrOptionalIdentityAndInvalidEmail() {
         var configuration = new FormRequestActionNodeV1.NodeConfig();
         configuration.recipientMode = "new";
