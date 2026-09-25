@@ -434,7 +434,7 @@ public class CustomerProcessInstanceTaskViewController {
         ProcessInstanceTaskEntity previousTask;
         if (taskViewData.task.getPreviousProcessNodeId() != null) {
             previousTask = processInstanceTaskService
-                    .retrieveLatest(
+                    .retrieveLatestForInstanceIdAndNodeId(
                             taskViewData.instance.getId(),
                             taskViewData.task.getPreviousProcessNodeId()
                     )

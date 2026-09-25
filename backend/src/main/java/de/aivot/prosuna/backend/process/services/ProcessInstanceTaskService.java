@@ -55,14 +55,6 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
         return processInstanceTaskRepository.findOne(specification);
     }
 
-    public Optional<ProcessInstanceTaskEntity> retrieveLatest(Long processInstanceId,
-                                                              Integer processDefinitionNodeId) {
-        return processInstanceTaskRepository.findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
-                processInstanceId,
-                processDefinitionNodeId
-        );
-    }
-
     @Override
     public boolean exists(@Nonnull Long id) {
         return processInstanceTaskRepository.existsById(id);
