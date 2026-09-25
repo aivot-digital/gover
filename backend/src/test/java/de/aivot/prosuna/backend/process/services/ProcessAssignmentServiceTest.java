@@ -183,6 +183,7 @@ class ProcessAssignmentServiceTest {
 
     @Test
     void runtimeOptionsFilterCurrentRightsForAutomaticRecipientAndManualDispatcher() throws Exception {
+        when(instances.existsById(17L)).thenReturn(true);
         grant("recipient", PROCESS_INSTANCE_READ);
         grant("dispatcher", PROCESS_INSTANCE_READ);
         grant("dispatcher", PROCESS_INSTANCE_EDIT_TASK);
@@ -198,7 +199,7 @@ class ProcessAssignmentServiceTest {
                 .stream().map(option -> option.id()).toList());
 
         service.requireRuntimeInstanceAssignee(17L, "recipient");
-        when(instances.hasPermission("recipient", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
+        when(instances.hasPermissionWithoutDeputies("recipient", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
         assertThrows(ResponseException.class, () -> service.requireRuntimeInstanceAssignee(17L, "recipient"));
     }
 

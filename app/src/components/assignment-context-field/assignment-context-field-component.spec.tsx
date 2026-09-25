@@ -68,6 +68,7 @@ describe('AssignmentContextFieldComponent', () => {
             <AssignmentContextFieldComponent
                 value={null}
                 onChange={vi.fn()}
+                options={[]}
                 disableProcessInstanceAssigneeOption
                 disableAssignmentContextRepeatExecutionAssigneePreferenceOptions
             />,
@@ -81,8 +82,7 @@ describe('AssignmentContextFieldComponent', () => {
         expect(screen.getByText('Bevorzuge Bearbeiter:in des vorherigen Prozessschritts')).toBeInTheDocument();
     });
 
-    it('offers removal of a saved preference when its selection is hidden', async () => {
-        const user = userEvent.setup();
+    it('keeps a saved disabled repeat preference hidden without changing it', () => {
         const onChange = vi.fn();
         const selection = [{type: 'user' as const, id: 'recipient'}];
         render(
@@ -93,19 +93,15 @@ describe('AssignmentContextFieldComponent', () => {
                     repeatExecutionAssigneePreference: 'previousIterationAssignee',
                 }}
                 onChange={onChange}
+                options={[]}
                 disableAssignmentContextRepeatExecutionAssigneePreferenceOptions
             />,
         );
 
-        expect(screen.getByRole('alert')).toHaveTextContent('Die gespeicherte Bevorzugung bei erneuter Ausführung ist hier nicht zulässig.');
         expect(screen.queryByTitle('Bevorzugung bei erneuter Ausführung (Schleife)')).not.toBeInTheDocument();
-
-        await user.click(screen.getByRole('button', {name: 'Bevorzugung entfernen'}));
-        expect(onChange).toHaveBeenCalledWith({
-            domainAndUserSelection: selection,
-            generalAssigneePreference: undefined,
-            repeatExecutionAssigneePreference: undefined,
-        });
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Bevorzugung entfernen'})).not.toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
     });
 
     it('shows a saved disabled general preference as an error until it is changed', () => {
@@ -117,6 +113,7 @@ describe('AssignmentContextFieldComponent', () => {
                     repeatExecutionAssigneePreference: 'none',
                 }}
                 onChange={vi.fn()}
+                options={[]}
                 disableProcessInstanceAssigneeOption
             />,
         );
