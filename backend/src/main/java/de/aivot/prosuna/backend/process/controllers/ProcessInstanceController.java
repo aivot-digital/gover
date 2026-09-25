@@ -8,6 +8,8 @@ import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceReassignRequestDTO;
+import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
+import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
@@ -39,6 +41,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -58,6 +61,7 @@ public class ProcessInstanceController {
     private final RabbitTemplate rabbitTemplate;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final PermissionService permissionService;
+    private final ProcessAssignmentService assignmentService;
 
     @Autowired
     public ProcessInstanceController(AuditService auditService,
@@ -66,7 +70,7 @@ public class ProcessInstanceController {
                                      ProcessInstanceTaskService processInstanceTaskService,
                                      RabbitTemplate rabbitTemplate,
                                      ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
-                                     PermissionService permissionService) {
+                                     PermissionService permissionService, ProcessAssignmentService assignmentService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceService = processInstanceService;
@@ -74,6 +78,7 @@ public class ProcessInstanceController {
         this.rabbitTemplate = rabbitTemplate;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.permissionService = permissionService;
+        this.assignmentService = assignmentService;
     }
 
     @GetMapping("")
@@ -144,7 +149,7 @@ public class ProcessInstanceController {
     @PutMapping("{id}/reassign/")
     @Operation(
             summary = "Reassign Process Instance",
-            description = "Assign an existing process instance to another user or clear its assignment."
+            description = "Assign an existing process instance to active staff with read access or clear its assignment. Requires process_instance.reassign."
     )
     public ProcessInstanceEntity reassign(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -155,37 +160,16 @@ public class ProcessInstanceController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var existing = processInstanceService
-                .retrieve(id)
-                .orElseThrow(ResponseException::notFound);
+        return assignmentService.reassignInstance(execUser, id, request.assignedUserId());
+    }
 
-        permissionService.requireProcessInstancePermission(
-                execUser.getId(),
-                existing.getId(),
-                ProcessInstancePermissionProvider.PROCESS_INSTANCE_REASSIGN
-        );
-
-        if (request.assignedUserId() != null && userService.retrieve(request.assignedUserId()).isEmpty()) {
-            throw ResponseException.badRequest("Die zuzuweisende Mitarbeiter:in wurde nicht gefunden.");
-        }
-
-        var result = processInstanceService.save(
-                existing
-                        .setAssignedUserId(request.assignedUserId())
-                        .setUpdated(Instant.now())
-        );
-
-        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, ProcessInstanceEntity.class, result.getId(), "id", Map.of(
-                "id", result.getId(),
-                "processDefinitionId", result.getProcessId()
-        )).withMessage(
-                "Der Vorgang mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s neu zugewiesen.",
-                StringUtils.quote(String.valueOf(result.getId())),
-                StringUtils.quote(String.valueOf(result.getProcessId())),
-                StringUtils.quote(execUser.getFullName())
-        ).log();
-
-        return result;
+    @GetMapping("{id}/assignment-options/")
+    @Operation(summary = "List Process Instance Assignees", description = "List active staff with read access to this instance. Requires process_instance.reassign.")
+    public List<ProcessAssignmentOptionDTO> assignmentOptions(
+            @Nullable @AuthenticationPrincipal Jwt jwt, @Nonnull @PathVariable Long id
+    ) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return assignmentService.instanceOptions(user.getId(), id);
     }
 
     @PutMapping("{id}/restart-failed/")

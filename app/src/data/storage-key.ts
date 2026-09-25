@@ -12,6 +12,10 @@ export enum StorageKey {
 
     SavedModule = 'saved_module',
 
+    ProcessInstanceListColumns = 'process_instance_list_columns',
+    ProcessTaskListColumns = 'process_task_list_columns',
+    ProcessInstanceTaskListColumns = 'process_instance_task_list_columns',
+
     TokenDebuggerActive = 'debug_tokens',
     CaptchaDebuggerActive = 'debug_captcha',
 

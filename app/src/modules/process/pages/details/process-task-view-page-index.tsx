@@ -1,5 +1,9 @@
-import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Link, Skeleton, Tooltip, Typography} from '@mui/material';
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
+import {ProcessAssignmentButton} from '../../components/process-assignment-button';
+import {createStaffPath} from '../../../../utils/url-path-utils';
+import {ProcessAssignee} from '../../components/process-assignee';
+import React, {type ReactNode, useId, useMemo} from 'react';
+import {Box, Button, Tooltip, Typography} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import Flag from '@aivot/mui-material-symbols-400-n25-outlined/Flag';
@@ -10,7 +14,6 @@ import ScheduleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/S
 import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import AssignmentIndOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AssignmentInd';
-import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
@@ -27,200 +30,82 @@ import MoveToInbox from '@aivot/mui-material-symbols-400-n25-outlined/MoveToInbo
 import Acute from '@aivot/mui-material-symbols-400-n25-outlined/Acute';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {
-    formatInstantInApplicationTimeZone,
-    formatRelativeInstantInApplicationTimeZone,
-} from '../../../../utils/temporal-utils';
+    ProcessNodeLabel,
+    ProcessEmptyValue,
+    ProcessStatusValue,
+    CopyableProcessValue,
+    ProcessFileNumbers,
+    formatDateTimeWithRelative,
+    renderLinkedValue,
+    renderProcessLabel,
+} from '../../components/process-detail-values';
 
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../enums/process-task-status';
-import {UsersApiService} from '../../../users/users-api-service';
-import {resolveUserName} from '../../../users/utils/resolve-user-name';
-import {type User} from '../../../users/models/user';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectUser} from '../../../../slices/user-slice';
-import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
-import {Permission} from '../../../../data/permissions/permission';
 import {type IdentityDataMap} from '../../../identity/models/identity-data';
+import {useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
 
-function TaskAssignee({userId}: {userId: string | null}): ReactNode {
-    const currentUser = useAppSelector(selectUser);
-    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
-    const [lookup, setLookup] = useState<{id: string; user: User | null} | null>(null);
-    const isSelf = userId != null && currentUser?.id === userId;
-
-    useEffect(() => {
-        let cancelled = false;
-        setLookup(null);
-        if (userId != null && !isSelf && canReadUsers) {
-            new UsersApiService().retrieve(userId).then(
-                (user) => {
-                    if (!cancelled) {
-                        setLookup({id: userId, user});
-                    }
-                },
-                () => {
-                    if (!cancelled) {
-                        setLookup({id: userId, user: null});
-                    }
-                },
-            );
-        }
-        return () => {
-            cancelled = true;
-        };
-    }, [userId, isSelf, canReadUsers]);
-
-    if (userId == null) return 'Nicht zugewiesen';
-    if (isSelf) return resolveUserName(currentUser);
-    if (!canReadUsers) return 'Zugewiesen · Name nicht verfügbar';
-    if (lookup?.id !== userId) return 'Name wird geladen …';
-    return lookup.user == null ? 'Zugewiesen · Name nicht verfügbar' : resolveUserName(lookup.user);
-}
-
-function getExternalAssigneeLabel(identityId: string, identities?: IdentityDataMap): string {
+function getExternalAssigneeLabel(identityId: string, identities?: IdentityDataMap): ReactNode {
     const identity = Object.values(identities ?? {}).find((value) => value.identityId === identityId);
-    if (identity == null) return 'Zugewiesen · Angaben nicht verfügbar';
+    if (identity == null) return <ProcessEmptyValue>Zugewiesen · Angaben nicht verfügbar</ProcessEmptyValue>;
 
     const attributes = identity.attributes;
-    const name = attributes.name?.trim() || [attributes.given_name, attributes.family_name]
-        .map((part) => part?.trim()).filter(Boolean).join(' ');
-    return name || identity.emailAddress?.trim() || 'Zugewiesen · Name nicht hinterlegt';
-}
-
-function formatDateTimeWithRelative(value?: string | null, fallback = 'Nicht hinterlegt'): ReactNode {
-    if (value == null || value.trim().length === 0) {
-        return fallback;
-    }
-
-    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy – HH:mm');
-    const relative = formatRelativeInstantInApplicationTimeZone(value);
-    if (formatted == null || relative == null) {
-        return fallback;
-    }
-
+    const name =
+        attributes.name?.trim() ||
+        [attributes.given_name, attributes.family_name]
+            .map((part) => part?.trim())
+            .filter(Boolean)
+            .join(' ');
     return (
-        <Box component="span">
-            {formatted} Uhr{' '}
-            <Box
-                component="span"
-                sx={{
-                    color: 'text.secondary',
-                }}
-            >
-                ({relative})
-            </Box>
-        </Box>
-    );
-}
-
-function renderLinkedValue(label: ReactNode, to: string | null): ReactNode {
-    if (to == null) {
-        return label;
-    }
-
-    return (
-        <Link
-            href={to}
-            target="_blank"
-            rel="noopener noreferrer"
-            underline="hover"
-            color="inherit"
-            sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                columnGap: 0.75,
-                rowGap: 0.25,
-            }}
-        >
-            {label}
-            <OpenInNewIcon
-                fontSize="inherit"
-                sx={{
-                    fontSize: 16,
-                    color: 'text.secondary',
-                }}
-            />
-        </Link>
-    );
-}
-
-function renderProcessLabel(name: string, version: number): ReactNode {
-    return (
-        <Box component="span">
-            <Box component="span">{name}</Box>{' '}
-            <Box
-                component="span"
-                sx={{
-                    color: 'text.secondary',
-                }}
-            >
-                (v{version})
-            </Box>
-        </Box>
+        name ||
+        identity.emailAddress?.trim() || <ProcessEmptyValue>Zugewiesen · Name nicht hinterlegt</ProcessEmptyValue>
     );
 }
 
 export function ProcessTaskViewPageIndex(): ReactNode {
-    const {
-        item,
-    } = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
+    const sectionId = useId();
+    const {item, refresh} = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
+    const canReadProcess = useHasProcessPermission(item?.task.processId, Permission.PROCESS_DEFINITION_READ);
 
-    const generalInfoItems = useMemo<StatusTablePropsItem[]>(() => {
+    const instanceInfoItems = useMemo<StatusTablePropsItem[]>(() => {
         if (item == null) {
             return [];
         }
 
-        const processPath = getProcessTaskProcessPath(item);
+        const processPath = canReadProcess ? getProcessTaskProcessPath(item) : null;
         const processLabel = renderProcessLabel(
             item.process?.internalTitle ?? `Prozess #${item.task.processId}`,
             item.task.processVersion,
         );
-        const fileNumbers = item.instance?.assignedFileNumbers?.filter((value) => value.trim().length > 0) ?? [];
         const entries: StatusTablePropsItem[] = [
             {
                 label: 'Vorgangskennung',
                 icon: <Inbox />,
-                children: renderLinkedValue(item.instance?.caseNumber ?? 'Nicht hinterlegt', processPath),
+                children: (
+                    <CopyableProcessValue
+                        value={item.instance?.caseNumber}
+                        label="Vorgangskennung"
+                    >
+                        {renderLinkedValue(
+                            item.instance?.caseNumber,
+                            item.instance == null ? null : createStaffPath(`/process-instances/${item.instance.id}`),
+                        )}
+                    </CopyableProcessValue>
+                ),
             },
             {
                 label: 'Aktenzeichen',
                 icon: <SellOutlinedIcon />,
-                children: fileNumbers.length > 0 ? fileNumbers.join(', ') : 'Kein Aktenzeichen hinterlegt',
+                children: <ProcessFileNumbers values={item.instance?.assignedFileNumbers} />,
             },
             {
                 label: 'Prozess',
                 icon: <RouteOutlinedIcon />,
                 children: renderLinkedValue(processLabel, processPath),
             },
-            {
-                label: 'Aufgabe erhalten',
-                icon: <MoveToInbox />,
-                children: formatDateTimeWithRelative(item.task.started),
-            },
-            {
-                label: 'Fälligkeit (spätestens)',
-                icon: <Acute/>,
-                children: formatDateTimeWithRelative(item.task.deadline, 'Nicht festgelegt'),
-            },
         ];
-
-        if (item.instance?.createdForTestClaimId != null) {
-            entries.push({
-                label: 'Test-Aufgabe',
-                icon: <ScienceOutlinedIcon sx={{color: 'warning.main'}} />,
-                alignTop: true,
-                children: (
-                    <>
-                        Es handelt sich bei dieser Aufgabe um einen Test.
-                        <br />
-                        Der zugehörige Vorgang wurde im Testmodus ausgelöst.
-                    </>
-                ),
-            });
-        }
-
         return entries;
-    }, [item]);
+    }, [item, canReadProcess]);
 
     const taskInfoItems = useMemo<StatusTablePropsItem[]>(() => {
         if (item == null) {
@@ -231,23 +116,67 @@ export function ProcessTaskViewPageIndex(): ReactNode {
             {
                 label: 'Prozesselement',
                 icon: getProcessTaskNodeIcon(item),
-                children: getProcessTaskName(item),
+                children: (
+                    <ProcessNodeLabel
+                        name={getProcessTaskName(item)}
+                        typeLabel={item.provider?.name}
+                    />
+                ),
             },
             {
                 label: 'Kurzbeschreibung',
                 icon: <Task />,
                 alignTop: true,
-                children: getProcessTaskDescription(item),
+                children:
+                    item.node?.description?.trim() || item.provider?.abstractDescription?.trim() ? (
+                        getProcessTaskDescription(item)
+                    ) : (
+                        <ProcessEmptyValue>{getProcessTaskDescription(item)}</ProcessEmptyValue>
+                    ),
             },
+            {
+                label: 'Aufgabe erhalten',
+                icon: <MoveToInbox />,
+                children: formatDateTimeWithRelative(item.task.started),
+            },
+        ];
+        if (item.instance?.createdForTestClaimId != null) {
+            entries.push({
+                label: 'Test-Aufgabe',
+                icon: <ScienceOutlinedIcon sx={{color: 'warning.main'}} />,
+                alignTop: true,
+                children: (
+                    <>
+                        Diese Aufgabe gehört zu einem Vorgang, der über den Testmodus des Prozesses gestartet wurde.
+                    </>
+                ),
+            });
+        }
+        return entries;
+    }, [item]);
+
+    const taskStatusItems = useMemo<StatusTablePropsItem[]>(() => {
+        if (item == null) return [];
+        const entries: StatusTablePropsItem[] = [
             {
                 label: 'Aufgabenstatus',
                 icon: <Flag />,
-                children: item.task.statusOverride?.trim() || ProcessTaskStatusLabels[item.task.status],
+                children: (
+                    <ProcessStatusValue
+                        systemLabel={ProcessTaskStatusLabels[item.task.status]}
+                        statusOverride={item.task.statusOverride}
+                    />
+                ),
             },
             {
-                label: 'Zuständige Person',
+                label: 'Aufgabe zugewiesen an',
                 icon: <AssignmentIndOutlinedIcon />,
-                children: <TaskAssignee userId={item.task.assignedUserId} />,
+                children: <ProcessAssignee userId={item.task.assignedUserId} />,
+            },
+            {
+                label: 'Fälligkeit (spätestens)',
+                icon: <Acute />,
+                children: formatDateTimeWithRelative(item.task.deadline, 'Nicht festgelegt'),
             },
             {
                 label: 'Zuletzt aktualisiert',
@@ -266,11 +195,12 @@ export function ProcessTaskViewPageIndex(): ReactNode {
 
         if (item.task.finished != null) {
             entries.push({
-                label: item.task.status === ProcessTaskStatus.Completed
-                    ? 'Abgeschlossen am'
-                    : item.task.status === ProcessTaskStatus.Aborted
-                        ? 'Abgebrochen am'
-                        : item.task.status === ProcessTaskStatus.Failed
+                label:
+                    item.task.status === ProcessTaskStatus.Completed
+                        ? 'Abgeschlossen am'
+                        : item.task.status === ProcessTaskStatus.Aborted
+                          ? 'Abgebrochen am'
+                          : item.task.status === ProcessTaskStatus.Failed
                             ? 'Fehlgeschlagen am'
                             : 'Beendet am',
                 icon: <EventAvailableOutlinedIcon />,
@@ -281,24 +211,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
         return entries;
     }, [item]);
 
-    if (item == null) {
-        return (
-            <Box
-                sx={{
-                    pt: 1,
-                    pb: 2,
-                }}
-            >
-                <Typography variant="h5">
-                    Allgemeine Informationen
-                </Typography>
-                <Skeleton
-                    sx={{mt: 3}}
-                    height={280}
-                />
-            </Box>
-        );
-    }
+    if (item == null) return <GenericDetailsSkeleton />;
 
     return (
         <Box
@@ -306,29 +219,59 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                 pt: 1,
             }}
         >
-            <Typography variant="h5">
-                Allgemeine Informationen
-            </Typography>
-
-            <StatusTable
-                sx={{mt: 2}}
-                cardVariant="outlined"
-                items={generalInfoItems}
-            />
-
-            <Typography
-                variant="h5"
+            <Box
+                component="section"
+                aria-labelledby={`${sectionId}-instance`}
+            >
+                <Typography
+                    id={`${sectionId}-instance`}
+                    component="h2"
+                    variant="h5"
+                >
+                    Angaben zum Vorgang
+                </Typography>
+                <StatusTable
+                    sx={{mt: 2}}
+                    cardVariant="outlined"
+                    items={instanceInfoItems}
+                />
+            </Box>
+            <Box
+                component="section"
+                aria-labelledby={`${sectionId}-task`}
                 sx={{mt: 4}}
             >
-                Details zur Aufgabe
-            </Typography>
-
-            <StatusTable
-                sx={{mt: 2}}
-                cardVariant="outlined"
-                items={taskInfoItems}
-            />
-
+                <Typography
+                    id={`${sectionId}-task`}
+                    component="h2"
+                    variant="h5"
+                >
+                    Angaben zur Aufgabe
+                </Typography>
+                <StatusTable
+                    sx={{mt: 2}}
+                    cardVariant="outlined"
+                    items={taskInfoItems}
+                />
+            </Box>
+            <Box
+                component="section"
+                aria-labelledby={`${sectionId}-status`}
+                sx={{mt: 4}}
+            >
+                <Typography
+                    id={`${sectionId}-status`}
+                    component="h2"
+                    variant="h5"
+                >
+                    Stand der Aufgabe
+                </Typography>
+                <StatusTable
+                    sx={{mt: 2}}
+                    cardVariant="outlined"
+                    items={taskStatusItems}
+                />
+            </Box>
             <Box
                 sx={{
                     mt: 4,
@@ -355,7 +298,10 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                         Aufgabe bearbeiten
                     </Button>
 
-                    <Tooltip title="Diese Funktion ist noch nicht verfügbar.">
+                    <Tooltip
+                        title="Diese Funktion ist noch nicht verfügbar."
+                        arrow
+                    >
                         <span>
                             <Button
                                 disabled
@@ -367,16 +313,13 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                     </Tooltip>
                 </Box>
 
-                <Tooltip title="Diese Funktion ist noch nicht verfügbar.">
-                    <span>
-                        <Button
-                            disabled
-                            startIcon={<AssignmentIndOutlinedIcon />}
-                        >
-                            Aufgabe neu zuweisen
-                        </Button>
-                    </span>
-                </Tooltip>
+                <ProcessAssignmentButton
+                    instanceId={item.task.processInstanceId}
+                    taskId={item.task.id}
+                    taskStatus={item.task.status}
+                    assignedUserId={item.task.assignedUserId}
+                    onAssigned={refresh}
+                />
             </Box>
         </Box>
     );

@@ -50,6 +50,7 @@ interface ProcessSettingsDialogAccessControlMatrixProps<AccessControl extends Pr
     departments: VDepartmentShadowedEntity[];
     teams: TeamEntity[];
     isBusy?: boolean;
+    readOnly?: boolean;
     onAccessControlsChange: (nextAccessControls: AccessControl[]) => void;
     onAddAccessControl: (domainOption: ProcessSettingsAccessControlAddDomainOption) => void;
     onDeleteAccessControl: (accessControl: AccessControl) => void;
@@ -75,7 +76,9 @@ function isOwningDepartmentAccess(
     return accessControl.sourceDepartmentId === owningDepartmentId;
 }
 
-function getAccessControlDomainKey(accessControl: Pick<ProcessSettingsAccessControlDraftBase, 'sourceDepartmentId' | 'sourceTeamId'>): string {
+function getAccessControlDomainKey(
+    accessControl: Pick<ProcessSettingsAccessControlDraftBase, 'sourceDepartmentId' | 'sourceTeamId'>,
+): string {
     if (accessControl.sourceDepartmentId != null) {
         return `department-${accessControl.sourceDepartmentId}`;
     }
@@ -87,7 +90,10 @@ function getAccessControlDomainKey(accessControl: Pick<ProcessSettingsAccessCont
     return 'unknown';
 }
 
-function createPermissionSet(accessControl: ProcessSettingsAccessControlDraftBase, permissionKeys: string[]): Set<string> {
+function createPermissionSet(
+    accessControl: ProcessSettingsAccessControlDraftBase,
+    permissionKeys: string[],
+): Set<string> {
     const matrixPermissionSet = new Set(permissionKeys);
 
     return new Set(accessControl.permissions.filter((permission) => matrixPermissionSet.has(permission)));
@@ -103,10 +109,7 @@ function mergeMatrixPermissions(
     const preservedPermissions = currentPermissions.filter((permission) => !matrixPermissionSet.has(permission));
     const nextMatrixPermissions = permissionKeys.filter((permission) => nextSelectedPermissionKeys.has(permission));
 
-    return [
-        ...preservedPermissions,
-        ...nextMatrixPermissions,
-    ];
+    return [...preservedPermissions, ...nextMatrixPermissions];
 }
 
 function getDomainDisplayData(
@@ -161,12 +164,15 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
         departments,
         teams,
         isBusy = false,
+        readOnly = false,
         onAccessControlsChange,
         onAddAccessControl,
         onDeleteAccessControl,
     } = props;
 
-    const [targetDomainOption, setTargetDomainOption] = useState<ProcessSettingsAccessControlAddDomainOption | null>(null);
+    const [targetDomainOption, setTargetDomainOption] = useState<ProcessSettingsAccessControlAddDomainOption | null>(
+        null,
+    );
     const [showPermissionKeys, setShowPermissionKeys] = useState(false);
 
     const permissionKeys = useMemo(() => getPermissionKeys(permissions), [permissions]);
@@ -177,24 +183,34 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
     );
 
     const addDomainOptions = useMemo(() => {
-        const assignedDomainKeys = new Set(accessControls.map((accessControl) => getAccessControlDomainKey(accessControl)));
+        const assignedDomainKeys = new Set(
+            accessControls.map((accessControl) => getAccessControlDomainKey(accessControl)),
+        );
 
         return [
-            ...departments.map((department) => ({
-                label: department.name,
-                value: department.id,
-                subLabel: getDepartmentPath(department),
-                icon: getDepartmentTypeIcons(department.depth),
-                type: 'department',
-                disabled: department.id === owningDepartmentId || assignedDomainKeys.has(`department-${department.id}`),
-            } as ProcessSettingsAccessControlAddDomainOption)),
-            ...teams.map((team) => ({
-                label: team.name,
-                value: team.id,
-                icon: ModuleIcons.teams,
-                type: 'team',
-                disabled: assignedDomainKeys.has(`team-${team.id}`),
-            } as ProcessSettingsAccessControlAddDomainOption)),
+            ...departments.map(
+                (department) =>
+                    ({
+                        label: department.name,
+                        value: department.id,
+                        subLabel: getDepartmentPath(department),
+                        icon: getDepartmentTypeIcons(department.depth),
+                        type: 'department',
+                        disabled:
+                            department.id === owningDepartmentId ||
+                            assignedDomainKeys.has(`department-${department.id}`),
+                    }) as ProcessSettingsAccessControlAddDomainOption,
+            ),
+            ...teams.map(
+                (team) =>
+                    ({
+                        label: team.name,
+                        value: team.id,
+                        icon: ModuleIcons.teams,
+                        type: 'team',
+                        disabled: assignedDomainKeys.has(`team-${team.id}`),
+                    }) as ProcessSettingsAccessControlAddDomainOption,
+            ),
         ];
     }, [accessControls, departments, owningDepartmentId, teams]);
 
@@ -207,33 +223,44 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
     }, [editableAccessControls, permissionKeys]);
 
     const editablePermissionCount = editableAccessControls.length * permissionKeys.length;
-    const areAllEditablePermissionsSelected = editablePermissionCount > 0 && selectedEditablePermissionCount === editablePermissionCount;
+    const areAllEditablePermissionsSelected =
+        editablePermissionCount > 0 && selectedEditablePermissionCount === editablePermissionCount;
     const hasSelectedEditablePermissions = selectedEditablePermissionCount > 0;
 
-    const owningDepartmentDisplayData = useMemo(() => getDomainDisplayData(
-        {
-            sourceDepartmentId: owningDepartmentId,
-            sourceTeamId: null,
-        },
-        departments,
-        teams,
-    ), [departments, owningDepartmentId, teams]);
+    const owningDepartmentDisplayData = useMemo(
+        () =>
+            getDomainDisplayData(
+                {
+                    sourceDepartmentId: owningDepartmentId,
+                    sourceTeamId: null,
+                },
+                departments,
+                teams,
+            ),
+        [departments, owningDepartmentId, teams],
+    );
 
     const updateAccessPermissions = (accessControl: AccessControl, nextSelectedPermissionKeys: ReadonlySet<string>) => {
-        if (isBusy) {
+        if (isBusy || readOnly) {
             return;
         }
 
-        onAccessControlsChange(accessControls.map((currentAccessControl) => {
-            if (currentAccessControl.clientId !== accessControl.clientId) {
-                return currentAccessControl;
-            }
+        onAccessControlsChange(
+            accessControls.map((currentAccessControl) => {
+                if (currentAccessControl.clientId !== accessControl.clientId) {
+                    return currentAccessControl;
+                }
 
-            return {
-                ...currentAccessControl,
-                permissions: mergeMatrixPermissions(currentAccessControl.permissions, permissionKeys, nextSelectedPermissionKeys),
-            };
-        }));
+                return {
+                    ...currentAccessControl,
+                    permissions: mergeMatrixPermissions(
+                        currentAccessControl.permissions,
+                        permissionKeys,
+                        nextSelectedPermissionKeys,
+                    ),
+                };
+            }),
+        );
     };
 
     const handleTogglePermission = (accessControl: AccessControl, permission: string, checked: boolean) => {
@@ -253,61 +280,62 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
     };
 
     const handleSetPermissionForAllRows = (permission: string, checked: boolean) => {
-        if (isBusy) {
+        if (isBusy || readOnly) {
             return;
         }
 
-        onAccessControlsChange(accessControls.map((accessControl) => {
-            if (isOwningDepartmentAccess(accessControl, owningDepartmentId)) {
-                return accessControl;
-            }
+        onAccessControlsChange(
+            accessControls.map((accessControl) => {
+                if (isOwningDepartmentAccess(accessControl, owningDepartmentId)) {
+                    return accessControl;
+                }
 
-            const nextPermissionSet = createPermissionSet(accessControl, permissionKeys);
+                const nextPermissionSet = createPermissionSet(accessControl, permissionKeys);
 
-            if (checked) {
-                nextPermissionSet.add(permission);
-            } else {
-                nextPermissionSet.delete(permission);
-            }
+                if (checked) {
+                    nextPermissionSet.add(permission);
+                } else {
+                    nextPermissionSet.delete(permission);
+                }
 
-            return {
-                ...accessControl,
-                permissions: mergeMatrixPermissions(accessControl.permissions, permissionKeys, nextPermissionSet),
-            };
-        }));
+                return {
+                    ...accessControl,
+                    permissions: mergeMatrixPermissions(accessControl.permissions, permissionKeys, nextPermissionSet),
+                };
+            }),
+        );
     };
 
     const handleSetAllRowsPermissions = (checked: boolean) => {
-        if (isBusy) {
+        if (isBusy || readOnly) {
             return;
         }
 
         const nextPermissionSet = new Set(checked ? permissionKeys : []);
 
-        onAccessControlsChange(accessControls.map((accessControl) => {
-            if (isOwningDepartmentAccess(accessControl, owningDepartmentId)) {
-                return accessControl;
-            }
+        onAccessControlsChange(
+            accessControls.map((accessControl) => {
+                if (isOwningDepartmentAccess(accessControl, owningDepartmentId)) {
+                    return accessControl;
+                }
 
-            return {
-                ...accessControl,
-                permissions: mergeMatrixPermissions(accessControl.permissions, permissionKeys, nextPermissionSet),
-            };
-        }));
+                return {
+                    ...accessControl,
+                    permissions: mergeMatrixPermissions(accessControl.permissions, permissionKeys, nextPermissionSet),
+                };
+            }),
+        );
     };
 
-    const renderDomainCell = (
-        displayData: DomainDisplayData,
-        protectedLabel?: string,
-        actions?: ReactNode,
-    ) => (
+    const renderDomainCell = (displayData: DomainDisplayData, protectedLabel?: string, actions?: ReactNode) => (
         <Stack
             direction="row"
             spacing={1.25}
             sx={{
-                alignItems: "center",
-                minWidth: 0
-            }}>
+                alignItems: 'center',
+                minWidth: 0,
+            }}
+        >
             <Box
                 sx={{
                     display: 'flex',
@@ -343,14 +371,14 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                     noWrap
                     title={displayData.subLabel}
                     sx={{
-                        color: "text.secondary",
+                        color: 'text.secondary',
                         display: 'block',
-                        lineHeight: 1.35
-                    }}>
+                        lineHeight: 1.35,
+                    }}
+                >
                     {displayData.subLabel}
                 </Typography>
-                {
-                    protectedLabel != null &&
+                {protectedLabel != null && (
                     <Chip
                         label={protectedLabel}
                         size="small"
@@ -361,10 +389,9 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                             maxWidth: '100%',
                         }}
                     />
-                }
+                )}
             </Box>
-            {
-                actions != null &&
+            {actions != null && (
                 <Box
                     sx={{
                         ml: 0.5,
@@ -373,12 +400,14 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                 >
                     {actions}
                 </Box>
-            }
+            )}
         </Stack>
     );
 
     const renderPermissionHeaderCell = (permission: PermissionEntry) => {
-        const selectedCount = editableAccessControls.filter((accessControl) => accessControl.permissions.includes(permission.permission)).length;
+        const selectedCount = editableAccessControls.filter((accessControl) =>
+            accessControl.permissions.includes(permission.permission),
+        ).length;
         const checked = editableAccessControls.length > 0 && selectedCount === editableAccessControls.length;
         const indeterminate = selectedCount > 0 && selectedCount < editableAccessControls.length;
 
@@ -395,7 +424,7 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                 <Stack
                     spacing={0.75}
                     sx={{
-                        alignItems: "center"
+                        alignItems: 'center',
                     }}
                 >
                     <Tooltip
@@ -417,23 +446,23 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                             {permission.label}
                         </Typography>
                     </Tooltip>
-                    {
-                        showPermissionKeys &&
+                    {showPermissionKeys && (
                         <Typography
                             component="code"
                             variant="caption"
                             sx={{
-                                color: "text.secondary",
+                                color: 'text.secondary',
                                 display: 'block',
                                 fontFamily: 'monospace',
                                 fontSize: 11,
                                 lineHeight: 1.35,
                                 maxWidth: PERMISSION_COLUMN_WIDTH - 16,
-                                overflowWrap: 'anywhere'
-                            }}>
+                                overflowWrap: 'anywhere',
+                            }}
+                        >
                             {permission.permission}
                         </Typography>
-                    }
+                    )}
                     <Tooltip
                         title="Für alle Domänen umschalten"
                         arrow
@@ -443,7 +472,7 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                                 size="small"
                                 checked={checked}
                                 indeterminate={indeterminate}
-                                disabled={isBusy || editableAccessControls.length === 0}
+                                disabled={isBusy || readOnly || editableAccessControls.length === 0}
                                 onChange={(event) => {
                                     handleSetPermissionForAllRows(permission.permission, event.target.checked);
                                 }}
@@ -451,7 +480,7 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                                 slotProps={{
                                     input: {
                                         'aria-label': `Berechtigung ${permission.label} für alle Domänen umschalten`,
-                                    }
+                                    },
                                 }}
                             />
                         </span>
@@ -464,18 +493,19 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
     const renderEditableAccessControlRow = (accessControl: AccessControl) => {
         const displayData = getDomainDisplayData(accessControl, departments, teams);
         const selectedPermissionSet = createPermissionSet(accessControl, permissionKeys);
-        const areAllRowPermissionsSelected = permissionKeys.length > 0 && selectedPermissionSet.size === permissionKeys.length;
+        const areAllRowPermissionsSelected =
+            permissionKeys.length > 0 && selectedPermissionSet.size === permissionKeys.length;
         const hasSelectedRowPermissions = selectedPermissionSet.size > 0;
         const rowActions = (
             <Actions
-                isBusy={isBusy}
+                isBusy={isBusy || readOnly}
                 dense
                 sx={{
                     height: 'auto',
                 }}
                 actions={[
                     {
-                        icon: <SelectAll fontSize="small"/>,
+                        icon: <SelectAll fontSize="small" />,
                         tooltip: 'Alle Rechte für diese Domäne auswählen',
                         ariaLabel: 'Alle Rechte für diese Domäne auswählen',
                         disabled: areAllRowPermissionsSelected || permissionKeys.length === 0,
@@ -484,7 +514,7 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                         },
                     },
                     {
-                        icon: <Deselect fontSize="small"/>,
+                        icon: <Deselect fontSize="small" />,
                         tooltip: 'Alle Rechte für diese Domäne abwählen',
                         ariaLabel: 'Alle Rechte für diese Domäne abwählen',
                         disabled: !hasSelectedRowPermissions,
@@ -493,7 +523,7 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                         },
                     },
                     {
-                        icon: <Delete fontSize="small"/>,
+                        icon: <Delete fontSize="small" />,
                         tooltip: 'Berechtigung entfernen',
                         ariaLabel: 'Berechtigung entfernen',
                         color: 'error',
@@ -524,32 +554,30 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                 >
                     {renderDomainCell(displayData, undefined, rowActions)}
                 </TableCell>
-                {
-                    permissions.map((permission) => (
-                        <TableCell
-                            key={permission.permission}
-                            align="center"
-                            sx={{
-                                borderLeft: (theme) => `1px solid ${theme.palette.divider}`,
+                {permissions.map((permission) => (
+                    <TableCell
+                        key={permission.permission}
+                        align="center"
+                        sx={{
+                            borderLeft: (theme) => `1px solid ${theme.palette.divider}`,
+                        }}
+                    >
+                        <Checkbox
+                            size="small"
+                            checked={accessControl.permissions.includes(permission.permission)}
+                            disabled={isBusy || readOnly}
+                            onChange={(event) => {
+                                handleTogglePermission(accessControl, permission.permission, event.target.checked);
                             }}
-                        >
-                            <Checkbox
-                                size="small"
-                                checked={accessControl.permissions.includes(permission.permission)}
-                                disabled={isBusy}
-                                onChange={(event) => {
-                                    handleTogglePermission(accessControl, permission.permission, event.target.checked);
-                                }}
-                                sx={{p: 0.5}}
-                                slotProps={{
-                                    input: {
-                                        'aria-label': `${permission.label} für ${displayData.label}`,
-                                    }
-                                }}
-                            />
-                        </TableCell>
-                    ))
-                }
+                            sx={{p: 0.5}}
+                            slotProps={{
+                                input: {
+                                    'aria-label': `${permission.label} für ${displayData.label}`,
+                                },
+                            }}
+                        />
+                    </TableCell>
+                ))}
             </TableRow>
         );
     };
@@ -563,12 +591,12 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                 }}
             >
                 <Actions
-                    isBusy={isBusy}
+                    isBusy={isBusy || readOnly}
                     dense
                     actions={[
                         {
                             label: 'Alle auswählen',
-                            icon: <SelectAll fontSize="small"/>,
+                            icon: <SelectAll fontSize="small" />,
                             iconPosition: 'start',
                             onClick: () => {
                                 handleSetAllRowsPermissions(true);
@@ -577,7 +605,7 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                         },
                         {
                             label: 'Alle abwählen',
-                            icon: <Deselect fontSize="small"/>,
+                            icon: <Deselect fontSize="small" />,
                             iconPosition: 'start',
                             onClick: () => {
                                 handleSetAllRowsPermissions(false);
@@ -662,29 +690,27 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                             >
                                 {renderDomainCell(owningDepartmentDisplayData, 'verwaltende Organisationseinheit')}
                             </TableCell>
-                            {
-                                permissions.map((permission) => (
-                                    <TableCell
-                                        key={permission.permission}
-                                        align="center"
-                                        sx={{
-                                            borderLeft: (theme) => `1px solid ${theme.palette.divider}`,
+                            {permissions.map((permission) => (
+                                <TableCell
+                                    key={permission.permission}
+                                    align="center"
+                                    sx={{
+                                        borderLeft: (theme) => `1px solid ${theme.palette.divider}`,
+                                    }}
+                                >
+                                    <Checkbox
+                                        size="small"
+                                        checked
+                                        disabled
+                                        sx={{p: 0.5}}
+                                        slotProps={{
+                                            input: {
+                                                'aria-label': `${permission.label} für verwaltende Organisationseinheit`,
+                                            },
                                         }}
-                                    >
-                                        <Checkbox
-                                            size="small"
-                                            checked
-                                            disabled
-                                            sx={{p: 0.5}}
-                                            slotProps={{
-                                                input: {
-                                                    'aria-label': `${permission.label} für verwaltende Organisationseinheit`,
-                                                }
-                                            }}
-                                        />
-                                    </TableCell>
-                                ))
-                            }
+                                    />
+                                </TableCell>
+                            ))}
                         </TableRow>
 
                         {editableAccessControls.map(renderEditableAccessControlRow)}
@@ -707,8 +733,8 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                     }}
                     fullWidth
                     size="small"
-                    disabled={isBusy}
-                    groupBy={(option) => option.type === 'department' ? 'Organisationseinheiten' : 'Teams'}
+                    disabled={isBusy || readOnly}
+                    groupBy={(option) => (option.type === 'department' ? 'Organisationseinheiten' : 'Teams')}
                     getOptionLabel={(option) => option.label}
                     isOptionEqualToValue={(option, value) => option.type === value.type && option.value === value.value}
                     getOptionDisabled={(option) => option.disabled ?? false}
@@ -753,17 +779,17 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                                 >
                                     {option.label}
                                 </Typography>
-                                {
-                                    option.subLabel != null &&
+                                {option.subLabel != null && (
                                     <Typography
                                         variant="caption"
                                         sx={{
-                                            color: "text.secondary",
-                                            lineHeight: 1.2
-                                        }}>
+                                            color: 'text.secondary',
+                                            lineHeight: 1.2,
+                                        }}
+                                    >
                                         {option.subLabel}
                                     </Typography>
-                                }
+                                )}
                             </Box>
                         </Box>
                     )}
@@ -779,8 +805,8 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                 <Box>
                     <Button
                         variant="outlined"
-                        startIcon={<Add/>}
-                        disabled={targetDomainOption == null || isBusy}
+                        startIcon={<Add />}
+                        disabled={targetDomainOption == null || isBusy || readOnly}
                         onClick={() => {
                             if (targetDomainOption == null) {
                                 return;

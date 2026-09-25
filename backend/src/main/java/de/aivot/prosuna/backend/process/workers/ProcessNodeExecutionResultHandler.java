@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
+
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
@@ -50,6 +52,7 @@ public class ProcessNodeExecutionResultHandler {
     private final RabbitTemplate rabbitTemplate;
     private final CommunicationService communicationService;
     private final ProcessInstanceRepository processInstanceRepository;
+    private final ProcessAssignmentService assignmentService;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
     private final UserService userService;
@@ -60,7 +63,8 @@ public class ProcessNodeExecutionResultHandler {
     private final DepartmentService departmentService;
 
     @Autowired
-    public ProcessNodeExecutionResultHandler(RabbitTemplate rabbitTemplate,
+    public ProcessNodeExecutionResultHandler(ProcessAssignmentService assignmentService,
+                                             RabbitTemplate rabbitTemplate,
                                              CommunicationService communicationService,
                                              ProcessInstanceRepository processInstanceRepository,
                                              ProcessInstanceTaskRepository processInstanceTaskRepository,
@@ -71,6 +75,7 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessNodeDefinitionService processNodeDefinitionService,
                                              ProcessService processService,
                                              DepartmentService departmentService) {
+        this.assignmentService = assignmentService;
         this.rabbitTemplate = rabbitTemplate;
         this.communicationService = communicationService;
         this.processInstanceRepository = processInstanceRepository;
@@ -489,8 +494,13 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
-        context.processInstanceTask.setAssignedUserId(context.result.getAssignedUserId());
-        assignAndSaveDataLayersAndStatusOverride(context, false);
+        applyDataLayersAndStatusOverride(context, false);
+        try {
+            assignmentService.saveRuntimeAssignment(context.processInstanceTask, context.result.getAssignedUserId());
+        } catch (ResponseException exception) {
+            throw new ProcessNodeExecutionExceptionInvalidAssignment(exception,
+                    "Die ausgewählte Person hat nicht die erforderlichen Berechtigungen für diese Aufgabe. Bitte wählen Sie eine andere berechtigte Person aus.");
+        }
 
         if (context.triggeringUser != null) {
             context.logger.logf(
@@ -751,6 +761,11 @@ public class ProcessNodeExecutionResultHandler {
 
     private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?> context,
                                                           boolean applyOutputMappings) {
+        applyDataLayersAndStatusOverride(context, applyOutputMappings);
+        processInstanceTaskRepository.save(context.processInstanceTask);
+    }
+
+    private void applyDataLayersAndStatusOverride(@Nonnull HandlerContext<?> context, boolean applyOutputMappings) {
         var newRuntimeData = context.result.getRuntimeData();
         if (newRuntimeData == null) {
             newRuntimeData = new HashMap<>();
@@ -788,7 +803,6 @@ public class ProcessNodeExecutionResultHandler {
             context.processInstanceTask.setStatusOverride(null);
         }
 
-        processInstanceTaskRepository.save(context.processInstanceTask);
     }
 
     private static <NodeConfig> Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition<NodeConfig> provider,

@@ -13,10 +13,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK;
+import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class PermissionServiceTest {
@@ -24,12 +29,14 @@ class PermissionServiceTest {
     private static final String PERMISSION = ProcessPermissionProvider.PROCESS_DEFINITION_READ;
 
     private ProcessRepository processRepository;
+    private ProcessInstanceRepository instances;
     private VUserSystemPermissionRepository systemPermissionRepository;
     private PermissionService permissionService;
 
     @BeforeEach
     void setUp() {
         processRepository = mock(ProcessRepository.class);
+        instances = mock(ProcessInstanceRepository.class);
         systemPermissionRepository = mock(VUserSystemPermissionRepository.class);
         permissionService = new PermissionService(
                 mock(VUserDepartmentPermissionRepository.class),
@@ -38,7 +45,7 @@ class PermissionServiceTest {
                 mock(DepartmentRepository.class),
                 mock(TeamRepository.class),
                 processRepository,
-                mock(ProcessInstanceRepository.class)
+                instances
         );
     }
 
@@ -59,5 +66,46 @@ class PermissionServiceTest {
 
         assertDoesNotThrow(() -> permissionService.requireProcessPermission(USER_ID, 42, PERMISSION));
         assertDoesNotThrow(() -> permissionService.requireProcessPermission(USER_ID, 43, PERMISSION));
+    }
+
+    @Test
+    void ownSystemPermissionOverridesInstanceScopeForLastingAssignments() {
+        when(systemPermissionRepository.hasPermissionWithoutDeputies("user", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+
+        assertTrue(permissionService.hasProcessInstancePermissionWithoutDeputies("user", 17L, PROCESS_INSTANCE_EDIT_TASK));
+        assertTrue(permissionService.hasProcessInstancePermissionWithoutDeputies("user", 18L, PROCESS_INSTANCE_EDIT_TASK));
+        verifyNoInteractions(instances);
+    }
+
+    @Test
+    void ownScopedPermissionOnlyAuthorizesItsUserInstanceAndKey() {
+        when(instances.hasPermissionWithoutDeputies("user", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+
+        assertTrue(permissionService.hasProcessInstancePermissionWithoutDeputies("user", 17L, PROCESS_INSTANCE_EDIT_TASK));
+        assertFalse(permissionService.hasProcessInstancePermissionWithoutDeputies("user", 18L, PROCESS_INSTANCE_EDIT_TASK));
+        assertFalse(permissionService.hasProcessInstancePermissionWithoutDeputies("other", 17L, PROCESS_INSTANCE_EDIT_TASK));
+        assertFalse(permissionService.hasProcessInstancePermissionWithoutDeputies("user", 17L, PROCESS_INSTANCE_READ));
+    }
+
+    @Test
+    void deputySystemPermissionAllowsAccessButNotLastingAssignments() {
+        when(systemPermissionRepository.hasPermission("user", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+
+        assertTrue(permissionService.hasProcessInstancePermission("user", 17L, PROCESS_INSTANCE_EDIT_TASK));
+        assertFalse(permissionService.hasProcessInstancePermissionWithoutDeputies("user", 17L, PROCESS_INSTANCE_EDIT_TASK));
+    }
+
+    @Test
+    void deputyScopedPermissionAllowsAccessButNotLastingAssignments() {
+        when(instances.hasPermission("user", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+
+        assertTrue(permissionService.hasProcessInstancePermission("user", 17L, PROCESS_INSTANCE_EDIT_TASK));
+        assertFalse(permissionService.hasProcessInstancePermissionWithoutDeputies("user", 17L, PROCESS_INSTANCE_EDIT_TASK));
+    }
+
+    @Test
+    void missingUserHasNoLastingAssignmentPermissions() {
+        assertFalse(permissionService.hasProcessInstancePermissionWithoutDeputies(null, 17L, PROCESS_INSTANCE_EDIT_TASK));
+        verifyNoInteractions(systemPermissionRepository, instances);
     }
 }

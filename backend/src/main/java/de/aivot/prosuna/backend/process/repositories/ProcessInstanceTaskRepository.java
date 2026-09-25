@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.repositories;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.projections.DashboardTaskCountsProjection;
+import de.aivot.prosuna.backend.process.projections.ProcessTaskAssignmentProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -25,7 +26,18 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
                                                                                                                Integer processDefinitionNodeId,
                                                                                                                Long excludedTaskId);
 
+    @Query("select task.processInstanceId from ProcessInstanceTaskEntity task where task.id = :id")
+    Optional<Long> findInstanceIdById(@Param("id") Long id);
+
     List<ProcessInstanceTaskEntity> findAllByProcessInstanceId(Long processInstanceId);
+
+    @Query("""
+            select new de.aivot.prosuna.backend.process.projections.ProcessTaskAssignmentProjection(
+                task.id, task.processNodeId, task.status, task.assignedUserId)
+            from ProcessInstanceTaskEntity task
+            where task.processInstanceId = :instanceId
+            """)
+    List<ProcessTaskAssignmentProjection> findAssignmentSnapshots(@Param("instanceId") Long instanceId);
 
     List<ProcessInstanceTaskEntity> findAllByAssignedUserIdInAndStatusIn(Collection<String> assignedUserIds,
                                                                          Collection<ProcessTaskStatus> statuses);
@@ -37,7 +49,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
             SELECT task.*
             FROM process_instance_tasks task
             WHERE task.assigned_user_id = :userId
-              AND task.status = :status
+              AND task.status in (:statuses)
               AND (
                     :hasSystemAccess = true
                     OR EXISTS (
@@ -52,7 +64,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
             ORDER BY task.deadline ASC NULLS LAST, task.started ASC, task.id ASC
             """, nativeQuery = true)
     List<ProcessInstanceTaskEntity> findDashboardTasks(@Param("userId") String userId,
-                                                       @Param("status") short status,
+                                                       @Param("statuses") Collection<Short> statuses,
                                                        @Param("hasSystemAccess") boolean hasSystemAccess,
                                                        @Param("permission") String permission,
                                                        Pageable pageable);
@@ -62,7 +74,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
                    COUNT(*) FILTER (WHERE task.deadline IS NOT NULL AND task.deadline < :now) AS "overdueCount"
             FROM process_instance_tasks task
             WHERE task.assigned_user_id = :userId
-              AND task.status = :status
+              AND task.status in (:statuses)
               AND (
                     :hasSystemAccess = true
                     OR EXISTS (
@@ -75,7 +87,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
               )
             """, nativeQuery = true)
     DashboardTaskCountsProjection getDashboardTaskCounts(@Param("userId") String userId,
-                                                          @Param("status") short status,
+                                                          @Param("statuses") Collection<Short> statuses,
                                                           @Param("hasSystemAccess") boolean hasSystemAccess,
                                                           @Param("permission") String permission,
                                                           @Param("now") Instant now);

@@ -44,7 +44,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     @Nonnull
     @Override
     public ProcessVersionEntity create(@Nonnull ProcessVersionEntity entity) throws ResponseException {
-        caseNumberGeneratorService.validateCaseNumberTemplate(entity.getCaseNumberTemplate());
+        caseNumberGeneratorService.validateConfiguration(entity.getCaseNumberType(), entity.getCaseNumberTemplate());
 
         // Fetch the latest version number for the given process definition
         Integer latestVersionNumber = processDefinitionVersionRepository
@@ -93,10 +93,11 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     public ProcessVersionEntity performUpdate(@Nonnull ProcessVersionEntityId id,
                                               @Nonnull ProcessVersionEntity entity,
                                               @Nonnull ProcessVersionEntity existingEntity) throws ResponseException {
-        caseNumberGeneratorService.validateCaseNumberTemplate(entity.getCaseNumberTemplate());
+        caseNumberGeneratorService.validateConfiguration(entity.getCaseNumberType(), entity.getCaseNumberTemplate());
         existingEntity.setStatus(entity.getStatus());
         existingEntity.setPublicTitle(entity.getPublicTitle());
         existingEntity.setCaseNumberTemplate(entity.getCaseNumberTemplate());
+        existingEntity.setCaseNumberType(entity.getCaseNumberType());
         existingEntity.setNotes(entity.getNotes());
         existingEntity.setThemeId(entity.getThemeId());
         existingEntity.setLegalSupportDepartmentId(entity.getLegalSupportDepartmentId());

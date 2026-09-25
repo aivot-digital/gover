@@ -1,59 +1,24 @@
 import React, {type ReactElement, type ReactNode} from 'react';
 import {Typography} from '@mui/material';
-import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import FolderShared from '@aivot/mui-material-symbols-400-n25-outlined/FolderShared';
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
 import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {Chip} from '../../../../components/chip/chip';
-import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
-import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
-import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
-import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
-import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
-import {type ProcessEntity} from '../../entities/process-entity';
-import {ProcessNodeApiService} from '../../services/process-node-api-service';
-import {type ProcessNodeEntity} from '../../entities/process-node-entity';
-import {
-    type ProcessNodeProvider,
-    ProcessNodeProviderApiService,
-} from '../../services/process-node-provider-api-service';
-import {ProcessInstanceStatus, ProcessInstanceStatusLabels} from '../../enums/process-instance-status';
-import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../enums/process-task-status';
-import {getNodeDescription, getNodeName} from './components/process-flow-editor/utils/node-utils';
+import {type ProcessTaskDetails} from '../../entities/process-task-details';
+import {ProcessTaskStatus, ProcessTaskStatusLabels, ProcessTaskStatusColors} from '../../enums/process-task-status';
 import {createStaffPath} from '../../../../utils/url-path-utils';
 import {KnownProviderIcons} from '../../data/known-provider-icons';
 import {type SvgIconComponent} from '../../../../types/svg-icon-component';
+import {useParams} from 'react-router-dom';
+import {useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
 
-export interface ProcessTaskDetailsPageItem {
-    task: ProcessInstanceTaskEntity;
-    instance: ProcessInstanceEntity | null;
-    process: ProcessEntity | null;
-    node: ProcessNodeEntity | null;
-    provider: ProcessNodeProvider | null;
-}
-
-const PROCESS_INSTANCE_STATUS_COLORS: Record<ProcessInstanceStatus, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-    [ProcessInstanceStatus.Created]: 'default',
-    [ProcessInstanceStatus.Running]: 'info',
-    [ProcessInstanceStatus.Paused]: 'warning',
-    [ProcessInstanceStatus.Completed]: 'success',
-    [ProcessInstanceStatus.Aborted]: 'error',
-    [ProcessInstanceStatus.Failed]: 'error',
-};
-
-const PROCESS_TASK_STATUS_COLORS: Record<ProcessTaskStatus, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-    [ProcessTaskStatus.Running]: 'info',
-    [ProcessTaskStatus.Paused]: 'warning',
-    [ProcessTaskStatus.AwaitingPayment]: 'warning',
-    [ProcessTaskStatus.AwaitingCustomer]: 'warning',
-    [ProcessTaskStatus.Completed]: 'success',
-    [ProcessTaskStatus.Aborted]: 'error',
-    [ProcessTaskStatus.Failed]: 'error',
-    [ProcessTaskStatus.Restarted]: 'warning',
-};
+export type ProcessTaskDetailsPageItem = ProcessTaskDetails;
 
 export function createEmptyProcessTaskDetailsPageItem(): ProcessTaskDetailsPageItem {
     return {
@@ -82,64 +47,41 @@ export function getProcessTaskProcessPath(item?: ProcessTaskDetailsPageItem | nu
         return null;
     }
 
-    return createStaffPath(`/processes/${item.process.id}/versions/${item.task.processVersion}?instanceId=${item.instance.id}`);
+    return createStaffPath(
+        `/processes/${item.process.id}/versions/${item.task.processVersion}?instanceId=${item.instance.id}`,
+    );
 }
 
 export function getProcessTaskName(item?: ProcessTaskDetailsPageItem | null): string {
-    if (item?.node != null && item.provider != null) {
-        return getNodeName(item.node, item.provider);
-    }
-
     if (item?.node?.name != null && item.node.name.trim().length > 0) {
         return item.node.name;
     }
 
-    return 'Unbenannte Aufgabe';
+    return item?.provider?.name || 'Unbenannte Aufgabe';
 }
 
 export function getProcessTaskDescription(item?: ProcessTaskDetailsPageItem | null): string {
-    if (item?.node != null && item.provider != null) {
-        const description = getNodeDescription(item.node, item.provider);
-        if (description.trim().length > 0) {
-            return description;
-        }
-    }
-
     if (item?.node?.description != null && item.node.description.trim().length > 0) {
         return item.node.description;
     }
 
-    return 'Keine Kurzbeschreibung hinterlegt.';
+    return item?.provider?.abstractDescription?.trim() || 'Keine Kurzbeschreibung hinterlegt.';
 }
 
 export function getProcessTaskStatusLabel(item?: ProcessTaskDetailsPageItem | null): string {
-    if (item?.instance?.statusOverride != null && item.instance.statusOverride.trim().length > 0) {
-        return item.instance.statusOverride;
-    }
-
-    if (item?.instance != null) {
-        return ProcessInstanceStatusLabels[item.instance.status];
-    }
-
-    if (item?.task.statusOverride != null && item.task.statusOverride.trim().length > 0) {
-        return item.task.statusOverride;
-    }
-
-    return ProcessTaskStatusLabels[item?.task.status ?? ProcessTaskStatus.Running];
+    return item?.task.statusOverride?.trim() || ProcessTaskStatusLabels[item?.task.status ?? ProcessTaskStatus.Running];
 }
 
-export function getProcessTaskStatusColor(item?: ProcessTaskDetailsPageItem | null): 'default' | 'info' | 'success' | 'warning' | 'error' {
-    if (item?.instance != null) {
-        return PROCESS_INSTANCE_STATUS_COLORS[item.instance.status];
-    }
-
-    return PROCESS_TASK_STATUS_COLORS[item?.task.status ?? ProcessTaskStatus.Running];
+export function getProcessTaskStatusColor(
+    item?: ProcessTaskDetailsPageItem | null,
+): 'default' | 'info' | 'success' | 'warning' | 'error' {
+    return ProcessTaskStatusColors[item?.task.status ?? ProcessTaskStatus.Running];
 }
 
 function getProcessTaskStatusIcon(item?: ProcessTaskDetailsPageItem | null): ReactElement | undefined {
-    const status = item?.instance?.status ?? item?.task.status;
+    const status = item?.task.status;
 
-    if (status === ProcessInstanceStatus.Running || status === ProcessTaskStatus.Running) {
+    if (status === ProcessTaskStatus.Running) {
         return <AccountCircle fontSize="small" />;
     }
 
@@ -151,34 +93,12 @@ function getProcessTaskStatusIcon(item?: ProcessTaskDetailsPageItem | null): Rea
 }
 
 export function getProcessTaskNodeIcon(item?: ProcessTaskDetailsPageItem | null): ReactElement {
-    const ProviderIcon: SvgIconComponent = (
-        (item?.provider != null && (
-            KnownProviderIcons[item.provider.componentKey] ||
-            KnownProviderIcons[item.provider.key]
-        )) ||
-        Assignment
-    );
+    const ProviderIcon: SvgIconComponent =
+        (item?.provider != null &&
+            (KnownProviderIcons[item.provider.componentKey] || KnownProviderIcons[item.provider.key])) ||
+        Assignment;
 
     return <ProviderIcon />;
-}
-
-async function fetchProcessTaskDetails(taskId: string): Promise<ProcessTaskDetailsPageItem> {
-    const task = await new ProcessInstanceTaskApiService().retrieve(Number(taskId));
-    const node = await new ProcessNodeApiService().retrieve(task.processNodeId);
-
-    const [instance, process, provider] = await Promise.all([
-        new ProcessInstanceApiService().retrieve(task.processInstanceId),
-        new ProcessDefinitionApiService().retrieve(task.processId),
-        new ProcessNodeProviderApiService().getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion),
-    ]);
-
-    return {
-        task,
-        instance,
-        process,
-        node,
-        provider,
-    };
 }
 
 function buildProcessTaskHeaderBadges(item?: ProcessTaskDetailsPageItem): ReactNode[] | undefined {
@@ -190,6 +110,12 @@ function buildProcessTaskHeaderBadges(item?: ProcessTaskDetailsPageItem): ReactN
         <Chip
             key="task-status"
             label={getProcessTaskStatusLabel(item)}
+            title={
+                item.task.statusOverride?.trim() &&
+                item.task.statusOverride.trim() !== ProcessTaskStatusLabels[item.task.status]
+                    ? `Systemstatus: ${ProcessTaskStatusLabels[item.task.status]}`
+                    : undefined
+            }
             color={getProcessTaskStatusColor(item)}
             icon={getProcessTaskStatusIcon(item)}
             mode="soft"
@@ -213,6 +139,8 @@ function buildProcessTaskHeaderBadges(item?: ProcessTaskDetailsPageItem): ReactN
 }
 
 export function ProcessTaskViewPage() {
+    const {taskId} = useParams();
+    const refreshPermissionSet = useRefreshPermissionSet();
     return (
         <PageWrapper
             title="Aufgabe"
@@ -220,20 +148,20 @@ export function ProcessTaskViewPage() {
             background
         >
             <GenericDetailsPage<ProcessTaskDetailsPageItem, string, undefined>
+                key={taskId}
                 header={(item) => {
-                    const processPath = getProcessTaskProcessPath(item);
-
                     return {
-                        icon: ModuleIcons.tasks,
+                        icon: <Task />,
                         title: 'Aufgabe',
                         badge: buildProcessTaskHeaderBadges(item),
                         actions: [
                             {
                                 label: 'Vorgang aufrufen',
-                                icon: <OpenInNewIcon />,
-                                href: processPath ?? '#',
+                                icon: <FolderShared />,
+                                iconPosition: 'end',
+                                to: item?.instance == null ? '#' : `/process-instances/${item.instance.id}`,
                                 variant: 'contained',
-                                disabled: processPath == null,
+                                disabled: item?.instance == null,
                                 disabledTooltip: 'Die Vorgangsdetails stehen noch nicht zur Verfügung.',
                             },
                         ],
@@ -243,41 +171,34 @@ export function ProcessTaskViewPage() {
                             content: (
                                 <>
                                     <Typography
-                                        variant="body1"
                                         component="p"
-                                        sx={{marginBottom: 2}}
+                                        sx={{mb: 2}}
                                     >
-                                        Eine Aufgabe ist ein einzelner Bearbeitungsschritt innerhalb eines Vorgangs.
-                                        Der zugehörige Prozess legt fest, welche Schritte erforderlich sind und wie sie
-                                        zusammenhängen. In einem Vorgang können dadurch mehrere Aufgaben entstehen,
-                                        die von unterschiedlichen zuständigen Personen bearbeitet werden.
+                                        Eine Aufgabe ist ein einzelner Bearbeitungsschritt innerhalb eines Vorgangs. Der
+                                        zugehörige Prozess legt fest, welche Schritte erforderlich sind und wie sie
+                                        zusammenhängen. In einem Vorgang können dadurch mehrere Aufgaben entstehen, die
+                                        von unterschiedlichen Personen bearbeitet werden.
                                     </Typography>
                                     <Typography
-                                        variant="body1"
                                         component="p"
-                                        sx={{marginBottom: 2}}
+                                        sx={{mb: 2}}
                                     >
-                                        Unter „Allgemeine Informationen“ sehen Sie, zu welchem Vorgang Ihre Aufgabe gehört,
-                                        was zu tun ist und bis wann sie erledigt sein soll. Die Vorgangskennung und hinterlegte
-                                        Aktenzeichen helfen Ihnen bei der Zuordnung. Über „Vorgang aufrufen“ öffnen Sie
-                                        den Vorgang und können die Aufgabe in den gesamten Ablauf einordnen.
+                                        Unter „Allgemeine Informationen“ sehen Sie, was zu tun ist, wer die Aufgabe
+                                        bearbeitet und wann sie fällig ist. „Vorgang aufrufen“ führt zum gesamten
+                                        Vorgang.
                                     </Typography>
                                     <Typography
-                                        variant="body1"
                                         component="p"
-                                        sx={{marginBottom: 2}}
+                                        sx={{mb: 2}}
                                     >
-                                        Unter „Aufgabe bearbeiten“ führen Sie den vorgesehenen Bearbeitungsschritt aus.
-                                        Im Bereich „Kommunikation“ tauschen Sie Nachrichten zur Aufgabe aus, etwa um
-                                        offene Fragen zu klären und die weitere Bearbeitung abzustimmen.
+                                        Unter „Aufgabe bearbeiten“ führen Sie den vorgesehenen Schritt aus. Im Bereich
+                                        „Kommunikation“ tauschen Sie Nachrichten zur Aufgabe aus. Mit „Wiedervorlage
+                                        einrichten“ merken Sie die Aufgabe für eine spätere Bearbeitung vor.
                                     </Typography>
-                                    <Typography
-                                        variant="body1"
-                                        component="p"
-                                    >
-                                        Wenn Sie die Bearbeitung später fortsetzen möchten, richten Sie eine Wiedervorlage
-                                        ein. Soll eine andere zuständige Person die Bearbeitung übernehmen, geben Sie
-                                        die Aufgabe über „Aufgabe neu zuweisen“ weiter.
+                                    <Typography component="p">
+                                        Über „Aufgabe zuweisen“ geben Sie eine aktive Aufgabe mit entsprechender
+                                        Berechtigung an eine andere Person weiter. Die Zuweisung des gesamten Vorgangs
+                                        bleibt dabei unverändert.
                                     </Typography>
                                 </>
                             ),
@@ -292,15 +213,26 @@ export function ProcessTaskViewPage() {
                     {
                         path: '/tasks/:instanceId/:taskId/edit',
                         label: 'Aufgabe bearbeiten',
+                        requiredPermission: {
+                            permission: Permission.PROCESS_INSTANCE_EDIT_TASK,
+                        },
                     },
                     {
                         path: '/tasks/:instanceId/:taskId/communication',
                         label: 'Kommunikation',
                         isDisabled: () => true,
+                        disabledTooltip: 'Diese Funktion ist noch nicht verfügbar.',
                     },
                 ]}
                 initializeItem={() => createEmptyProcessTaskDetailsPageItem()}
-                fetchData={(_, taskId) => fetchProcessTaskDetails(taskId)}
+                fetchData={async (_, taskId) => {
+                    // Task actions depend on instance permissions, which may have changed since list loading.
+                    const [details] = await Promise.all([
+                        new ProcessInstanceTaskApiService().retrieveDetails(Number(taskId)),
+                        refreshPermissionSet(),
+                    ]);
+                    return details;
+                }}
                 getTabTitle={(item) => getProcessTaskName(item)}
                 getHeaderTitle={(item, _, notFound) => {
                     if (notFound) {
@@ -314,6 +246,14 @@ export function ProcessTaskViewPage() {
                     to: '/tasks',
                 }}
                 idParam="taskId"
+                permissionCheck={{
+                    scope: {
+                        type: 'processInstance',
+                        getResourceId: (item) => item.task.processInstanceId,
+                    },
+                    read: Permission.PROCESS_INSTANCE_READ,
+                    update: Permission.PROCESS_INSTANCE_EDIT_TASK,
+                }}
             />
         </PageWrapper>
     );

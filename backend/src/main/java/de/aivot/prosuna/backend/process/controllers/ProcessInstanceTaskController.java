@@ -10,6 +10,10 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceTaskService;
+import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
+import de.aivot.prosuna.backend.process.services.ProcessListService;
+import de.aivot.prosuna.backend.process.dtos.ProcessInstanceReassignRequestDTO;
+import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.workers.ProcessWorker;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.specification.SpecificationBuilderArrayContains;
@@ -42,21 +46,26 @@ import java.util.Map;
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessInstanceTaskController {
     // Tasks are created and progressed by the process engine. Generic write endpoints are intentionally not exposed;
-    // staff interactions use the task-view commands and the explicit failed-task restart below.
+    // staff interactions use task-view commands, reassignment and the explicit failed-task restart below.
     private final UserService userService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final RabbitTemplate rabbitTemplate;
     private final PermissionService permissionService;
+    private final ProcessAssignmentService assignmentService;
+    private final ProcessListService listService;
 
     @Autowired
     public ProcessInstanceTaskController(UserService userService,
                                          ProcessInstanceTaskService processInstanceTaskService,
                                          RabbitTemplate rabbitTemplate,
-                                         PermissionService permissionService) {
+                                         PermissionService permissionService, ProcessAssignmentService assignmentService,
+                                         ProcessListService listService) {
         this.userService = userService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.rabbitTemplate = rabbitTemplate;
         this.permissionService = permissionService;
+        this.assignmentService = assignmentService;
+        this.listService = listService;
     }
 
     @GetMapping("")
@@ -101,7 +110,7 @@ public class ProcessInstanceTaskController {
     @GetMapping("assigned-count/")
     @Operation(
             summary = "Count Assigned Process Instance Tasks",
-            description = "Returns the number of currently assigned running tasks for the authenticated user."
+            description = "Returns the number of currently assigned open tasks in readable process instances for the authenticated user."
     )
     public Map<String, Long> countAssignedTasks(
             @Nullable @AuthenticationPrincipal Jwt jwt
@@ -112,10 +121,7 @@ public class ProcessInstanceTaskController {
 
         return Map.of(
                 "count",
-                processInstanceTaskService.countAssignedTasks(
-                        execUser.getId(),
-                        List.of(ProcessTaskStatus.Running)
-                )
+                listService.countOpenAssignedTasks(execUser.getId())
         );
     }
 
@@ -143,6 +149,25 @@ public class ProcessInstanceTaskController {
         );
 
         return task;
+    }
+
+    @GetMapping("{id}/assignment-options/")
+    @Operation(summary = "List Task Assignees", description = "List active staff with read and task-edit access to the owning instance. Requires process_instance.edit_task.")
+    public List<ProcessAssignmentOptionDTO> assignmentOptions(
+            @Nullable @AuthenticationPrincipal Jwt jwt, @Nonnull @PathVariable Long id
+    ) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return assignmentService.taskOptions(user.getId(), id);
+    }
+
+    @PutMapping("{id}/reassign/")
+    @Operation(summary = "Reassign Process Instance Task", description = "Assign an active task to an eligible staff member. An assignee is required; task assignments cannot be cleared through this endpoint. Requires process_instance.edit_task.")
+    public ProcessInstanceTaskEntity reassign(
+            @Nullable @AuthenticationPrincipal Jwt jwt, @Nonnull @PathVariable Long id,
+            @Nonnull @RequestBody @Valid ProcessInstanceReassignRequestDTO request
+    ) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return assignmentService.reassignTask(user, id, request.assignedUserId());
     }
 
     @PutMapping("{id}/rerun-failed/")

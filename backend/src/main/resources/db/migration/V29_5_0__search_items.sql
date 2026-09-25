@@ -260,6 +260,7 @@ GROUP BY p.id,
 UNION ALL
 
 -- Process Instances
+-- One search row per instance and user, even when several teams/departments grant access.
 SELECT text 'process_instances'                                     AS origin_table,
        null                                                         AS origin_table_subset,
        pi.case_number::varchar || (case
@@ -270,10 +271,15 @@ SELECT text 'process_instances'                                     AS origin_ta
        to_tsvector('german', pi.case_number::varchar) ||
        to_tsvector('german',
                    array_to_string(pi.assigned_file_numbers, ', ')) AS searchable_element,
-       pi.case_number::varchar || ' ' ||
-       array_to_string(pi.assigned_file_numbers, ', ')              AS search_text,
+       -- Keep the displayed spelling and an ungrouped Crockford alias in the shared search text.
+       concat_ws(' ', pi.case_number, array_to_string(pi.assigned_file_numbers, ', '),
+                 compact_case_number_search_key(pi.case_number))   AS search_text,
        upp.user_id                                                  AS user_id,
-       upp.permissions                                              AS permissions
+       array_unique_union_agg(upp.permissions)                      AS permissions
 FROM process_instances pi
          JOIN v_user_process_instance_access_permissions AS upp
-              ON upp.target_process_instance_id = pi.id;
+              ON upp.target_process_instance_id = pi.id
+GROUP BY pi.id,
+         pi.case_number,
+         pi.assigned_file_numbers,
+         upp.user_id;

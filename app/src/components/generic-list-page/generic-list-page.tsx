@@ -5,6 +5,7 @@ import {GenericPageHeader} from '../generic-page-header/generic-page-header';
 import {type GenericListColDef, type GenericListProps} from '../generic-list/generic-list-props';
 import {type GenericPageHeaderProps} from '../generic-page-header/generic-page-header-props';
 import {GenericList} from '../generic-list/generic-list';
+import {loadListFullWidth} from '../generic-list/generic-list-column-settings';
 import {type GenericListRowModel} from '../generic-list/generic-list-row-models';
 import {type Action} from '../actions/actions-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -65,9 +66,11 @@ export function GenericListPage<ItemType extends GenericListRowModel>(props: Gen
         rowActions,
         ...listProps
     } = props;
-    const [isFullWidth, setIsFullWidth] = useState(false);
+    const [isFullWidth, setIsFullWidth] = useState(() => props.disableFullWidthToggle !== true && loadListFullWidth(props.columnSettingsStorageKey));
     const [isBusy, setIsBusy] = useState(false);
     const permissionSet = useAppSelector(selectPermissions);
+    const countPermissions = props.fetchFilterCounts == null ? undefined : permissionSet;
+    const refreshKey = useMemo(() => [countPermissions, props.refreshKey], [countPermissions, props.refreshKey]);
 
     const permissionState = useMemo(() => createPermissionState(permissionSet, permissionCheck), [permissionSet, permissionCheck]);
     const missingListPermission = useMemo(() => findMissingListPermission(permissionSet, permissionCheck), [permissionSet, permissionCheck]);
@@ -109,6 +112,7 @@ export function GenericListPage<ItemType extends GenericListRowModel>(props: Gen
             >
                 <GenericList
                     {...listProps}
+                    refreshKey={refreshKey}
                     columnDefinitions={resolvedColumnDefinitions}
                     noDataPlaceholder={resolvedNoDataPlaceholder}
                     rowActions={rowActions == null ? undefined : resolvedRowActions}

@@ -13,6 +13,7 @@ import de.aivot.prosuna.backend.process.filters.ProcessInstanceAccessControlPres
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.process.services.ProcessEdgeService;
+import de.aivot.prosuna.backend.process.services.ProcessDefinitionCountService;
 import de.aivot.prosuna.backend.process.services.ProcessExportService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAccessControlPresetService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
@@ -71,7 +72,8 @@ class ProcessControllerTest {
                 processDefinitionEdgeService,
                 processInstanceAccessControlPresetService,
                 processNodeProviderService,
-                new JsonMapper()
+                new JsonMapper(),
+                mock(ProcessDefinitionCountService.class)
         );
 
         var user = new UserEntity()

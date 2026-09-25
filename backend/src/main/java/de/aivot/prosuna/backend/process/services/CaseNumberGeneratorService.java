@@ -1,10 +1,13 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.enums.CaseNumberType;
+import de.aivot.prosuna.backend.process.utils.CrockfordCaseNumber;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -14,7 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Generates process case numbers from a process-local template contract.
+ * Generates process case numbers in the format selected on the process version.
  *
  * <p>The process module keeps this logic in its own service on purpose. Process case numbers are part of the
  * workflow domain and carry their own placeholder semantics, persistence query, and uniqueness guarantees. Reusing
@@ -67,18 +70,31 @@ public class CaseNumberGeneratorService {
     }
 
     /**
-     * Generates the next case number for the provided template.
+     * Generates a case number using the selected format.
      *
-     * <p>The database remains the final uniqueness guard, but the generator still reads the current maximum increment
+     * <p>The database remains the final uniqueness guard, but template generation still reads the current maximum increment
      * for the rendered prefix/suffix pair so numbering stays monotonic for the active time bucket.</p>
      */
     @Nonnull
-    public String generateCaseNumber(@Nullable String caseNumberTemplate) throws ResponseException {
-        if (caseNumberTemplate == null) {
-            return UUID.randomUUID().toString();
-        }
+    public String generateCaseNumber(@Nonnull CaseNumberType type, @Nullable String caseNumberTemplate) throws ResponseException {
+        validateConfiguration(type, caseNumberTemplate);
+        return switch (type) {
+            case CROCKFORD_BASE32 -> CrockfordCaseNumber.generate();
+            case UUID_V4 -> UUID.randomUUID().toString();
+            // Hibernate's UUIDv7 strategy generates locally and does not use the persistence session.
+            case UUID_V7 -> UuidVersion7Strategy.INSTANCE.generateUuid(null).toString();
+            case TEMPLATE -> generateCaseNumber(caseNumberTemplate, ZonedDateTime.now(ApplicationTimeZone.getZoneId()));
+        };
+    }
 
-        return generateCaseNumber(caseNumberTemplate, ZonedDateTime.now(ApplicationTimeZone.getZoneId()));
+    public void validateConfiguration(@Nonnull CaseNumberType type, @Nullable String template) throws ResponseException {
+        if (type == null) throw ResponseException.badRequest("Bitte wählen Sie einen Typ der Vorgangskennung aus.");
+        if (type == CaseNumberType.TEMPLATE) {
+            if (template == null) throw ResponseException.badRequest("Bitte geben Sie eine Formatvorlage für die Vorgangskennung an.");
+            validateCaseNumberTemplate(template);
+        } else if (template != null) {
+            throw ResponseException.badRequest("Eine Formatvorlage kann nur für den Kennungstyp „Eigene Formatvorlage“ verwendet werden.");
+        }
     }
 
     @Nonnull

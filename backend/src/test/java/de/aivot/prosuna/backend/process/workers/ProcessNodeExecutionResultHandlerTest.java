@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
+import static org.mockito.Mockito.*;
+
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
@@ -44,6 +47,7 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
@@ -675,7 +679,18 @@ class ProcessNodeExecutionResultHandlerTest {
                                                                    List<ProcessInstanceEntity> savedInstances,
                                                                    ProcessService processService,
                                                                    DepartmentService departmentService) {
-        return new ProcessNodeExecutionResultHandler(
+        var assignments = mock(ProcessAssignmentService.class);
+        try {
+            doAnswer(invocation -> {
+                ProcessInstanceTaskEntity task = invocation.getArgument(0);
+                task.setAssignedUserId(invocation.getArgument(1));
+                savedTasks.add(task);
+                return null;
+            }).when(assignments).saveRuntimeAssignment(any(), anyString());
+        } catch (ResponseException exception) {
+            throw new AssertionError(exception);
+        }
+        return new ProcessNodeExecutionResultHandler(assignments,
                 null,
                 communicationService,
                 createInstanceRepository(savedInstances),
@@ -898,7 +913,7 @@ class ProcessNodeExecutionResultHandlerTest {
         private final Optional<ProcessEntity> process;
 
         private TestProcessService(Optional<ProcessEntity> process) {
-            super(null, null, null);
+            super(null, null, null, mock(PlatformTransactionManager.class));
             this.process = process;
         }
 

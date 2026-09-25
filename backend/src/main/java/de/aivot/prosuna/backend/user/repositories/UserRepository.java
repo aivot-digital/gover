@@ -12,6 +12,8 @@ import java.util.List;
 public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSpecificationExecutor<UserEntity> {
     Integer countAllByDeletedInIdpIsFalseAndEnabledIsTrue();
 
+    List<UserEntity> findAllByEnabledTrueAndDeletedInIdpFalseOrderByFullNameAsc();
+
     Boolean existsBySystemRoleId(Integer systemRoleId);
 
     @Query("""
