@@ -66,21 +66,33 @@ public final class SearchItemSpecifications {
             @Nullable String originTable
     ) {
         return (root, query, criteriaBuilder) -> {
+            var searchTerm = search.trim();
+            if (searchTerm.isEmpty()) {
+                return criteriaBuilder.disjunction();
+            }
+
             var predicates = new LinkedList<Predicate>();
+            // word_similarity finds the first argument within the second. Keep the search term first:
+            // additional file numbers or search aliases must not dilute an otherwise matching term.
             var similarity = criteriaBuilder.function(
                     "word_similarity",
                     Double.class,
-                    root.get("searchText"),
-                    criteriaBuilder.literal(search)
+                    criteriaBuilder.literal(searchTerm),
+                    root.get("searchText")
             );
 
-            var literalMatch = criteriaBuilder.equal(criteriaBuilder.lower(root.get("caseNumber")), search.trim().toLowerCase(Locale.ROOT));
-            var normalized = CrockfordCaseNumber.normalizeSearch(search);
+            var searchText = criteriaBuilder.lower(root.<String>get("searchText"));
+            var literalMatch = criteriaBuilder.like(searchText,
+                    "%" + escapeLike(searchTerm.toLowerCase(Locale.ROOT)) + "%", '\\');
+            var normalized = CrockfordCaseNumber.normalizeSearch(searchTerm);
+            // Only instance search texts include Crockford aliases. Keep the original query as well,
+            // since replacing O/I/L in ordinary names, UUIDs or custom case numbers changes their meaning.
             var compactMatch = normalized == null ? criteriaBuilder.disjunction()
-                    : criteriaBuilder.like(root.get("compactCaseNumber"), "%" + normalized + "%");
-            var completeCompactMatch = normalized == null || normalized.length() != 12 ? criteriaBuilder.disjunction()
-                    : criteriaBuilder.equal(root.get("compactCaseNumber"), normalized);
-            predicates.add(criteriaBuilder.or(literalMatch, compactMatch,
+                    : criteriaBuilder.and(
+                            criteriaBuilder.equal(root.get("originTable"), "process_instances"),
+                            criteriaBuilder.like(searchText, "%" + normalized.toLowerCase(Locale.ROOT) + "%"));
+            var directMatch = criteriaBuilder.or(literalMatch, compactMatch);
+            predicates.add(criteriaBuilder.or(directMatch,
                     criteriaBuilder.greaterThan(similarity, MIN_SIMILARITY)));
 
             if (StringUtils.isNotNullOrEmpty(originTable)) {
@@ -90,13 +102,18 @@ public final class SearchItemSpecifications {
             if (!Long.class.equals(query.getResultType()) && !long.class.equals(query.getResultType())) {
                 query.orderBy(
                         criteriaBuilder.asc(criteriaBuilder.<Integer>selectCase()
-                                .when(literalMatch, 0).when(completeCompactMatch, 1).when(compactMatch, 2).otherwise(3)),
+                                .when(directMatch, 0).otherwise(1)),
                         criteriaBuilder.desc(similarity),
                         criteriaBuilder.asc(root.get("originTable")), criteriaBuilder.asc(root.get("id")));
             }
 
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    @Nonnull
+    private static String escapeLike(@Nonnull String value) {
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     @Nonnull
