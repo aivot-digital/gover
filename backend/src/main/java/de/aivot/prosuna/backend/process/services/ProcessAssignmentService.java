@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.*;
 
@@ -30,6 +32,7 @@ import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermis
 public class ProcessAssignmentService {
     private static final Set<ProcessTaskStatus> ACTIVE_TASK_STATUSES = Set.of(ProcessTaskStatus.Running,
             ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
+    private static final List<String> TASK_ASSIGNMENT_PERMISSIONS = List.of(PROCESS_INSTANCE_READ, PROCESS_INSTANCE_EDIT_TASK);
     private final PermissionService permissions;
     private final UserRepository users;
     private final ProcessInstanceRepository instances;
@@ -49,8 +52,7 @@ public class ProcessAssignmentService {
     @Nonnull
     @Transactional(readOnly = true)
     public List<ProcessAssignmentOptionDTO> instanceOptions(@Nonnull String actorId, @Nonnull Long instanceId) throws ResponseException {
-        permissions.requireProcessInstancePermission(actorId, instanceId, PROCESS_INSTANCE_REASSIGN);
-        if (!instances.existsById(instanceId)) throw ResponseException.notFound();
+        requireAssignableInstance(actorId, instanceId);
         return options(instanceId, false);
     }
 
@@ -83,8 +85,7 @@ public class ProcessAssignmentService {
     @Transactional(rollbackFor = ResponseException.class)
     public ProcessInstanceEntity reassignInstance(@Nonnull UserEntity actor, @Nonnull Long instanceId,
                                                   @Nullable String assignedUserId) throws ResponseException {
-        permissions.requireProcessInstancePermission(actor.getId(), instanceId, PROCESS_INSTANCE_REASSIGN);
-        var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
+        var instance = requireAssignableInstance(actor.getId(), instanceId);
         validateAssignee(assignedUserId, instanceId, false);
         var previousUserId = instance.getAssignedUserId();
         instance.setAssignedUserId(assignedUserId).setUpdated(Instant.now());
@@ -104,6 +105,10 @@ public class ProcessAssignmentService {
         instances.lockAccessById(instanceId).orElseThrow(ResponseException::notFound);
         // Load the task and evaluate both parties' rights only after acquiring the instance lock.
         var task = requireAssignableTask(actor.getId(), taskId);
+        // Staff may transfer tasks; clearing an assignment is reserved for internal lifecycle operations.
+        if (assignedUserId == null) {
+            throw ResponseException.badRequest("Die Zuweisung einer Aufgabe kann nicht aufgehoben werden. Bitte wählen Sie eine andere Person aus.");
+        }
         validateAssignee(assignedUserId, task.getProcessInstanceId(), true);
         var previousUserId = task.getAssignedUserId();
         task.setAssignedUserId(assignedUserId).setUpdated(Instant.now());
@@ -126,6 +131,30 @@ public class ProcessAssignmentService {
         tasks.saveAndFlush(task);
     }
 
+    /**
+     * Check the same account and instance rights as persistence before applying node preferences or load balancing.
+     * Node-specific permissions may extend, but never replace, the read and edit permissions required for every task.
+     * This does not define the configured candidate pool; the resolver must establish that pool separately.
+     */
+    public boolean canReceiveTaskAssignment(@Nonnull String userId, @Nonnull Long instanceId,
+                                            @Nonnull List<String> requiredPermissions) {
+        var permissionsToCheck = Stream.concat(TASK_ASSIGNMENT_PERMISSIONS.stream(), requiredPermissions.stream())
+                .distinct().toList();
+        return users.findById(userId)
+                .map(user -> canReceiveAssignment(user, instanceId, permissionsToCheck))
+                .orElse(false);
+    }
+
+    @Nonnull
+    private ProcessInstanceEntity requireAssignableInstance(@Nonnull String actorId, @Nonnull Long instanceId) throws ResponseException {
+        permissions.requireProcessInstancePermission(actorId, instanceId, PROCESS_INSTANCE_REASSIGN);
+        var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
+        if (instance.getStatus() == ProcessInstanceStatus.Completed || instance.getStatus() == ProcessInstanceStatus.Aborted) {
+            throw ResponseException.badRequest("Die Zuweisung abgeschlossener oder abgebrochener Vorgänge kann nicht mehr geändert werden.");
+        }
+        return instance;
+    }
+
     @Nonnull
     private ProcessInstanceTaskEntity requireAssignableTask(@Nonnull String actorId, @Nonnull Long taskId) throws ResponseException {
         var task = tasks.findById(taskId).orElseThrow(ResponseException::notFound);
@@ -145,17 +174,21 @@ public class ProcessAssignmentService {
     }
 
     private void validateAssignee(@Nullable String userId, @Nonnull Long instanceId, boolean forTask) throws ResponseException {
-        // Clearing an assignment remains possible even when the previous assignee has lost access.
+        // Instance assignments can be cleared even when the previous assignee has lost access.
         if (userId == null) return;
         var user = users.findById(userId).orElseThrow(() -> ResponseException.badRequest("Die ausgewählte Person wurde nicht gefunden."));
         if (!canReceiveAssignment(user, instanceId, forTask)) {
-            throw ResponseException.badRequest("Die ausgewählte Person ist nicht aktiv oder hat nicht die erforderlichen Berechtigungen für diesen Vorgang.");
+            throw ResponseException.badRequest("Die ausgewählte Person ist nicht aktiv oder hat nicht die erforderlichen eigenen Berechtigungen für diesen Vorgang. Berechtigungen aus einer Stellvertretung reichen für eine Zuweisung nicht aus.");
         }
     }
 
     private boolean canReceiveAssignment(@Nonnull UserEntity user, @Nonnull Long instanceId, boolean forTask) {
+        return canReceiveAssignment(user, instanceId, forTask ? TASK_ASSIGNMENT_PERMISSIONS : List.of(PROCESS_INSTANCE_READ));
+    }
+
+    private boolean canReceiveAssignment(@Nonnull UserEntity user, @Nonnull Long instanceId, @Nonnull List<String> requiredPermissions) {
         return Boolean.TRUE.equals(user.getEnabled()) && Boolean.FALSE.equals(user.getDeletedInIdp())
-                && permissions.hasProcessInstancePermission(user.getId(), instanceId, PROCESS_INSTANCE_READ)
-                && (!forTask || permissions.hasProcessInstancePermission(user.getId(), instanceId, PROCESS_INSTANCE_EDIT_TASK));
+                && requiredPermissions.stream().allMatch(permission ->
+                        permissions.hasProcessInstancePermissionWithoutDeputies(user.getId(), instanceId, permission));
     }
 }

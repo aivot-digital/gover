@@ -1,11 +1,14 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.enums.CaseNumberType;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
-import de.aivot.prosuna.backend.process.services.CaseNumberGeneratorService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.HttpStatus;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -142,14 +145,34 @@ class CaseNumberGeneratorServiceTest {
         );
     }
 
-    @Test
-    void generateCaseNumber_ReturnsUuidWhenTemplateIsMissing() {
+    @ParameterizedTest
+    @CsvSource({"UUID_V4, 4", "UUID_V7, 7"})
+    void generateCaseNumber_ReturnsTheSelectedUuidVersion(CaseNumberType type, int version) {
         var repository = mock(ProcessInstanceRepository.class);
         var service = new CaseNumberGeneratorService(repository);
 
-        var result = assertDoesNotThrow(() -> service.generateCaseNumber(de.aivot.prosuna.backend.process.enums.CaseNumberType.UUID_V4, null));
+        var result = assertDoesNotThrow(() -> service.generateCaseNumber(type, null));
 
         assertEquals(result, UUID.fromString(result).toString());
+        assertEquals(version, UUID.fromString(result).version());
+        assertEquals(2, UUID.fromString(result).variant());
+        assertThrows(ResponseException.class, () -> service.generateCaseNumber(type, "%I(4)"));
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void generatesTimeOrderedUuidV7WithoutDatabaseAccess() throws ResponseException {
+        var repository = mock(ProcessInstanceRepository.class);
+        var service = new CaseNumberGeneratorService(repository);
+        var before = Instant.now().toEpochMilli();
+
+        var first = service.generateCaseNumber(CaseNumberType.UUID_V7, null);
+        var second = service.generateCaseNumber(CaseNumberType.UUID_V7, null);
+
+        var after = Instant.now().toEpochMilli();
+        var firstTimestamp = UUID.fromString(first).getMostSignificantBits() >>> 16;
+        assertTrue(firstTimestamp >= before && firstTimestamp <= after);
+        assertTrue(first.compareTo(second) < 0);
         verifyNoInteractions(repository);
     }
 }

@@ -5,7 +5,12 @@ import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {StorageKey} from '../../../../data/storage-key';
 import FolderShared from '@aivot/mui-material-symbols-400-n25-outlined/FolderShared';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
-import {GenericListPropsFetchOptions, ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import {
+    GenericListPropsFetchOptions,
+    ListControlRef,
+    type FetchListFilterCounts,
+    type GenericListFilter,
+} from '../../../../components/generic-list/generic-list-props';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {ProcessTaskListEntry} from '../../entities/process-list';
@@ -14,11 +19,14 @@ import {useProcessListFilters} from '../../components/use-process-list-filters';
 import {processListColumns} from '../../components/process-list-columns';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
 import {Action} from '../../../../components/actions/actions-props';
+import {useListFilter} from '../../../../components/generic-list/use-list-filter';
+import {ProcessListFilterMenu} from '../../components/process-list-filter-menu';
 
-const filters = [
+const filters: GenericListFilter[] = [
     {
         value: 'all',
         label: 'Alle Aufgaben',
+        showCount: false,
     },
     {
         value: 'open',
@@ -27,10 +35,12 @@ const filters = [
     {
         value: 'overdue',
         label: 'Überfällige Aufgaben',
+        countColor: 'warning',
     },
     {
         value: 'failed',
         label: 'Fehlerhafte Aufgaben',
+        countColor: 'error',
     },
 ];
 const visibility = {
@@ -49,6 +59,8 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
         true,
         instanceId,
     );
+    const {value: includeTestsValue, setValue: setIncludeTests} = useListFilter('includeTests');
+    const includeTests = includeTestsValue !== 'false';
     const [loadFailed, setLoadFailed] = useState(false);
     const refresh = useCallback(() => {
         listRef.current?.refresh();
@@ -59,6 +71,10 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
         dispatchProcessAssignedTaskCountRefreshEvent();
     }, []);
     const columns = useMemo(() => processListColumns<ProcessTaskListEntry>(true, refresh), [refresh]);
+    const fetchFilterCounts = useCallback<FetchListFilterCounts>(
+        ({signal}) => new ProcessListApiService().tasksCounts(instanceId, signal),
+        [instanceId],
+    );
     const fetch = useCallback(
         async (options: GenericListPropsFetchOptions<ProcessTaskListEntry>) => {
             try {
@@ -72,6 +88,7 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
                         processId,
                         processVersion,
                         instanceId,
+                        includeTests,
                         search: options.search,
                         view: options.filter,
                     },
@@ -83,7 +100,7 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
                 throw error;
             }
         },
-        [assignee, processId, processVersion, instanceId],
+        [assignee, processId, processVersion, instanceId, includeTests],
     );
     const actions: Action[] = [
         ...(instanceId == null
@@ -110,6 +127,14 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
         >
             <GenericListPage<ProcessTaskListEntry>
                 {...filterProps}
+                hasActiveAdditionalFilters={filterProps.hasActiveAdditionalFilters || !includeTests}
+                filterActions={
+                    <ProcessListFilterMenu
+                        tasks
+                        includeTests={includeTests}
+                        onChange={(value) => setIncludeTests(value ? null : 'false')}
+                    />
+                }
                 controlRef={listRef}
                 header={{
                     icon: ModuleIcons.tasks,
@@ -170,6 +195,7 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
                         : []),
                 ]}
                 fetch={fetch}
+                fetchFilterCounts={fetchFilterCounts}
                 filters={filters}
                 defaultFilter={instanceId == null ? 'open' : 'all'}
                 searchLabel="Vorgangskennung / Aktenzeichen"

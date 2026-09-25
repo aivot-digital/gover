@@ -7,6 +7,7 @@ import {ProcessInstanceTaskApiService} from '../services/process-instance-task-a
 import {useHasProcessInstancePermission} from '../../permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 import {ProcessTaskStatus} from '../enums/process-task-status';
+import {ProcessInstanceStatus} from '../enums/process-instance-status';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {DisabledTooltip} from '../../../components/disabled-tooltip/disabled-tooltip';
@@ -14,6 +15,7 @@ import {formatMissingPermissionTooltip} from '../../permissions/utils/permission
 
 interface ProcessAssignmentButtonProps {
     instanceId: number;
+    instanceStatus?: ProcessInstanceStatus;
     taskId?: number;
     taskStatus?: ProcessTaskStatus;
     assignedUserId: string | null;
@@ -29,6 +31,7 @@ const activeStatuses = new Set([
 
 export function ProcessAssignmentButton({
     instanceId,
+    instanceStatus,
     taskId,
     taskStatus,
     assignedUserId,
@@ -38,8 +41,15 @@ export function ProcessAssignmentButton({
     const isTask = taskId != null;
     const requiredPermission = isTask ? Permission.PROCESS_INSTANCE_EDIT_TASK : Permission.PROCESS_INSTANCE_REASSIGN;
     const allowed = useHasProcessInstancePermission(instanceId, requiredPermission);
-    const active = !isTask || (taskStatus != null && activeStatuses.has(taskStatus));
+    const active = isTask
+        ? taskStatus != null && activeStatuses.has(taskStatus)
+        : instanceStatus != null &&
+          instanceStatus !== ProcessInstanceStatus.Completed &&
+          instanceStatus !== ProcessInstanceStatus.Aborted;
     const label = isTask ? 'Aufgabe zuweisen' : 'Vorgang zuweisen';
+    const inactiveReason = isTask
+        ? 'Nur aktive Aufgaben können zugewiesen werden.'
+        : 'Die Zuweisung abgeschlossener oder abgebrochener Vorgänge kann nicht mehr geändert werden.';
 
     return (
         <>
@@ -49,7 +59,7 @@ export function ProcessAssignmentButton({
                     !allowed
                         ? formatMissingPermissionTooltip(requiredPermission)
                         : !active
-                          ? 'Nur aktive Aufgaben können zugewiesen werden.'
+                          ? inactiveReason
                           : undefined
                 }
             >
@@ -80,7 +90,7 @@ export function ProcessAssignmentDialog({
     assignedUserId,
     onAssigned,
     onClose,
-}: Omit<ProcessAssignmentButtonProps, 'taskStatus'> & {onClose: () => void}) {
+}: Omit<ProcessAssignmentButtonProps, 'taskStatus' | 'instanceStatus'> & {onClose: () => void}) {
     const dispatch = useAppDispatch();
     const isTask = taskId != null;
     const label = isTask ? 'Aufgabe zuweisen' : 'Vorgang zuweisen';
@@ -101,10 +111,11 @@ export function ProcessAssignmentDialog({
             title={label}
             description={
                 isTask
-                    ? 'Mit der Zuweisung legen Sie fest, wer für die Bearbeitung dieser Aufgabe zuständig ist. Zur Auswahl stehen Mitarbeiter:innen mit aktivem Benutzerkonto, die den Vorgang anzeigen und seine Aufgaben bearbeiten dürfen. Die Zuständigkeit für den gesamten Vorgang und die Zuweisungen anderer Aufgaben bleiben unverändert.'
-                    : 'Mit der Zuweisung legen Sie fest, wer für den gesamten Vorgang zuständig ist. Einzelne Aufgaben können weiterhin von anderen Personen bearbeitet werden; ihre Zuweisungen bleiben unverändert. Zur Auswahl stehen Mitarbeiter:innen mit aktivem Benutzerkonto, die den Vorgang anzeigen dürfen.'
+                    ? 'Wählen Sie, wer diese Aufgabe bearbeiten soll. Sie können Mitarbeiter:innen mit aktivem Konto auswählen, die den Vorgang einsehen und Aufgaben bearbeiten dürfen. Diese Rechte müssen auch ohne Stellvertretung bestehen.'
+                    : 'Wählen Sie, wer für diesen Vorgang zuständig sein soll. Aufgaben werden separat zugewiesen. Sie können Mitarbeiter:innen mit aktivem Konto auswählen, die den Vorgang auch ohne Stellvertretung einsehen dürfen.'
             }
             assignedUserId={assignedUserId}
+            allowUnassign={!isTask}
             loadOptions={loadOptions}
             onSave={async (userId) => {
                 if (taskId == null) await new ProcessInstanceApiService().reassign(instanceId, userId);

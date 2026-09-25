@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
+import de.aivot.prosuna.backend.utils.DatabaseConstraintUtils;
 import de.aivot.prosuna.backend.utils.RandomUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -18,12 +19,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
 public class ProcessInstanceService implements EntityService<ProcessInstanceEntity, Long> {
-    private static final int MAX_CASE_NUMBER_GENERATION_ATTEMPTS = 5;
+    private static final int MAX_IDENTIFIER_GENERATION_ATTEMPTS = 5;
 
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
@@ -31,6 +36,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessVersionService processVersionService;
     private final CaseNumberGeneratorService caseNumberGeneratorService;
+    private final TransactionTemplate creationTransaction;
 
     @Autowired
     public ProcessInstanceService(ProcessInstanceRepository processInstanceRepository,
@@ -38,26 +44,27 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
                                   ProcessInstanceAttachmentSetRepository processInstanceAttachmentSetRepository,
                                   ProcessInstanceAttachmentService processInstanceAttachmentService,
                                   ProcessVersionService processVersionService,
-                                  CaseNumberGeneratorService caseNumberGeneratorService) {
+                                  CaseNumberGeneratorService caseNumberGeneratorService,
+                                  @Nonnull PlatformTransactionManager transactionManager) {
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceAttachmentRepository = processInstanceAttachmentRepository;
         this.processInstanceAttachmentSetRepository = processInstanceAttachmentSetRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processVersionService = processVersionService;
         this.caseNumberGeneratorService = caseNumberGeneratorService;
+        this.creationTransaction = new TransactionTemplate(transactionManager);
+        // A failed flush invalidates its transaction. Complete that rollback before generating new identifiers.
+        this.creationTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Nonnull
     @Override
     public ProcessInstanceEntity create(@Nonnull ProcessInstanceEntity entity) throws ResponseException {
-        entity.setId(null);
-        entity.setAccessKey(RandomUtils.generateRandomString(ProcessInstanceEntity.ACCESS_KEY_LENGTH));
-
         var processVersion = processVersionService
                 .retrieve(ProcessVersionEntityId.of(entity.getProcessId(), entity.getInitialProcessVersion()))
                 .orElseThrow(ResponseException::badRequest);
 
-        return createWithUniqueCaseNumber(entity, processVersion.getCaseNumberType(), processVersion.getCaseNumberTemplate());
+        return createWithUniqueIdentifiers(entity, processVersion.getCaseNumberType(), processVersion.getCaseNumberTemplate());
     }
 
     @Nullable
@@ -137,36 +144,47 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
     }
 
     /**
-     * The generator reads the current maximum increment before persisting, but the database unique constraint is still the last line of defense under concurrent instance creation.
-     * Retrying here keeps the sequencing logic simple in the generator while still handling the race at the boundary where it actually happens.
+     * Database constraints arbitrate collisions, including concurrent creation with incrementing case numbers.
+     * Only generated identifiers may be replaced; an existing inbound reference must still reject creation.
      */
     @Nonnull
-    private ProcessInstanceEntity createWithUniqueCaseNumber(@Nonnull ProcessInstanceEntity entity,
-                                                            @Nonnull CaseNumberType caseNumberType,
-                                                            @Nullable String caseNumberTemplate) throws ResponseException {
-        for (int attempt = 1; attempt <= MAX_CASE_NUMBER_GENERATION_ATTEMPTS; attempt++) {
+    private ProcessInstanceEntity createWithUniqueIdentifiers(@Nonnull ProcessInstanceEntity entity,
+                                                             @Nonnull CaseNumberType caseNumberType,
+                                                             @Nullable String caseNumberTemplate) throws ResponseException {
+        for (int attempt = 1; attempt <= MAX_IDENTIFIER_GENERATION_ATTEMPTS; attempt++) {
             entity.setId(null);
+            entity.setAccessKey(RandomUtils.generateRandomString(ProcessInstanceEntity.ACCESS_KEY_LENGTH));
             entity.setCaseNumber(caseNumberGeneratorService.generateCaseNumber(caseNumberType, caseNumberTemplate));
 
             try {
-                return processInstanceRepository.saveAndFlush(entity);
+                return Objects.requireNonNull(creationTransaction.execute(
+                        status -> processInstanceRepository.saveAndFlush(entity)
+                ));
             } catch (DataIntegrityViolationException e) {
-                if (entity.getInboundReference() != null &&
-                        processInstanceRepository.existsByInboundReference(entity.getInboundReference())) {
+                if (DatabaseConstraintUtils.isUniqueViolation(e, "process_instances_inbound_reference_unique")) {
                     throw ResponseException.conflict("Für diese externe Eingangsreferenz existiert bereits ein Vorgang.");
                 }
 
-                if (processInstanceRepository.existsByCaseNumber(entity.getCaseNumber())) {
-                    if (attempt == MAX_CASE_NUMBER_GENERATION_ATTEMPTS) {
+                if (DatabaseConstraintUtils.isUniqueViolation(e, "process_instances_case_number_key")) {
+                    if (attempt == MAX_IDENTIFIER_GENERATION_ATTEMPTS) {
                         throw ResponseException.conflict("Es konnte keine eindeutige Vorgangskennung erzeugt werden. Bitte versuchen Sie es erneut.");
                     }
                     continue;
                 }
 
-                throw ResponseException.internalServerError("Der Vorgang konnte nicht gespeichert werden.", e);
+                if (DatabaseConstraintUtils.isUniqueViolation(e, "process_instances_access_key_key")) {
+                    if (attempt == MAX_IDENTIFIER_GENERATION_ATTEMPTS) {
+                        throw ResponseException.internalServerErrorWithDetails(e,
+                                "Der Vorgang konnte nicht erstellt werden.", "Bitte versuchen Sie es erneut.");
+                    }
+                    continue;
+                }
+
+                throw ResponseException.internalServerErrorWithDetails(e,
+                        "Der Vorgang konnte nicht gespeichert werden.", "Beim Speichern ist ein technischer Fehler aufgetreten.");
             }
         }
 
-        throw ResponseException.conflict("Es konnte keine eindeutige Vorgangskennung erzeugt werden. Bitte versuchen Sie es erneut.");
+        throw new IllegalStateException("Identifier generation attempts exhausted");
     }
 }

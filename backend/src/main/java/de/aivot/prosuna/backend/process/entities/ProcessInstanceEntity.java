@@ -35,7 +35,7 @@ public class ProcessInstanceEntity {
     private String caseNumber;
 
     @Nonnull
-    @Column(length = ACCESS_KEY_LENGTH)
+    @Column(length = ACCESS_KEY_LENGTH, unique = true)
     @NotNull(message = "Der Zugriffsschlüssel darf nicht null sein.")
     private String accessKey;
 

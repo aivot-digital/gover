@@ -445,7 +445,8 @@ class ApprovalActionNodeV1Test {
         private TestAssignmentContextAssigneeResolverService() {
             super(
                     proxy(VPotentialProcessInstanceAccessRepository.class, (methodName, args) -> unsupported(methodName)),
-                    proxy(ProcessInstanceTaskRepository.class, (methodName, args) -> unsupported(methodName))
+                    proxy(ProcessInstanceTaskRepository.class, (methodName, args) -> unsupported(methodName)),
+                    null
             );
         }
 

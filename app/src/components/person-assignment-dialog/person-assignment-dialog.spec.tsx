@@ -33,6 +33,34 @@ async function chooseKim() {
 }
 
 describe('PersonAssignmentDialog', () => {
+    it.each(['kim', 'former', null])('shows loading before evaluating the current assignment (%s)', async (assignedUserId) => {
+        let complete!: (options: {value: string; label: string}[]) => void;
+        const props = setup({
+            assignedUserId,
+            loadOptions: vi.fn(
+                () => new Promise<{value: string; label: string}[]>((resolve) => {
+                    complete = resolve;
+                }),
+            ),
+        });
+        const input = screen.getByRole('combobox', {name: /Zugewiesen an/});
+        expect(input).toBeDisabled();
+        expect(input).toHaveAttribute('placeholder', 'Personen werden geladen …');
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Zuweisung speichern'})).toBeDisabled();
+
+        complete([{value: 'kim', label: 'Kim Beispiel'}]);
+        await waitFor(() => expect(input).not.toBeDisabled());
+        expect(input).not.toHaveAttribute('placeholder', 'Personen werden geladen …');
+        expect(input).toHaveValue(assignedUserId === 'kim' ? 'Kim Beispiel' : '');
+        if (assignedUserId === 'former') {
+            expect(screen.getByRole('alert')).toHaveTextContent('Die bisher zugewiesene Person steht nicht mehr zur Auswahl.');
+        } else {
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        }
+        expect(props.onSave).not.toHaveBeenCalled();
+    });
+
     it('saves a selected person and closes only after the request succeeds', async () => {
         let complete!: () => void;
         const props = setup({
@@ -96,6 +124,18 @@ describe('PersonAssignmentDialog', () => {
         const user = userEvent.setup();
         await user.click(screen.getByRole('button', {name: 'Zuweisung aufheben'}));
         expect(props.onSave).toHaveBeenCalledWith(null);
+    });
+
+    it('keeps a required assignment when candidate loading fails', async () => {
+        const props = setup({
+            assignedUserId: 'former',
+            allowUnassign: false,
+            loadOptions: vi.fn().mockRejectedValue(new Error()),
+        });
+        await screen.findByText('Die verfügbaren Personen konnten nicht geladen werden.');
+        expect(screen.queryByRole('button', {name: 'Zuweisung aufheben'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Zuweisung speichern'})).toBeDisabled();
+        expect(props.onSave).not.toHaveBeenCalled();
     });
 
     it('preserves the dialog and reports a failed removal accurately', async () => {

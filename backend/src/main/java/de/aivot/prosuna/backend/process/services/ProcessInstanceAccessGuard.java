@@ -50,11 +50,13 @@ public class ProcessInstanceAccessGuard {
         var before = new HashMap<String, Set<String>>();
         for (var task : activeAssignments(instanceId)) {
             before.computeIfAbsent(task.assignedUserId(), userId -> {
-                var grants = new HashSet<String>();
+                var ownPermissions = new HashSet<String>();
                 for (var key : REQUIRED) {
-                    if (permissions.hasProcessInstancePermission(userId, instanceId, key)) grants.add(key);
+                    if (permissions.hasProcessInstancePermissionWithoutDeputies(userId, instanceId, key)) {
+                        ownPermissions.add(key);
+                    }
                 }
-                return grants;
+                return Set.copyOf(ownPermissions);
             });
         }
         return before;
@@ -67,9 +69,10 @@ public class ProcessInstanceAccessGuard {
     public void requireRetainedAccess(@Nonnull Long instanceId, @Nonnull Map<String, Set<String>> before,
                                       boolean includeTaskDetails) throws ResponseException {
         var affectedUsers = new HashSet<String>();
-        before.forEach((userId, keys) -> {
+        before.forEach((userId, ownPermissions) -> {
             // Existing missing rights must not prevent unrelated changes or attempts to repair access.
-            if (keys.stream().anyMatch(key -> !permissions.hasProcessInstancePermission(userId, instanceId, key))) {
+            // Temporary deputy rights must not mask the loss of an assignee's own access.
+            if (ownPermissions.stream().anyMatch(key -> !permissions.hasProcessInstancePermissionWithoutDeputies(userId, instanceId, key))) {
                 affectedUsers.add(userId);
             }
         });

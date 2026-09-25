@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -48,10 +49,13 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -66,8 +70,45 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class StaffProcessInstanceTaskViewControllerTest {
+    @ParameterizedTest
+    @ValueSource(strings = {"retrieve", "autoSave", "event", "derive"})
+    void rejectsUnauthorizedStaffViewOperationsBeforeLoadingRuntimeData(String operation) throws ResponseException {
+        var jwt = mock(Jwt.class);
+        var userService = mock(UserService.class);
+        when(userService.fromJWT(jwt)).thenReturn(Optional.of(new UserEntity().setId("actor")));
+        var taskService = mock(ProcessInstanceTaskService.class);
+        when(taskService.retrieveForStaffView("actor", 17L, 23L)).thenThrow(ResponseException.forbidden());
+        var instanceService = mock(ProcessInstanceService.class);
+        var definitions = mock(ProcessNodeDefinitionService.class);
+        var nodes = mock(ProcessNodeService.class);
+        var handler = mock(ProcessNodeExecutionResultHandler.class);
+        var logger = mock(ProcessNodeExecutionLoggerFactory.class);
+        var derivation = mock(ElementDerivationService.class);
+        var inputs = mock(FileUploadMultipartInputService.class);
+        var data = mock(ProcessDataService.class);
+        var controller = new StaffProcessInstanceTaskViewController(instanceService, taskService, definitions, nodes,
+                handler, userService, logger, derivation, inputs, data);
+
+        var error = assertThrows(ResponseException.class, () -> {
+            switch (operation) {
+                case "retrieve" -> controller.retrieve(jwt, 17L, 23L);
+                case "autoSave" -> controller.update(jwt, 17L, 23L, "{}", null, null, null, null);
+                case "event" -> controller.update(jwt, 17L, 23L, "{}", null, null, "complete", null);
+                case "derive" -> controller.derive(jwt, 17L, 23L, new AuthoredElementValues(), null);
+                default -> throw new AssertionError(operation);
+            }
+        });
+
+        assertEquals(HttpStatus.FORBIDDEN, error.getStatus());
+        verify(taskService).retrieveForStaffView("actor", 17L, 23L);
+        verifyNoInteractions(instanceService, definitions, nodes, handler, logger, derivation, inputs, data);
+    }
+
     @Test
     void retrieve_AfterAutoSaveReloadPreservesClearedStaffTaskValue() throws ResponseException {
         var user = new UserEntity()
@@ -493,7 +534,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceEntity instance;
 
         private TestProcessInstanceService(ProcessInstanceEntity instance) {
-            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class));
+            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class), mock(PlatformTransactionManager.class));
             this.instance = instance;
         }
 
@@ -507,7 +548,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceTaskEntity task;
 
         private TestProcessInstanceTaskService(ProcessInstanceTaskEntity task) {
-            super(null);
+            super(null, mock(PermissionService.class));
             this.task = task;
         }
 

@@ -8,6 +8,7 @@ interface PersonAssignmentDialogProps {
     title: string;
     description: string;
     assignedUserId: string | null;
+    allowUnassign?: boolean;
     loadOptions: () => Promise<SelectFieldComponentOption<string>[]>;
     onSave: (userId: string | null) => Promise<void>;
     onClose: () => void;
@@ -18,6 +19,7 @@ export function PersonAssignmentDialog({
     title,
     description,
     assignedUserId,
+    allowUnassign = true,
     loadOptions,
     onSave,
     onClose,
@@ -60,7 +62,7 @@ export function PersonAssignmentDialog({
         options.some((option) => option.value === selectedId);
 
     const save = async (userId: string | null) => {
-        if (submitting.current || (userId == null ? assignedUserId == null : !canSaveSelection)) return;
+        if (submitting.current || (userId == null ? !allowUnassign || assignedUserId == null : !canSaveSelection)) return;
         submitting.current = true;
         setSaving(true);
         setSaveError(undefined);
@@ -109,16 +111,16 @@ export function PersonAssignmentDialog({
                     <SelectFieldComponent<string>
                         label="Zugewiesen an"
                         required
-                        value={selectedId}
+                        value={loading ? null : selectedId}
                         onChange={(value) => {
                             setSelectedId(value);
                             setSaveError(undefined);
                         }}
-                        options={options}
+                        options={loading ? [] : options}
                         busy={loading || saving}
                         disabled={loading || saving}
                         presentation={SelectFieldPresentation.Combobox}
-                        emptyStatePlaceholder="Keine passenden Personen verfügbar"
+                        emptyStatePlaceholder={loading ? 'Personen werden geladen …' : 'Keine passenden Personen verfügbar'}
                     />
                 )}
                 {!loading && !loadFailed && options.length === 0 && (
@@ -137,8 +139,9 @@ export function PersonAssignmentDialog({
                             severity="info"
                             sx={{mt: 2}}
                         >
-                            Die bisher zugewiesene Person steht nicht mehr zur Auswahl. Sie können eine andere Person
-                            auswählen oder die Zuweisung aufheben.
+                            {allowUnassign
+                                ? 'Die bisher zugewiesene Person steht nicht mehr zur Auswahl. Sie können eine andere Person auswählen oder die Zuweisung aufheben.'
+                                : 'Die bisher zugewiesene Person steht nicht mehr zur Auswahl. Bitte wählen Sie eine andere Person aus.'}
                         </Alert>
                     )}
                 {saveError && (
@@ -170,14 +173,16 @@ export function PersonAssignmentDialog({
                 >
                     Abbrechen
                 </Button>
-                <Button
-                    sx={{ml: 'auto'}}
-                    color="error"
-                    onClick={() => void save(null)}
-                    disabled={saving || assignedUserId == null}
-                >
-                    Zuweisung aufheben
-                </Button>
+                {allowUnassign && (
+                    <Button
+                        sx={{ml: 'auto'}}
+                        color="error"
+                        onClick={() => void save(null)}
+                        disabled={saving || assignedUserId == null}
+                    >
+                        Zuweisung aufheben
+                    </Button>
+                )}
             </DialogActions>
         </Dialog>
     );

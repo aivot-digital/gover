@@ -79,7 +79,7 @@ public class ProcessListService {
 
     @Nonnull
     public ProcessListDTO.Options options(@Nonnull String userId, boolean tasks, @Nullable Long instanceId) throws ResponseException {
-        var filter = new ProcessListFilter(null, "all", null, null, instanceId, "all");
+        var filter = new ProcessListFilter(null, "all", null, null, instanceId, "all", null);
         var access = access(userId, instanceId);
         var cb = em.getCriteriaBuilder();
         var query = cb.createTupleQuery();
@@ -100,12 +100,40 @@ public class ProcessListService {
                         .sorted(Comparator.comparing(ProcessListDTO.Option::label, String.CASE_INSENSITIVE_ORDER)).toList());
     }
 
+    @Nonnull
+    public Map<String, Long> counts(@Nonnull String userId, @Nullable Long instanceId, boolean tasks) throws ResponseException {
+        var access = access(userId, instanceId);
+        var now = Instant.now();
+        var cb = em.getCriteriaBuilder();
+        var query = cb.createTupleQuery();
+        var roots = roots(query, tasks);
+        var views = tasks ? List.of("open", "overdue", "failed") : List.of("active", "failed");
+        var selections = new ArrayList<Selection<?>>();
+        var categories = new ArrayList<Predicate>();
+        for (var view : views) {
+            var category = viewPredicate(cb, roots, view, now);
+            categories.add(category);
+            selections.add(cb.count(cb.<Integer>selectCase().when(category, 1)
+                    .otherwise((Integer) null)).alias(view));
+        }
+        // Tab counts describe the whole readable list scope, independently of search and secondary filters.
+        var scope = new ProcessListFilter(null, "all", null, null, instanceId, "all", null);
+        var conditions = new ArrayList<>(Arrays.asList(predicates(cb, roots, scope, userId, access, now)));
+        // Historical rows need no counters. Limit aggregation to the categories actually displayed.
+        conditions.add(cb.or(categories.toArray(Predicate[]::new)));
+        query.multiselect(selections).where(conditions.toArray(Predicate[]::new));
+        var row = em.createQuery(query).getSingleResult();
+        var result = new LinkedHashMap<String, Long>();
+        views.forEach(view -> result.put(view, row.get(view, Long.class)));
+        return result;
+    }
+
     public long countOpenAssignedTasks(@Nonnull String userId) throws ResponseException {
         var cb = em.getCriteriaBuilder();
         var query = cb.createQuery(Long.class);
         var roots = roots(query, true);
         query.select(cb.count(roots.task)).where(predicates(cb, roots,
-                new ProcessListFilter(null, "open", null, null, null, "mine"), userId, access(userId, null), Instant.now()));
+                new ProcessListFilter(null, "open", null, null, null, "mine", null), userId, access(userId, null), Instant.now()));
         return em.createQuery(query).getSingleResult();
     }
 
@@ -194,6 +222,7 @@ public class ProcessListService {
         if (filter.instanceId() != null) result.add(cb.equal(r.instance.get("id"), filter.instanceId()));
         if (filter.processId() != null) result.add(cb.equal(r.process.get("id"), filter.processId()));
         if (filter.processVersion() != null) result.add(cb.equal(r.owner().get(r.task == null ? "initialProcessVersion" : "processVersion"), filter.processVersion()));
+        if (Boolean.FALSE.equals(filter.includeTests())) result.add(cb.isNull(r.instance.get("createdForTestClaimId")));
         var assignee = nonBlank(filter.assignee(), "all");
         if (assignee.equals("unassigned")) result.add(cb.isNull(r.owner().get("assignedUserId")));
         else if (!assignee.equals("all")) result.add(cb.equal(r.owner().get("assignedUserId"), assignee.equals("mine") ? userId : assignee));
@@ -207,29 +236,30 @@ public class ProcessListService {
             result.add(cb.or(cb.like(cb.lower(r.instance.get("caseNumber")), pattern, '\\'),
                     cb.like(cb.lower(numbers), pattern, '\\'), compactMatch));
         }
-        var view = nonBlank(filter.view(), "all");
-        if (r.task == null) {
-            switch (view) {
-                case "all" -> {
-                }
-                case "active" -> result.add(r.instance.get("status").in(ProcessInstanceStatus.Created, ProcessInstanceStatus.Running, ProcessInstanceStatus.Paused));
-                case "ended" -> result.add(r.instance.get("status").in(ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted));
-                case "failed" -> result.add(cb.equal(r.instance.get("status"), ProcessInstanceStatus.Failed));
-                default -> throw ResponseException.badRequest("Diese Vorgangsansicht ist nicht verfügbar.");
-            }
-        } else {
-            switch (view) {
-                case "all" -> {
-                }
-                case "open", "overdue" -> {
-                    result.add(r.task.get("status").in(OPEN_TASK_STATUSES));
-                    if (view.equals("overdue")) result.add(cb.lessThan(r.task.get("deadline"), now));
-                }
-                case "failed" -> result.add(cb.equal(r.task.get("status"), ProcessTaskStatus.Failed));
-                default -> throw ResponseException.badRequest("Diese Aufgabenansicht ist nicht verfügbar.");
-            }
-        }
+        result.add(viewPredicate(cb, r, filter.view(), now));
         return result.toArray(Predicate[]::new);
+    }
+
+    @Nonnull
+    private Predicate viewPredicate(@Nonnull CriteriaBuilder cb, @Nonnull Roots roots,
+                                    @Nullable String requestedView, @Nonnull Instant now) throws ResponseException {
+        var view = nonBlank(requestedView, "all");
+        if (roots.task == null) {
+            return switch (view) {
+                case "all" -> cb.conjunction();
+                case "active" -> roots.instance.get("status").in(ProcessInstanceStatus.Created, ProcessInstanceStatus.Running, ProcessInstanceStatus.Paused);
+                case "ended" -> roots.instance.get("status").in(ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted);
+                case "failed" -> cb.equal(roots.instance.get("status"), ProcessInstanceStatus.Failed);
+                default -> throw ResponseException.badRequest("Diese Vorgangsansicht ist nicht verfügbar.");
+            };
+        }
+        return switch (view) {
+            case "all" -> cb.conjunction();
+            case "open" -> roots.task.get("status").in(OPEN_TASK_STATUSES);
+            case "overdue" -> cb.and(roots.task.get("status").in(OPEN_TASK_STATUSES), cb.lessThan(roots.task.get("deadline"), now));
+            case "failed" -> cb.equal(roots.task.get("status"), ProcessTaskStatus.Failed);
+            default -> throw ResponseException.badRequest("Diese Aufgabenansicht ist nicht verfügbar.");
+        };
     }
 
     @SuppressWarnings("unchecked")

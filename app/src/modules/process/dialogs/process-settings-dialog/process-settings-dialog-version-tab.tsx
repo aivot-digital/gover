@@ -43,9 +43,16 @@ const caseNumberTypeOptions = [
         value: CaseNumberType.CrockfordBase32,
     },
     {
-        label: 'Universelle Kennung (UUID v4)',
-        subLabel: 'Zufällig erzeugte Kennung nach dem UUID-v4-Standard mit 36 Zeichen einschließlich Bindestrichen.',
+        label: 'Zufällige Kennung (UUID v4)',
+        subLabel:
+            'Zufällig erzeugte Kennung mit 36 Zeichen einschließlich Bindestrichen. Sie enthält keinen Erstellungszeitpunkt.',
         value: CaseNumberType.UuidV4,
+    },
+    {
+        label: 'Zeitlich sortierbare Kennung (UUID v7)',
+        subLabel:
+            'Kennung mit 36 Zeichen einschließlich Bindestrichen, die Erstellungszeitpunkt und Zufallswerte verbindet. Kennungen dieses Typs lassen sich nach ihrer Erstellungszeit sortieren.',
+        value: CaseNumberType.UuidV7,
     },
     {
         label: 'Eigene Formatvorlage',

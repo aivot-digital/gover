@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Dialog, DialogContent, Menu, MenuItem, Typography} from '@mui/material';
+import {Menu, MenuItem, Typography} from '@mui/material';
 import {Link} from 'react-router-dom';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
@@ -17,9 +17,6 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {ProcessAssignmentDialog} from './process-assignment-button';
 import {ProcessInstanceEventDialog} from '../dialogs/process-instance-event-dialog';
-import {ProcessInstanceTaskEntity} from '../entities/process-instance-task-entity';
-import {ExpandableCodeBlock} from '../../../components/expandable-code-block/expandable-code-block';
-import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 
 export function ProcessListActions({
     item,
@@ -33,7 +30,6 @@ export function ProcessListActions({
     const [anchor, setAnchor] = useState<Element | null>(null);
     const [assigning, setAssigning] = useState(false);
     const [events, setEvents] = useState(false);
-    const [data, setData] = useState<ProcessInstanceTaskEntity | null>(null);
     const [busy, setBusy] = useState(false);
     const confirm = useConfirm();
     const dispatch = useAppDispatch();
@@ -45,31 +41,29 @@ export function ProcessListActions({
         instanceId,
         task ? Permission.PROCESS_INSTANCE_EDIT_TASK : Permission.PROCESS_INSTANCE_UPDATE,
     );
-    const canDelete = useHasProcessInstancePermission(instanceId, Permission.PROCESS_INSTANCE_DELETE);
     const canReadModel = useHasProcessPermission(item.processId, Permission.PROCESS_DEFINITION_READ);
     const active =
-        task == null ||
-        [
-            ProcessTaskStatus.Running,
-            ProcessTaskStatus.Paused,
-            ProcessTaskStatus.AwaitingCustomer,
-            ProcessTaskStatus.AwaitingPayment,
-        ].includes(task.status);
+        task == null
+            ? item.status !== ProcessInstanceStatus.Completed && item.status !== ProcessInstanceStatus.Aborted
+            : [
+                  ProcessTaskStatus.Running,
+                  ProcessTaskStatus.Paused,
+                  ProcessTaskStatus.AwaitingCustomer,
+                  ProcessTaskStatus.AwaitingPayment,
+              ].includes(task.status);
     const failed = item.status === (task ? ProcessTaskStatus.Failed : ProcessInstanceStatus.Failed);
     const detailPath = task ? `/tasks/${instanceId}/${task.id}` : `/process-instances/${instanceId}`;
 
-    const mutate = async (remove: boolean) => {
+    const restart = async () => {
         setAnchor(null);
-        const label = remove ? 'Vorgang löschen' : task ? 'Aufgabe erneut starten' : 'Vorgang erneut starten';
+        const label = task ? 'Aufgabe erneut starten' : 'Vorgang erneut starten';
         if (
             !(await confirm({
                 title: label,
-                isDestructive: remove,
+                isDestructive: false,
                 children: (
                     <Typography>
-                        {remove
-                            ? `Möchten Sie den Vorgang „${item.caseNumber}“ löschen? Dies kann nicht rückgängig gemacht werden.`
-                            : `Möchten Sie ${task ? 'die fehlgeschlagene Aufgabe' : 'den fehlgeschlagenen Vorgang'} erneut starten?`}
+                        {`Möchten Sie ${task ? 'die fehlgeschlagene Aufgabe' : 'den fehlgeschlagenen Vorgang'} erneut starten?`}
                     </Typography>
                 ),
             }))
@@ -77,30 +71,12 @@ export function ProcessListActions({
             return;
         setBusy(true);
         try {
-            if (remove) await new ProcessInstanceApiService().destroy(instanceId);
-            else if (task) await new ProcessInstanceTaskApiService().rerunFailedTask(task.id);
+            if (task) await new ProcessInstanceTaskApiService().rerunFailedTask(task.id);
             else await new ProcessInstanceApiService().restartFailedInstance(instanceId);
-            dispatch(showSuccessSnackbar(remove ? 'Der Vorgang wurde gelöscht.' : 'Der Neustart wurde angestoßen.'));
+            dispatch(showSuccessSnackbar('Der Neustart wurde angestoßen.'));
             onChanged();
         } catch (error) {
-            dispatch(
-                showApiErrorSnackbar(
-                    error,
-                    remove ? 'Der Vorgang konnte nicht gelöscht werden.' : 'Der Neustart ist fehlgeschlagen.',
-                ),
-            );
-        } finally {
-            setBusy(false);
-        }
-    };
-    const loadData = async () => {
-        if (!task) return;
-        setAnchor(null);
-        setBusy(true);
-        try {
-            setData(await new ProcessInstanceTaskApiService().retrieve(task.id));
-        } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Die Aufgabendaten konnten nicht geladen werden.'));
+            dispatch(showApiErrorSnackbar(error, 'Der Neustart ist fehlgeschlagen.'));
         } finally {
             setBusy(false);
         }
@@ -161,7 +137,6 @@ export function ProcessListActions({
                 >
                     Ereignisse einsehen
                 </MenuItem>
-                {task && <MenuItem onClick={() => void loadData()}>Technische Aufgabendaten</MenuItem>}
                 {canReadModel && (
                     <MenuItem
                         component={Link}
@@ -170,15 +145,7 @@ export function ProcessListActions({
                         Im Prozessmodell ansehen
                     </MenuItem>
                 )}
-                {canRestart && failed && <MenuItem onClick={() => void mutate(false)}>Erneut starten</MenuItem>}
-                {!task && canDelete && (
-                    <MenuItem
-                        sx={{color: 'error.main'}}
-                        onClick={() => void mutate(true)}
-                    >
-                        Vorgang löschen
-                    </MenuItem>
-                )}
+                {canRestart && failed && <MenuItem onClick={() => void restart()}>Erneut starten</MenuItem>}
             </Menu>
             {assigning && canAssign && active && (
                 <ProcessAssignmentDialog
@@ -197,35 +164,6 @@ export function ProcessListActions({
                     onClose={() => setEvents(false)}
                 />
             )}
-            <Dialog
-                open={data != null}
-                onClose={() => setData(null)}
-                fullWidth
-                maxWidth="md"
-            >
-                <DialogTitleWithClose onClose={() => setData(null)}>Technische Aufgabendaten</DialogTitleWithClose>
-                <DialogContent>
-                    {data && (
-                        <>
-                            <Typography variant="h6">Vorgangsdaten der Aufgabe</Typography>
-                            <ExpandableCodeBlock
-                                value={JSON.stringify(data.processData, null, 2)}
-                                language="json"
-                            />
-                            <Typography variant="h6">Elementdaten der Aufgabe</Typography>
-                            <ExpandableCodeBlock
-                                value={JSON.stringify(data.nodeData, null, 2)}
-                                language="json"
-                            />
-                            <Typography variant="h6">Laufzeitdaten der Aufgabe</Typography>
-                            <ExpandableCodeBlock
-                                value={JSON.stringify(data.runtimeData, null, 2)}
-                                language="json"
-                            />
-                        </>
-                    )}
-                </DialogContent>
-            </Dialog>
         </>
     );
 }

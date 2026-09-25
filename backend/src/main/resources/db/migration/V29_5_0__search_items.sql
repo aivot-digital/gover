@@ -10,9 +10,7 @@ SELECT text 'assets'                                                  AS origin_
        to_tsvector('german', filename)                                AS searchable_element,
        filename                                                       AS search_text,
        usp.user_id                                                    AS user_id,
-       usp.permissions                                                AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions                                                AS permissions
 FROM v_storage_index_items_with_assets
          CROSS JOIN v_user_system_permission AS usp
 WHERE directory = false
@@ -28,9 +26,7 @@ SELECT text 'data_object_items'                                 AS origin_table,
        to_tsvector('german', id) || to_tsvector('german', data) AS searchable_element,
        id || ' ' || data::varchar                               AS search_text,
        usp.user_id                                              AS user_id,
-       usp.permissions                                          AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions                                          AS permissions
 FROM data_object_items
          CROSS JOIN v_user_system_permission AS usp
 UNION ALL
@@ -43,9 +39,7 @@ SELECT text 'data_object_schemas'  AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        usp.user_id                 AS user_id,
-       usp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions             AS permissions
 FROM data_object_schemas
          CROSS JOIN v_user_system_permission AS usp
 UNION ALL
@@ -58,9 +52,7 @@ SELECT text 'departments'          AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        udp.user_id                 AS user_id,
-       udp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       udp.permissions             AS permissions
 FROM departments
          JOIN v_user_department_permissions AS udp
               ON udp.department_id = departments.id
@@ -75,9 +67,7 @@ SELECT text 'teams'                AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        utp.user_id                 AS user_id,
-       utp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       utp.permissions             AS permissions
 FROM teams
          JOIN v_user_team_permissions AS utp
               ON utp.team_id = teams.id
@@ -93,9 +83,7 @@ SELECT text 'users'                                                             
        to_tsvector('german', coalesce(email, ''))                                AS searchable_element,
        trim(coalesce(full_name, '') || ' ' || coalesce(email, ''))               AS search_text,
        usp.user_id                                                               AS user_id,
-       usp.permissions                                                           AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions                                                           AS permissions
 FROM users
          CROSS JOIN v_user_system_permission AS usp
 WHERE deleted_in_idp = false
@@ -111,9 +99,7 @@ SELECT text 'process_nodes'                                         AS origin_ta
        to_tsvector('german', coalesce(description, ''))             AS searchable_element,
        trim(coalesce(name, '') || ' ' || coalesce(description, '')) AS search_text,
        upp.user_id                                                  AS user_id,
-       array_unique_union_agg(upp.permissions)                      AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       array_unique_union_agg(upp.permissions)                      AS permissions
 FROM process_nodes
          JOIN v_user_process_access_permissions AS upp
               ON upp.target_process_id = process_nodes.process_id
@@ -136,9 +122,7 @@ SELECT text 'identity_providers'   AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        usp.user_id                 AS user_id,
-       usp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions             AS permissions
 FROM identity_providers
          CROSS JOIN v_user_system_permission AS usp
 UNION ALL
@@ -151,9 +135,7 @@ SELECT text 'payment_providers'    AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        usp.user_id                 AS user_id,
-       usp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions             AS permissions
 FROM payment_providers
          CROSS JOIN v_user_system_permission AS usp
 
@@ -167,9 +149,7 @@ SELECT text 'storage_providers'    AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        usp.user_id                 AS user_id,
-       usp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions             AS permissions
 FROM storage_providers
          CROSS JOIN v_user_system_permission AS usp
 
@@ -183,9 +163,7 @@ SELECT text 'presets'                          AS origin_table,
        to_tsvector('german', title)            AS searchable_element,
        title                                   AS search_text,
        usp.user_id                             AS user_id,
-       usp.permissions                         AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions                         AS permissions
 FROM preset_version_with_details
          CROSS JOIN v_user_system_permission AS usp
 
@@ -199,9 +177,7 @@ SELECT text 'secrets'              AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        usp.user_id                 AS user_id,
-       usp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions             AS permissions
 FROM secrets
          CROSS JOIN v_user_system_permission AS usp
 
@@ -215,9 +191,7 @@ SELECT text 'themes'               AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        usp.user_id                 AS user_id,
-       usp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions             AS permissions
 FROM themes
          CROSS JOIN v_user_system_permission AS usp
 
@@ -232,9 +206,7 @@ SELECT text 'code_lists'                               AS origin_table,
         to_tsvector('german', key)                     AS searchable_element,
         trim(name || ' ' || key)                       AS search_text,
         usp.user_id                                    AS user_id,
-        usp.permissions                                AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+        usp.permissions                                AS permissions
 FROM code_lists
          CROSS JOIN v_user_system_permission AS usp
 
@@ -248,9 +220,7 @@ SELECT text 'domain_roles'         AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        usp.user_id                 AS user_id,
-       usp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions             AS permissions
 FROM domain_roles
          CROSS JOIN v_user_system_permission AS usp
 
@@ -264,9 +234,7 @@ SELECT text 'system_roles'         AS origin_table,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text,
        usp.user_id                 AS user_id,
-       usp.permissions             AS permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       usp.permissions             AS permissions
 FROM system_roles
          CROSS JOIN v_user_system_permission AS usp
 
@@ -280,9 +248,7 @@ SELECT text 'processes'                                              AS origin_t
        to_tsvector('german', p.internal_title)                       AS searchable_element,
        p.internal_title                                              AS search_text,
        usp.user_id                                                   as user_id,
-       array_unique_union_agg(usp.permissions)                        as permissions,
-       null::text AS case_number,
-       null::text AS compact_case_number
+       array_unique_union_agg(usp.permissions)                        as permissions
 FROM process_versions pv
          JOIN processes p ON pv.process_id = p.id
          JOIN v_user_process_access_permissions AS usp ON usp.target_process_id = p.id
@@ -294,6 +260,7 @@ GROUP BY p.id,
 UNION ALL
 
 -- Process Instances
+-- One search row per instance and user, even when several teams/departments grant access.
 SELECT text 'process_instances'                                     AS origin_table,
        null                                                         AS origin_table_subset,
        pi.case_number::varchar || (case
@@ -304,12 +271,15 @@ SELECT text 'process_instances'                                     AS origin_ta
        to_tsvector('german', pi.case_number::varchar) ||
        to_tsvector('german',
                    array_to_string(pi.assigned_file_numbers, ', ')) AS searchable_element,
-       pi.case_number::varchar || ' ' ||
-       array_to_string(pi.assigned_file_numbers, ', ')              AS search_text,
+       -- Keep the displayed spelling and an ungrouped Crockford alias in the shared search text.
+       concat_ws(' ', pi.case_number, array_to_string(pi.assigned_file_numbers, ', '),
+                 compact_case_number_search_key(pi.case_number))   AS search_text,
        upp.user_id                                                  AS user_id,
-       upp.permissions                                              AS permissions,
-       pi.case_number,
-       compact_case_number_search_key(pi.case_number) AS compact_case_number
+       array_unique_union_agg(upp.permissions)                      AS permissions
 FROM process_instances pi
          JOIN v_user_process_instance_access_permissions AS upp
-              ON upp.target_process_instance_id = pi.id;
+              ON upp.target_process_instance_id = pi.id
+GROUP BY pi.id,
+         pi.case_number,
+         pi.assigned_file_numbers,
+         upp.user_id;

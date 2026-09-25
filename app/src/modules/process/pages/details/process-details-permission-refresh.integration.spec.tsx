@@ -31,8 +31,12 @@ vi.mock('../../../../hooks/use-api', () => {
     return {useApi: () => api};
 });
 
-function permissions(instanceId?: number, system = false): PermissionSet {
-    const grants = [Permission.PROCESS_INSTANCE_READ, Permission.PROCESS_INSTANCE_UPDATE];
+function permissions(instanceId?: number, system = false, canEditTasks = true): PermissionSet {
+    const grants = [
+        Permission.PROCESS_INSTANCE_READ,
+        Permission.PROCESS_INSTANCE_UPDATE,
+        ...(canEditTasks ? [Permission.PROCESS_INSTANCE_EDIT_TASK] : []),
+    ];
     return {
         departmentPermissions: [],
         teamPermissions: [],
@@ -71,7 +75,7 @@ function RouteError() {
     return <p role="alert">Fehler {error.status}</p>;
 }
 
-function renderPage(kind: 'instance' | 'task', initialPermissions = permissions()) {
+function renderPage(kind: 'instance' | 'task', initialPermissions = permissions(), initialPath?: string) {
     const store = configureStore({reducer: {user: userReducer}});
     store.dispatch(
         setUser({
@@ -105,7 +109,7 @@ function renderPage(kind: 'instance' | 'task', initialPermissions = permissions(
                 ],
             },
         ],
-        {initialEntries: [kind === 'instance' ? '/process-instances/17' : '/tasks/17/8']},
+        {initialEntries: [initialPath ?? (kind === 'instance' ? '/process-instances/17' : '/tasks/17/8')]},
     );
     render(
         <Provider store={store}>
@@ -218,6 +222,43 @@ describe('Permissions on process detail navigation', () => {
         renderPage('task', permissions(17));
         expect(await screen.findByRole('button', {name: 'Bearbeiten'})).toBeDisabled();
     });
+
+    it.each(['read', 'instance-update', 'other-instance'])(
+        'keeps task details readable but denies editing with only %s access',
+        async (scope) => {
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+            const grants = permissions(17, false, false);
+            if (scope === 'read') {
+                grants.processInstancePermissions[0].permissions = [Permission.PROCESS_INSTANCE_READ];
+            } else if (scope === 'other-instance') {
+                grants.processInstancePermissions.push(...permissions(18).processInstancePermissions);
+            }
+            vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet').mockResolvedValue(grants);
+            const {router} = renderPage('task');
+
+            expect(await screen.findByRole('button', {name: 'Bearbeiten'})).toBeInTheDocument();
+            expect(screen.getByRole('tab', {name: 'Allgemeine Informationen'})).toHaveAttribute('aria-selected', 'true');
+            const editTab = screen.getByRole('tab', {name: /process_instance\.edit_task/});
+            expect(editTab).toHaveTextContent('Aufgabe bearbeiten');
+            expect(editTab).toHaveAttribute('aria-disabled', 'true');
+
+            await act(async () => router.navigate('/tasks/17/8/edit'));
+            expect(await screen.findByRole('alert')).toHaveTextContent('Fehler 403');
+            expect(screen.queryByRole('button', {name: 'Bearbeiten'})).not.toBeInTheDocument();
+        },
+    );
+
+    it.each([permissions(17), permissions(undefined, true)])(
+        'allows the task edit route with matching scoped or system edit rights',
+        async (grants) => {
+            vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet').mockResolvedValue(grants);
+            renderPage('task', permissions(), '/tasks/17/8/edit');
+
+            expect(await screen.findByRole('button', {name: 'Bearbeiten'})).toBeEnabled();
+            expect(screen.getByRole('tab', {name: 'Aufgabe bearbeiten'})).toHaveAttribute('aria-selected', 'true');
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        },
+    );
 
     it('rejects task details when refreshed permissions no longer grant access to their instance', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});

@@ -92,11 +92,11 @@ describe('Process list actions', () => {
         expect(screen.queryByRole('menuitem', {name: 'Vorgang löschen'})).not.toBeInTheDocument();
         expect(screen.queryByRole('menuitem', {name: 'Im Prozessmodell ansehen'})).not.toBeInTheDocument();
     });
-    it.each(['instance', 'system'] as const)('allows mutations with the matching %s grant', (scope) => {
+    it.each(['instance', 'system'] as const)('offers assignment and restart but no deletion with the matching %s grant', (scope) => {
         grant(scope);
         showActions();
         expect(screen.getByRole('menuitem', {name: 'Vorgang zuweisen'})).toBeInTheDocument();
-        expect(screen.getByRole('menuitem', {name: 'Vorgang löschen'})).toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Vorgang löschen'})).not.toBeInTheDocument();
         expect(screen.getByRole('menuitem', {name: 'Erneut starten'})).toBeInTheDocument();
         if (scope === 'system') {
             expect(screen.getByRole('menuitem', {name: 'Im Prozessmodell ansehen'})).toHaveAttribute(
@@ -113,6 +113,14 @@ describe('Process list actions', () => {
         expect(screen.queryByRole('menuitem', {name: 'Vorgang zuweisen'})).not.toBeInTheDocument();
         expect(screen.queryByRole('menuitem', {name: 'Erneut starten'})).not.toBeInTheDocument();
     });
+    it.each([ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted])(
+        'does not offer assignment for %s instances despite system permission',
+        (status) => {
+            grant('system');
+            showActions({...instance, status});
+            expect(screen.queryByRole('menuitem', {name: 'Vorgang zuweisen'})).not.toBeInTheDocument();
+        },
+    );
     it('offers task assignment only while active and preserves the instance link', () => {
         grant('system');
         const task: ProcessTaskListEntry = {
@@ -130,7 +138,11 @@ describe('Process list actions', () => {
             'href',
             '/process-instances/17',
         );
-        expect(screen.getByRole('menuitem', {name: 'Technische Aufgabendaten'})).toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Technische Aufgabendaten'})).not.toBeInTheDocument();
+        expect(screen.getByRole('menuitem', {name: 'Im Prozessmodell ansehen'})).toHaveAttribute(
+            'href',
+            '/processes/10/versions/2/?instanceId=17',
+        );
         expect(screen.queryByRole('menuitem', {name: 'Aufgabe zuweisen'})).not.toBeInTheDocument();
         expect(screen.queryByRole('menuitem', {name: 'Erneut starten'})).not.toBeInTheDocument();
     });

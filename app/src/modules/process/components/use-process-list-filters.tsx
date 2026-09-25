@@ -97,6 +97,7 @@ export function useProcessListFilters(tasks: boolean, instanceId?: number) {
                 presentation={SelectFieldPresentation.Combobox}
                 busy={busy}
                 showOptionalIndicator={false}
+                includeEmptyOption={false}
                 margin="none"
             />,
             ...(instanceId == null
@@ -110,6 +111,7 @@ export function useProcessListFilters(tasks: boolean, instanceId?: number) {
                           presentation={SelectFieldPresentation.Combobox}
                           busy={busy}
                           showOptionalIndicator={false}
+                          includeEmptyOption={false}
                           margin="none"
                       />,
                   ]

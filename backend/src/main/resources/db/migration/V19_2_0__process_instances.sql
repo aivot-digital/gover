@@ -10,7 +10,7 @@ create table process_instances
 
     -- The key of this process instance.
     -- Public access to this process instance is done via this key.
-    access_key              varchar(128)  not null,
+    access_key              varchar(128)  not null unique,
 
     -- The process definition version this instance is based on
     process_id              int           not null,
@@ -61,7 +61,6 @@ create table process_instances
     keep_until              timestamptz   null,
 
     primary key (id),
-    unique (access_key),
     foreign key (process_id) references processes (id) on delete cascade,
     foreign key (initial_node_id) references process_nodes (id) on delete restrict,
     foreign key (assigned_user_id) references users (id) on delete restrict

@@ -47,6 +47,7 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
@@ -1030,7 +1031,7 @@ class ProcessNodeExecutionResultHandlerTest {
         private final Optional<ProcessEntity> process;
 
         private TestProcessService(Optional<ProcessEntity> process) {
-            super(null, null, null);
+            super(null, null, null, mock(PlatformTransactionManager.class));
             this.process = process;
         }
 

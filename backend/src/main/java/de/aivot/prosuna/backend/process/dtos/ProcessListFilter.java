@@ -10,6 +10,7 @@ public record ProcessListFilter(
         @Nullable @Positive Integer processId,
         @Nullable @Positive Integer processVersion,
         @Nullable @Positive Long instanceId,
-        @Nullable @Size(max = 36) String assignee
+        @Nullable @Size(max = 36) String assignee,
+        @Nullable Boolean includeTests
 ) {
 }

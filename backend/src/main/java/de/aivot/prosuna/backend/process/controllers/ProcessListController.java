@@ -20,6 +20,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/process-lists/")
 @Tag(name = "Process lists")
@@ -34,7 +36,7 @@ public class ProcessListController {
     }
 
     @GetMapping("instances/")
-    @Operation(summary = "List process instance summaries", description = "Returns paged metadata filtered by effective process_instance.read permissions.")
+    @Operation(summary = "List process instance summaries", description = "Returns paged metadata filtered by effective process_instance.read permissions. Test instances are included by default and can be excluded with includeTests=false.")
     @Nonnull
     public Page<ProcessListDTO.Instance> instances(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                    @Nonnull @ParameterObject @PageableDefault(size = 12) Pageable page,
@@ -43,12 +45,27 @@ public class ProcessListController {
     }
 
     @GetMapping("tasks/")
-    @Operation(summary = "List task summaries", description = "Returns paged metadata for tasks in readable instances, including tasks assigned to others.")
+    @Operation(summary = "List task summaries", description = "Returns paged metadata for tasks in readable instances, including tasks assigned to others. Tasks belonging to test instances can be excluded with includeTests=false.")
     @Nonnull
     public Page<ProcessListDTO.Task> tasks(@Nullable @AuthenticationPrincipal Jwt jwt,
                                            @Nonnull @ParameterObject @PageableDefault(size = 12) Pageable page,
                                            @Nonnull @ParameterObject @Valid ProcessListFilter filter) throws ResponseException {
         return lists.tasks(userId(jwt), page, filter);
+    }
+
+    @GetMapping("instances/counts/")
+    @Operation(summary = "Count active and failed instances", description = "Counts readable instances independently of the selected tab, search and secondary list filters.")
+    @Nonnull
+    public Map<String, Long> instanceCounts(@Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+        return lists.counts(userId(jwt), null, false);
+    }
+
+    @GetMapping("tasks/counts/")
+    @Operation(summary = "Count open, overdue and failed tasks", description = "Counts tasks in readable instances independently of search and assignment filters. An optional instance ID restricts the list scope.")
+    @Nonnull
+    public Map<String, Long> taskCounts(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                       @Nullable @RequestParam(required = false) Long instanceId) throws ResponseException {
+        return lists.counts(userId(jwt), instanceId, true);
     }
 
     @GetMapping("instances/options/")

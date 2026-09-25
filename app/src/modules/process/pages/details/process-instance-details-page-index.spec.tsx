@@ -166,7 +166,7 @@ describe('Process instance information', () => {
                 name: /Aufgabe zugewiesen an/,
             }),
         ).toHaveTextContent('Alex');
-        expect(screen.getByText(/Es handelt sich bei diesem Vorgang um einen Test/)).toBeInTheDocument();
+        expect(screen.getByText('Dieser Vorgang wurde über den Testmodus des Prozesses gestartet.')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: 'Prüfung'})).toHaveAttribute('target', '_blank');
         expect(screen.getByRole('link', {name: 'Bauantrag (v3)'})).toHaveAttribute('target', '_blank');
         expect(screen.getByText('Beendet am')).toBeInTheDocument();
@@ -261,7 +261,7 @@ describe('Process instance information', () => {
             expect(task.getAllByRole('row')).toHaveLength(4);
             expect(task.getByRole('row', {name: /Fälligkeit/})).toHaveTextContent(deadline);
         }
-        expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toBeInTheDocument();
+        expect(screen.queryByRole('row', {name: /Zuletzt aktualisiert/})).not.toBeInTheDocument();
         expect(screen.queryByText(/unabhängig von der Bearbeitung einzelner Aufgaben/)).not.toBeInTheDocument();
         await screen.findByText('Noch kein Ereignis vorhanden');
     });

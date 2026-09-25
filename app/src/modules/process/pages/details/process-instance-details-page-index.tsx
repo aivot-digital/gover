@@ -126,7 +126,7 @@ export function ProcessInstanceDetailsPageIndex() {
             label: 'Test-Vorgang',
             icon: <Science sx={{color: 'warning.main'}} />,
             alignTop: true,
-            children: <>Es handelt sich bei diesem Vorgang um einen Test.</>,
+            children: <>Dieser Vorgang wurde über den Testmodus des Prozesses gestartet.</>,
         });
     }
 
@@ -167,11 +167,6 @@ export function ProcessInstanceDetailsPageIndex() {
                         </Typography>
                     </>
                 ),
-        },
-        {
-            label: 'Zuletzt aktualisiert',
-            icon: <Schedule />,
-            children: formatDateTimeWithRelative(instance.updated),
         },
     ];
     if (instance.finished != null) {
@@ -305,6 +300,7 @@ export function ProcessInstanceDetailsPageIndex() {
                 >
                     <ProcessAssignmentButton
                         instanceId={instance.id}
+                        instanceStatus={instance.status}
                         assignedUserId={instance.assignedUserId}
                         onAssigned={refresh}
                     />

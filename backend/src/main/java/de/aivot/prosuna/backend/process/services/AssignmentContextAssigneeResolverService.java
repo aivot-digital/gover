@@ -31,13 +31,16 @@ public class AssignmentContextAssigneeResolverService {
 
     private final VPotentialProcessInstanceAccessRepository potentialProcessInstanceAccessRepository;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
+    private final ProcessAssignmentService processAssignmentService;
 
     public AssignmentContextAssigneeResolverService(
             VPotentialProcessInstanceAccessRepository potentialProcessInstanceAccessRepository,
-            ProcessInstanceTaskRepository processInstanceTaskRepository
+            ProcessInstanceTaskRepository processInstanceTaskRepository,
+            ProcessAssignmentService processAssignmentService
     ) {
         this.potentialProcessInstanceAccessRepository = potentialProcessInstanceAccessRepository;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
+        this.processAssignmentService = processAssignmentService;
     }
 
     @Nonnull
@@ -91,6 +94,7 @@ public class AssignmentContextAssigneeResolverService {
                 .filter(PotentialAccessRow::isUserRow)
                 .filter(row -> Boolean.TRUE.equals(row.userIsEnabled()))
                 .filter(row -> Boolean.TRUE.equals(row.userIsDirectMember()))
+                .filter(row -> hasRequiredPermissions(row.userDirectPermissions(), normalizedRequiredPermissions))
                 .filter(row -> currentlyEligibleUserIds != null
                         ? currentlyEligibleUserIds.contains(row.userId())
                         : hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
@@ -111,6 +115,11 @@ public class AssignmentContextAssigneeResolverService {
         }
 
         var candidateUserIds = collectCandidateUserIds(selection, eligibleUserRows, eligibleUserIds);
+        // Preserve the configured candidate pool, including permissions through the selected membership.
+        // Current instance rights only narrow that pool: rights through another team must not expand it.
+        // Filter before preferences/load balancing so an ineligible preferred user cannot hide a valid alternative.
+        candidateUserIds.removeIf(userId -> !processAssignmentService.canReceiveTaskAssignment(
+                userId, processInstanceId, normalizedRequiredPermissions));
         if (candidateUserIds.isEmpty()) {
             return java.util.Optional.empty();
         }

@@ -13,7 +13,11 @@ import {GridColDef} from '@mui/x-data-grid';
 import {Link} from 'react-router-dom';
 import HomeStorage from '@aivot/mui-material-symbols-400-n25-outlined/HomeStorage';
 import NewWindow from '@aivot/mui-material-symbols-400-n25-outlined/NewWindow';
-import {GenericListPropsFetchOptions, ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import {
+    GenericListPropsFetchOptions,
+    ListControlRef,
+    type FetchListFilterCounts,
+} from '../../../../components/generic-list/generic-list-props';
 import {Page} from '../../../../models/dtos/page';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
@@ -41,6 +45,7 @@ const availableFilter = [
     {
         label: 'Alle Prozesse',
         value: 'all',
+        showCount: false,
     },
     {
         label: 'Entwürfe',
@@ -53,6 +58,7 @@ const availableFilter = [
     {
         label: 'Zurückgezogen',
         value: 'revoked',
+        showCount: false,
     },
 ];
 
@@ -102,7 +108,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                                 textDecoration: 'none',
                             }}
                             to={`/processes/${params.row.id}/versions/latest`}
-                            title="Prozess bearbeiten"
+                            title={params.row.internalTitle}
                         >
                             {params.row.internalTitle}
                         </Link>
@@ -130,6 +136,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
 
                     <Typography
                         variant="body2"
+                        title={`Verwaltet von: ${params.row.managingDepartmentName ?? 'Unbekannt'}`}
                         sx={{
                             mt: -0.5,
                             fontSize: '0.875rem',
@@ -151,7 +158,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
         headerName: 'Zuletzt bearbeitet',
         flex: 1,
         renderCell: (params) => {
-            const formatted = formatInstantInApplicationTimeZone(params.row.updated, 'dd.MM.yyyy — HH:mm');
+            const formatted = formatInstantInApplicationTimeZone(params.row.updated, 'dd.MM.yyyy – HH:mm');
             return (
                 <Box
                     sx={{
@@ -160,12 +167,16 @@ const columns: GridColDef<ProcessListEntry>[] = [
                         flexDirection: 'column',
                     }}
                 >
-                    <Typography sx={{fontSize: '0.875rem'}}>
+                    <Typography
+                        sx={{fontSize: '0.875rem'}}
+                        title={formatted != null ? `${formatted} Uhr` : undefined}
+                    >
                         {formatted != null ? `${formatted} Uhr` : '—'}
                     </Typography>
                     <Typography
                         color="textSecondary"
                         sx={{fontSize: '0.875rem'}}
+                        title={params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
                     >
                         {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
                     </Typography>
@@ -228,19 +239,22 @@ export function ProcessListPage() {
         return () => { cancelled = true; };
     }, [departmentOptionsRevision]);
 
-    const departmentOptions = useMemo(() => departments.map(department => ({
-        value: department.id,
-        label: department.name,
-    })), [departments]);
+    const departmentOptions = useMemo(() => [
+        {value: 'all', label: 'Alle Organisationseinheiten'},
+        ...departments.map(department => ({
+            value: String(department.id),
+            label: department.name,
+        })),
+    ], [departments]);
     const preSearchElements = useMemo(() => [
         <SelectFieldComponent
             key="managing-department"
             label="Verwaltende Organisationseinheit"
             presentation={SelectFieldPresentation.Combobox}
             options={departmentOptions}
-            value={departmentId}
-            onChange={id => setDepartmentFilter(id == null ? null : String(id))}
-            emptyOptionLabel="Alle Organisationseinheiten"
+            value={departmentId == null ? 'all' : String(departmentId)}
+            onChange={id => setDepartmentFilter(id === 'all' ? null : id)}
+            includeEmptyOption={false}
             showOptionalIndicator={false}
             margin="none"
             busy={departmentsLoading}
@@ -325,6 +339,11 @@ export function ProcessListPage() {
             ),
         },
     }), []);
+
+    const fetchFilterCounts = useCallback<FetchListFilterCounts>(
+        ({signal}) => new ProcessDefinitionApiService().counts(signal),
+        [],
+    );
 
     const fetch = useCallback(async (options: GenericListPropsFetchOptions<ProcessListEntry>) => {
         const processesPage = await new ProcessDefinitionApiService()
@@ -447,6 +466,7 @@ export function ProcessListPage() {
                     searchLabel="Prozess suchen"
                     searchPlaceholder="Titel des Prozesses eingeben…"
                     fetch={fetch}
+                    fetchFilterCounts={fetchFilterCounts}
                     preSearchElements={preSearchElements}
                     hasActiveAdditionalFilters={departmentId != null}
                     columnDefinitions={columns}

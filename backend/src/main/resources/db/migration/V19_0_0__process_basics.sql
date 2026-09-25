@@ -10,9 +10,8 @@ create table processes
     -- The ID of the owning department who can create, edit and delete this process definition
     department_id     int         not null,
 
-    -- The public key of this process.
-    -- Public access to this process is done via this key.
-    access_key        uuid        not null,
+    -- The globally unique public key of this process, independent of its URL namespace (slug).
+    access_key        uuid        not null unique,
 
     -- The total count of versions for this process definition
     version_count     int         not null default 0,
@@ -52,7 +51,7 @@ create table process_versions
     -- Generation format for new process instances of this version.
     case_number_type     varchar(32)  not null default 'CROCKFORD_BASE32'
         constraint process_versions_case_number_type_check
-            check (case_number_type in ('CROCKFORD_BASE32', 'UUID_V4', 'TEMPLATE')),
+            check (case_number_type in ('CROCKFORD_BASE32', 'UUID_V4', 'UUID_V7', 'TEMPLATE')),
     case_number_template varchar(96)  null,
     constraint process_versions_case_number_template_check
         check ((case_number_type = 'TEMPLATE') = (case_number_template is not null)),

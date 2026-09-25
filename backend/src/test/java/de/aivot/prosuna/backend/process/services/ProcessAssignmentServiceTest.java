@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -17,7 +18,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +40,8 @@ class ProcessAssignmentServiceTest {
     private ProcessAssignmentService service;
     private final UserEntity actor = user("actor");
     private final UserEntity recipient = user("recipient");
-    private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(17L).setProcessId(2).setAssignedUserId("previous");
+    private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(17L).setProcessId(2)
+            .setStatus(ProcessInstanceStatus.Running).setAssignedUserId("previous");
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(5L).setProcessInstanceId(17L)
             .setStatus(ProcessTaskStatus.Running).setAssignedUserId("previous");
 
@@ -49,7 +53,6 @@ class ProcessAssignmentServiceTest {
         when(instances.lockAccessById(17L)).thenReturn(Optional.of(17L));
         when(tasks.findInstanceIdById(5L)).thenReturn(Optional.of(17L));
         when(instances.findById(17L)).thenReturn(Optional.of(instance));
-        when(instances.existsById(17L)).thenReturn(true);
         when(tasks.findById(5L)).thenReturn(Optional.of(task));
         when(users.findById("recipient")).thenReturn(Optional.of(recipient));
         when(instances.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -70,11 +73,18 @@ class ProcessAssignmentServiceTest {
         assertNotNull(payload.getValue().getDiff());
     }
 
-    @Test
-    void acceptsSystemOverridesForActorAndRecipient() throws Exception {
-        when(systemPermissions.hasPermission("actor", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
-        when(systemPermissions.hasPermission("recipient", PROCESS_INSTANCE_READ)).thenReturn(true);
-        when(systemPermissions.hasPermission("recipient", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void reassignsTasksWithScopedOrSystemPermissions(boolean systemAccess) throws Exception {
+        if (systemAccess) {
+            when(systemPermissions.hasPermission("actor", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+            when(systemPermissions.hasPermissionWithoutDeputies("recipient", PROCESS_INSTANCE_READ)).thenReturn(true);
+            when(systemPermissions.hasPermissionWithoutDeputies("recipient", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        } else {
+            grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+            grant("recipient", PROCESS_INSTANCE_READ);
+            grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+        }
         var result = service.reassignTask(actor, 5L, "recipient");
         assertEquals("recipient", result.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Running, result.getStatus());
@@ -99,7 +109,7 @@ class ProcessAssignmentServiceTest {
     @Test
     void separatesReassignmentAndTaskEditPermissions() throws Exception {
         grant("actor", PROCESS_INSTANCE_REASSIGN);
-        assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, null));
+        assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, "recipient"));
         verify(tasks, never()).saveAndFlush(any());
     }
 
@@ -107,7 +117,7 @@ class ProcessAssignmentServiceTest {
     void checksRecipientsOnTheActualInstanceAtSaveTime() throws Exception {
         grant("actor", PROCESS_INSTANCE_REASSIGN);
         grant("actor", PROCESS_INSTANCE_EDIT_TASK);
-        when(instances.hasPermission("recipient", 18L, PROCESS_INSTANCE_READ)).thenReturn(true);
+        when(instances.hasPermissionWithoutDeputies("recipient", 18L, PROCESS_INSTANCE_READ)).thenReturn(true);
         assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, "recipient"));
         grant("recipient", PROCESS_INSTANCE_READ);
         assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, "recipient"));
@@ -129,13 +139,28 @@ class ProcessAssignmentServiceTest {
     }
 
     @Test
-    void clearsAssignmentEvenIfFormerRecipientIsUnavailable() throws Exception {
+    void clearsInstanceAssignmentEvenIfFormerRecipientIsUnavailable() throws Exception {
         grant("actor", PROCESS_INSTANCE_REASSIGN);
-        grant("actor", PROCESS_INSTANCE_EDIT_TASK);
         assertNull(service.reassignInstance(actor, 17L, null).getAssignedUserId());
-        assertNull(service.reassignTask(actor, 5L, null).getAssignedUserId());
+        assertEquals("previous", task.getAssignedUserId());
         verifyNoInteractions(users);
-        verify(audit, times(2)).addAuditEntry(any());
+        verify(audit).addAuditEntry(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void rejectsClearingTaskAssignmentsEvenWithSystemPermission(boolean systemAccess) {
+        if (systemAccess) when(systemPermissions.hasPermission("actor", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        else grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+
+        var exception = assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, null));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Die Zuweisung einer Aufgabe kann nicht aufgehoben werden. Bitte wählen Sie eine andere Person aus.", exception.getMessage());
+        assertEquals("previous", task.getAssignedUserId());
+        assertNull(task.getUpdated());
+        verify(tasks, never()).saveAndFlush(any());
+        verifyNoInteractions(audit, users);
     }
 
     @Test
@@ -145,13 +170,13 @@ class ProcessAssignmentServiceTest {
         grant("recipient", PROCESS_INSTANCE_READ);
         var global = user("global");
         var otherScope = user("other-scope");
-        when(systemPermissions.hasPermission("global", PROCESS_INSTANCE_READ)).thenReturn(true);
-        when(systemPermissions.hasPermission("global", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
-        when(instances.hasPermission("other-scope", 18L, PROCESS_INSTANCE_READ)).thenReturn(true);
+        when(systemPermissions.hasPermissionWithoutDeputies("global", PROCESS_INSTANCE_READ)).thenReturn(true);
+        when(systemPermissions.hasPermissionWithoutDeputies("global", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        when(instances.hasPermissionWithoutDeputies("other-scope", 18L, PROCESS_INSTANCE_READ)).thenReturn(true);
         when(users.findAllByEnabledTrueAndDeletedInIdpFalseOrderByFullNameAsc()).thenReturn(List.of(recipient, global, otherScope));
         assertEquals(List.of("recipient", "global"), service.instanceOptions("actor", 17L).stream().map(option -> option.id()).toList());
         assertEquals(List.of("global"), service.taskOptions("actor", 5L).stream().map(option -> option.id()).toList());
-        when(instances.hasPermission("recipient", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
+        when(instances.hasPermissionWithoutDeputies("recipient", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
         assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, "recipient"));
         verifyNoInteractions(audit);
     }
@@ -178,14 +203,123 @@ class ProcessAssignmentServiceTest {
     }
 
     @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void excludesDeputyOnlyRecipientsFromOptionsAndAllAssignmentPaths(boolean systemAccess) throws Exception {
+        grant("actor", PROCESS_INSTANCE_REASSIGN);
+        grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+        for (var key : List.of(PROCESS_INSTANCE_READ, PROCESS_INSTANCE_EDIT_TASK)) {
+            if (systemAccess) when(systemPermissions.hasPermission("recipient", key)).thenReturn(true);
+            else when(instances.hasPermission("recipient", 17L, key)).thenReturn(true);
+        }
+        when(users.findAllByEnabledTrueAndDeletedInIdpFalseOrderByFullNameAsc()).thenReturn(List.of(recipient));
+
+        assertTrue(service.instanceOptions("actor", 17L).isEmpty());
+        assertTrue(service.taskOptions("actor", 5L).isEmpty());
+        var error = assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, "recipient"));
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
+        assertTrue(error.getMessage().contains("Stellvertretung"));
+        assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, "recipient"));
+        assertThrows(ResponseException.class, () -> service.saveRuntimeAssignment(task, "recipient"));
+        assertEquals("previous", instance.getAssignedUserId());
+        assertEquals("previous", task.getAssignedUserId());
+        verify(instances, never()).saveAndFlush(any());
+        verify(tasks, never()).saveAndFlush(any());
+        verifyNoInteractions(audit);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {PROCESS_INSTANCE_READ, PROCESS_INSTANCE_EDIT_TASK})
+    void requiresEachTaskPermissionIndependentlyOfDeputies(String deputyOnlyPermission) throws Exception {
+        grant("actor", PROCESS_INSTANCE_REASSIGN);
+        grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+        grant("recipient", PROCESS_INSTANCE_READ);
+        grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+        when(instances.hasPermissionWithoutDeputies("recipient", 17L, deputyOnlyPermission)).thenReturn(false);
+        when(users.findAllByEnabledTrueAndDeletedInIdpFalseOrderByFullNameAsc()).thenReturn(List.of(recipient));
+
+        assertEquals(PROCESS_INSTANCE_READ.equals(deputyOnlyPermission) ? 0 : 1,
+                service.instanceOptions("actor", 17L).size());
+        assertTrue(service.taskOptions("actor", 5L).isEmpty());
+        assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, "recipient"));
+        verify(tasks, never()).saveAndFlush(any());
+        verifyNoInteractions(audit);
+    }
+
+    @Test
+    void allowsDeputiesToAssignTasksToEligibleRecipients() throws Exception {
+        when(instances.hasPermission("actor", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        grant("recipient", PROCESS_INSTANCE_READ);
+        grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+
+        assertEquals("recipient", service.reassignTask(actor, 5L, "recipient").getAssignedUserId());
+        verify(audit).addAuditEntry(any());
+    }
+
+    @ParameterizedTest
     @EnumSource(value = ProcessTaskStatus.class, names = {"Completed", "Aborted", "Failed", "Restarted"})
     void preservesAssignmentsOnFinishedTasks(ProcessTaskStatus status) throws Exception {
         grant("actor", PROCESS_INSTANCE_EDIT_TASK);
         task.setStatus(status);
-        assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, null));
+        assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, "recipient"));
         assertThrows(ResponseException.class, () -> service.taskOptions("actor", 5L));
         verify(tasks, never()).saveAndFlush(any());
         verifyNoInteractions(audit, users);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessInstanceStatus.class, names = {"Completed", "Aborted"})
+    void preservesAssignmentsOnFinishedInstancesEvenWithSystemPermission(ProcessInstanceStatus status) throws Exception {
+        when(systemPermissions.hasPermission("actor", PROCESS_INSTANCE_REASSIGN)).thenReturn(true);
+        instance.setStatus(status);
+
+        var error = assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, "recipient"));
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
+        assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, null));
+        assertThrows(ResponseException.class, () -> service.instanceOptions("actor", 17L));
+        assertEquals("previous", instance.getAssignedUserId());
+        assertNull(instance.getUpdated());
+        verify(instances, never()).saveAndFlush(any());
+        verifyNoInteractions(audit, users);
+    }
+
+    @Test
+    void allowsAssigningFailedInstancesForRecovery() throws Exception {
+        grant("actor", PROCESS_INSTANCE_REASSIGN);
+        grant("recipient", PROCESS_INSTANCE_READ);
+        instance.setStatus(ProcessInstanceStatus.Failed);
+        when(users.findAllByEnabledTrueAndDeletedInIdpFalseOrderByFullNameAsc()).thenReturn(List.of(recipient));
+
+        assertEquals(List.of("recipient"), service.instanceOptions("actor", 17L).stream().map(option -> option.id()).toList());
+        assertEquals("recipient", service.reassignInstance(actor, 17L, "recipient").getAssignedUserId());
+        assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void automaticEligibilityRequiresBothOwnTaskPermissionsInTheActualScope(boolean systemAccess) {
+        for (var key : List.of(PROCESS_INSTANCE_READ, PROCESS_INSTANCE_EDIT_TASK)) {
+            when(instances.hasPermissionWithoutDeputies("recipient", 18L, key)).thenReturn(true);
+            when(instances.hasPermission("recipient", 17L, key)).thenReturn(true);
+        }
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of(PROCESS_INSTANCE_EDIT_TASK)));
+        if (systemAccess) {
+            when(systemPermissions.hasPermissionWithoutDeputies("recipient", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        } else {
+            grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+        }
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of(PROCESS_INSTANCE_EDIT_TASK)));
+        if (systemAccess) {
+            when(systemPermissions.hasPermissionWithoutDeputies("recipient", PROCESS_INSTANCE_READ)).thenReturn(true);
+        } else {
+            grant("recipient", PROCESS_INSTANCE_READ);
+        }
+        assertTrue(service.canReceiveTaskAssignment("recipient", 17L, List.of(PROCESS_INSTANCE_EDIT_TASK)));
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of(PROCESS_INSTANCE_UPDATE)));
+        recipient.setEnabled(false);
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of()));
+        recipient.setEnabled(true).setDeletedInIdp(true);
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of()));
+        assertFalse(service.canReceiveTaskAssignment("missing", 17L, List.of()));
     }
 
     @Test
@@ -196,8 +330,8 @@ class ProcessAssignmentServiceTest {
         assertEquals("recipient", task.getAssignedUserId());
         var order = inOrder(instances, tasks);
         order.verify(instances).lockAccessById(17L);
-        order.verify(instances).hasPermission("recipient", 17L, PROCESS_INSTANCE_READ);
-        order.verify(instances).hasPermission("recipient", 17L, PROCESS_INSTANCE_EDIT_TASK);
+        order.verify(instances).hasPermissionWithoutDeputies("recipient", 17L, PROCESS_INSTANCE_READ);
+        order.verify(instances).hasPermissionWithoutDeputies("recipient", 17L, PROCESS_INSTANCE_EDIT_TASK);
         order.verify(tasks).saveAndFlush(task);
         verifyNoInteractions(audit);
     }
@@ -213,6 +347,7 @@ class ProcessAssignmentServiceTest {
 
     private void grant(String userId, String permission) {
         when(instances.hasPermission(userId, 17L, permission)).thenReturn(true);
+        when(instances.hasPermissionWithoutDeputies(userId, 17L, permission)).thenReturn(true);
     }
 
     private static UserEntity user(String id) {

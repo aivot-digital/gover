@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 
 import java.util.*;
@@ -37,8 +38,8 @@ class ProcessInstanceAccessGuardTest {
     void setup() {
         when(instances.lockAccessById(17L)).thenReturn(Optional.of(17L));
         when(tasks.findAssignmentSnapshots(17L)).thenAnswer(ignored -> List.of(snapshot(task)));
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(true);
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(true);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
         when(nodes.findById(5)).thenReturn(Optional.of(new ProcessNodeEntity().setName("Prüfung")));
         when(users.findById("alice")).thenReturn(Optional.of(new UserEntity().setId("alice").setFullName("Alice Beispiel")));
     }
@@ -48,7 +49,7 @@ class ProcessInstanceAccessGuardTest {
     void rejectsLostEditAccessOnEveryActiveStatus(ProcessTaskStatus status) throws Exception {
         task.setStatus(status);
         var before = guard.lockAndSnapshot(17L);
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(false);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(false);
         var error = assertThrows(ResponseException.class, () -> guard.requireRetainedAccess(17L, before, true));
         assertEquals(HttpStatus.CONFLICT, error.getStatus());
         assertTrue(error.getMessage().contains("anderen berechtigten Personen"));
@@ -60,7 +61,7 @@ class ProcessInstanceAccessGuardTest {
     @Test
     void rejectsLossOfReadAccessEvenIfTaskEditRemains() throws Exception {
         var before = guard.lockAndSnapshot(17L);
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
         assertThrows(ResponseException.class, () -> guard.requireRetainedAccess(17L, before, true));
     }
 
@@ -68,10 +69,10 @@ class ProcessInstanceAccessGuardTest {
     void acceptsRemainingScopedAndSystemGrants() throws Exception {
         var before = guard.lockAndSnapshot(17L);
         guard.requireRetainedAccess(17L, before, true);
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(false);
-        when(system.hasPermission("alice", PROCESS_INSTANCE_READ)).thenReturn(true);
-        when(system.hasPermission("alice", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(false);
+        when(system.hasPermissionWithoutDeputies("alice", PROCESS_INSTANCE_READ)).thenReturn(true);
+        when(system.hasPermissionWithoutDeputies("alice", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
         guard.requireRetainedAccess(17L, before, true);
         verifyNoInteractions(users, nodes);
     }
@@ -79,9 +80,23 @@ class ProcessInstanceAccessGuardTest {
     @Test
     void doesNotAcceptAGrantOnAnotherInstance() throws Exception {
         var before = guard.lockAndSnapshot(17L);
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(false);
-        when(instances.hasPermission("alice", 18L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(false);
+        when(instances.hasPermissionWithoutDeputies("alice", 18L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
         assertThrows(ResponseException.class, () -> guard.requireRetainedAccess(17L, before, true));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void rejectsLosingOwnAccessEvenIfDeputyAccessRemains(boolean systemAccess) throws Exception {
+        var before = guard.lockAndSnapshot(17L);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(false);
+        if (systemAccess) when(system.hasPermission("alice", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        else when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+
+        var error = assertThrows(ResponseException.class, () -> guard.requireRetainedAccess(17L, before));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatus());
+        assertEquals("assigned_tasks_lose_access", ((Map<?, ?>) error.getDetails()).get("reason"));
     }
 
     @ParameterizedTest
@@ -96,7 +111,7 @@ class ProcessInstanceAccessGuardTest {
         task.setAssignedUserId(null);
         assertTrue(guard.lockAndSnapshot(17L).isEmpty());
         task.setAssignedUserId("alice");
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(false);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(false);
         guard.requireRetainedAccess(17L, guard.lockAndSnapshot(17L));
     }
 
@@ -105,7 +120,7 @@ class ProcessInstanceAccessGuardTest {
         when(tasks.findAssignmentSnapshots(17L)).thenReturn(List.of(snapshot(task),
                 snapshot(task(2L, "alice", ProcessTaskStatus.Paused)), snapshot(task(3L, "bob", ProcessTaskStatus.Running))));
         var before = guard.lockAndSnapshot(17L);
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
         var error = assertThrows(ResponseException.class, () -> guard.requireRetainedAccess(17L, before, true));
         var affected = (List<?>) ((Map<?, ?>) error.getDetails()).get("tasks");
         assertEquals(2, affected.size());
@@ -114,7 +129,7 @@ class ProcessInstanceAccessGuardTest {
     @Test
     void doesNotExposeTaskDetailsWithoutReadPermission() throws Exception {
         var before = guard.lockAndSnapshot(17L);
-        when(instances.hasPermission("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
+        when(instances.hasPermissionWithoutDeputies("alice", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
         var error = assertThrows(ResponseException.class, () -> guard.requireRetainedAccess(17L, before));
         assertEquals(List.of(), ((Map<?, ?>) error.getDetails()).get("tasks"));
         verifyNoInteractions(users, nodes);

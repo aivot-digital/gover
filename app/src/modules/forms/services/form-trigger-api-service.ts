@@ -1,6 +1,6 @@
 import type {Page} from '../../../models/dtos/page';
 import type {AuthoredElementValues} from '../../../models/element-data';
-import type {SortOrder} from '../../../components/generic-list/generic-list-props';
+import type {ListFilterCounts, SortOrder} from '../../../components/generic-list/generic-list-props';
 import type {QueryParams} from '../../../services/base-api-service';
 import {BaseApiService} from '../../../services/base-api-service';
 import type {ProcessEntity} from '../../process/entities/process-entity';
@@ -234,6 +234,10 @@ export class FormTriggerApiService extends BaseApiService {
         );
     }
 
+
+    public overviewCounts(abort?: AbortSignal): Promise<ListFilterCounts> {
+        return this.get('/api/forms/v1/counts/', {abort});
+    }
 
     public async listOverview(
         page: number,
