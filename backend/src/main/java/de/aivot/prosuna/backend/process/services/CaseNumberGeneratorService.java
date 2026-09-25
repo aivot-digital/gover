@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -16,7 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Generates process case numbers from a process-local template contract.
+ * Generates process case numbers in the format selected on the process version.
  *
  * <p>The process module keeps this logic in its own service on purpose. Process case numbers are part of the
  * workflow domain and carry their own placeholder semantics, persistence query, and uniqueness guarantees. Reusing
@@ -80,6 +81,8 @@ public class CaseNumberGeneratorService {
         return switch (type) {
             case CROCKFORD_BASE32 -> CrockfordCaseNumber.generate();
             case UUID_V4 -> UUID.randomUUID().toString();
+            // Hibernate's UUIDv7 strategy generates locally and does not use the persistence session.
+            case UUID_V7 -> UuidVersion7Strategy.INSTANCE.generateUuid(null).toString();
             case TEMPLATE -> generateCaseNumber(caseNumberTemplate, ZonedDateTime.now(ApplicationTimeZone.getZoneId()));
         };
     }

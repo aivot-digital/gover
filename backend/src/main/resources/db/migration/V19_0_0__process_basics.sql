@@ -51,7 +51,7 @@ create table process_versions
     -- Generation format for new process instances of this version.
     case_number_type     varchar(32)  not null default 'CROCKFORD_BASE32'
         constraint process_versions_case_number_type_check
-            check (case_number_type in ('CROCKFORD_BASE32', 'UUID_V4', 'TEMPLATE')),
+            check (case_number_type in ('CROCKFORD_BASE32', 'UUID_V4', 'UUID_V7', 'TEMPLATE')),
     case_number_template varchar(96)  null,
     constraint process_versions_case_number_template_check
         check ((case_number_type = 'TEMPLATE') = (case_number_template is not null)),

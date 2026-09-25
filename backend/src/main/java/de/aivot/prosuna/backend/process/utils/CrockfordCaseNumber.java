@@ -7,6 +7,13 @@ import java.security.SecureRandom;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+/**
+ * Human-readable case numbers using <a href="https://www.crockford.com/base32.html">Crockford's Base32</a>.
+ * Its 32-character alphabet encodes five bits per character and omits I, L, O and U. Twelve random characters
+ * provide 60 random bits while remaining practical to read aloud, especially when grouped in blocks of four.
+ * Search accepts either letter case and treats O as 0 and I/L as 1 to tolerate common transcription mistakes.
+ * The database constraint, rather than randomness alone, guarantees uniqueness.
+ */
 public final class CrockfordCaseNumber {
     private static final String ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
     private static final int LENGTH = 12;
