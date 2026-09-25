@@ -2,19 +2,27 @@ package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
+import de.aivot.prosuna.backend.audit.services.AuditService;
+import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.VPotentialProcessInstanceAccessRepository;
-import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ;
+import static org.mockito.Mockito.*;
 
 class AssignmentContextAssigneeResolverServiceTest {
     private static final Integer PROCESS_ID = 42;
@@ -32,6 +40,7 @@ class AssignmentContextAssigneeResolverServiceTest {
     private List<ProcessInstanceTaskEntity> activeTasks;
     private Long capturedExcludedTaskId;
     private AssignmentContextAssigneeResolverService service;
+    private PermissionService permissions;
 
     @BeforeEach
     void setUp() {
@@ -42,9 +51,19 @@ class AssignmentContextAssigneeResolverServiceTest {
         activeTasks = List.of();
         capturedExcludedTaskId = null;
 
+        permissions = mock(PermissionService.class);
+        when(permissions.hasProcessInstancePermissionWithoutDeputies(anyString(), eq(PROCESS_INSTANCE_ID), anyString()))
+                .thenReturn(true);
+        var users = mock(UserRepository.class);
+        when(users.findById(anyString())).thenAnswer(invocation -> Optional.of(new UserEntity()
+                .setId(invocation.getArgument(0)).setEnabled(true).setDeletedInIdp(false)));
+        var tasks = createProcessInstanceTaskRepository();
+        var assignments = new ProcessAssignmentService(permissions, users, mock(ProcessInstanceRepository.class),
+                tasks, mock(AuditService.class));
         service = new AssignmentContextAssigneeResolverService(
                 createPotentialAccessRepository(),
-                createProcessInstanceTaskRepository()
+                tasks,
+                assignments
         );
     }
 
@@ -112,6 +131,106 @@ class AssignmentContextAssigneeResolverServiceTest {
         );
 
         assertEquals(Optional.of("own-access"), result);
+    }
+
+    @Test
+    void resolveAssignee_SkipsPreferredAndLessLoadedCandidateWithoutReadPermission() {
+        accessRows = List.of(
+                userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-2", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        when(permissions.hasProcessInstancePermissionWithoutDeputies("user-1", PROCESS_INSTANCE_ID, PROCESS_INSTANCE_READ))
+                .thenReturn(false);
+        previousTask = task("user-1");
+        activeTasks = List.of(activeTask("user-2"));
+
+        var result = service.resolveAssignee(
+                PROCESS_ID, PROCESS_VERSION, PROCESS_INSTANCE_ID, CURRENT_NODE_ID, CURRENT_TASK_ID,
+                PREVIOUS_NODE_ID, null, assignmentContext(List.of(orgUnit("10")))
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PREVIOUS_PROCESS_STEP_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-2"), result);
+    }
+
+    @Test
+    void resolveAssignee_ExcludesPreviouslyEligibleUserAfterInstancePermissionWithdrawal() {
+        accessRows = List.of(
+                userRow("withdrawn", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("granted", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        when(permissions.hasProcessInstancePermissionWithoutDeputies("withdrawn", PROCESS_INSTANCE_ID, REQUIRED_PERMISSION))
+                .thenReturn(false);
+        activeTasks = List.of(activeTask("granted"));
+
+        var result = service.resolveAssignee(
+                PROCESS_ID, PROCESS_VERSION, PROCESS_INSTANCE_ID, CURRENT_NODE_ID, CURRENT_TASK_ID,
+                null, null, assignmentContext(List.of(orgUnit("10"))), List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("granted"), result);
+    }
+
+    @Test
+    void resolveAssignee_DoesNotExpandExplicitSelectionBeyondTheConfiguredPool() {
+        accessRows = List.<Object[]>of(
+                userRow("candidate", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        var result = service.resolveAssignee(
+                PROCESS_ID, PROCESS_VERSION, PROCESS_INSTANCE_ID, CURRENT_NODE_ID, CURRENT_TASK_ID,
+                null, null, assignmentContext(List.of(user("global"))), List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.empty(), result);
+        verifyNoInteractions(permissions);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"orgUnit", "team"})
+    void resolveAssignee_DoesNotUseAnotherMembershipToQualifyForTheSelectedGroup(String selectionType) {
+        var department = "orgUnit".equals(selectionType);
+        accessRows = List.of(
+                userRow("cross-member", department ? 10 : null, department ? null : 10, true,
+                        List.of(PROCESS_INSTANCE_READ), List.of(PROCESS_INSTANCE_READ)),
+                userRow("cross-member", department ? 20 : null, department ? null : 20, true,
+                        List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("eligible-member", department ? 10 : null, department ? null : 10, true,
+                        List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        // Both have own instance rights, but only eligible-member qualifies through the selected group.
+        previousTask = task("cross-member");
+        activeTasks = List.of(activeTask("eligible-member"));
+
+        var result = service.resolveAssignee(
+                PROCESS_ID, PROCESS_VERSION, PROCESS_INSTANCE_ID, CURRENT_NODE_ID, CURRENT_TASK_ID,
+                PREVIOUS_NODE_ID, null,
+                assignmentContext(List.of(new DomainAndUserSelectInputElementValue(selectionType, "10")))
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PREVIOUS_PROCESS_STEP_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("eligible-member"), result);
+        verify(permissions, never()).hasProcessInstancePermissionWithoutDeputies(eq("cross-member"), anyLong(), anyString());
+    }
+
+    @Test
+    void resolveAssignee_DoesNotFallBackOutsideTheSelectionWhenNoEligibleCandidateRemains() {
+        accessRows = List.of(
+                userRow("selected", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("outside", 20, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        when(permissions.hasProcessInstancePermissionWithoutDeputies("selected", PROCESS_INSTANCE_ID, PROCESS_INSTANCE_READ))
+                .thenReturn(false);
+
+        var result = service.resolveAssignee(
+                PROCESS_ID, PROCESS_VERSION, PROCESS_INSTANCE_ID, CURRENT_NODE_ID, CURRENT_TASK_ID,
+                null, "outside", assignmentContext(List.of(orgUnit("10")))
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PROCESS_INSTANCE_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.empty(), result);
     }
 
     @Test
@@ -422,6 +541,10 @@ class AssignmentContextAssigneeResolverServiceTest {
 
     private static DomainAndUserSelectInputElementValue team(String id) {
         return new DomainAndUserSelectInputElementValue("team", id);
+    }
+
+    private static DomainAndUserSelectInputElementValue user(String id) {
+        return new DomainAndUserSelectInputElementValue("user", id);
     }
 
     private static ProcessInstanceTaskEntity task(String assignedUserId) {

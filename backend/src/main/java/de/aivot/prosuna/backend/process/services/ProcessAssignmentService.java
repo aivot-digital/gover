@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.*;
 
@@ -30,6 +31,7 @@ import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermis
 public class ProcessAssignmentService {
     private static final Set<ProcessTaskStatus> ACTIVE_TASK_STATUSES = Set.of(ProcessTaskStatus.Running,
             ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
+    private static final List<String> TASK_ASSIGNMENT_PERMISSIONS = List.of(PROCESS_INSTANCE_READ, PROCESS_INSTANCE_EDIT_TASK);
     private final PermissionService permissions;
     private final UserRepository users;
     private final ProcessInstanceRepository instances;
@@ -112,6 +114,20 @@ public class ProcessAssignmentService {
         tasks.saveAndFlush(task);
     }
 
+    /**
+     * Check the same account and instance rights as persistence before applying node preferences or load balancing.
+     * Node-specific permissions may extend, but never replace, the read and edit permissions required for every task.
+     * This does not define the configured candidate pool; the resolver must establish that pool separately.
+     */
+    public boolean canReceiveTaskAssignment(@Nonnull String userId, @Nonnull Long instanceId,
+                                            @Nonnull List<String> requiredPermissions) {
+        var permissionsToCheck = Stream.concat(TASK_ASSIGNMENT_PERMISSIONS.stream(), requiredPermissions.stream())
+                .distinct().toList();
+        return users.findById(userId)
+                .map(user -> canReceiveAssignment(user, instanceId, permissionsToCheck))
+                .orElse(false);
+    }
+
     @Nonnull
     private ProcessInstanceTaskEntity requireAssignableTask(@Nonnull String actorId, @Nonnull Long taskId) throws ResponseException {
         var task = tasks.findById(taskId).orElseThrow(ResponseException::notFound);
@@ -140,8 +156,12 @@ public class ProcessAssignmentService {
     }
 
     private boolean canReceiveAssignment(@Nonnull UserEntity user, @Nonnull Long instanceId, boolean forTask) {
+        return canReceiveAssignment(user, instanceId, forTask ? TASK_ASSIGNMENT_PERMISSIONS : List.of(PROCESS_INSTANCE_READ));
+    }
+
+    private boolean canReceiveAssignment(@Nonnull UserEntity user, @Nonnull Long instanceId, @Nonnull List<String> requiredPermissions) {
         return Boolean.TRUE.equals(user.getEnabled()) && Boolean.FALSE.equals(user.getDeletedInIdp())
-                && permissions.hasProcessInstancePermissionWithoutDeputies(user.getId(), instanceId, PROCESS_INSTANCE_READ)
-                && (!forTask || permissions.hasProcessInstancePermissionWithoutDeputies(user.getId(), instanceId, PROCESS_INSTANCE_EDIT_TASK));
+                && requiredPermissions.stream().allMatch(permission ->
+                        permissions.hasProcessInstancePermissionWithoutDeputies(user.getId(), instanceId, permission));
     }
 }

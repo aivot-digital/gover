@@ -244,6 +244,34 @@ class ProcessAssignmentServiceTest {
         verifyNoInteractions(audit, users);
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void automaticEligibilityRequiresBothOwnTaskPermissionsInTheActualScope(boolean systemAccess) {
+        for (var key : List.of(PROCESS_INSTANCE_READ, PROCESS_INSTANCE_EDIT_TASK)) {
+            when(instances.hasPermissionWithoutDeputies("recipient", 18L, key)).thenReturn(true);
+            when(instances.hasPermission("recipient", 17L, key)).thenReturn(true);
+        }
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of(PROCESS_INSTANCE_EDIT_TASK)));
+        if (systemAccess) {
+            when(systemPermissions.hasPermissionWithoutDeputies("recipient", PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+        } else {
+            grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+        }
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of(PROCESS_INSTANCE_EDIT_TASK)));
+        if (systemAccess) {
+            when(systemPermissions.hasPermissionWithoutDeputies("recipient", PROCESS_INSTANCE_READ)).thenReturn(true);
+        } else {
+            grant("recipient", PROCESS_INSTANCE_READ);
+        }
+        assertTrue(service.canReceiveTaskAssignment("recipient", 17L, List.of(PROCESS_INSTANCE_EDIT_TASK)));
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of(PROCESS_INSTANCE_UPDATE)));
+        recipient.setEnabled(false);
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of()));
+        recipient.setEnabled(true).setDeletedInIdp(true);
+        assertFalse(service.canReceiveTaskAssignment("recipient", 17L, List.of()));
+        assertFalse(service.canReceiveTaskAssignment("missing", 17L, List.of()));
+    }
+
     @Test
     void runtimeAssignmentsUseInstanceLockAndCheckCurrentRights() throws Exception {
         grant("recipient", PROCESS_INSTANCE_READ);
