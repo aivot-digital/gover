@@ -52,7 +52,6 @@ export interface AssignmentContextFieldComponentProps {
 const DEFAULT_HEADLINE = 'Verantwortlicher Personenkreis';
 const DEFAULT_TEXT = 'Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann.';
 const ASSIGNMENT_LOGIC_SUMMARY = 'Die automatische Zuweisung ermittelt zuerst alle berechtigten Personen aus dem Personenkreis. Danach werden die gewählten Bevorzugungen und abschließend die aktuelle Aufgabenlast berücksichtigt.';
-const ASSIGNMENT_LOGIC_SUMMARY_WITHOUT_REPEAT = 'Die automatische Zuweisung ermittelt zuerst alle berechtigten Personen aus dem Personenkreis. Danach werden die allgemeine Bevorzugung und abschließend die aktuelle Aufgabenlast berücksichtigt.';
 
 function resolveGeneralAssigneePreference(value: AssignmentContextValue): GeneralAssigneePreference {
     switch (value.generalAssigneePreference) {
@@ -137,9 +136,7 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
         generalAssigneePreference === 'processInstanceAssignee';
     const unavailableRepeatPreference = props.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions === true &&
         repeatExecutionAssigneePreference !== 'none';
-    const assignmentLogicSummary = props.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions
-        ? ASSIGNMENT_LOGIC_SUMMARY_WITHOUT_REPEAT
-        : ASSIGNMENT_LOGIC_SUMMARY;
+    const assignmentLogicSummary = ASSIGNMENT_LOGIC_SUMMARY;
 
     const headlineText = props.title != null && props.title.trim().length > 0 ? props.title : DEFAULT_HEADLINE;
     const descriptionText = props.description != null && props.description.trim().length > 0 ? props.description : DEFAULT_TEXT;
