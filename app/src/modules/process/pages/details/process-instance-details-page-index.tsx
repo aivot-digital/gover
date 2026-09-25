@@ -300,6 +300,7 @@ export function ProcessInstanceDetailsPageIndex() {
                 >
                     <ProcessAssignmentButton
                         instanceId={instance.id}
+                        instanceStatus={instance.status}
                         assignedUserId={instance.assignedUserId}
                         onAssigned={refresh}
                     />

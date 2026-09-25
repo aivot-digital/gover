@@ -5,6 +5,7 @@ import {ProcessAssignmentButton} from './process-assignment-button';
 import {ProcessInstanceApiService} from '../services/process-instance-api-service';
 import {ProcessInstanceTaskApiService} from '../services/process-instance-task-api-service';
 import {ProcessTaskStatus} from '../enums/process-task-status';
+import {ProcessInstanceStatus} from '../enums/process-instance-status';
 import {Permission} from '../../../data/permissions/permission';
 
 const access = vi.hoisted(() => ({
@@ -42,6 +43,7 @@ describe('ProcessAssignmentButton', () => {
                 instanceId={17}
                 taskId={isTask ? 5 : undefined}
                 taskStatus={ProcessTaskStatus.Running}
+                instanceStatus={ProcessInstanceStatus.Running}
                 assignedUserId="former"
                 onAssigned={refreshed}
             />,
@@ -102,6 +104,28 @@ describe('ProcessAssignmentButton', () => {
         expect(screen.getByRole('button')).toBeDisabled();
         expect(options).not.toHaveBeenCalled();
     });
+
+    it.each([ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted])(
+        'disables assignment for %s instances and explains why',
+        async (status) => {
+            const options = vi.spyOn(ProcessInstanceApiService.prototype, 'assignmentOptions');
+            render(
+                <ProcessAssignmentButton
+                    instanceId={17}
+                    instanceStatus={status}
+                    assignedUserId="former"
+                    onAssigned={vi.fn()}
+                />,
+            );
+            const button = screen.getByRole('button', {name: 'Vorgang zuweisen'});
+            expect(button).toBeDisabled();
+            await userEvent.setup().hover(button.parentElement!);
+            expect(await screen.findByRole('tooltip')).toHaveTextContent(
+                'Die Zuweisung abgeschlossener oder abgebrochener Vorgänge kann nicht mehr geändert werden.',
+            );
+            expect(options).not.toHaveBeenCalled();
+        },
+    );
 
     it.each([false, true])('names the required permission in the disabled tooltip (task: %s)', async (isTask) => {
         access.allowed = false;

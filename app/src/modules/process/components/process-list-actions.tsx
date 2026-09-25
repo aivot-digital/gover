@@ -43,13 +43,14 @@ export function ProcessListActions({
     );
     const canReadModel = useHasProcessPermission(item.processId, Permission.PROCESS_DEFINITION_READ);
     const active =
-        task == null ||
-        [
-            ProcessTaskStatus.Running,
-            ProcessTaskStatus.Paused,
-            ProcessTaskStatus.AwaitingCustomer,
-            ProcessTaskStatus.AwaitingPayment,
-        ].includes(task.status);
+        task == null
+            ? item.status !== ProcessInstanceStatus.Completed && item.status !== ProcessInstanceStatus.Aborted
+            : [
+                  ProcessTaskStatus.Running,
+                  ProcessTaskStatus.Paused,
+                  ProcessTaskStatus.AwaitingCustomer,
+                  ProcessTaskStatus.AwaitingPayment,
+              ].includes(task.status);
     const failed = item.status === (task ? ProcessTaskStatus.Failed : ProcessInstanceStatus.Failed);
     const detailPath = task ? `/tasks/${instanceId}/${task.id}` : `/process-instances/${instanceId}`;
 

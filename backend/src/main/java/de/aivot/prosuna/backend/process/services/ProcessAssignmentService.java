@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
@@ -51,8 +52,7 @@ public class ProcessAssignmentService {
     @Nonnull
     @Transactional(readOnly = true)
     public List<ProcessAssignmentOptionDTO> instanceOptions(@Nonnull String actorId, @Nonnull Long instanceId) throws ResponseException {
-        permissions.requireProcessInstancePermission(actorId, instanceId, PROCESS_INSTANCE_REASSIGN);
-        if (!instances.existsById(instanceId)) throw ResponseException.notFound();
+        requireAssignableInstance(actorId, instanceId);
         return options(instanceId, false);
     }
 
@@ -67,8 +67,7 @@ public class ProcessAssignmentService {
     @Transactional(rollbackFor = ResponseException.class)
     public ProcessInstanceEntity reassignInstance(@Nonnull UserEntity actor, @Nonnull Long instanceId,
                                                   @Nullable String assignedUserId) throws ResponseException {
-        permissions.requireProcessInstancePermission(actor.getId(), instanceId, PROCESS_INSTANCE_REASSIGN);
-        var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
+        var instance = requireAssignableInstance(actor.getId(), instanceId);
         validateAssignee(assignedUserId, instanceId, false);
         var previousUserId = instance.getAssignedUserId();
         instance.setAssignedUserId(assignedUserId).setUpdated(Instant.now());
@@ -126,6 +125,16 @@ public class ProcessAssignmentService {
         return users.findById(userId)
                 .map(user -> canReceiveAssignment(user, instanceId, permissionsToCheck))
                 .orElse(false);
+    }
+
+    @Nonnull
+    private ProcessInstanceEntity requireAssignableInstance(@Nonnull String actorId, @Nonnull Long instanceId) throws ResponseException {
+        permissions.requireProcessInstancePermission(actorId, instanceId, PROCESS_INSTANCE_REASSIGN);
+        var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
+        if (instance.getStatus() == ProcessInstanceStatus.Completed || instance.getStatus() == ProcessInstanceStatus.Aborted) {
+            throw ResponseException.badRequest("Die Zuweisung abgeschlossener oder abgebrochener Vorgänge kann nicht mehr geändert werden.");
+        }
+        return instance;
     }
 
     @Nonnull

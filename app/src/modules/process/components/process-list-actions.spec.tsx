@@ -113,6 +113,14 @@ describe('Process list actions', () => {
         expect(screen.queryByRole('menuitem', {name: 'Vorgang zuweisen'})).not.toBeInTheDocument();
         expect(screen.queryByRole('menuitem', {name: 'Erneut starten'})).not.toBeInTheDocument();
     });
+    it.each([ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted])(
+        'does not offer assignment for %s instances despite system permission',
+        (status) => {
+            grant('system');
+            showActions({...instance, status});
+            expect(screen.queryByRole('menuitem', {name: 'Vorgang zuweisen'})).not.toBeInTheDocument();
+        },
+    );
     it('offers task assignment only while active and preserves the instance link', () => {
         grant('system');
         const task: ProcessTaskListEntry = {

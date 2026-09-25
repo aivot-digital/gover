@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -39,7 +40,8 @@ class ProcessAssignmentServiceTest {
     private ProcessAssignmentService service;
     private final UserEntity actor = user("actor");
     private final UserEntity recipient = user("recipient");
-    private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(17L).setProcessId(2).setAssignedUserId("previous");
+    private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(17L).setProcessId(2)
+            .setStatus(ProcessInstanceStatus.Running).setAssignedUserId("previous");
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(5L).setProcessInstanceId(17L)
             .setStatus(ProcessTaskStatus.Running).setAssignedUserId("previous");
 
@@ -51,7 +53,6 @@ class ProcessAssignmentServiceTest {
         when(instances.lockAccessById(17L)).thenReturn(Optional.of(17L));
         when(tasks.findInstanceIdById(5L)).thenReturn(Optional.of(17L));
         when(instances.findById(17L)).thenReturn(Optional.of(instance));
-        when(instances.existsById(17L)).thenReturn(true);
         when(tasks.findById(5L)).thenReturn(Optional.of(task));
         when(users.findById("recipient")).thenReturn(Optional.of(recipient));
         when(instances.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -242,6 +243,34 @@ class ProcessAssignmentServiceTest {
         assertThrows(ResponseException.class, () -> service.taskOptions("actor", 5L));
         verify(tasks, never()).saveAndFlush(any());
         verifyNoInteractions(audit, users);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessInstanceStatus.class, names = {"Completed", "Aborted"})
+    void preservesAssignmentsOnFinishedInstancesEvenWithSystemPermission(ProcessInstanceStatus status) throws Exception {
+        when(systemPermissions.hasPermission("actor", PROCESS_INSTANCE_REASSIGN)).thenReturn(true);
+        instance.setStatus(status);
+
+        var error = assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, "recipient"));
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
+        assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, null));
+        assertThrows(ResponseException.class, () -> service.instanceOptions("actor", 17L));
+        assertEquals("previous", instance.getAssignedUserId());
+        assertNull(instance.getUpdated());
+        verify(instances, never()).saveAndFlush(any());
+        verifyNoInteractions(audit, users);
+    }
+
+    @Test
+    void allowsAssigningFailedInstancesForRecovery() throws Exception {
+        grant("actor", PROCESS_INSTANCE_REASSIGN);
+        grant("recipient", PROCESS_INSTANCE_READ);
+        instance.setStatus(ProcessInstanceStatus.Failed);
+        when(users.findAllByEnabledTrueAndDeletedInIdpFalseOrderByFullNameAsc()).thenReturn(List.of(recipient));
+
+        assertEquals(List.of("recipient"), service.instanceOptions("actor", 17L).stream().map(option -> option.id()).toList());
+        assertEquals("recipient", service.reassignInstance(actor, 17L, "recipient").getAssignedUserId());
+        assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
     }
 
     @ParameterizedTest
