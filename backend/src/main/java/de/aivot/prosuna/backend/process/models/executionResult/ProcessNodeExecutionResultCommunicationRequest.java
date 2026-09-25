@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.models.executionResult;
 
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.utils.EmailAddressUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -8,12 +9,14 @@ import jakarta.annotation.Nullable;
 /**
  * Describes one message that must be sent as part of applying a process-node execution result.
  *
- * @param recipientIdentityId logical process identity receiving the message
- * @param message             message to dispatch through the communication provider selected for the identity
- * @param nodeDataOutputKey   optional node-data key receiving the communication provider result
+ * @param recipientIdentityId    logical process identity receiving the message, if one already exists
+ * @param recipientEmailAddress  direct email recipient when no process identity exists yet
+ * @param message                message to dispatch
+ * @param nodeDataOutputKey      optional node-data key receiving the communication provider result
  */
 public record ProcessNodeExecutionResultCommunicationRequest(
-        @Nonnull String recipientIdentityId,
+        @Nullable String recipientIdentityId,
+        @Nullable String recipientEmailAddress,
         @Nonnull CommunicationMessage message,
         @Nullable String nodeDataOutputKey
 ) {
@@ -21,12 +24,24 @@ public record ProcessNodeExecutionResultCommunicationRequest(
 
     public ProcessNodeExecutionResultCommunicationRequest(@Nonnull String recipientIdentityId,
                                                           @Nonnull CommunicationMessage message) {
-        this(recipientIdentityId, message, null);
+        this(recipientIdentityId, null, message, null);
+    }
+
+    public ProcessNodeExecutionResultCommunicationRequest(@Nonnull String recipientIdentityId,
+                                                          @Nonnull CommunicationMessage message,
+                                                          @Nullable String nodeDataOutputKey) {
+        this(recipientIdentityId, null, message, nodeDataOutputKey);
+    }
+
+    public static ProcessNodeExecutionResultCommunicationRequest toEmail(@Nonnull String recipientEmailAddress,
+                                                                         @Nonnull CommunicationMessage message) {
+        return new ProcessNodeExecutionResultCommunicationRequest(null, recipientEmailAddress, message, null);
     }
 
     public ProcessNodeExecutionResultCommunicationRequest {
-        if (StringUtils.isNullOrEmpty(recipientIdentityId)) {
-            throw new IllegalArgumentException("Die ID der Empfängeridentität muss angegeben werden und darf nicht leer sein.");
+        if ((StringUtils.isNullOrEmpty(recipientIdentityId) && recipientEmailAddress == null)
+                || (recipientIdentityId != null && recipientEmailAddress != null)) {
+            throw new IllegalArgumentException("Es muss genau eine Empfängeridentität oder E-Mail-Adresse angegeben werden.");
         }
 
         if (message == null) {
@@ -38,7 +53,11 @@ public record ProcessNodeExecutionResultCommunicationRequest(
             throw new IllegalArgumentException("Der Node-Data-Ausgabeschlüssel für das Kommunikationsergebnis darf nicht leer sein.");
         }
 
-        recipientIdentityId = recipientIdentityId.trim();
+        if (recipientIdentityId != null) {
+            recipientIdentityId = recipientIdentityId.trim();
+        } else {
+            recipientEmailAddress = EmailAddressUtils.normalizeSingleAddress(recipientEmailAddress);
+        }
         nodeDataOutputKey = nodeDataOutputKey.trim();
     }
 }

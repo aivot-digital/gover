@@ -67,8 +67,8 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
     }, [element, isDeriving, isLoadingProviders]);
 
     const Component = useMemo(() => {
-        return wrapIdentityConfigSlot(providers);
-    }, [providers]);
+        return wrapIdentityConfigSlot(providers, element.optionalSlotsAllowed !== false);
+    }, [providers, element.optionalSlotsAllowed]);
 
     const shouldShowEmptyState = (value?.length ?? 0) === 0;
     const errorText = [
@@ -79,6 +79,9 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
         .join(' ');
 
     const handleAddSlot = () => {
+        if (element.maxSlots != null && element.maxSlots > 0 && (value?.length ?? 0) >= element.maxSlots) {
+            return;
+        }
         setValue([
             ...(value ?? []),
             {
@@ -133,7 +136,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                 <Button
                     size="small"
                     startIcon={<Add/>}
-                    disabled={isReadOnly || isFieldBusy}
+                    disabled={isReadOnly || isFieldBusy || (element.maxSlots != null && element.maxSlots > 0 && (value?.length ?? 0) >= element.maxSlots)}
                     onClick={handleAddSlot}
                 >
                     Hinzufügen
@@ -216,7 +219,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
     );
 }
 
-function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[]): DialogListPropsDialogContentComponent<IdentityConfigElementSlot> {
+function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[], optionalSlotsAllowed: boolean): DialogListPropsDialogContentComponent<IdentityConfigElementSlot> {
     return (props: {
         item: IdentityConfigElementSlot,
         onChange: (item: IdentityConfigElementSlot) => void,
@@ -227,6 +230,7 @@ function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[]): DialogLis
             item={props.item}
             onChange={props.onChange}
             providers={providers}
+            optionalSlotsAllowed={optionalSlotsAllowed}
             disabled={props.readOnly || props.busy}
         />
     );
@@ -256,12 +260,14 @@ function IdentityConfigSlot(props: {
     onChange: (value: IdentityConfigElementSlot) => void;
     disabled?: boolean;
     providers: IdentityProviderListDTO[];
+    optionalSlotsAllowed: boolean;
 }) {
     const {
         item,
         onChange,
         disabled = false,
         providers,
+        optionalSlotsAllowed,
     } = props;
 
     return (
@@ -368,29 +374,24 @@ function IdentityConfigSlot(props: {
                     container
                     spacing={2}
                 >
-                    <Grid
-                        size={{
-                            xs: 12,
-                            md: 6,
-                        }}
-                    >
-                        <CheckboxFieldComponent
-                            label="Optional"
-                            hint="Ist eine Identität optional, muss sie nicht angegeben werden."
-                            variant="switch"
-                            value={item.isOptional ?? false}
-                            onChange={(val) => {
-                                onChange({
-                                    ...item,
-                                    isOptional: val,
-                                });
-                            }}
-                            sx={{
-                                my: 0,
-                            }}
-                            disabled={disabled}
-                        />
-                    </Grid>
+                    {(optionalSlotsAllowed || item.isOptional === true) &&
+                        <Grid size={{xs: 12, md: 6}}>
+                            <CheckboxFieldComponent
+                                label="Optional"
+                                hint="Ist eine Identität optional, muss sie nicht angegeben werden."
+                                variant="switch"
+                                value={item.isOptional ?? false}
+                                onChange={(val) => {
+                                    onChange({
+                                        ...item,
+                                        isOptional: val,
+                                    });
+                                }}
+                                sx={{my: 0}}
+                                disabled={disabled}
+                            />
+                        </Grid>
+                    }
 
                     <Grid
                         size={{

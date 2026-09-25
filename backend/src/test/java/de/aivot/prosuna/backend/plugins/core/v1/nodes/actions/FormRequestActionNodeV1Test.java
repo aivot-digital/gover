@@ -8,25 +8,37 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
+import de.aivot.prosuna.backend.process.models.ProcessNodeCustomerView;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssignedCustomer;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
@@ -45,8 +57,10 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -96,6 +110,19 @@ class FormRequestActionNodeV1Test {
         ).orElseThrow();
         assertEquals("Identität", recipient.getLabel());
         assertEquals("Wählen Sie die Identität aus, an welche die Nachricht gesendet wird.", recipient.getHint());
+        assertEquals("existing", node.getInitialConfiguration().getLiteral(FormRequestActionNodeV1.NodeConfig.RECIPIENT_MODE_FIELD_ID));
+        assertEquals(2, layout.findChild(
+                FormRequestActionNodeV1.NodeConfig.RECIPIENT_MODE_FIELD_ID,
+                RadioInputElement.class
+        ).orElseThrow().getOptions().size());
+        var newIdentities = layout.findChild(
+                FormRequestActionNodeV1.NodeConfig.NEW_IDENTITIES_FIELD_ID,
+                IdentityConfigElement.class
+        ).orElseThrow();
+        assertEquals(1, newIdentities.getMaxSlots());
+        assertEquals(false, newIdentities.getOptionalSlotsAllowed());
+        assertNotNull(newIdentities.getVisibility());
+        assertNotNull(recipient.getVisibility());
 
         var automaticContent = layout.findChild(
                 SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID,
@@ -137,6 +164,8 @@ class FormRequestActionNodeV1Test {
         assertEquals("Hallo **Ada**", message.body());
         assertEquals("Hallo **Ada**", message.htmlBody());
         assertSame(signatureDepartment, message.signatureDepartment());
+        assertEquals(RECIPIENT_IDENTITY_ID, result.getIdentityId());
+        assertEquals(RECIPIENT_IDENTITY_ID, result.getCommunicationRequest().recipientIdentityId());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(
                         "Daten einreichen",
@@ -147,13 +176,108 @@ class FormRequestActionNodeV1Test {
     }
 
     @Test
+    void newRecipientModeInvitesByEmailAndCollectsIdentityBeforeForm() throws Exception {
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = "new";
+        configuration.recipientEmailAddress = "  invitee@example.test  ";
+        configuration.newIdentities = List.of(new IdentityConfigElementSlot()
+                .setId("representative")
+                .setTitle("Vertretung")
+                .setAllowsMail(true)
+                .setIsOptional(false));
+        configuration.uiDefinition = new GroupLayoutElement();
+        configuration.uiDefinition.setId("form");
+
+        var instance = new ProcessInstanceEntity()
+                .setAccessKey("instance-access")
+                .setIdentities(new IdentityDataMap());
+        var task = new ProcessInstanceTaskEntity().setAccessKey("task-access");
+        var result = assertInstanceOf(ProcessNodeExecutionResultTaskAssignedCustomer.class,
+                ReflectionTestUtils.invokeMethod(node, "createCustomerAssignmentResult",
+                        instance, task, configuration, "Daten ergänzen", "Bitte ergänzen"));
+
+        assertNull(result.getIdentityId());
+        assertNull(result.getCommunicationRequest().recipientIdentityId());
+        assertEquals("invitee@example.test", result.getCommunicationRequest().recipientEmailAddress());
+        assertEquals(List.of(new CommunicationMessageCallToAction(
+                "Daten einreichen", "https://example.test/process/instance-access/tasks/task-access"
+        )), result.getCommunicationRequest().message().callToActions());
+        assertTrue(instance.getIdentities().isEmpty());
+
+        ProcessNodeCustomerView customerView = node.getCustomerTaskView(context(configuration, Map.of()));
+        assertNull(customerView.requiredExistingIdentityId());
+        assertSame(configuration.newIdentities.getFirst(), customerView.requiredNewIdentitySlot());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class,
+                node.onEventFromCustomerTaskView(
+                        context(configuration, Map.of()),
+                        new AuthoredElementValues(),
+                        new DerivedRuntimeElementData().setEffectiveValues(new EffectiveElementValues()),
+                        "submit"
+                ).orElseThrow());
+        assertEquals("representative", completed.getNodeData().get("recipientIdentityId"));
+
+        var metadata = node.getMetadata(mock(ProcessNodeEntity.class), configuration, ProcessNodeDefinitionMetadata.empty());
+        assertEquals(1, metadata.forwardedIdentities().size());
+        assertEquals("representative", metadata.forwardedIdentities().getFirst().identityId());
+        assertEquals("Vertretung", metadata.forwardedIdentities().getFirst().label());
+    }
+
+    @Test
+    void newRecipientModeRejectsMissingOrOptionalIdentityAndInvalidEmail() {
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = "new";
+        configuration.recipientEmailAddress = "invalid";
+        configuration.newIdentities = List.of(new IdentityConfigElementSlot()
+                .setId("representative")
+                .setTitle("Vertretung")
+                .setAllowsMail(true)
+                .setIsOptional(true));
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                mock(ProcessNodeEntity.class), configuration, DerivedRuntimeElementData.empty(),
+                ProcessNodeConfigurationValidationPhase.Authoring
+        ));
+        assertNotNull(errors);
+        assertTrue(errors.containsKey(FormRequestActionNodeV1.NodeConfig.NEW_IDENTITIES_FIELD_ID));
+        assertTrue(errors.containsKey(FormRequestActionNodeV1.NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID));
+
+        configuration.newIdentities = List.of();
+        var missingSlotErrors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                mock(ProcessNodeEntity.class), configuration, DerivedRuntimeElementData.empty(),
+                ProcessNodeConfigurationValidationPhase.Authoring
+        ));
+        assertTrue(missingSlotErrors.containsKey(FormRequestActionNodeV1.NodeConfig.NEW_IDENTITIES_FIELD_ID));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void newRecipientModeRejectsAnIdentityIdAlreadyInTheProcessBeforeSending() {
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = "new";
+        configuration.recipientEmailAddress = "invitee@example.test";
+        configuration.newIdentities = List.of(new IdentityConfigElementSlot()
+                .setId("applicant").setTitle("Neue Person").setAllowsMail(true));
+        var identities = new IdentityDataMap();
+        identities.put("applicant", new IdentityData(
+                "session", "applicant", IdentityType.Email, null, null, null,
+                "existing@example.test", Map.of(), null, Map.of()
+        ));
+        var instance = new ProcessInstanceEntity().setIdentities(identities);
+        var context = mock(ProcessNodeExecutionInitContext.class);
+        when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
+        when(context.getThisProcessInstance()).thenReturn(instance);
+
+        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class, () -> node.init(context));
+    }
+
+    @Test
     void getOutputs_ExposesRecipientAndFormSubmissionData() {
         assertEquals(
                 List.of(
                         new ProcessNodeOutput(
                                 "recipientIdentityId",
                                 "Identität",
-                                "Die ID der Prozessidentität, an die die Formularanforderung gesendet wurde.",
+                                "Die ID der bestehenden oder beim Einreichen neu angegebenen Prozessidentität.",
                                 "string"
                         ),
                         new ProcessNodeOutput(
@@ -336,6 +460,7 @@ class FormRequestActionNodeV1Test {
         when(context.getThisTask()).thenReturn(
                 new ProcessInstanceTaskEntity()
                         .setId(PROCESS_INSTANCE_TASK_ID)
+                        .setRuntimeData(Map.of())
                         .setProcessData(processData)
         );
         return context;

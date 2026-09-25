@@ -260,19 +260,22 @@ public class ProcessNodeExecutionResultHandler {
             return;
         }
 
-        var processIdentities = context.processInstance.getIdentities();
-        var recipientIdentity = processIdentities == null
-                ? null
-                : processIdentities.get(communicationRequest.recipientIdentityId());
-        if (recipientIdentity == null) {
-            recipientIdentity = context.additionalIdentities.get(communicationRequest.recipientIdentityId());
-        }
-        if (recipientIdentity == null) {
-            markTaskFailed(context.processInstanceTask);
-            throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die Empfängeridentität %s ist im Vorgang nicht vorhanden.",
-                    StringUtils.quote(communicationRequest.recipientIdentityId())
-            );
+        IdentityData recipientIdentity = null;
+        if (communicationRequest.recipientIdentityId() != null) {
+            var processIdentities = context.processInstance.getIdentities();
+            recipientIdentity = processIdentities == null
+                    ? null
+                    : processIdentities.get(communicationRequest.recipientIdentityId());
+            if (recipientIdentity == null) {
+                recipientIdentity = context.additionalIdentities.get(communicationRequest.recipientIdentityId());
+            }
+            if (recipientIdentity == null) {
+                markTaskFailed(context.processInstanceTask);
+                throw new ProcessNodeExecutionExceptionMissingValue(
+                        "Die Empfängeridentität %s ist im Vorgang nicht vorhanden.",
+                        StringUtils.quote(communicationRequest.recipientIdentityId())
+                );
+            }
         }
 
         var message = communicationRequest.message().withSendingContext(
@@ -282,18 +285,28 @@ public class ProcessNodeExecutionResultHandler {
 
         final Map<String, Object> sendResult;
         try {
-            sendResult = communicationService.sendMessage(recipientIdentity, message);
+            sendResult = recipientIdentity != null
+                    ? communicationService.sendMessage(recipientIdentity, message)
+                    : communicationService.sendMessageToEmail(communicationRequest.recipientEmailAddress(), message);
         } catch (CommunicationException e) {
             markTaskFailed(context.processInstanceTask);
+            if (recipientIdentity != null) {
+                throw new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die Nachricht an die Identität %s konnte nicht versendet werden: %s",
+                        StringUtils.quote(communicationRequest.recipientIdentityId()),
+                        e.getMessage()
+                );
+            }
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die Nachricht an die Identität %s konnte nicht versendet werden: %s",
-                    StringUtils.quote(communicationRequest.recipientIdentityId()),
+                    "Die Nachricht an die E-Mail-Adresse %s konnte nicht versendet werden: %s",
+                    StringUtils.quote(communicationRequest.recipientEmailAddress()),
                     e.getMessage()
             );
         }
 
-        logCommunicationSent(context, recipientIdentity, message, sendResult);
+        logCommunicationSent(context, recipientIdentity, communicationRequest.recipientEmailAddress(), message, sendResult);
 
         if (communicationRequest.nodeDataOutputKey() == null) {
             return;
@@ -307,7 +320,8 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void logCommunicationSent(@Nonnull HandlerContext<?> context,
-                                      @Nonnull IdentityData recipientIdentity,
+                                      @Nullable IdentityData recipientIdentity,
+                                      @Nullable String recipientEmailAddress,
                                       @Nonnull CommunicationMessage message,
                                       @Nonnull Map<String, Object> sendResult) {
         var processInstanceDetails = new LinkedHashMap<String, Object>();
@@ -315,14 +329,6 @@ public class ProcessNodeExecutionResultHandler {
         processInstanceDetails.put("caseNumber", context.processInstance.getCaseNumber());
         processInstanceDetails.put("processId", context.processInstance.getProcessId());
         processInstanceDetails.put("initialProcessVersion", context.processInstance.getInitialProcessVersion());
-
-        var recipientIdentityDetails = new LinkedHashMap<String, Object>();
-        recipientIdentityDetails.put("identityId", recipientIdentity.identityId());
-        recipientIdentityDetails.put("type", recipientIdentity.type());
-        recipientIdentityDetails.put("providerKey", recipientIdentity.providerKey());
-        recipientIdentityDetails.put("metadataIdentifier", recipientIdentity.metadataIdentifier());
-        recipientIdentityDetails.put("emailAddress", recipientIdentity.emailAddress());
-        recipientIdentityDetails.put("communicationProviderBindingId", recipientIdentity.communicationProviderBindingId());
 
         var messageDetails = new LinkedHashMap<String, Object>();
         messageDetails.put("subject", message.subject());
@@ -334,20 +340,44 @@ public class ProcessNodeExecutionResultHandler {
 
         var eventDetails = new LinkedHashMap<String, Object>();
         eventDetails.put("processInstance", processInstanceDetails);
-        eventDetails.put("recipientIdentity", recipientIdentityDetails);
+        if (recipientIdentity != null) {
+            var recipientIdentityDetails = new LinkedHashMap<String, Object>();
+            recipientIdentityDetails.put("identityId", recipientIdentity.identityId());
+            recipientIdentityDetails.put("type", recipientIdentity.type());
+            recipientIdentityDetails.put("providerKey", recipientIdentity.providerKey());
+            recipientIdentityDetails.put("metadataIdentifier", recipientIdentity.metadataIdentifier());
+            recipientIdentityDetails.put("emailAddress", recipientIdentity.emailAddress());
+            recipientIdentityDetails.put("communicationProviderBindingId", recipientIdentity.communicationProviderBindingId());
+            eventDetails.put("recipientIdentity", recipientIdentityDetails);
+        } else {
+            eventDetails.put("recipientEmailAddress", recipientEmailAddress);
+        }
         eventDetails.put("message", messageDetails);
         eventDetails.put("sendResult", sendResult);
 
-        context.logger.logf(
-                ProcessNodeExecutionLogLevel.Info,
-                false,
-                true,
-                "Nachricht versendet",
-                eventDetails,
-                "Die Nachricht mit dem Betreff %s wurde erfolgreich an die Identität %s versendet.",
-                StringUtils.quote(message.subject()),
-                StringUtils.quote(recipientIdentity.identityId())
-        );
+        if (recipientIdentity != null) {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    false,
+                    true,
+                    "Nachricht versendet",
+                    eventDetails,
+                    "Die Nachricht mit dem Betreff %s wurde erfolgreich an die Identität %s versendet.",
+                    StringUtils.quote(message.subject()),
+                    StringUtils.quote(recipientIdentity.identityId())
+            );
+        } else {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    false,
+                    true,
+                    "Nachricht versendet",
+                    eventDetails,
+                    "Die Nachricht mit dem Betreff %s wurde erfolgreich an die E-Mail-Adresse %s versendet.",
+                    StringUtils.quote(message.subject()),
+                    StringUtils.quote(recipientEmailAddress)
+            );
+        }
     }
 
     @Nonnull
@@ -547,14 +577,32 @@ public class ProcessNodeExecutionResultHandler {
 
 
     private void handleAssignedCustomer(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskAssignedCustomer> context) throws ProcessNodeExecutionException {
-        String previousAssignedUserId = context.processInstanceTask.getAssignedCustomerIdentityId();
+        var identityId = context.result.getIdentityId();
+        if (identityId == null) {
+            var communicationRequest = context.result.getCommunicationRequest();
+            if (communicationRequest == null || communicationRequest.recipientEmailAddress() == null) {
+                throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                        "Eine Kundenaufgabe ohne Prozessidentität benötigt eine Einladung per E-Mail."
+                );
+            }
 
-        final IdentityData assignedCustomer = context
-                .processInstance()
-                .getIdentities()
-                .get(context.result.getIdentityId());
+            context.processInstanceTask.setAssignedCustomerIdentityId(null);
+            context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingCustomer);
+            assignAndSaveDataLayersAndStatusOverride(context, false);
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Aufgabe per E-Mail zugewiesen",
+                    "Die Aufgabe %s wurde per E-Mail an %s eingeladen.",
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    StringUtils.quote(communicationRequest.recipientEmailAddress())
+            );
+            return;
+        }
 
-
+        var processIdentities = context.processInstance.getIdentities();
+        var assignedCustomer = processIdentities == null ? null : processIdentities.get(identityId);
         if (assignedCustomer == null) {
             throw new ProcessNodeExecutionExceptionInvalidAssignment(
                     """
@@ -563,7 +611,7 @@ public class ProcessNodeExecutionResultHandler {
                             """,
                     StringUtils.quote(context.provider.getName()),
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
-                    StringUtils.quote(context.result.getIdentityId())
+                    StringUtils.quote(identityId)
             );
         }
 
