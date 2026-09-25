@@ -55,6 +55,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -533,7 +534,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceEntity instance;
 
         private TestProcessInstanceService(ProcessInstanceEntity instance) {
-            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class));
+            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class), mock(PlatformTransactionManager.class));
             this.instance = instance;
         }
 

@@ -18,6 +18,7 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.PlatformTransactionManager;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
@@ -47,7 +48,7 @@ public class FormOverviewCountServiceTest {
     void setUp() {
         permissions = mock(PermissionService.class);
         processes = mock(ProcessRepository.class);
-        var processService = new ProcessService(processes, mock(ProcessSlugHistoryRepository.class), permissions);
+        var processService = new ProcessService(processes, mock(ProcessSlugHistoryRepository.class), permissions, mock(PlatformTransactionManager.class));
         var trigger = mock(FormTriggerNodeV1.class);
         when(trigger.getKey()).thenReturn("form:form:1");
         counts = new FormOverviewCountService(processService, new SpecificationCountService(entityManager), trigger);

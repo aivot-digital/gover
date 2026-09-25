@@ -32,7 +32,8 @@ public class ProcessEntity {
     private Integer departmentId;
 
     @Nonnull
-    @NotNull(message = "Die ID der Organisationseinheit darf nicht null sein.")
+    @Column(unique = true)
+    @NotNull(message = "Der Zugriffsschlüssel darf nicht null sein.")
     private UUID accessKey;
 
     @Nonnull

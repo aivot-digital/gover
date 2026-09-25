@@ -18,6 +18,7 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.PlatformTransactionManager;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
@@ -48,7 +49,7 @@ class ProcessDepartmentOptionServiceTest {
     void setUp() {
         permissions = mock(PermissionService.class);
         processes = mock(ProcessRepository.class);
-        processService = new ProcessService(processes, mock(ProcessSlugHistoryRepository.class), permissions);
+        processService = new ProcessService(processes, mock(ProcessSlugHistoryRepository.class), permissions, mock(PlatformTransactionManager.class));
         options = new ProcessDepartmentOptionService(processService, entityManager);
         // Only the projected columns are needed; no process or department configuration is loaded.
         entityManager.createNativeQuery("create table if not exists departments (id integer primary key, name varchar(255))").executeUpdate();

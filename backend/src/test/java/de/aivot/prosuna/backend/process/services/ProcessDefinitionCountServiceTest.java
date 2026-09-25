@@ -16,6 +16,7 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.PlatformTransactionManager;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
@@ -46,7 +47,7 @@ class ProcessDefinitionCountServiceTest {
     void setUp() {
         permissions = mock(PermissionService.class);
         processes = mock(ProcessRepository.class);
-        var processService = new ProcessService(processes, mock(ProcessSlugHistoryRepository.class), permissions);
+        var processService = new ProcessService(processes, mock(ProcessSlugHistoryRepository.class), permissions, mock(PlatformTransactionManager.class));
         counts = new ProcessDefinitionCountService(processService, new SpecificationCountService(entityManager));
         entityManager.createNativeQuery("create table if not exists processes (id integer primary key, department_id integer, internal_title varchar, drafted_version integer, published_version integer)").executeUpdate();
         entityManager.createNativeQuery("insert into processes values (101, 10, 'Anmeldung A', 2, 1), (102, 10, 'Anmeldung B', null, 1), (201, 20, 'Genehmigung', 1, null), (301, 30, 'Archiviert', null, null)").executeUpdate();
