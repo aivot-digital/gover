@@ -327,42 +327,27 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                     margin="none"
                 />
 
-                {props.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions ? (
-                    unavailableRepeatPreference && (
-                        <Alert
-                            severity="warning"
-                            action={
-                                <Button
-                                    color="inherit"
-                                    size="small"
-                                    disabled={props.disabled || props.busy || props.readOnly}
-                                    onClick={() => patchValue({repeatExecutionAssigneePreference: 'none'})}
-                                >
-                                    Bevorzugung entfernen
-                                </Button>
-                            }
-                        >
-                            Die gespeicherte Bevorzugung bei erneuter Ausführung ist hier nicht zulässig.
-                        </Alert>
+                {
+                    props.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions &&
+                    (
+                        <SelectFieldComponent
+                            label="Bevorzugung bei erneuter Ausführung (Schleife)"
+                            value={repeatExecutionAssigneePreference}
+                            onChange={(nextValue) => {
+                                patchValue({
+                                    repeatExecutionAssigneePreference: (nextValue ?? 'none') as RepeatExecutionAssigneePreference,
+                                });
+                            }}
+                            options={assignmentContextRepeatExecutionAssigneePreferenceOptions}
+                            includeEmptyOption={false}
+                            disabled={props.disabled}
+                            busy={props.busy}
+                            readOnly={props.readOnly}
+                            size="small"
+                            margin="none"
+                        />
                     )
-                ) : (
-                    <SelectFieldComponent
-                        label="Bevorzugung bei erneuter Ausführung (Schleife)"
-                        value={repeatExecutionAssigneePreference}
-                        onChange={(nextValue) => {
-                            patchValue({
-                                repeatExecutionAssigneePreference: (nextValue ?? 'none') as RepeatExecutionAssigneePreference,
-                            });
-                        }}
-                        options={assignmentContextRepeatExecutionAssigneePreferenceOptions}
-                        includeEmptyOption={false}
-                        disabled={props.disabled}
-                        busy={props.busy}
-                        readOnly={props.readOnly}
-                        size="small"
-                        margin="none"
-                    />
-                )}
+                }
             </Stack>
         </Stack>
     );
