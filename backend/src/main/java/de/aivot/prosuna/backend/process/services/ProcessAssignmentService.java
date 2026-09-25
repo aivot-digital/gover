@@ -56,6 +56,24 @@ public class ProcessAssignmentService {
         return options(instanceId, false);
     }
 
+    /** Returns eligible recipients for a process node without requiring a human actor. */
+    @Nonnull
+    @Transactional(readOnly = true)
+    public List<ProcessAssignmentOptionDTO> runtimeInstanceOptions(@Nonnull Long instanceId,
+                                                                    @Nonnull List<String> additionalPermissions) throws ResponseException {
+        if (!instances.existsById(instanceId)) throw ResponseException.notFound();
+        return options(instanceId, false).stream()
+                .filter(option -> additionalPermissions.stream().allMatch(permission ->
+                        permissions.hasProcessInstancePermission(option.id(), instanceId, permission)))
+                .toList();
+    }
+
+    /** Rechecks the recipient immediately before a process node changes the assignment. */
+    @Transactional(readOnly = true)
+    public void requireRuntimeInstanceAssignee(@Nonnull Long instanceId, @Nonnull String userId) throws ResponseException {
+        validateAssignee(userId, instanceId, false);
+    }
+
     @Nonnull
     @Transactional(readOnly = true)
     public List<ProcessAssignmentOptionDTO> taskOptions(@Nonnull String actorId, @Nonnull Long taskId) throws ResponseException {

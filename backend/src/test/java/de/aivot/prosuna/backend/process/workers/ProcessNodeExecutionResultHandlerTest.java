@@ -64,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
@@ -565,6 +566,7 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(assignedUser.getId(), mailService.lastAssignedUserId);
         assertFalse(mailService.lastReassignment);
         assertEquals(0, logger.exceptionCount);
+        assertEquals("Aufgabe zugewiesen", logger.events.getLast().title());
     }
 
     @Test
@@ -592,13 +594,15 @@ class ProcessNodeExecutionResultHandlerTest {
         var triggeringUser = user("user-1", "Trigger User");
         var assignedUser = user("user-2", "Assigned User");
         var mailService = new RecordingProcessTaskMailService();
-        var handler = createHandler(new ArrayList<>(), Map.of(
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(
                 triggeringUser.getId(), triggeringUser,
                 assignedUser.getId(), assignedUser
         ), mailService);
 
+        var logger = new RecordingProcessNodeExecutionLogger();
         handler.handleResult(
-                new RecordingProcessNodeExecutionLogger(),
+                logger,
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
                 processNode("Prüfung"),
@@ -609,6 +613,119 @@ class ProcessNodeExecutionResultHandlerTest {
         );
 
         assertEquals(0, mailService.sendCount);
+        assertEquals(0, mailService.unassignedSendCount);
+        assertEquals(1, savedTasks.size());
+        assertEquals("Zuweisung zur Aufgabe unverändert", logger.events.getLast().title());
+    }
+
+    @Test
+    void handleResult_NotifiesBothRecipientsOnTaskReassignment() throws ProcessNodeExecutionException {
+        var triggeringUser = user("user-1", "Trigger User");
+        var previousUser = user("user-2", "Previous User");
+        var assignedUser = user("user-3", "Assigned User");
+        var mailService = new RecordingProcessTaskMailService();
+        var handler = createHandler(new ArrayList<>(), Map.of(
+                triggeringUser.getId(), triggeringUser,
+                previousUser.getId(), previousUser,
+                assignedUser.getId(), assignedUser
+        ), mailService);
+        var logger = new RecordingProcessNodeExecutionLogger();
+        var task = processInstanceTask(previousUser.getId());
+
+        handler.handleResult(logger, triggeringUser, new TestProcessNodeDefinition("Fallback task"),
+                processNode("Prüfung"), processInstance(), task, null,
+                ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
+
+        assertEquals(assignedUser.getId(), task.getAssignedUserId());
+        assertEquals("Aufgabe neu zugewiesen", logger.events.getLast().title());
+        assertTrue(logger.events.getLast().message().contains("Previous User"));
+        assertTrue(logger.events.getLast().message().contains("Assigned User"));
+        assertEquals(1, mailService.sendCount);
+        assertTrue(mailService.lastReassignment);
+        assertEquals(assignedUser.getId(), mailService.lastAssignedUserId);
+        assertEquals(1, mailService.unassignedSendCount);
+        assertEquals(previousUser.getId(), mailService.lastUnassignedUserId);
+    }
+
+    @Test
+    void handleResult_DoesNotMailTheTriggeringUserOnTaskReassignment() throws ProcessNodeExecutionException {
+        var previousUser = user("user-1", "Previous User");
+        var assignedUser = user("user-2", "Assigned User");
+        var mailService = new RecordingProcessTaskMailService();
+        var handler = createHandler(new ArrayList<>(), Map.of(
+                previousUser.getId(), previousUser,
+                assignedUser.getId(), assignedUser
+        ), mailService);
+
+        handler.handleResult(new RecordingProcessNodeExecutionLogger(), previousUser,
+                new TestProcessNodeDefinition("Fallback task"), processNode("Prüfung"),
+                processInstance(), processInstanceTask(previousUser.getId()), null,
+                ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
+
+        assertEquals(1, mailService.sendCount);
+        assertEquals(0, mailService.unassignedSendCount);
+    }
+
+    @Test
+    void handleResult_StillNotifiesFormerRecipientWhenNewRecipientTriggeredReassignment() throws ProcessNodeExecutionException {
+        var previousUser = user("user-1", "Previous User");
+        var assignedUser = user("user-2", "Assigned User");
+        var mailService = new RecordingProcessTaskMailService();
+        var handler = createHandler(new ArrayList<>(), Map.of(
+                previousUser.getId(), previousUser,
+                assignedUser.getId(), assignedUser
+        ), mailService);
+
+        handler.handleResult(new RecordingProcessNodeExecutionLogger(), assignedUser,
+                new TestProcessNodeDefinition("Fallback task"), processNode("Prüfung"),
+                processInstance(), processInstanceTask(previousUser.getId()), null,
+                ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
+
+        assertEquals(0, mailService.sendCount);
+        assertEquals(1, mailService.unassignedSendCount);
+        assertEquals(previousUser.getId(), mailService.lastUnassignedUserId);
+    }
+
+    @Test
+    void handleResult_KeepsTaskReassignmentWhenPreviousUserIsMissing() throws ProcessNodeExecutionException {
+        var assignedUser = user("user-2", "Assigned User");
+        var mailService = new RecordingProcessTaskMailService();
+        var handler = createHandler(new ArrayList<>(), Map.of(assignedUser.getId(), assignedUser), mailService);
+        var logger = new RecordingProcessNodeExecutionLogger();
+        var task = processInstanceTask("deleted-user");
+
+        handler.handleResult(logger, null, new TestProcessNodeDefinition("Fallback task"),
+                processNode("Prüfung"), processInstance(), task, null,
+                ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
+
+        assertEquals(assignedUser.getId(), task.getAssignedUserId());
+        assertEquals(1, mailService.sendCount);
+        assertEquals(0, mailService.unassignedSendCount);
+        assertEquals("Bisherige Aufgabenzuweisung nicht auflösbar", logger.events.getFirst().title());
+        assertEquals("Aufgabe neu zugewiesen", logger.events.getLast().title());
+    }
+
+    @Test
+    void handleResult_KeepsTaskReassignmentWhenRemovalMailFails() throws ProcessNodeExecutionException {
+        var previousUser = user("user-1", "Previous User");
+        var assignedUser = user("user-2", "Assigned User");
+        var mailService = new RecordingProcessTaskMailService();
+        mailService.throwOnUnassigned = true;
+        var handler = createHandler(new ArrayList<>(), Map.of(
+                previousUser.getId(), previousUser,
+                assignedUser.getId(), assignedUser
+        ), mailService);
+        var logger = new RecordingProcessNodeExecutionLogger();
+        var task = processInstanceTask(previousUser.getId());
+
+        handler.handleResult(logger, null, new TestProcessNodeDefinition("Fallback task"),
+                processNode("Prüfung"), processInstance(), task, null,
+                ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
+
+        assertEquals(assignedUser.getId(), task.getAssignedUserId());
+        assertEquals(1, mailService.sendCount);
+        assertEquals(1, mailService.unassignedSendCount);
+        assertEquals(1, logger.exceptionCount);
     }
 
     @Test
@@ -701,7 +818,8 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 null,
                 processService,
-                departmentService
+                departmentService,
+                null
         );
     }
 
@@ -939,9 +1057,12 @@ class ProcessNodeExecutionResultHandlerTest {
 
     private static final class RecordingProcessTaskMailService extends ProcessTaskMailService {
         private int sendCount;
+        private int unassignedSendCount;
         private boolean lastReassignment;
         private String lastAssignedUserId;
+        private String lastUnassignedUserId;
         private boolean throwOnSend;
+        private boolean throwOnUnassigned;
 
         private RecordingProcessTaskMailService() {
             super(null, null, null);
@@ -960,6 +1081,20 @@ class ProcessNodeExecutionResultHandlerTest {
             lastReassignment = isReassignment;
 
             if (throwOnSend) {
+                throw new RuntimeException("mail send failed");
+            }
+        }
+
+        @Override
+        public void sendUnassigned(UserEntity triggeringUser,
+                                   UserEntity previouslyAssignedUser,
+                                   ProcessInstanceEntity processInstance,
+                                   ProcessInstanceTaskEntity processInstanceTask,
+                                   ProcessNodeEntity currentNode,
+                                   ProcessNodeDefinition provider) {
+            unassignedSendCount++;
+            lastUnassignedUserId = previouslyAssignedUser.getId();
+            if (throwOnUnassigned) {
                 throw new RuntimeException("mail send failed");
             }
         }

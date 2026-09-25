@@ -12,8 +12,8 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component
-public class ProcessNotificationTaskAssignedUserConfigDefinition implements UserConfigDefinition {
-    public static final String KEY = "mail.notification.process.task-assigned";
+public class ProcessNotificationInstanceAssignmentChangedUserConfigDefinition implements UserConfigDefinition {
+    public static final String KEY = "mail.notification.process.instance-assignment-changed";
 
     @Nonnull
     @Override
@@ -42,18 +42,18 @@ public class ProcessNotificationTaskAssignedUserConfigDefinition implements User
     @Nonnull
     @Override
     public String getLabel() {
-        return "Aufgabenzuweisung geändert";
+        return "Vorgangszuweisung geändert";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen eine Aufgabe zugewiesen wird oder Ihre Zuweisung endet.";
+        return "Erhalten Sie eine E-Mail, wenn Ihnen ein Vorgang zugewiesen wird oder Ihre Zuweisung endet.";
     }
 
     @Override
     public List<String> getDefaultValue() {
-        return List.of("mail", "app");
+        return List.of("mail");
     }
 
     @Nonnull
@@ -80,10 +80,7 @@ public class ProcessNotificationTaskAssignedUserConfigDefinition implements User
     @Nullable
     @Override
     public List<ConfigDefinitionOption> getOptions() {
-        return List.of(
-                new ConfigDefinitionOption("E-Mail", "mail"),
-                new ConfigDefinitionOption("In-App", "app")
-        );
+        return List.of(new ConfigDefinitionOption("E-Mail", "mail"));
     }
 
     @Override
@@ -93,6 +90,6 @@ public class ProcessNotificationTaskAssignedUserConfigDefinition implements User
 
     @Override
     public int getDefinitionOrder() {
-        return 1;
+        return 2;
     }
 }

@@ -19,6 +19,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ;
@@ -93,6 +94,24 @@ class AssignmentContextAssigneeResolverServiceTest {
         );
 
         assertEquals(Optional.of("user-2"), result);
+    }
+
+    @Test
+    void resolveAssignee_AllowsExplicitUserWithCurrentSystemOrInstanceAccessWithoutViewRow() {
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                null,
+                null,
+                assignmentContext(List.of(new DomainAndUserSelectInputElementValue("user", "globally-authorized"))),
+                List.of("process_instance.read"),
+                Set.of("globally-authorized")
+        );
+
+        assertEquals(Optional.of("globally-authorized"), result);
     }
 
     @Test
