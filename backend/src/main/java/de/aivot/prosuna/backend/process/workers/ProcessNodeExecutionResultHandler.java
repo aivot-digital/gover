@@ -140,6 +140,12 @@ public class ProcessNodeExecutionResultHandler {
             @Nullable ProcessNodeExecutionResult executionResult,
             @Nonnull Map<String, IdentityData> additionalIdentities
     ) throws ProcessNodeExecutionException {
+        if (processInstance.getStatus() == ProcessInstanceStatus.Completed
+                || processInstance.getStatus() == ProcessInstanceStatus.Aborted) {
+            // A delayed result must not change a finished process or trigger further work.
+            return;
+        }
+
         if (executionResult == null) {
             var err = String.format(
                     """
@@ -205,6 +211,12 @@ public class ProcessNodeExecutionResultHandler {
                     currentNode.resolveName(provider),
                     executionResult.getClass().getName()
             );
+        }
+
+        if (!(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)
+                && processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(processInstance);
         }
     }
 
