@@ -125,7 +125,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         return """
                 Wählen Sie, ob eine Person automatisch aus einem konfigurierten Personenkreis ermittelt wird oder ob eine manuelle Zuweisungsaufgabe entsteht.
                 Bei der manuellen Zuweisung bestimmt ein eigener Personenkreis, wer die Aufgabe erhält. Die bearbeitende Person wählt anschließend aus den aktuell für den Vorgang berechtigten Personen.
-                Eine bestehende Zuweisung wird ersetzt. Nach erfolgreicher Zuweisung wird der Prozess fortgesetzt und die ID der zugewiesenen Person als Elementausgang bereitgestellt.
+                Eine bestehende Zuweisung wird ersetzt. Nach erfolgreicher Zuweisung wird der Prozess fortgesetzt. Als Ergebnis stellt das Element die ID der zugewiesenen Person bereit.
                 """;
     }
 
