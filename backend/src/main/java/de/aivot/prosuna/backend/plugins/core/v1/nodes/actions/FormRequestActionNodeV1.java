@@ -452,12 +452,19 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         taskViewData.putLiteral(STAFF_TASK_CONTENT_FIELD_ID, manualContent.content.trim());
 
         if (RECIPIENT_MODE_NEW.equals(configuration.recipientMode)) {
-            var recipientField = new TextInputElement();
-            recipientField.setId(STAFF_TASK_RECIPIENT_EMAIL_FIELD_ID);
-            recipientField.setLabel("E-Mail-Adresse der Einladung");
-            recipientField.setDisabled(true);
-            root.getChildren().addFirst(recipientField);
-            taskViewData.putLiteral(STAFF_TASK_RECIPIENT_EMAIL_FIELD_ID, requireInvitationEmailForStaffView(configuration));
+            try {
+                var recipientId = requireNewIdentitySlot(configuration).getId();
+                if (!hasIdentity(context.getThisProcessInstance(), recipientId)) {
+                    var recipientField = new TextInputElement();
+                    recipientField.setId(STAFF_TASK_RECIPIENT_EMAIL_FIELD_ID);
+                    recipientField.setLabel("E-Mail-Adresse der Einladung");
+                    recipientField.setDisabled(true);
+                    root.getChildren().addFirst(recipientField);
+                    taskViewData.putLiteral(STAFF_TASK_RECIPIENT_EMAIL_FIELD_ID, requireInvitationEmailForStaffView(configuration));
+                }
+            } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
+                throw ResponseException.internalServerError(e, e.getMessage());
+            }
         }
 
         return ProcessNodeStaffView.of(
@@ -509,10 +516,11 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                                                                       NodeConfig configuration,
                                                                       String subject,
                                                                       String content) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var newRecipient = RECIPIENT_MODE_NEW.equals(requireRecipientMode(configuration.recipientMode));
-        var recipientId = newRecipient
+        var newRecipientMode = RECIPIENT_MODE_NEW.equals(requireRecipientMode(configuration.recipientMode));
+        var recipientId = newRecipientMode
                 ? requireNewRecipientConfiguration(configuration, processInstance).getId()
                 : requireRecipientIdentity(configuration.recipientIdentityId);
+        var newRecipient = newRecipientMode && !hasIdentity(processInstance, recipientId);
 
         var customerLink = prosunaConfig
                 .createUrl("/process/", processInstance.getAccessKey(), "tasks", task.getAccessKey());
@@ -545,9 +553,15 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         final String existingIdentityId;
         final IdentityConfigElementSlot newIdentitySlot;
         if (RECIPIENT_MODE_NEW.equals(configuration.recipientMode)) {
-            existingIdentityId = null;
             try {
-                newIdentitySlot = requireNewIdentitySlot(configuration);
+                var slot = requireNewIdentitySlot(configuration);
+                if (hasIdentity(context.getThisProcessInstance(), slot.getId())) {
+                    existingIdentityId = slot.getId();
+                    newIdentitySlot = null;
+                } else {
+                    existingIdentityId = null;
+                    newIdentitySlot = slot;
+                }
             } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
                 throw ResponseException.internalServerError(e, e.getMessage());
             }
@@ -796,13 +810,14 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             @Nonnull ProcessInstanceEntity processInstance
     ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var slot = requireNewIdentitySlot(configuration);
-        requireInvitationEmail(configuration.recipientEmailAddress);
-        if (processInstance.getIdentities() != null && processInstance.getIdentities().containsKey(slot.getId())) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die ID der neuen Identität wird bereits im Vorgang verwendet."
-            );
+        if (!hasIdentity(processInstance, slot.getId())) {
+            requireInvitationEmail(configuration.recipientEmailAddress);
         }
         return slot;
+    }
+
+    private static boolean hasIdentity(@Nonnull ProcessInstanceEntity processInstance, @Nonnull String identityId) {
+        return processInstance.getIdentities() != null && processInstance.getIdentities().containsKey(identityId);
     }
 
     private static boolean isValidNewIdentityId(@Nullable String identityId) {
@@ -911,7 +926,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         public String recipientIdentityId;
 
         /**
-         * Delivery address only; this address is never stored as a process identity.
+         * Delivery address used only until the configured identity exists; it is never stored as a process identity.
          */
         @InputElementPOJOBinding(id = RECIPIENT_EMAIL_ADDRESS_FIELD_ID, type = ElementType.Text,
                 dynamicText = true,
@@ -924,7 +939,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         public String recipientEmailAddress;
 
         /**
-         * Exactly one required identity is collected before the form can be submitted.
+         * Exactly one required identity is collected before the first submission and reused on later executions.
          */
         @InputElementPOJOBinding(id = NEW_IDENTITIES_FIELD_ID, type = ElementType.IdentityConfig, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Neue Identität"),
