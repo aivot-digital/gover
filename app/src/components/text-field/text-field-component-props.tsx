@@ -1,17 +1,19 @@
-import {ReactNode} from 'react';
-import {SxProps} from '@mui/material';
+import {type ReactNode} from 'react';
+import {type SxProps, type TextFieldProps, type Theme} from '@mui/material';
+import {type FormFieldLayoutProps} from '../form-field';
 
-export interface TextFieldComponentProps {
+export interface TextFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     autocomplete?: string;
     placeholder?: string;
     required?: boolean;
     disabled?: boolean;
+    readonly?: boolean;
     busy?: boolean;
     display?: boolean;
     multiline?: boolean;
-    value?: string;
-    error?: string;
+    value?: string | null | undefined;
+    error?: string | string[];
     hint?: string;
     maxCharacters?: number;
     minCharacters?: number;
@@ -19,22 +21,26 @@ export interface TextFieldComponentProps {
     softLimitCharactersWarning?: string;
     rows?: number;
     type?: string;
-    onChange: (val: string | undefined) => void;
-    onBlur?: (val: string | undefined) => void;
+    onChange: (val: string | null) => void;
+    onBlur?: (val: string | null) => void;
     endAction?: EndAction | Array<EndAction>;
+    copyable?: boolean;
+    copyValueTemplate?: string | null;
     startIcon?: ReactNode;
     pattern?: {
         regex: string;
         message: string;
     };
-    sx?: SxProps;
+    controlSx?: SxProps<Theme>;
     bufferInputUntilBlur?: boolean;
     debounce?: number;
     size?: 'small' | 'medium';
+    muiPassTroughProps?: TextFieldProps;
 }
 
-type EndAction = {
+export type EndAction = {
     icon: ReactNode;
     tooltip?: string;
+    ariaLabel?: string;
     onClick: () => void;
 };

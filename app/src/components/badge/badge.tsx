@@ -1,26 +1,29 @@
-import {BadgeProps} from './badge-props';
-import {Badge as MuiBadge, Tooltip} from '@mui/material';
+import {type BadgeProps} from './badge-props';
+import {Chip, Tooltip} from '@mui/material';
+import React, {type ReactNode} from 'react';
 
-export function Badge(props: BadgeProps) {
-    if (props.tooltip) {
+export function Badge(props: BadgeProps): ReactNode {
+    if (props.tooltip != null) {
         return (
             <Tooltip {...props.tooltip}>
-                <MuiBadge
+                <Chip
                     color={props.color}
                     sx={props.sx}
-                >
-                    {props.label}
-                </MuiBadge>
+                    label={props.label}
+                    size="small"
+                    onDelete={props.onDelete}
+                />
             </Tooltip>
         );
     }
 
     return (
-        <MuiBadge
+        <Chip
             color={props.color}
             sx={props.sx}
-        >
-            {props.label}
-        </MuiBadge>
+            label={props.label}
+            size="small"
+            onDelete={props.onDelete}
+        />
     );
 }

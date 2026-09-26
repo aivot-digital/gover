@@ -1,0 +1,92 @@
+package de.aivot.prosuna.backend.plugins.core.v1.operators.object;
+
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
+import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
+import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
+import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
+import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
+
+public class NoCodeObjectGetOperator extends NoCodeOperator {
+    public static final String OPERATOR_ID = "object-get";
+
+    @Override
+    public String getIdentifier() {
+        return OPERATOR_ID;
+    }
+
+    @Override
+    public String getLabel() {
+        return "Objektzugriff";
+    }
+
+    @Override
+    public String getAbstract() {
+        return "Gibt ein Element eines Objekts zurück.";
+    }
+
+    @Override
+    public String getDescription() {
+        return """
+                # Beschreibung:
+                Der Operator **„Objektzugriff“** gibt ein Element eines Objekts zurück. \s
+                Sollte der angegebene Schlüssel nicht im Objekt vorhanden sein, wird **null** zurückgegeben.
+                
+                # Anwendungsbeispiel:
+                Stellen Sie sich vor, Sie möchten die Postleitzahl einer Stadt aus einem Objekt extrahieren. \s
+                
+                Mit dem Operator **„Objektzugriff“** wird diese Logik so formuliert: \s
+                `Objektzugriff Stadt Postleitzahl`
+                
+                Beispielwerte: \s
+                - **Objekt:** {"name": "Marburg", "postleitzahl": "35039", "ambiente": "Schön"} \s
+                - **Schlüssel:** "postleitzahl"
+                
+                **Ergebnis:**
+                - **Rückgabewert:** "35039"
+                
+                # Weitere Beispiele:
+                - `Objektzugriff {"name": "Marburg", "postleitzahl": "35039", "ambiente": "Schön"} postleitzahl` \s
+                  **Ergebnis:** "35039"
+                
+                # Wann verwenden Sie den Operator „Objektzugriff“?
+                Verwenden Sie **„Objektzugriff“**, um ein bestimmtes Element aus einem Objekt zu extrahieren. \s
+                Dieser Operator ist besonders hilfreich, wenn Sie gezielt auf Elemente innerhalb eines Objekts zugreifen möchten, z. B. um spezifische Daten zu extrahieren oder zu verarbeiten.
+                """;
+    }
+
+    @Override
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Runtime,
+                        new NoCodeParameter(
+                                NoCodeDataType.Object,
+                                "Objekt",
+                                "Das Objekt, aus dem ein Element abgerufen werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Feldbezeichner",
+                                "Der Bezeichner des Feldes, das abgerufen werden soll."
+                        )
+                )
+        );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "hole aus „#0“ das Feld „#1“";
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
+        var obj = castToMap(args[0]);
+        var field = castToString(args[1]);
+
+        return new NoCodeResult(obj.getOrDefault(field, null));
+    }
+}

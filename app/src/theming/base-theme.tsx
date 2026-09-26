@@ -1,10 +1,13 @@
 import {createTheme} from '@mui/material';
-import {deDE} from '@mui/x-data-grid/locales/deDE';
+import {gridClasses} from '@mui/x-data-grid';
+import {deDE} from '@mui/x-data-grid/locales';
 import {deDE as coreDeDE} from '@mui/material/locale';
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
-import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
+import CheckCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import ReportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Report';
+import type {} from '@mui/x-data-grid/themeAugmentation';
+import {getDisabledFieldBackground} from './field-state-colors';
 
 const fontStackHeadlines = ['"Public Sans"',
     '-apple-system',
@@ -116,11 +119,7 @@ export const BaseTheme = createTheme({
         },
         MuiTooltip: {
             styleOverrides: {
-                arrow: {
-                    color: '#16191F',
-                },
                 tooltip: {
-                    backgroundColor: '#16191F',
                     fontSize: '0.8125rem',
                 },
             },
@@ -157,10 +156,10 @@ export const BaseTheme = createTheme({
         },
         MuiStepLabel: {
             styleOverrides: {
-                iconContainer: {
-                    color: 'rgba(0, 0, 0, 0.55)',
-                },
-                label: {
+                iconContainer: ({theme}) => ({
+                    color: theme.palette.text.secondary,
+                }),
+                label: ({theme}) => ({
                     'fontFamily': fontStackHeadlines,
                     'fontWeight': 500,
                     'fontSize': '1.3125rem',
@@ -174,8 +173,8 @@ export const BaseTheme = createTheme({
                     '.completed-step-suffix': {
                         display: 'none',
                     },
-                    'color': 'rgba(0, 0, 0, 0.55)',
-                },
+                    'color': theme.palette.text.secondary,
+                }),
             },
         },
         MuiTextField: {
@@ -202,10 +201,10 @@ export const BaseTheme = createTheme({
             },
             defaultProps: {
                 iconMapping: {
-                    error: <ErrorOutlineOutlinedIcon/>,
-                    info: <InfoOutlinedIcon/>,
-                    success: <CheckCircleOutlinedIcon/>,
-                    warning: <ReportOutlinedIcon/>,
+                    error: <ErrorOutlineOutlinedIcon />,
+                    info: <InfoOutlinedIcon />,
+                    success: <CheckCircleOutlinedIcon />,
+                    warning: <ReportOutlinedIcon />,
                 },
             },
         },
@@ -221,19 +220,18 @@ export const BaseTheme = createTheme({
         },
         MuiOutlinedInput: {
             styleOverrides: {
-                root: {
+                root: ({theme}) => ({
                     '&.Mui-disabled': {
-                        backgroundColor: '#F8F8F8',
+                        backgroundColor: getDisabledFieldBackground(theme),
                         cursor: 'not-allowed',
                     },
-                },
-                input: {
+                }),
+                input: ({theme}) => ({
                     '&.Mui-disabled': {
-                        backgroundColor: '#F8F8F8',
-                        WebkitTextFillColor: 'rgba(0, 0, 0, 0.66)', // Make text more readable in disabled state
+                        WebkitTextFillColor: theme.palette.text.secondary,
                         cursor: 'not-allowed',
                     },
-                },
+                }),
             },
         },
         MuiFormControlLabel: {
@@ -266,12 +264,47 @@ export const BaseTheme = createTheme({
                 },
             },
         },
+        MuiDialog: {
+            defaultProps: {
+                slotProps: {
+                    paper: {
+                        elevation: 1,
+                    },
+                },
+            },
+        },
+        MuiDrawer: {
+            defaultProps: {
+                elevation: 1,
+            },
+        },
         MuiTab: {
             styleOverrides: {
                 root: {
                     textTransform: 'none',
                     fontSize: '0.9375rem',
                 },
+            },
+        },
+        MuiDataGrid: {
+            styleOverrides: {
+                root: ({theme}) => ({
+                    backgroundColor: `${theme.palette.background.paper} !important`,
+                    borderBottom: 0,
+                    // MUI X v9 paints the sort button with the header color. Transparent custom
+                    // headers would otherwise composite that color twice and show a solid circle.
+                    [`& .${gridClasses.columnHeader} .${gridClasses.sortButton}`]: {
+                        backgroundColor: 'transparent',
+                        '&:hover': {
+                            backgroundColor: theme.palette.action.hover,
+                        },
+                    },
+                }),
+                row: ({theme}) => ({
+                    '&:hover': {
+                        backgroundColor: theme.palette.action.hover,
+                    },
+                }),
             },
         },
     },

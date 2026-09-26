@@ -1,0 +1,1194 @@
+package de.aivot.prosuna.backend.process.services;
+
+import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
+import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementState;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
+import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.core.enums.ModuleFlags;
+import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
+import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.plugins.form.FormPlugin;
+import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
+import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
+import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
+import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
+import de.aivot.prosuna.backend.process.services.ProcessNodeService;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.services.UserService;
+import jakarta.annotation.Nonnull;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+class ProcessNodeServiceTest {
+    private static final Integer PROCESS_ID = 10;
+    private static final Integer PROCESS_VERSION = 3;
+    private static final UUID IDENTITY_PROVIDER_KEY = UUID.fromString("2ff2831e-4726-4f0f-bb13-2d65075108e7");
+
+    private ProcessNodeRepository processNodeRepository;
+    private ProcessEdgeRepository processEdgeRepository;
+    private ProcessRepository processRepository;
+    private ProcessVersionRepository processVersionRepository;
+    private ElementDerivationService elementDerivationService;
+    private IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
+    private ProsunaConfig prosunaConfig;
+    private PermissionService permissionService;
+
+    private ProcessNodeService service;
+
+    @BeforeEach
+    void setUp() {
+        processNodeRepository = mock(ProcessNodeRepository.class);
+        processEdgeRepository = mock(ProcessEdgeRepository.class);
+        processRepository = mock(ProcessRepository.class);
+        processVersionRepository = mock(ProcessVersionRepository.class);
+        elementDerivationService = mock(ElementDerivationService.class);
+        identityCommunicationAvailabilityService = mock(IdentityCommunicationAvailabilityService.class);
+        prosunaConfig = new ProsunaConfig();
+        permissionService = mock(PermissionService.class);
+
+        when(identityCommunicationAvailabilityService.validate(any()))
+                .thenReturn(new IdentityCommunicationAvailabilityService.ValidationResult(true, List.of()));
+
+        var definitionService = new ProcessNodeDefinitionService(List.of(
+                new HintingTestNodeDefinition(),
+                new HintingTestNodeDefinition("trigger-hint-node", ProcessNodeType.Trigger),
+                new InitialConfigurationTestNodeDefinition(),
+                new DepartmentSelectionTestNodeDefinition()
+        ));
+
+        service = createService(
+                definitionService,
+                prosunaConfig
+        );
+
+        when(processRepository.findById(PROCESS_ID)).thenReturn(Optional.of(createProcess()));
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION)))
+                .thenReturn(Optional.of(createProcessVersion()));
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of());
+        when(elementDerivationService.derive(any()))
+                .thenReturn(new DerivedRuntimeElementData());
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(new DerivedRuntimeElementData());
+    }
+
+    private ProcessNodeService createService(ProcessNodeDefinitionService definitionService,
+                                             ProsunaConfig config) {
+        return new ProcessNodeService(
+                processNodeRepository,
+                definitionService,
+                elementDerivationService,
+                mock(UserService.class),
+                processRepository,
+                processVersionRepository,
+                processEdgeRepository,
+                config,
+                identityCommunicationAvailabilityService,
+                permissionService
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldReturnHintsWithTheirSourceNodesInDependencyOrder() throws Exception {
+        var nodeA = createNode(1, "a");
+        var nodeB = createNode(2, "b");
+        var nodeC = createNode(3, "c");
+        var targetNode = createNode(4, "target");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(targetNode, nodeC, nodeA, nodeB));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(
+                        createEdge(1, nodeA.getId(), nodeB.getId()),
+                        createEdge(2, nodeB.getId(), targetNode.getId()),
+                        createEdge(3, nodeA.getId(), nodeC.getId()),
+                        createEdge(4, nodeC.getId(), targetNode.getId())
+                ));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("a", "a", null, nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("b", "b", null, nodeB),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("c", "c", null, nodeC)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldHandleCyclesWithoutIncludingTheTargetNode() throws Exception {
+        var nodeA = createNode(1, "a");
+        var nodeB = createNode(2, "b");
+        var targetNode = createNode(3, "target");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(targetNode, nodeB, nodeA));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(
+                        createEdge(1, nodeA.getId(), nodeB.getId()),
+                        createEdge(2, nodeB.getId(), nodeA.getId()),
+                        createEdge(3, nodeB.getId(), targetNode.getId())
+                ));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("a", "a", null, nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("b", "b", null, nodeB)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldIncludeMappedOutputProcessDataKeys() throws Exception {
+        var nodeA = createNode(1, "a");
+        nodeA.getOutputMappings().put("result", "foo.bar");
+        var targetNode = createNode(2, "target");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(targetNode, nodeA));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(
+                        createEdge(1, nodeA.getId(), targetNode.getId())
+                ));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("a", "a", null, nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("foo.bar", "Result", "Mapped test result.", nodeA)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+        assertTrue(result.inputVariables().stream().anyMatch(variable ->
+                variable.source() == InputVariableSource.ElementData &&
+                        variable.path().equals("result") &&
+                        variable.nodeDataKey().equals("a")
+        ));
+        assertTrue(result.inputVariables().stream().anyMatch(variable ->
+                variable.source() == InputVariableSource.ProcessData &&
+                        variable.path().equals("foo.bar")
+        ));
+        assertTrue(result.inputVariables().stream().anyMatch(variable ->
+                variable.source() == InputVariableSource.ProtectedProcessData &&
+                        variable.path().equals("caseNumber")
+        ));
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldKeepDuplicateKeysInTraversalOrder() throws Exception {
+        var nodeA = createNode(1, "a");
+        nodeA.getOutputMappings().put("result", "shared");
+        var nodeB = createNode(2, "b");
+        nodeB.getOutputMappings().put("result", "shared");
+        var targetNode = createNode(3, "target");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(targetNode, nodeB, nodeA));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(
+                        createEdge(1, nodeA.getId(), nodeB.getId()),
+                        createEdge(2, nodeB.getId(), targetNode.getId())
+                ));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("a", "a", null, nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("shared", "Result", "Mapped test result.", nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("b", "b", null, nodeB),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("shared", "Result", "Mapped test result.", nodeB)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldReturnOwnMetadataForTriggerWithoutPreviousNodes() throws Exception {
+        var triggerNode = createTriggerNode(1, "trigger");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(triggerNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of());
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(triggerNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("trigger", "trigger", null, triggerNode)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldIncludeMappedOutputsForTriggerWithoutPreviousNodes() throws Exception {
+        var triggerNode = createTriggerNode(1, "trigger");
+        triggerNode.getOutputMappings().put("result", "payload.result");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(triggerNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of());
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(triggerNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("trigger", "trigger", null, triggerNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("payload.result", "Result", "Mapped test result.", triggerNode)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldReturnEmptyMetadataForActionWithoutPreviousNodes() throws Exception {
+        var actionNode = createNode(1, "action");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(actionNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of());
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(actionNode);
+
+        assertEquals(List.of(), result.forwardedProcessDataKeys());
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldNotReturnOwnMetadataForTriggerWithPreviousNodes() throws Exception {
+        var previousNode = createNode(1, "previous");
+        var triggerNode = createTriggerNode(2, "trigger");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(triggerNode, previousNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(
+                        createEdge(1, previousNode.getId(), triggerNode.getId())
+                ));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(triggerNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("previous", "previous", null, previousNode)
+                ),
+                result.forwardedProcessDataKeys()
+        );
+    }
+
+    @Test
+    void validate_ShouldApplyProviderValidationErrorsToDerivedRuntimeElementData() throws Exception {
+        var provider = new FieldValidationTestNodeDefinition();
+        var node = createNode(1, "a");
+
+        var result = service.validate(node, provider, false);
+
+        assertEquals(true, result.isPresent());
+        var problems = result.orElseThrow();
+
+        assertEquals(
+                List.of(
+                        "Validated field: First error.",
+                        "Validated field: Second error."
+                ),
+                problems.problems()
+        );
+        assertEquals(
+                "First error. Second error.",
+                problems
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(FieldValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
+    @Test
+    void validate_ShouldNotTreatADeferredDynamicValueAsMissing() throws Exception {
+        var derivedData = new DerivedRuntimeElementData();
+        derivedData.getElementStates().put(
+                FieldValidationTestNodeDefinition.FIELD_ID,
+                new ComputedElementState().setInputValueDeferred(true)
+        );
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class))).thenReturn(derivedData);
+
+        var result = service.validate(createNode(1, "a"), new ContextValidationTestNodeDefinition(), false);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void deriveRuntimeConfiguration_ShouldApplyOptedInProviderValidation() throws Exception {
+        var derivedData = new DerivedRuntimeElementData();
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class))).thenReturn(derivedData);
+
+        var result = service.deriveRuntimeConfiguration(
+                createNode(1, "a"),
+                new ContextValidationTestNodeDefinition(),
+                null,
+                false,
+                new ProcessExecutionData()
+        );
+
+        assertEquals(
+                "First error. Second error.",
+                result.derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(FieldValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
+    @Test
+    void deriveRuntimeConfiguration_ShouldRespectProviderAuthoringOnlyChecks() throws Exception {
+        var result = service.deriveRuntimeConfiguration(
+                createNode(1, "a"),
+                new FieldValidationTestNodeDefinition(),
+                null,
+                false,
+                new ProcessExecutionData()
+        );
+
+        assertTrue(result.derivedRuntimeElementData().getElementStates().isEmpty());
+    }
+
+    @Test
+    void create_ShouldRejectWhenNodeTypeLimitIsReached() {
+        prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, 1));
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createNode(1, "existing")));
+
+        var exception = assertThrows(ResponseException.class, () -> service.create(createNode(2, "new")));
+
+        assertTrue(exception.getMessage().contains("maximal 1"));
+    }
+
+    @Test
+    void createReportsOnlyDataKeyCollisionsAsRetryable() {
+        var node = createNode(2, "existing");
+        var constraint = new org.hibernate.exception.ConstraintViolationException("duplicate",
+                new java.sql.SQLException("duplicate", "23505"), "process_nodes_process_id_process_version_data_key_key");
+        var failure = new org.springframework.dao.DataIntegrityViolationException("duplicate", constraint);
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class))).thenThrow(failure);
+        var error = assertThrows(ResponseException.class, () -> service.create(node));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT, error.getStatus());
+        assertEquals(Map.of("reason", "process_node_data_key_conflict"), error.getDetails());
+        var unrelated = new org.springframework.dao.DataIntegrityViolationException("foreign key",
+                new org.hibernate.exception.ConstraintViolationException("foreign key",
+                        new java.sql.SQLException("foreign key", "23503"), "process_nodes_process_id_fkey"));
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class))).thenThrow(unrelated);
+        assertEquals(unrelated, assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> service.create(node)));
+    }
+
+    @Test
+    void create_ShouldAllowNegativeNodeTypeLimit() throws Exception {
+        prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, -1));
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.create(createNode(2, "new"));
+
+        assertEquals("new", result.getDataKey());
+    }
+
+    @Test
+    void create_ShouldAllowLimitedNodeTypeWhenProcessFlagIsSet() throws Exception {
+        prosunaConfig.setModuleFlags(List.of(ModuleFlags.PROCESS));
+        prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, 0));
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.create(createNode(2, "new"));
+
+        assertEquals("new", result.getDataKey());
+    }
+
+    @Test
+    void create_ShouldFillMissingInitialConfigurationWithoutOverwritingSubmittedValues() throws Exception {
+        var node = createNode(2, "new")
+                .setProcessNodeDefinitionKey("test.process.initial-configuration-node");
+        node.getConfiguration()
+                .putLiteral("overridden", null);
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.create(node);
+
+        assertEquals("default", result.getConfiguration().getLiteral("defaultOnly"));
+        assertTrue(result.getConfiguration().containsKey("overridden"));
+        assertNull(result.getConfiguration().getLiteral("overridden"));
+    }
+
+    @Test
+    void validateNewProcessNodeBatch_ShouldRejectDisabledFormPluginNodes() {
+        var formService = createService(
+                new ProcessNodeDefinitionService(List.of(new FormTestNodeDefinition())),
+                new ProsunaConfig()
+        );
+
+        var exception = assertThrows(ResponseException.class, () -> formService.validateNewProcessNodeBatch(List.of(createFormNode())));
+
+        assertTrue(exception.getMessage().contains("Formularerweiterung"));
+    }
+
+    @Test
+    void requireReadableDepartmentSelectionsChecksTheSelectedDepartmentScope() throws Exception {
+        var node = createNode(1, "department")
+                .setProcessNodeDefinitionKey("test.process.department-selection-node");
+        node.getConfiguration().putLiteral(DepartmentSelectionTestNodeDefinition.FIELD_ID, 42);
+        var user = new UserEntity().setId("user-1");
+
+        service.requireReadableDepartmentSelections(user, node);
+
+        verify(permissionService).requireDepartmentPermission(
+                "user-1",
+                42,
+                DepartmentPermissionProvider.DEPARTMENT_READ
+        );
+    }
+
+    @Test
+    void requireReadableDepartmentSelectionsPropagatesDeniedDepartmentScope() throws Exception {
+        var node = createNode(1, "department")
+                .setProcessNodeDefinitionKey("test.process.department-selection-node");
+        node.getConfiguration().putLiteral(DepartmentSelectionTestNodeDefinition.FIELD_ID, 42);
+        var user = new UserEntity().setId("user-1");
+        doThrow(ResponseException.forbidden("forbidden"))
+                .when(permissionService)
+                .requireDepartmentPermission(
+                        "user-1",
+                        42,
+                        DepartmentPermissionProvider.DEPARTMENT_READ
+                );
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> service.requireReadableDepartmentSelections(user, node)
+        );
+
+        assertEquals("forbidden", exception.getMessage());
+    }
+
+    private ProcessEntity createProcess() {
+        return new ProcessEntity()
+                .setId(PROCESS_ID)
+                .setDepartmentId(7)
+                .setInternalTitle("Process")
+                .setAccessKey(UUID.randomUUID())
+                .setVersionCount(1)
+                .setCreated(Instant.now())
+                .setUpdated(Instant.now());
+    }
+
+    private ProcessVersionEntity createProcessVersion() {
+        return new ProcessVersionEntity()
+                .setProcessId(PROCESS_ID)
+                .setProcessVersion(PROCESS_VERSION)
+                .setStatus(ProcessVersionStatus.Drafted)
+                .setPublicTitle("Draft")
+                .setCreated(Instant.now())
+                .setUpdated(Instant.now());
+    }
+
+    private ProcessNodeEntity createNode(int id, String dataKey) {
+        return new ProcessNodeEntity()
+                .setId(id)
+                .setProcessId(PROCESS_ID)
+                .setProcessVersion(PROCESS_VERSION)
+                .setName("Node " + id)
+                .setDataKey(dataKey)
+                .setProcessNodeDefinitionKey("test.process.hint-node")
+                .setProcessNodeDefinitionVersion(1)
+                .setConfiguration(new AuthoredElementValues())
+                .setOutputMappings(new HashMap<>())
+                .setSavedWithErrors(false);
+    }
+
+    private ProcessNodeEntity createTriggerNode(int id, String dataKey) {
+        return createNode(id, dataKey)
+                .setProcessNodeDefinitionKey("test.process.trigger-hint-node");
+    }
+
+    private ProcessNodeEntity createFormNode() {
+        return new ProcessNodeEntity()
+                .setId(1)
+                .setProcessId(PROCESS_ID)
+                .setProcessVersion(PROCESS_VERSION)
+                .setName("Form node")
+                .setDataKey("form")
+                .setProcessNodeDefinitionKey("de.aivot.form.form-trigger")
+                .setProcessNodeDefinitionVersion(1)
+                .setConfiguration(new AuthoredElementValues())
+                .setOutputMappings(new HashMap<>())
+                .setSavedWithErrors(false);
+    }
+
+    private ProcessEdgeEntity createEdge(int id, int fromNodeId, int toNodeId) {
+        return new ProcessEdgeEntity()
+                .setId(id)
+                .setProcessId(PROCESS_ID)
+                .setProcessVersion(PROCESS_VERSION)
+                .setFromNodeId(fromNodeId)
+                .setToNodeId(toNodeId)
+                .setViaPort("default");
+    }
+
+    private static class HintingTestNodeDefinition implements ProcessNodeDefinition<HintingTestNodeDefinition.TestNodeConfig> {
+        private final String componentKey;
+        private final ProcessNodeType type;
+
+        private HintingTestNodeDefinition() {
+            this("hint-node", ProcessNodeType.Action);
+        }
+
+        private HintingTestNodeDefinition(String componentKey,
+                                          ProcessNodeType type) {
+            this.componentKey = componentKey;
+            this.type = type;
+        }
+
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return "test.process";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return componentKey;
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "Hint node";
+        }
+
+        @Nonnull
+        @Override
+        public String getAbstract() {
+            return "Test node definition for process data key hints.";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "Test node definition for process data key hints.";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return type;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodeOutput> getOutputs() {
+            return List.of(
+                    new ProcessNodeOutput(
+                            "result",
+                            "Result",
+                            "Mapped test result.",
+                            "string"
+                    )
+            );
+        }
+
+        @Override
+        public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                         @Nonnull TestNodeConfig configuration,
+                                                         @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+            return ProcessNodeDefinitionMetadata
+                    .reuse(previousMetadata)
+                    .addForwardedProcessDataKey(
+                            processNodeEntity.getDataKey(),
+                            processNodeEntity.getDataKey(),
+                            null,
+                            processNodeEntity
+                    )
+                    .addForwardedIdentity(
+                            processNodeEntity.getDataKey() + "-identity",
+                            processNodeEntity.getDataKey() + " identity",
+                            null,
+                            List.of(IDENTITY_PROVIDER_KEY),
+                            processNodeEntity
+                    );
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<TestNodeConfig> context) {
+            return new ProcessNodeExecutionResultTaskCompleted();
+        }
+
+        @Nonnull
+        @Override
+        public Class<TestNodeConfig> getNodeConfigurationClass() {
+            return TestNodeConfig.class;
+        }
+
+        public static class TestNodeConfig {
+        }
+    }
+
+    @Test
+    void validate_ShouldAcceptForwardedProcessIdentityId() throws Exception {
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var sourceNode = createNode(1, "source");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "source-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var result = service.validate(targetNode, provider, false);
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(identityCommunicationAvailabilityService);
+    }
+
+    @Test
+    void validate_ShouldRejectForwardedIdentityWithoutCommunicationBindingForCommunicatingField() throws Exception {
+        var provider = new IdentityIdValidationTestNodeDefinition(false, true);
+        var sourceNode = createNode(1, "source");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "source-identity");
+        var expectedError = "Für den Identitätsanbieter \"BayernID\" (source identity) ist keine verwendbare Kommunikationsanbindung konfiguriert.";
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+        when(identityCommunicationAvailabilityService.validate(any()))
+                .thenReturn(new IdentityCommunicationAvailabilityService.ValidationResult(
+                        true,
+                        List.of(expectedError)
+                ));
+
+        var problems = service.validate(targetNode, provider, false).orElseThrow();
+
+        assertEquals(List.of("Identity: " + expectedError), problems.problems());
+        assertEquals(
+                expectedError,
+                problems
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(IdentityIdValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+        verify(identityCommunicationAvailabilityService).validate(List.of(
+                new IdentityCommunicationAvailabilityService.IdentityProviderUsage(
+                        IDENTITY_PROVIDER_KEY,
+                        "source identity"
+                )
+        ));
+    }
+
+    @Test
+    void validate_ShouldRejectUnavailableProcessIdentityId() throws Exception {
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var sourceNode = createNode(1, "source");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "missing-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var problems = service.validate(targetNode, provider, false).orElseThrow();
+        var expectedError = "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar.";
+
+        assertEquals(List.of("Identity: " + expectedError), problems.problems());
+        assertEquals(
+                expectedError,
+                problems
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(IdentityIdValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
+    @Test
+    void validate_ShouldRejectProcessIdentityIdWhenIncomingMetadataCannotBeResolved() throws Exception {
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var sourceNode = createNode(1, "source")
+                .setProcessNodeDefinitionKey("test.process.missing");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "source-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var problems = service.validate(targetNode, provider, false).orElseThrow();
+        var expectedError = "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden.";
+
+        assertEquals(List.of("Identity: " + expectedError), problems.problems());
+        assertEquals(
+                expectedError,
+                problems
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(IdentityIdValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
+    @Test
+    void validate_ShouldMergeUnavailableProcessIdentityAndProviderErrors() throws Exception {
+        var provider = new IdentityIdValidationTestNodeDefinition(true);
+        var sourceNode = createNode(1, "source");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "missing-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, sourceNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var problems = service.validate(targetNode, provider, false).orElseThrow();
+
+        assertEquals(
+                "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar. Provider error.",
+                problems
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(IdentityIdValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
+    private static final class IdentityIdValidationTestNodeDefinition implements ProcessNodeDefinition<IdentityIdValidationTestNodeDefinition.TestNodeConfig> {
+        private static final String FIELD_ID = "identity";
+
+        private final boolean includeProviderError;
+        private final boolean requiresCommunication;
+
+        private IdentityIdValidationTestNodeDefinition() {
+            this(false, false);
+        }
+
+        private IdentityIdValidationTestNodeDefinition(boolean includeProviderError) {
+            this(includeProviderError, false);
+        }
+
+        private IdentityIdValidationTestNodeDefinition(boolean includeProviderError,
+                                                       boolean requiresCommunication) {
+            this.includeProviderError = includeProviderError;
+            this.requiresCommunication = requiresCommunication;
+        }
+
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return "test.process";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return "identity-id-validation-node";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "Identity ID validation node";
+        }
+
+        @Nonnull
+        @Override
+        public String getAbstract() {
+            return "Test node definition for process identity ID validation.";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "Test node definition for process identity ID validation.";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+
+            var field = new ProcessIdentityIdInputElement();
+            field.setId(FIELD_ID);
+            field.setLabel("Identity");
+            field.setRequiresCommunication(requiresCommunication);
+            layout.addChild(field);
+
+            return layout;
+        }
+
+        @Override
+        public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeConfigurationValidationContext<TestNodeConfig> context) {
+            return includeProviderError
+                    ? Map.of(FIELD_ID, List.of("Provider error."))
+                    : Map.of();
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<TestNodeConfig> context) {
+            return new ProcessNodeExecutionResultTaskCompleted();
+        }
+
+        @Nonnull
+        @Override
+        public Class<TestNodeConfig> getNodeConfigurationClass() {
+            return TestNodeConfig.class;
+        }
+
+        public static class TestNodeConfig {
+            @InputElementPOJOBinding(id = FIELD_ID, type = ElementType.ProcessIdentityIdInput)
+            public String identityId;
+        }
+    }
+
+    private static final class InitialConfigurationTestNodeDefinition extends HintingTestNodeDefinition {
+        private InitialConfigurationTestNodeDefinition() {
+            super("initial-configuration-node", ProcessNodeType.Action);
+        }
+
+        @Nonnull
+        @Override
+        public AuthoredElementValues getInitialConfiguration() {
+            return new AuthoredElementValues()
+                    .putLiteral("defaultOnly", "default")
+                    .putLiteral("overridden", "default");
+        }
+    }
+
+    private static final class DepartmentSelectionTestNodeDefinition extends HintingTestNodeDefinition {
+        private static final String FIELD_ID = "department";
+
+        private DepartmentSelectionTestNodeDefinition() {
+            super("department-selection-node", ProcessNodeType.Action);
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(
+                @Nonnull ProcessNodeDefinitionConfigurationLayoutContext context
+        ) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+            var field = new DepartmentSelectInputElement();
+            field.setId(FIELD_ID);
+            field.setLabel("Department");
+            layout.addChild(field);
+            return layout;
+        }
+    }
+
+    private static class FieldValidationTestNodeDefinition implements ProcessNodeDefinition<FieldValidationTestNodeDefinition.TestNodeConfig> {
+        static final String FIELD_ID = "validatedField";
+
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return "test.process";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return "field-validation-node";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "Field validation node";
+        }
+
+        @Nonnull
+        @Override
+        public String getAbstract() {
+            return "Test node definition for field validation errors.";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "Test node definition for field validation errors.";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+
+            var field = new TextInputElement();
+            field.setId(FIELD_ID);
+            field.setLabel("Validated field");
+            layout.addChild(field);
+
+            return layout;
+        }
+
+        @Override
+        public Map<String, List<String>> validateConfiguration(
+                @Nonnull ProcessNodeConfigurationValidationContext<TestNodeConfig> context
+        ) {
+            if (!context.isAuthoring()) {
+                return null;
+            }
+            return Map.of(FIELD_ID, List.of("First error.", "Second error."));
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<TestNodeConfig> context) {
+            return new ProcessNodeExecutionResultTaskCompleted();
+        }
+
+        @Nonnull
+        @Override
+        public Class<TestNodeConfig> getNodeConfigurationClass() {
+            return TestNodeConfig.class;
+        }
+
+        public static class TestNodeConfig {
+        }
+    }
+
+    private static final class ContextValidationTestNodeDefinition extends FieldValidationTestNodeDefinition {
+        @Override
+        public Map<String, List<String>> validateConfiguration(
+                @Nonnull ProcessNodeConfigurationValidationContext<TestNodeConfig> context
+        ) {
+            if (context.isDeferred(FIELD_ID)) {
+                return null;
+            }
+
+            return Map.of(FIELD_ID, List.of("First error.", "Second error."));
+        }
+    }
+
+    private static final class FormTestNodeDefinition implements ProcessNodeDefinition<FormTestNodeDefinition.TestNodeConfig> {
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return FormPlugin.PLUGIN_KEY;
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return "form-trigger";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "Form trigger";
+        }
+
+        @Nonnull
+        @Override
+        public String getAbstract() {
+            return "Test form trigger.";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "Test form trigger.";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Trigger;
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeExecutionType[] getExecutionTypes() {
+            return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<TestNodeConfig> context) {
+            return new ProcessNodeExecutionResultTaskCompleted();
+        }
+
+        @Nonnull
+        @Override
+        public Class<TestNodeConfig> getNodeConfigurationClass() {
+            return TestNodeConfig.class;
+        }
+
+        public static class TestNodeConfig {
+        }
+    }
+}

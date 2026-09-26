@@ -1,11 +1,22 @@
 import {SxProps} from '@mui/material';
 import {AlertComponentProps} from '../alert/alert-component-props';
+import {editor} from 'monaco-editor';
 
 export interface CodeEditorProps {
+    id?: string;
     label?: string;
-    value?: string;
+    ariaLabel?: string;
+    ariaLabelledBy?: string;
+    ariaDescribedBy?: string;
+    value?: string | null;
     onChange: (value: string) => void;
+    onBlur?: (value: string) => void;
     disabled?: boolean;
+    readOnly?: boolean;
+    busy?: boolean;
+    required?: boolean;
+    error?: boolean;
+    wordWrap?: boolean;
     height?: string;
     sx?: SxProps;
     language?: string;
@@ -14,4 +25,5 @@ export interface CodeEditorProps {
         content: string;
     }[];
     alert?: AlertComponentProps;
+    onEditorMount?: (editor: editor.IStandaloneCodeEditor) => void;
 }

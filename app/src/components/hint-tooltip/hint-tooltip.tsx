@@ -8,22 +8,22 @@ export const HintTooltip = styled(({
     <Tooltip {...props} classes={{popper: className}}/>
 ))(({theme}) => ({
     [`& .${tooltipClasses.tooltip}`]: {
-        backgroundColor: '#fff',
-        color: '#444',
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
         maxWidth: 220,
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
         padding: '10px 12px',
-        border: '1px solid #ccc',
+        border: `1px solid ${theme.palette.divider}`,
     },
     [`& .${tooltipClasses.tooltip} a`]: {
-        color: '#444',
+        color: theme.palette.text.primary,
         marginTop: '4px',
         display: 'block',
     },
     [`& .${tooltipClasses.arrow}`]: {
-        color: '#fff',
+        color: theme.palette.background.paper,
     },
     [`& .${tooltipClasses.arrow}:before`]: {
-        border: '1px solid #ccc',
+        border: `1px solid ${theme.palette.divider}`,
     },
 }));

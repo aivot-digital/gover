@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {type RootState} from '../store';
+import {type RootState} from '../store.staff';
 import {SystemConfigResponseDto as SystemConfig} from '../modules/configs/dtos/system-config-response-dto';
 
 
@@ -16,6 +16,15 @@ export const systemConfigSlice = createSlice({
                 state[config.key] = config.value;
             });
         },
+        setSystemConfigsFromMap: (state, action: PayloadAction<Record<string, any> | null | undefined>) => {
+            if (action.payload == null) {
+                return;
+            }
+
+            for (const [key, value] of Object.entries(action.payload)) {
+                state[key] = String(value);
+            }
+        },
         setSystemConfig: (state, action: PayloadAction<SystemConfig>) => {
             state[action.payload.key] = action.payload.value;
         },
@@ -25,6 +34,7 @@ export const systemConfigSlice = createSlice({
 export const {
     setSystemConfigs,
     setSystemConfig,
+    setSystemConfigsFromMap,
 } = systemConfigSlice.actions;
 
 export const selectSystemConfig = (state: RootState) => state.systemConfig;

@@ -1,0 +1,65 @@
+# Production reverse proxy. Compose supplies PROSUNA_HOSTNAME as the full public HTTPS
+# URL without a trailing slash. Caddy listens on ports 80 and 443, redirects HTTP to
+# HTTPS, and obtains and renews the public certificate automatically.
+{$PROSUNA_HOSTNAME} {
+    # Match the four public route groups. The customer matcher is a catch-all, so its
+    # handle block must remain after the more specific staff, identity, and API routes.
+    @customer {
+        path /
+        path /*
+    }
+
+    @staff {
+        path /staff
+        path /staff/*
+    }
+
+    @idp {
+        path /idp
+        path /idp/*
+    }
+
+    @api {
+        path /api
+        path /api/*
+    }
+
+    # Keycloak is configured with /idp as its internal relative path, so preserve the
+    # prefix when forwarding requests over the private proxy network.
+    handle @idp {
+        reverse_proxy keycloak:8080
+    }
+
+    # Proxy API calls to the backend. Retry connection attempts for up to 30 seconds
+    # while the application finishes starting.
+    handle @api {
+        reverse_proxy prosuna_api:9595 {
+            lb_try_duration 30s
+            lb_try_interval 1s
+        }
+    }
+
+    # Staff and customer traffic is served directly by the web application container.
+    handle @staff {
+        reverse_proxy prosuna_app:8080 {
+            lb_try_duration 30s
+            lb_try_interval 1s
+        }
+    }
+
+    # This catch-all must remain the final handle block.
+    handle @customer {
+        reverse_proxy prosuna_app:8080 {
+            lb_try_duration 30s
+            lb_try_interval 1s
+        }
+    }
+
+    # Allow browser applications on other origins to load the bundled web fonts.
+    header /assets/fonts/* {
+        Access-Control-Allow-Origin *
+    }
+
+    # Keep the legacy security.txt URL canonical.
+    redir /security.txt /.well-known/security.txt 301
+}

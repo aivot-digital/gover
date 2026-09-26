@@ -9,6 +9,7 @@ export interface CustomStepProps {
     stepIndex: number;
     isFirstStep: boolean;
     isLastStep: boolean;
+    isSubmitStep: boolean;
 
     step: StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
     children: React.ReactNode;
@@ -18,8 +19,8 @@ export interface CustomStepProps {
 
     navDirection?: 'next' | 'previous';
     setNavDirection?: (direction: 'next' | 'previous') => void;
-    stepRefs: React.MutableRefObject<React.RefObject<HTMLDivElement>[]>;
-    scrollContainerRef?: React.RefObject<HTMLDivElement>;
+    stepRefs: React.MutableRefObject<React.RefObject<HTMLDivElement | null>[]>;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 
     isBusy: boolean;
     isDeriving: boolean;

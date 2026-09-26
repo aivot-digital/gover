@@ -1,0 +1,411 @@
+import {describe, expect, it} from 'vitest';
+import {ElementType} from '../data/element-type/element-type';
+import {applyComputedErrors, type ComputedElementStates, literalAuthoredValue} from '../models/element-data';
+import * as yup from 'yup';
+import {
+    applyYupErrorsToElementData,
+    prosunaSchemaToYup,
+    mapFormManagerErrorsToComputedErrors,
+} from './prosuna-schema-to-yup';
+import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
+
+describe('mapFormManagerErrorsToComputedErrors', () => {
+    it('should validate children inside replicating container row values', async () => {
+        const street = createTextField('street');
+        street.required = true;
+        const rootElement = createGroupLayout([
+            createReplicatingContainer('addresses', [
+                street,
+            ]),
+        ]);
+        const schema = yup.object().shape(prosunaSchemaToYup(rootElement, {}));
+
+        await expect(schema.validate({
+            addresses: literalAuthoredValue([
+                {
+                    id: 'row-1',
+                    values: {
+                        street: literalAuthoredValue(''),
+                    },
+                },
+            ]),
+        }, {abortEarly: false})).rejects.toMatchObject({
+            inner: [
+                expect.objectContaining({
+                    path: 'addresses.value[0].values.street.value',
+                }),
+            ],
+        });
+    });
+
+    it('should map top-level form manager errors to computed element errors', () => {
+        const rootElement = createGroupLayout([
+            createTextField('apiKey'),
+        ]);
+
+        expect(mapFormManagerErrorsToComputedErrors(
+            rootElement,
+            {},
+            {
+                name: 'Name is required',
+                'config.apiKey': 'API key is required',
+            },
+            {rootPath: 'config'},
+        )).toEqual({
+            apiKey: {
+                error: 'API key is required',
+            },
+        });
+    });
+
+    it('should map descendant paths to the owning composite input element', () => {
+        const rootElement = createGroupLayout([
+            createMapPointField('location'),
+        ]);
+
+        expect(mapFormManagerErrorsToComputedErrors(
+            rootElement,
+            {},
+            {
+                'config.location.value.latitude': 'Latitude is invalid',
+            },
+            {rootPath: 'config'},
+        )).toEqual({
+            location: {
+                error: 'Latitude is invalid',
+            },
+        });
+    });
+
+    it('should build full replicating container sub state arrays so unaffected rows remain mergeable', () => {
+        const rootElement = createGroupLayout([
+            createReplicatingContainer('addresses', [
+                createTextField('street'),
+            ]),
+        ]);
+        const computedErrors = mapFormManagerErrorsToComputedErrors(
+            rootElement,
+            {
+                addresses: literalAuthoredValue([
+                    {
+                        id: 'row-1',
+                        values: {
+                            street: literalAuthoredValue('A'),
+                        },
+                    },
+                    {
+                        id: 'row-2',
+                        values: {
+                            street: literalAuthoredValue(''),
+                        },
+                    },
+                ]),
+            },
+            {
+                'config.addresses.value[1].values.street.value': 'Street is required',
+            },
+            {rootPath: 'config'},
+        );
+        const existingStates: ComputedElementStates = {
+            addresses: {
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {
+                            street: {
+                                visible: false,
+                            },
+                        },
+                    },
+                    {
+                        id: 'row-2',
+                        states: {
+                            street: {
+                                visible: true,
+                            },
+                        },
+                    },
+                ],
+            },
+        };
+
+        expect(computedErrors).toEqual({
+            addresses: {
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {},
+                    },
+                    {
+                        id: 'row-2',
+                        states: {
+                            street: {
+                                error: 'Street is required',
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+        expect(applyComputedErrors(computedErrors, existingStates)).toEqual({
+            addresses: {
+                subStates: [
+                    {
+                        id: 'row-1',
+                        states: {
+                            street: {
+                                visible: false,
+                            },
+                        },
+                    },
+                    {
+                        id: 'row-2',
+                        states: {
+                            street: {
+                                visible: true,
+                                error: 'Street is required',
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+    });
+});
+
+describe('applyYupErrorsToElementData', () => {
+    it('should use the same mapping logic for default data paths', () => {
+        const rootElement = createGroupLayout([
+            createTextField('title'),
+        ]);
+
+        expect(applyYupErrorsToElementData(
+            rootElement,
+            {},
+            {
+                'data.title': 'Title is required',
+            },
+        ).elementStates).toEqual({
+            title: {
+                error: 'Title is required',
+            },
+        });
+    });
+});
+
+describe('temporal range validation', () => {
+    it('should validate canonical local date and time ranges', async () => {
+        const dateSchema = prosunaSchemaToYup(createRangeField('date', ElementType.DateRange), {}).date;
+        const timeSchema = prosunaSchemaToYup(createRangeField('time', ElementType.TimeRange), {}).time;
+
+        await expect(dateSchema.validate(literalAuthoredValue({
+            start: '2026-07-29',
+            end: '2026-07-30',
+        }))).resolves.toBeDefined();
+        await expect(dateSchema.validate(literalAuthoredValue({
+            start: '2026-07-30',
+            end: '2026-07-29',
+        }))).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
+        await expect(timeSchema.validate(literalAuthoredValue({
+            start: '09:30:15',
+            end: '09:30:14',
+        }))).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
+    });
+
+    it('should compare datetime ranges as explicit instants', async () => {
+        const schema = prosunaSchemaToYup(createRangeField('dateTime', ElementType.DateTimeRange), {}).dateTime;
+
+        await expect(schema.validate(literalAuthoredValue({
+            start: '2026-07-29T09:30:00+02:00',
+            end: '2026-07-29T07:30:01Z',
+        }))).resolves.toBeDefined();
+        await expect(schema.validate(literalAuthoredValue({
+            start: '2026-07-29T09:30:00',
+            end: '2026-07-29T09:31:00',
+        }))).rejects.toThrow('Der Wert besitzt kein gültiges Datums- oder Zeitformat.');
+    });
+
+    it('should validate date ranges according to their configured precision', async () => {
+        const monthSchema = prosunaSchemaToYup(
+            createRangeField('month', ElementType.DateRange, DateFieldComponentModelMode.Month),
+            {},
+        ).month;
+        const yearSchema = prosunaSchemaToYup(
+            createRangeField('year', ElementType.DateRange, DateFieldComponentModelMode.Year),
+            {},
+        ).year;
+
+        await expect(monthSchema.validate(literalAuthoredValue({
+            start: '2026-07',
+            end: '2026-08',
+        }))).resolves.toBeDefined();
+        await expect(monthSchema.validate(literalAuthoredValue({
+            start: '2026-08',
+            end: '2026-07',
+        }))).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
+        await expect(yearSchema.validate(literalAuthoredValue({
+            start: '2026',
+            end: '2027',
+        }))).resolves.toBeDefined();
+        await expect(yearSchema.validate(literalAuthoredValue({
+            start: '2026-01-01',
+            end: '2027-01-01',
+        }))).rejects.toThrow('Der Wert besitzt kein gültiges Datums- oder Zeitformat.');
+    });
+
+    it('should compare datetime range boundaries below millisecond precision', async () => {
+        const schema = prosunaSchemaToYup(createRangeField('dateTime', ElementType.DateTimeRange), {}).dateTime;
+
+        await expect(schema.validate(literalAuthoredValue({
+            start: '2026-07-29T07:30:00.000000002Z',
+            end: '2026-07-29T09:30:00.000000001+02:00',
+        }))).rejects.toThrow('Der Startwert darf nicht größer als der Endwert sein.');
+    });
+});
+
+describe('authored input value validation', () => {
+    it('should allow an omitted optional value but reject explicit raw values', async () => {
+        const schema = prosunaSchemaToYup(createTextField('name'), {}).name;
+
+        await expect(schema.validate(undefined)).resolves.toBeUndefined();
+        await expect(schema.validate(null)).rejects.toThrow('Der Eingabewert ist ungültig.');
+        await expect(schema.validate('Ada')).rejects.toThrow('Der Eingabewert ist ungültig.');
+        await expect(schema.validate(literalAuthoredValue(null))).resolves.toEqual(literalAuthoredValue(null));
+        await expect(schema.validate(literalAuthoredValue('Ada'))).resolves.toEqual(literalAuthoredValue('Ada'));
+    });
+});
+
+describe('process identity ID validation', () => {
+    it('should validate a scalar identity ID instead of a list', async () => {
+        const schema = prosunaSchemaToYup({
+            id: 'identity',
+            type: ElementType.ProcessIdentityIdInput,
+            label: 'Prozessidentität',
+            required: true,
+        } as any, {}).identity;
+
+        await expect(schema.validate(literalAuthoredValue(' citizen '))).resolves.toEqual(literalAuthoredValue('citizen'));
+        await expect(schema.validate(literalAuthoredValue(['citizen']))).rejects.toThrow();
+        await expect(schema.validate(literalAuthoredValue(''))).rejects.toThrow('Prozessidentität ist ein Pflichtfeld.');
+    });
+});
+
+describe('secret selection validation', () => {
+    it('should validate a scalar secret key without requiring embedded options', async () => {
+        const schema = prosunaSchemaToYup({
+            id: 'secret',
+            type: ElementType.SecretSelectInput,
+            label: 'Geheimnis',
+            required: true,
+        } as any, {}).secret;
+
+        await expect(schema.validate(literalAuthoredValue(' secret-key '))).resolves.toEqual(literalAuthoredValue('secret-key'));
+        await expect(schema.validate(literalAuthoredValue(['secret-key']))).rejects.toThrow();
+        await expect(schema.validate(literalAuthoredValue(''))).rejects.toThrow('Geheimnis ist ein Pflichtfeld.');
+    });
+});
+
+describe('department selection validation', () => {
+    it('should validate a scalar numeric department ID', async () => {
+        const schema = prosunaSchemaToYup({
+            id: 'department',
+            type: ElementType.DepartmentSelectInput,
+            label: 'Organisationseinheit',
+            required: true,
+        } as any, {}).department;
+
+        await expect(schema.validate(literalAuthoredValue(17))).resolves.toEqual(literalAuthoredValue(17));
+        await expect(schema.validate(literalAuthoredValue(['17']))).rejects.toThrow();
+        await expect(schema.validate(literalAuthoredValue(null))).rejects.toThrow('Organisationseinheit ist ein Pflichtfeld.');
+    });
+});
+
+describe('assignment context preference restrictions', () => {
+    const selection = [{type: 'user', id: 'recipient'}];
+
+    function schema(disableProcessInstanceAssigneeOption: boolean,
+                    disableAssignmentContextRepeatExecutionAssigneePreferenceOptions: boolean) {
+        return prosunaSchemaToYup({
+            id: 'assignmentContext',
+            type: ElementType.AssignmentContext,
+            label: 'Personenkreis',
+            disableProcessInstanceAssigneeOption,
+            disableAssignmentContextRepeatExecutionAssigneePreferenceOptions,
+        } as any, {}).assignmentContext;
+    }
+
+    it('rejects only the disabled general preference', async () => {
+        const value = literalAuthoredValue({
+            domainAndUserSelection: selection,
+            generalAssigneePreference: 'processInstanceAssignee',
+            repeatExecutionAssigneePreference: null,
+        });
+
+        await expect(schema(true, false).validate(value))
+            .rejects.toThrow('Die Bevorzugung der dem Vorgang zugewiesenen Person ist hier nicht zulässig.');
+        await expect(schema(false, false).validate(value)).resolves.toBeDefined();
+    });
+
+    it('rejects a repeat preference when the complete selection is disabled', async () => {
+        const value = literalAuthoredValue({
+            domainAndUserSelection: selection,
+            generalAssigneePreference: null,
+            repeatExecutionAssigneePreference: 'previousIterationAssignee',
+        });
+
+        await expect(schema(false, true).validate(value))
+            .rejects.toThrow('Eine Bevorzugung bei erneuter Ausführung ist hier nicht zulässig.');
+        await expect(schema(false, false).validate(value)).resolves.toBeDefined();
+    });
+});
+
+function createGroupLayout(children: any[]): any {
+    return {
+        id: 'root',
+        type: ElementType.GroupLayout,
+        children: children,
+        marketplaceLink: null,
+    };
+}
+
+function createTextField(id: string): any {
+    return {
+        id: id,
+        type: ElementType.Text,
+        label: id,
+        required: false,
+    };
+}
+
+function createMapPointField(id: string): any {
+    return {
+        id: id,
+        type: ElementType.MapPoint,
+        label: id,
+        required: false,
+    };
+}
+
+function createReplicatingContainer(id: string, children: any[]): any {
+    return {
+        id: id,
+        type: ElementType.ReplicatingContainer,
+        label: id,
+        required: false,
+        children: children,
+    };
+}
+
+function createRangeField(
+    id: string,
+    type: ElementType,
+    mode?: DateFieldComponentModelMode,
+): any {
+    return {
+        id,
+        type,
+        label: id,
+        required: false,
+        mode,
+    };
+}
