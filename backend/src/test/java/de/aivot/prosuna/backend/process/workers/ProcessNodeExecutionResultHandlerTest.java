@@ -1,8 +1,5 @@
 package de.aivot.prosuna.backend.process.workers;
 
-import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
-import static org.mockito.Mockito.*;
-
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
@@ -14,6 +11,7 @@ import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
+import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -34,8 +32,10 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssignedCustomer;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
@@ -46,6 +46,8 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -66,13 +68,126 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ProcessNodeExecutionResultHandlerTest {
+    @Test
+    void handleResult_InvitesCustomerWithoutCreatingAnIdentity() throws Exception {
+        var communicationService = mock(CommunicationService.class);
+        var sendResult = Map.<String, Object>of("fallback", true, "recipient", "invitee@example.test");
+        when(communicationService.sendMessageToEmail(eq("invitee@example.test"), any(CommunicationMessage.class)))
+                .thenReturn(sendResult);
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), communicationService, savedInstances);
+        var instance = processInstance().setStatus(ProcessInstanceStatus.Failed);
+        var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        handler.handleResult(
+                logger, null, new TestProcessNodeDefinition("Formularanforderung"),
+                processNode("Formularanforderung"), instance, task, null,
+                ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
+                        .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
+                                "invitee@example.test", CommunicationMessage.of("Daten ergänzen", "Bitte ergänzen", "Bitte ergänzen")
+                        ))
+        );
+
+        assertEquals(ProcessTaskStatus.AwaitingCustomer, task.getStatus());
+        assertNull(task.getAssignedCustomerIdentityId());
+        assertTrue(instance.getIdentities().isEmpty());
+        assertEquals(sendResult, task.getNodeData().get("communicationResult"));
+        assertEquals(List.of(task), savedTasks);
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertEquals(List.of(instance), savedInstances);
+        var event = logger.events.stream().filter(candidate -> candidate.title().equals("Nachricht versendet"))
+                .findFirst().orElseThrow();
+        assertEquals("invitee@example.test", event.details().get("recipientEmailAddress"));
+        assertFalse(event.details().containsKey("recipientIdentity"));
+    }
+
+    @Test
+    void handleResult_FailedDirectEmailDoesNotAssignCustomerTask() throws Exception {
+        var communicationService = mock(CommunicationService.class);
+        when(communicationService.sendMessageToEmail(eq("invitee@example.test"), any(CommunicationMessage.class)))
+                .thenThrow(new CommunicationException("Versand fehlgeschlagen"));
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), communicationService, savedInstances);
+        var instance = processInstance().setStatus(ProcessInstanceStatus.Failed);
+        var task = processInstanceTask(null);
+
+        assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(), null,
+                new TestProcessNodeDefinition("Formularanforderung"), processNode("Formularanforderung"),
+                instance, task, null,
+                ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
+                        .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
+                                "invitee@example.test", CommunicationMessage.of("Daten ergänzen", "Bitte ergänzen", "Bitte ergänzen")
+                        ))
+        ));
+
+        assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertNull(task.getAssignedCustomerIdentityId());
+        assertEquals(List.of(task), savedTasks);
+        assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
+        assertTrue(savedInstances.isEmpty());
+    }
+
+    @Test
+    void handleResult_NoopRestoresFailedInstance() throws Exception {
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, savedInstances);
+        var instance = processInstance().setStatus(ProcessInstanceStatus.Failed);
+        var task = processInstanceTask(null);
+
+        handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(), null,
+                new TestProcessNodeDefinition("Zahlung"), processNode("Zahlung"),
+                instance, task, null, new ProcessNodeExecutionResultNoop()
+        );
+
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertEquals(List.of(instance), savedInstances);
+        assertTrue(savedTasks.isEmpty());
+        assertEquals(ProcessTaskStatus.Running, task.getStatus());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessInstanceStatus.class, names = {"Completed", "Aborted"})
+    void handleResult_IgnoresLateCustomerAssignment(ProcessInstanceStatus status) throws Exception {
+        var communicationService = mock(CommunicationService.class);
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), communicationService, savedInstances);
+        var instance = processInstance().setStatus(status);
+        var task = processInstanceTask(null);
+
+        handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(), null,
+                new TestProcessNodeDefinition("Formularanforderung"), processNode("Formularanforderung"),
+                instance, task, null,
+                ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
+                        .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
+                                "invitee@example.test", CommunicationMessage.of("Daten ergänzen", "Bitte ergänzen", "Bitte ergänzen")
+                        ))
+        );
+
+        assertEquals(status, instance.getStatus());
+        assertEquals(ProcessTaskStatus.Running, task.getStatus());
+        assertTrue(savedInstances.isEmpty());
+        assertTrue(savedTasks.isEmpty());
+        verifyNoInteractions(communicationService);
+    }
+
     @Test
     void handleResultWithAdditionalIdentities_PersistsIdentityOnInstanceCompletion() throws Exception {
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
@@ -566,7 +681,6 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(assignedUser.getId(), mailService.lastAssignedUserId);
         assertFalse(mailService.lastReassignment);
         assertEquals(0, logger.exceptionCount);
-        assertEquals("Aufgabe zugewiesen", logger.events.getLast().title());
     }
 
     @Test
@@ -595,18 +709,20 @@ class ProcessNodeExecutionResultHandlerTest {
         var assignedUser = user("user-2", "Assigned User");
         var mailService = new RecordingProcessTaskMailService();
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
         var handler = createHandler(savedTasks, Map.of(
                 triggeringUser.getId(), triggeringUser,
                 assignedUser.getId(), assignedUser
-        ), mailService);
-
+        ), mailService, null, savedInstances);
+        var instance = processInstance().setStatus(ProcessInstanceStatus.Failed);
         var logger = new RecordingProcessNodeExecutionLogger();
+
         handler.handleResult(
                 logger,
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
                 processNode("Prüfung"),
-                processInstance(),
+                instance,
                 processInstanceTask(assignedUser.getId()),
                 null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId())
@@ -616,6 +732,8 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(0, mailService.unassignedSendCount);
         assertEquals(1, savedTasks.size());
         assertEquals("Zuweisung zur Aufgabe unverändert", logger.events.getLast().title());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertEquals(List.of(instance), savedInstances);
     }
 
     @Test

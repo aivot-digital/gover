@@ -23,6 +23,54 @@ vi.mock('../modules/identity/identity-providers-api-service', () => ({
 }));
 
 describe('IdentityConfigView', () => {
+    it('limits a required identity configuration to one slot', async () => {
+        const user = userEvent.setup();
+        const element = {
+            type: ElementType.IdentityConfigElement,
+            id: 'new-identities',
+            label: 'Neue Identität',
+            required: true,
+            maxSlots: 1,
+            optionalSlotsAllowed: false,
+        } as IdentityConfigElement;
+
+        render(
+            <TestViewDispatcherProvider>
+                <ConfirmProvider>
+                    <IdentityConfigView
+                        element={element}
+                        value={[{
+                            id: 'representative',
+                            title: 'Vertretung',
+                            description: null,
+                            allowsMail: true,
+                            isOptional: false,
+                            options: [],
+                        }]}
+                        setValue={vi.fn()}
+                        onBlur={vi.fn()}
+                        errors={null}
+                        isBusy={false}
+                        isDeriving={false}
+                        authoredElementValues={{}}
+                        onAuthoredElementValuesChange={vi.fn()}
+                        derivedData={createDerivedRuntimeElementData()}
+                        onDerive={async () => createDerivedRuntimeElementData()}
+                        onEvent={async () => undefined}
+                        onResetErrors={vi.fn()}
+                        suppressErrors={false}
+                        derivationTriggerIdQueue={[]}
+                    />
+                </ConfirmProvider>
+            </TestViewDispatcherProvider>,
+        );
+
+        expect(screen.getByRole('button', {name: 'Hinzufügen'})).toBeDisabled();
+        await user.click(screen.getByText('Vertretung').closest('button')!);
+        expect(screen.queryByRole('switch', {name: 'Optional'})).not.toBeInTheDocument();
+        expect(screen.getByRole('switch', {name: 'E-Mail-Adresse zulassen'})).toBeInTheDocument();
+    });
+
     it('exposes the identity list as one field group without including its action in the name', async () => {
         const element = {
             type: ElementType.IdentityConfigElement,

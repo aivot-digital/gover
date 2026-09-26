@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
+import de.aivot.prosuna.backend.communication.utils.EmailAddressUtils;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
@@ -11,21 +12,37 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
+import de.aivot.prosuna.backend.elements.enums.InputMode;
+import de.aivot.prosuna.backend.elements.enums.ValueFunctionType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
@@ -33,6 +50,7 @@ import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -48,10 +66,14 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Component
 public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormRequestActionNodeV1.NodeConfig> {
     public static final String NODE_KEY = "form_request";
+    private static final String RECIPIENT_MODE_EXISTING = "existing";
+    private static final String RECIPIENT_MODE_NEW = "new";
+    private static final Pattern NEW_IDENTITY_ID_PATTERN = Pattern.compile("^[a-zA-Z0-9_]{1,32}$");
 
     private static final String PORT_SUBMITTED = "submitted";
 
@@ -67,23 +89,27 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private static final String STAFF_TASK_ROOT_ID = "root";
     private static final String STAFF_TASK_SUBJECT_FIELD_ID = "subject";
     private static final String STAFF_TASK_CONTENT_FIELD_ID = "body";
+    private static final String STAFF_TASK_RECIPIENT_EMAIL_FIELD_ID = "recipientEmailAddress";
     private static final String STAFF_TASK_SEND_EVENT = "send";
     private static final String CUSTOMER_TASK_SUBMIT_EVENT = "submit";
 
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
     private final ProsunaConfig prosunaConfig;
     private final ElementDataTransformService elementDataTransformService;
+    private final AuthoredInputValueService authoredInputValueService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final VDepartmentShadowedService vDepartmentShadowedService;
 
     public FormRequestActionNodeV1(AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
                                    ProsunaConfig prosunaConfig,
                                    ElementDataTransformService elementDataTransformService,
+                                   AuthoredInputValueService authoredInputValueService,
                                    ProcessInstanceAttachmentService processInstanceAttachmentService,
                                    VDepartmentShadowedService vDepartmentShadowedService) {
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
         this.prosunaConfig = prosunaConfig;
         this.elementDataTransformService = elementDataTransformService;
+        this.authoredInputValueService = authoredInputValueService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
     }
@@ -137,7 +163,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Override
     public String getDescription() {
         return """
-
+                
                 """;
     }
 
@@ -145,6 +171,12 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Override
     public Class<NodeConfig> getNodeConfigurationClass() {
         return NodeConfig.class;
+    }
+
+    @Nonnull
+    @Override
+    public AuthoredElementValues getInitialConfiguration() {
+        return new AuthoredElementValues().putLiteral(NodeConfig.RECIPIENT_MODE_FIELD_ID, RECIPIENT_MODE_EXISTING);
     }
 
     @Nonnull
@@ -158,6 +190,34 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
         }
+
+        layout.findChild(NodeConfig.RECIPIENT_MODE_FIELD_ID, RadioInputElement.class)
+                .ifPresent(field -> {
+                    field.setOptions(List.of(
+                            RadioInputElementOption.of(RECIPIENT_MODE_EXISTING, "Existierende Identität"),
+                            RadioInputElementOption.of(RECIPIENT_MODE_NEW, "Neue Identität")
+                    ));
+                    field.setValue(new ElementValueFunctions()
+                            .setType(ValueFunctionType.NoCode)
+                            .setNoCode(NoCodeStaticValue.of(RECIPIENT_MODE_EXISTING)));
+                });
+        layout.findChild(NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID, de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement.class)
+                .ifPresent(field -> field.setVisibility(recipientModeVisibility(RECIPIENT_MODE_EXISTING)));
+        layout.findChild(NodeConfig.NEW_IDENTITIES_FIELD_ID, de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElement.class)
+                .ifPresent(field -> field.setVisibility(recipientModeVisibility(RECIPIENT_MODE_NEW)));
+        layout.findChild(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID, TextInputElement.class)
+                .ifPresent(field -> {
+                    field.setVisibility(recipientModeVisibility(RECIPIENT_MODE_NEW));
+                    field.setMaxCharacters(254);
+                    field.setValidation(ElementValidationFunctions.of(
+                            NoCodeExpression.of(
+                                    NoCodeRegexMatchOperator.OPERATOR_ID,
+                                    NoCodeReference.of(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID),
+                                    NoCodeStaticValue.of(EmailAddressUtils.EMAIL_PATTERN_VALUE)
+                            ),
+                            "Bitte geben Sie eine gültige E-Mail-Adresse ein."
+                    ));
+                });
 
         layout.findChild(SemiAutomaticMessageConfig.GROUP_ID, GroupLayoutElement.class)
                 .ifPresent(group -> {
@@ -194,7 +254,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 new ProcessNodeOutput(
                         OUTPUT_RECIPIENT_IDENTITY_ID,
                         "Identität",
-                        "Die ID der Prozessidentität, an die die Formularanforderung gesendet wurde.",
+                        "Die ID der bestehenden oder beim Einreichen neu angegebenen Prozessidentität.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -224,9 +284,77 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         );
     }
 
+    @Nullable
+    @Override
+    public Map<String, List<String>> validateConfiguration(
+            @Nonnull ProcessNodeConfigurationValidationContext<NodeConfig> context
+    ) {
+        var configuration = context.configuration();
+        var errors = new LinkedHashMap<String, List<String>>();
+        var mode = StringUtils.toNullableTrimmedString(configuration.recipientMode);
+        if (mode != null && !RECIPIENT_MODE_EXISTING.equals(mode) && !RECIPIENT_MODE_NEW.equals(mode)) {
+            errors.put(NodeConfig.RECIPIENT_MODE_FIELD_ID, List.of("Wählen Sie eine gültige Empfängerart aus."));
+        }
+        if (!RECIPIENT_MODE_NEW.equals(mode)) {
+            return errors.isEmpty() ? null : errors;
+        }
+
+        var identities = configuration.newIdentities;
+        if (identities == null || identities.size() != 1 || identities.getFirst() == null) {
+            errors.put(NodeConfig.NEW_IDENTITIES_FIELD_ID, List.of("Konfigurieren Sie genau eine verpflichtende Identität."));
+        } else {
+            var slot = identities.getFirst();
+            if (!isValidNewIdentityId(slot.getId()) || StringUtils.isNullOrEmpty(slot.getTitle())
+                    || Boolean.TRUE.equals(slot.getIsOptional())) {
+                errors.put(NodeConfig.NEW_IDENTITIES_FIELD_ID, List.of("Die neue Identität benötigt einen Schlüssel aus 1 bis 32 Buchstaben, Zahlen oder Unterstrichen, einen Titel und muss verpflichtend sein."));
+            }
+        }
+
+        if (!context.isDeferred(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID)
+                && !EmailAddressUtils.isValidSingleAddress(configuration.recipientEmailAddress)) {
+            errors.put(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID, List.of("Bitte geben Sie eine gültige E-Mail-Adresse ein."));
+        }
+        return errors.isEmpty() ? null : errors;
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull NodeConfig configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        var metadata = ProcessNodeDefinitionMetadata
+                .reuse(previousMetadata)
+                .withLayout(configuration.uiDefinition, processNodeEntity);
+
+        if (!RECIPIENT_MODE_NEW.equals(configuration.recipientMode)
+                || configuration.newIdentities == null
+                || configuration.newIdentities.size() != 1) {
+            return metadata;
+        }
+        var identity = configuration.newIdentities.getFirst();
+        if (identity == null || !isValidNewIdentityId(identity.getId()) || StringUtils.isNullOrEmpty(identity.getTitle())) {
+            return metadata;
+        }
+        return metadata.addForwardedIdentity(
+                identity.getId(),
+                identity.getTitle().trim(),
+                identity.getDescription(),
+                Optional.ofNullable(identity.getOptions()).orElse(List.of()).stream()
+                        .filter(Objects::nonNull)
+                        .map(IdentityConfigElementOption::getIdentityProviderKey)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList(),
+                processNodeEntity
+        );
+    }
+
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
+        if (RECIPIENT_MODE_NEW.equals(requireRecipientMode(configuration.recipientMode))) {
+            requireNewRecipientConfiguration(configuration, context.getThisProcessInstance());
+        }
 
         if (SemiAutomaticMessageConfig.isAutomatic(configuration.messageConfig)) {
             return initAutomatic(context, configuration);
@@ -301,6 +429,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     public ProcessNodeStaffView getStaffTaskView(
             @Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context
     ) throws ResponseException {
+        var configuration = context.getConfigurationOfExecutingNode();
         var subjectField = new TextInputElement();
         subjectField.setId(STAFF_TASK_SUBJECT_FIELD_ID);
         subjectField.setLabel("Betreff der Aufforderung");
@@ -316,11 +445,20 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         root.setId(STAFF_TASK_ROOT_ID);
         root.setChildren(new LinkedList<>(List.of(subjectField, contentField)));
 
-        var manualContent = requireManualContentForStaffView(context.getConfigurationOfExecutingNode());
+        var manualContent = requireManualContentForStaffView(configuration);
         var taskViewData = new AuthoredElementValues();
 
         taskViewData.putLiteral(STAFF_TASK_SUBJECT_FIELD_ID, manualContent.subject.trim());
         taskViewData.putLiteral(STAFF_TASK_CONTENT_FIELD_ID, manualContent.content.trim());
+
+        if (RECIPIENT_MODE_NEW.equals(configuration.recipientMode)) {
+            var recipientField = new TextInputElement();
+            recipientField.setId(STAFF_TASK_RECIPIENT_EMAIL_FIELD_ID);
+            recipientField.setLabel("E-Mail-Adresse der Einladung");
+            recipientField.setDisabled(true);
+            root.getChildren().addFirst(recipientField);
+            taskViewData.putLiteral(STAFF_TASK_RECIPIENT_EMAIL_FIELD_ID, requireInvitationEmailForStaffView(configuration));
+        }
 
         return ProcessNodeStaffView.of(
                 context,
@@ -371,7 +509,10 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                                                                       NodeConfig configuration,
                                                                       String subject,
                                                                       String content) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var recipientId = requireRecipientIdentity(configuration.recipientIdentityId);
+        var newRecipient = RECIPIENT_MODE_NEW.equals(requireRecipientMode(configuration.recipientMode));
+        var recipientId = newRecipient
+                ? requireNewRecipientConfiguration(configuration, processInstance).getId()
+                : requireRecipientIdentity(configuration.recipientIdentityId);
 
         var customerLink = prosunaConfig
                 .createUrl("/process/", processInstance.getAccessKey(), "tasks", task.getAccessKey());
@@ -387,25 +528,48 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 vDepartmentShadowedService
         ));
 
-        var communicationRequest = new ProcessNodeExecutionResultCommunicationRequest(
-                recipientId,
-                message
-        );
+        var communicationRequest = newRecipient
+                ? ProcessNodeExecutionResultCommunicationRequest.toEmail(requireInvitationEmail(configuration.recipientEmailAddress), message)
+                : new ProcessNodeExecutionResultCommunicationRequest(recipientId, message);
 
-        return new ProcessNodeExecutionResultTaskAssignedCustomer()
-                .setIdentityId(recipientId)
-                .setCommunicationRequest(communicationRequest);
+        var assignmentResult = newRecipient
+                ? ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
+                : ProcessNodeExecutionResultTaskAssignedCustomer.of(recipientId);
+        return assignmentResult.setCommunicationRequest(communicationRequest);
     }
 
     @Nonnull
     @Override
     public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) throws ResponseException {
+        var configuration = context.getConfigurationOfExecutingNode();
+        final String existingIdentityId;
+        final IdentityConfigElementSlot newIdentitySlot;
+        if (RECIPIENT_MODE_NEW.equals(configuration.recipientMode)) {
+            existingIdentityId = null;
+            try {
+                newIdentitySlot = requireNewIdentitySlot(configuration);
+            } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
+                throw ResponseException.internalServerError(e, e.getMessage());
+            }
+        } else {
+            existingIdentityId = configuration.recipientIdentityId;
+            newIdentitySlot = null;
+        }
+        var effectiveValues = elementDataTransformService.buildEffectiveValues(
+                configuration.uiDefinition,
+                context.getThisTask().getProcessData()
+        );
+        var initialData = authoredInputValueService.toLiteralAuthoredElementValues(
+                configuration.uiDefinition,
+                effectiveValues
+        );
         return ProcessNodeCustomerView.of(
                 context,
-                context.getConfigurationOfExecutingNode().uiDefinition,
+                configuration.uiDefinition,
                 List.of(new TaskViewEvent("Daten einreichen", CUSTOMER_TASK_SUBMIT_EVENT)),
-                new AuthoredElementValues(),
-                context.getConfigurationOfExecutingNode().recipientIdentityId
+                initialData,
+                existingIdentityId,
+                newIdentitySlot
         );
     }
 
@@ -437,7 +601,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(
                 OUTPUT_RECIPIENT_IDENTITY_ID,
-                requireRecipientIdentity(configuration.recipientIdentityId)
+                RECIPIENT_MODE_NEW.equals(requireRecipientMode(configuration.recipientMode))
+                        ? requireNewIdentitySlot(configuration).getId()
+                        : requireRecipientIdentity(configuration.recipientIdentityId)
         );
         nodeData.put(OUTPUT_PAYLOAD, payload);
         nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
@@ -547,6 +713,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         configuration.remove(NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID);
+        configuration.remove(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID);
+        configuration.remove(NodeConfig.NEW_IDENTITIES_FIELD_ID);
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
         configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1);
         configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2);
@@ -560,6 +728,94 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Formularanforderung muss eine Empfängeridentität konfiguriert sein.");
         }
         return normalizedIdentity;
+    }
+
+    @Nonnull
+    private static String requireRecipientMode(@Nullable String configuredMode)
+            throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var mode = StringUtils.toNullableTrimmedString(configuredMode);
+        if (mode == null || RECIPIENT_MODE_EXISTING.equals(mode)) {
+            return RECIPIENT_MODE_EXISTING;
+        }
+        if (RECIPIENT_MODE_NEW.equals(mode)) {
+            return RECIPIENT_MODE_NEW;
+        }
+        throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die konfigurierte Empfängerart ist ungültig.");
+    }
+
+    @Nonnull
+    private static IdentityConfigElementSlot requireNewIdentitySlot(@Nonnull NodeConfig configuration)
+            throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        if (configuration.newIdentities == null || configuration.newIdentities.size() != 1
+                || configuration.newIdentities.getFirst() == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Für neue Identitäten muss genau eine Identität konfiguriert sein."
+            );
+        }
+        var slot = configuration.newIdentities.getFirst();
+        if (!isValidNewIdentityId(slot.getId()) || StringUtils.isNullOrEmpty(slot.getTitle())
+                || Boolean.TRUE.equals(slot.getIsOptional())) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die neue Identität benötigt einen Schlüssel aus 1 bis 32 Buchstaben, Zahlen oder Unterstrichen, einen Titel und muss verpflichtend sein."
+            );
+        }
+        var hasProvider = Optional.ofNullable(slot.getOptions()).orElse(List.of()).stream()
+                .anyMatch(option -> option != null && option.getIdentityProviderKey() != null);
+        if (!Boolean.TRUE.equals(slot.getAllowsMail()) && !hasProvider) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Für die neue Identität muss ein Identitätsanbieter oder die direkte E-Mail-Eingabe aktiviert sein."
+            );
+        }
+        return slot;
+    }
+
+    @Nonnull
+    private static String requireInvitationEmail(@Nullable String emailAddress)
+            throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        try {
+            return EmailAddressUtils.normalizeSingleAddress(emailAddress);
+        } catch (IllegalArgumentException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die E-Mail-Adresse der Einladung ist ungültig."
+            );
+        }
+    }
+
+    @Nonnull
+    private static String requireInvitationEmailForStaffView(@Nonnull NodeConfig configuration) throws ResponseException {
+        try {
+            return requireInvitationEmail(configuration.recipientEmailAddress);
+        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
+            throw ResponseException.internalServerError(e, e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private static IdentityConfigElementSlot requireNewRecipientConfiguration(
+            @Nonnull NodeConfig configuration,
+            @Nonnull ProcessInstanceEntity processInstance
+    ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var slot = requireNewIdentitySlot(configuration);
+        requireInvitationEmail(configuration.recipientEmailAddress);
+        if (processInstance.getIdentities() != null && processInstance.getIdentities().containsKey(slot.getId())) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die ID der neuen Identität wird bereits im Vorgang verwendet."
+            );
+        }
+        return slot;
+    }
+
+    private static boolean isValidNewIdentityId(@Nullable String identityId) {
+        return identityId != null && NEW_IDENTITY_ID_PATTERN.matcher(identityId).matches();
+    }
+
+    @Nonnull
+    private static ElementVisibilityFunctions recipientModeVisibility(@Nonnull String expectedMode) {
+        return ElementVisibilityFunctions.of(NoCodeExpression.of(
+                NoCodeEqualsOperator.OPERATOR_ID,
+                NoCodeReference.of(NodeConfig.RECIPIENT_MODE_FIELD_ID),
+                NoCodeStaticValue.of(expectedMode)
+        )).recalculateReferencedIds();
     }
 
     @Nonnull
@@ -607,13 +863,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         if (subject == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_SUBJECT_FIELD_ID,
-                    new ComputedElementState().setError("Der Betreff der Zahlungsaufforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Der Betreff der Formularanforderung darf nicht leer sein.")
             );
         }
         if (content == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_CONTENT_FIELD_ID,
-                    new ComputedElementState().setError("Die Nachricht der Zahlungsaufforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Die Nachricht der Formularanforderung darf nicht leer sein.")
             );
         }
         if (derivedRuntimeData.hasAnyError()) {
@@ -622,17 +878,29 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     }
 
     /**
-     * Configuration for creating a payable customer task and sending its payment request to one process identity.
+     * Configuration for sending a form request to an existing identity or inviting a new one.
      */
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class NodeConfig {
+        public static final String RECIPIENT_MODE_FIELD_ID = "recipientMode";
         public static final String RECIPIENT_IDENTITY_ID_FIELD_ID = "recipientIdentityId";
+        public static final String RECIPIENT_EMAIL_ADDRESS_FIELD_ID = "recipientEmailAddress";
+        public static final String NEW_IDENTITIES_FIELD_ID = "newIdentities";
         public static final String UI_DEFINITION_FIELD_ID = "uiDefinition";
 
         /**
-         * Logical process identity receiving the form request. A missing identity or an identity that is not
-         * present in the process instance prevents initialization or dispatch. Every configured provider option
-         * must have a usable communication binding because the request is sent through the selected identity.
+         * Missing mode in older process definitions retains the existing-identity behavior.
+         */
+        @InputElementPOJOBinding(id = RECIPIENT_MODE_FIELD_ID, type = ElementType.Radio, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger:in"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Datenanforderung an eine existierende Identität oder per E-Mail an eine neue Identität gesendet wird."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String recipientMode;
+
+        /**
+         * Logical process identity receiving the form request in the existing-identity mode. A missing identity or
+         * one that is not present in the process instance prevents dispatch.
          */
         @InputElementPOJOBinding(id = RECIPIENT_IDENTITY_ID_FIELD_ID, type = ElementType.ProcessIdentityIdInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Identität"),
@@ -641,6 +909,31 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 @ElementPOJOBindingProperty(key = "requiresCommunication", boolValue = true)
         })
         public String recipientIdentityId;
+
+        /**
+         * Delivery address only; this address is never stored as a process identity.
+         */
+        @InputElementPOJOBinding(id = RECIPIENT_EMAIL_ADDRESS_FIELD_ID, type = ElementType.Text,
+                dynamicText = true,
+                allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode},
+                properties = {
+                        @ElementPOJOBindingProperty(key = "label", strValue = "E-Mail-Adresse"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Die E-Mail-Adresse der Empfänger:in, welche Ihre Identität nachweisen und anschließend die Aufgabe bearbeiten soll."),
+                        @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                })
+        public String recipientEmailAddress;
+
+        /**
+         * Exactly one required identity is collected before the form can be submitted.
+         */
+        @InputElementPOJOBinding(id = NEW_IDENTITIES_FIELD_ID, type = ElementType.IdentityConfig, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Neue Identität"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Konfigurieren Sie die Identität, die vor der Bearbeitung der Aufgabe angegeben werden muss."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "maxSlots", intValue = 1),
+                @ElementPOJOBindingProperty(key = "optionalSlotsAllowed", falseValue = true)
+        })
+        public List<IdentityConfigElementSlot> newIdentities;
 
         /**
          * UI-Definition for the form request. This is a required field and must be a valid UI definition element.

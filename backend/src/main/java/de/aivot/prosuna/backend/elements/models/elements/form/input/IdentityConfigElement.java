@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.utils.SpringContext;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import jakarta.annotation.Nullable;
 import tools.jackson.core.JacksonException;
 
 import java.util.*;
@@ -21,6 +22,11 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
             IdentityProviderType.BundId,
             IdentityProviderType.ShId
     );
+
+    @Nullable
+    private Integer maxSlots;
+    @Nullable
+    private Boolean optionalSlotsAllowed;
 
     public IdentityConfigElement() {
         super(ElementType.IdentityConfig);
@@ -78,7 +84,16 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
         var missingTrustLevelProviderNames = new ArrayList<String>();
         var communicationProviderUsages = new ArrayList<IdentityCommunicationAvailabilityService.IdentityProviderUsage>();
 
+        if (maxSlots != null && maxSlots > 0 && value.size() > maxSlots) {
+            validationErrors.add(maxSlots == 1
+                    ? "Es darf höchstens eine Identität konfiguriert werden."
+                    : "Es dürfen höchstens %d Identitäten konfiguriert werden.".formatted(maxSlots));
+        }
+
         for (var slot : value) {
+            if (slot != null && Boolean.FALSE.equals(optionalSlotsAllowed) && Boolean.TRUE.equals(slot.getIsOptional())) {
+                validationErrors.add("Die konfigurierte Identität muss verpflichtend sein.");
+            }
             if (slot == null || StringUtils.isNullOrEmpty(slot.getTitle())) {
                 validationErrors.add("Geben Sie für jede Identität einen Titel an.");
             }
@@ -117,6 +132,39 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
                     String.join(" ", validationErrors.stream().distinct().toList())
             );
         }
+    }
+
+    @Nullable
+    public Integer getMaxSlots() {
+        return maxSlots;
+    }
+
+    public IdentityConfigElement setMaxSlots(@Nullable Integer maxSlots) {
+        this.maxSlots = maxSlots;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getOptionalSlotsAllowed() {
+        return optionalSlotsAllowed;
+    }
+
+    public IdentityConfigElement setOptionalSlotsAllowed(@Nullable Boolean optionalSlotsAllowed) {
+        this.optionalSlotsAllowed = optionalSlotsAllowed;
+        return this;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (!super.equals(object)) return false;
+        IdentityConfigElement that = (IdentityConfigElement) object;
+        return Objects.equals(maxSlots, that.maxSlots)
+                && Objects.equals(optionalSlotsAllowed, that.optionalSlotsAllowed);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), maxSlots, optionalSlotsAllowed);
     }
 
     private void validateSelectedOptions(

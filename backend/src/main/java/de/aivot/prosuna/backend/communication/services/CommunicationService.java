@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefinition;
+import de.aivot.prosuna.backend.communication.utils.EmailAddressUtils;
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderBindingRepository;
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderRepository;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -65,15 +66,24 @@ public class CommunicationService {
                         identityData.identityId()
                 );
             }
-            defaultMailCommunicationService.sendMessage(emailAddress, message);
-            return Map.of(
-                    "fallback", true,
-                    "recipient", emailAddress
-            );
+            return sendMessageToEmail(emailAddress, message);
         }
 
         var resolved = resolveSelected(identityData);
         return sendResolved(resolved, identityData, message);
+    }
+
+    /** Sends an invitation without creating a process identity for its delivery address. */
+    public Map<String, Object> sendMessageToEmail(@Nonnull String rawEmailAddress,
+                                                  @Nonnull CommunicationMessage message) throws CommunicationException {
+        final String emailAddress;
+        try {
+            emailAddress = EmailAddressUtils.normalizeSingleAddress(rawEmailAddress);
+        } catch (IllegalArgumentException e) {
+            throw new CommunicationException("Die E-Mail-Adresse der empfangenden Person ist ungültig.", e);
+        }
+        defaultMailCommunicationService.sendMessage(emailAddress, message);
+        return Map.of("fallback", true, "recipient", emailAddress);
     }
 
     @Nonnull

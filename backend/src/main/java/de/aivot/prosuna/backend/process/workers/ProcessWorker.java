@@ -37,6 +37,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -88,16 +89,20 @@ public class ProcessWorker {
         ProcessNodeExecutionLogger logger = processNodeExecutionLoggerFactory
                 .create(payload.processInstanceId(), null, null, null);
 
-        Tuple3<ProcessInstanceEntity, ProcessNodeEntity, ProcessNodeDefinition<?>> instanceNodeProvider;
+        Optional<Tuple3<ProcessInstanceEntity, ProcessNodeEntity, ProcessNodeDefinition<?>>> instanceNodeProvider;
         try {
             instanceNodeProvider = fetchInstanceNodeProvider(payload.processInstanceId, payload.nextNodeId);
         } catch (Exception exception) {
             logger.logException(exception);
             return;
         }
-        var currentProcessInstance = instanceNodeProvider.first();
-        var nextProcessNode = instanceNodeProvider.second();
-        var nextProcessNodeDefinition = instanceNodeProvider.third();
+        if (instanceNodeProvider.isEmpty()) {
+            return;
+        }
+        var resolved = instanceNodeProvider.get();
+        var currentProcessInstance = resolved.first();
+        var nextProcessNode = resolved.second();
+        var nextProcessNodeDefinition = resolved.third();
 
         try {
             workOnNextProcessNode(
@@ -122,16 +127,20 @@ public class ProcessWorker {
                 .create(payload.currentProcessInstanceId(), payload.currentTaskId, null, null);
 
 
-        Tuple3<ProcessInstanceEntity, ProcessNodeEntity, ProcessNodeDefinition<?>> instanceNodeProvider;
+        Optional<Tuple3<ProcessInstanceEntity, ProcessNodeEntity, ProcessNodeDefinition<?>>> instanceNodeProvider;
         try {
             instanceNodeProvider = fetchInstanceNodeProvider(payload.currentProcessInstanceId, payload.currentNodeId);
         } catch (Exception exception) {
             logger.logException(exception);
             return;
         }
-        var currentProcessInstance = instanceNodeProvider.first();
-        var currentProcessNode = instanceNodeProvider.second();
-        var currentProcessNodeDefinition = instanceNodeProvider.third();
+        if (instanceNodeProvider.isEmpty()) {
+            return;
+        }
+        var resolved = instanceNodeProvider.get();
+        var currentProcessInstance = resolved.first();
+        var currentProcessNode = resolved.second();
+        var currentProcessNodeDefinition = resolved.third();
 
         ProcessInstanceTaskEntity currentTask;
         try {
@@ -164,7 +173,7 @@ public class ProcessWorker {
 
     }
 
-    private Tuple3<ProcessInstanceEntity, ProcessNodeEntity, ProcessNodeDefinition<?>> fetchInstanceNodeProvider(@Nonnull Long processInstanceId, @Nonnull Integer nodeId) throws Exception {
+    private Optional<Tuple3<ProcessInstanceEntity, ProcessNodeEntity, ProcessNodeDefinition<?>>> fetchInstanceNodeProvider(@Nonnull Long processInstanceId, @Nonnull Integer nodeId) throws Exception {
         // Fetch the process instance
         // If this fails, we cannot continue
         ProcessInstanceEntity instance = processInstanceRepository
@@ -173,6 +182,12 @@ public class ProcessWorker {
                         "Der Vorgang mit der ID „%d“ wurde nicht gefunden."
                                 .formatted(processInstanceId)
                 ));
+
+        if (instance.getStatus() == ProcessInstanceStatus.Completed
+                || instance.getStatus() == ProcessInstanceStatus.Aborted) {
+            // Ignore queued work that arrived after the process reached a terminal state.
+            return Optional.empty();
+        }
 
         ProcessNodeEntity node;
         try {
@@ -204,11 +219,11 @@ public class ProcessWorker {
             throw exception;
         }
 
-        return new Tuple3<>(
+        return Optional.of(new Tuple3<>(
                 instance,
                 node,
                 provider
-        );
+        ));
     }
 
     private <NodeConfig> void workOnNextProcessNode(@Nonnull ProcessNodeEntity currentNode,

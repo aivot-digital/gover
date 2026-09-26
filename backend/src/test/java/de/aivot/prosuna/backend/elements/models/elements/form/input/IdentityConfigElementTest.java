@@ -19,6 +19,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -98,6 +99,27 @@ class IdentityConfigElementTest {
                 .setOptions(List.of());
 
         assertDoesNotThrow(() -> element.performValidation(List.of(slot)));
+    }
+
+    @Test
+    void restrictedIdentityConfigRejectsMultipleOrOptionalSlots() {
+        var element = new IdentityConfigElement()
+                .setMaxSlots(1)
+                .setOptionalSlotsAllowed(false);
+        var requiredSlot = new IdentityConfigElementSlot()
+                .setTitle("Vertretung")
+                .setAllowsMail(true)
+                .setIsOptional(false);
+        var optionalSlot = new IdentityConfigElementSlot()
+                .setTitle("Weitere Person")
+                .setAllowsMail(true)
+                .setIsOptional(true);
+
+        assertDoesNotThrow(() -> element.performValidation(List.of(requiredSlot)));
+        var error = assertThrows(ValidationException.class,
+                () -> element.performValidation(List.of(requiredSlot, optionalSlot)));
+        assertTrue(error.getMessage().contains("höchstens eine Identität"));
+        assertTrue(error.getMessage().contains("muss verpflichtend sein"));
     }
 
     @Test

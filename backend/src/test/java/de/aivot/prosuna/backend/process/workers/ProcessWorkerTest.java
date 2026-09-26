@@ -35,8 +35,43 @@ import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class ProcessWorkerTest {
+    @ParameterizedTest
+    @EnumSource(value = ProcessInstanceStatus.class, names = {"Completed", "Aborted"})
+    void queuedWork_DoesNotExecuteForTerminalInstance(ProcessInstanceStatus status) {
+        var instance = mock(ProcessInstanceEntity.class);
+        when(instance.getStatus()).thenReturn(status);
+        var instanceRepository = mock(ProcessInstanceRepository.class);
+        when(instanceRepository.findById(42L)).thenReturn(Optional.of(instance));
+        var nodeRepository = mock(ProcessNodeRepository.class);
+        var taskRepository = mock(ProcessInstanceTaskRepository.class);
+        var definitionService = mock(ProcessNodeDefinitionService.class);
+        var resultHandler = mock(ProcessNodeExecutionResultHandler.class);
+        var worker = new ProcessWorker(
+                instanceRepository,
+                nodeRepository,
+                definitionService,
+                taskRepository,
+                resultHandler,
+                mock(ProcessDataService.class),
+                mock(ProcessNodeExecutionLoggerFactory.class),
+                mock(ProcessNodeService.class)
+        );
+
+        worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11));
+        worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
+
+        verifyNoInteractions(nodeRepository, taskRepository, definitionService, resultHandler);
+        verify(instanceRepository, never()).save(any());
+    }
+
     @ParameterizedTest
     @EnumSource(ExecutionFailure.class)
     void doWork_MarksProcessInstanceAndTaskFailed_WhenExecutionFails(ExecutionFailure executionFailure) {
