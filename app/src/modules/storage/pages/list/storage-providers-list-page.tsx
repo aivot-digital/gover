@@ -107,7 +107,10 @@ export function StorageProvidersListPage(): ReactNode {
     }), []);
 
     const definitionOptions = useMemo(
-        () => definitions.map(createStorageProviderDefinitionOption),
+        () => [
+            {value: 'all', label: 'Alle Speichertypen'},
+            ...definitions.map(createStorageProviderDefinitionOption),
+        ],
         [definitions],
     );
 
@@ -115,10 +118,10 @@ export function StorageProvidersListPage(): ReactNode {
         <SelectFieldComponent
             key="definition"
             label="Speichertyp"
-            value={selectedDefinitionKey}
-            onChange={(value) => setSelectedDefinitionKey(value ?? undefined)}
+            value={selectedDefinitionKey ?? 'all'}
+            onChange={(value) => setSelectedDefinitionKey(value === 'all' ? null : value)}
             options={definitionOptions}
-            emptyOptionLabel="Alle Speichertypen"
+            includeEmptyOption={false}
             showOptionalIndicator={false}
             margin="none"
             size="small"

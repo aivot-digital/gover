@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.services;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
+import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
@@ -18,14 +19,19 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
 
+import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK;
+
 @Service
 public class ProcessInstanceTaskService implements EntityService<ProcessInstanceTaskEntity, Long> {
 
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
+    private final PermissionService permissions;
 
     @Autowired
-    public ProcessInstanceTaskService(ProcessInstanceTaskRepository processInstanceTaskRepository) {
+    public ProcessInstanceTaskService(ProcessInstanceTaskRepository processInstanceTaskRepository,
+                                      PermissionService permissions) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
+        this.permissions = permissions;
     }
 
     @Nonnull
@@ -47,6 +53,23 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
     @Override
     public Optional<ProcessInstanceTaskEntity> retrieve(@Nonnull Long id) throws ResponseException {
         return processInstanceTaskRepository.findById(id);
+    }
+
+    @Nonnull
+    public ProcessInstanceTaskEntity retrieveForStaffView(@Nonnull String userId,
+                                                         @Nonnull Long instanceId,
+                                                         @Nonnull Long taskId) throws ResponseException {
+        var task = retrieve(taskId).orElseThrow(ResponseException::notFound);
+        // Both IDs come from the request. A mismatched pair must never combine another
+        // instance's data or permissions with this task's execution context.
+        if (!instanceId.equals(task.getProcessInstanceId())) {
+            throw ResponseException.notFound();
+        }
+        permissions.requireProcessInstancePermission(userId, task.getProcessInstanceId(), PROCESS_INSTANCE_EDIT_TASK);
+        if (task.getStatus() != ProcessTaskStatus.Running) {
+            throw ResponseException.forbidden();
+        }
+        return task;
     }
 
     @Nonnull

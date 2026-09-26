@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskReposito
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
+import de.aivot.prosuna.backend.process.services.ProcessListService;
 import de.aivot.prosuna.backend.system.dtos.DashboardActivityDTO;
 import de.aivot.prosuna.backend.system.dtos.DashboardOverviewDTO;
 import de.aivot.prosuna.backend.system.configs.DashboardActivityEnabledSystemConfigDefinition;
@@ -138,14 +139,14 @@ public class DashboardService {
         var hasSystemAccess = permissionService.hasSystemPermission(user.getId(), permission);
         var tasks = taskRepository.findDashboardTasks(
                 user.getId(),
-                ProcessTaskStatus.Running.getDatabaseValue(),
+                ProcessListService.OPEN_TASK_STATUSES.stream().map(ProcessTaskStatus::getDatabaseValue).toList(),
                 hasSystemAccess,
                 permission,
                 PageRequest.of(0, TASK_PREVIEW_SIZE)
         );
         var counts = taskRepository.getDashboardTaskCounts(
                 user.getId(),
-                ProcessTaskStatus.Running.getDatabaseValue(),
+                ProcessListService.OPEN_TASK_STATUSES.stream().map(ProcessTaskStatus::getDatabaseValue).toList(),
                 hasSystemAccess,
                 permission,
                 Instant.now()

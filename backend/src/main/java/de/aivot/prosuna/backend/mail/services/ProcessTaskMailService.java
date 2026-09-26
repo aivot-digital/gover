@@ -98,4 +98,42 @@ public class ProcessTaskMailService {
                 mailData
         );
     }
+
+    public void sendUnassigned(@Nullable UserEntity triggeringUser,
+                               @Nonnull UserEntity previouslyAssignedUser,
+                               @Nonnull ProcessInstanceEntity processInstance,
+                               @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+                               @Nonnull ProcessNodeEntity currentNode,
+                               @Nonnull ProcessNodeDefinition provider) throws MessagingException, IOException, ResponseException {
+        ProcessEntity process = processService
+                .retrieve(processInstanceTask.getProcessId())
+                .orElseThrow(() -> new MessagingException("Process with id " + processInstanceTask.getProcessId() + " not found"));
+
+        var department = departmentService
+                .retrieve(process.getDepartmentId())
+                .orElseThrow(() -> new MessagingException("Department with id " + process.getDepartmentId() + " not found"));
+
+        List<String> fileNumbers = processInstance
+                .getAssignedFileNumbers()
+                .stream()
+                .filter(value -> value != null && !value.isBlank())
+                .toList();
+
+        String title = "Zuweisung zur Aufgabe aufgehoben";
+        var mailData = new HashMap<String, Object>();
+        mailData.put("title", title);
+        mailData.put("process", process);
+        mailData.put("processInstanceTask", processInstanceTask);
+        mailData.put("taskName", currentNode.resolveName(provider));
+        mailData.put("fileNumbersDisplay", fileNumbers.isEmpty() ? null : String.join(", ", fileNumbers));
+        mailData.put("changeSource", triggeringUser != null ? triggeringUser.getFullName() : "System");
+
+        mailService.sendMailToUser(
+                departmentService.getDepartmentTheme(department),
+                previouslyAssignedUser.getId(),
+                "[Prosuna] " + (processInstance.getCreatedForTestClaimId() != null ? "[Test] " : "") + title,
+                MailTemplate.ProcessTaskUnassigned,
+                mailData
+        );
+    }
 }

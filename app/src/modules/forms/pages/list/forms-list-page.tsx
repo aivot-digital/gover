@@ -20,6 +20,7 @@ import {
     type GenericListColDef,
     type GenericListPropsFetchOptions,
     type ListControlRef,
+    type FetchListFilterCounts,
 } from '../../../../components/generic-list/generic-list-props';
 import {type GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
 import {
@@ -131,6 +132,11 @@ export function FormsListPage(): React.ReactElement {
             content: <FormsListPageHelp />,
         },
     }), []);
+
+    const fetchFilterCounts = useCallback<FetchListFilterCounts>(
+        ({signal}) => new FormTriggerApiService().overviewCounts(signal),
+        [],
+    );
 
     const fetch = useCallback(async (options: GenericListPropsFetchOptions<FormOverviewItem>) => {
         const view: FormOverviewMode = options.filter === 'Drafted' ? 'Drafted' : 'Published';
@@ -401,6 +407,7 @@ export function FormsListPage(): React.ReactElement {
                     searchPlaceholder="Formular, Prozess oder URL-Segment eingeben…"
                     listContextElements={listContextElements}
                     fetch={fetch}
+                    fetchFilterCounts={fetchFilterCounts}
                     columnDefinitions={columns}
                     getRowIdentifier={(row) => row.id.toString()}
                     noDataPlaceholder={noDataPlaceholder}

@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.process.services.ProcessInstanceService;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.lang.reflect.Proxy;
 import java.time.Duration;
@@ -152,7 +153,7 @@ class ProcessInstanceRetentionCleanupServiceTest {
         private final List<ProcessInstanceEntity> deletedProcessInstances = new ArrayList<>();
 
         private TestProcessInstanceService() {
-            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class));
+            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class), mock(PlatformTransactionManager.class));
         }
 
         @Override

@@ -40,6 +40,12 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
     private List<String> allowedTypes;
 
     @Nullable
+    private Boolean disableProcessInstanceAssigneeOption;
+
+    @Nullable
+    private Boolean disableAssignmentContextRepeatExecutionAssigneePreferenceOptions;
+
+    @Nullable
     private DomainAndUserSelectProcessAccessConstraint processAccessConstraint;
 
     public AssignmentContextInputElement() {
@@ -75,10 +81,17 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
         if (generalAssigneePreference != null && !_isGeneralAssigneePreference(generalAssigneePreference)) {
             throw new ValidationException(this, "Ungültige Bevorzugung bei der Zuweisung.");
         }
+        if (Boolean.TRUE.equals(disableProcessInstanceAssigneeOption) && value.prefersProcessInstanceAssignee()) {
+            throw new ValidationException(this, "Die Bevorzugung der dem Vorgang zugewiesenen Person ist hier nicht zulässig.");
+        }
 
         var repeatExecutionAssigneePreference = value.getRepeatExecutionAssigneePreference();
         if (repeatExecutionAssigneePreference != null && !_isRepeatExecutionAssigneePreference(repeatExecutionAssigneePreference)) {
             throw new ValidationException(this, "Ungültige Bevorzugung bei erneuter Ausführung.");
+        }
+        if (Boolean.TRUE.equals(disableAssignmentContextRepeatExecutionAssigneePreferenceOptions)
+                && repeatExecutionAssigneePreference != null) {
+            throw new ValidationException(this, "Eine Bevorzugung bei erneuter Ausführung ist hier nicht zulässig.");
         }
 
         var normalizedValues = value
@@ -405,12 +418,12 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         AssignmentContextInputElement that = (AssignmentContextInputElement) o;
-        return Objects.equals(headline, that.headline) && Objects.equals(text, that.text) && Objects.equals(placeholder, that.placeholder) && Objects.equals(minItems, that.minItems) && Objects.equals(maxItems, that.maxItems) && Objects.equals(allowedTypes, that.allowedTypes) && Objects.equals(processAccessConstraint, that.processAccessConstraint);
+        return Objects.equals(headline, that.headline) && Objects.equals(text, that.text) && Objects.equals(placeholder, that.placeholder) && Objects.equals(minItems, that.minItems) && Objects.equals(maxItems, that.maxItems) && Objects.equals(allowedTypes, that.allowedTypes) && Objects.equals(disableProcessInstanceAssigneeOption, that.disableProcessInstanceAssigneeOption) && Objects.equals(disableAssignmentContextRepeatExecutionAssigneePreferenceOptions, that.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions) && Objects.equals(processAccessConstraint, that.processAccessConstraint);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), headline, text, placeholder, minItems, maxItems, allowedTypes, processAccessConstraint);
+        return Objects.hash(super.hashCode(), headline, text, placeholder, minItems, maxItems, allowedTypes, disableProcessInstanceAssigneeOption, disableAssignmentContextRepeatExecutionAssigneePreferenceOptions, processAccessConstraint);
     }
 
     @Nullable
@@ -470,6 +483,26 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
 
     public AssignmentContextInputElement setAllowedTypes(@Nullable List<String> allowedTypes) {
         this.allowedTypes = allowedTypes;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getDisableProcessInstanceAssigneeOption() {
+        return disableProcessInstanceAssigneeOption;
+    }
+
+    public AssignmentContextInputElement setDisableProcessInstanceAssigneeOption(@Nullable Boolean disableProcessInstanceAssigneeOption) {
+        this.disableProcessInstanceAssigneeOption = disableProcessInstanceAssigneeOption;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions() {
+        return disableAssignmentContextRepeatExecutionAssigneePreferenceOptions;
+    }
+
+    public AssignmentContextInputElement setDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions(@Nullable Boolean disableAssignmentContextRepeatExecutionAssigneePreferenceOptions) {
+        this.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions = disableAssignmentContextRepeatExecutionAssigneePreferenceOptions;
         return this;
     }
 

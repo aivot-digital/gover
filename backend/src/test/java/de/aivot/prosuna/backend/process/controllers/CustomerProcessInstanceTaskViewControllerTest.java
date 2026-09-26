@@ -62,6 +62,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.net.URI;
 import java.time.Instant;
@@ -1143,7 +1144,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceEntity instance;
 
         private TestProcessInstanceService(ProcessInstanceEntity instance) {
-            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class));
+            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class), mock(PlatformTransactionManager.class));
             this.instance = instance;
         }
 
@@ -1157,7 +1158,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceTaskEntity task;
 
         private TestProcessInstanceTaskService(ProcessInstanceTaskEntity task) {
-            super(null);
+            super(null, null);
             this.task = task;
         }
 
@@ -1286,7 +1287,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class FailingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private FailingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -1304,7 +1305,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override

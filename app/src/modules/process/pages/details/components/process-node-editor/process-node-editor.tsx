@@ -508,13 +508,10 @@ export function ProcessNodeEditor(): ReactNode {
                             value="configuration"
                         />
 
-                        {
-                            provider.outputs.length > 0 &&
-                            <Tab
-                                label="Ausgangsdaten"
-                                value="outputs"
-                            />
-                        }
+                        <Tab
+                            label="Ausgangsdaten"
+                            value="outputs"
+                        />
 
                         <Tab
                             label="Weiteres"

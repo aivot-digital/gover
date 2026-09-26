@@ -1,9 +1,10 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Skeleton, Stack, Typography} from '@mui/material';
+import {Box, Stack, Typography} from '@mui/material';
 import {Blocker, useBeforeUnload, useBlocker, useNavigate} from 'react-router-dom';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {
     ProcessInstanceTaskApiService,
@@ -52,9 +53,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const {
-        item,
-    } = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
+    const {item} = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
 
     const pushUpdateTimeoutRef = useRef<number | null>(null);
     const taskSessionRef = useRef(0);
@@ -69,7 +68,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const [taskView, setTaskView] = useState<TaskView>();
     const [taskInputData, setTaskInputData] = useState<AuthoredElementValues>({});
     const [lastPersistedTaskInputData, setLastPersistedTaskInputData] = useState<AuthoredElementValues>({});
-    const [taskInputDataSaveState, setTaskInputDataSaveState] = useState<ProcessTaskInputSaveState>(ProcessTaskInputSaveState.Saved);
+    const [taskInputDataSaveState, setTaskInputDataSaveState] = useState<ProcessTaskInputSaveState>(
+        ProcessTaskInputSaveState.Saved,
+    );
     const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
     const [pendingBlockedNavigation, setPendingBlockedNavigation] = useState<Blocker | null>(null);
@@ -89,92 +90,110 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return !deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current);
     }, []);
 
-    useBeforeUnload(useCallback((event: BeforeUnloadEvent) => {
-        if (!hasPendingUnloadChanges()) {
-            return;
-        }
+    useBeforeUnload(
+        useCallback(
+            (event: BeforeUnloadEvent) => {
+                if (!hasPendingUnloadChanges()) {
+                    return;
+                }
 
-        event.preventDefault();
-        event.returnValue = '';
-    }, [hasPendingUnloadChanges]));
+                event.preventDefault();
+                event.returnValue = '';
+            },
+            [hasPendingUnloadChanges],
+        ),
+    );
 
-    const saveTaskInputData = useCallback(async (payload: AuthoredElementValues): Promise<boolean> => {
-        if (item == null) {
-            return false;
-        }
-
-        if (deepEquals(payload, lastPersistedTaskInputDataRef.current)) {
-            const hasNewerUnsavedChanges = !deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current);
-            setTaskInputDataSaveState(hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved);
-            return true;
-        }
-
-        if (inFlightSavePromiseRef.current != null) {
-            await inFlightSavePromiseRef.current;
+    const saveTaskInputData = useCallback(
+        async (payload: AuthoredElementValues): Promise<boolean> => {
+            if (item == null) {
+                return false;
+            }
 
             if (deepEquals(payload, lastPersistedTaskInputDataRef.current)) {
+                const hasNewerUnsavedChanges = !deepEquals(
+                    latestTaskInputDataRef.current,
+                    lastPersistedTaskInputDataRef.current,
+                );
+                setTaskInputDataSaveState(
+                    hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved,
+                );
                 return true;
             }
-        }
 
-        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-            pendingOfflineRetryRef.current = true;
-            setTaskInputDataSaveState(ProcessTaskInputSaveState.RetryQueued);
-            return false;
-        }
+            if (inFlightSavePromiseRef.current != null) {
+                await inFlightSavePromiseRef.current;
 
-        const currentTaskSession = taskSessionRef.current;
-        setTaskInputDataSaveState(ProcessTaskInputSaveState.Saving);
-
-        const savePromise = withDelay(
-            new ProcessInstanceTaskApiService()
-                .putStaffTaskView(item.task.processInstanceId, item.task.id, payload),
-            TASK_INPUT_DATA_MIN_SAVE_DURATION_MS,
-        )
-            .then(() => {
-                if (currentTaskSession !== taskSessionRef.current) {
-                    return false;
+                if (deepEquals(payload, lastPersistedTaskInputDataRef.current)) {
+                    return true;
                 }
+            }
 
-                pendingOfflineRetryRef.current = false;
-                lastPersistedTaskInputDataRef.current = payload;
-                setLastPersistedTaskInputData(payload);
-                setLastSavedAt(new Date());
-
-                const hasNewerUnsavedChanges = !deepEquals(latestTaskInputDataRef.current, payload);
-                setTaskInputDataSaveState(hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved);
-
-                return true;
-            })
-            .catch((err) => {
-                if (currentTaskSession !== taskSessionRef.current) {
-                    return false;
-                }
-
-                if (isOfflineApiError(err)) {
-                    pendingOfflineRetryRef.current = true;
-                    setTaskInputDataSaveState(ProcessTaskInputSaveState.RetryQueued);
-                    return false;
-                }
-
-                pendingOfflineRetryRef.current = false;
-                if (!isApiUnreachableError(err)) {
-                    dispatch(showApiErrorSnackbar(err, 'Die Eingaben konnten nicht gespeichert werden.'));
-                }
-                setTaskInputDataSaveState(ProcessTaskInputSaveState.Failed);
-
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                pendingOfflineRetryRef.current = true;
+                setTaskInputDataSaveState(ProcessTaskInputSaveState.RetryQueued);
                 return false;
-            })
-            .finally(() => {
-                if (currentTaskSession === taskSessionRef.current) {
-                    inFlightSavePromiseRef.current = null;
-                }
-            });
+            }
 
-        inFlightSavePromiseRef.current = savePromise;
+            const currentTaskSession = taskSessionRef.current;
+            setTaskInputDataSaveState(ProcessTaskInputSaveState.Saving);
 
-        return await savePromise;
-    }, [dispatch, item]);
+            const savePromise = withDelay(
+                new ProcessInstanceTaskApiService().putStaffTaskView(
+                    item.task.processInstanceId,
+                    item.task.id,
+                    payload,
+                ),
+                TASK_INPUT_DATA_MIN_SAVE_DURATION_MS,
+            )
+                .then(() => {
+                    if (currentTaskSession !== taskSessionRef.current) {
+                        return false;
+                    }
+
+                    pendingOfflineRetryRef.current = false;
+                    lastPersistedTaskInputDataRef.current = payload;
+                    setLastPersistedTaskInputData(payload);
+                    setLastSavedAt(new Date());
+
+                    const hasNewerUnsavedChanges = !deepEquals(latestTaskInputDataRef.current, payload);
+                    setTaskInputDataSaveState(
+                        hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved,
+                    );
+
+                    return true;
+                })
+                .catch((err) => {
+                    if (currentTaskSession !== taskSessionRef.current) {
+                        return false;
+                    }
+
+                    if (isOfflineApiError(err)) {
+                        pendingOfflineRetryRef.current = true;
+                        setTaskInputDataSaveState(ProcessTaskInputSaveState.RetryQueued);
+                        return false;
+                    }
+
+                    pendingOfflineRetryRef.current = false;
+                    if (!isApiUnreachableError(err)) {
+                        dispatch(showApiErrorSnackbar(err, 'Die Eingaben konnten nicht gespeichert werden.'));
+                    }
+                    setTaskInputDataSaveState(ProcessTaskInputSaveState.Failed);
+
+                    return false;
+                })
+                .finally(() => {
+                    if (currentTaskSession === taskSessionRef.current) {
+                        inFlightSavePromiseRef.current = null;
+                    }
+                });
+
+            inFlightSavePromiseRef.current = savePromise;
+
+            return await savePromise;
+        },
+        [dispatch, item],
+    );
 
     const flushCurrentTaskInputData = useCallback(async (): Promise<boolean> => {
         if (pushUpdateTimeoutRef.current != null) {
@@ -267,10 +286,12 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
 
                 if (err.status === 403) {
-                    dispatch(setErrorMessage({
-                        message: 'Sie haben keine Berechtigung, diese Aufgabenansicht zu sehen.',
-                        status: 403,
-                    }));
+                    dispatch(
+                        setErrorMessage({
+                            message: 'Sie haben keine Berechtigung, diese Aufgabenansicht zu sehen.',
+                            status: 403,
+                        }),
+                    );
                 } else {
                     dispatch(showApiErrorSnackbar(err, 'Die Aufgabenansicht konnte nicht geladen werden.'));
                 }
@@ -364,65 +385,82 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             },
             {
                 label: 'Kurzbeschreibung',
-                icon: <Task/>,
+                icon: <Task />,
                 alignTop: true,
                 children: getProcessTaskDescription(item),
             },
         ];
     }, [item]);
 
-    const handleDownloadAttachment = useCallback(async (attachment: ProcessInstanceAttachmentEntity): Promise<void> => {
-        try {
-            const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=true`);
-            const objectUrl = URL.createObjectURL(blob);
+    const handleDownloadAttachment = useCallback(
+        async (attachment: ProcessInstanceAttachmentEntity): Promise<void> => {
+            try {
+                const blob = await new BaseApiService().getBlob(
+                    `/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=true`,
+                );
+                const objectUrl = URL.createObjectURL(blob);
 
-            const link = document.createElement('a');
-            link.href = objectUrl;
-            link.download = attachment.fileName;
-            link.style.display = 'none';
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = attachment.fileName;
+                link.style.display = 'none';
 
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
 
-            URL.revokeObjectURL(objectUrl);
-        } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
-        }
-    }, [dispatch]);
-
-    const handleViewAttachment = useCallback(async (attachment: ProcessInstanceAttachmentEntity): Promise<void> => {
-        const previewWindow = window.open('', '_blank');
-        if (previewWindow == null) {
-            dispatch(showErrorSnackbar('Der Anhang konnte nicht geöffnet werden. Bitte erlauben Sie Pop-ups für diese Seite.'));
-            return;
-        }
-
-        previewWindow.opener = null;
-        previewWindow.document.title = attachment.fileName;
-        previewWindow.document.body.textContent = 'Anhang wird geladen...';
-
-        try {
-            const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=false`);
-            const objectUrl = URL.createObjectURL(blob);
-            previewWindow.location.replace(objectUrl);
-
-            window.setTimeout(() => {
                 URL.revokeObjectURL(objectUrl);
-            }, 60_000);
-        } catch (error) {
-            previewWindow.close();
-            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht angezeigt werden.'));
-        }
-    }, [dispatch]);
+            } catch (error) {
+                dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
+            }
+        },
+        [dispatch],
+    );
 
-    const taskViewAttachmentContextValue = useMemo(() => ({
-        attachments: taskAttachments,
-        attachmentSets: taskAttachmentSets,
-        isLoadingAttachments: isLoadingTaskAttachments,
-        viewAttachment: handleViewAttachment,
-        downloadAttachment: handleDownloadAttachment,
-    }), [handleDownloadAttachment, handleViewAttachment, isLoadingTaskAttachments, taskAttachmentSets, taskAttachments]);
+    const handleViewAttachment = useCallback(
+        async (attachment: ProcessInstanceAttachmentEntity): Promise<void> => {
+            const previewWindow = window.open('', '_blank');
+            if (previewWindow == null) {
+                dispatch(
+                    showErrorSnackbar(
+                        'Der Anhang konnte nicht geöffnet werden. Bitte erlauben Sie Pop-ups für diese Seite.',
+                    ),
+                );
+                return;
+            }
+
+            previewWindow.opener = null;
+            previewWindow.document.title = attachment.fileName;
+            previewWindow.document.body.textContent = 'Anhang wird geladen...';
+
+            try {
+                const blob = await new BaseApiService().getBlob(
+                    `/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=false`,
+                );
+                const objectUrl = URL.createObjectURL(blob);
+                previewWindow.location.replace(objectUrl);
+
+                window.setTimeout(() => {
+                    URL.revokeObjectURL(objectUrl);
+                }, 60_000);
+            } catch (error) {
+                previewWindow.close();
+                dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht angezeigt werden.'));
+            }
+        },
+        [dispatch],
+    );
+
+    const taskViewAttachmentContextValue = useMemo(
+        () => ({
+            attachments: taskAttachments,
+            attachmentSets: taskAttachmentSets,
+            isLoadingAttachments: isLoadingTaskAttachments,
+            viewAttachment: handleViewAttachment,
+            downloadAttachment: handleDownloadAttachment,
+        }),
+        [handleDownloadAttachment, handleViewAttachment, isLoadingTaskAttachments, taskAttachmentSets, taskAttachments],
+    );
 
     const handleTaskViewEvent = async (evt: TaskViewEvent, eventPayload: AuthoredElementValues) => {
         if (item == null || taskView == null) {
@@ -441,17 +479,23 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             await inFlightSavePromiseRef.current;
         }
 
-        dispatch(setLoadingMessage({
-            message: `Verarbeite Aktion: ${evt.label}`,
-            blocking: true,
-            estimatedTime: 500,
-        }));
+        dispatch(
+            setLoadingMessage({
+                message: `Verarbeite Aktion: ${evt.label}`,
+                blocking: true,
+                estimatedTime: 500,
+            }),
+        );
 
         latestTaskInputDataRef.current = eventPayload;
 
         return withDelay(
-            new ProcessInstanceTaskApiService()
-                .putStaffTaskView(item.task.processInstanceId, item.task.id, eventPayload, evt.event),
+            new ProcessInstanceTaskApiService().putStaffTaskView(
+                item.task.processInstanceId,
+                item.task.id,
+                eventPayload,
+                evt.event,
+            ),
             500,
         )
             .then(async (updatedTaskView) => {
@@ -550,8 +594,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             return false;
         }
 
-        if (currentLocation.pathname === nextLocation.pathname &&
-            currentLocation.search === nextLocation.search) {
+        if (currentLocation.pathname === nextLocation.pathname && currentLocation.search === nextLocation.search) {
             return false;
         }
 
@@ -559,7 +602,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     });
 
     const shouldAutoResolveBlockedNavigation = useMemo(() => {
-        const canRetryNow = taskInputDataSaveState === ProcessTaskInputSaveState.RetryQueued &&
+        const canRetryNow =
+            taskInputDataSaveState === ProcessTaskInputSaveState.RetryQueued &&
             (typeof navigator === 'undefined' || navigator.onLine);
 
         return (
@@ -571,32 +615,37 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         );
     }, [taskInputDataSaveState]);
 
-    const handleBlockedNavigation = useCallback(async (blockedNavigation: Blocker) => {
-        if (item == null) {
-            return;
-        }
+    const handleBlockedNavigation = useCallback(
+        async (blockedNavigation: Blocker) => {
+            if (item == null) {
+                return;
+            }
 
-        isResolvingBlockedNavigationRef.current = true;
-        setPendingBlockedNavigation(null);
+            isResolvingBlockedNavigationRef.current = true;
+            setPendingBlockedNavigation(null);
 
-        dispatch(setLoadingMessage({
-            message: NAVIGATION_SAVE_MESSAGE,
-            blocking: true,
-            estimatedTime: TASK_INPUT_DATA_MIN_SAVE_DURATION_MS,
-        }));
+            dispatch(
+                setLoadingMessage({
+                    message: NAVIGATION_SAVE_MESSAGE,
+                    blocking: true,
+                    estimatedTime: TASK_INPUT_DATA_MIN_SAVE_DURATION_MS,
+                }),
+            );
 
-        const shouldProceed = await flushCurrentTaskInputData();
+            const shouldProceed = await flushCurrentTaskInputData();
 
-        dispatch(clearLoadingMessage());
-        isResolvingBlockedNavigationRef.current = false;
+            dispatch(clearLoadingMessage());
+            isResolvingBlockedNavigationRef.current = false;
 
-        if (shouldProceed && deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current)) {
-            blockedNavigation.proceed?.();
-            return;
-        }
+            if (shouldProceed && deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current)) {
+                blockedNavigation.proceed?.();
+                return;
+            }
 
-        setPendingBlockedNavigation(blockedNavigation);
-    }, [dispatch, flushCurrentTaskInputData, item]);
+            setPendingBlockedNavigation(blockedNavigation);
+        },
+        [dispatch, flushCurrentTaskInputData, item],
+    );
 
     useEffect(() => {
         if (blocker.state !== 'blocked' || isResolvingBlockedNavigationRef.current) {
@@ -634,21 +683,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     }, [taskInputDataSaveState]);
 
     if (item == null) {
-        return (
-            <Box
-                sx={{
-                    pt: 1.5,
-                }}
-            >
-                <Typography variant="h5">
-                    Aufgabe bearbeiten
-                </Typography>
-                <Skeleton
-                    sx={{mt: 3}}
-                    height={320}
-                />
-            </Box>
-        );
+        return <GenericDetailsSkeleton />;
     }
 
     return (
@@ -657,9 +692,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 pt: 1,
             }}
         >
-            <Typography variant="h5">
-                Aufgabe bearbeiten
-            </Typography>
+            <Typography variant="h5">Aufgabe bearbeiten</Typography>
 
             <StatusTable
                 sx={{mt: 2}}
@@ -667,64 +700,63 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 items={introItems}
             />
 
-            {
-                taskView == null ?
-                    <Skeleton
-                        sx={{mt: 4}}
-                        height={360}
-                    /> :
-                    <ProcessTaskViewAttachmentProvider
-                        value={taskViewAttachmentContextValue}
+            {taskView == null ? (
+                <Box sx={{mt: 4}}>
+                    <GenericDetailsSkeleton />
+                </Box>
+            ) : (
+                <ProcessTaskViewAttachmentProvider value={taskViewAttachmentContextValue}>
+                    <Box
+                        sx={{
+                            mt: 4,
+                        }}
                     >
-                        <Box
-                            sx={{
-                                mt: 4,
+                        <ElementDerivationContext
+                            element={taskView.layout}
+                            authoredElementValues={taskInputData}
+                            onAuthoredElementValuesChange={handleAuthoredValuesChange}
+                            computedErrors={derivedErrors?.elementStates}
+                            onEvent={handleInlineEvent}
+                            taskViewMode="staff"
+                            showErrorSummary
+                            onDeriveOverride={(aev, skipErrorsForElements) => {
+                                if (item == null || item.instance == null || item.task == null) {
+                                    return Promise.resolve({
+                                        effectiveValues: {},
+                                        elementStates: {},
+                                    });
+                                }
+
+                                return new ProcessInstanceTaskApiService().deriveStaffTaskView(
+                                    item.instance.id,
+                                    item.task.id,
+                                    aev,
+                                    skipErrorsForElements,
+                                );
                             }}
-                        >
-                            <ElementDerivationContext
-                                element={taskView.layout}
-                                authoredElementValues={taskInputData}
-                                onAuthoredElementValuesChange={handleAuthoredValuesChange}
-                                computedErrors={derivedErrors?.elementStates}
-                                onEvent={handleInlineEvent}
-                                taskViewMode="staff"
-                                showErrorSummary
-                                onDeriveOverride={(aev, skipErrorsForElements) => {
-                                    if (item == null || item.instance == null || item.task == null) {
-                                        return Promise.resolve({
-                                            effectiveValues: {},
-                                            elementStates: {},
-                                        });
-                                    }
+                        />
+                    </Box>
 
-                                    return new ProcessInstanceTaskApiService()
-                                        .deriveStaffTaskView(item.instance.id, item.task.id, aev, skipErrorsForElements);
-                                }}
-                            />
-                        </Box>
+                    <Stack
+                        direction="row"
+                        sx={{
+                            alignItems: 'flex-end',
+                        }}
+                    >
+                        <TaskViewEventButtons
+                            events={taskView.events}
+                            onEvent={handleEventClick}
+                        />
 
-                        <Stack
-                            direction="row"
-                            sx={{
-                                alignItems: "flex-end"
-                            }}
-                        >
-                            <TaskViewEventButtons
-                                events={taskView.events}
-                                onEvent={handleEventClick}
-                            />
+                        <ProcessTaskInputSaveStateChip
+                            state={taskInputDataSaveState}
+                            lastSavedAt={lastSavedAt}
+                        />
+                    </Stack>
+                </ProcessTaskViewAttachmentProvider>
+            )}
 
-                            <ProcessTaskInputSaveStateChip
-                                state={taskInputDataSaveState}
-                                lastSavedAt={lastSavedAt}
-                            />
-
-                        </Stack>
-                    </ProcessTaskViewAttachmentProvider>
-            }
-
-            {
-                pendingBlockedNavigation != null &&
+            {pendingBlockedNavigation != null && (
                 <ConfirmDialog
                     title="Ungespeicherte Eingaben"
                     onConfirm={handleConfirmBlockedNavigation}
@@ -733,7 +765,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 >
                     {blockedNavigationMessage}
                 </ConfirmDialog>
-            }
+            )}
         </Box>
     );
 }
