@@ -1,20 +1,23 @@
 import React, {useMemo, useRef, useState} from 'react';
-import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useMediaQuery, useTheme} from '@mui/material';
 import {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/huminization-utils';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../slices/snackbar-slice';
+import {humanizeFileSize} from '../../utils/humanization-utils';
 import {BaseViewProps} from '../../views/base-view';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
-import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
+import {BaseApiService} from '../../services/base-api-service';
+import {FileUploadFieldLayout} from './file-upload-field-layout';
+
+const PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX = 'process-instance-attachment:';
 
 export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploadElementItem[]>) {
     const {
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -32,12 +35,10 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    const theme = useTheme();
     const dispatch = useAppDispatch();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isDraggedOver, setIsDraggedOver] = useState(false);
-    const isBreakpointMdAndDown = useMediaQuery(theme.breakpoints.down('md'));
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files != null && event.target.files.length > 0) {
@@ -51,13 +52,46 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
     };
 
     const handleRemove = (file: FileUploadElementItem) => {
+        // Persisted process attachments are backend-owned; removing them here would only corrupt the form value.
+        if (isProcessInstanceAttachment(file)) {
+            return;
+        }
+
         if (value != null) {
             const index = value.indexOf(file);
             if (index >= 0) {
                 const updatedFiles = [...value];
                 updatedFiles.splice(index, 1);
-                setValue(updatedFiles.length > 0 ? updatedFiles : undefined);
+                setValue(updatedFiles.length > 0 ? updatedFiles : null);
+                if (file.uri.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.uri);
+                }
             }
+        }
+    };
+
+    const handleDownload = async (file: FileUploadElementItem) => {
+        const attachmentKey = resolveProcessInstanceAttachmentKey(file);
+        if (attachmentKey == null) {
+            return;
+        }
+
+        try {
+            const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachmentKey)}/file/?download=true`);
+            const objectUrl = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = file.name;
+            link.style.display = 'none';
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            URL.revokeObjectURL(objectUrl);
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
         }
     };
 
@@ -73,7 +107,9 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         for (let i = 0; i < originalFileList.length; i++) {
             const file = originalFileList[i];
 
-            if (extensions != null) {
+            if (extensions == null || extensions.length === 0) {
+                cleanedFiles.push(file);
+            } else {
                 const fileExtension = file.name.split('.').pop();
 
                 if (fileExtension == null || extensions.every(ext => ext.toLowerCase() !== fileExtension.toLowerCase())) {
@@ -87,13 +123,14 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         const maxFiles = element.isMultifile ? (element.maxFiles != null && element.maxFiles > 0 ? element.maxFiles : null) : 1;
 
         const fileUploadItems: FileUploadElementItem[] = [
-            ...value ?? [],
+            ...(value ?? []),
         ];
         let addedItems = 0;
         for (let i = 0; (i < cleanedFiles.length && (maxFiles == null || fileUploadItems.length < maxFiles)); i++) {
             const file = cleanedFiles[i];
             fileUploadItems.push({
                 name: file.name,
+                originalFileName: file.name,
                 uri: URL.createObjectURL(file),
                 size: file.size,
             });
@@ -101,10 +138,10 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         }
 
         if (addedItems < cleanedFiles.length) {
-            dispatch(showErrorSnackbar('Einige Anlagen konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
+            dispatch(showErrorSnackbar('Einige Dateien konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
         }
 
-        setValue(fileUploadItems.length > 0 ? fileUploadItems : undefined);
+        setValue(fileUploadItems.length > 0 ? fileUploadItems : null);
     };
 
     const fileMaximumReached = (
@@ -118,246 +155,82 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
     );
 
     return (
-        <Box>
-            <Box
-                sx={{
-                    mb: 1,
-                }}
-            >
-                <FormLabel
-                    htmlFor={element.id + '-input'}
-                    error={error != null}
-                >
-                    {element.label}
-                    {element.required && ' *'}
-                </FormLabel>
-            </Box>
+        <FileUploadFieldLayout
+            id={`${element.id}-input`}
+            label={element.label ?? ''}
+            required={element.required ?? undefined}
+            disabled={isDisabled}
+            busy={isBusy}
+            error={errors != null && errors.length > 0 ? errors.join(', ') : undefined}
+            hint={element.hint}
+            fileCount={(value ?? []).length}
+            minFiles={element.minFiles}
+            maxFiles={element.maxFiles}
+            items={(value ?? []).map(file => {
+                const isPersistedAttachment = isProcessInstanceAttachment(file);
+                const actionLabel = isPersistedAttachment
+                    ? `${file.name} herunterladen`
+                    : `${file.name} entfernen`;
 
-            {
-                value != null &&
-                value.length > 0 &&
-                <TableContainer sx={{mb: 2}}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>
-                                    Dateiname
-                                </TableCell>
-                                <TableCell align="right">
-                                    Dateigröße
-                                </TableCell>
-                                <TableCell align="right">
-                                    Aktion
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {
-                                value.map(file => (
-                                    <TableRow
-                                        key={file.uri}
-                                    >
-                                        <TableCell>
-                                            {file.name}
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            {humanizeFileSize(file.size)}
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            {
-                                                isBreakpointMdAndDown ?
-                                                    <IconButton
-                                                        onClick={() => handleRemove(file)}
-                                                        disabled={isDisabled || isBusy}
-                                                    >
-                                                        <DeleteForeverOutlinedIcon
-                                                            fontSize="small"
-                                                        />
-                                                    </IconButton> :
-                                                    <Button
-                                                        variant="outlined"
-                                                        onClick={() => handleRemove(file)}
-                                                        disabled={isDisabled || isBusy}
-                                                        startIcon={
-                                                            <DeleteForeverOutlinedIcon
-                                                                fontSize="small"
-                                                            />
-                                                        }
-                                                    >
-                                                        Entfernen
-                                                    </Button>
-                                            }
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            }
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            }
-
-            <Box
-                sx={{
-                    p: 2,
-                    border: `2px ${isFocused ? 'solid' : 'dashed'} ${error != null ? theme.palette.error.main : (isFocused ? theme.palette.primary.main : theme.palette.grey['500'])}`,
-                    backgroundColor: theme.palette.grey['100'],
-                    transition: 'background-color 250ms ease-in-out',
-                    '&:hover': {
-                        backgroundColor: theme.palette.grey['50'],
-                    },
-                    boxShadow: (isDraggedOver && !isDisabled) ? `0 0 0.5em ${theme.palette.primary.main}` : undefined,
-                    pointerEvents: isBusy ? 'none' : 'auto',
-                }}
-                onDragOver={(event) => {
+                return {
+                    key: file.uri,
+                    name: file.name,
+                    size: humanizeFileSize(file.size),
+                    detail: isPersistedAttachment && file.originalFileName != null
+                        ? `Hochgeladen als ${file.originalFileName}`
+                        : undefined,
+                    actionLabel,
+                    actionIcon: isPersistedAttachment
+                        ? <Download fontSize="small" />
+                        : <Delete fontSize="small" />,
+                    actionDisabled: !isPersistedAttachment && (isDisabled || isBusy),
+                    onAction: () => isPersistedAttachment
+                        ? void handleDownload(file)
+                        : handleRemove(file),
+                };
+            })}
+            showInput={!fileMaximumReached}
+            inputAreaProps={{
+                inputRef,
+                multiple: element.isMultifile ?? undefined,
+                extensions: element.extensions,
+                disabled: isDisabled || isBusy,
+                error: errors != null && errors.length > 0,
+                focused: isFocused,
+                draggedOver: isDraggedOver,
+                onChange: handleChange,
+                onFocus: () => setIsFocused(true),
+                onBlur: () => setIsFocused(false),
+                onDragOver: (event) => {
                     event.preventDefault();
-                    if (!isBusy) {
+                    if (!isBusy && !isDisabled) {
                         setIsDraggedOver(true);
                     }
-                }}
-                onDragLeave={(event) => {
+                },
+                onDragLeave: (event) => {
                     event.preventDefault();
-                    if (!isBusy || isDraggedOver) {
-                        setIsDraggedOver(false);
-                    }
-                }}
-                onDrop={(event) => {
+                    setIsDraggedOver(false);
+                },
+                onDrop: (event) => {
                     event.preventDefault();
-                    if (!isBusy) {
+                    if (!isBusy && !isDisabled) {
                         handleDrop(event);
                     }
-                }}
-            >
-                <Box
-                    sx={{
-                        position: 'relative',
-                    }}
-                >
-                    <input
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            opacity: 0,
-                            width: 0.1,
-                            height: 0.1,
-                            overflow: 'hidden',
-                            zIndex: -1,
-                        }}
-                        id={element.id + '-input'}
-                        ref={inputRef}
-                        type="file"
-                        multiple={element.isMultifile}
-                        accept={element.extensions != null ? element.extensions.map(ext => '.' + ext).join(',') : undefined}
-                        onChange={handleChange}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                        disabled={isDisabled || fileMaximumReached || isBusy}
-                    />
-
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                        }}
-                    >
-
-                        <BackupOutlinedIcon
-                            fontSize="large"
-                            sx={{color: fileMaximumReached ? theme.palette.grey['500'] : theme.palette.grey['700']}}
-                        />
-
-                        <Typography
-                            sx={{
-                                ml: 1,
-                                color: fileMaximumReached ? theme.palette.grey['500'] : undefined,
-                            }}
-                        >
-                            Datei per Drag & Drop auf dieses Feld hochladen
-                        </Typography>
-
-                        <Button
-                            sx={{ml: 'auto'}}
-                            onClick={() => {
-                                if (inputRef.current != null) {
-                                    inputRef.current.click();
-                                }
-                            }}
-                            disabled={isDisabled || fileMaximumReached || isBusy}
-                        >
-                            Datei auswählen
-                        </Button>
-                    </Box>
-                    {
-                        element.extensions &&
-                        element.extensions.length > 0 &&
-                        <Typography
-                            color={theme.palette.grey['700']}
-                            variant="caption"
-                        >
-                            Erlaubte Dateitypen: {element.extensions.map(ext => '.' + ext).join(', ')}
-                        </Typography>
-                    }
-                </Box>
-            </Box>
-
-            {
-                (
-                    error != null ||
-                    element.hint != null ||
-                    (
-                        element.minFiles != null &&
-                        element.minFiles > 0
-                    ) || (
-                        element.maxFiles != null &&
-                        element.maxFiles > 0
-                    )
-                ) &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        mt: 0.5,
-                        mx: 1.5,
-                    }}
-                >
-                    <Typography
-                        color={error != null ? theme.palette.error.main : theme.palette.grey['600']}
-                        variant="caption"
-                    >
-                        {error || element.hint}
-                    </Typography>
-
-                    {
-                        ((
-                            element.minFiles != null &&
-                            element.minFiles > 0
-                        ) || (
-                            element.maxFiles != null &&
-                            element.maxFiles > 0
-                        )) &&
-                        <Typography
-                            color={theme.palette.grey['600']}
-                            variant="caption"
-                            sx={{
-                                ml: 'auto',
-                            }}
-                        >
-                            {
-                                element.minFiles === element.maxFiles ?
-                                    'Genau' :
-                                    (
-                                        (element.minFiles != null && element.minFiles > 0) ?
-                                            'Mindestens' :
-                                            'Höchstens'
-                                    )
-                            } {
-                            humanizeNumber(element.minFiles != null && element.minFiles > 0 ? element.minFiles : element.maxFiles!)
-                        } {
-                            pluralize(element.minFiles != null && element.minFiles > 0 ? element.minFiles : element.maxFiles!, 'Anlage', 'Anlagen')
-                        }
-                        </Typography>
-                    }
-                </Box>
-            }
-        </Box>
+                },
+            }}
+        />
     );
+}
+
+function isProcessInstanceAttachment(file: FileUploadElementItem): boolean {
+    return file.uri.startsWith(PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX);
+}
+
+function resolveProcessInstanceAttachmentKey(file: FileUploadElementItem): string | null {
+    if (!file.uri.startsWith(PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX)) {
+        return null;
+    }
+
+    const attachmentKey = file.uri.slice(PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX.length).trim();
+    return attachmentKey.length === 0 ? null : attachmentKey;
 }

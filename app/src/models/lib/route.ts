@@ -2,6 +2,6 @@ import {RouteObject} from 'react-router-dom';
 
 export interface Route {
     path: string;
-    element: JSX.Element;
+    element: React.ReactNode;
     children?: RouteObject[];
 }

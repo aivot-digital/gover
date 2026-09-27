@@ -17,10 +17,10 @@ export function SearchBaseDialog<T>(props: SearchBaseDialogProps<T>) {
             onClose={props.onClose}
             fullWidth={true}
             maxWidth="lg"
+            slotProps={{paper: {id: props.id}}}
         >
             <DialogTitleWithClose
                 onClose={props.onClose}
-                bordered
             >
                 {props.title}
 

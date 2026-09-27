@@ -1,218 +1,687 @@
-import {Box, Button, Link, Typography} from '@mui/material';
-import React, {useContext, useMemo, useState} from 'react';
-import {AppConfig} from '../../../../../app-config';
-import {StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
-import {StatusTable} from '../../../../../components/status-table/status-table';
-import {ApiOutlined, BadgeOutlined, Inventory2Outlined, LockOutlined, MailOutlined, ToggleOnOutlined, WarningOutlined} from '@mui/icons-material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import {Box, Button, Grid, InputAdornment, TextField, Typography} from '@mui/material';
+import React, {useContext, useEffect, useMemo, useState} from 'react';
+import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
+import LockResetOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LockReset';
+import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
-import {useNavigate} from 'react-router-dom';
-import {isAdmin} from '../../../../../utils/is-admin';
-import {useApi} from '../../../../../hooks/use-api';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../../components/generic-details-page/generic-details-page-context';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {
+    GenericDetailsPageContext,
+    type GenericDetailsPageContextType,
+} from '../../../../../components/generic-details-page/generic-details-page-context';
 import {type User} from '../../../../../models/entities/user';
-import {UsersApiService} from '../../../users-api-service';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
 import {isApiError} from '../../../../../models/api-error';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
-import {SubmissionsApiService} from '../../../../submissions/submissions-api-service';
-import {ConstraintLinkProps} from '../../../../../dialogs/constraint-dialog/constraint-link-props';
 import {ConfirmDialog} from '../../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../../dialogs/constraint-dialog/constraint-dialog';
-import {resolveUserName} from '../../../utils/resolve-user-name';
+import {ConstraintLinkProps} from '../../../../../dialogs/constraint-dialog/constraint-link-props';
+import {TextFieldComponent} from '../../../../../components/text-field/text-field-component';
+import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
+import {useFormManager} from '../../../../../hooks/use-form-manager';
+import * as yup from 'yup';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {SelectFieldComponent} from '../../../../../components/select-field/select-field-component';
+import {CreateUserResponseDTO, UsersApiService} from '../../../users-api-service';
+import {useConfirm} from '../../../../../providers/confirm-provider';
+import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
+import {useChangeBlocker} from '../../../../../hooks/use-change-blocker';
+import {createOidcPath} from '../../../../../utils/create-oidc-path';
+import {ProcessInstanceTaskApiService} from '../../../../process/services/process-instance-task-api-service';
+import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../../../process/enums/process-task-status';
+import {InfoDialog} from '../../../../../dialogs/info-dialog/info-dialog';
+import {CopyToClipboardButton} from '../../../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
+import {downloadTextFile} from '../../../../../utils/download-utils';
+import {AlertComponent} from '../../../../../components/alert/alert-component';
+import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
+
+const KEYCLOAK_PERSON_NAME_MAX_CHARACTERS = 255;
+const KEYCLOAK_EMAIL_MAX_CHARACTERS = 255;
+// Mirrors Keycloak's default `person-name-prohibited-characters` validator.
+const KEYCLOAK_PERSON_NAME_REGEX = /^[^<>&"$%!#?§;*~/\\|^=\[\]{}()\u0000-\u001F\u007F]+$/;
+
+const createPersonNameSchema = (fieldLabel: 'Vorname' | 'Nachname') => yup
+    .string()
+    .trim()
+    .required(`Bitte einen ${fieldLabel === 'Vorname' ? 'Vornamen' : 'Nachnamen'} angeben.`)
+    .max(KEYCLOAK_PERSON_NAME_MAX_CHARACTERS, `${fieldLabel} darf maximal ${KEYCLOAK_PERSON_NAME_MAX_CHARACTERS} Zeichen lang sein.`)
+    .matches(
+        KEYCLOAK_PERSON_NAME_REGEX,
+        {
+            excludeEmptyString: true,
+            message: `${fieldLabel} enthält unzulässige Zeichen. Bitte entfernen Sie Sonderzeichen wie ^, <, >, &, $, %, !, #, ?, §, ;, *, ~, /, \\, |, =, [ ], { } oder ( ).`,
+        },
+    );
+
+const Schema = yup.object({
+    firstName: createPersonNameSchema('Vorname'),
+    lastName: createPersonNameSchema('Nachname'),
+    email: yup
+        .string()
+        .trim()
+        .email('Bitte eine gültige E-Mail-Adresse angeben.')
+        .max(KEYCLOAK_EMAIL_MAX_CHARACTERS, `Die E-Mail-Adresse darf maximal ${KEYCLOAK_EMAIL_MAX_CHARACTERS} Zeichen lang sein.`)
+        .required('Bitte eine E-Mail-Adresse angeben.'),
+    enabled: yup
+        .boolean()
+        .required(),
+    systemRoleId: yup
+        .number()
+        .nullable()
+        .required('Bitte eine Systemrolle auswählen.'),
+});
+
+const DELETION_BLOCKING_TASK_STATUSES = new Set<ProcessTaskStatus>([
+    ProcessTaskStatus.Running,
+    ProcessTaskStatus.Paused,
+    ProcessTaskStatus.Restarted,
+]);
+
+type UserDetailsLocationState = {
+    userProvisioningResult?: CreateUserResponseDTO;
+};
+
+function sanitizeFilenameSegment(input: string): string {
+    return input
+        .trim()
+        .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .toLowerCase();
+}
 
 export function UserDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
+    const confirm = useConfirm();
+    const refreshPermissionSet = useRefreshPermissionSet();
+    const canReadSystemRoles = useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
+    const canDeleteUser = useHasSystemPermission(Permission.USER_DELETE);
+    const deleteUserDisabledTooltip = formatMissingPermissionTooltip(Permission.USER_DELETE);
+    const systemRoleReadDisabledTooltip = formatMissingPermissionTooltip(Permission.SYSTEM_ROLE_READ);
 
-    const api = useApi();
     const {
         item: user,
+        isNewItem: isNewUser,
+        setItem,
+        isBusy,
+        setIsBusy,
+        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
+    const updateUserDisabledTooltip = formatMissingPermissionTooltip(isNewUser ? Permission.USER_CREATE : Permission.USER_UPDATE);
 
-    const [isBusy, setIsBusy] = useState(false);
+    const {
+        currentItem: editedUser,
+        errors,
+        hasNotChanged,
+        handleInputBlur,
+        handleInputChange,
+        validate,
+        reset,
+    } = useFormManager<User>(user, Schema as any);
 
+    const changeBlocker = useChangeBlocker(user, editedUser);
+
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
-    const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
-    const [relatedSubmissions, setRelatedSubmissions] = useState<ConstraintLinkProps[] | undefined>(undefined);
+    const [relatedTasks, setRelatedTasks] = useState<ConstraintLinkProps[] | undefined>(undefined);
+    const [systemRoleOptions, setSystemRoleOptions] = useState<Array<{ label: string; value: number }>>([]);
+    const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(true);
+    const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
+    const [sendInitialCredentialsByEmail, setSendInitialCredentialsByEmail] = useState(false);
+    const [userProvisioningResult, setUserProvisioningResult] = useState<CreateUserResponseDTO | null>(null);
 
-    const userInfo: StatusTablePropsItem[] | undefined = useMemo(() => {
-        if (user == null) {
+    const keycloakAdminConsoleUrl = useMemo(() => {
+        if (editedUser?.id == null || editedUser.id.length === 0) {
             return undefined;
         }
 
-        const userInfoItems: StatusTablePropsItem[] = [
-            {
-                label: 'Name',
-                icon: <BadgeOutlined />,
-                children: resolveUserName(user),
-            },
-            {
-                label: 'E-Mail-Adresse',
-                icon: <MailOutlined />,
-                children: user.email ?
-                    <Link
-                        href={`mailto:${user.email}`}
-                        title="E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)"
-                        sx={{
-                            textDecoration: 'none',
-                            color: 'inherit',
-                        }}
-                    >
-                        {String(user.email)}
-                    </Link> :
-                    'Keine E-Mail-Adresse hinterlegt',
-            },
-            {
-                label: 'Passwort',
-                icon: <LockOutlined />,
-                children: '****************',
-            },
-            {
-                label: 'Kontostatus',
-                icon: user?.enabled ? <ToggleOnOutlined /> : <WarningOutlined sx={{color: 'warning.main'}} />,
-                children: user?.enabled ?
-                    'Aktiv' :
-                    <Box
-                        sx={{
-                            color: 'warning.dark',
-                        }}
-                    >
-                        {user?.deletedInIdp ? 'Gelöscht' : 'Inaktiv'} – {user?.deletedInIdp ?
-                            'Dieses Konto wurde im IDP gelöscht und hat keinen Zugriff mehr auf das System.'
-                            :
-                            'Dieses Konto wurde im IDP deaktiviert und hat derzeit keinen Zugriff auf das System.'
-                        }
-                    </Box>,
-            },
-            {
-                label: 'Verwendeter IDP',
-                icon: <ApiOutlined />,
-                children: <Typography>
-                    Gover Identity Provider{' '}
-                    <Typography component="span" color="text.secondary" fontSize="0.875rem">
-                        (basierend auf Keycloak)
-                    </Typography>
-                </Typography>,
-            },
-        ];
+        const realm = encodeURIComponent(AppConfig.oidc.realm);
+        const userId = encodeURIComponent(editedUser.id);
 
-        if (isAdmin(user)) {
-            userInfoItems.splice(4, 0, {
-                label: 'Administrator:innen-Status',
-                icon: <BadgeOutlined />,
-                children: 'Globale Administrator:in – Diese Mitarbeiter:in hat Administratorrechte für das gesamte System.',
-            });
+        return createOidcPath(`/admin/${realm}/console/#/${realm}/users/${userId}/settings`);
+    }, [editedUser?.id]);
+
+    const canEditUser = isEditable && !user?.deletedInIdp && !user?.artificialUser;
+    const canResetUserPassword = canEditUser && !isNewUser;
+    const canDeleteExistingUser = canDeleteUser && !isNewUser && !user?.deletedInIdp && !user?.artificialUser;
+    const saveDisabled =
+        isBusy ||
+        hasNotChanged ||
+        !canEditUser ||
+        !canReadSystemRoles ||
+        isSystemRolesLoading ||
+        systemRoleOptions.length === 0;
+    const saveDisabledTooltip =
+        !canEditUser
+            ? updateUserDisabledTooltip
+            : !canReadSystemRoles
+                ? systemRoleReadDisabledTooltip
+                : undefined;
+
+    const refreshPermissionsAfterUserRoleChange = () => {
+        // Effective permissions may include system grants inherited through deputy assignments.
+        // The frontend cannot know whether the edited user is currently represented by the active user.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Mitarbeiter:in nicht aktualisiert werden.',
+            )));
+    };
+
+    useEffect(() => {
+        if (!canReadSystemRoles) {
+            setSystemRoleOptions([]);
+            setHasSystemRolesLoadingError(false);
+            setIsSystemRolesLoading(false);
+            return;
         }
 
-        if (user?.deletedInIdp) {
-            userInfoItems.push({
-                label: 'Hinweis zur Datenhaltung gelöschter Konten',
-                icon: <Inventory2Outlined />,
-                alignTop: true,
-                children:
-                    <>
-                        <Typography>
-                            Diese Mitarbeiter:in wurde im IDP gelöscht. Zur Wahrung der Nachvollziehbarkeit von Zuweisungen, Rollen und Mitgliedschaften (z. B. in Fachbereichen und Anträgen) wird eine pseudonymisierte Version des Nutzerkontos in der Plattform archiviert.
-                        </Typography>
-                        <Typography sx={{ mt: 2 }}>
-                            Diese Maßnahme erfolgt unter Berücksichtigung der DSGVO, insbesondere im Rahmen von Art. 5 Abs. 1 lit. e (Speicherbegrenzung) und Art. 6 Abs. 1 lit. f (berechtigtes Interesse), um die Integrität historischer Systemdaten sicherzustellen, ohne eine Rückverfolgbarkeit der betroffenen Person zu ermöglichen.
-                        </Typography>
-                    </>,
+        let isActive = true;
+        setIsSystemRolesLoading(true);
+        setHasSystemRolesLoadingError(false);
+
+        new SystemRolesApiService()
+            .listAll()
+            .then((result) => {
+                if (!isActive) {
+                    return;
+                }
+
+                const options = result.content
+                    .map((role) => ({
+                        label: role.name,
+                        value: role.id,
+                    }))
+                    .sort((a, b) => a.label.localeCompare(b.label));
+                setSystemRoleOptions(options);
+            })
+            .catch((err) => {
+                if (!isActive) {
+                    return;
+                }
+
+                setHasSystemRolesLoadingError(true);
+                dispatch(showApiErrorSnackbar(err, 'Beim Laden der Systemrollen ist ein Fehler aufgetreten.'));
+            })
+            .finally(() => {
+                if (isActive) {
+                    setIsSystemRolesLoading(false);
+                }
             });
+
+        return () => {
+            isActive = false;
+        };
+    }, [canReadSystemRoles, dispatch]);
+
+    useEffect(() => {
+        const navigationState = location.state as UserDetailsLocationState | null;
+        if (navigationState?.userProvisioningResult?.initialCredentials == null) {
+            return;
         }
 
-        return userInfoItems;
-    }, [user]);
+        setUserProvisioningResult(navigationState.userProvisioningResult);
+        navigate(location.pathname, {
+            replace: true,
+            state: null,
+        });
+    }, [location.pathname, location.state, navigate]);
 
-    if (user == null || userInfo == null) {
+    useEffect(() => {
+        if (isNewUser && user?.id === '') {
+            setSendInitialCredentialsByEmail(false);
+        }
+    }, [isNewUser, user?.id]);
+
+    if (editedUser == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
-    const checkAndHandleDelete = async () => {
-        if (!user.id) return;
+    const initialCredentials = userProvisioningResult?.initialCredentials;
+    const hasInitialCredentialsDeliveryError = userProvisioningResult?.initialCredentialsDeliveryError != null;
+
+    const buildInitialCredentialsExport = () => {
+        if (initialCredentials == null) {
+            return null;
+        }
+
+        return [
+            'Initiale Zugangsdaten für Prosuna',
+            '',
+            `Name: ${initialCredentials.fullName}`,
+            `E-Mail-Adresse: ${initialCredentials.email}`,
+            `Systemrolle: ${initialCredentials.systemRoleName}`,
+            `Temporäres Passwort: ${initialCredentials.temporaryPassword}`,
+            '',
+            'Hinweis: Nur das temporäre Passwort wird einmalig angezeigt.',
+            'Beim ersten Login muss die Mitarbeiter:in ein neues Passwort vergeben, die E-Mail-Adresse bestätigen und gegebenenfalls eine Zwei-Faktor-Authentifizierung einrichten, sofern dies in der System-Konfiguration vorgesehen ist.',
+        ].join('\n');
+    };
+
+    const handleDownloadInitialCredentials = () => {
+        const content = buildInitialCredentialsExport();
+        if (content == null || initialCredentials == null) {
+            return;
+        }
+
+        const filenameSegment = sanitizeFilenameSegment(initialCredentials.fullName);
+        const filename = filenameSegment.length > 0
+            ? `prosuna-zugangsdaten-${filenameSegment}.txt`
+            : 'prosuna-zugangsdaten.txt';
+
+        downloadTextFile(filename, content, 'text/plain;charset=utf-8');
+    };
+
+    const renderInitialCredentialField = (label: string, value: string, copyLabel: string) => (
+        <TextField
+            label={label}
+            value={value}
+            fullWidth
+            slotProps={{
+                input: {
+                    readOnly: true,
+                    endAdornment: (
+                        <InputAdornment position="end">
+                            <CopyToClipboardButton
+                                text={value}
+                                tooltip={`${copyLabel} kopieren`}
+                                copiedTooltip={`${copyLabel} kopiert`}
+                                ariaLabel={`${copyLabel} kopieren`}
+                            />
+                        </InputAdornment>
+                    ),
+                }
+            }}
+        />
+    );
+
+    const handleSave = () => {
+        if (!canEditUser || !canReadSystemRoles) {
+            return;
+        }
+
+        if (!validate()) {
+            dispatch(showErrorSnackbar('Bitte prüfen Sie die Pflichtfelder.'));
+            return;
+        }
+
+        if (systemRoleOptions.length === 0) {
+            dispatch(showErrorSnackbar('Es sind keine Systemrollen verfügbar.'));
+            return;
+        }
 
         setIsBusy(true);
-        try {
-            const submissionsApi = new SubmissionsApiService(api);
-            const submissions = await submissionsApi.list(0, 999, undefined, undefined, { assigneeId: user.id, notArchived: true });
 
-            if (submissions.content.length > 0) {
-                const maxVisibleLinks = 5;
-                let processedLinks = submissions.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.fileNumber ? `Antrag mit Aktenzeichen ${f.fileNumber}` : `Antrag ohne Aktenzeichen (${f.id})`,
-                    to: `/submissions/${f.id}`
+        if (isNewUser) {
+            new UsersApiService()
+                .provision({
+                    user: editedUser,
+                    sendInitialCredentialsByEmail: sendInitialCredentialsByEmail,
+                })
+                .then((result) => {
+                    setItem(result.user);
+                    reset();
+                    refreshPermissionsAfterUserRoleChange();
+                    setSendInitialCredentialsByEmail(false);
+
+                    if (result.initialCredentialsSentByEmail) {
+                        dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich erstellt und die initialen Zugangsdaten wurden per E-Mail versendet.'));
+                    } else if (result.initialCredentialsDeliveryError != null) {
+                        dispatch(showErrorSnackbar('Die Mitarbeiter:in wurde erstellt, die E-Mail mit den initialen Zugangsdaten konnte jedoch nicht versendet werden.'));
+                    } else {
+                        dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich erstellt. Bitte geben Sie die initialen Zugangsdaten manuell weiter.'));
+                    }
+
+                    setTimeout(() => {
+                        navigate(`/users/${result.user.id}`, {
+                            replace: true,
+                            state: result.initialCredentials != null
+                                ? {
+                                    userProvisioningResult: result,
+                                } satisfies UserDetailsLocationState
+                                : undefined,
+                        });
+                    }, 0);
+                })
+                .catch((err) => {
+                    dispatch(showApiErrorSnackbar(err, 'Beim Erstellen der Mitarbeiter:in ist ein Fehler aufgetreten.'));
+                })
+                .finally(() => {
+                    setIsBusy(false);
+                });
+        } else {
+            new UsersApiService()
+                .update(user!.id, editedUser)
+                .then((savedUser) => {
+                    setItem(savedUser);
+                    reset();
+                    refreshPermissionsAfterUserRoleChange();
+
+                    dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich gespeichert.'));
+                })
+                .catch((err) => {
+                    dispatch(showApiErrorSnackbar(err, 'Beim Speichern der Mitarbeiter:in ist ein Fehler aufgetreten.'));
+                })
+                .finally(() => {
+                    setIsBusy(false);
+                });
+        }
+    };
+
+    const checkAndHandleDelete = async () => {
+        if (!canDeleteUser || isNewUser || user?.id == null || user.deletedInIdp || user.artificialUser) {
+            return;
+        }
+
+        setIsBusy(true);
+
+        try {
+            const tasks = await new ProcessInstanceTaskApiService().listAll({
+                assignedUserId: user.id,
+            });
+
+            const blockingTasks = tasks.content.filter((task) =>
+                task.assignedUserId === user.id &&
+                DELETION_BLOCKING_TASK_STATUSES.has(task.status),
+            );
+
+            if (blockingTasks.length === 0) {
+                setShowConfirmDialog(true);
+                return;
+            }
+
+            const maxVisibleLinks = 5;
+            const processedLinks: ConstraintLinkProps[] = blockingTasks
+                .slice(0, maxVisibleLinks)
+                .map((task) => ({
+                    label: `Aufgabe #${task.id} in Vorgang #${task.processInstanceId} (${ProcessTaskStatusLabels[task.status]})`,
+                    to: `/tasks/${task.processInstanceId}/${task.id}`,
                 }));
 
-                if (submissions.content.length > maxVisibleLinks) {
-                    processedLinks.push({
-                        label: "Weitere Anträge anzeigen…",
-                        to: `/submissions`
-                    });
-                }
-
-                setRelatedSubmissions(processedLinks);
-                setShowConstraintDialog(true);
-            } else {
-                setConfirmDeleteAction(() => confirmDelete);
+            if (blockingTasks.length > maxVisibleLinks) {
+                processedLinks.push({
+                    label: 'Weitere zugewiesene Aufgaben anzeigen…',
+                    to: '/tasks',
+                });
             }
-        } catch (error) {
-            console.error(error);
-            dispatch(showErrorSnackbar('Fehler beim Prüfen der Löschbarkeit.'));
+
+            setRelatedTasks(processedLinks);
+            setShowConstraintDialog(true);
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Beim Prüfen zugewiesener Aufgaben ist ein Fehler aufgetreten.'));
         } finally {
             setIsBusy(false);
         }
     };
 
-    const confirmDelete = () => {
-        if (!user.id) return;
+    const handleDelete = () => {
+        if (!canDeleteUser || isNewUser || user?.id == null || user.deletedInIdp || user.artificialUser) {
+            return;
+        }
 
         setIsBusy(true);
-        new UsersApiService(api)
+
+        new UsersApiService()
             .destroy(user.id)
             .then(() => {
+                reset();
+                refreshPermissionsAfterUserRoleChange();
                 navigate('/users', {
                     replace: true,
                 });
                 dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich gelöscht.'));
             })
-            .catch(err => {
-                console.error(err);
-
+            .catch((err) => {
                 if (isApiError(err) && 'message' in err.details) {
                     dispatch(showErrorSnackbar(err.details.message));
                 } else {
                     dispatch(showErrorSnackbar('Beim Löschen der Mitarbeiter:in ist ein Fehler aufgetreten.'));
                 }
             })
-            .finally(() => setIsBusy(false));
+            .finally(() => {
+                setIsBusy(false);
+            });
+    };
+
+    const handlePasswordReset = () => {
+        if (!canResetUserPassword || user?.id == null || user.deletedInIdp) {
+            return;
+        }
+
+        confirm({
+            title: 'Passwort zurücksetzen',
+            children: (
+                <>
+                    <Typography>
+                        Möchten Sie das Passwort für diese Mitarbeiter:in wirklich zurücksetzen?
+                    </Typography>
+                    <Typography>
+                        Dazu wird an die hinterlegte E-Mail-Adresse ein Link zum Zurücksetzen des Passworts gesendet.
+                    </Typography>
+                </>
+            ),
+        })
+            .then((isConfirmed) => {
+                if (!isConfirmed) {
+                    return;
+                }
+
+                setIsBusy(true);
+
+                new UsersApiService()
+                    .resetPassword(user.id)
+                    .then(() => {
+                        dispatch(showSuccessSnackbar('Der Passwort-Zurücksetzen-Link wurde erfolgreich versendet.'));
+                    })
+                    .catch((err) => {
+                        dispatch(showApiErrorSnackbar(err, 'Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.'));
+                    })
+                    .finally(() => {
+                        setIsBusy(false);
+                    });
+            });
     };
 
     return (
         <>
-            <Box sx={{pt: 1.5}}>
+            <Box
+                sx={{
+                    pt: 1.5,
+                }}
+            >
                 <Typography
                     variant="h5"
                     sx={{mb: 1}}
                 >
-                    Kontoinformationen dieser Mitarbeiter:in
+                    {isNewUser ? 'Mitarbeiter:in anlegen' : 'Mitarbeiter:in verwalten'}
                 </Typography>
 
-                <Typography sx={{mb: 2, maxWidth: 900}}>
-                    Die hier angezeigten Kontoinformationen stammen aus dem Identity-Provider-System (IDP) und werden in einer lokal synchronisierten Kopie vorgehalten.
-                    Bitte beachten Sie, dass Änderungen an diesen Daten ausschließlich über die Verwaltungsoberfläche des IDP vorgenommen werden können.
-                    Änderungen werden im System nach der nächsten Synchronisierung (alle fünf Minuten) sichtbar.
+                {
+                    editedUser.artificialUser &&
+                    <AlertComponent
+                        color="info"
+                        sx={{
+                            my: 2,
+                        }}
+                    >
+                        Bei dieser Mitarbeiter:in handelt es sich um einen Beispieldatensatz.<br/>
+                        Eine Änderung der Daten, sowie ein Löschen ist nicht möglich.
+                    </AlertComponent>
+                }
+
+                <Typography sx={{mb: 3, maxWidth: 900}}>
+                    {
+                        isNewUser
+                            ? 'Legen Sie hier eine neue Mitarbeiter:in an. Für das Konto wird ein temporäres Passwort gesetzt. Beim ersten Login muss dieses ersetzt und die E-Mail-Adresse bestätigt werden. Je nach System-Konfiguration kann zusätzlich die Einrichtung einer Zwei-Faktor-Authentifizierung erforderlich sein.'
+                            : 'Hier können Sie die in Prosuna relevanten Basisdaten und die Systemrolle dieser Mitarbeiter:in pflegen.'
+                    }
                 </Typography>
 
-                <StatusTable
-                    cardSx={{
-                        mt: 3,
-                    }}
-                    cardVariant="outlined"
-                    items={userInfo}
-                />
+                <Grid
+                    container
+                    columnSpacing={2}
+                >
+                    <Grid size={6}>
+                        <TextFieldComponent
+                            label="Vorname"
+                            value={editedUser.firstName}
+                            onChange={handleInputChange('firstName')}
+                            onBlur={handleInputBlur('firstName')}
+                            error={errors.firstName}
+                            maxCharacters={KEYCLOAK_PERSON_NAME_MAX_CHARACTERS}
+                            disabled={isBusy || !canEditUser}
+                            required
+                        />
+                    </Grid>
+                    <Grid size={6}>
+                        <TextFieldComponent
+                            label="Nachname"
+                            value={editedUser.lastName}
+                            onChange={handleInputChange('lastName')}
+                            onBlur={handleInputBlur('lastName')}
+                            error={errors.lastName}
+                            maxCharacters={KEYCLOAK_PERSON_NAME_MAX_CHARACTERS}
+                            disabled={isBusy || !canEditUser}
+                            required
+                        />
+                    </Grid>
+                    <Grid size={6}>
+                        <TextFieldComponent
+                            label="E-Mail-Adresse"
+                            value={editedUser.email}
+                            onChange={handleInputChange('email')}
+                            onBlur={handleInputBlur('email')}
+                            error={errors.email}
+                            maxCharacters={KEYCLOAK_EMAIL_MAX_CHARACTERS}
+                            disabled={isBusy || !canEditUser}
+                            required
+                        />
+                    </Grid>
+                    <Grid size={6}>
+                        <SelectFieldComponent
+                            label="Systemrolle"
+                            value={editedUser.systemRoleId}
+                            onChange={handleInputChange('systemRoleId')}
+                            options={systemRoleOptions}
+                            placeholder="Systemrolle auswählen"
+                            emptyStatePlaceholder={
+                                !canReadSystemRoles
+                                    ? 'Keine Berechtigung zur Einsicht'
+                                    : isSystemRolesLoading
+                                    ? 'Systemrollen werden geladen…'
+                                    : hasSystemRolesLoadingError
+                                        ? 'Systemrollen konnten nicht geladen werden'
+                                        : 'Keine Systemrollen vorhanden'
+                            }
+                            hint={
+                                !canReadSystemRoles
+                                    ? systemRoleReadDisabledTooltip
+                                    : hasSystemRolesLoadingError
+                                    ? 'Die Rollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder wenden Sie sich an eine Administrator:in.'
+                                    : undefined
+                            }
+                            error={errors.systemRoleId}
+                            disabled={isBusy || !canEditUser || !canReadSystemRoles || isSystemRolesLoading}
+                            required
+                        />
+                    </Grid>
+                    <Grid size={6}>
+                        <CheckboxFieldComponent
+                            label="Konto aktiviert"
+                            value={editedUser.enabled}
+                            onChange={handleInputChange('enabled')}
+                            error={errors.enabled}
+                            variant="switch"
+                            disabled={isBusy || !canEditUser}
+                            busy={isBusy}
+                        />
+                    </Grid>
+                    {
+                        isNewUser &&
+                        <Grid size={12}>
+                            <CheckboxFieldComponent
+                                label="Initiale Zugangsdaten automatisch per E-Mail senden"
+                                value={sendInitialCredentialsByEmail}
+                                onChange={setSendInitialCredentialsByEmail}
+                                variant="switch"
+                                disabled={isBusy || !canEditUser}
+                                busy={isBusy}
+                                hint="Wenn deaktiviert, wird das temporäre Passwort nach der Anlage einmalig angezeigt."
+                            />
+                        </Grid>
+                    }
+                </Grid>
+
+                {
+                    editedUser.deletedInIdp ? (
+                        <AlertComponent
+                            color="warning"
+                            sx={{
+                                my: 3,
+                            }}
+                        >
+                            Dieses Konto wurde im Identity Provider bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
+                            Der Datensatz bleibt in Prosuna erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
+                        </AlertComponent>
+                    ) : (
+                        !isNewUser &&
+                        <Box
+                            sx={{
+                                mt: 2,
+                                mb: 3,
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                alignItems: 'center',
+                                gap: 2,
+                            }}
+                        >
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "text.secondary",
+                                    maxWidth: 900
+                                }}>
+                                Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in Keycloak.
+                                Benutzer-ID:{' '}
+                                <Box
+                                    component="span"
+                                    sx={{
+                                        fontFamily: 'monospace',
+                                        fontSize: '0.95em',
+                                    }}
+                                >
+                                    {editedUser.id}
+                                </Box>
+                                . Wenn die Mitarbeiter:in keinen Zugriff mehr benötigt, können Sie das Konto im IdP
+                                löschen.
+                            </Typography>
+
+                            {
+                                isEditable && keycloakAdminConsoleUrl != null &&
+                                <Button
+                                    component="a"
+                                    href={keycloakAdminConsoleUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    variant="text"
+                                    size="small"
+                                    startIcon={<OpenInNewIcon/>}
+                                    sx={{whiteSpace: 'nowrap'}}
+                                >
+                                    In Keycloak öffnen
+                                </Button>
+                            }
+                        </Box>
+                    )
+                }
 
                 <Box
                     sx={{
@@ -221,57 +690,170 @@ export function UserDetailsPageIndex() {
                         gap: 2,
                     }}
                 >
-                    {
-                        !user.deletedInIdp &&
-                            <Button
-                            target="_blank"
-                            href={`${AppConfig.staff.host}/admin/${AppConfig.staff.realm}/console/#/${AppConfig.staff.realm}/users/${user?.id}/settings`}
+                    <DisabledTooltip
+                        disabled={saveDisabled && saveDisabledTooltip != null}
+                        title={saveDisabledTooltip}
+                    >
+                        <Button
                             variant="contained"
                             color="primary"
-                            startIcon={<OpenInNewIcon />}
-                            disabled={isBusy}
+                            startIcon={<SaveOutlinedIcon/>}
+                            disabled={saveDisabled}
+                            onClick={handleSave}
                         >
-                            Daten der Mitarbeiter:in verwalten
+                            {isNewUser ? 'Mitarbeiter:in anlegen' : 'Speichern'}
                         </Button>
+                    </DisabledTooltip>
+
+                    {
+                        !isNewUser &&
+                        <DisabledTooltip
+                            disabled={!canEditUser}
+                            title={updateUserDisabledTooltip}
+                        >
+                            <Button
+                                color="error"
+                                disabled={isBusy || hasNotChanged || !canEditUser}
+                                onClick={() => {
+                                    reset();
+                                }}
+                            >
+                                Zurücksetzen
+                            </Button>
+                        </DisabledTooltip>
                     }
 
-                    {/* TODO: Remove code for user deletion in the future
-                        user.deletedInIdp &&
-                        <Button
-                            onClick={checkAndHandleDelete}
-                            variant="outlined"
-                            color="error"
-                            startIcon={<DeleteOutlinedIcon />}
-                            sx={{
-                                ml: 'auto',
-                            }}
-                            disabled={isBusy}
-                        >
-                            Mitarbeiter:in endgültig löschen
-                        </Button>
-                    */}
+                    {
+                        !isNewUser &&
+                        <>
+                            <DisabledTooltip
+                                disabled={!canResetUserPassword}
+                                title={updateUserDisabledTooltip}
+                                wrapperSx={{
+                                    ml: 'auto',
+                                }}
+                            >
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    startIcon={<LockResetOutlinedIcon/>}
+                                    disabled={isBusy || !canResetUserPassword}
+                                    onClick={handlePasswordReset}
+                                >
+                                    Passwort zurücksetzen
+                                </Button>
+                            </DisabledTooltip>
+                            <DisabledTooltip
+                                disabled={!canDeleteExistingUser}
+                                title={user?.deletedInIdp ? undefined : deleteUserDisabledTooltip}
+                            >
+                                <Button
+                                    onClick={checkAndHandleDelete}
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={<Delete/>}
+
+                                    disabled={isBusy || !canDeleteExistingUser}
+                                >
+                                    Löschen
+                                </Button>
+                            </DisabledTooltip>
+                        </>
+                    }
                 </Box>
             </Box>
 
+            {changeBlocker.dialog}
+
             <ConfirmDialog
                 title="Mitarbeiter:in löschen"
-                onCancel={() => setConfirmDeleteAction(undefined)}
-                onConfirm={confirmDeleteAction}
+                onCancel={() => setShowConfirmDialog(false)}
+                onConfirm={showConfirmDialog ? handleDelete : undefined}
+                confirmationText={editedUser.email || editedUser.id}
                 isDestructive
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diese Mitarbeiter:in wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diese Mitarbeiter:in wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
+                    werden.
+                </Typography>
+
+                <Typography
+                    sx={{
+                        mt: 2,
+                        color: 'text.secondary',
+                    }}
+                >
+                    Das Konto wird im Identity Provider gelöscht und in Prosuna als gelöscht markiert.
+                    Anschließend sind keine weiteren Anmeldungen oder Passwort-Resets mehr möglich.
                 </Typography>
             </ConfirmDialog>
 
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
-                message="Dieser Mitarbeiter:in kann (noch) nicht gelöscht werden, da sie noch offenen Anträgen zugewiesen ist."
-                solutionText="Bitte übertragen Sie die Anträge an eine andere Mitarbeiter:in und versuchen Sie es erneut:"
-                links={relatedSubmissions}
+                message="Diese Mitarbeiter:in kann (noch) nicht gelöscht werden, da ihr noch nicht abgeschlossene Aufgaben zugewiesen sind."
+                solutionText="Bitte weisen Sie die Aufgaben einer anderen Mitarbeiter:in zu oder schließen Sie sie ab und versuchen Sie es erneut:"
+                links={relatedTasks}
             />
+
+            {
+                initialCredentials != null &&
+                <InfoDialog
+                    open
+                    onClose={() => setUserProvisioningResult(null)}
+                    title="Initiale Zugangsdaten"
+                    severity={hasInitialCredentialsDeliveryError ? 'warning' : 'info'}
+                    actions={
+                        <Button
+                            startIcon={<FileDownloadOutlinedIcon/>}
+                            onClick={handleDownloadInitialCredentials}
+                        >
+                            Als Textdatei herunterladen
+                        </Button>
+                    }
+                >
+                    <Typography>
+                        {
+                            hasInitialCredentialsDeliveryError
+                                ? 'Die Mitarbeiter:in wurde erstellt, die initialen Zugangsdaten konnten jedoch nicht automatisch per E-Mail versendet werden. Bitte geben Sie die folgenden Informationen manuell weiter.'
+                                : 'Die Mitarbeiter:in wurde erstellt. Bitte geben Sie die folgenden Informationen manuell weiter.'
+                        }
+                    </Typography>
+
+                    <Grid
+                        container
+                        spacing={2}
+                        sx={{mt: 0.5}}
+                    >
+                        <Grid size={6}>
+                            {renderInitialCredentialField('Name', initialCredentials.fullName, 'Name')}
+                        </Grid>
+                        <Grid size={6}>
+                            {renderInitialCredentialField('E-Mail-Adresse', initialCredentials.email, 'E-Mail-Adresse')}
+                        </Grid>
+                        <Grid size={6}>
+                            {renderInitialCredentialField('Systemrolle', initialCredentials.systemRoleName, 'Systemrolle')}
+                        </Grid>
+                        <Grid size={6}>
+                            {renderInitialCredentialField('Temporäres Passwort', initialCredentials.temporaryPassword, 'Temporäres Passwort')}
+                        </Grid>
+                    </Grid>
+
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            mt: 2
+                        }}>
+                        Das temporäre Passwort wird an dieser Stelle einmalig angezeigt. Name, E-Mail-Adresse und
+                        Systemrolle können später weiterhin im Profil eingesehen und geändert werden. Die Mitarbeiter:in
+                        muss beim ersten Login ein neues Passwort vergeben, die E-Mail-Adresse bestätigen und
+                        gegebenenfalls eine Zwei-Faktor-Authentifizierung einrichten, sofern dies in der
+                        System-Konfiguration vorgesehen ist.
+                    </Typography>
+                </InfoDialog>
+            }
         </>
     );
 }

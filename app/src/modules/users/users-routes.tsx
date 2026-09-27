@@ -1,18 +1,38 @@
 import React from 'react';
 import {RouteObject} from 'react-router-dom';
+import {UserListPage} from './pages/user/list/user-list-page';
+import {UserDetailsPage} from './pages/user/details/user-details-page';
+import {UserDetailsPageIndex} from './pages/user/details/user-details-page-index';
+import {UserDetailsPageDepartmentMemberships} from './pages/user/details/user-details-page-department-memberships';
+import {UserDetailsPageTeamMemberships} from "./pages/user/details/user-details-page-team-memberships";
+import {UserDetailsPageDeputies} from "./pages/user/details/user-details-page-deputies";
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const usersRoutes: RouteObject[] = [
     {
         path: '/users',
-        element: <div />,
+        element: <UserListPage />,
     },
     {
         path: '/users/:id',
-        element: <div />,
+        element: <UserDetailsPage />,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,
-                element: <div />,
+                element: <UserDetailsPageIndex />,
+            },
+            {
+                path: '/users/:id/department-memberships',
+                element: <UserDetailsPageDepartmentMemberships />,
+            },
+            {
+                path: '/users/:id/team-memberships',
+                element: <UserDetailsPageTeamMemberships />,
+            },
+            {
+                path: '/users/:id/deputies',
+                element: <UserDetailsPageDeputies />,
             },
         ],
     },

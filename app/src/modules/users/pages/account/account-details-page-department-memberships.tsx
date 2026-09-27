@@ -1,15 +1,19 @@
 import React from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../../slices/user-slice';
-import {DepartmentMembershipsApiService} from '../../../departments/department-memberships-api-service';
-import {UserRole, UserRoleLabels} from '../../../../data/user-role';
-import EditOutlined from '@mui/icons-material/EditOutlined';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {GenericList} from '../../../../components/generic-list/generic-list';
-import {type DepartmentMembershipResponseDTO} from '../../../departments/dtos/department-membership-response-dto';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import {isAdmin} from '../../../../utils/is-admin';
+import {UserRoleChips} from '../../../user-roles/components/user-role-chips';
+import {
+    VDepartmentMembershipWithDetailsEntity
+} from '../../../departments/entities/v-department-membership-with-details-entity';
+import {
+    VDepartmentMembershipWithDetailsService
+} from '../../../departments/services/v-department-membership-with-details-service';
 
 export function AccountDetailsPageDepartmentMemberships() {
     const user = useSelector(selectUser);
@@ -20,15 +24,16 @@ export function AccountDetailsPageDepartmentMemberships() {
                 variant="h5"
                 sx={{mb: 1}}
             >
-                Mitgliedschaften in Fachbereichen
+                Mitgliedschaften in Organisationseinheiten
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Eine Übersicht der Fachbereiche, in denen Sie Mitglied sind, und den dazugehörigen Rollen.
-                Wenn Sie noch keinem Fachbereich zugeordnet sind, bitten Sie eine Administrator:in, Sie zu einem Fachbereich hinzuzufügen.
+                Eine Übersicht der Organisationseinheiten, in denen Sie Mitglied sind, und den dazugehörigen Rollen.
+                Wenn Sie noch keiner Organisationseinheit zugeordnet sind, bitten Sie eine Administrator:in, Sie zu
+                einer Organisationseinheit hinzuzufügen.
             </Typography>
 
-            <GenericList<DepartmentMembershipResponseDTO>
+            <GenericList<VDepartmentMembershipWithDetailsEntity>
                 disableFullWidthToggle={true}
                 sx={{
                     mx: '-16px',
@@ -36,49 +41,58 @@ export function AccountDetailsPageDepartmentMemberships() {
                 }}
                 columnDefinitions={[
                     {
-                        field: 'departmentName',
-                        headerName: 'Fachbereich',
+                        field: 'orgUnitName',
+                        headerName: 'Organisationseinheit',
                         flex: 1,
                         renderCell: (params) => {
-                            const isMembershipAdmin = isAdmin(user) || params.row.role === UserRole.Admin;
-                            return (isMembershipAdmin ? <CellLink
-                                to={`/departments/${params.row.departmentId}`}
-                                title={`Fachbereich bearbeiten`}
-                            >
-                                {String(params.row.departmentName)}
-                            </CellLink> : params.row.departmentName);
+                            return (
+                                <CellLink
+                                    to={`/departments/${params.row.departmentId}`}
+                                    title={`Organisationseinheit bearbeiten`}
+                                >
+                                    {String(params.row.departmentName)}
+                                </CellLink>
+                            );
                         },
                     },
                     {
                         field: 'role',
                         headerName: 'Rolle',
                         flex: 1,
-                        renderCell: (params) => UserRoleLabels[params.row.role],
+                        sortable: false,
+                        renderCell: (params) => (
+                            <UserRoleChips roles={params.row.domainRoles.map(item => ({
+                                id: item.id!,
+                                name: item.name ?? '',
+                            }))}/>
+                        ),
                     },
                 ]}
                 fetch={(options) => {
-                    return new DepartmentMembershipsApiService(options.api)
-                        .listAllOrdered((options.sort === 'departmentName' ? 'name' : 'membershipRole') as any, options.order, {
+                    return new VDepartmentMembershipWithDetailsService()
+                        .list(options.page, options.size, options.sort, options.order, {
                             userId: user?.id,
-                            departmentName: options.search,
+                            name: options.search,
                         });
                 }}
-                getRowIdentifier={(item) => item.id.toString()}
-                searchLabel="Fachbereich suchen"
-                searchPlaceholder="Titel des Fachbereichs eingeben…"
+                getRowIdentifier={(item) => item.membershipId.toString()}
+                searchLabel="Organisationseinheit suchen"
+                searchPlaceholder="Name der Organisationseinheit eingeben…"
                 defaultSortField="departmentName"
                 rowMenuItems={[]}
-                noDataPlaceholder="Keine Fachbereiche vorhanden"
-                loadingPlaceholder="Lade Fachbereiche…"
-                noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
-                rowActions={(item: DepartmentMembershipResponseDTO) => {
-                    const isMembershipAdmin = isAdmin(user) || item.role === UserRole.Admin;
-                    return isMembershipAdmin ? [{
-                        icon: <EditOutlined />,
-                        to: `/departments/${item.departmentId}`,
-                        tooltip: 'Fachbereich bearbeiten',
-                    }] : [];
-                }}
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Keine Organisationseinheiten zugeordnet"
+                        description="Ihre Organisationseinheiten bestimmen, in welchen fachlichen Bereichen Sie mitarbeiten."
+                    />
+                }
+                loadingPlaceholder="Lade Organisationseinheiten…"
+                noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
+                rowActions={(item) => [{
+                    icon: <EditOutlined/>,
+                    to: `/departments/${item.departmentId}`,
+                    tooltip: 'Organisationseinheit bearbeiten',
+                }]}
                 preSearchElements={[]}
             />
         </Box>

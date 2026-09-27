@@ -7,4 +7,5 @@ export interface HintProps {
     details: ReactNode;
     sx?: SxProps;
     isError?: boolean;
+    label?: string;
 }

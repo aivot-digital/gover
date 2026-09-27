@@ -1,0 +1,70 @@
+package de.aivot.prosuna.backend.process.filters;
+
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.lib.models.Filter;
+import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.utils.specification.SpecificationBuilder;
+import org.springframework.data.jpa.domain.Specification;
+
+import jakarta.annotation.Nonnull;
+import java.util.List;
+
+public class ProcessVersionFilter implements Filter<ProcessVersionEntity> {
+    private Integer processId;
+    private List<Integer> processIds;
+    private Integer processVersion;
+    private ProcessVersionStatus status;
+
+    public static ProcessVersionFilter create() {
+        return new ProcessVersionFilter();
+    }
+
+    @Nonnull
+    @Override
+    public Specification<ProcessVersionEntity> build() {
+        var builder = SpecificationBuilder
+                .create(ProcessVersionEntity.class)
+                .withEquals("processId", processId)
+                .withInList("processId", processIds)
+                .withEquals("processVersion", processVersion)
+                .withEquals("status", status);
+
+        return builder.build();
+    }
+
+    public Integer getProcessId() {
+        return processId;
+    }
+
+    public ProcessVersionFilter setProcessId(Integer processId) {
+        this.processId = processId;
+        return this;
+    }
+
+    public List<Integer> getProcessIds() {
+        return processIds;
+    }
+
+    public ProcessVersionFilter setProcessIds(List<Integer> processIds) {
+        this.processIds = processIds;
+        return this;
+    }
+
+    public Integer getProcessVersion() {
+        return processVersion;
+    }
+
+    public ProcessVersionFilter setProcessVersion(Integer processVersion) {
+        this.processVersion = processVersion;
+        return this;
+    }
+
+    public ProcessVersionStatus getStatus() {
+        return status;
+    }
+
+    public ProcessVersionFilter setStatus(ProcessVersionStatus status) {
+        this.status = status;
+        return this;
+    }
+}

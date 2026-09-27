@@ -1,0 +1,58 @@
+package de.aivot.prosuna.backend.process.services;
+
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.Filter;
+import de.aivot.prosuna.backend.lib.services.ReadEntityService;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+@Service
+public class ProcessInstanceEventService implements ReadEntityService<ProcessInstanceEventEntity, Long> {
+
+    private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
+
+    @Autowired
+    public ProcessInstanceEventService(ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
+        this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
+    }
+
+    @Nullable
+    @Override
+    public Page<ProcessInstanceEventEntity> performList(@Nonnull Pageable pageable,
+                                                        @Nullable Specification<ProcessInstanceEventEntity> specification,
+                                                        @Nullable Filter<ProcessInstanceEventEntity> filter) throws ResponseException {
+        return processInstanceHistoryEventRepository.findAll(specification, pageable);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<ProcessInstanceEventEntity> retrieve(@Nonnull Long id) throws ResponseException {
+        return processInstanceHistoryEventRepository.findById(id);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<ProcessInstanceEventEntity> retrieve(@Nonnull Specification<ProcessInstanceEventEntity> specification) throws ResponseException {
+        return processInstanceHistoryEventRepository.findOne(specification);
+    }
+
+    @Override
+    public boolean exists(@Nonnull Long id) {
+        return processInstanceHistoryEventRepository.existsById(id);
+    }
+
+    @Override
+    public boolean exists(@Nonnull Specification<ProcessInstanceEventEntity> specification) {
+        return processInstanceHistoryEventRepository.exists(specification);
+    }
+
+}

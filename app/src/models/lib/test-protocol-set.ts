@@ -1,4 +1,4 @@
-import {TestProtocol} from "./test-protocol";
+import {TestProtocol} from './test-protocol';
 
 export interface TestProtocolSet {
     technicalTest?: TestProtocol;

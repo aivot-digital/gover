@@ -4,12 +4,11 @@ import {Box, Button, FormControl, FormLabel, Grid, Tooltip, Typography} from '@m
 import {StepIconsMap} from '../../data/step-icons';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {type Form as Application} from '../../models/entities/form';
 import {IconPickerDialog} from '../../dialogs/icon-picker-dialog/icon-picker-dialog';
-import {SvgIconComponent} from '@mui/icons-material';
-import ArrowCircleRightOutlinedIcon from '@mui/icons-material/ArrowCircleRightOutlined';
+import {type SvgIconComponent} from '../../types/svg-icon-component';
+import ArrowCircleRightOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowCircleRight';
 
-export function StepComponentEditor(props: BaseEditorProps<StepElement, Application>): JSX.Element {
+export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
     const [pickerOpen, setPickerOpen] = useState(false);
 
     const IconComponent: SvgIconComponent =
@@ -27,10 +26,10 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}>
                     <TextFieldComponent
                         value={props.element.title ?? ''}
                         label="Titel des Abschnitts"
@@ -43,25 +42,26 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <FormControl margin="normal">
                 <FormLabel>Symbol (Icon) für diesen Abschnitt</FormLabel>
 
                 <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                    mt={1}
-                >
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mt: 1
+                    }}>
                     {IconComponent && (
-                        <Tooltip title={iconLabel}>
+                        <Tooltip title={iconLabel} arrow>
                             <Box
                                 sx={{
                                     border: '1px solid',
-                                    borderColor: 'grey.300',
+                                    borderColor: 'divider',
                                     borderRadius: 1,
                                     p: 1,
-                                    backgroundColor: 'grey.50',
+                                    backgroundColor: 'action.selected',
+                                    color: 'text.secondary',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -69,7 +69,7 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                                     height: 48,
                                 }}
                             >
-                                <IconComponent />
+                                <IconComponent/>
                             </Box>
                         </Tooltip>
                     )}
@@ -108,8 +108,8 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                     open={pickerOpen}
                     onClose={() => setPickerOpen(false)}
                     onSelect={(id) => props.onPatch({icon: id})}
-                    selectedIconId={props.element.icon}
-                    title={"Symbol (Icon) für Abschnitt auswählen"}
+                    selectedIconId={props.element.icon ?? undefined}
+                    title={'Symbol (Icon) für Abschnitt auswählen'}
                     showLabels
                     autoSelect
                 />

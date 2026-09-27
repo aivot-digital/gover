@@ -1,7 +1,6 @@
 import React from 'react';
-import {Box, Typography} from '@mui/material';
+import {Box, SxProps, Theme, Typography} from '@mui/material';
 import Balancer from 'react-wrap-balancer';
-import {SxProps, Theme} from "@mui/material";
 
 interface ElementEditorSectionHeaderProps {
     title: string;
@@ -23,7 +22,7 @@ export function ElementEditorSectionHeader({
                                      maxWidth = '900px',
                                      children,
                                      sx = {},
-                                 }: ElementEditorSectionHeaderProps): JSX.Element {
+                                 }: ElementEditorSectionHeaderProps) {
     return (
         <Box
             sx={{
@@ -34,7 +33,13 @@ export function ElementEditorSectionHeader({
             }}
         >
             <Typography variant={variant}>
-                <Balancer>{title} <Typography component="span" color={"text.secondary"} sx={{fontSize: 'inherit', pl: 0.5}}>{titleSuffix}</Typography></Balancer>
+                <Balancer>{title} <Typography
+                    component="span"
+                    sx={{
+                        color: "text.secondary",
+                        fontSize: 'inherit',
+                        pl: 0.5
+                    }}>{titleSuffix}</Typography></Balancer>
             </Typography>
             {children && (
                 <Typography sx={{mt: 1}}>

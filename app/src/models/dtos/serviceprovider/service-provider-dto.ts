@@ -1,9 +1,9 @@
 // TODO: Implement this DTO
 export interface ServiceProviderDTO {
 }
-// package de.aivot.GoverBackend.serviceprovider.dtos;
+// package de.aivot.prosuna.backend.serviceprovider.dtos;
 // 
-// import de.aivot.GoverBackend.serviceprovider.providers.ServiceProvider;
+// import de.aivot.prosuna.backend.serviceprovider.providers.ServiceProvider;
 // 
 // /**
 //  * Data transfer object for service providers.

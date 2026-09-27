@@ -1,8 +1,11 @@
+import {type AssetVisibility} from '../../modules/assets/models/asset-visibility';
+
 export interface SelectAssetDialogProps {
+    id?: string;
     title: string;
     show: boolean;
-    mimetype?: string;
+    mimetype?: string | string[];
     onSelect: (assetKey: string) => void;
     onCancel: () => void;
-    mode: 'private' | 'public' | 'all';
+    visibility: AssetVisibility;
 }

@@ -1,5 +1,7 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import type {RootState} from '../store';
+import type {RootState} from '../store.staff';
+import {ElementDerivationLogItem} from '../models/element-data';
+import {instantToEpochMillis} from '../utils/temporal-utils';
 
 export enum LogLevel {
     Debug,
@@ -34,6 +36,19 @@ const loggingSlice = createSlice({
     name: 'logging',
     initialState: initialState,
     reducers: {
+        addDerivationLogItems: (state, action: PayloadAction<ElementDerivationLogItem[]>) => {
+            const newEntries = action.payload.map((item) => ({
+                type: item.level === 'Debug' ? LogLevel.Debug : LogLevel.Error,
+                source: item.elementId,
+                message: item.message,
+                timestamp: instantToEpochMillis(item.timestamp) ?? Number.NaN,
+            }));
+
+            state.entries = [
+                ...state.entries,
+                ...newEntries,
+            ];
+        },
         setLogLevel: (state, action: PayloadAction<LogLevel>) => {
             state.logLevel = action.payload;
         },
@@ -93,6 +108,7 @@ const loggingSlice = createSlice({
 });
 
 export const {
+    addDerivationLogItems,
     setLogLevel,
     logDebug,
     logInfo,

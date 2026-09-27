@@ -1,0 +1,652 @@
+package de.aivot.prosuna.backend.process.models;
+
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import jakarta.annotation.Nonnull;
+import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Proxy;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class ProcessNodeDefinitionTest {
+    @Test
+    void getStaffTaskView_ReturnsSavedStaffSnapshotWhenPresent() throws Exception {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
+            @Override
+            public String getParentPluginKey() {
+                return "test.plugin";
+            }
+
+            @Override
+            public String getComponentKey() {
+                return "test-node";
+            }
+
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Override
+            public String getName() {
+                return "Test Node";
+            }
+
+            @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Test node description";
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeType getType() {
+                return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+            }
+
+            @Nonnull
+            @Override
+            public List<ProcessNodePort> getPorts() {
+                return List.of();
+            }
+
+            @Override
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+                return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+                var initialData = new AuthoredElementValues();
+                initialData.putLiteral("defaultField", "initial");
+                initialData.putLiteral("sharedField", "initial");
+                return ProcessNodeStaffView.of(context, new GroupLayoutElement(), List.of(), initialData);
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
+            }
+        };
+
+        var context = staffContext(
+                Map.of(
+                        ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
+                        new AuthoredElementValues()
+                                .putLiteral("defaultField", "initial")
+                                .putLiteral("sharedField", "saved")
+                                .putLiteral("savedField", "saved")
+                ),
+                Map.of(),
+                Map.of()
+        );
+
+        var data = definition.getStaffTaskView(context).data();
+
+        assertEquals("initial", data.getLiteral("defaultField"));
+        assertEquals("saved", data.getLiteral("sharedField"));
+        assertEquals("saved", data.getLiteral("savedField"));
+    }
+
+    @Test
+    void getStaffTaskView_PreservesSavedNullValues() throws Exception {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
+            @Override
+            public String getParentPluginKey() {
+                return "test.plugin";
+            }
+
+            @Override
+            public String getComponentKey() {
+                return "test-node";
+            }
+
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Override
+            public String getName() {
+                return "Test Node";
+            }
+
+            @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Test node description";
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeType getType() {
+                return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+            }
+
+            @Nonnull
+            @Override
+            public List<ProcessNodePort> getPorts() {
+                return List.of();
+            }
+
+            @Override
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+                return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+                var initialData = new AuthoredElementValues();
+                initialData.putLiteral("defaultField", "initial");
+                return ProcessNodeStaffView.of(context, new GroupLayoutElement(), List.of(), initialData);
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
+            }
+        };
+
+        var runtimeData = new HashMap<String, Object>();
+        var savedData = new AuthoredElementValues();
+        savedData.putLiteral("defaultField", null);
+        runtimeData.put(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY, savedData);
+
+        var context = staffContext(
+                runtimeData,
+                Map.of(),
+                Map.of()
+        );
+
+        var data = definition.getStaffTaskView(context).data();
+
+        assertTrue(data.containsKey("defaultField"));
+        assertNull(data.getLiteral("defaultField"));
+    }
+
+    @Test
+    void onAutoSaveFromStaffTaskView_DefaultPersistsSavedSnapshotAndPreservesTaskData() throws Exception {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
+            @Override
+            public String getParentPluginKey() {
+                return "test.plugin";
+            }
+
+            @Override
+            public String getComponentKey() {
+                return "test-node";
+            }
+
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Override
+            public String getName() {
+                return "Test Node";
+            }
+
+            @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Test node description";
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeType getType() {
+                return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+            }
+
+            @Nonnull
+            @Override
+            public List<ProcessNodePort> getPorts() {
+                return List.of();
+            }
+
+            @Override
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+                return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
+            }
+        };
+
+        var update = new AuthoredElementValues();
+        update.putLiteral("field", "value");
+
+        var context = staffContext(
+                Map.of("keep", "value"),
+                Map.of("existing", "node-data"),
+                Map.of("applicant", Map.of("name", "Ada"))
+        );
+
+        var result = definition.onAutoSaveFromStaffTaskView(context, update);
+
+        assertTrue(result.isPresent());
+        var updated = assertInstanceOf(ProcessNodeExecutionResultTaskUpdated.class, result.get());
+        assertEquals("value", updated.getRuntimeData().get("keep"));
+        assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
+        assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
+
+        var savedData = assertInstanceOf(AuthoredElementValues.class, updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
+        assertEquals("value", savedData.getLiteral("field"));
+    }
+
+    @Test
+    void getCustomerTaskView_MergesSavedDataOntoInitialData() throws Exception {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
+            @Override
+            public String getParentPluginKey() {
+                return "test.plugin";
+            }
+
+            @Override
+            public String getComponentKey() {
+                return "test-node";
+            }
+
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Override
+            public String getName() {
+                return "Test Node";
+            }
+
+            @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Test node description";
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeType getType() {
+                return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+            }
+
+            @Nonnull
+            @Override
+            public List<ProcessNodePort> getPorts() {
+                return List.of();
+            }
+
+            @Override
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+                return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+                var initialData = new AuthoredElementValues();
+                initialData.putLiteral("defaultField", "initial");
+                initialData.putLiteral("sharedField", "initial");
+                return ProcessNodeCustomerView.of(context, new GroupLayoutElement(), List.of(), initialData);
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
+            }
+        };
+
+        var context = customerContext(
+                Map.of(
+                        ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY,
+                        new AuthoredElementValues()
+                                .putLiteral("sharedField", "saved")
+                                .putLiteral("savedField", "saved")
+                ),
+                Map.of(),
+                Map.of()
+        );
+
+        var data = definition.getCustomerTaskView(context).data();
+
+        assertEquals("initial", data.getLiteral("defaultField"));
+        assertEquals("saved", data.getLiteral("sharedField"));
+        assertEquals("saved", data.getLiteral("savedField"));
+    }
+
+    @Test
+    void customerViewOf_PreservesRequiredIdentityWhenMergingSavedData() {
+        var context = customerContext(
+                Map.of(
+                        ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY,
+                        new AuthoredElementValues().putLiteral("field", "saved")
+                ),
+                Map.of(),
+                Map.of()
+        );
+        var initialData = new AuthoredElementValues();
+        initialData.putLiteral("field", "initial");
+
+        var view = ProcessNodeCustomerView.of(
+                context,
+                new GroupLayoutElement(),
+                List.of(),
+                initialData,
+                "applicant"
+        );
+
+        assertEquals("saved", view.data().getLiteral("field"));
+        assertEquals("applicant", view.requiredExistingIdentityId());
+    }
+
+    @Test
+    void getCustomerTaskView_TreatsSavedNullAsExplicitDeletion() throws Exception {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
+            @Override
+            public String getParentPluginKey() {
+                return "test.plugin";
+            }
+
+            @Override
+            public String getComponentKey() {
+                return "test-node";
+            }
+
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Override
+            public String getName() {
+                return "Test Node";
+            }
+
+            @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Test node description";
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeType getType() {
+                return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+            }
+
+            @Nonnull
+            @Override
+            public List<ProcessNodePort> getPorts() {
+                return List.of();
+            }
+
+            @Override
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+                return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
+                var initialData = new AuthoredElementValues();
+                initialData.putLiteral("defaultField", "initial");
+                return ProcessNodeCustomerView.of(context, new GroupLayoutElement(), List.of(), initialData);
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
+            }
+        };
+
+        var runtimeData = new HashMap<String, Object>();
+        var savedData = new AuthoredElementValues();
+        savedData.putLiteral("defaultField", null);
+        runtimeData.put(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY, savedData);
+
+        var context = customerContext(
+                runtimeData,
+                Map.of(),
+                Map.of()
+        );
+
+        var data = definition.getCustomerTaskView(context).data();
+
+        assertTrue(data.containsKey("defaultField"));
+        assertNull(data.getLiteral("defaultField"));
+    }
+
+    @Test
+    void onAutoSaveFromCustomerTaskView_DefaultPersistsSavedSnapshotAndPreservesTaskData() throws Exception {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
+            @Override
+            public String getParentPluginKey() {
+                return "test.plugin";
+            }
+
+            @Override
+            public String getComponentKey() {
+                return "test-node";
+            }
+
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Override
+            public String getName() {
+                return "Test Node";
+            }
+
+            @Override
+            public String getAbstract() {
+                return "Test node abstract";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Test node description";
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeType getType() {
+                return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeExecutionType[] getExecutionTypes() {
+                return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+            }
+
+            @Nonnull
+            @Override
+            public List<ProcessNodePort> getPorts() {
+                return List.of();
+            }
+
+            @Override
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+                return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
+            }
+        };
+
+        var update = new AuthoredElementValues();
+        update.putLiteral("field", "value");
+
+        var context = customerContext(
+                Map.of("keep", "value"),
+                Map.of("existing", "node-data"),
+                Map.of("applicant", Map.of("name", "Ada"))
+        );
+
+        var result = definition.onAutoSaveFromCustomerTaskView(context, update, new DerivedRuntimeElementData());
+
+        assertTrue(result.isPresent());
+        var updated = assertInstanceOf(ProcessNodeExecutionResultTaskUpdated.class, result.get());
+        assertEquals("value", updated.getRuntimeData().get("keep"));
+        assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
+        assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
+
+        var savedData = assertInstanceOf(AuthoredElementValues.class, updated.getRuntimeData().get(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY));
+        assertEquals("value", savedData.getLiteral("field"));
+    }
+
+    private static ProcessNodeExecutionContextUIStaff staffContext(Map<String, Object> runtimeData,
+                                                                   Map<String, Object> nodeData,
+                                                                   Map<String, Object> processData) {
+        var task = new ProcessInstanceTaskEntity()
+                .setRuntimeData(new HashMap<>(runtimeData))
+                .setNodeData(new HashMap<>(nodeData))
+                .setProcessData(new HashMap<>(processData));
+
+        return new ProcessNodeExecutionContextUIStaff(
+                logger(),
+                new ProcessNodeEntity(),
+                new ProcessInstanceEntity(),
+                task,
+                null,
+                new UserEntity().setId("user-1"),
+                new DerivedRuntimeElementData(),
+                new ProcessExecutionData()
+        );
+    }
+
+    private static ProcessNodeExecutionContextUICustomer<AuthoredElementValues> customerContext(Map<String, Object> runtimeData,
+                                                                                                Map<String, Object> nodeData,
+                                                                                                Map<String, Object> processData) {
+        var task = new ProcessInstanceTaskEntity()
+                .setRuntimeData(new HashMap<>(runtimeData))
+                .setNodeData(new HashMap<>(nodeData))
+                .setProcessData(new HashMap<>(processData));
+
+        return new ProcessNodeExecutionContextUICustomer<>(
+                logger(),
+                new ProcessNodeEntity(),
+                new ProcessInstanceEntity(),
+                task,
+                null,
+                null,
+                new AuthoredElementValues(),
+                null
+        );
+    }
+
+    private static ProcessNodeExecutionLogger logger() {
+        return new ProcessNodeExecutionLogger(
+                99L,
+                456L,
+                null,
+                null,
+                proxy(ProcessInstanceHistoryEventRepository.class, (methodName, args) -> switch (methodName) {
+                    case "save" -> args[0];
+                    default -> unsupported(methodName);
+                })
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T proxy(Class<T> type, Invocation invocation) {
+        return (T) Proxy.newProxyInstance(
+                type.getClassLoader(),
+                new Class[]{type},
+                (proxy, method, args) -> invocation.apply(method.getName(), args == null ? new Object[0] : args)
+        );
+    }
+
+    private static Object unsupported(String methodName) {
+        throw new UnsupportedOperationException("Method not supported in test: " + methodName);
+    }
+
+    @FunctionalInterface
+    private interface Invocation {
+        Object apply(String methodName, Object[] args);
+    }
+}

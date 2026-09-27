@@ -28,7 +28,7 @@ export const Accordion = styled((props: AccordionProps) => (
         {...props}
     />
 ))(({theme}) => ({
-    'border': `1px solid ${theme.palette.grey[400]}`,
+    'border': `1px solid ${theme.palette.divider}`,
     'margin-bottom': '-1px',
     '&:before': {
         display: 'none',
@@ -55,5 +55,5 @@ export const AccordionSummary = styled((props: AccordionSummaryProps) => (
 export const AccordionDetails = styled(MuiAccordionDetails)(({theme}) => ({
     padding: theme.spacing(2),
     paddingBottom: theme.spacing(4),
-    borderTop: `1px solid ${theme.palette.grey[400]}`,
+    borderTop: `1px solid ${theme.palette.divider}`,
 }));

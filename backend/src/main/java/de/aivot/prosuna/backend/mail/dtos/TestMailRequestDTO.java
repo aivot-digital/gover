@@ -1,0 +1,14 @@
+package de.aivot.prosuna.backend.mail.dtos;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.annotation.Nonnull;
+
+public record TestMailRequestDTO(
+        @Nonnull
+        @NotNull(message = "targetMail must not be null")
+        @Email(message = "targetMail must be a valid email address")
+        String targetMail
+) {
+}
