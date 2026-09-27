@@ -43,6 +43,8 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
             caseNumberType: CaseNumberType.CrockfordBase32,
             caseNumberTemplate: null,
             notes: null,
+            retentionTimeValue: null,
+            retentionTimeUnit: null,
             themeId: null,
             legalSupportDepartmentId: null,
             technicalSupportDepartmentId: null,
