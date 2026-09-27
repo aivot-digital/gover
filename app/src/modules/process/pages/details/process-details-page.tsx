@@ -770,7 +770,7 @@ export function ProcessDetailsPage(): ReactNode {
         if (!isCurrent()) return;
         setProcessFlow(flow);
         setProcessNodeProblems(validation.nodeProblems);
-        setShowProcessNodeProblemsForNodes(previous => includeNodeProblems(previous, validation.nodeProblems));
+        setShowProcessNodeProblemsForNodes(previous => includeNodeProblems(previous, validation.nodeProblems, flow.nodes));
         if (editor != null && !selectedStillExists) {
             navigate(`/processes/${processId}/versions/${processVersion}?${searchParams.toString()}`, {replace: true});
         }
