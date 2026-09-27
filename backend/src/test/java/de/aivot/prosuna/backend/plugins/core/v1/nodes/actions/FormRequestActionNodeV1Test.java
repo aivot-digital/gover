@@ -30,7 +30,6 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeCustomerView;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -42,6 +41,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
@@ -63,7 +63,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -192,9 +191,14 @@ class FormRequestActionNodeV1Test {
         configuration.uiDefinition = new GroupLayoutElement();
         configuration.uiDefinition.setId("form");
 
+        var identities = new IdentityDataMap();
+        identities.put("other", new IdentityData(
+                "session", "other", IdentityType.Email, null, null, null,
+                "other@example.test", Map.of(), null, Map.of()
+        ));
         var instance = new ProcessInstanceEntity()
                 .setAccessKey("instance-access")
-                .setIdentities(new IdentityDataMap());
+                .setIdentities(identities);
         var task = new ProcessInstanceTaskEntity().setAccessKey("task-access");
         var result = assertInstanceOf(ProcessNodeExecutionResultTaskAssignedCustomer.class,
                 ReflectionTestUtils.invokeMethod(node, "createCustomerAssignmentResult",
@@ -206,15 +210,17 @@ class FormRequestActionNodeV1Test {
         assertEquals(List.of(new CommunicationMessageCallToAction(
                 "Daten einreichen", "https://example.test/process/instance-access/tasks/task-access"
         )), result.getCommunicationRequest().message().callToActions());
-        assertTrue(instance.getIdentities().isEmpty());
+        assertEquals(1, instance.getIdentities().size());
 
-        ProcessNodeCustomerView customerView = node.getCustomerTaskView(context(configuration, Map.of()));
+        var customerContext = context(configuration, Map.of());
+        when(customerContext.getThisProcessInstance()).thenReturn(instance);
+        ProcessNodeCustomerView customerView = node.getCustomerTaskView(customerContext);
         assertNull(customerView.requiredExistingIdentityId());
         assertSame(configuration.newIdentities.getFirst(), customerView.requiredNewIdentitySlot());
 
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class,
                 node.onEventFromCustomerTaskView(
-                        context(configuration, Map.of()),
+                        customerContext,
                         new AuthoredElementValues(),
                         new DerivedRuntimeElementData().setEffectiveValues(new EffectiveElementValues()),
                         "submit"
@@ -393,23 +399,104 @@ class FormRequestActionNodeV1Test {
 
     @Test
     @SuppressWarnings("unchecked")
-    void newRecipientModeRejectsAnIdentityIdAlreadyInTheProcessBeforeSending() {
+    void newRecipientModeReusesExistingIdentityOnRepeatedAutomaticExecution() throws Exception {
         var configuration = new FormRequestActionNodeV1.NodeConfig();
         configuration.recipientMode = "new";
         configuration.recipientEmailAddress = "invitee@example.test";
         configuration.newIdentities = List.of(new IdentityConfigElementSlot()
                 .setId("applicant").setTitle("Neue Person").setAllowsMail(true));
+        configuration.uiDefinition = new GroupLayoutElement();
+        configuration.uiDefinition.setId("form");
+        configuration.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        configuration.messageConfig.executionType = SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC;
+        configuration.messageConfig.automaticContent = new SemiAutomaticMessageConfig.AutomaticContent();
+        configuration.messageConfig.automaticContent.subject = "Daten ergänzen";
+        configuration.messageConfig.automaticContent.content = "Bitte ergänzen";
+        var identities = new IdentityDataMap();
+        var identity = new IdentityData(
+                "session", "applicant", IdentityType.Email, null, null, null,
+                "existing@example.test", Map.of(), null, Map.of()
+        );
+        identities.put("applicant", identity);
+        var instance = new ProcessInstanceEntity()
+                .setAccessKey("instance-access")
+                .setIdentities(identities);
+        var task = new ProcessInstanceTaskEntity().setAccessKey("task-access");
+        var context = mock(ProcessNodeExecutionInitContext.class);
+        when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
+        when(context.getThisProcessInstance()).thenReturn(instance);
+        when(context.getThisTask()).thenReturn(task);
+
+        var result = assertInstanceOf(ProcessNodeExecutionResultTaskAssignedCustomer.class, node.init(context));
+
+        assertEquals("applicant", result.getIdentityId());
+        assertEquals("applicant", result.getCommunicationRequest().recipientIdentityId());
+        assertNull(result.getCommunicationRequest().recipientEmailAddress());
+        assertEquals(1, instance.getIdentities().size());
+        assertSame(identity, instance.getIdentities().get("applicant"));
+
+        var customerContext = context(configuration, Map.of());
+        when(customerContext.getThisProcessInstance()).thenReturn(instance);
+        var view = node.getCustomerTaskView(customerContext);
+        assertEquals("applicant", view.requiredExistingIdentityId());
+        assertNull(view.requiredNewIdentitySlot());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class,
+                node.onEventFromCustomerTaskView(
+                        customerContext,
+                        new AuthoredElementValues(),
+                        new DerivedRuntimeElementData().setEffectiveValues(new EffectiveElementValues()),
+                        "submit"
+                ).orElseThrow());
+        assertEquals("applicant", completed.getNodeData().get("recipientIdentityId"));
+        assertSame(identity, instance.getIdentities().get("applicant"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void newRecipientModeHidesInvitationEmailAndSendsToExistingIdentityInManualExecution() throws Exception {
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = "new";
+        configuration.recipientEmailAddress = "invitee@example.test";
+        configuration.newIdentities = List.of(new IdentityConfigElementSlot()
+                .setId("applicant").setTitle("Neue Person").setAllowsMail(true));
+        configuration.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        configuration.messageConfig.executionType = SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL;
+        configuration.messageConfig.manualContent = new SemiAutomaticMessageConfig.ManualContent();
+        configuration.messageConfig.manualContent.subject = "Daten ergänzen";
+        configuration.messageConfig.manualContent.content = "Bitte ergänzen";
         var identities = new IdentityDataMap();
         identities.put("applicant", new IdentityData(
                 "session", "applicant", IdentityType.Email, null, null, null,
                 "existing@example.test", Map.of(), null, Map.of()
         ));
-        var instance = new ProcessInstanceEntity().setIdentities(identities);
-        var context = mock(ProcessNodeExecutionInitContext.class);
+        var instance = new ProcessInstanceEntity()
+                .setAccessKey("instance-access")
+                .setIdentities(identities);
+        var task = new ProcessInstanceTaskEntity()
+                .setAccessKey("task-access")
+                .setRuntimeData(Map.of());
+        var context = mock(ProcessNodeExecutionContextUIStaff.class);
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
         when(context.getThisProcessInstance()).thenReturn(instance);
+        when(context.getThisTask()).thenReturn(task);
 
-        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class, () -> node.init(context));
+        var view = node.getStaffTaskView(context);
+        assertFalse(view.data().containsKey("recipientEmailAddress"));
+        assertTrue(assertInstanceOf(GroupLayoutElement.class, view.layout())
+                .findChild("recipientEmailAddress", TextInputElement.class).isEmpty());
+
+        var result = assertInstanceOf(ProcessNodeExecutionResultTaskAssignedCustomer.class,
+                node.onEventFromStaffTaskView(
+                        context,
+                        new AuthoredElementValues()
+                                .putLiteral("subject", "Weitere Daten")
+                                .putLiteral("body", "Bitte erneut ergänzen"),
+                        "send"
+                ).orElseThrow());
+        assertEquals("applicant", result.getIdentityId());
+        assertEquals("applicant", result.getCommunicationRequest().recipientIdentityId());
+        assertNull(result.getCommunicationRequest().recipientEmailAddress());
     }
 
     @Test
