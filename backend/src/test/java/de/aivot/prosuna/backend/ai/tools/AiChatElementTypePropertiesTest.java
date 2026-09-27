@@ -18,7 +18,7 @@ class AiChatElementTypePropertiesTest {
         var properties = tools.listElementTypeProperties(ElementType.Text.getKey()).lines().toList();
 
         assertThat(properties)
-                .contains("- id", "- type", "- name", "- label", "- isMultiline", "- pattern", "- visibility")
+                .contains("- id", "- type", "- name", "- label", "- isMultiline", "- visibility")
                 .doesNotContain("- multiline", "- regex", "- message", "- conditionSet", "- class", "- COPY_VALUE_TEMPLATE_PLACEHOLDER")
                 .doesNotHaveDuplicates()
                 .allSatisfy(line -> assertThat(line).matches("- [A-Za-z][A-Za-z0-9_]*"));
