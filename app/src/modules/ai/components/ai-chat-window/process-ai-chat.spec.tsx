@@ -1,9 +1,10 @@
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {useEffect} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {AiChatWindow} from './ai-chat-window';
 import {AiChatService} from '../../services/ai-chat-service';
 import {useProcessAiChat, type ProcessChatEditor} from '../../../process/pages/details/hooks/use-process-ai-chat';
+import {renderAiChatTestUi as render} from './ai-chat-test-utils';
 
 const mocks = vi.hoisted(() => ({download: vi.fn()}));
 vi.mock('../../../../utils/download-utils', () => ({downloadBlobFile: mocks.download}));
