@@ -278,6 +278,7 @@ public abstract class BaseElement implements Serializable {
             case StoragePathSelector -> StoragePathSelectorInputElement.class;
             case PaymentConfig -> PaymentConfigElement.class;
             case LinkButton -> LinkButtonContentElement.class;
+            case DepartmentSelectInput -> DepartmentSelectInputElement.class;
         };
     }
 }
