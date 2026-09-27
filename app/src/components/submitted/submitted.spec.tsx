@@ -1,5 +1,5 @@
 import React from 'react';
-import {act, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {Submitted} from './submitted';
 import {
@@ -13,11 +13,17 @@ import type {ProcessNodeEntity} from '../../modules/process/entities/process-nod
 import type {ProcessEntity} from '../../modules/process/entities/process-entity';
 import type {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 import {literalAuthoredValue} from '../../models/element-data';
+import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
 
 const dispatchMock = vi.hoisted(() => vi.fn());
+const downloadBlobFileMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => dispatchMock,
+}));
+
+vi.mock('../../utils/download-utils', () => ({
+    downloadBlobFile: downloadBlobFileMock,
 }));
 
 describe('Submitted', () => {
@@ -25,6 +31,7 @@ describe('Submitted', () => {
         vi.clearAllTimers();
         vi.useRealTimers();
         vi.restoreAllMocks();
+        downloadBlobFileMock.mockClear();
     });
 
     it('enables the PDF download when form processing completes without payment', async () => {
@@ -69,15 +76,71 @@ describe('Submitted', () => {
         expect(getInstanceStatus).toHaveBeenCalledTimes(2);
     });
 
-    it('disables payment and PDF actions when process preparation fails', async () => {
-        vi.useFakeTimers();
+    it.each([ProcessTaskStatus.Completed, ProcessTaskStatus.Failed])(
+        'keeps PDF download available and payment disabled when first task is %s and process fails',
+        async (taskStatus) => {
+            vi.useFakeTimers();
 
-        const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
-            .mockResolvedValueOnce(createStatusResponse(ProcessInstanceStatus.Running))
-            .mockResolvedValueOnce(createStatusResponse(
-                ProcessInstanceStatus.Failed,
-                ProcessTaskStatus.AwaitingPayment,
-            ));
+            const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
+                .mockResolvedValueOnce(createStatusResponse(ProcessInstanceStatus.Running))
+                .mockResolvedValueOnce(createStatusResponse(
+                    ProcessInstanceStatus.Failed,
+                    taskStatus,
+                ));
+            const pdf = new Blob(['pdf'], {type: 'application/pdf'});
+            const downloadSubmittedSummaryPdf = vi.spyOn(FormTriggerApiService.prototype, 'downloadSubmittedSummaryPdf')
+                .mockResolvedValue(pdf);
+
+            render(
+                <Submitted
+                    startedProcessAccessKey="process-access-key"
+                    paymentRequired
+                    formElement={{children: []} as unknown as FormLayoutElement}
+                    node={{configuration: {formSlug: literalAuthoredValue('form')}} as unknown as ProcessNodeEntity}
+                    process={{slug: 'process'} as unknown as ProcessEntity}
+                    version={{processVersion: 1} as unknown as ProcessVersionEntity}
+                />,
+            );
+
+            await act(async () => {
+                await Promise.resolve();
+            });
+
+            expect(screen.getByRole('heading', {name: 'Angaben erfolgreich übermittelt'})).toBeVisible();
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(1000);
+            });
+
+            expect(screen.getByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).toBeVisible();
+            expect(screen.getByText('Ihr Antrag konnte nicht verarbeitet werden')).toBeVisible();
+            expect(screen.getByText(/Bitte wenden Sie sich an die zuständige Stelle/)).toBeVisible();
+            expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
+            fireEvent.click(screen.getByRole('button', {name: 'Antrag als PDF herunterladen'}));
+            expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
+
+            await act(async () => {
+                await Promise.resolve();
+            });
+            expect(downloadSubmittedSummaryPdf).toHaveBeenCalledWith(
+                'process',
+                'form',
+                'process-access-key',
+                'task-access-key',
+                1,
+            );
+            expect(downloadBlobFileMock).toHaveBeenCalledWith('Antrag.pdf', pdf);
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(3000);
+            });
+            expect(getInstanceStatus).toHaveBeenCalledTimes(2);
+        },
+    );
+
+    it('keeps PDF download unavailable when the failed process has no first task', async () => {
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
+            .mockResolvedValue(createStatusResponse(ProcessInstanceStatus.Failed));
 
         render(
             <Submitted
@@ -94,23 +157,8 @@ describe('Submitted', () => {
             await Promise.resolve();
         });
 
-        expect(screen.getByRole('heading', {name: 'Angaben erfolgreich übermittelt'})).toBeVisible();
-
-        await act(async () => {
-            await vi.advanceTimersByTimeAsync(1000);
-        });
-
-        expect(screen.getByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).toBeVisible();
-        expect(screen.getByText('Ihr Antrag konnte nicht verarbeitet werden')).toBeVisible();
-        expect(screen.getByText(/Bitte wenden Sie sich an die zuständige Stelle/)).toBeVisible();
-        expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
         expect(screen.getByRole('button', {name: 'PDF nicht verfügbar'})).toBeDisabled();
-        expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
-
-        await act(async () => {
-            await vi.advanceTimersByTimeAsync(3000);
-        });
-        expect(getInstanceStatus).toHaveBeenCalledTimes(2);
+        expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
     });
 });
 
