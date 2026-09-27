@@ -943,7 +943,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
          */
         @InputElementPOJOBinding(id = NEW_IDENTITIES_FIELD_ID, type = ElementType.IdentityConfig, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Neue Identität"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Konfigurieren Sie die Identität, die vor der Bearbeitung der Aufgabe angegeben werden muss."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Konfigurieren Sie die Identität, die vor der Bearbeitung der Aufgabe angegeben werden muss. Ist die Identität aufgrund erneuter Ausführung (Schleife) schon bekannt, wird die existierende Identität verwendet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "maxSlots", intValue = 1),
                 @ElementPOJOBindingProperty(key = "optionalSlotsAllowed", falseValue = true)
