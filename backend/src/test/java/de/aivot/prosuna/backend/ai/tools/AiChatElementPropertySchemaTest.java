@@ -44,14 +44,14 @@ class AiChatElementPropertySchemaTest {
 
     @Test
     void describesNestedValuesWithoutTheContainingElement() {
-        var schema = schema("pattern");
-        assertThat(schema.path("properties").has("regex")).isTrue();
-        assertThat(schema.path("properties").has("message")).isTrue();
+        var schema = schema("dynamicTextPolicy");
+        assertThat(schema.path("properties").has("variableSuggestionSources")).isTrue();
+        assertThat(schema.path("properties").path("variableSuggestionSources").path("type").asString()).isEqualTo("array");
         assertThat(schema.toString()).doesNotContain("visibility", "isMultiline", "children");
         assertReferencesResolve(schema, schema);
         var validator = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12).getSchema(schema);
-        assertThat(validator.validate(mapper.readTree("{\"regex\":\"[a-z]+\",\"message\":\"Example\"}"))).isEmpty();
-        assertThat(validator.validate(mapper.readTree("{\"regex\":42}"))).isNotEmpty();
+        assertThat(validator.validate(mapper.readTree("{\"variableSuggestionSources\":[\"ProcessData\"]}"))).isEmpty();
+        assertThat(validator.validate(mapper.readTree("{\"variableSuggestionSources\":[42]}"))).isNotEmpty();
     }
 
     @Test
@@ -59,7 +59,7 @@ class AiChatElementPropertySchemaTest {
         for (var typeKey : new int[]{-1, ElementType.SubmittedStep.getKey()}) {
             assertThat(call(typeKey, "label")).contains("Der Formularelementtyp wird nicht unterstützt.");
         }
-        for (var property : new String[]{"unknown", "", "multiline", "pattern.regex", "/pattern/regex"}) {
+        for (var property : new String[]{"unknown", "", "multiline", "dynamicTextPolicy.variableSuggestionSources", "/dynamicTextPolicy/variableSuggestionSources"}) {
             assertThat(call(ElementType.Text.getKey(), property))
                     .contains("Die Eigenschaft ist für diesen Formularelementtyp nicht verfügbar.");
         }
