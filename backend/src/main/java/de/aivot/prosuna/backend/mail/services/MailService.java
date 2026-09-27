@@ -474,7 +474,9 @@ public class MailService {
             return null;
         }
 
-        var department = context.get("department");
+        var department = context.containsKey("signatureDepartment")
+                ? context.get("signatureDepartment")
+                : context.get("department");
         String signature = null;
 
         if (department instanceof VDepartmentShadowedEntity shadowedDepartment) {

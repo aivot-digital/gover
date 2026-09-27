@@ -9,6 +9,7 @@ import type {ProcessIdentityIdInputElement} from '../models/elements/form/input/
 import type {SecretSelectInputElement} from '../models/elements/form/input/secret-select-input-element';
 import {type StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
 import {type AssetSelectInputElement} from '../models/elements/form/input/asset-select-input-element';
+import {type DepartmentSelectInputElement} from '../models/elements/form/input/department-select-input-element';
 import {AssetVisibility} from '../modules/assets/models/asset-visibility';
 
 describe('generateElementWithDefaultValues', () => {
@@ -78,5 +79,13 @@ describe('generateElementWithDefaultValues', () => {
         expect(element.placeholder).toBe('Keine Datei ausgewählt');
         expect(element.dialogTitle).toBe('Datei auswählen');
         expect(element.assetVisibility).toBe(AssetVisibility.All);
+    });
+
+    it('should initialize department selections as scalar references', () => {
+        const element = generateElementWithDefaultValues(ElementType.DepartmentSelectInput) as DepartmentSelectInputElement;
+
+        expect(element.label).toBe('Organisationseinheit');
+        expect(element.placeholder).toBe('Keine Organisationseinheit ausgewählt');
+        expect(element.dialogTitle).toBe('Organisationseinheit auswählen');
     });
 });

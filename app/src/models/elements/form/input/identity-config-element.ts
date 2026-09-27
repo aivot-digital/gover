@@ -3,6 +3,8 @@ import {ElementType} from '../../../../data/element-type/element-type';
 import {IdentityProviderListDTO} from '../../../../modules/identity/models/identity-provider-list-dto';
 
 export interface IdentityConfigElement extends BaseInputElement<ElementType.IdentityConfigElement> {
+    maxSlots?: number | null;
+    optionalSlotsAllowed?: boolean | null;
 }
 
 export interface IdentityConfigElementSlot {
@@ -26,5 +28,4 @@ export interface IdentityConfigElementOption {
 export type IdentityConfigElementOptionWithProvider = IdentityConfigElementOption & {
     provider: IdentityProviderListDTO;
 }
-
 

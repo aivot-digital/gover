@@ -1,166 +1,88 @@
-import {
-    Box,
-    Button,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableRow,
-    Typography,
-} from '@mui/material';
+import {Alert, Box, Button, Chip, CircularProgress, Divider, Typography} from '@mui/material';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
-import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
-import {useEffect, useMemo, useState} from 'react';
-import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
-import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
+import ArrowUpward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowUpward';
+import ArrowDownward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowDownward';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {IconButton} from '../../../../components/icon-button/icon-button';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {Permission} from '../../../../data/permissions/permission';
+import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {CommunicationProvidersApiService} from '../../../communication/communication-providers-api-service';
-import {
-    CommunicationConfigurationLayout,
-    CommunicationProvider,
-    CommunicationProviderBinding,
-    CommunicationProviderBindingRequest,
-    CommunicationProviderDefinition,
-} from '../../../communication/models';
-import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
+import {type CommunicationProvider, type CommunicationProviderBinding, type CommunicationProviderBindingRequest, type CommunicationProviderDefinition} from '../../../communication/models';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
-import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
-
-interface BindingDraft {
-    id: number | null;
-    communicationProviderId: number | null;
-    name: string;
-    description: string;
-    isEnabled: boolean;
-    position: number;
-    configuration: Record<string, any>;
-}
-
-const emptyDraft: BindingDraft = {
-    id: null,
-    communicationProviderId: null,
-    name: '',
-    description: '',
-    isEnabled: false,
-    position: 0,
-    configuration: {},
-};
+import {CommunicationBindingDialog} from '../../components/communication-binding-dialog';
+import {type IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 
 export function IdentityProviderDetailsPageCommunication() {
-    const {item: identityProvider, isBusy: pageBusy} = useGenericDetailsPageContext<IdentityProviderDetailsDTO, void>();
+    const {item, isBusy} = useGenericDetailsPageContext<IdentityProviderDetailsDTO, void>();
+    return item == null ? null : <CommunicationBindings key={item.key} identityProvider={item} pageBusy={isBusy}/>;
+}
+
+function CommunicationBindings({identityProvider, pageBusy}: {identityProvider: IdentityProviderDetailsDTO; pageBusy: boolean}) {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
+    const api = useMemo(() => new CommunicationProvidersApiService(), []);
     const canCreate = useHasSystemPermission(Permission.COMMUNICATION_PROVIDER_CREATE);
     const canUpdate = useHasSystemPermission(Permission.COMMUNICATION_PROVIDER_UPDATE);
     const canDelete = useHasSystemPermission(Permission.COMMUNICATION_PROVIDER_DELETE);
     const [providers, setProviders] = useState<CommunicationProvider[]>([]);
     const [definitions, setDefinitions] = useState<CommunicationProviderDefinition[]>([]);
-    const [bindings, setBindings] = useState<CommunicationProviderBinding[]>([]);
-    const [draft, setDraft] = useState<BindingDraft | null>(null);
-    const [layout, setLayout] = useState<CommunicationConfigurationLayout | null>(null);
+    const [bindings, setBindings] = useState<CommunicationProviderBinding[] | null>(null);
+    const [editedBinding, setEditedBinding] = useState<CommunicationProviderBinding | null | undefined>(undefined);
+    const [loading, setLoading] = useState(true);
+    const [loadFailed, setLoadFailed] = useState(false);
     const [busy, setBusy] = useState(false);
+    const disabled = busy || loading || pageBusy || loadFailed;
 
-    const reload = () => {
-        if (!identityProvider?.key) return;
-        const api = new CommunicationProvidersApiService();
-        setBusy(true);
-        Promise.all([
-            api.listProviders(),
-            api.listDefinitions(),
-            api.listBindings(identityProvider.key),
-        ])
-            .then(([loadedProviders, loadedDefinitions, loadedBindings]) => {
-                setProviders(loadedProviders);
-                setDefinitions(loadedDefinitions);
-                setBindings(loadedBindings);
-            })
-            .catch(error => dispatch(showApiErrorSnackbar(error, 'Kommunikationsanbindungen konnten nicht geladen werden.')))
-            .finally(() => setBusy(false));
-    };
-
-    useEffect(reload, [identityProvider?.key]);
-
-    const compatibleProviders = useMemo(() => {
-        if (identityProvider == null) return [];
-        return providers.filter(provider => {
-            const definition = definitions.find(candidate => (
-                candidate.key === provider.communicationProviderDefinitionKey &&
-                candidate.version === provider.communicationProviderDefinitionVersion
-            ));
-            return definition?.supportedIdentityProviderTypes.includes(identityProvider.type) === true;
-        });
-    }, [definitions, identityProvider, providers]);
-
-    useEffect(() => {
-        if (draft?.communicationProviderId == null || identityProvider?.key == null) {
-            setLayout(null);
-            return;
+    const reload = useCallback(async () => {
+        setLoading(true);
+        setLoadFailed(false);
+        try {
+            const [loadedProviders, loadedDefinitions, loadedBindings] = await Promise.all([
+                api.listProviders(), api.listDefinitions(), api.listBindings(identityProvider.key),
+            ]);
+            setProviders(loadedProviders);
+            setDefinitions(loadedDefinitions);
+            // Preserve the authoritative order, including the backend's tie-breakers for older data.
+            setBindings(loadedBindings);
+        } catch (error) {
+            setLoadFailed(true);
+            dispatch(showApiErrorSnackbar(error, 'Kommunikationsanbindungen konnten nicht geladen werden.'));
+        } finally {
+            setLoading(false);
         }
-        new CommunicationProvidersApiService()
-            .getBindingConfigurationLayout(draft.communicationProviderId, identityProvider.key)
-            .then(setLayout)
-            .catch(error => dispatch(showApiErrorSnackbar(error, 'Konfigurationsoberfläche konnte nicht geladen werden.')));
-    }, [dispatch, draft?.communicationProviderId, identityProvider?.key]);
+    }, [api, dispatch, identityProvider.key]);
+    useEffect(() => { void reload(); }, [reload]);
 
-    if (identityProvider == null) return null;
+    const compatibleProviders = providers.filter(provider => provider.isEnabled && definitions.some(definition => (
+        definition.key === provider.communicationProviderDefinitionKey &&
+        definition.version === provider.communicationProviderDefinitionVersion &&
+        definition.supportedIdentityProviderTypes.includes(identityProvider.type)
+    )));
 
-    const providerName = (providerId: number) => providers.find(provider => provider.id === providerId)?.name ?? `#${providerId}`;
-    const openCreate = () => setDraft({...emptyDraft, position: bindings.length});
-    const openEdit = (binding: CommunicationProviderBinding) => setDraft({
-        id: binding.id,
-        communicationProviderId: binding.communicationProviderId,
-        name: binding.name,
-        description: binding.description,
-        isEnabled: binding.isEnabled,
-        position: binding.position,
-        configuration: binding.configuration ?? {},
-    });
-    const updateDraft = <K extends keyof BindingDraft>(key: K, value: BindingDraft[K]) => {
-        setDraft(current => current == null ? null : {...current, [key]: value});
-    };
-
-    const save = async () => {
-        if (draft == null || draft.communicationProviderId == null || !draft.name.trim() || !draft.description.trim()) {
-            dispatch(showErrorSnackbar('Bitte füllen Sie Anbieter, Name und Beschreibung vollständig aus.'));
-            return;
-        }
-        const request: CommunicationProviderBindingRequest = {
-            identityProviderKey: identityProvider.key,
-            communicationProviderId: draft.communicationProviderId,
-            name: draft.name.trim(),
-            description: draft.description.trim(),
-            isEnabled: draft.isEnabled,
-            position: draft.position,
-            configuration: draft.configuration ?? {},
-        };
+    const save = async (request: CommunicationProviderBindingRequest) => {
+        if (disabled || (editedBinding == null ? !canCreate : !canUpdate)) return;
         setBusy(true);
         try {
-            const api = new CommunicationProvidersApiService();
-            if (draft.id == null) await api.createBinding(request);
-            else await api.updateBinding(draft.id, request);
-            setDraft(null);
+            if (editedBinding == null) await api.createBinding(request);
+            else await api.updateBinding(editedBinding.id, request);
+            setEditedBinding(undefined);
             dispatch(showSuccessSnackbar('Kommunikationsanbindung wurde gespeichert.'));
-            reload();
+            await reload();
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Kommunikationsanbindung konnte nicht gespeichert werden.'));
+        } finally {
             setBusy(false);
         }
     };
 
     const remove = async (binding: CommunicationProviderBinding) => {
+        if (disabled || !canDelete) return;
         const confirmed = await confirm({
             title: 'Kommunikationsanbindung löschen',
             confirmButtonText: 'Endgültig löschen',
@@ -170,116 +92,132 @@ export function IdentityProviderDetailsPageCommunication() {
         if (!confirmed) return;
         setBusy(true);
         try {
-            await new CommunicationProvidersApiService().deleteBinding(binding.id);
+            await api.deleteBinding(binding.id);
             dispatch(showSuccessSnackbar('Kommunikationsanbindung wurde gelöscht.'));
-            reload();
+            await reload();
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Kommunikationsanbindung konnte nicht gelöscht werden.'));
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const move = async (index: number, direction: -1 | 1) => {
+        if (bindings == null || disabled || !canUpdate) return;
+        const target = index + direction;
+        if (target < 0 || target >= bindings.length) return;
+        const reordered = [...bindings];
+        [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+        setBindings(reordered);
+        setBusy(true);
+        try {
+            setBindings(await api.reorderBindings(identityProvider.key, reordered.map(binding => binding.id)));
+            dispatch(showSuccessSnackbar('Reihenfolge wurde gespeichert.'));
+        } catch (error) {
+            setBindings(bindings);
+            dispatch(showApiErrorSnackbar(error, 'Reihenfolge konnte nicht gespeichert werden.'));
+            // A concurrent addition or deletion may have invalidated this list.
+            await reload();
+        } finally {
             setBusy(false);
         }
     };
 
     return (
         <Box>
-            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 2, mb: 3}}>
-                <Box>
-                    <Typography variant="h4">Kommunikationsanbindungen</Typography>
-                    <Typography color="text.secondary" sx={{mt: 1}}>
-                        Jede Anbindung beschreibt eine konkrete Nutzung. Derselbe Anbieter kann mehrfach hinzugefügt werden;
-                        Attributzuordnungen sind optional.
+            <Typography variant="h5" component="h2" sx={{mt: 1.5, mb: 1}}>Kommunikationsanbindungen</Typography>
+            <Typography sx={{maxWidth: 900, mb: 3}}>
+                Legen Sie fest, über welche Anbieter die ausfüllende Person Nachrichten zu ihrem Vorgang erhalten kann.
+                Verschieben Sie die Anbindungen mit den Pfeilen, um die Reihenfolge der Auswahl festzulegen.
+            </Typography>
+            <Box sx={{border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden'}}>
+                {loading && <Box sx={{display: 'grid', placeItems: 'center', minHeight: 160}}>
+                    <CircularProgress size={28} aria-label="Kommunikationsanbindungen werden geladen"/>
+                </Box>}
+                {loadFailed && !loading && <Alert severity="error" sx={{m: 2}} action={
+                    <Button color="inherit" size="small" onClick={() => void reload()}>Erneut versuchen</Button>
+                }>Die Kommunikationsanbindungen konnten nicht geladen werden.</Alert>}
+                {!loading && !loadFailed && bindings?.length === 0 && <Box sx={{px: 3, py: 4, textAlign: 'center'}}>
+                    <Typography sx={{fontWeight: 600}}>Noch keine Kommunikationsanbindungen eingerichtet</Typography>
+                    <Typography color="text.secondary" sx={{mt: 0.5, mx: 'auto', maxWidth: 680}}>
+                        Fügen Sie eine Anbindung hinzu, um einen Kommunikationsanbieter für diesen Identitätsanbieter bereitzustellen.
                     </Typography>
-                </Box>
-                <Button variant="contained" startIcon={<Add/>} onClick={openCreate} disabled={busy || pageBusy || !canCreate}>
-                    Anbieter hinzufügen
-                </Button>
+                </Box>}
+                {!loading && !loadFailed && bindings != null && bindings.length > 0 && (
+                    <Box component="ol" aria-label="Kommunikationsanbindungen" sx={{listStyle: 'none', m: 0, p: 0}}>
+                        {bindings.map((binding, index) => {
+                            const provider = providers.find(candidate => candidate.id === binding.communicationProviderId);
+                            return <Box component="li" key={binding.id}>
+                                {index > 0 && <Divider/>}
+                                <Box sx={{display: 'grid', gridTemplateColumns: '36px minmax(0, 1fr) auto', alignItems: 'center', gap: 2, px: 2, py: 1.75}}>
+                                    <Box aria-hidden sx={{width: 32, height: 32, display: 'grid', placeItems: 'center', color: 'text.secondary'}}>
+                                        {ModuleIcons.communication}
+                                    </Box>
+                                    <Box sx={{minWidth: 0, overflowWrap: 'anywhere'}}>
+                                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap'}}>
+                                            <Typography sx={{fontWeight: 600}}>{binding.name}</Typography>
+                                            <Chip size="small" variant="outlined" label={binding.isEnabled ? 'Aktiv' : 'Inaktiv'} color={binding.isEnabled ? 'success' : 'default'}/>
+                                            {provider != null && !provider.isEnabled && <Chip size="small" variant="outlined" label="Anbieter inaktiv" color="warning"/>}
+                                        </Box>
+                                        <Typography color="text.secondary" sx={{mt: 0.5}}>{binding.description}</Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>Kommunikationsanbieter: {provider?.name ?? `#${binding.communicationProviderId}`}</Typography>
+                                    </Box>
+                                    <Box sx={{display: 'flex', gap: 0.5}}>
+                                        <IconButton
+                                            tooltipProps={{title: 'Nach oben verschieben'}}
+                                            buttonProps={{
+                                                size: 'small',
+                                                'aria-label': `${binding.name} nach oben verschieben`,
+                                                disabled: disabled || !canUpdate || index === 0,
+                                                onClick: () => void move(index, -1),
+                                            }}
+                                        ><ArrowUpward/></IconButton>
+                                        <IconButton
+                                            tooltipProps={{title: 'Nach unten verschieben'}}
+                                            buttonProps={{
+                                                size: 'small',
+                                                'aria-label': `${binding.name} nach unten verschieben`,
+                                                disabled: disabled || !canUpdate || index === bindings.length - 1,
+                                                onClick: () => void move(index, 1),
+                                            }}
+                                        ><ArrowDownward/></IconButton>
+                                        <IconButton
+                                            tooltipProps={{title: 'Bearbeiten'}}
+                                            buttonProps={{
+                                                size: 'small',
+                                                'aria-label': `${binding.name} bearbeiten`,
+                                                disabled: disabled || !canUpdate,
+                                                onClick: () => setEditedBinding(binding),
+                                            }}
+                                        ><Edit/></IconButton>
+                                        <IconButton
+                                            tooltipProps={{title: 'Löschen'}}
+                                            buttonProps={{
+                                                size: 'small',
+                                                color: 'error',
+                                                'aria-label': `${binding.name} löschen`,
+                                                disabled: disabled || !canDelete,
+                                                onClick: () => void remove(binding),
+                                            }}
+                                        ><Delete/></IconButton>
+                                    </Box>
+                                </Box>
+                            </Box>;
+                        })}
+                    </Box>
+                )}
             </Box>
-
-            <Paper variant="outlined" sx={{overflowX: 'auto'}}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Reihenfolge</TableCell>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Anbieter</TableCell>
-                            <TableCell>Beschreibung</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell align="right">Aktionen</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {[...bindings].sort((a, b) => a.position - b.position || a.name.localeCompare(b.name)).map(binding => (
-                            <TableRow key={binding.id}>
-                                <TableCell>{binding.position}</TableCell>
-                                <TableCell>{binding.name}</TableCell>
-                                <TableCell>{providerName(binding.communicationProviderId)}</TableCell>
-                                <TableCell>{binding.description}</TableCell>
-                                <TableCell><Chip size="small" label={binding.isEnabled ? 'Aktiv' : 'Inaktiv'} color={binding.isEnabled ? 'success' : 'default'}/></TableCell>
-                                <TableCell align="right">
-                                    <Button startIcon={<Edit/>} onClick={() => openEdit(binding)} disabled={!canUpdate}>Bearbeiten</Button>
-                                    <Button color="error" startIcon={<Delete/>} onClick={() => remove(binding)} disabled={!canDelete}>Löschen</Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {bindings.length === 0 && (
-                            <TableRow><TableCell colSpan={6}>
-                                <Typography color="text.secondary" sx={{py: 3, textAlign: 'center'}}>
-                                    Noch keine Kommunikationsanbindung konfiguriert.
-                                </Typography>
-                            </TableCell></TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </Paper>
-
-            <Dialog open={draft != null} onClose={() => !busy && setDraft(null)} fullWidth maxWidth="md">
-                <DialogTitle>{draft?.id == null ? 'Kommunikationsanbieter hinzufügen' : 'Kommunikationsanbindung bearbeiten'}</DialogTitle>
-                <DialogContent>
-                    {draft != null && <>
-                        <SelectFieldComponent
-                            label="Kommunikationsanbieter"
-                            required
-                            value={draft.communicationProviderId == null ? undefined : String(draft.communicationProviderId)}
-                            options={compatibleProviders.map(provider => ({
-                                value: String(provider.id),
-                                label: provider.name,
-                                subLabel: provider.description,
-                            }))}
-                            onChange={value => {
-                                updateDraft('communicationProviderId', value == null ? null : Number(value));
-                                updateDraft('configuration', {});
-                            }}
-                            disabled={busy || draft.id != null}
-                            emptyStatePlaceholder="Keine kompatiblen Kommunikationsanbieter vorhanden"
-                        />
-                        <TextFieldComponent label="Anzeigename" required value={draft.name} onChange={value => updateDraft('name', value ?? '')} disabled={busy}/>
-                        <TextFieldComponent label="Beschreibung für Kund:innen" required multiline value={draft.description} onChange={value => updateDraft('description', value ?? '')} disabled={busy}/>
-                        <TextFieldComponent
-                            label="Reihenfolge"
-                            value={String(draft.position)}
-                            onChange={value => updateDraft('position', Number.parseInt(value ?? '', 10) || 0)}
-                            disabled={busy}
-                            muiPassTroughProps={{type: 'number'}}
-                        />
-                        {layout != null && <ElementDerivationContext
-                            element={layout}
-                            authoredElementValues={draft.configuration}
-                            onAuthoredElementValuesChange={value => updateDraft('configuration', value)}
-                            disabled={busy}
-                        />}
-                        <CheckboxFieldComponent
-                            label="Aktiv"
-                            variant="switch"
-                            value={draft.isEnabled}
-                            onChange={value => updateDraft('isEnabled', value)}
-                            disabled={busy}
-                        />
-                    </>}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDraft(null)} disabled={busy}>Abbrechen</Button>
-                    <Button variant="contained" startIcon={<Save/>} onClick={save} disabled={busy}>Speichern</Button>
-                </DialogActions>
-            </Dialog>
+            {canCreate && <Button variant="contained" startIcon={<Add/>} sx={{mt: 2}} onClick={() => setEditedBinding(null)} disabled={disabled}>
+                Anbindung hinzufügen
+            </Button>}
+            {editedBinding !== undefined && <CommunicationBindingDialog
+                binding={editedBinding}
+                identityProviderKey={identityProvider.key}
+                providers={editedBinding == null ? compatibleProviders : providers.filter(provider => provider.id === editedBinding.communicationProviderId)}
+                busy={busy || pageBusy}
+                onClose={() => setEditedBinding(undefined)}
+                onSave={save}
+            />}
         </Box>
     );
 }

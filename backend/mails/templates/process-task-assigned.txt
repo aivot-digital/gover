@@ -13,7 +13,7 @@ Aufgabe öffnen:
 [(${base.config.createUrl(taskPath)})]
 
 [# th:if="${mailSignature != null}"]
----
+
 [(${mailSignature})]
 
 [/]

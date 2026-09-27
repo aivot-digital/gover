@@ -18,7 +18,7 @@ Der StackTrace zum Fehler:
 [(${stackTrace})]
 
 [# th:if="${mailSignature != null}"]
----
+
 [(${mailSignature})]
 
 [/]

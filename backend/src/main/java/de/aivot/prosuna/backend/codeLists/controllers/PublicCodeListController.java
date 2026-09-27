@@ -50,4 +50,11 @@ public class PublicCodeListController {
     ) throws ResponseException {
         return codeListElementOptionsService.listAsMultiCheckbox(codeListKey);
     }
+
+    @GetMapping("chip-input/")
+    public List<String> listAsChipInputSuggestions(
+            @Nonnull @PathVariable String codeListKey
+    ) throws ResponseException {
+        return codeListElementOptionsService.listAsChipInputSuggestions(codeListKey);
+    }
 }

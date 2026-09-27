@@ -224,6 +224,7 @@ export function TeamsDetailsPageMembers() {
                     startIcon={<AddOutlinedIcon />}
                     onClick={openSelectNewMemberDialog}
                     disabled={addDisabled}
+                    sx={{mt: 2.5}}
                 >
                     Mitarbeiter:in hinzufügen
                 </Button>

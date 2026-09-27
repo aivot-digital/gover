@@ -61,6 +61,20 @@ function findOption<T extends SelectFieldValue>(
     return options.find((option) => normalizeValue(option.value) === normalizedValue);
 }
 
+function getEmptyDisplay<T extends SelectFieldValue>(props: SelectFieldComponentProps<T>) {
+    // A missing option must not disguise a stored reference as an unanswered field or an unrestricted filter.
+    if (normalizeValue(props.value) !== '' && findOption(props.options, props.value) == null) {
+        return {text: 'Auswahl derzeit nicht verfügbar', isPlaceholder: true};
+    }
+    if (!props.required && props.includeEmptyOption !== false && props.emptyOptionLabel != null) {
+        return {text: props.emptyOptionLabel, isPlaceholder: false};
+    }
+    if (props.options.length === 0) {
+        return {text: props.emptyStatePlaceholder ?? 'Keine Optionen vorhanden', isPlaceholder: true};
+    }
+    return {text: props.placeholder ?? 'Bitte auswählen', isPlaceholder: true};
+}
+
 function renderStartAdornment(startIcon: React.ReactNode): React.ReactNode {
     return startIcon != null
         ? <InputAdornment position="start">{startIcon}</InputAdornment>
@@ -98,7 +112,6 @@ interface SelectControlProps<T extends SelectFieldValue> {
 function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: SelectControlProps<T>) {
     const {
         autocomplete,
-        placeholder,
         disabled,
         readOnly,
         busy,
@@ -107,6 +120,7 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
         onChange,
         options,
         emptyStatePlaceholder,
+        emptyOptionLabel,
         includeEmptyOption = true,
         startIcon,
         endAction,
@@ -116,6 +130,7 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
     } = props;
     const passThroughSlotProps = muiPassTroughProps?.slotProps;
     const selectedOption = findOption(options, value);
+    const emptyDisplay = getEmptyDisplay(props);
 
     return (
         <TextField
@@ -127,7 +142,6 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
             required={required}
             error={fieldContext.invalid}
             helperText={undefined}
-            placeholder={placeholder}
             value={selectedOption != null ? normalizeValue(selectedOption.value) : ''}
             onChange={(event) => {
                 const option = findOption(options, event.target.value);
@@ -174,9 +188,13 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
                         'aria-labelledby': undefined,
                         labelId,
                         readOnly: readOnly || busy || selectSlotProps?.readOnly,
-                        renderValue: (selectedValue: unknown) => {
-                            return findOption(options, normalizeValue(selectedValue as SelectFieldValue))?.label ?? '';
-                        },
+                        // Select has no native placeholder; keep the display separate from the stored value.
+                        displayEmpty: true,
+                        renderValue: () => selectedOption?.label ?? (
+                            <Box component="span" sx={{color: disabled || !emptyDisplay.isPlaceholder ? 'inherit' : 'text.secondary'}}>
+                                {emptyDisplay.text}
+                            </Box>
+                        ),
                         MenuProps: {
                             ...selectSlotProps?.MenuProps,
                             slotProps: {
@@ -192,15 +210,20 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
                 },
             }}
         >
-            {includeEmptyOption && !(required ?? false) && options.length > 0 && (
-                <MenuItem value="">
-                    <i>{placeholder ?? 'Keine Auswahl'}</i>
+            {includeEmptyOption && !required && (options.length > 0 || normalizeValue(value) !== '' || emptyOptionLabel != null) && (
+                <MenuItem value="" onClick={() => {
+                    // MUI already sees an empty value for an unavailable option and would skip onChange.
+                    if (selectedOption == null && normalizeValue(value) !== '') {
+                        onChange(null);
+                    }
+                }}>
+                    {emptyOptionLabel ?? 'Keine Auswahl'}
                 </MenuItem>
             )}
 
             {options.length === 0 && (
-                <MenuItem value="">
-                    <i>{emptyStatePlaceholder ?? 'Keine Optionen vorhanden'}</i>
+                <MenuItem disabled>
+                    {emptyStatePlaceholder ?? 'Keine Optionen vorhanden'}
                 </MenuItem>
             )}
 
@@ -232,7 +255,6 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
 function ComboboxControl<T extends SelectFieldValue>({props, fieldContext}: SelectControlProps<T>) {
     const {
         autocomplete,
-        placeholder,
         disabled,
         readOnly,
         busy,
@@ -249,6 +271,7 @@ function ComboboxControl<T extends SelectFieldValue>({props, fieldContext}: Sele
         size = 'small',
     } = props;
     const selectedOption = findOption(options, value) ?? null;
+    const emptyDisplay = getEmptyDisplay(props);
     const passThroughSlotProps = muiPassTroughProps?.slotProps;
     const filterOptions = useMemo(() => createFilterOptions<SelectFieldComponentOption<T>>({
         stringify: (option) => [
@@ -268,7 +291,7 @@ function ComboboxControl<T extends SelectFieldValue>({props, fieldContext}: Sele
             required={required}
             error={fieldContext.invalid}
             helperText={undefined}
-            placeholder={placeholder}
+            placeholder={emptyDisplay.text}
             disabled={disabled ?? false}
             size={size}
             fullWidth
@@ -282,7 +305,12 @@ function ComboboxControl<T extends SelectFieldValue>({props, fieldContext}: Sele
                     return {
                         ...inputSlotProps,
                         ...params.slotProps.input,
-                        sx: [inputSlotProps?.sx, formFieldInputRootSx, controlSx],
+                        sx: [inputSlotProps?.sx, formFieldInputRootSx, {
+                            '& input::placeholder': {
+                                color: disabled ? 'inherit' : emptyDisplay.isPlaceholder ? 'text.secondary' : 'text.primary',
+                                opacity: 1,
+                            },
+                        }, controlSx],
                         readOnly: readOnly || busy || inputSlotProps?.readOnly,
                         startAdornment: mergeAdornments(
                             renderStartAdornment(startIcon),

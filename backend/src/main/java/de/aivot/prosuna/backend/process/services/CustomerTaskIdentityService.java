@@ -189,7 +189,7 @@ public class CustomerTaskIdentityService {
         var requiredIdentity = processIdentities == null ? null : processIdentities.get(requiredIdentityId);
         if (requiredIdentity == null) {
             throw ResponseException.internalServerError(
-                    "Die für die Kundenaufgabe erforderliche Identität ist in der Prozessinstanz nicht vorhanden."
+                    "Die für die Kundenaufgabe erforderliche Identität ist im Vorgang nicht vorhanden."
             );
         }
 
@@ -233,7 +233,7 @@ public class CustomerTaskIdentityService {
         var processIdentities = processInstance.getIdentities();
         if (processIdentities != null && processIdentities.containsKey(identityId)) {
             throw ResponseException.internalServerError(
-                    "Die ID der neu anzulegenden Identität wird bereits von einer Identität der Prozessinstanz verwendet."
+                    "Die ID der neu anzulegenden Identität wird bereits von einer Identität des Vorgangs verwendet."
             );
         }
         return slot;

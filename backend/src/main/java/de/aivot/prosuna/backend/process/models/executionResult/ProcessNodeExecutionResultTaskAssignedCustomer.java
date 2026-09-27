@@ -2,15 +2,15 @@ package de.aivot.prosuna.backend.process.models.executionResult;
 
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public class ProcessNodeExecutionResultTaskAssignedCustomer extends ProcessNodeExecutionResult {
-    @Nonnull
+    @Nullable
     private String identityId;
 
     // region constructor
 
     public ProcessNodeExecutionResultTaskAssignedCustomer() {
-        this.identityId = "";
     }
 
     public ProcessNodeExecutionResultTaskAssignedCustomer(@Nonnull String identityId) {
@@ -29,10 +29,14 @@ public class ProcessNodeExecutionResultTaskAssignedCustomer extends ProcessNodeE
         return new ProcessNodeExecutionResultTaskAssignedCustomer(identityData.identityId());
     }
 
+    public static ProcessNodeExecutionResultTaskAssignedCustomer withoutIdentity() {
+        return new ProcessNodeExecutionResultTaskAssignedCustomer();
+    }
+
     // endregion
 
 
-    @Nonnull
+    @Nullable
     public String getIdentityId() {
         return identityId;
     }

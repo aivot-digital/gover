@@ -161,6 +161,7 @@ const YupSchemaMap: {
     [ElementType.ProcessIdentityIdInput]: dynamicSelectFieldToYup,
     [ElementType.SecretSelectInput]: dynamicSelectFieldToYup,
     [ElementType.AssetSelectInput]: dynamicSelectFieldToYup,
+    [ElementType.DepartmentSelectInput]: departmentSelectFieldToYup,
 };
 
 function genericFieldToYup(elem: AnyInputElement): Schema {
@@ -255,6 +256,23 @@ function numberFieldToYup(elem: AnyInputElement): Schema {
     }
 
     return numberFieldSchema;
+}
+
+function departmentSelectFieldToYup(elem: AnyInputElement): Schema {
+    let departmentSchema: NumberSchema<number | undefined | null> = yup
+        .number()
+        .strict()
+        .integer('Bitte wählen Sie eine gültige Organisationseinheit aus.')
+        .positive('Bitte wählen Sie eine gültige Organisationseinheit aus.');
+
+    if (elem.required) {
+        departmentSchema = departmentSchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    } else {
+        departmentSchema = departmentSchema.nullable();
+    }
+
+    return departmentSchema;
 }
 
 function selectFieldToYup(elem: SelectFieldElement | RadioFieldElement): Schema {
@@ -696,12 +714,21 @@ function assignmentContextFieldToYup(elem: AssignmentContextFieldElement): Schem
                 'previousProcessStepAssignee',
                 'uninvolvedUser',
                 'processInstanceAssignee',
-            ]).nullable(),
+            ]).nullable().test(
+                'process-instance-assignee-option-enabled',
+                'Die Bevorzugung der dem Vorgang zugewiesenen Person ist hier nicht zulässig.',
+                (value) => elem.disableProcessInstanceAssigneeOption !== true || value !== 'processInstanceAssignee',
+            ),
             repeatExecutionAssigneePreference: yup.string().oneOf([
                 'none',
                 'previousIterationAssignee',
                 'differentFromPreviousIterationAssignee',
-            ]).nullable(),
+            ]).nullable().test(
+                'repeat-execution-assignee-preference-options-enabled',
+                'Eine Bevorzugung bei erneuter Ausführung ist hier nicht zulässig.',
+                (value) => elem.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions !== true ||
+                    value == null || value === 'none',
+            ),
         })
         .test(
             'assignment-context-preference-requires-selection',

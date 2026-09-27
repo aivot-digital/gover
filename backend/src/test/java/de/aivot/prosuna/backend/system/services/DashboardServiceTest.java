@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
@@ -31,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -173,9 +173,9 @@ class DashboardServiceTest {
         var counts = mock(DashboardTaskCountsProjection.class);
         when(counts.getTotalCount()).thenReturn(0L);
         when(counts.getOverdueCount()).thenReturn(0L);
-        when(fixture.taskRepository.findDashboardTasks(any(), anyShort(), anyBoolean(), any(), any()))
+        when(fixture.taskRepository.findDashboardTasks(any(), eq(de.aivot.prosuna.backend.process.services.ProcessListService.OPEN_TASK_STATUSES.stream().map(ProcessTaskStatus::getDatabaseValue).toList()), anyBoolean(), any(), any()))
                 .thenReturn(List.of());
-        when(fixture.taskRepository.getDashboardTaskCounts(any(), anyShort(), anyBoolean(), any(), any()))
+        when(fixture.taskRepository.getDashboardTaskCounts(any(), eq(de.aivot.prosuna.backend.process.services.ProcessListService.OPEN_TASK_STATUSES.stream().map(ProcessTaskStatus::getDatabaseValue).toList()), anyBoolean(), any(), any()))
                 .thenReturn(counts);
     }
 

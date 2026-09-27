@@ -20,9 +20,8 @@ public interface VPotentialProcessInstanceAccessRepository extends
     )
     boolean findAllByPermission(@Nonnull @Param("permission") String permission);
 
-    // TODO: This should not be necessary and needs to be revisited. Also we should not include users based on deputy permission.
-    //  At this moment we can not easily distinguish between users that have access via their own permissions and users that have access via deputy permissions.
-    //  This is because the deputy permissions are currently stored in the same array as the normal permissions.
+    // TODO: This should not be necessary and needs to be revisited.
+    // Keep own permissions separate from effective preset access when selecting lasting assignees.
     @Query(
             value = """
                     SELECT
@@ -69,7 +68,8 @@ public interface VPotentialProcessInstanceAccessRepository extends
                         p.user_via_department_id,
                         p.user_via_team_id,
                         p.user_is_direct_member,
-                        p.permissions
+                        p.permissions,
+                        p.user_direct_permissions
                     FROM v_potential_process_instance_access p
                              LEFT JOIN v_departments_shadowed dpt
                                        ON p.department_id = dpt.id

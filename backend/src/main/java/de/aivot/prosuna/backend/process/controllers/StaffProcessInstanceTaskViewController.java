@@ -14,10 +14,10 @@ import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
+import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
-import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -29,6 +29,7 @@ import de.aivot.prosuna.backend.process.workers.ProcessNodeExecutionResultHandle
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -43,8 +44,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK;
+
 @RestController
 @RequestMapping("/api/processes/{procId}/tasks/{taskId}/")
+@SecurityRequirement(name = OpenApiConfiguration.Security)
 @Tag(
         name = OpenApiConstants.Tags.ProcessesDefinitionsName,
         description = "Operations for managing process instance tasks."
@@ -86,7 +90,8 @@ public class StaffProcessInstanceTaskViewController {
     @Operation(
             summary = "Retrieve Process Instance Task View Layout",
             description = "Retrieves the view layout for a specific task within a process instance. " +
-                    "The layout defines how the task is presented to the user, including form fields and structure."
+                    "Requires `" + PROCESS_INSTANCE_EDIT_TASK + "` for the task's instance. " +
+                    "The task must belong to the requested instance and be running."
     )
     public <NodeConfig> TaskViewResponse retrieve(
             @Nonnull @AuthenticationPrincipal Jwt jwt,
@@ -142,9 +147,9 @@ public class StaffProcessInstanceTaskViewController {
 
     @PutMapping("")
     @Operation(
-            summary = "Retrieve Process Instance Task View Layout",
-            description = "Retrieves the view layout for a specific task within a process instance. " +
-                    "The layout defines how the task is presented to the user, including form fields and structure."
+            summary = "Save task inputs or execute a task event",
+            description = "Saves draft inputs or executes a staff task event. Requires `" + PROCESS_INSTANCE_EDIT_TASK +
+                    "` for the task's instance. The task must belong to the requested instance and be running."
     )
     public <NodeConfig> TaskViewResponse update(
             @Nonnull @AuthenticationPrincipal Jwt jwt,
@@ -323,9 +328,9 @@ public class StaffProcessInstanceTaskViewController {
 
     @PostMapping("derive/")
     @Operation(
-            summary = "Retrieve Process Instance Task View Layout",
-            description = "Retrieves the view layout for a specific task within a process instance. " +
-                    "The layout defines how the task is presented to the user, including form fields and structure."
+            summary = "Derive and validate staff task inputs",
+            description = "Derives and validates inputs for a staff task view. Requires `" + PROCESS_INSTANCE_EDIT_TASK +
+                    "` for the task's instance. The task must belong to the requested instance and be running."
     )
     public <NodeConfig> DerivedRuntimeElementData derive(
             @Nonnull @AuthenticationPrincipal Jwt jwt,
@@ -379,17 +384,12 @@ public class StaffProcessInstanceTaskViewController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var instance = processInstanceService
-                .retrieve(procId)
-                .orElseThrow(ResponseException::notFound);
-
         var task = processInstanceTaskService
-                .retrieve(taskId)
-                .orElseThrow(ResponseException::notFound);
+                .retrieveForStaffView(user.getId(), procId, taskId);
 
-        if (task.getStatus() != ProcessTaskStatus.Running) {
-            throw ResponseException.forbidden();
-        }
+        var instance = processInstanceService
+                .retrieve(task.getProcessInstanceId())
+                .orElseThrow(ResponseException::notFound);
 
         var node = processDefinitionNodeService
                 .retrieve(task.getProcessNodeId())

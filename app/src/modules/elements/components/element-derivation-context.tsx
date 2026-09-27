@@ -53,9 +53,11 @@ import {
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {deepEquals} from '../../../utils/equality-utils';
 import {type InputVariableSuggestion} from '../../../models/input-mode';
+import {ErrorAlert} from '../../../components/error-alert/error-alert';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
+    scrollContainerRef?: RefObject<HTMLDivElement | null>;
     authoredElementValues: AuthoredElementValues;
     onAuthoredElementValuesChange: (newData: AuthoredElementValues) => void;
     derivedData?: DerivedRuntimeElementData;
@@ -76,10 +78,12 @@ interface ElementDerivationContextProps {
     inputModesEnabled?: boolean;
     inputModeVariables?: InputVariableSuggestion[];
     deriveOnMount?: boolean;
+    showErrorSummary?: boolean;
 }
 
 export interface ElementDerivationContextHandle {
     replaceAuthoredElementValues: (newData: AuthoredElementValues) => Promise<DerivedRuntimeElementData>;
+    validate: () => Promise<DerivedRuntimeElementData>;
 }
 
 interface ElementDerivationContextType {
@@ -131,6 +135,7 @@ export const ElementDerivationContext = forwardRef<
 >(function ElementDerivationContext(props, ref) {
     const {
         element,
+        scrollContainerRef,
         authoredElementValues,
         onAuthoredElementValuesChange,
         derivedData: controlledDerivedData,
@@ -151,6 +156,7 @@ export const ElementDerivationContext = forwardRef<
         inputModesEnabled = false,
         inputModeVariables = [],
         deriveOnMount = true,
+        showErrorSummary = false,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -196,7 +202,7 @@ export const ElementDerivationContext = forwardRef<
             isEditable: !disabled && !readOnly,
             showInvisible: false,
             showTechnical: true,
-            scrollContainerRef: null,
+            scrollContainerRef: scrollContainerRef ?? null,
 
             rootElement: element,
             allElements: allElements,
@@ -216,6 +222,7 @@ export const ElementDerivationContext = forwardRef<
         computedErrors,
         suppressErrors,
         renderMode,
+        scrollContainerRef,
     ]);
 
     useEffect(() => {
@@ -407,8 +414,25 @@ export const ElementDerivationContext = forwardRef<
         return await deriveWithMinimumVisibleDuration(normalizedNewData, ['ALL']);
     };
 
+    const resetErrorsBeforeValidation = () => {
+        const clearedData = clearDerivedErrorsRecursively(baseDerivedData);
+        setInternalDerivedData(clearedData);
+        // Clear externally managed results too before lifting edit-time error suppression.
+        onDerivedDataChange?.(clearedData);
+        setErrorSuppressionTargets([]);
+    };
+
+    const handleValidationDerive = (
+        validationAuthoredElementValues: AuthoredElementValues,
+        skipErrorsForElements?: string[],
+    ) => {
+        resetErrorsBeforeValidation();
+        return deriveWithMinimumVisibleDuration(validationAuthoredElementValues, skipErrorsForElements);
+    };
+
     useImperativeHandle(ref, () => ({
         replaceAuthoredElementValues,
+        validate: () => handleValidationDerive(authoredElementValues, []),
     }));
 
     return (
@@ -417,6 +441,7 @@ export const ElementDerivationContext = forwardRef<
         >
             <ViewDispatcherContextProvider
                 value={{
+                    scrollContainerRef,
                     rootElement: element,
                     allElements: allElements,
                     mode: renderMode,
@@ -428,6 +453,7 @@ export const ElementDerivationContext = forwardRef<
                     inputModesEnabled,
                     inputModeVariables,
                     readOnly,
+                    showErrorSummary,
                 }}
             >
                 <ViewDispatcherComponent
@@ -438,13 +464,9 @@ export const ElementDerivationContext = forwardRef<
                     derivedData={derivedData}
                     onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
                     derivationTriggerIdQueue={derivationTriggerIdQueue}
-                    onDerive={(authoredValues, _, skipErrorsForElements) => {
-                        setInternalDerivedData((current) => {
-                            return clearDerivedErrorsRecursively(current);
-                        });
-                        setErrorSuppressionTargets([]);
-                        return deriveWithMinimumVisibleDuration(authoredValues, skipErrorsForElements);
-                    }}
+                    onDerive={(authoredValues, _, skipErrorsForElements) =>
+                        handleValidationDerive(authoredValues, skipErrorsForElements)
+                    }
                     onEvent={(data, event) => {
                         const normalizedData = normalizeReplicatingContainerValues(element, data);
 
@@ -465,6 +487,16 @@ export const ElementDerivationContext = forwardRef<
                     }}
                     suppressErrors={suppressErrors ?? false}
                 />
+                {showErrorSummary && !suppressErrors && (
+                    <ErrorAlert
+                        element={element}
+                        authoredElementValues={authoredElementValues}
+                        derivedData={derivedData}
+                        description={renderMode === ViewDispatcherMode.Editor
+                            ? 'Bitte korrigieren Sie Ihre Angaben und klicken Sie erneut auf „Eingaben validieren“.'
+                            : undefined}
+                    />
+                )}
             </ViewDispatcherContextProvider>
         </ElementDerivationContextProvider>
     );

@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.repositories;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.projections.DashboardActivityBucketProjection;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -15,6 +16,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProcessInstanceRepository extends JpaRepository<ProcessInstanceEntity, Long>, JpaSpecificationExecutor<ProcessInstanceEntity> {
+    // All ACL mutations and staff assignments lock the owning instance before checking rights.
+    // Return only the ID so acquiring the lock does not cache a potentially stale entity.
+    @Query(value = "SELECT id FROM process_instances WHERE id = :id FOR UPDATE", nativeQuery = true)
+    Optional<Long> lockAccessById(@Param("id") Long id);
+
     List<ProcessInstanceEntity> findAllByStatus(ProcessInstanceStatus status);
 
     Optional<ProcessInstanceEntity> findByAccessKey(String accessKey);
@@ -43,6 +49,26 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
     boolean hasPermission(@Param("userId") String userId,
                           @Param("processInstanceId") Long processInstanceId,
                           @Param("permission") String permission);
+
+    // Match own rights to the same source as the effective instance grant. A right held in
+    // another domain must not turn deputy-only access to this instance into assignable access.
+    @Query(value = """
+            SELECT EXISTS(
+                SELECT 1
+                FROM v_user_process_instance_access_permissions access
+                JOIN v_user_domain_permissions domain_access
+                  ON domain_access.user_id = access.user_id
+                 AND (domain_access.department_id = access.via_source_department_id
+                      OR domain_access.team_id = access.via_source_team_id)
+                WHERE access.user_id = :userId
+                  AND access.target_process_instance_id = :processInstanceId
+                  AND access.permissions::text[] @> ARRAY[:permission]
+                  AND domain_access.direct_permissions::text[] @> ARRAY[:permission]
+            )
+            """, nativeQuery = true)
+    boolean hasPermissionWithoutDeputies(@Nonnull @Param("userId") String userId,
+                                         @Nonnull @Param("processInstanceId") Long processInstanceId,
+                                         @Nonnull @Param("permission") String permission);
 
     @Query(
             value = "SELECT DISTINCT p.target_process_instance_id FROM v_user_process_instance_access_permissions p WHERE p.user_id = :userId AND p.target_process_instance_id IS NOT NULL AND p.permissions::text[] @> ARRAY[:permission]",

@@ -128,6 +128,10 @@ export class CommunicationProvidersApiService extends BaseApiService {
         return this.put(`${this.path}bindings/${id}/`, request);
     }
 
+    public reorderBindings(identityProviderKey: string, ids: number[]): Promise<CommunicationProviderBinding[]> {
+        return this.put(`${this.path}bindings/order/`, {identityProviderKey, ids});
+    }
+
     public deleteBinding(id: number): Promise<void> {
         return this.delete(`${this.path}bindings/${id}/`);
     }

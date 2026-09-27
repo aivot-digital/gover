@@ -18,8 +18,8 @@ import {
 import {SelectFieldComponent} from '../select-field/select-field-component';
 import {Hint} from '../hint/hint';
 import {
-    assignmentContextGeneralAssigneePreferenceOptions,
     assignmentContextRepeatExecutionAssigneePreferenceOptions,
+    getAvailableAssignmentContextGeneralAssigneePreferenceOptions,
 } from '../../utils/assignment-context-preference-options';
 import {pluralize} from '../../utils/humanization-utils';
 import WarningAmberOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
@@ -45,6 +45,8 @@ export interface AssignmentContextFieldComponentProps {
     options?: DomainAndUserSelectOption[];
     allowedTypes?: DomainAndUserSelectItemType[] | null;
     processAccessConstraint?: DomainAndUserSelectProcessAccessConstraint | null;
+    disableProcessInstanceAssigneeOption?: boolean;
+    disableAssignmentContextRepeatExecutionAssigneePreferenceOptions?: boolean;
 }
 
 const DEFAULT_HEADLINE = 'Verantwortlicher Personenkreis';
@@ -130,6 +132,9 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
     };
     const generalAssigneePreference = resolveGeneralAssigneePreference(currentValue);
     const repeatExecutionAssigneePreference = resolveRepeatExecutionAssigneePreference(currentValue);
+    const unavailableGeneralPreference = props.disableProcessInstanceAssigneeOption === true &&
+        generalAssigneePreference === 'processInstanceAssignee';
+    const assignmentLogicSummary = ASSIGNMENT_LOGIC_SUMMARY;
 
     const headlineText = props.title != null && props.title.trim().length > 0 ? props.title : DEFAULT_HEADLINE;
     const descriptionText = props.description != null && props.description.trim().length > 0 ? props.description : DEFAULT_TEXT;
@@ -190,12 +195,12 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                 </Typography>
 
                 <Hint
-                    summary={ASSIGNMENT_LOGIC_SUMMARY}
+                    summary={assignmentLogicSummary}
                     detailsTitle="Zuweisungslogik"
                     details={
                         <Box>
                             <Typography variant="body2" sx={{mb: 2}}>
-                                {ASSIGNMENT_LOGIC_SUMMARY}
+                                {assignmentLogicSummary}
                             </Typography>
 
                             <Typography variant="body2" sx={{mb: 2}}>
@@ -212,9 +217,11 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                                 <Typography component="li" variant="body2" sx={{mb: 1}}>
                                     Aus dem ausgewählten Personenkreis werden alle Mitarbeitenden ermittelt, die für diese Aufgabe berechtigt sind.
                                 </Typography>
-                                <Typography component="li" variant="body2" sx={{mb: 1}}>
-                                    Wenn dieselbe Aufgabe im Rahmen einer Schleife erneut ausgeführt wird, wird die Bevorzugung bei erneuter Ausführung berücksichtigt.
-                                </Typography>
+                                {!props.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions && (
+                                    <Typography component="li" variant="body2" sx={{mb: 1}}>
+                                        Wenn dieselbe Aufgabe im Rahmen einer Schleife erneut ausgeführt wird, wird die Bevorzugung bei erneuter Ausführung berücksichtigt.
+                                    </Typography>
+                                )}
                                 <Typography component="li" variant="body2" sx={{mb: 1}}>
                                     Danach wird die allgemeine Bevorzugung bei der Zuweisung angewendet.
                                 </Typography>
@@ -306,8 +313,11 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                             generalAssigneePreference: (nextValue ?? 'none') as GeneralAssigneePreference,
                         });
                     }}
-                    options={assignmentContextGeneralAssigneePreferenceOptions}
+                    options={getAvailableAssignmentContextGeneralAssigneePreferenceOptions(props.disableProcessInstanceAssigneeOption === true)}
                     includeEmptyOption={false}
+                    error={unavailableGeneralPreference
+                        ? 'Die Bevorzugung der dem Vorgang zugewiesenen Person ist hier nicht zulässig.'
+                        : undefined}
                     disabled={props.disabled}
                     busy={props.busy}
                     readOnly={props.readOnly}
@@ -315,22 +325,24 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                     margin="none"
                 />
 
-                <SelectFieldComponent
-                    label="Bevorzugung bei erneuter Ausführung (Schleife)"
-                    value={repeatExecutionAssigneePreference}
-                    onChange={(nextValue) => {
-                        patchValue({
-                            repeatExecutionAssigneePreference: (nextValue ?? 'none') as RepeatExecutionAssigneePreference,
-                        });
-                    }}
-                    options={assignmentContextRepeatExecutionAssigneePreferenceOptions}
-                    includeEmptyOption={false}
-                    disabled={props.disabled}
-                    busy={props.busy}
-                    readOnly={props.readOnly}
-                    size="small"
-                    margin="none"
-                />
+                {!props.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions && (
+                    <SelectFieldComponent
+                        label="Bevorzugung bei erneuter Ausführung (Schleife)"
+                        value={repeatExecutionAssigneePreference}
+                        onChange={(nextValue) => {
+                            patchValue({
+                                repeatExecutionAssigneePreference: (nextValue ?? 'none') as RepeatExecutionAssigneePreference,
+                            });
+                        }}
+                        options={assignmentContextRepeatExecutionAssigneePreferenceOptions}
+                        includeEmptyOption={false}
+                        disabled={props.disabled}
+                        busy={props.busy}
+                        readOnly={props.readOnly}
+                        size="small"
+                        margin="none"
+                    />
+                )}
             </Stack>
         </Stack>
     );

@@ -61,6 +61,7 @@ public class ProcessController {
     private final ProcessInstanceAccessControlPresetService processInstanceAccessControlPresetService;
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final JsonMapper objectMapper;
+    private final ProcessDefinitionCountService processCounts;
 
     @Autowired
     public ProcessController(AuditService auditService,
@@ -75,7 +76,8 @@ public class ProcessController {
                              ProcessEdgeService processDefinitionEdgeService,
                              ProcessInstanceAccessControlPresetService processInstanceAccessControlPresetService,
                              ProcessNodeDefinitionService processNodeProviderService,
-                             JsonMapper objectMapper) {
+                             JsonMapper objectMapper,
+                             ProcessDefinitionCountService processCounts) {
         this.auditService = auditService.createScopedAuditService(ProcessController.class, "Prozesse");
 
         this.userService = userService;
@@ -90,6 +92,7 @@ public class ProcessController {
         this.processInstanceAccessControlPresetService = processInstanceAccessControlPresetService;
         this.processNodeProviderService = processNodeProviderService;
         this.objectMapper = objectMapper;
+        this.processCounts = processCounts;
     }
 
     @GetMapping("")
@@ -112,6 +115,14 @@ public class ProcessController {
                         execUser.getId(),
                         filter.build()
                 );
+    }
+
+    @GetMapping("counts/")
+    @Operation(summary = "Count draft and published process definitions", description = "Counts readable processes with a draft or published version independently of the selected tab, title search and department filter. Processes with both versions contribute to both categories.")
+    @Nonnull
+    public Map<String, Long> counts(@Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return processCounts.count(user.getId());
     }
 
     @GetMapping("slug-availability/")
@@ -215,6 +226,22 @@ public class ProcessController {
 
         processDefinitionNodeService.validateNewProcessNodeBatch(exportData.nodes());
 
+        for (var node : exportData.nodes()) {
+            var provider = processNodeProviderService
+                    .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
+                    .orElseThrow(() -> ResponseException
+                            .badRequest("Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ ist nicht verfügbar."
+                                    .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())));
+            node.setConfiguration(provider.prefillConfigurationOnImport(node.getConfiguration()));
+            processDefinitionNodeService.requireReadableDepartmentSelections(
+                    execUser,
+                    node,
+                    provider,
+                    exportData.process(),
+                    exportData.version()
+            );
+        }
+
         var newProcess = processDefinitionService
                 .create(
                         exportData
@@ -242,20 +269,10 @@ public class ProcessController {
         for (var node : exportData.nodes()) {
             var originalId = node.getId();
 
-            var provider = processNodeProviderService
-                    .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
-                    .orElseThrow(() -> ResponseException
-                            .badRequest("Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ ist nicht verfügbar."
-                                    .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())));
-
-            var config = provider
-                    .prefillConfigurationOnImport(node.getConfiguration());
-
             var addedNode = processDefinitionNodeService
                     .create(node
                             .setProcessId(newProcess.getId())
                             .setProcessVersion(newVersion.getProcessVersion())
-                            .setConfiguration(config)
                     );
 
             savedNodeIdMap
@@ -656,6 +673,7 @@ public class ProcessController {
                         null,
                         null
                 )
+                        .setCaseNumberType(originalProcessVersion.getCaseNumberType())
                         .setThemeId(originalProcessVersion.getThemeId())
                         .setLegalSupportDepartmentId(originalProcessVersion.getLegalSupportDepartmentId())
                         .setTechnicalSupportDepartmentId(originalProcessVersion.getTechnicalSupportDepartmentId())

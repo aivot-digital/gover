@@ -1,3 +1,4 @@
+import {CaseNumberType} from '../../enums/case-number-type';
 import {configureStore} from '@reduxjs/toolkit';
 import {act, createRef} from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
@@ -20,6 +21,47 @@ vi.mock('../../../../components/rich-text-input-component/rich-text-input-compon
 }));
 
 describe('ProcessSettingsDialogVersionTab', () => {
+    it.each([
+        [CaseNumberType.UuidV4, 'Zufällige Kennung (UUID v4)'],
+        [CaseNumberType.UuidV7, 'Zeitlich sortierbare Kennung (UUID v7)'],
+    ])('defaults to compact identifiers and persists an explicit %s choice', async (type, label) => {
+        const user = userEvent.setup();
+        const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+        };
+        const update = vi
+            .spyOn(ProcessDefinitionVersionApiService.prototype, 'update')
+            .mockImplementation(async (_id, updated) => updated);
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    ref={ref}
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                />
+            </Provider>,
+        );
+        expect(screen.getByRole('radio', {name: /Kompakte Zufallskennung/})).toBeChecked();
+        await user.click(screen.getByRole('radio', {name: label}));
+        act(() => ref.current?.save());
+        await waitFor(() =>
+            expect(update).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.objectContaining({
+                    caseNumberType: type,
+                    caseNumberTemplate: null,
+                }),
+            ),
+        );
+    });
+
     it('saves the selected theme on the process version', async () => {
         const user = userEvent.setup();
         const ref = createRef<ProcessSettingsDialogVersionTabHandle>();

@@ -452,6 +452,10 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         }
 
         final var process = retrieveProcess(processInstance);
+        final var signatureDepartment = SemiAutomaticMessageConfig.resolveSignatureDepartment(
+                config.messageConfig,
+                vDepartmentShadowedService
+        );
         final var department = vDepartmentShadowedService
                 .retrieve(process.getDepartmentId())
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
@@ -471,6 +475,9 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         mailContext.put("messageText", contentMarkdown);
         mailContext.put("messageHtml", contentHtml);
         mailContext.put("department", department);
+        if (signatureDepartment != null) {
+            mailContext.put("signatureDepartment", signatureDepartment);
+        }
 
         try {
             mailService.sendMail(
@@ -483,7 +490,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                     mailContext,
                     Optional.empty(),
                     mailAttachments.isEmpty() ? Optional.empty() : Optional.of(mailAttachments),
-                    MailSendOptions.defaults()
+                    new MailSendOptions(signatureDepartment != null)
             );
         } catch (MailException exception) {
             throw new ProcessNodeExecutionExceptionUnknown(
@@ -569,6 +576,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         configuration.remove(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1);
+        configuration.remove(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2);
         return configuration;
     }
 
@@ -585,7 +594,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         if (attachmentSets.isEmpty()) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Anlagensatz mit dem Datenschlüssel %s wurde in der Prozess-Instanz %d nicht gefunden.",
+                    "Der Anlagensatz mit dem Datenschlüssel %s wurde im Vorgang %d nicht gefunden.",
                     StringUtils.quote(normalizedDataKey),
                     processInstance.getId()
             );
@@ -638,7 +647,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze der Prozessinstanz, deren Anhänge später als E-Mail-Anhänge hinzugefügt werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze des Vorgangs, deren Anhänge später als E-Mail-Anhänge hinzugefügt werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public List<String> attachmentSetDataKeys;

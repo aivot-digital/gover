@@ -39,6 +39,8 @@ export function AssignmentContextFieldView(props: BaseViewProps<AssignmentContex
             disabled={isDisabled}
             busy={isBusy}
             allowedTypes={element.allowedTypes ?? undefined}
+            disableProcessInstanceAssigneeOption={element.disableProcessInstanceAssigneeOption === true}
+            disableAssignmentContextRepeatExecutionAssigneePreferenceOptions={element.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions === true}
             processAccessConstraint={element.processAccessConstraint ?? undefined}
         />
     );

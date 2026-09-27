@@ -49,6 +49,7 @@ import {PaymentConfigView} from './payment-config-view';
 import {LinkButtonView} from './link-button-view';
 import {SecretSelectInputView} from './secret-select-input-view';
 import {AssetSelectInputView} from './asset-select-input-view';
+import {DepartmentSelectInputView} from './department-select-input-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,
@@ -100,6 +101,7 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.ProcessIdentityIdInput]: ProcessIdentityIdInputFieldView,
     [ElementType.SecretSelectInput]: SecretSelectInputView,
     [ElementType.AssetSelectInput]: AssetSelectInputView,
+    [ElementType.DepartmentSelectInput]: DepartmentSelectInputView,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputView,
     [ElementType.StoragePathSelector]: StoragePathSelectorInputView,
     [ElementType.ProcessAttachmentDisplay]: ProcessAttachmentDisplayView,

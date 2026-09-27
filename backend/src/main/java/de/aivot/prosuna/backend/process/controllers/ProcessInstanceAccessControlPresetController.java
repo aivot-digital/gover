@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAccessControlPresetEntity;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAccessControlPresetFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAccessAuditDescriptionService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAccessControlPresetService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -32,16 +33,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProcessInstanceAccessControlPresetController extends GenericCrudController<ProcessInstanceAccessControlPresetEntity, Integer, ProcessInstanceAccessControlPresetFilter> {
     private final ProcessInstanceAccessControlPresetService processInstanceAccessControlPresetService;
     private final PermissionService permissionService;
+    private final ProcessInstanceAccessAuditDescriptionService auditDescriptions;
 
     public ProcessInstanceAccessControlPresetController(AuditService auditService,
                                                         UserService userService,
                                                         ProcessInstanceAccessControlPresetService processInstanceAccessControlPresetService,
-                                                        PermissionService permissionService) {
+                                                        PermissionService permissionService,
+                                                        ProcessInstanceAccessAuditDescriptionService auditDescriptions) {
         super(auditService.createScopedAuditService(ProcessInstanceAccessControlPresetController.class, "Prozesse"),
                 userService,
                 processInstanceAccessControlPresetService);
         this.processInstanceAccessControlPresetService = processInstanceAccessControlPresetService;
         this.permissionService = permissionService;
+        this.auditDescriptions = auditDescriptions;
     }
 
     @Override
@@ -124,10 +128,9 @@ public class ProcessInstanceAccessControlPresetController extends GenericCrudCon
     protected String buildCreateAuditMessage(@Nonnull UserEntity execUser,
                                              @Nonnull ProcessInstanceAccessControlPresetEntity createdItem) {
         return String.format(
-                "Die Instanz-Zugriffsvorlage mit der ID %s für den Zielprozess %s wurde von der Mitarbeiter:in %s erstellt.",
-                StringUtils.quote(String.valueOf(createdItem.getId())),
-                StringUtils.quote(String.valueOf(createdItem.getTargetProcessId())),
-                StringUtils.quote(execUser.getFullName())
+                "%s hat %s hinzugefügt.",
+                StringUtils.quote(execUser.getFullName()),
+                auditDescriptions.describePreset(createdItem)
         );
     }
 
@@ -137,10 +140,9 @@ public class ProcessInstanceAccessControlPresetController extends GenericCrudCon
                                              @Nonnull Integer id,
                                              @Nonnull ProcessInstanceAccessControlPresetEntity updatedItem) {
         return String.format(
-                "Die Instanz-Zugriffsvorlage mit der ID %s für den Zielprozess %s wurde von der Mitarbeiter:in %s aktualisiert.",
-                StringUtils.quote(String.valueOf(id)),
-                StringUtils.quote(String.valueOf(updatedItem.getTargetProcessId())),
-                StringUtils.quote(execUser.getFullName())
+                "%s hat %s geändert.",
+                StringUtils.quote(execUser.getFullName()),
+                auditDescriptions.describePreset(updatedItem)
         );
     }
 
@@ -150,10 +152,9 @@ public class ProcessInstanceAccessControlPresetController extends GenericCrudCon
                                              @Nonnull Integer id,
                                              @Nonnull ProcessInstanceAccessControlPresetEntity deletedItem) {
         return String.format(
-                "Die Instanz-Zugriffsvorlage mit der ID %s für den Zielprozess %s wurde von der Mitarbeiter:in %s gelöscht.",
-                StringUtils.quote(String.valueOf(id)),
-                StringUtils.quote(String.valueOf(deletedItem.getTargetProcessId())),
-                StringUtils.quote(execUser.getFullName())
+                "%s hat %s entfernt.",
+                StringUtils.quote(execUser.getFullName()),
+                auditDescriptions.describePreset(deletedItem)
         );
     }
 

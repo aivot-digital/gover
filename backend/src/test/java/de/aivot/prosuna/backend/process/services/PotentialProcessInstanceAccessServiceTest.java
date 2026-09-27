@@ -130,6 +130,24 @@ class PotentialProcessInstanceAccessServiceTest {
         );
     }
 
+    @Test
+    void listSelectableItems_ExcludesDeputyPermissionsEvenForDirectMembers() {
+        var deputy = userRow("deputy", "Kim Beispiel", null, null, 20, true, List.of(REQUIRED_PERMISSION));
+        deputy[13] = new String[]{"process_instance.read"};
+        rows = List.of(
+                teamRow(20, "Bürgerbüro", List.of(REQUIRED_PERMISSION)),
+                deputy,
+                userRow("own-access", "Alex Beispiel", null, null, 20, true, List.of(REQUIRED_PERMISSION))
+        );
+
+        var result = service.listSelectableItems(PROCESS_ID, PROCESS_VERSION, List.of(REQUIRED_PERMISSION));
+
+        assertEquals(List.of(
+                new ProcessInstanceAccessSelectableItem("team", "20", "Bürgerbüro", "Team", null, 1),
+                new ProcessInstanceAccessSelectableItem("user", "own-access", "Alex Beispiel", null, null)
+        ), result);
+    }
+
     private static Object[] departmentRow(Integer departmentId,
                                           String departmentLabel,
                                           Integer departmentDepth,
@@ -147,6 +165,7 @@ class PotentialProcessInstanceAccessServiceTest {
                 null,
                 null,
                 null,
+                permissions.toArray(String[]::new),
                 permissions.toArray(String[]::new)
         };
     }
@@ -167,6 +186,7 @@ class PotentialProcessInstanceAccessServiceTest {
                 null,
                 null,
                 null,
+                permissions.toArray(String[]::new),
                 permissions.toArray(String[]::new)
         };
     }
@@ -202,6 +222,7 @@ class PotentialProcessInstanceAccessServiceTest {
                 viaDepartmentId,
                 viaTeamId,
                 isDirectMember,
+                permissions.toArray(String[]::new),
                 permissions.toArray(String[]::new)
         };
     }

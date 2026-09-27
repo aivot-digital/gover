@@ -1,5 +1,5 @@
 import {getCustomerPageSurfaceColor} from '../../theming/customer-page-surface';
-import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {useNavigate, useOutletContext, useParams, useSearchParams} from 'react-router-dom';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Box,
@@ -78,6 +78,7 @@ import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
 import type {IdentitySlot} from '../../modules/identity/models/identity-slot';
 import {IdentitySlotCard} from '../../modules/identity/components/identity-slot-card/identity-slot-card';
+import type {CustomerShellOutletContext} from '../../shells/customer/customer-shell';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
@@ -112,6 +113,7 @@ function createCustomerFormLoadError(error: unknown) {
 
 export function CustomerFormPage() {
     const baseTheme = useTheme();
+    const scrollContainerRef = useOutletContext<CustomerShellOutletContext | null>()?.scrollContainerRef;
 
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -501,6 +503,7 @@ export function CustomerFormPage() {
                         startedProcessAccessInfo == null &&
                         customerInputLoaderResolved &&
                         <ElementDerivationContext
+                            scrollContainerRef={scrollContainerRef}
                             element={layoutElement}
                             authoredElementValues={authoredElementValues}
                             derivedData={derivedData}

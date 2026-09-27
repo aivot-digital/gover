@@ -26,7 +26,7 @@ public class ProcessInstanceEventEntity {
     private Long id;
 
     @Nonnull
-    @NotNull(message = "Die ID der Prozessinstanz muss angegeben werden.")
+    @NotNull(message = "Die ID des Vorgangs muss angegeben werden.")
     private Long processInstanceId;
 
     @Nullable

@@ -41,6 +41,7 @@ import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
 import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
 import {Stack} from '@mui/material';
 import {NoCodeTreeRow} from './no-code-tree-row';
+import {useCodeListElementOptions} from '../../code-lists/hooks/use-code-list-element-options';
 
 interface NoCodeOperandEditorExpressionProps {
     allElements: ElementWithParents[];
@@ -101,6 +102,14 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
         }).parameters;
     }, [operator, operands.length]);
 
+    const referencedElements = useMemo(() => {
+        return operands
+            .filter(isNoCodeReference)
+            .map((op) => allElements.find((entry) => entry.element.id === op.elementId)?.element)
+            .filter((element): element is ElementWithParents['element'] => element != null);
+    }, [operands, allElements]);
+    const codeListOptions = useCodeListElementOptions(referencedElements);
+
     const parameterOptionOverrides: NoCodeParameterOption[] = useMemo(() => {
         const options: NoCodeParameterOption[] = [];
 
@@ -131,26 +140,32 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 } :
                                 option
                         )));
+                    } else {
+                        options.push(...(codeListOptions.get(element.id) ?? []));
                     }
                     break;
                 case ElementType.MultiCheckbox:
                     if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
                         options.push(...element.options);
+                    } else {
+                        options.push(...(codeListOptions.get(element.id) ?? []));
                     }
                     break;
                 case ElementType.ChipInput:
-                    if (element.suggestions != null) {
+                    if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.suggestions != null) {
                         options.push(...element.suggestions.map((value) => ({
                             value,
                             label: value,
                         })));
+                    } else {
+                        options.push(...(codeListOptions.get(element.id) ?? []));
                     }
                     break;
             }
         }
 
         return options;
-    }, [operands, allElements]);
+    }, [operands, allElements, codeListOptions]);
 
     const leadingParameter: ResolvedParameter | undefined = useMemo(() => {
         if (parameters.length >= 2) {

@@ -30,5 +30,7 @@ export interface AssignmentContextFieldElement extends BaseInputElement<ElementT
     minItems: number | null | undefined;
     maxItems: number | null | undefined;
     allowedTypes: DomainAndUserSelectItemType[] | null | undefined;
+    disableProcessInstanceAssigneeOption?: boolean | null;
+    disableAssignmentContextRepeatExecutionAssigneePreferenceOptions?: boolean | null;
     processAccessConstraint: DomainAndUserSelectProcessAccessConstraint | null | undefined;
 }

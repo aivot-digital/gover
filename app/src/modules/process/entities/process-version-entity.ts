@@ -1,3 +1,4 @@
+import {CaseNumberType} from '../enums/case-number-type';
 import {ProcessStatus} from '../enums/process-status';
 
 export interface ProcessVersionEntity {
@@ -5,6 +6,7 @@ export interface ProcessVersionEntity {
     processVersion: number;
     status: ProcessStatus;
     publicTitle: string;
+    caseNumberType: CaseNumberType;
     caseNumberTemplate: string | null;
     notes: string | null;
     themeId: number | null;

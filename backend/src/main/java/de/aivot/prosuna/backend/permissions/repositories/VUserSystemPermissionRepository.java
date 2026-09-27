@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.permissions.repositories;
 
 import de.aivot.prosuna.backend.permissions.entities.VUserSystemPermissionEntity;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +16,18 @@ public interface VUserSystemPermissionRepository extends JpaRepository<VUserSyst
     )
     boolean hasPermission(@Param("userId") String userId,
                           @Param("permission") String permission);
+
+    @Query(value = """
+            SELECT EXISTS(
+                SELECT 1
+                FROM users usr
+                JOIN system_roles role ON role.id = usr.system_role_id
+                WHERE usr.id = :userId
+                  AND role.permissions::text[] @> ARRAY[:permission]
+            )
+            """, nativeQuery = true)
+    boolean hasPermissionWithoutDeputies(@Nonnull @Param("userId") String userId,
+                                         @Nonnull @Param("permission") String permission);
 
     List<VUserSystemPermissionEntity> findAllByUserId(String userId);
 }

@@ -147,6 +147,7 @@ public class PotentialProcessInstanceAccessService {
             @Nonnull List<String> requiredPermissions
     ) {
         return Boolean.TRUE.equals(row.userIsDirectMember()) &&
+               hasRequiredPermissions(row.userDirectPermissions(), requiredPermissions) &&
                hasRequiredPermissions(row.permissions(), requiredPermissions);
     }
 
@@ -231,7 +232,7 @@ public class PotentialProcessInstanceAccessService {
 
     @Nullable
     private static PotentialAccessRow toRow(@Nullable Object[] row) {
-        if (row == null || row.length < 13) {
+        if (row == null || row.length < 14) {
             return null;
         }
 
@@ -248,7 +249,8 @@ public class PotentialProcessInstanceAccessService {
                 toInteger(row[9]),
                 toInteger(row[10]),
                 toBoolean(row[11]),
-                toStringList(row[12])
+                toStringList(row[12]),
+                toStringList(row[13])
         );
     }
 
@@ -390,7 +392,8 @@ public class PotentialProcessInstanceAccessService {
             @Nullable Integer userViaDepartmentId,
             @Nullable Integer userViaTeamId,
             @Nullable Boolean userIsDirectMember,
-            @Nonnull List<String> permissions
+            @Nonnull List<String> permissions,
+            @Nonnull List<String> userDirectPermissions
     ) {
     }
 }

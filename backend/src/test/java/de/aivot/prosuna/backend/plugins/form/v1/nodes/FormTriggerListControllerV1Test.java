@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.plugins.form.services.FormOverviewCountService;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -59,7 +60,8 @@ class FormTriggerListControllerV1Test {
                 processNodeService,
                 processVersionService,
                 formTriggerNode,
-                publicUrlService
+                publicUrlService,
+                mock(FormOverviewCountService.class)
         );
 
         when(formTriggerNode.getKey()).thenReturn("form:form:1");
@@ -138,6 +140,7 @@ class FormTriggerListControllerV1Test {
         assertEquals(7, item.id());
         assertEquals("Online-Antrag", item.nodeName());
         assertEquals("Hundesteuer online beantragen", item.formTitle());
+        assertEquals("antrag", item.formSlug());
         assertEquals("Hundesteuer", item.processTitle());
         assertEquals(ProcessVersionStatus.Published, item.status());
         assertEquals("https://example.test/form/hundesteuer/antrag/", item.publicUrl());
@@ -233,6 +236,7 @@ class FormTriggerListControllerV1Test {
 
         var item = result.getContent().getFirst();
         assertEquals("Hundesteuer beantragen", item.formTitle());
+        assertEquals("antrag", item.formSlug());
         assertEquals(ProcessVersionStatus.Drafted, item.status());
         assertNull(item.publicUrl());
         assertNull(item.published());

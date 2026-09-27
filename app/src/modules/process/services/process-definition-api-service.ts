@@ -1,8 +1,10 @@
+import {type ListFilterCounts} from '../../../components/generic-list/generic-list-props';
 import {BaseCrudApiService} from "../../../services/base-crud-api-service";
 import {ProcessEntity} from "../entities/process-entity";
 import {ProcessExport} from "../entities/process-export";
 import {ProcessVersionEntity} from '../entities/process-version-entity';
 import {ProcessSlugHistoryEntity} from '../entities/process-slug-history-entity';
+import {type ProcessDepartmentOptionDTO} from '../dtos/process-department-option-dto';
 
 interface ProcessDefinitionFilter {
     internalTitle: string;
@@ -35,6 +37,10 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
         return ProcessDefinitionApiService.initialize();
     }
 
+    public counts(abort?: AbortSignal): Promise<ListFilterCounts> {
+        return this.get('/api/processes/counts/', {abort});
+    }
+
     public static initialize(): ProcessEntity {
         return {
             id: 0,
@@ -60,6 +66,10 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
 
     public move(processId: number, targetDepartmentId: number): Promise<ProcessEntity> {
         return this.put<any, ProcessEntity>(`/api/processes/${processId}/move/?targetDepartmentId=${targetDepartmentId}`, {});
+    }
+
+    public listDepartmentOptions(): Promise<ProcessDepartmentOptionDTO[]> {
+        return this.get<ProcessDepartmentOptionDTO[]>('/api/processes/department-options/');
     }
 
     public addNewVersion(processId: number, sourceVersionNumber?: number): Promise<ProcessVersionEntity> {

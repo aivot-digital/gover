@@ -27,6 +27,7 @@ interface ErrorAlertProps {
     element: AnyElement;
     authoredElementValues: AuthoredElementValues;
     derivedData: DerivedRuntimeElementData;
+    description?: string;
 }
 
 interface CollectedError {
@@ -144,7 +145,7 @@ export function ErrorAlert(props: ErrorAlertProps) {
             }}
         >
             <Typography>
-                Bitte korrigieren Sie Ihre Angaben und fahren Sie fort, damit diese erneut überprüft werden.
+                {props.description ?? 'Bitte korrigieren Sie Ihre Angaben und fahren Sie fort, damit diese erneut überprüft werden.'}
             </Typography>
 
             <ul

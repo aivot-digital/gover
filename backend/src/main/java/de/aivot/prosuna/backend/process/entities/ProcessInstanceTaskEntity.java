@@ -34,7 +34,7 @@ public class ProcessInstanceTaskEntity {
     private String accessKey;
 
     @Nonnull
-    @NotNull(message = "Die Prozessinstanz-ID darf nicht null sein.")
+    @NotNull(message = "Die Vorgangs-ID darf nicht null sein.")
     private Long processInstanceId;
 
     @Nonnull

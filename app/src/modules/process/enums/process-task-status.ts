@@ -19,3 +19,14 @@ export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
     [ProcessTaskStatus.Failed]: 'Fehlgeschlagen',
     [ProcessTaskStatus.Restarted]: 'Neu gestartet',
 };
+
+export const ProcessTaskStatusColors: Record<ProcessTaskStatus, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
+    [ProcessTaskStatus.Running]: 'info',
+    [ProcessTaskStatus.Paused]: 'warning',
+    [ProcessTaskStatus.AwaitingPayment]: 'warning',
+    [ProcessTaskStatus.AwaitingCustomer]: 'warning',
+    [ProcessTaskStatus.Completed]: 'success',
+    [ProcessTaskStatus.Aborted]: 'error',
+    [ProcessTaskStatus.Failed]: 'error',
+    [ProcessTaskStatus.Restarted]: 'warning',
+};

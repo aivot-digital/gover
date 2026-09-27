@@ -481,6 +481,21 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                     .append(HtmlUtils.htmlEscape(title))
                     .append("</a></p>");
         }
+
+        var signature = message.signatureDepartment() == null
+                ? null
+                : message.signatureDepartment().getDefaultMailSignature();
+        if (signature != null && !signature.isBlank()) {
+            if (content.length() > 0) {
+                content.append('\n');
+            }
+            var signatureHtml = HtmlUtils
+                    .htmlEscape(signature.strip())
+                    .replace("\r\n", "<br>")
+                    .replace("\r", "<br>")
+                    .replace("\n", "<br>");
+            content.append("<div>").append(signatureHtml).append("</div>");
+        }
         return content.toString();
     }
 
@@ -681,16 +696,16 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     public static class IdentityBinding {
         public static final String BPK2_ATTRIBUTE_FIELD_ID = "bpk2Attribute";
         @InputElementPOJOBinding(id = BPK2_ATTRIBUTE_FIELD_ID, type = ElementType.Select, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Postfach-ID-Attribut"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Attribut des Identitätsanbieters."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Postfach"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie hier das Attribut des Identitätsanbieters aus, welches die Kennung für das Postfach beinhaltet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String bpk2Attribute;
 
         public static final String STORK_QAA_LEVEL_FIELD_ID = "storkQaaLevel";
         @InputElementPOJOBinding(id = STORK_QAA_LEVEL_FIELD_ID, type = ElementType.Select, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Attribut für das Vertrauensniveau"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Attribut des Identitätsanbieters."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Vertrauensniveau"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie hier das Attribut des Identitätsanbieters aus, welches die Kennung für das Vertrauensniveau beinhaltet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String storkQaaLevel;

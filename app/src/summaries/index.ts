@@ -87,6 +87,7 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.ProcessIdentityIdInput]: TextFieldSummary,
     [ElementType.SecretSelectInput]: TextFieldSummary,
     [ElementType.AssetSelectInput]: TextFieldSummary,
+    [ElementType.DepartmentSelectInput]: NumberSummary,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputSummary,
     [ElementType.StoragePathSelector]: StoragePathSelectorInputSummary,
     [ElementType.ProcessAttachmentDisplay]: null,

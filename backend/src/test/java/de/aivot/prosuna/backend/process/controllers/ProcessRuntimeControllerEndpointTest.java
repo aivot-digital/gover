@@ -23,10 +23,10 @@ class ProcessRuntimeControllerEndpointTest {
     }
 
     @Test
-    void processInstanceTasksExposeOnlyTheFailedTaskRestartCommand() {
+    void processInstanceTasksExposeOnlyExplicitWriteCommands() {
         assertFalse(hasMethodWithAnnotation(ProcessInstanceTaskController.class, PostMapping.class));
         assertFalse(hasMethodWithAnnotation(ProcessInstanceTaskController.class, DeleteMapping.class));
-        assertEquals(Set.of("{id}/rerun-failed/"), putMappings(ProcessInstanceTaskController.class));
+        assertEquals(Set.of("{id}/rerun-failed/", "{id}/reassign/"), putMappings(ProcessInstanceTaskController.class));
     }
 
     @Test

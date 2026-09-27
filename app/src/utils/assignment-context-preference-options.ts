@@ -50,6 +50,12 @@ export const assignmentContextRepeatExecutionAssigneePreferenceOptions: Array<As
     },
 ];
 
+export function getAvailableAssignmentContextGeneralAssigneePreferenceOptions(disableProcessInstanceAssigneeOption: boolean) {
+    return disableProcessInstanceAssigneeOption
+        ? assignmentContextGeneralAssigneePreferenceOptions.filter((option) => option.value !== 'processInstanceAssignee')
+        : assignmentContextGeneralAssigneePreferenceOptions;
+}
+
 export function getAssignmentContextGeneralAssigneePreferenceLabel(value: string | null | undefined): string | undefined {
     if (value == null || value === 'none') {
         return undefined;

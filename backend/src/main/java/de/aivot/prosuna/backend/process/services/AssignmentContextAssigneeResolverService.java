@@ -31,13 +31,16 @@ public class AssignmentContextAssigneeResolverService {
 
     private final VPotentialProcessInstanceAccessRepository potentialProcessInstanceAccessRepository;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
+    private final ProcessAssignmentService processAssignmentService;
 
     public AssignmentContextAssigneeResolverService(
             VPotentialProcessInstanceAccessRepository potentialProcessInstanceAccessRepository,
-            ProcessInstanceTaskRepository processInstanceTaskRepository
+            ProcessInstanceTaskRepository processInstanceTaskRepository,
+            ProcessAssignmentService processAssignmentService
     ) {
         this.potentialProcessInstanceAccessRepository = potentialProcessInstanceAccessRepository;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
+        this.processAssignmentService = processAssignmentService;
     }
 
     @Nonnull
@@ -51,6 +54,27 @@ public class AssignmentContextAssigneeResolverService {
             @Nullable String processInstanceAssignedUserId,
             @Nullable AssignmentContextInputElementValue assignmentContext,
             @Nullable List<String> requiredPermissions
+    ) {
+        return resolveAssignee(
+                processId, processVersion, processInstanceId, currentProcessNodeId,
+                currentProcessInstanceTaskId, previousProcessNodeId, processInstanceAssignedUserId,
+                assignmentContext, requiredPermissions, null
+        );
+    }
+
+    /** Uses current instance eligibility when a node needs more than the definition-level access view can express. */
+    @Nonnull
+    public java.util.Optional<String> resolveAssignee(
+            @Nonnull Integer processId,
+            @Nonnull Integer processVersion,
+            @Nonnull Long processInstanceId,
+            @Nullable Integer currentProcessNodeId,
+            @Nullable Long currentProcessInstanceTaskId,
+            @Nullable Integer previousProcessNodeId,
+            @Nullable String processInstanceAssignedUserId,
+            @Nullable AssignmentContextInputElementValue assignmentContext,
+            @Nullable List<String> requiredPermissions,
+            @Nullable Set<String> currentlyEligibleUserIds
     ) {
         var selection = assignmentContext != null ? assignmentContext.getDomainAndUserSelection() : null;
         if (selection == null || selection.isEmpty()) {
@@ -70,10 +94,13 @@ public class AssignmentContextAssigneeResolverService {
                 .filter(PotentialAccessRow::isUserRow)
                 .filter(row -> Boolean.TRUE.equals(row.userIsEnabled()))
                 .filter(row -> Boolean.TRUE.equals(row.userIsDirectMember()))
-                .filter(row -> hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
+                .filter(row -> hasRequiredPermissions(row.userDirectPermissions(), normalizedRequiredPermissions))
+                .filter(row -> currentlyEligibleUserIds != null
+                        ? currentlyEligibleUserIds.contains(row.userId())
+                        : hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
                 .toList();
 
-        if (eligibleUserRows.isEmpty()) {
+        if (eligibleUserRows.isEmpty() && currentlyEligibleUserIds == null) {
             return java.util.Optional.empty();
         }
 
@@ -82,8 +109,17 @@ public class AssignmentContextAssigneeResolverService {
                 .map(PotentialAccessRow::userId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (currentlyEligibleUserIds != null) {
+            // Explicitly selected users can have system-level or instance-specific access without a view row.
+            eligibleUserIds.addAll(currentlyEligibleUserIds);
+        }
 
         var candidateUserIds = collectCandidateUserIds(selection, eligibleUserRows, eligibleUserIds);
+        // Preserve the configured candidate pool, including permissions through the selected membership.
+        // Current instance rights only narrow that pool: rights through another team must not expand it.
+        // Filter before preferences/load balancing so an ineligible preferred user cannot hide a valid alternative.
+        candidateUserIds.removeIf(userId -> !processAssignmentService.canReceiveTaskAssignment(
+                userId, processInstanceId, normalizedRequiredPermissions));
         if (candidateUserIds.isEmpty()) {
             return java.util.Optional.empty();
         }

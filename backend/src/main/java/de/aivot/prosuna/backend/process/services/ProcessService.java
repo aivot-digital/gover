@@ -9,16 +9,21 @@ import de.aivot.prosuna.backend.process.entities.ProcessSlugHistoryEntity;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessSlugHistoryRepository;
+import de.aivot.prosuna.backend.utils.DatabaseConstraintUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -30,31 +35,51 @@ import java.util.UUID;
 @Service
 public class ProcessService implements EntityService<ProcessEntity, Integer> {
     private static final int MAX_SLUG_LENGTH = 128;
+    private static final int MAX_ACCESS_KEY_GENERATION_ATTEMPTS = 5;
 
     private final ProcessRepository processDefinitionRepository;
     private final ProcessSlugHistoryRepository processSlugHistoryRepository;
     private final PermissionService permissionService;
+    private final TransactionTemplate creationTransaction;
 
     @Autowired
     public ProcessService(ProcessRepository processDefinitionRepository,
                           ProcessSlugHistoryRepository processSlugHistoryRepository,
-                          PermissionService permissionService) {
+                          PermissionService permissionService,
+                          @Nonnull PlatformTransactionManager transactionManager) {
         this.processDefinitionRepository = processDefinitionRepository;
         this.processSlugHistoryRepository = processSlugHistoryRepository;
         this.permissionService = permissionService;
+        this.creationTransaction = new TransactionTemplate(transactionManager);
+        // Roll back each failed insert independently before trying another generated key.
+        this.creationTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Nonnull
     @Override
     public ProcessEntity create(@Nonnull ProcessEntity entity) throws ResponseException {
-        entity.setId(null);
-        entity.setAccessKey(UUID.randomUUID());
-
         var slug = normalizeAndValidateSlug(entity.getSlug());
         validateSlugIsAvailable(slug, null);
         entity.setSlug(slug);
 
-        return processDefinitionRepository.save(entity);
+        for (int attempt = 1; attempt <= MAX_ACCESS_KEY_GENERATION_ATTEMPTS; attempt++) {
+            entity.setId(null);
+            entity.setAccessKey(UUID.randomUUID());
+            try {
+                return Objects.requireNonNull(creationTransaction.execute(
+                        status -> processDefinitionRepository.saveAndFlush(entity)
+                ));
+            } catch (DataIntegrityViolationException exception) {
+                if (!DatabaseConstraintUtils.isUniqueViolation(exception, "processes_access_key_key")) {
+                    throw exception;
+                }
+                if (attempt == MAX_ACCESS_KEY_GENERATION_ATTEMPTS) {
+                    throw ResponseException.internalServerErrorWithDetails(exception,
+                            "Der Prozess konnte nicht erstellt werden.", "Bitte versuchen Sie es erneut.");
+                }
+            }
+        }
+        throw new IllegalStateException("Access key generation attempts exhausted");
     }
 
     @Nullable
@@ -68,8 +93,20 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
     public Page<ProcessEntity> listAllByAccessibleForUser(@Nonnull Pageable pageable,
                                                           @Nonnull String userId,
                                                           @Nullable Specification<ProcessEntity> specification) throws ResponseException {
+        var accessSpecification = getReadAccessSpecification(userId);
+        var combinedSpecification = accessSpecification == null ? specification
+                : specification == null ? accessSpecification : specification.and(accessSpecification);
+        return processDefinitionRepository.findAll(combinedSpecification, pageable);
+    }
+
+    /**
+     * Shared by process rows and filter options so explicit grants and system overrides cannot diverge.
+     * A null specification denotes unrestricted system-level read access.
+     */
+    @Nullable
+    public Specification<ProcessEntity> getReadAccessSpecification(@Nonnull String userId) {
         if (permissionService.hasSystemPermission(userId, ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
-            return processDefinitionRepository.findAll(specification, pageable);
+            return null;
         }
 
         // A process can be visible through its owning department or through an explicit process grant.
@@ -86,10 +123,10 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
                 .toList();
 
         if (accessibleDepartmentIds.isEmpty() && accessibleProcessIds.isEmpty()) {
-            return Page.empty(pageable);
+            return (root, query, criteriaBuilder) -> criteriaBuilder.disjunction();
         }
 
-        Specification<ProcessEntity> userAccessSpec = (root, query, criteriaBuilder) -> {
+        return (root, query, criteriaBuilder) -> {
             var predicates = new LinkedList<Predicate>();
 
             if (!accessibleDepartmentIds.isEmpty()) {
@@ -102,10 +139,6 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
 
             return criteriaBuilder.or(predicates.toArray(Predicate[]::new));
         };
-
-        Specification<ProcessEntity> combinedSpec = (specification == null) ? userAccessSpec : specification.and(userAccessSpec);
-
-        return processDefinitionRepository.findAll(combinedSpec, pageable);
     }
 
     @Nonnull

@@ -147,6 +147,10 @@ public enum ElementType implements Identifiable<Integer> {
             "Asset-Auswahl",
             "Wählt eine Datei aus den Assets aus und speichert deren stabilen Schlüssel."
     ),
+    DepartmentSelectInput(54,
+            "Organisationseinheiten-Auswahl",
+            "Wählt eine bestehende Organisationseinheit aus und speichert die ID der Organisationseinheit. Auswählbar sind alle Organisationseinheiten, auf die der Nutzer zugriff hat."
+            ),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -203,6 +207,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_LinkButton = "51";
     public static final String ID_SecretSelectInput = "52";
     public static final String ID_AssetSelectInput = "53";
+    public static final String ID_DepartmentSelectInput = "54";
 
     private final Integer key;
     private final String displayName;
@@ -302,6 +307,7 @@ public enum ElementType implements Identifiable<Integer> {
             case LinkButton -> new LinkButtonContentElement();
             case SecretSelectInput -> new SecretSelectInputElement();
             case AssetSelectInput -> new AssetSelectInputElement();
+            case DepartmentSelectInput -> new DepartmentSelectInputElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

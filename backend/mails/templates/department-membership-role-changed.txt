@@ -7,7 +7,7 @@ Bisherige Rolle: [(${oldRole.getLabel})]
 Änderung durch: [(${admin.getFullName()})]
 
 [# th:if="${mailSignature != null}"]
----
+
 [(${mailSignature})]
 
 [/]

@@ -51,6 +51,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.ProcessIdentityIdInput]: 'Prozessidentitäts-Auswahl',
     [ElementType.SecretSelectInput]: 'Geheimnis-Auswahl',
     [ElementType.AssetSelectInput]: 'Asset-Auswahl',
+    [ElementType.DepartmentSelectInput]: 'Organisationseinheits-Auswahl',
     [ElementType.HtmlTemplateInput]: 'HTML-Vorlage',
     [ElementType.StoragePathSelector]: 'Speicherpfad-Auswahl',
     [ElementType.ProcessAttachmentDisplay]: 'Anhang zum Vorgang',

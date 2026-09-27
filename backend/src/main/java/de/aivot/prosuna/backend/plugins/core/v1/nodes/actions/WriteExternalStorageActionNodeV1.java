@@ -539,7 +539,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             }
 
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Anlagensatz mit dem Datenschlüssel %s wurde in der Prozess-Instanz %d nicht gefunden.",
+                    "Der Anlagensatz mit dem Datenschlüssel %s wurde im Vorgang %d nicht gefunden.",
                     StringUtils.quote(attachmentSetDataKey),
                     context.getThisProcessInstance().getId()
             );

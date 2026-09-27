@@ -45,7 +45,7 @@ public class ProcessInstanceAttachmentEntity {
     private Integer attachmentSetId;
 
     @Nonnull
-    @NotNull(message = "Die ID der Prozessinstanz darf nicht null sein.")
+    @NotNull(message = "Die ID des Vorgangs darf nicht null sein.")
     private Long processInstanceId;
 
     @Nullable

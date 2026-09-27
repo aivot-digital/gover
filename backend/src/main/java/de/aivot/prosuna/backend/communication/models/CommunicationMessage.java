@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.communication.models;
 
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -24,11 +25,26 @@ public record CommunicationMessage(
         @Nullable
         UserEntity sendingUser,
         @Nullable
-        DepartmentEntity sendingDepartment
+        DepartmentEntity sendingDepartment,
+        @Nullable
+        VDepartmentShadowedEntity signatureDepartment
 ) {
     public CommunicationMessage {
         callToActions = callToActions == null ? List.of() : callToActions;
         attachments = attachments == null ? List.of() : attachments;
+    }
+
+    public CommunicationMessage(
+            @Nonnull String subject,
+            @Nonnull String body,
+            @Nonnull String htmlBody,
+            @Nonnull List<CommunicationMessageCallToAction> callToActions,
+            @Nonnull Instant timestamp,
+            @Nonnull List<CommunicationMessageAttachment> attachments,
+            @Nullable UserEntity sendingUser,
+            @Nullable DepartmentEntity sendingDepartment
+    ) {
+        this(subject, body, htmlBody, callToActions, timestamp, attachments, sendingUser, sendingDepartment, null);
     }
 
     public static CommunicationMessage of(
@@ -45,7 +61,7 @@ public record CommunicationMessage(
             @Nonnull String htmlBody,
             @Nonnull List<CommunicationMessageAttachment> attachments
     ) {
-        return new CommunicationMessage(subject, body, htmlBody, List.of(), Instant.now(), attachments, null, null);
+        return new CommunicationMessage(subject, body, htmlBody, List.of(), Instant.now(), attachments, null, null, null);
     }
 
     public static CommunicationMessage of(
@@ -55,7 +71,7 @@ public record CommunicationMessage(
             @Nonnull List<CommunicationMessageCallToAction> callToActions,
             @Nonnull List<CommunicationMessageAttachment> attachments
     ) {
-        return new CommunicationMessage(subject, body, htmlBody, callToActions, Instant.now(), attachments, null, null);
+        return new CommunicationMessage(subject, body, htmlBody, callToActions, Instant.now(), attachments, null, null, null);
     }
 
     @Nonnull
@@ -71,7 +87,23 @@ public record CommunicationMessage(
                 timestamp,
                 attachments,
                 sendingUser,
-                sendingDepartment
+                sendingDepartment,
+                signatureDepartment
+        );
+    }
+
+    @Nonnull
+    public CommunicationMessage withSignatureDepartment(@Nullable VDepartmentShadowedEntity signatureDepartment) {
+        return new CommunicationMessage(
+                subject,
+                body,
+                htmlBody,
+                callToActions,
+                timestamp,
+                attachments,
+                sendingUser,
+                sendingDepartment,
+                signatureDepartment
         );
     }
 }

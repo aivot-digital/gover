@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
@@ -15,6 +16,8 @@ import de.aivot.prosuna.backend.core.enums.ModuleFlags;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
+import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.plugins.form.FormPlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -40,6 +43,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -74,6 +79,7 @@ class ProcessNodeServiceTest {
     private ElementDerivationService elementDerivationService;
     private IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
     private ProsunaConfig prosunaConfig;
+    private PermissionService permissionService;
 
     private ProcessNodeService service;
 
@@ -86,6 +92,7 @@ class ProcessNodeServiceTest {
         elementDerivationService = mock(ElementDerivationService.class);
         identityCommunicationAvailabilityService = mock(IdentityCommunicationAvailabilityService.class);
         prosunaConfig = new ProsunaConfig();
+        permissionService = mock(PermissionService.class);
 
         when(identityCommunicationAvailabilityService.validate(any()))
                 .thenReturn(new IdentityCommunicationAvailabilityService.ValidationResult(true, List.of()));
@@ -93,7 +100,8 @@ class ProcessNodeServiceTest {
         var definitionService = new ProcessNodeDefinitionService(List.of(
                 new HintingTestNodeDefinition(),
                 new HintingTestNodeDefinition("trigger-hint-node", ProcessNodeType.Trigger),
-                new InitialConfigurationTestNodeDefinition()
+                new InitialConfigurationTestNodeDefinition(),
+                new DepartmentSelectionTestNodeDefinition()
         ));
 
         service = createService(
@@ -123,7 +131,8 @@ class ProcessNodeServiceTest {
                 processVersionRepository,
                 processEdgeRepository,
                 config,
-                identityCommunicationAvailabilityService
+                identityCommunicationAvailabilityService,
+                permissionService
         );
     }
 
@@ -412,9 +421,26 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void createReportsOnlyDataKeyCollisionsAsRetryable() {
+        var node = createNode(2, "existing");
+        var constraint = new org.hibernate.exception.ConstraintViolationException("duplicate",
+                new java.sql.SQLException("duplicate", "23505"), "process_nodes_process_id_process_version_data_key_key");
+        var failure = new org.springframework.dao.DataIntegrityViolationException("duplicate", constraint);
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class))).thenThrow(failure);
+        var error = assertThrows(ResponseException.class, () -> service.create(node));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT, error.getStatus());
+        assertEquals(Map.of("reason", "process_node_data_key_conflict"), error.getDetails());
+        var unrelated = new org.springframework.dao.DataIntegrityViolationException("foreign key",
+                new org.hibernate.exception.ConstraintViolationException("foreign key",
+                        new java.sql.SQLException("foreign key", "23503"), "process_nodes_process_id_fkey"));
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class))).thenThrow(unrelated);
+        assertEquals(unrelated, assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> service.create(node)));
+    }
+
+    @Test
     void create_ShouldAllowNegativeNodeTypeLimit() throws Exception {
         prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, -1));
-        when(processNodeRepository.save(any(ProcessNodeEntity.class)))
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         var result = service.create(createNode(2, "new"));
@@ -426,7 +452,7 @@ class ProcessNodeServiceTest {
     void create_ShouldAllowLimitedNodeTypeWhenProcessFlagIsSet() throws Exception {
         prosunaConfig.setModuleFlags(List.of(ModuleFlags.PROCESS));
         prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, 0));
-        when(processNodeRepository.save(any(ProcessNodeEntity.class)))
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         var result = service.create(createNode(2, "new"));
@@ -440,7 +466,7 @@ class ProcessNodeServiceTest {
                 .setProcessNodeDefinitionKey("test.process.initial-configuration-node");
         node.getConfiguration()
                 .putLiteral("overridden", null);
-        when(processNodeRepository.save(any(ProcessNodeEntity.class)))
+        when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         var result = service.create(node);
@@ -460,6 +486,44 @@ class ProcessNodeServiceTest {
         var exception = assertThrows(ResponseException.class, () -> formService.validateNewProcessNodeBatch(List.of(createFormNode())));
 
         assertTrue(exception.getMessage().contains("Formularerweiterung"));
+    }
+
+    @Test
+    void requireReadableDepartmentSelectionsChecksTheSelectedDepartmentScope() throws Exception {
+        var node = createNode(1, "department")
+                .setProcessNodeDefinitionKey("test.process.department-selection-node");
+        node.getConfiguration().putLiteral(DepartmentSelectionTestNodeDefinition.FIELD_ID, 42);
+        var user = new UserEntity().setId("user-1");
+
+        service.requireReadableDepartmentSelections(user, node);
+
+        verify(permissionService).requireDepartmentPermission(
+                "user-1",
+                42,
+                DepartmentPermissionProvider.DEPARTMENT_READ
+        );
+    }
+
+    @Test
+    void requireReadableDepartmentSelectionsPropagatesDeniedDepartmentScope() throws Exception {
+        var node = createNode(1, "department")
+                .setProcessNodeDefinitionKey("test.process.department-selection-node");
+        node.getConfiguration().putLiteral(DepartmentSelectionTestNodeDefinition.FIELD_ID, 42);
+        var user = new UserEntity().setId("user-1");
+        doThrow(ResponseException.forbidden("forbidden"))
+                .when(permissionService)
+                .requireDepartmentPermission(
+                        "user-1",
+                        42,
+                        DepartmentPermissionProvider.DEPARTMENT_READ
+                );
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> service.requireReadableDepartmentSelections(user, node)
+        );
+
+        assertEquals("forbidden", exception.getMessage());
     }
 
     private ProcessEntity createProcess() {
@@ -924,6 +988,28 @@ class ProcessNodeServiceTest {
             return new AuthoredElementValues()
                     .putLiteral("defaultOnly", "default")
                     .putLiteral("overridden", "default");
+        }
+    }
+
+    private static final class DepartmentSelectionTestNodeDefinition extends HintingTestNodeDefinition {
+        private static final String FIELD_ID = "department";
+
+        private DepartmentSelectionTestNodeDefinition() {
+            super("department-selection-node", ProcessNodeType.Action);
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(
+                @Nonnull ProcessNodeDefinitionConfigurationLayoutContext context
+        ) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+            var field = new DepartmentSelectInputElement();
+            field.setId(FIELD_ID);
+            field.setLabel("Department");
+            layout.addChild(field);
+            return layout;
         }
     }
 

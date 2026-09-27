@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
@@ -48,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -163,6 +166,8 @@ class CommunicationMessageActionNodeV1Test {
                 SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_FIELD_ID,
                 SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC
         );
+        values.put(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1, 17);
+        values.put(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2, 29);
         values.put(SemiAutomaticMessageConfig.AutomaticContent.SUBJECT_FIELD_ID, "Subject");
         values.put(SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID, "Content");
 
@@ -175,14 +180,21 @@ class CommunicationMessageActionNodeV1Test {
         assertNotNull(configuration.messageConfig);
         assertEquals("automatic", configuration.messageConfig.executionType);
         assertNotNull(configuration.messageConfig.automaticContent);
+        assertEquals(17, configuration.messageConfig.automaticContent.signatureDepartmentId);
         assertEquals("Subject", configuration.messageConfig.automaticContent.subject);
         assertEquals("Content", configuration.messageConfig.automaticContent.content);
+        assertNotNull(configuration.messageConfig.manualContent);
+        assertEquals(29, configuration.messageConfig.manualContent.signatureDepartmentId);
     }
 
     @Test
     void initAutomaticReturnsCommunicationRequestForConfiguredIdentity() throws Exception {
-        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
+        var departmentService = mock(VDepartmentShadowedService.class);
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class), departmentService);
         var configuration = configuration("automatic");
+        configuration.messageConfig.automaticContent.signatureDepartmentId = 17;
+        var signatureDepartment = new VDepartmentShadowedEntity().setId(17).setName("Bürgerbüro");
+        when(departmentService.retrieve(17)).thenReturn(Optional.of(signatureDepartment));
         var processInstance = processInstance();
         var executionData = new ProcessExecutionData().addProcessData(Map.of("caseNumber", "123"));
         var context = initContext(configuration, executionData, processInstance, mock(ProcessInstanceTaskEntity.class));
@@ -197,6 +209,7 @@ class CommunicationMessageActionNodeV1Test {
         assertEquals("Hello", communicationRequest.message().body());
         assertEquals("Hello", communicationRequest.message().htmlBody());
         assertEquals(result.getNodeData().get("sentAt"), communicationRequest.message().timestamp());
+        assertSame(signatureDepartment, communicationRequest.message().signatureDepartment());
         assertEquals(5, result.getNodeData().get("communicationProviderBindingId"));
     }
 
@@ -235,8 +248,12 @@ class CommunicationMessageActionNodeV1Test {
 
     @Test
     void staffTaskProvidesResolvedDefaultsAndSendsEditedValues() throws Exception {
-        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
+        var departmentService = mock(VDepartmentShadowedService.class);
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class), departmentService);
         var configuration = configuration("manual");
+        configuration.messageConfig.manualContent.signatureDepartmentId = 17;
+        var signatureDepartment = new VDepartmentShadowedEntity().setId(17).setName("Bürgerbüro");
+        when(departmentService.retrieve(17)).thenReturn(Optional.of(signatureDepartment));
         var executionData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var context = staffContext(configuration, executionData, processInstance(), task());
 
@@ -257,6 +274,7 @@ class CommunicationMessageActionNodeV1Test {
         );
         assertEquals("Bearbeitet", result.getCommunicationRequest().message().subject());
         assertEquals("Finaler Inhalt", result.getCommunicationRequest().message().body());
+        assertSame(signatureDepartment, result.getCommunicationRequest().message().signatureDepartment());
     }
 
     @Test
@@ -298,12 +316,18 @@ class CommunicationMessageActionNodeV1Test {
                 "applicant",
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
                 Map.of("user", "staff-1"),
+                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1,
+                17,
+                SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2,
+                29,
                 "portableValue",
                 "kept"
         );
         var cleaned = node.cleanConfigurationForExport(exported);
         assertFalse(cleaned.containsKey(CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID));
         assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_1));
+        assertFalse(cleaned.containsKey(SemiAutomaticMessageConfig.LayoutConfig.SIGNATURE_DEPARTMENT_FIELD_ID_2));
         assertEquals("kept", cleaned.getLiteral("portableValue"));
     }
 
@@ -413,11 +437,19 @@ class CommunicationMessageActionNodeV1Test {
     private static CommunicationMessageActionNodeV1 createNode(
             AssignmentContextAssigneeResolverService assignmentResolver
     ) {
+        return createNode(assignmentResolver, mock(VDepartmentShadowedService.class));
+    }
+
+    private static CommunicationMessageActionNodeV1 createNode(
+            AssignmentContextAssigneeResolverService assignmentResolver,
+            VDepartmentShadowedService departmentService
+    ) {
         return new CommunicationMessageActionNodeV1(
                 mock(ProcessInstanceAttachmentSetService.class),
                 mock(ProcessInstanceAttachmentService.class),
                 mock(StorageService.class),
-                assignmentResolver
+                assignmentResolver,
+                departmentService
         );
     }
 }

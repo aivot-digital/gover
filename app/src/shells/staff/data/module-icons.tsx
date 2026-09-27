@@ -55,8 +55,8 @@ import History from '@aivot/mui-material-symbols-400-n25-outlined/History';
 import HistoryFilled from '@aivot/mui-material-symbols-400-n25-outlined/HistoryFilled';
 import ListAlt from '@aivot/mui-material-symbols-400-n25-outlined/ListAlt';
 import ListAltFilled from '@aivot/mui-material-symbols-400-n25-outlined/ListAltFilled';
-import ForwardToInbox from '@aivot/mui-material-symbols-400-n25-outlined/ForwardToInbox';
-import ForwardToInboxFilled from '@aivot/mui-material-symbols-400-n25-outlined/ForwardToInboxFilled';
+import Forum from '@aivot/mui-material-symbols-400-n25-outlined/Forum';
+import ForumFilled from '@aivot/mui-material-symbols-400-n25-outlined/ForumFilled';
 import Experiment from '@aivot/mui-material-symbols-400-n25-outlined/Experiment';
 import ExperimentFilled from '@aivot/mui-material-symbols-400-n25-outlined/ExperimentFilled';
 
@@ -73,7 +73,7 @@ export const ModuleIcons = {
     forms: <Description />,
     identity: <IdentityPlatform />,
     payment: <Payments />,
-    communication: <ForwardToInbox />,
+    communication: <Forum />,
     presets: <CopyAll />,
     customLinks: <Link />,
     secrets: <Key />,
@@ -106,7 +106,7 @@ export const ModuleIconsFilled = {
     forms: <DescriptionFilled />,
     identity: <IdentityPlatformFilled />,
     payment: <PaymentsFilled />,
-    communication: <ForwardToInboxFilled />,
+    communication: <ForumFilled />,
     presets: <CopyAllFilled />,
     customLinks: <LinkFilled />,
     secrets: <KeyFilled />,

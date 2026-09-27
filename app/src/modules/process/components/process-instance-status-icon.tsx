@@ -24,6 +24,7 @@ export function ProcessInstanceStatusIcon(props: ProcessInstanceStatusIconProps)
     if (statusOverride != null) {
         return (
             <Tooltip
+                arrow
                 title={statusOverride}
             >
                 <ProcessInstanceOverrideStatusIcon
@@ -39,6 +40,7 @@ export function ProcessInstanceStatusIcon(props: ProcessInstanceStatusIconProps)
 
     return (
         <Tooltip
+            arrow
             title={title}
         >
             <Icon color={color}/>

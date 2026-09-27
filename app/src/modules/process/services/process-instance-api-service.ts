@@ -1,3 +1,5 @@
+import {type ProcessAssignmentOption} from '../entities/process-assignment-option';
+import {type ProcessInstanceDetails} from '../entities/process-instance-details';
 import {RequestOptions} from '../../../services/base-api-service';
 import {BaseReadApiService} from '../../../services/base-read-api-service';
 import {type ProcessInstanceEntity} from '../entities/process-instance-entity';
@@ -26,6 +28,10 @@ export class ProcessInstanceApiService extends BaseReadApiService<
         super('/api/process-instances/');
     }
 
+    public assignmentOptions(id: number): Promise<ProcessAssignmentOption[]> {
+        return this.get(`${this.buildPath(id)}assignment-options/`);
+    }
+
     initialize(): ProcessInstanceEntity {
         return {
             caseNumber: '',
@@ -49,15 +55,18 @@ export class ProcessInstanceApiService extends BaseReadApiService<
         };
     }
 
+    public retrieveDetails(id: number): Promise<ProcessInstanceDetails> {
+        return this.get(`${this.buildPath(id)}details/`);
+    }
+
     public restartFailedInstance(id: number): Promise<ProcessInstanceEntity> {
         return this.put<any, ProcessInstanceEntity>(this.buildPath(id) + 'restart-failed/', {});
     }
 
     public reassign(id: number, assignedUserId: string | null): Promise<ProcessInstanceEntity> {
-        return this.put<{ assignedUserId: string | null }, ProcessInstanceEntity>(
-            this.buildPath(id) + 'reassign/',
-            {assignedUserId},
-        );
+        return this.put<{assignedUserId: string | null}, ProcessInstanceEntity>(this.buildPath(id) + 'reassign/', {
+            assignedUserId,
+        });
     }
 
     public async destroy(id: number, options?: RequestOptions): Promise<void> {

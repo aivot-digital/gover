@@ -17,6 +17,7 @@ import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../.
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
 import {AuditLogDetailsDialogContent} from './audit-log-details-dialog-content';
 import {ChipInputFieldComponent} from '../../../../components/chip-input-field/chip-input-field-component';
+import {useListFilter} from '../../../../components/generic-list/use-list-filter';
 import {
     formatInstantInApplicationTimeZone,
     instantToEpochMillis,
@@ -82,9 +83,9 @@ export function AuditLogsListPage(): ReactNode {
         triggerTypes: [],
         actors: [],
     });
-    const [selectedModules, setSelectedModules] = useState<string[] | undefined>(undefined);
-    const [selectedTriggerTypes, setSelectedTriggerTypes] = useState<string[] | undefined>(undefined);
-    const [selectedActors, setSelectedActors] = useState<string[] | undefined>(undefined);
+    const {values: selectedModules, setValue: setSelectedModules} = useListFilter('modules');
+    const {values: selectedTriggerTypes, setValue: setSelectedTriggerTypes} = useListFilter('triggerTypes');
+    const {values: selectedActors, setValue: setSelectedActors} = useListFilter('actors');
 
     useEffect(() => {
         let cancelled = false;
@@ -117,15 +118,15 @@ export function AuditLogsListPage(): ReactNode {
 
     const handleModuleChange = useCallback((value: string[] | null | undefined) => {
         setSelectedModules(value ?? undefined);
-    }, []);
+    }, [setSelectedModules]);
 
     const handleTriggerTypeChange = useCallback((value: string[] | null | undefined) => {
         setSelectedTriggerTypes(value ?? undefined);
-    }, []);
+    }, [setSelectedTriggerTypes]);
 
     const handleActorChange = useCallback((value: string[] | null | undefined) => {
         setSelectedActors(value ?? undefined);
-    }, []);
+    }, [setSelectedActors]);
 
     const header = useMemo(() => ({
         icon: ModuleIcons.audit,
@@ -135,6 +136,8 @@ export function AuditLogsListPage(): ReactNode {
     const preSearchElements = useMemo(() => [
         <ChipInputFieldComponent
             key="modules"
+            margin="none"
+            showOptionalIndicator={false}
             label="Modul"
             value={selectedModules}
             onChange={handleModuleChange}
@@ -144,6 +147,8 @@ export function AuditLogsListPage(): ReactNode {
         />,
         <ChipInputFieldComponent
             key="triggerTypes"
+            margin="none"
+            showOptionalIndicator={false}
             label="Auslösende Aktion"
             value={selectedTriggerTypes}
             onChange={handleTriggerTypeChange}
@@ -153,6 +158,8 @@ export function AuditLogsListPage(): ReactNode {
         />,
         <ChipInputFieldComponent
             key="actors"
+            margin="none"
+            showOptionalIndicator={false}
             label="Akteur"
             value={selectedActors}
             onChange={handleActorChange}
@@ -345,6 +352,7 @@ export function AuditLogsListPage(): ReactNode {
                 header={header}
                 permissionCheck={auditLogsListPermissionCheck}
                 preSearchElements={preSearchElements}
+                hasActiveAdditionalFilters={selectedModules.length > 0 || selectedTriggerTypes.length > 0 || selectedActors.length > 0}
                 fetch={fetchAuditLogs}
                 columnIcon={ModuleIcons.audit}
                 columnDefinitions={columnDefinitions}

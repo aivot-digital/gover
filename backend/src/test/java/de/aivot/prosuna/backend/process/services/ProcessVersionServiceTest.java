@@ -23,6 +23,18 @@ import static org.mockito.Mockito.when;
 
 class ProcessVersionServiceTest {
     @Test
+    void defaultsToCompactAndPreservesExplicitGenerationSettingsAcrossSerialization() {
+        var mapper = de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper();
+        assertEquals(de.aivot.prosuna.backend.process.enums.CaseNumberType.CROCKFORD_BASE32,
+                mapper.readValue("{}", ProcessVersionEntity.class).getCaseNumberType());
+        for (var type : de.aivot.prosuna.backend.process.enums.CaseNumberType.values()) {
+            var version = new ProcessVersionEntity().setCaseNumberType(type);
+            var restored = mapper.readValue(mapper.writeValueAsString(version), ProcessVersionEntity.class);
+            assertEquals(type, restored.getCaseNumberType());
+        }
+    }
+
+    @Test
     void create_ValidatesCaseNumberTemplateBeforeSaving() throws ResponseException {
         var repository = mock(ProcessVersionRepository.class);
         when(repository.maxVersionForProcessDefinition(12)).thenReturn(Optional.of(4));
@@ -40,11 +52,12 @@ class ProcessVersionServiceTest {
                 .setProcessId(12)
                 .setStatus(ProcessVersionStatus.Drafted)
                 .setPublicTitle("Bauantrag")
+                .setCaseNumberType(de.aivot.prosuna.backend.process.enums.CaseNumberType.TEMPLATE)
                 .setCaseNumberTemplate("AZ-%YYY-%I(4)");
 
         var result = service.create(entity);
 
-        verify(caseNumberGeneratorService).validateCaseNumberTemplate("AZ-%YYY-%I(4)");
+        verify(caseNumberGeneratorService).validateConfiguration(de.aivot.prosuna.backend.process.enums.CaseNumberType.TEMPLATE, "AZ-%YYY-%I(4)");
         verify(repository).save(entity);
         assertEquals(5, result.getProcessVersion());
     }
@@ -82,6 +95,7 @@ class ProcessVersionServiceTest {
                 .setProcessVersion(5)
                 .setStatus(ProcessVersionStatus.Published)
                 .setPublicTitle("Neu")
+                .setCaseNumberType(de.aivot.prosuna.backend.process.enums.CaseNumberType.TEMPLATE)
                 .setCaseNumberTemplate("AZ-%YYY-%M-%I(4)")
                 .setNotes("Neue Notizen")
                 .setThemeId(16)
@@ -95,7 +109,7 @@ class ProcessVersionServiceTest {
 
         var result = service.performUpdate(ProcessVersionEntityId.of(12, 5), updatedEntity, existingEntity);
 
-        verify(caseNumberGeneratorService).validateCaseNumberTemplate("AZ-%YYY-%M-%I(4)");
+        verify(caseNumberGeneratorService).validateConfiguration(de.aivot.prosuna.backend.process.enums.CaseNumberType.TEMPLATE, "AZ-%YYY-%M-%I(4)");
         verify(repository).save(existingEntity);
         assertEquals(ProcessVersionStatus.Published, result.getStatus());
         assertEquals("Neu", result.getPublicTitle());

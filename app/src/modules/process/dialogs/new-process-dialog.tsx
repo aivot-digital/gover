@@ -1,3 +1,4 @@
+import {CaseNumberType} from '../enums/case-number-type';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
@@ -125,7 +126,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             ),
         },
         {
-            label: 'Name',
+            label: 'Interne Bezeichnung',
             icon: <SummaryIcon><Label/></SummaryIcon>,
             children: (
                 <Typography variant="body2" sx={{overflowWrap: 'anywhere'}}>
@@ -216,15 +217,15 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         const trimmedValue = value?.trim() ?? '';
 
         if (!isStringNotNullOrEmpty(trimmedValue)) {
-            return 'Bitte geben Sie einen Namen für den Prozess an.';
+            return 'Bitte geben Sie eine interne Bezeichnung an.';
         }
 
         if (trimmedValue.length < 3) {
-            return 'Der Name des Prozesses muss mindestens 3 Zeichen lang sein.';
+            return 'Die interne Bezeichnung muss mindestens 3 Zeichen lang sein.';
         }
 
         if (trimmedValue.length > 96) {
-            return 'Der Name des Prozesses darf maximal 96 Zeichen lang sein.';
+            return 'Die interne Bezeichnung darf maximal 96 Zeichen lang sein.';
         }
 
         return undefined;
@@ -689,7 +690,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                 <ProcessConfigurationErrorAlert show={hasProcessConfigurationErrors}/>
 
                                 <TextFieldComponent
-                                    label="Name des Prozesses (intern)"
+                                    label="Interne Bezeichnung"
                                     value={nameOverride}
                                     onChange={(val) => {
                                         const nextName = val ?? null;
@@ -713,7 +714,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     error={nameError}
                                     minCharacters={3}
                                     maxCharacters={96}
-                                    hint="Nur intern sichtbar; dient zur Wiedererkennung des Prozesses in der Verwaltung."
+                                    hint="Dient der internen Identifizierung des Prozesses; nicht öffentlich sichtbar."
                                 />
 
                                 <TextFieldComponent
@@ -1201,6 +1202,7 @@ const EmptyProcess: ProcessExport = {
         processVersion: 0,
         status: ProcessStatus.Drafted,
         publicTitle: 'Neuer Prozess',
+        caseNumberType: CaseNumberType.CrockfordBase32,
         caseNumberTemplate: null,
         notes: null,
         themeId: null,

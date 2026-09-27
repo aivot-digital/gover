@@ -117,9 +117,9 @@ public class FormTriggerUtilsControllerV1 {
                 .retrieve(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion()))
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.requireDepartmentPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
-                process.getDepartmentId(),
+                process.getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
 

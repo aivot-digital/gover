@@ -17,20 +17,23 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeNotOperator;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.utils.MapUtils;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
@@ -141,6 +144,36 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                         "Der Prozess wird hier fortgesetzt, nachdem die Abbildungsregeln ausgeführt wurden."
                 )
         );
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull DataMappingActionNodeV1Config configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        if (configuration.rules == null) {
+            return previousMetadata;
+        }
+
+        var metadata = ProcessNodeDefinitionMetadata.reuse(previousMetadata);
+        for (var rule : configuration.rules) {
+            if (rule == null || Boolean.TRUE.equals(rule.deleteOnly)) {
+                continue;
+            }
+
+            var targetPath = StringUtils.toNullableTrimmedString(rule.target);
+            if (targetPath == null) {
+                continue;
+            }
+
+            metadata.addForwardedProcessDataKey(
+                    targetPath,
+                    targetPath,
+                    null,
+                    processNodeEntity
+            );
+        }
+        return metadata;
     }
 
     @Override

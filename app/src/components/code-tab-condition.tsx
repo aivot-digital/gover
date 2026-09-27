@@ -1,7 +1,7 @@
 import {type Condition} from '../models/functions/conditions/condition';
 import {Box, IconButton, Tooltip, Typography} from '@mui/material';
 import {type ConditionOperator, ConditionOperatorIsUnary, ConditionOperatorLabel, getConditionOperatorHint} from '../data/condition-operator';
-import React from 'react';
+import React, {useMemo} from 'react';
 import {ElementType} from '../data/element-type/element-type';
 import {evaluators as Evaluators} from '../evaluators';
 import {SelectFieldComponent} from './select-field/select-field-component';
@@ -13,6 +13,7 @@ import {isStringArray} from '../utils/is-string-array';
 import {ElementWithParents, generateElementNameWithParent} from '../utils/flatten-elements';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {useCodeListElementOptions} from '../modules/code-lists/hooks/use-code-list-element-options';
 
 interface CodeTabConditionProps {
     allElements: ElementWithParents[];
@@ -32,6 +33,11 @@ export function CodeTabCondition({
                                      editable,
                                  }: CodeTabConditionProps) {
     const referencedElement = allElements.find((e) => e.element.id === cond.reference);
+    const referencedElements = useMemo(
+        () => referencedElement != null && cond.value != null ? [referencedElement.element] : [],
+        [referencedElement, cond.value],
+    );
+    const codeListOptions = useCodeListElementOptions(referencedElements);
 
     const evaluator = referencedElement != null ? Evaluators[referencedElement.element.type] : null;
     const availableOperators: ConditionOperator[] = (evaluator != null) ? Object.keys(evaluator) as unknown as ConditionOperator[] : [];
@@ -44,10 +50,16 @@ export function CodeTabCondition({
             case ElementType.MultiCheckbox:
                 if ((referencedElement.element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual) {
                     availableValueOptions = [...(referencedElement.element.options ?? [])];
+                } else {
+                    availableValueOptions = [...(codeListOptions.get(referencedElement.element.id) ?? [])];
                 }
                 break;
             case ElementType.ChipInput:
-                availableValueOptions = [...(referencedElement.element.suggestions ?? [])];
+                if ((referencedElement.element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual) {
+                    availableValueOptions = [...(referencedElement.element.suggestions ?? [])];
+                } else {
+                    availableValueOptions = [...(codeListOptions.get(referencedElement.element.id) ?? [])];
+                }
                 break;
             case ElementType.Checkbox:
                 availableValueOptions = ['Ja (True)', 'Nein (False)'];

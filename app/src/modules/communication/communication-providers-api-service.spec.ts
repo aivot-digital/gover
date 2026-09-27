@@ -23,6 +23,13 @@ const testResultLayout = {
 } satisfies CommunicationTestResultLayout;
 
 describe('CommunicationProvidersApiService', () => {
+    it('sends the identity provider and full binding order in one request', async () => {
+        const service = new CommunicationProvidersApiService();
+        const fetchMock = vi.spyOn(service, 'fetch').mockResolvedValue(responseWithJson([]));
+        await expect(service.reorderBindings('identity-1', [7, 3])).resolves.toEqual([]);
+        expect(fetchMock).toHaveBeenCalledWith('PUT', '/api/communication-providers/bindings/order/', JSON.stringify({identityProviderKey: 'identity-1', ids: [7, 3]}), undefined);
+    });
+
     it('loads and parses the provider testing layout', async () => {
         const service = new CommunicationProvidersApiService();
         const fetchMock = vi.spyOn(service, 'fetch').mockResolvedValue(responseWithText(JSON.stringify(testingLayout)));

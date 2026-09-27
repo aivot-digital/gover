@@ -30,7 +30,7 @@ einschließlich ihrer technischen Header. Verwenden Sie dafür keine sensiblen o
 personenbezogenen Inhalte.
 
 [# th:if="${mailSignature != null}"]
----
+
 [(${mailSignature})]
 
 [/]

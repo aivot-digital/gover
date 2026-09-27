@@ -52,6 +52,7 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.ProcessIdentityIdInput]: NoCodeDataType.String,
     [ElementType.SecretSelectInput]: NoCodeDataType.String,
     [ElementType.AssetSelectInput]: NoCodeDataType.String,
+    [ElementType.DepartmentSelectInput]: NoCodeDataType.Number,
     [ElementType.HtmlTemplateInput]: NoCodeDataType.Object,
     [ElementType.StoragePathSelector]: NoCodeDataType.Object,
     [ElementType.ProcessAttachmentDisplay]: NoCodeDataType.Runtime,

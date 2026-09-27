@@ -276,6 +276,21 @@ public class PermissionService {
                 .getProcessInstanceIdsWithPermission(userId, permission);
     }
 
+    /**
+     * Checks rights held independently of a deputy relationship, for lasting assignments.
+     * Own system permissions still override resource scope; ordinary access checks include deputies.
+     */
+    public boolean hasProcessInstancePermissionWithoutDeputies(@Nullable String userId,
+                                                                @Nonnull Long processInstanceId,
+                                                                @Nonnull String permission) {
+        if (userId == null) {
+            return false;
+        }
+
+        return vUserSystemPermissionRepository.hasPermissionWithoutDeputies(userId, permission)
+                || processInstanceRepository.hasPermissionWithoutDeputies(userId, processInstanceId, permission);
+    }
+
     public void requireProcessInstancePermission(@Nonnull String userId,
                                              @Nonnull Long processInstanceId,
                                              @Nonnull String permission) throws ResponseException {

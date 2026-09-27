@@ -25,6 +25,7 @@ import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility'
 import FolderOpen from '@aivot/mui-material-symbols-400-n25-outlined/FolderOpen';
 import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import {createStorageProviderDefinitionOption} from '../../utils/storage-provider-definition-utils';
+import {useListFilter} from '../../../../components/generic-list/use-list-filter';
 
 const availableFilter = [
     {
@@ -53,7 +54,7 @@ const storageProvidersListPermissionCheck: GenericListPagePermissionConfig<Stora
 export function StorageProvidersListPage(): ReactNode {
     const navigate = useNavigate();
     const [definitions, setDefinitions] = useState<StorageProviderDefinition[]>([]);
-    const [selectedDefinitionKey, setSelectedDefinitionKey] = useState<string | undefined>(undefined);
+    const {value: selectedDefinitionKey, setValue: setSelectedDefinitionKey} = useListFilter('storageProviderDefinitionKey');
 
     useEffect(() => {
         new StorageProvidersApiService()
@@ -106,7 +107,10 @@ export function StorageProvidersListPage(): ReactNode {
     }), []);
 
     const definitionOptions = useMemo(
-        () => definitions.map(createStorageProviderDefinitionOption),
+        () => [
+            {value: 'all', label: 'Alle Speichertypen'},
+            ...definitions.map(createStorageProviderDefinitionOption),
+        ],
         [definitions],
     );
 
@@ -114,13 +118,15 @@ export function StorageProvidersListPage(): ReactNode {
         <SelectFieldComponent
             key="definition"
             label="Speichertyp"
-            value={selectedDefinitionKey}
-            onChange={(value) => setSelectedDefinitionKey(value ?? undefined)}
+            value={selectedDefinitionKey ?? 'all'}
+            onChange={(value) => setSelectedDefinitionKey(value === 'all' ? null : value)}
             options={definitionOptions}
-            placeholder="Alle Speichertypen"
+            includeEmptyOption={false}
+            showOptionalIndicator={false}
+            margin="none"
             size="small"
         />,
-    ], [definitionOptions, selectedDefinitionKey]);
+    ], [definitionOptions, selectedDefinitionKey, setSelectedDefinitionKey]);
 
     const fetchStorageProviders = useCallback((options: GenericListPropsFetchOptions<StorageProviderEntity>) => {
         const filter: Partial<StorageProviderFilter> = {};
@@ -240,6 +246,7 @@ export function StorageProvidersListPage(): ReactNode {
                     searchLabel="Speicheranbieter suchen"
                     searchPlaceholder="Name der Konfiguration eingeben…"
                     preSearchElements={preSearchElements}
+                    hasActiveAdditionalFilters={selectedDefinitionKey != null}
                     fetch={fetchStorageProviders}
                     columnIcon={columnIcon}
                     columnDefinitions={columnDefinitions}

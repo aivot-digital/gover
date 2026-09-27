@@ -26,7 +26,7 @@ import {ElementType} from '../../data/element-type/element-type';
 import {UiDefinitionInputFieldElementItem} from '../../models/elements/form/input/ui-definition-input-field-element';
 import {ElementTree} from '../element-tree-2/element-tree';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
-import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
+import {ElementDerivationContext, type ElementDerivationContextHandle} from '../../modules/elements/components/element-derivation-context';
 import {Allotment} from 'allotment';
 import {AuthoredElementValues} from '../../models/element-data';
 import {ElementChildOptions, ElementDisplayContext} from '../../data/element-type/element-child-options';
@@ -51,7 +51,6 @@ import DoneAll from '@aivot/mui-material-symbols-400-n25-outlined/DoneAll';
 import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import VisibilityOff from '@aivot/mui-material-symbols-400-n25-outlined/VisibilityOff';
-import {useNotImplemented} from '../../hooks/use-not-implemented';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import TouchApp from '@aivot/mui-material-symbols-400-n25-outlined/TouchApp';
 import {
@@ -100,7 +99,6 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const theme = useTheme();
     const confirm = useConfirm();
     const dispatch = useAppDispatch();
-    const notImplemented = useNotImplemented();
     const disableElementContextMenu = useAppSelector(selectDisableElementContextMenu);
 
     const {
@@ -127,6 +125,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const [pastDraftValues, setPastDraftValues] = useState<UiDefinitionInputFieldElementItem[]>([]);
     const [futureDraftValues, setFutureDraftValues] = useState<UiDefinitionInputFieldElementItem[]>([]);
     const [inputData, setInputData] = useState<AuthoredElementValues>({});
+    const derivationContextRef = useRef<ElementDerivationContextHandle>(null);
+    const [isValidating, setIsValidating] = useState(false);
     const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
     const [highlightElementSignal, setHighlightElementSignal] = useState(0);
     const [hoveredTreeElementId, setHoveredTreeElementId] = useState<string | null>(null);
@@ -595,10 +595,16 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         },
                         'separator',
                         {
-                            tooltip: 'Validierung testen',
+                            tooltip: 'Eingaben validieren',
                             icon: <DoneAll/>,
-                            onClick: () => {
-                                notImplemented();
+                            disabled: isValidating || emptyStateTarget != null,
+                            onClick: async () => {
+                                setIsValidating(true);
+                                try {
+                                    await derivationContextRef.current?.validate();
+                                } finally {
+                                    setIsValidating(false);
+                                }
                             },
                         },
                         {
@@ -676,12 +682,14 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                                     disabled={!canAddAtRoot}
                                                 /> :
                                                 <ElementDerivationContext
+                                                    ref={derivationContextRef}
                                                     element={effectiveValue}
                                                     authoredElementValues={inputData}
                                                     onAuthoredElementValuesChange={setInputData}
                                                     highlightedElementId={hoveredTreeElementId}
                                                     disableVisibilities={disableVisibilities}
                                                     mode={ViewDispatcherMode.Editor}
+                                                    showErrorSummary
                                                 />
                                         }
                                     </ElementTreeInlineEditorContextProvider>

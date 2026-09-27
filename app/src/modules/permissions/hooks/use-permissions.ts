@@ -39,7 +39,7 @@ export function useRefreshPermissionSet() {
             return undefined;
         }
 
-        // Refresh permissions explicitly after access-changing mutations; do not use focus polling, as that would keep sessions alive.
+        // Refresh on access-changing mutations or explicit navigation; do not use focus polling, which would keep sessions alive.
         const permissionSet = await new PermissionApiService()
             .getOwnPermissionSet();
 

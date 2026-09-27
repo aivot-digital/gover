@@ -2,6 +2,7 @@ import {createTheme as createMuiTheme, ThemeProvider} from '@mui/material';
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {MemoryRouter, Outlet, Route, Routes} from 'react-router-dom';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {CustomerFormPage} from './customer-form-page';
 import {BaseApiService} from '../../services/base-api-service';
@@ -22,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     dispatch: vi.fn(),
     eventResolved: vi.fn(),
     navigate: vi.fn(),
+    observeScrollContainer: vi.fn(),
     submitValues: {} as Record<string, unknown>,
 }));
 
@@ -63,9 +65,12 @@ vi.mock('../../components/code-editor/code-editor', () => ({CodeEditor: () => nu
 vi.mock('../../modules/elements/components/element-derivation-context', () => ({
     ElementDerivationContext: function ElementDerivationContextMock({
         onEvent,
+        scrollContainerRef,
     }: {
         onEvent: (values: Record<string, unknown>, event: string) => Promise<void>;
+        scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
     }) {
+        mocks.observeScrollContainer(scrollContainerRef);
         const [isBusy, setIsBusy] = React.useState(false);
 
         return (
@@ -150,6 +155,20 @@ describe('CustomerFormPage', () => {
 
         const submit = await screen.findByRole('button', {name: 'Formular absenden'});
         expect(submit.parentElement).toHaveStyle({backgroundColor: mode === 'light' ? '#ffffff' : '#1c1c1c'});
+    });
+
+    it('passes the shell outlet scroll container to the form', async () => {
+        const scrollContainerRef = React.createRef<HTMLDivElement>();
+        render(<MemoryRouter>
+            <Routes>
+                <Route element={<div ref={scrollContainerRef}><Outlet context={{scrollContainerRef}}/></div>}>
+                    <Route index element={<CustomerFormPage/>}/>
+                </Route>
+            </Routes>
+        </MemoryRouter>);
+        const submit = await screen.findByRole('button', {name: 'Formular absenden'});
+        expect(mocks.observeScrollContainer).toHaveBeenLastCalledWith(scrollContainerRef);
+        expect(scrollContainerRef.current).toContainElement(submit);
     });
 
     it('sets a generic shell error when form loading fails unexpectedly', async () => {

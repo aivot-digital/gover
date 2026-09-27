@@ -434,12 +434,9 @@ public class CustomerProcessInstanceTaskViewController {
         ProcessInstanceTaskEntity previousTask;
         if (taskViewData.task.getPreviousProcessNodeId() != null) {
             previousTask = processInstanceTaskService
-                    .retrieve(
-                            ProcessInstanceTaskFilter
-                                    .create()
-                                    .setProcessInstanceId(taskViewData.instance.getId())
-                                    .setProcessNodeId(taskViewData.task.getPreviousProcessNodeId())
-                                    .build()
+                    .retrieveLatestForInstanceIdAndNodeId(
+                            taskViewData.instance.getId(),
+                            taskViewData.task.getPreviousProcessNodeId()
                     )
                     .orElse(null);
         } else {
@@ -545,15 +542,15 @@ public class CustomerProcessInstanceTaskViewController {
                 );
             } else {
                 processNodeExecutionResultHandler.handleResultWithAdditionalIdentities(
-                            logger,
-                            null,
-                            taskViewData.provider,
-                            taskViewData.node,
-                            taskViewData.instance,
-                            taskViewData.task,
-                            previousTask,
-                            executionResult,
-                            additionalIdentities
+                        logger,
+                        null,
+                        taskViewData.provider,
+                        taskViewData.node,
+                        taskViewData.instance,
+                        taskViewData.task,
+                        previousTask,
+                        executionResult,
+                        additionalIdentities
                 );
             }
         } catch (ProcessNodeExecutionException e) {
@@ -827,7 +824,7 @@ public class CustomerProcessInstanceTaskViewController {
 
     private void requireActiveCustomerTask(@Nonnull ProcessInstanceTaskEntity task) throws ResponseException {
         if (task.getStatus() != ProcessTaskStatus.AwaitingCustomer &&
-            task.getStatus() != ProcessTaskStatus.AwaitingPayment) {
+                task.getStatus() != ProcessTaskStatus.AwaitingPayment) {
             throw ResponseException.forbidden();
         }
     }

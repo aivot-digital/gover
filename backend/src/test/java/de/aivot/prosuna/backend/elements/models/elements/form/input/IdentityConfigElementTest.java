@@ -19,18 +19,47 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
 class IdentityConfigElementTest {
+    private static final String VALID_TITLE = "Antragstellende Person";
+    private static final String MISSING_TITLE_MESSAGE = "Geben Sie für jede Identität einen Titel an.";
     private static final String MISSING_OPTION_MESSAGE = "Für jede Identität muss mindestens ein Identitätsanbieter oder die direkte E-Mail-Eingabe aktiviert werden.";
+
+    @Test
+    void shouldRejectSlotWithoutTitle() {
+        var element = new IdentityConfigElement();
+        var slot = new IdentityConfigElementSlot()
+                .setAllowsMail(true)
+                .setOptions(List.of());
+
+        var exception = assertThrows(ValidationException.class, () -> element.performValidation(List.of(slot)));
+
+        assertEquals(MISSING_TITLE_MESSAGE, exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectSlotWithBlankTitle() {
+        var element = new IdentityConfigElement();
+        var slot = new IdentityConfigElementSlot()
+                .setTitle("  ")
+                .setAllowsMail(true)
+                .setOptions(List.of());
+
+        var exception = assertThrows(ValidationException.class, () -> element.performValidation(List.of(slot)));
+
+        assertEquals(MISSING_TITLE_MESSAGE, exception.getMessage());
+    }
 
     @Test
     void shouldRejectSlotWithoutSelectedOption() {
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setOptions(List.of());
 
         var exception = assertThrows(ValidationException.class, () -> element.performValidation(List.of(slot)));
@@ -41,7 +70,8 @@ class IdentityConfigElementTest {
     @Test
     void shouldRejectSlotWithNullOptions() {
         var element = new IdentityConfigElement();
-        var slot = new IdentityConfigElementSlot();
+        var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE);
 
         var exception = assertThrows(ValidationException.class, () -> element.performValidation(List.of(slot)));
 
@@ -52,6 +82,7 @@ class IdentityConfigElementTest {
     void shouldRejectSlotWithoutIdentityProviderKey() {
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setOptions(List.of(new IdentityConfigElementOption()));
 
         var exception = assertThrows(ValidationException.class, () -> element.performValidation(List.of(slot)));
@@ -63,10 +94,32 @@ class IdentityConfigElementTest {
     void shouldAcceptEmailOnlySlot() {
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setAllowsMail(true)
                 .setOptions(List.of());
 
         assertDoesNotThrow(() -> element.performValidation(List.of(slot)));
+    }
+
+    @Test
+    void restrictedIdentityConfigRejectsMultipleOrOptionalSlots() {
+        var element = new IdentityConfigElement()
+                .setMaxSlots(1)
+                .setOptionalSlotsAllowed(false);
+        var requiredSlot = new IdentityConfigElementSlot()
+                .setTitle("Vertretung")
+                .setAllowsMail(true)
+                .setIsOptional(false);
+        var optionalSlot = new IdentityConfigElementSlot()
+                .setTitle("Weitere Person")
+                .setAllowsMail(true)
+                .setIsOptional(true);
+
+        assertDoesNotThrow(() -> element.performValidation(List.of(requiredSlot)));
+        var error = assertThrows(ValidationException.class,
+                () -> element.performValidation(List.of(requiredSlot, optionalSlot)));
+        assertTrue(error.getMessage().contains("höchstens eine Identität"));
+        assertTrue(error.getMessage().contains("muss verpflichtend sein"));
     }
 
     @Test
@@ -78,6 +131,7 @@ class IdentityConfigElementTest {
 
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setOptions(List.of(new IdentityConfigElementOption()
                         .setIdentityProviderKey(providerKey)));
 
@@ -98,6 +152,7 @@ class IdentityConfigElementTest {
 
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setOptions(List.of(new IdentityConfigElementOption()
                         .setIdentityProviderKey(providerKey)));
 
@@ -118,6 +173,7 @@ class IdentityConfigElementTest {
 
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setOptions(List.of(new IdentityConfigElementOption()
                         .setIdentityProviderKey(providerKey)
                         .setAdditionalScopes(List.of())));
@@ -141,6 +197,7 @@ class IdentityConfigElementTest {
 
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setOptions(List.of(new IdentityConfigElementOption()
                         .setIdentityProviderKey(providerKey)
                         .setAdditionalScopes(List.of("  "))));
@@ -166,6 +223,7 @@ class IdentityConfigElementTest {
 
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setOptions(List.of(
                         new IdentityConfigElementOption()
                                 .setIdentityProviderKey(bayernIdProviderKey)
@@ -197,6 +255,7 @@ class IdentityConfigElementTest {
 
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setOptions(List.of(new IdentityConfigElementOption()
                         .setIdentityProviderKey(providerKey)
                         .setAdditionalScopes(List.of("urn:example:trust-level"))));
@@ -217,6 +276,7 @@ class IdentityConfigElementTest {
 
         var element = new IdentityConfigElement();
         var slot = new IdentityConfigElementSlot()
+                .setTitle(VALID_TITLE)
                 .setOptions(List.of(new IdentityConfigElementOption()
                         .setIdentityProviderKey(providerKey)));
 

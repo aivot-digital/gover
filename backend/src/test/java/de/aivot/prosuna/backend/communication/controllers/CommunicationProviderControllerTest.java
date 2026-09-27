@@ -12,6 +12,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
@@ -40,6 +42,15 @@ class CommunicationProviderControllerTest {
                 Map.of("alg", "none"),
                 Map.of("sub", "user-1")
         );
+    }
+
+    @Test
+    void reorderPassesTheActorAndCompleteOrderToTheService() throws Exception {
+        var identityProviderKey = UUID.randomUUID();
+        var request = new CommunicationProviderController.BindingOrderRequest(identityProviderKey, List.of(2, 1));
+        when(managementService.reorderBindings(jwt, identityProviderKey, request.ids())).thenReturn(List.of());
+        controller.reorderBindings(jwt, request);
+        verify(managementService).reorderBindings(jwt, identityProviderKey, List.of(2, 1));
     }
 
     @Test

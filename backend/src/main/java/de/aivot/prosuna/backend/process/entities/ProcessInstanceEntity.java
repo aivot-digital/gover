@@ -31,11 +31,11 @@ public class ProcessInstanceEntity {
     private Long id;
 
     @Nonnull
-    @NotNull(message = "Der Vorgangsschlüssel darf nicht null sein.")
+    @NotNull(message = "Die Vorgangskennung darf nicht null sein.")
     private String caseNumber;
 
     @Nonnull
-    @Column(length = ACCESS_KEY_LENGTH)
+    @Column(length = ACCESS_KEY_LENGTH, unique = true)
     @NotNull(message = "Der Zugriffsschlüssel darf nicht null sein.")
     private String accessKey;
 
@@ -48,7 +48,7 @@ public class ProcessInstanceEntity {
     private Integer initialProcessVersion;
 
     @Nonnull
-    @NotNull(message = "Der Prozessinstanz-Status darf nicht null sein.")
+    @NotNull(message = "Der Vorgangsstatus darf nicht null sein.")
     @Column(columnDefinition = "int2")
     private ProcessInstanceStatus status;
 

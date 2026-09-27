@@ -191,6 +191,7 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.AssetSelectInput]: {
         default: AssetSelectInputFieldEditor,
     },
+    [ElementType.DepartmentSelectInput]: null,
     [ElementType.HtmlTemplateInput]: null,
     [ElementType.StoragePathSelector]: {
         default: StoragePathSelectorInputFieldEditor,
