@@ -156,9 +156,12 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
     }, [draft.notes]);
 
     const retentionTimeValueError = useMemo(() => {
+        if (!isEditable) {
+            return undefined;
+        }
         const value = draft.retentionTimeValue;
         if (value == null) {
-            return draft.retentionTimeUnit != null ? 'Geben Sie eine Aufbewahrungsdauer an.' : undefined;
+            return 'Geben Sie eine Aufbewahrungsdauer an.';
         }
         if (!Number.isInteger(value) || value < 1) {
             return 'Die Aufbewahrungsdauer muss eine positive ganze Zahl sein.';
@@ -167,9 +170,9 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             return 'Die Aufbewahrungsdauer ist zu groß.';
         }
         return undefined;
-    }, [draft.retentionTimeValue, draft.retentionTimeUnit]);
+    }, [draft.retentionTimeValue, isEditable]);
 
-    const retentionTimeUnitError = draft.retentionTimeValue != null && draft.retentionTimeUnit == null
+    const retentionTimeUnitError = isEditable && draft.retentionTimeUnit == null
         ? 'Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.'
         : undefined;
 
@@ -413,7 +416,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             >
                 Nach Abschluss eines Vorgangs bleibt er für diese Dauer gespeichert. Danach werden der Vorgang und alle
                 zugehörigen Anhänge gelöscht. Beim Abschluss kann eine abweichende Frist festgelegt werden. Geben Sie
-                die Frist vor der Veröffentlichung an.
+                Dauer und Zeiteinheit an, um die versionsspezifischen Einstellungen zu speichern.
             </ElementEditorSectionHeader>
 
             <Grid container spacing={2} sx={{maxWidth: 680}}>
@@ -428,6 +431,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         decimalPlaces={0}
                         minValue={1}
                         maxValue={MAX_RETENTION_TIME_VALUE}
+                        required={isEditable}
+                        showOptionalIndicator={false}
                         error={retentionTimeValueError}
                         disabled={!isEditable || isSaving}
                     />
@@ -440,6 +445,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                             setDraft({...draft, retentionTimeUnit: unit});
                         }}
                         options={retentionTimeUnitOptions}
+                        required={isEditable}
+                        showOptionalIndicator={false}
                         error={retentionTimeUnitError}
                         disabled={!isEditable || isSaving}
                     />
