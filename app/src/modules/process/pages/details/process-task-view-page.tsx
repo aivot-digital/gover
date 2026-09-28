@@ -74,14 +74,14 @@ export function getProcessTaskStatusLabel(item?: ProcessTaskDetailsPageItem | nu
 
 export function getProcessTaskStatusColor(
     item?: ProcessTaskDetailsPageItem | null,
-): 'default' | 'info' | 'success' | 'warning' | 'error' {
+): 'default' | 'primary' | 'info' | 'success' | 'warning' | 'error' {
     return ProcessTaskStatusColors[item?.task.status ?? ProcessTaskStatus.Running];
 }
 
 function getProcessTaskStatusIcon(item?: ProcessTaskDetailsPageItem | null): ReactElement | undefined {
     const status = item?.task.status;
 
-    if (status === ProcessTaskStatus.Running) {
+    if (status === ProcessTaskStatus.Running || status === ProcessTaskStatus.InProgress) {
         return <AccountCircle fontSize="small" />;
     }
 

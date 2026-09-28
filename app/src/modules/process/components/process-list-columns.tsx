@@ -198,6 +198,7 @@ export function processListColumns<T extends Entry>(tasks: boolean, onChanged: (
                             Date.parse(task.deadline) < Date.now() &&
                             [
                                 ProcessTaskStatus.Running,
+                                ProcessTaskStatus.InProgress,
                                 ProcessTaskStatus.Paused,
                                 ProcessTaskStatus.AwaitingCustomer,
                                 ProcessTaskStatus.AwaitingPayment,

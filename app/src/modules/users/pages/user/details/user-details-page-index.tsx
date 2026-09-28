@@ -77,6 +77,7 @@ const Schema = yup.object({
 
 const DELETION_BLOCKING_TASK_STATUSES = new Set<ProcessTaskStatus>([
     ProcessTaskStatus.Running,
+    ProcessTaskStatus.InProgress,
     ProcessTaskStatus.Paused,
     ProcessTaskStatus.Restarted,
 ]);

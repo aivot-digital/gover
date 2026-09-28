@@ -24,6 +24,7 @@ interface ProcessAssignmentButtonProps {
 
 const activeStatuses = new Set([
     ProcessTaskStatus.Running,
+    ProcessTaskStatus.InProgress,
     ProcessTaskStatus.Paused,
     ProcessTaskStatus.AwaitingCustomer,
     ProcessTaskStatus.AwaitingPayment,

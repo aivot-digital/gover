@@ -47,6 +47,7 @@ export function ProcessListActions({
             ? item.status !== ProcessInstanceStatus.Completed && item.status !== ProcessInstanceStatus.Aborted
             : [
                   ProcessTaskStatus.Running,
+                  ProcessTaskStatus.InProgress,
                   ProcessTaskStatus.Paused,
                   ProcessTaskStatus.AwaitingCustomer,
                   ProcessTaskStatus.AwaitingPayment,
