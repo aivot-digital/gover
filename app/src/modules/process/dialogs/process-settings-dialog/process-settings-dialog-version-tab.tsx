@@ -18,6 +18,8 @@ import {type ThemeResponseDTO} from '../../../themes/models/theme';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {type SelectFieldComponentOption} from '../../../../components/select-field/select-field-component-option';
 import {Hint} from '../../../../components/hint/hint';
+import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
+import {RetentionTimeUnit} from '../../enums/retention-time-unit';
 
 interface ProcessSettingsDialogVersionTabProps {
     open: boolean;
@@ -63,6 +65,13 @@ const caseNumberTypeOptions = [
 ];
 
 const PROCESS_VERSION_NOTES_MAX_LENGTH = 2048;
+const MAX_RETENTION_TIME_VALUE = 2_147_483_647;
+const retentionTimeUnitOptions: SelectFieldComponentOption<RetentionTimeUnit>[] = [
+    {value: RetentionTimeUnit.Days, label: 'Tage'},
+    {value: RetentionTimeUnit.Weeks, label: 'Wochen'},
+    {value: RetentionTimeUnit.Months, label: 'Monate'},
+    {value: RetentionTimeUnit.Years, label: 'Jahre'},
+];
 
 export const ProcessSettingsDialogVersionTab = forwardRef<
     ProcessSettingsDialogVersionTabHandle,
@@ -83,6 +92,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
 
     const [draft, setDraft] = useState<ProcessVersionEntity>(version);
     const [isSaving, setIsSaving] = useState(false);
+    const [retentionInputRevision, setRetentionInputRevision] = useState(0);
+    const [hasEditedRetentionTime, setHasEditedRetentionTime] = useState(false);
 
     const isEditable = version.status === ProcessStatus.Drafted;
     const caseNumberType = draft.caseNumberType;
@@ -107,6 +118,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
     useEffect(() => {
         if (open) {
             setDraft(version);
+            setRetentionInputRevision((revision) => revision + 1);
+            setHasEditedRetentionTime(false);
         }
     }, [open, version]);
 
@@ -144,7 +157,29 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         return undefined;
     }, [draft.notes]);
 
-    const hasValidationError = publicTitleError != null || caseNumberTemplateError != null || notesError != null;
+    const retentionTimeValueError = useMemo(() => {
+        if (!isEditable) {
+            return undefined;
+        }
+        const value = draft.retentionTimeValue;
+        if (value == null) {
+            return 'Geben Sie eine Aufbewahrungsdauer an.';
+        }
+        if (!Number.isInteger(value) || value < 1) {
+            return 'Die Aufbewahrungsdauer muss eine positive ganze Zahl sein.';
+        }
+        if (value > MAX_RETENTION_TIME_VALUE) {
+            return 'Die Aufbewahrungsdauer ist zu groß.';
+        }
+        return undefined;
+    }, [draft.retentionTimeValue, isEditable]);
+
+    const retentionTimeUnitError = isEditable && draft.retentionTimeUnit == null
+        ? 'Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.'
+        : undefined;
+
+    const hasValidationError = publicTitleError != null || caseNumberTemplateError != null || notesError != null
+        || retentionTimeValueError != null || retentionTimeUnitError != null;
 
     const hasUnsavedChanges = useMemo(() => {
         return !deepEquals(
@@ -153,6 +188,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 caseNumberType: version.caseNumberType,
                 caseNumberTemplate: version.caseNumberTemplate,
                 notes: version.notes,
+                retentionTimeValue: version.retentionTimeValue,
+                retentionTimeUnit: version.retentionTimeUnit,
                 themeId: version.themeId,
                 legalSupportDepartmentId: version.legalSupportDepartmentId,
                 technicalSupportDepartmentId: version.technicalSupportDepartmentId,
@@ -167,6 +204,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 caseNumberType: draft.caseNumberType,
                 caseNumberTemplate: draft.caseNumberTemplate,
                 notes: draft.notes,
+                retentionTimeValue: draft.retentionTimeValue,
+                retentionTimeUnit: draft.retentionTimeUnit,
                 themeId: draft.themeId,
                 legalSupportDepartmentId: draft.legalSupportDepartmentId,
                 technicalSupportDepartmentId: draft.technicalSupportDepartmentId,
@@ -184,6 +223,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         draft.imprintDepartmentId,
         draft.legalSupportDepartmentId,
         draft.notes,
+        draft.retentionTimeValue,
+        draft.retentionTimeUnit,
         draft.privacyDepartmentId,
         draft.processSpecificAccessibilityStatement,
         draft.processSpecificPrivacyStatement,
@@ -196,6 +237,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         version.imprintDepartmentId,
         version.legalSupportDepartmentId,
         version.notes,
+        version.retentionTimeValue,
+        version.retentionTimeUnit,
         version.privacyDepartmentId,
         version.processSpecificAccessibilityStatement,
         version.processSpecificPrivacyStatement,
@@ -246,6 +289,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             caseNumberTemplate:
                 caseNumberType === CaseNumberType.Template ? (draft.caseNumberTemplate?.trim() ?? '') : null,
             notes: draft.notes?.trim() === '' ? null : (draft.notes?.trim() ?? null),
+            retentionTimeValue: draft.retentionTimeValue,
+            retentionTimeUnit: draft.retentionTimeUnit,
             themeId: draft.themeId,
             legalSupportDepartmentId: draft.legalSupportDepartmentId,
             technicalSupportDepartmentId: draft.technicalSupportDepartmentId,
@@ -275,6 +320,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             .then((updatedVersion) => {
                 onVersionChange(updatedVersion);
                 setDraft(updatedVersion);
+                setHasEditedRetentionTime(false);
                 dispatch(showSuccessSnackbar('Die versionsspezifischen Einstellungen wurden gespeichert.'));
             })
             .catch((error) => {
@@ -302,6 +348,9 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
 
     const handleReset = useCallback(() => {
         setDraft(version);
+        setHasEditedRetentionTime(false);
+        // NumberFieldComponent buffers its displayed text independently of the draft value.
+        setRetentionInputRevision((revision) => revision + 1);
     }, [version]);
 
     useImperativeHandle(
@@ -361,6 +410,54 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 error={notesError}
                 hint="Halten Sie übergreifende Hinweise zur aktuell geöffneten Prozessversion fest, z. B. offene Punkte, Annahmen oder spätere Ergänzungen der Prozesskonfiguration."
             />
+
+            <ElementEditorSectionHeader
+                title="Aufbewahrungsfrist"
+                variant="h6"
+                disableMarginTop
+                disableMarginBottom
+                maxWidth={680}
+            >
+                Nach Abschluss eines Vorgangs bleibt er für diese Dauer gespeichert. Danach werden der Vorgang und alle
+                zugehörigen Anhänge gelöscht. Beim Abschluss kann eine abweichende Frist festgelegt werden. Geben Sie
+                Dauer und Zeiteinheit an, um die versionsspezifischen Einstellungen zu speichern.
+            </ElementEditorSectionHeader>
+
+            <Grid container spacing={2} sx={{maxWidth: 680}}>
+                <Grid size={{xs: 12, md: 6}}>
+                    <NumberFieldComponent
+                        key={retentionInputRevision}
+                        label="Aufbewahrungsdauer"
+                        value={draft.retentionTimeValue}
+                        onChange={(value) => {
+                            setHasEditedRetentionTime(true);
+                            setDraft({...draft, retentionTimeValue: value});
+                        }}
+                        decimalPlaces={0}
+                        minValue={1}
+                        maxValue={MAX_RETENTION_TIME_VALUE}
+                        required={isEditable}
+                        showOptionalIndicator={false}
+                        error={hasEditedRetentionTime ? retentionTimeValueError : undefined}
+                        disabled={!isEditable || isSaving}
+                    />
+                </Grid>
+                <Grid size={{xs: 12, md: 6}}>
+                    <SelectFieldComponent<RetentionTimeUnit>
+                        label="Zeiteinheit"
+                        value={draft.retentionTimeUnit}
+                        onChange={(unit) => {
+                            setHasEditedRetentionTime(true);
+                            setDraft({...draft, retentionTimeUnit: unit});
+                        }}
+                        options={retentionTimeUnitOptions}
+                        required={isEditable}
+                        showOptionalIndicator={false}
+                        error={hasEditedRetentionTime ? retentionTimeUnitError : undefined}
+                        disabled={!isEditable || isSaving}
+                    />
+                </Grid>
+            </Grid>
 
             <ElementEditorSectionHeader
                 title="Erscheinungsbild"

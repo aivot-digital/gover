@@ -1205,6 +1205,8 @@ const EmptyProcess: ProcessExport = {
         caseNumberType: CaseNumberType.CrockfordBase32,
         caseNumberTemplate: null,
         notes: null,
+        retentionTimeValue: null,
+        retentionTimeUnit: null,
         themeId: null,
         legalSupportDepartmentId: null,
         technicalSupportDepartmentId: null,

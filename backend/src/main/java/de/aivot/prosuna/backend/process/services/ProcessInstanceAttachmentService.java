@@ -226,8 +226,9 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
 
     @Override
     public void performDelete(@Nonnull ProcessInstanceAttachmentEntity entity) throws ResponseException {
-        // Delete the attachment from the database
+        // The storage index still has a foreign key from this row; flush its deletion first.
         processInstanceAttachmentRepository.delete(entity);
+        processInstanceAttachmentRepository.flush();
 
         // Delete the attachment from the storage provider
         storageService

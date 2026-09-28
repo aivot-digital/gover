@@ -1,7 +1,8 @@
 package de.aivot.prosuna.backend.process.entities;
 
-import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.enums.CaseNumberType;
+import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
+import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -44,6 +45,13 @@ public class ProcessVersionEntity {
 
     @Nullable
     private String caseNumberTemplate;
+
+    @Nullable
+    private Integer retentionTimeValue;
+
+    @Nullable
+    @Enumerated(EnumType.STRING)
+    private ProcessRetentionTimeUnit retentionTimeUnit;
 
     @Nullable
     @Size(max = 2048, message = "Die Notizen dürfen maximal 2048 Zeichen lang sein.")
@@ -255,6 +263,26 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setCaseNumberTemplate(@Nullable String caseNumberTemplate) {
         this.caseNumberTemplate = caseNumberTemplate;
+        return this;
+    }
+
+    @Nullable
+    public Integer getRetentionTimeValue() {
+        return retentionTimeValue;
+    }
+
+    public ProcessVersionEntity setRetentionTimeValue(@Nullable Integer retentionTimeValue) {
+        this.retentionTimeValue = retentionTimeValue;
+        return this;
+    }
+
+    @Nullable
+    public ProcessRetentionTimeUnit getRetentionTimeUnit() {
+        return retentionTimeUnit;
+    }
+
+    public ProcessVersionEntity setRetentionTimeUnit(@Nullable ProcessRetentionTimeUnit retentionTimeUnit) {
+        this.retentionTimeUnit = retentionTimeUnit;
         return this;
     }
 
