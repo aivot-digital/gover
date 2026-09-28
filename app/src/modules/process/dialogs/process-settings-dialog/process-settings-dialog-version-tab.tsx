@@ -93,6 +93,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
     const [draft, setDraft] = useState<ProcessVersionEntity>(version);
     const [isSaving, setIsSaving] = useState(false);
     const [retentionInputRevision, setRetentionInputRevision] = useState(0);
+    const [hasEditedRetentionTime, setHasEditedRetentionTime] = useState(false);
 
     const isEditable = version.status === ProcessStatus.Drafted;
     const caseNumberType = draft.caseNumberType;
@@ -118,6 +119,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         if (open) {
             setDraft(version);
             setRetentionInputRevision((revision) => revision + 1);
+            setHasEditedRetentionTime(false);
         }
     }, [open, version]);
 
@@ -318,6 +320,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             .then((updatedVersion) => {
                 onVersionChange(updatedVersion);
                 setDraft(updatedVersion);
+                setHasEditedRetentionTime(false);
                 dispatch(showSuccessSnackbar('Die versionsspezifischen Einstellungen wurden gespeichert.'));
             })
             .catch((error) => {
@@ -345,6 +348,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
 
     const handleReset = useCallback(() => {
         setDraft(version);
+        setHasEditedRetentionTime(false);
         // NumberFieldComponent buffers its displayed text independently of the draft value.
         setRetentionInputRevision((revision) => revision + 1);
     }, [version]);
@@ -426,6 +430,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         label="Aufbewahrungsdauer"
                         value={draft.retentionTimeValue}
                         onChange={(value) => {
+                            setHasEditedRetentionTime(true);
                             setDraft({...draft, retentionTimeValue: value});
                         }}
                         decimalPlaces={0}
@@ -433,7 +438,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         maxValue={MAX_RETENTION_TIME_VALUE}
                         required={isEditable}
                         showOptionalIndicator={false}
-                        error={retentionTimeValueError}
+                        error={hasEditedRetentionTime ? retentionTimeValueError : undefined}
                         disabled={!isEditable || isSaving}
                     />
                 </Grid>
@@ -442,12 +447,13 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         label="Zeiteinheit"
                         value={draft.retentionTimeUnit}
                         onChange={(unit) => {
+                            setHasEditedRetentionTime(true);
                             setDraft({...draft, retentionTimeUnit: unit});
                         }}
                         options={retentionTimeUnitOptions}
                         required={isEditable}
                         showOptionalIndicator={false}
-                        error={retentionTimeUnitError}
+                        error={hasEditedRetentionTime ? retentionTimeUnitError : undefined}
                         disabled={!isEditable || isSaving}
                     />
                 </Grid>

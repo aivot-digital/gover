@@ -205,18 +205,29 @@ describe('ProcessSettingsDialogVersionTab', () => {
         const unit = screen.getByRole('combobox', {name: 'Zeiteinheit'});
         expect(duration).toHaveAttribute('aria-required', 'true');
         expect(unit).toHaveAttribute('aria-required', 'true');
-        expect(screen.getByText('Geben Sie eine Aufbewahrungsdauer an.')).toBeInTheDocument();
-        expect(screen.getByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).toBeInTheDocument();
+        expect(duration).not.toHaveAttribute('aria-invalid', 'true');
+        expect(unit).not.toHaveAttribute('aria-invalid', 'true');
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
 
         await user.type(screen.getByRole('textbox', {name: /Öffentliche Bezeichnung/}), ' neu');
         await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(true));
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
         act(() => ref.current?.save());
         expect(update).not.toHaveBeenCalled();
 
         await user.type(duration, '3');
+        expect(screen.getByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).toBeInTheDocument();
         act(() => ref.current?.save());
         expect(update).not.toHaveBeenCalled();
 
+        act(() => ref.current?.reset());
+        expect(screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'})).toHaveValue('');
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
+
+        await user.type(screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'}), '3');
         await user.click(unit);
         await user.click(await screen.findByText('Tage'));
         await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(false));
@@ -224,7 +235,7 @@ describe('ProcessSettingsDialogVersionTab', () => {
         await waitFor(() => expect(update).toHaveBeenCalledWith(
             expect.anything(),
             expect.objectContaining({
-                publicTitle: 'Bauantrag neu',
+                publicTitle: 'Bauantrag',
                 retentionTimeValue: 3,
                 retentionTimeUnit: RetentionTimeUnit.Days,
             }),
