@@ -112,7 +112,7 @@ public class DashboardService {
                         user.getId(),
                         hasSystemAccess,
                         permission,
-                        ProcessInstanceStatus.Running.ordinal()
+                        List.of(ProcessInstanceStatus.Running.ordinal(), ProcessInstanceStatus.InProgress.ordinal())
                 ),
                 buckets
         );

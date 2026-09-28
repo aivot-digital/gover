@@ -19,7 +19,7 @@ import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermis
 @Service
 @Transactional(propagation = Propagation.MANDATORY)
 public class ProcessInstanceAccessGuard {
-    private static final Set<ProcessTaskStatus> ACTIVE = Set.of(ProcessTaskStatus.Running, ProcessTaskStatus.Paused,
+    private static final Set<ProcessTaskStatus> ACTIVE = Set.of(ProcessTaskStatus.Running, ProcessTaskStatus.InProgress, ProcessTaskStatus.Paused,
             ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
     private static final List<String> REQUIRED = List.of(PROCESS_INSTANCE_READ, PROCESS_INSTANCE_EDIT_TASK);
     private final ProcessInstanceRepository instances;

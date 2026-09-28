@@ -13,6 +13,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Objects;
 
 @Component
@@ -95,7 +96,7 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
         }
 
         var runningProcesses = processInstanceRepository
-                .countAllByStatusIs(ProcessInstanceStatus.Running);
+                .countAllByStatusIn(List.of(ProcessInstanceStatus.Running, ProcessInstanceStatus.InProgress));
 
         if (runningProcesses > 0) {
             throw ResponseException.conflict(

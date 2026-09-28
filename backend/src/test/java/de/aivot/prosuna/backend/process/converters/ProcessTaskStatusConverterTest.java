@@ -22,7 +22,8 @@ class ProcessTaskStatusConverterTest {
                 ProcessTaskStatus.Completed, 2,
                 ProcessTaskStatus.Aborted, 3,
                 ProcessTaskStatus.Failed, 4,
-                ProcessTaskStatus.Restarted, 5
+                ProcessTaskStatus.Restarted, 5,
+                ProcessTaskStatus.InProgress, 8
         );
 
         assertEquals(ProcessTaskStatus.values().length, expectedValues.size());

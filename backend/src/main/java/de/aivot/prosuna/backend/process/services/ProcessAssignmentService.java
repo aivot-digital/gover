@@ -30,7 +30,7 @@ import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermis
 
 @Service
 public class ProcessAssignmentService {
-    private static final Set<ProcessTaskStatus> ACTIVE_TASK_STATUSES = Set.of(ProcessTaskStatus.Running,
+    private static final Set<ProcessTaskStatus> ACTIVE_TASK_STATUSES = Set.of(ProcessTaskStatus.Running, ProcessTaskStatus.InProgress,
             ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
     private static final List<String> TASK_ASSIGNMENT_PERMISSIONS = List.of(PROCESS_INSTANCE_READ, PROCESS_INSTANCE_EDIT_TASK);
     private final PermissionService permissions;

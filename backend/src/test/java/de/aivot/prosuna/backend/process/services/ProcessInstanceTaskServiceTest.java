@@ -89,8 +89,16 @@ class ProcessInstanceTaskServiceTest {
         verifyNoInteractions(instances, systemPermissions);
     }
 
+    @Test
+    void allowsStaffViewAfterWorkHasStarted() throws ResponseException {
+        task.setStatus(ProcessTaskStatus.InProgress);
+        when(instances.hasPermission("actor", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+
+        assertSame(task, service.retrieveForStaffView("actor", 17L, 23L));
+    }
+
     @ParameterizedTest
-    @EnumSource(value = ProcessTaskStatus.class, names = "Running", mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = ProcessTaskStatus.class, names = {"Running", "InProgress"}, mode = EnumSource.Mode.EXCLUDE)
     void rejectsTasksThatAreNotRunning(ProcessTaskStatus status) {
         task.setStatus(status);
         when(instances.hasPermission("actor", 17L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);

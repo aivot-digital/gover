@@ -15,6 +15,7 @@ public enum ProcessTaskStatus {
     Aborted(3),
     Failed(4),
     Restarted(5),
+    InProgress(8),
     ;
 
     private final short databaseValue;

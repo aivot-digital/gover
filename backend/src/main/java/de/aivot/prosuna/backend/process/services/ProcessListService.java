@@ -30,7 +30,7 @@ import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermis
 @Service
 @Transactional(readOnly = true)
 public class ProcessListService {
-    public static final List<ProcessTaskStatus> OPEN_TASK_STATUSES = List.of(ProcessTaskStatus.Running,
+    public static final List<ProcessTaskStatus> OPEN_TASK_STATUSES = List.of(ProcessTaskStatus.Running, ProcessTaskStatus.InProgress,
             ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
     private final EntityManager em;
     private final PermissionService permissions;
@@ -247,7 +247,8 @@ public class ProcessListService {
         if (roots.task == null) {
             return switch (view) {
                 case "all" -> cb.conjunction();
-                case "active" -> roots.instance.get("status").in(ProcessInstanceStatus.Created, ProcessInstanceStatus.Running, ProcessInstanceStatus.Paused);
+                case "active" -> roots.instance.get("status").in(ProcessInstanceStatus.Created, ProcessInstanceStatus.Running,
+                        ProcessInstanceStatus.InProgress, ProcessInstanceStatus.Paused);
                 case "ended" -> roots.instance.get("status").in(ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted);
                 case "failed" -> cb.equal(roots.instance.get("status"), ProcessInstanceStatus.Failed);
                 default -> throw ResponseException.badRequest("Diese Vorgangsansicht ist nicht verfügbar.");

@@ -176,7 +176,8 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
                 .findById(processInstanceId)
                 .orElseThrow(() -> new IllegalArgumentException("Process instance not found: " + processInstanceId));
 
-        if (processInstance.getStatus() != ProcessInstanceStatus.Running) {
+        if (processInstance.getStatus() != ProcessInstanceStatus.Running
+                && processInstance.getStatus() != ProcessInstanceStatus.InProgress) {
             throw new IllegalStateException("Cannot change attachment sets for process instance that is not running: " + processInstanceId);
         }
 
@@ -192,7 +193,7 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
             throw new IllegalArgumentException("Process instance task does not belong to process instance: " + processInstanceTaskId);
         }
 
-        if (task.getStatus() != ProcessTaskStatus.Running) {
+        if (task.getStatus() != ProcessTaskStatus.Running && task.getStatus() != ProcessTaskStatus.InProgress) {
             throw new IllegalStateException("Cannot change attachment sets for process instance task that is not running: " + processInstanceTaskId);
         }
     }
