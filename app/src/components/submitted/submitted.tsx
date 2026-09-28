@@ -120,16 +120,16 @@ export function Submitted(props: SubmittedProps) {
                         return;
                     }
 
+                    const firstTask = res.tasks?.[0];
                     if (res.status === ProcessInstanceStatus.Failed) {
                         setProcessFailed(true);
-                        setFormTaskAccessKey(undefined);
+                        setFormTaskAccessKey(firstTask?.accessKey);
                         if (intervalId != null) {
                             clearInterval(intervalId);
                         }
                         return;
                     }
 
-                    const firstTask = res.tasks?.[0];
                     const isPrintReady = firstTask?.status === ProcessTaskStatus.AwaitingPayment ||
                         firstTask?.status === ProcessTaskStatus.Completed;
                     if (isPrintReady) {
@@ -178,7 +178,7 @@ export function Submitted(props: SubmittedProps) {
 
     const downloadSubmittedPrint = (): void => {
         const formSlug = getLiteralElementValue<string>(node.configuration, 'formSlug');
-        if (processFailed || typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
+        if (typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
             return;
         }
 
@@ -532,13 +532,11 @@ export function Submitted(props: SubmittedProps) {
                             }
                             onClick={downloadSubmittedPrint}
                             size="large"
-                            disabled={processFailed || formTaskAccessKey == null || isPrintDownloadPending}
+                            disabled={formTaskAccessKey == null || isPrintDownloadPending}
                         >
                             {
-                                processFailed ?
-                                    'PDF nicht verfügbar' :
-                                    formTaskAccessKey == null ?
-                                    'PDF wird vorbereitet' :
+                                formTaskAccessKey == null ?
+                                    processFailed ? 'PDF nicht verfügbar' : 'PDF wird vorbereitet' :
                                     'Antrag als PDF herunterladen'
                             }
                         </Button>

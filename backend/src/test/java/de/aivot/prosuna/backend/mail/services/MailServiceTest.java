@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.mail.enums.MailTemplate;
 import de.aivot.prosuna.backend.mail.models.MailSendOptions;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
+import de.aivot.prosuna.backend.user.dtos.UserInitialCredentialsDTO;
 import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Multipart;
@@ -38,6 +39,88 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class MailServiceTest {
+    @Test
+    void sendMailRendersStaffAccountCredentialsInTextAndHtml() throws Exception {
+        var prosunaConfig = new ProsunaConfig();
+        prosunaConfig.setFromMail("noreply@example.org");
+        prosunaConfig.setProsunaHostname("https://prosuna.example.org");
+        var mailSender = mock(JavaMailSender.class);
+        var message = new MimeMessage(Session.getInstance(new Properties()));
+        when(mailSender.createMimeMessage()).thenReturn(message);
+        var systemConfigService = mock(SystemConfigService.class);
+        when(systemConfigService.retrieve(ProviderNameSystemConfigDefinition.KEY)).thenReturn(
+                new SystemConfigEntity()
+                        .setKey(ProviderNameSystemConfigDefinition.KEY)
+                        .setValue("Musterstadt")
+                        .setPublicConfig(true)
+        );
+        var mailLogoService = mock(MailLogoService.class);
+        when(mailLogoService.createSenderLogo(null)).thenReturn(Optional.empty());
+        var service = new MailService(
+                prosunaConfig,
+                mailSender,
+                systemConfigService,
+                mock(DepartmentService.class),
+                mock(VDepartmentShadowedService.class),
+                mock(DepartmentMembershipService.class),
+                mailLogoService,
+                mock(UserService.class),
+                mock(UserConfigService.class)
+        );
+        ReflectionTestUtils.setField(service, "mailHost", "smtp.example.org");
+        var context = new HashMap<String, Object>();
+        context.put("title", "Ihre Zugangsdaten für Prosuna");
+        context.put("initialCredentials", new UserInitialCredentialsDTO(
+                "Erika & Max",
+                "erika@example.org",
+                "Sachbearbeitung <intern> & Vertretung",
+                "Ab3&!xyz"
+        ));
+        context.put("loginUrl", "/staff");
+
+        service.sendMail(
+                new ThemeEntity(),
+                "erika@example.org",
+                Optional.empty(),
+                Optional.empty(),
+                "[Prosuna] Ihre Zugangsdaten",
+                MailTemplate.StaffAccountCredentials,
+                context,
+                Optional.empty()
+        );
+
+        verify(mailSender).send(message);
+        message.saveChanges();
+        var parts = collectParts(message.getContent());
+        var text = parts.stream()
+                .filter(part -> contentTypeStartsWith(part, "text/plain"))
+                .map(this::readContent)
+                .findFirst()
+                .orElseThrow();
+        var html = parts.stream()
+                .filter(part -> contentTypeStartsWith(part, "text/html"))
+                .map(this::readContent)
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(text.contains("Name: Erika & Max"));
+        assertTrue(text.contains("E-Mail-Adresse: erika@example.org"));
+        assertTrue(text.contains("Systemrolle: Sachbearbeitung <intern> & Vertretung"));
+        assertTrue(text.contains("Temporäres Passwort: Ab3&!xyz"));
+        assertTrue(text.contains("https://prosuna.example.org/staff"));
+        assertTrue(text.contains("ein neues Passwort vergeben"));
+        assertTrue(text.contains("Ihre E-Mail-Adresse bestätigen"));
+        assertTrue(html.contains("Erika &amp; Max"));
+        assertTrue(html.contains("erika@example.org"));
+        assertTrue(html.contains("Sachbearbeitung &lt;intern&gt; &amp; Vertretung"));
+        assertTrue(html.contains("Ab3&amp;!xyz"));
+        assertTrue(html.contains("href=\"https://prosuna.example.org/staff\""));
+        assertTrue(html.contains("ein neues Passwort vergeben"));
+        assertTrue(html.contains("Ihre E-Mail-Adresse"));
+        assertFalse(html.contains("th:text"));
+        assertFalse(html.contains("th:href"));
+    }
+
     @Test
     void sendMailRendersGenericMessageAndCallToActionsWithCustomEnvelopeHeaders() throws Exception {
         var prosunaConfig = mock(ProsunaConfig.class);
