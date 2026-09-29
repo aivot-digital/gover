@@ -163,13 +163,13 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         }
         const value = draft.retentionTimeValue;
         if (value == null) {
-            return 'Geben Sie eine Aufbewahrungsdauer an.';
+            return 'Geben Sie eine Aufbewahrungsfrist an.';
         }
         if (!Number.isInteger(value) || value < 1) {
-            return 'Die Aufbewahrungsdauer muss eine positive ganze Zahl sein.';
+            return 'Die Aufbewahrungsfrist muss eine positive ganze Zahl sein.';
         }
         if (value > MAX_RETENTION_TIME_VALUE) {
-            return 'Die Aufbewahrungsdauer ist zu groß.';
+            return 'Die Aufbewahrungsfrist ist zu groß.';
         }
         return undefined;
     }, [draft.retentionTimeValue, isEditable]);
@@ -418,16 +418,15 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginBottom
                 maxWidth={680}
             >
-                Nach Abschluss eines Vorgangs bleibt er für diese Dauer gespeichert. Danach werden der Vorgang und alle
-                zugehörigen Anhänge gelöscht. Beim Abschluss kann eine abweichende Frist festgelegt werden. Geben Sie
-                Dauer und Zeiteinheit an, um die versionsspezifischen Einstellungen zu speichern.
+                Die Aufbewahrungsfrist legt fest, wie lange ein Vorgang nach seiner Beendigung gespeichert bleibt.
+                Nach Ablauf der Aufbewahrungsfrist wird der Vorgang vollständig gelöscht.
             </ElementEditorSectionHeader>
 
             <Grid container spacing={2} sx={{maxWidth: 680}}>
                 <Grid size={{xs: 12, md: 6}}>
                     <NumberFieldComponent
                         key={retentionInputRevision}
-                        label="Aufbewahrungsdauer"
+                        label="Aufbewahrungsfrist"
                         value={draft.retentionTimeValue}
                         onChange={(value) => {
                             setHasEditedRetentionTime(true);
@@ -444,7 +443,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 </Grid>
                 <Grid size={{xs: 12, md: 6}}>
                     <SelectFieldComponent<RetentionTimeUnit>
-                        label="Zeiteinheit"
+                        label="Einheit der Aufbewahrungsfrist"
                         value={draft.retentionTimeUnit}
                         onChange={(unit) => {
                             setHasEditedRetentionTime(true);
