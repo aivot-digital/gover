@@ -245,7 +245,9 @@ interface IdentityAttributeRow {
 function IdentityItem(props: IdentityItemProps): React.JSX.Element {
     const identity = props.identity;
     const isEmailIdentity = identity.type === 'Email';
-    const identityLabel = identity.identityId || 'Unbenannte Identität';
+    const identityKey = identity.identityId || 'Unbenannte Identität';
+    const identityTitle = identity.title?.trim();
+    const identityLabel = identityTitle ? `${identityTitle} (${identityKey})` : identityKey;
     const trustLevelAttributeKey = props.identityProvider == null
         ? undefined
         : trustLevelAttributeByProviderType[props.identityProvider.type];
@@ -284,8 +286,14 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
                     overflowWrap: 'anywhere',
                 }}
             >
-                {identityLabel}
+                {identityTitle || identityKey}
             </Typography>
+            {
+                identityTitle &&
+                <Typography variant="body2" sx={{color: 'text.secondary', overflowWrap: 'anywhere'}}>
+                    {identityKey}
+                </Typography>
+            }
 
             <Box component="dl" sx={{m: 0, mt: 0.5}}>
                 <DetailRow label="Typ">
