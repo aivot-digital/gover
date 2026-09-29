@@ -223,25 +223,12 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
 
     /**
      * Resume a task by this node provider during process instance execution.
-     * @param context
-     * @return
-     * @throws ProcessNodeExecutionException
+     * @param context The context to resume the task for.
+     * @return The result of the node execution, or null if not applicable.
+     * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     @Nullable
     default ProcessNodeExecutionResult resume(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException {
-        return null;
-    }
-
-    /**
-     * Get the task status layout for nodes of this provider type. This layout is used to display the status of the task in task lists and overviews. It is optional and can be
-     * null.
-     *
-     * @param context The context to build the layout for.
-     * @return The task status layout, or null if not provided.
-     * @throws ResponseException If an error occurs while generating the layout.
-     */
-    @Nullable
-    default LayoutElement<?> getTaskStatusLayout(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
         return null;
     }
 
