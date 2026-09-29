@@ -154,7 +154,7 @@ class ProcessVersionServiceTest {
                 .setProcessVersion(5));
 
         assertEquals(List.of(
-                "Legen Sie eine Aufbewahrungsfrist für Vorgänge fest.",
+                "Die Aufbewahrungsfrist muss festgelegt sein.",
                 "Der fachliche Support muss eingerichtet sein.",
                 "Der technische Support muss eingerichtet sein.",
                 "Das Impressum muss eingerichtet sein.",

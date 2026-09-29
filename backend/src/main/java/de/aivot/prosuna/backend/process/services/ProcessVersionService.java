@@ -152,7 +152,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         var problems = new LinkedList<String>();
 
         if (entity.getRetentionTimeValue() == null || entity.getRetentionTimeUnit() == null) {
-            problems.add("Legen Sie eine Aufbewahrungsfrist für Vorgänge fest.");
+            problems.add("Die Aufbewahrungsfrist muss festgelegt sein.");
         }
 
         if (entity.getLegalSupportDepartmentId() == null) {
