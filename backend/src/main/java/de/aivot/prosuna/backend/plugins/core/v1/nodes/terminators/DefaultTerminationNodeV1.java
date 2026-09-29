@@ -211,8 +211,8 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         /** If absent together with the unit, the process version controls retention. */
         @InputElementPOJOBinding(id = RETENTION_VALUE_FIELD_KEY, type = ElementType.Number, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Abweichende Aufbewahrungsfrist"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Ohne Angabe gilt die Aufbewahrungsfrist der Prozessversion."),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Ohne Angabe gilt die Aufbewahrungsfrist der Prozessversion."),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false),
                 @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0)
         })
@@ -222,7 +222,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         /** Required only when an override value is provided. */
         @InputElementPOJOBinding(id = RETENTION_UNIT_FIELD_KEY, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Einheit der Aufbewahrungsfrist"),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 4.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         @Nullable
