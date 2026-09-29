@@ -174,6 +174,13 @@ public class ProcessNodeExecutionResultHandler {
                     .setAlreadyLogged(true);
         }
 
+        if (Boolean.TRUE.equals(executionResult.getClearCurrentlyAssignedUser())
+                && executionResult instanceof ProcessNodeExecutionResultTaskAssigned) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    "Ein Ausführungsergebnis darf die Zuweisung einer Aufgabe nicht gleichzeitig aufheben und neu setzen."
+            );
+        }
+
         validateAdditionalIdentities(
                 processInstance,
                 executionResult,
@@ -222,11 +229,38 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
+        clearCurrentlyAssignedUser(context);
+
         if (!(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)
                 && processInstance.getStatus() != ProcessInstanceStatus.Running) {
             processInstance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(processInstance);
         }
+    }
+
+    private void clearCurrentlyAssignedUser(@Nonnull HandlerContext<?> context) {
+        var previousAssignedUserId = context.processInstanceTask.getAssignedUserId();
+        if (!Boolean.TRUE.equals(context.result.getClearCurrentlyAssignedUser()) || previousAssignedUserId == null) {
+            return;
+        }
+
+        context.processInstanceTask.setAssignedUserId(null);
+        processInstanceTaskRepository.save(context.processInstanceTask);
+
+        var message = "Die Zuweisung der Aufgabe an die Person mit der ID %s wurde aufgehoben."
+                .formatted(StringUtils.quote(previousAssignedUserId));
+        message += context.triggeringUser != null
+                ? " Ausgelöst durch %s.".formatted(StringUtils.quote(context.triggeringUser.getFullName()))
+                : " Die Ausführung erfolgte automatisch.";
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                context.triggeringUser == null,
+                true,
+                "Aufgabenzuweisung aufgehoben",
+                Map.of("previousAssignedUserId", previousAssignedUserId),
+                "%s",
+                message
+        );
     }
 
     private void validateAdditionalIdentities(@Nonnull ProcessInstanceEntity processInstance,
