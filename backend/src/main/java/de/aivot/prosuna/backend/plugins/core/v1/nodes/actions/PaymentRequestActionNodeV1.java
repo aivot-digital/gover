@@ -455,6 +455,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 content,
                 update
         );
+        result.setClearCurrentlyAssignedUser(true);
         return Optional.of(result);
     }
 

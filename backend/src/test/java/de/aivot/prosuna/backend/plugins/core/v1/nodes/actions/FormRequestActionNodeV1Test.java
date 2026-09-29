@@ -429,6 +429,7 @@ class FormRequestActionNodeV1Test {
 
         var result = assertInstanceOf(ProcessNodeExecutionResultTaskAssignedCustomer.class, node.init(context));
 
+        assertNull(result.getClearCurrentlyAssignedUser());
         assertEquals("applicant", result.getIdentityId());
         assertEquals("applicant", result.getCommunicationRequest().recipientIdentityId());
         assertNull(result.getCommunicationRequest().recipientEmailAddress());
@@ -494,6 +495,7 @@ class FormRequestActionNodeV1Test {
                                 .putLiteral("body", "Bitte erneut ergänzen"),
                         "send"
                 ).orElseThrow());
+        assertEquals(Boolean.TRUE, result.getClearCurrentlyAssignedUser());
         assertEquals("applicant", result.getIdentityId());
         assertEquals("applicant", result.getCommunicationRequest().recipientIdentityId());
         assertNull(result.getCommunicationRequest().recipientEmailAddress());

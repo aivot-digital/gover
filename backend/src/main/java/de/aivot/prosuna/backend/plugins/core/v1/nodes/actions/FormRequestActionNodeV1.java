@@ -507,6 +507,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 subject,
                 content
         );
+        result.setClearCurrentlyAssignedUser(true);
 
         return Optional.of(result);
     }
