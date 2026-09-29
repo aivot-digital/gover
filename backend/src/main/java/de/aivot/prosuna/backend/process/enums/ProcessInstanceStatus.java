@@ -8,5 +8,4 @@ public enum ProcessInstanceStatus {
     Completed,
     Aborted,
     Failed,
-    InProgress,
 }

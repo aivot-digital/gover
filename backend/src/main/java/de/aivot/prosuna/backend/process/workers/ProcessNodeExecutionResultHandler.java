@@ -234,8 +234,7 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void ensureInstanceRunning(@Nonnull ProcessInstanceEntity instance) {
-        if (instance.getStatus() != ProcessInstanceStatus.Running
-                && instance.getStatus() != ProcessInstanceStatus.InProgress) {
+        if (instance.getStatus() != ProcessInstanceStatus.Running) {
             instance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(instance);
         }
@@ -708,7 +707,7 @@ public class ProcessNodeExecutionResultHandler {
         if (viaPort == null) {
             assignAndSaveDataLayersAndStatusOverride(context, false);
         }
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.InProgress) {
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
             context.processInstance.setStatus(ProcessInstanceStatus.Running);
         }
         processInstanceRepository.save(context.processInstance);
@@ -939,8 +938,8 @@ public class ProcessNodeExecutionResultHandler {
         }
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
-        if (context.triggeringUser != null && context.processInstance.getStatus() != ProcessInstanceStatus.InProgress) {
-            context.processInstance.setStatus(ProcessInstanceStatus.InProgress);
+        if (context.triggeringUser != null && context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(context.processInstance);
         } else {
             ensureInstanceRunning(context.processInstance);
@@ -979,7 +978,7 @@ public class ProcessNodeExecutionResultHandler {
 
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
         if (!context.additionalIdentities.isEmpty()) {
-            if (context.processInstance.getStatus() != ProcessInstanceStatus.InProgress) {
+            if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
                 context.processInstance.setStatus(ProcessInstanceStatus.Running);
             }
             processInstanceRepository.save(context.processInstance);

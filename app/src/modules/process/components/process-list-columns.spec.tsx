@@ -105,9 +105,7 @@ describe('Process list columns', () => {
 
     describe.each([
         {row: instance, label: 'Gestartet'},
-        {row: {...instance, status: ProcessInstanceStatus.InProgress}, label: 'In Bearbeitung'},
         {row: task, label: 'Gestartet'},
-        {row: {...task, status: ProcessTaskStatus.InProgress}, label: 'In Bearbeitung'},
     ])('status for row $row.id', ({row, label}) => {
         it.each([null, '', '   ', label, ` ${label} `])('omits a redundant tooltip for %s', async statusOverride => {
             renderCell({...row, statusOverride}, 'status');

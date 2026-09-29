@@ -176,8 +176,7 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
                 .findById(processInstanceId)
                 .orElseThrow(() -> new IllegalArgumentException("Process instance not found: " + processInstanceId));
 
-        if (processInstance.getStatus() != ProcessInstanceStatus.Running
-                && processInstance.getStatus() != ProcessInstanceStatus.InProgress) {
+        if (processInstance.getStatus() != ProcessInstanceStatus.Running) {
             throw new IllegalStateException("Cannot change attachment sets for process instance that is not running: " + processInstanceId);
         }
 

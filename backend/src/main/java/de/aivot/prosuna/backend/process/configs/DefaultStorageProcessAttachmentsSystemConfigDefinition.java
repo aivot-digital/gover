@@ -96,7 +96,7 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
         }
 
         var runningProcesses = processInstanceRepository
-                .countAllByStatusIn(List.of(ProcessInstanceStatus.Running, ProcessInstanceStatus.InProgress));
+                .countAllByStatusIs(ProcessInstanceStatus.Running);
 
         if (runningProcesses > 0) {
             throw ResponseException.conflict(

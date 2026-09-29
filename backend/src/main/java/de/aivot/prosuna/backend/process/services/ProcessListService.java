@@ -247,8 +247,7 @@ public class ProcessListService {
         if (roots.task == null) {
             return switch (view) {
                 case "all" -> cb.conjunction();
-                case "active" -> roots.instance.get("status").in(ProcessInstanceStatus.Created, ProcessInstanceStatus.Running,
-                        ProcessInstanceStatus.InProgress, ProcessInstanceStatus.Paused);
+                case "active" -> roots.instance.get("status").in(ProcessInstanceStatus.Created, ProcessInstanceStatus.Running, ProcessInstanceStatus.Paused);
                 case "ended" -> roots.instance.get("status").in(ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted);
                 case "failed" -> cb.equal(roots.instance.get("status"), ProcessInstanceStatus.Failed);
                 default -> throw ResponseException.badRequest("Diese Vorgangsansicht ist nicht verfügbar.");

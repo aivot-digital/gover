@@ -6,7 +6,6 @@ import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircl
 import StopCircle from '@aivot/mui-material-symbols-400-n25-outlined/StopCircle';
 import Cancel from '@aivot/mui-material-symbols-400-n25-outlined/Cancel';
 import AppBadging from '@aivot/mui-material-symbols-400-n25-outlined/AppBadging';
-import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 
 export enum ProcessInstanceStatus {
     Created = 'Created',
@@ -15,7 +14,6 @@ export enum ProcessInstanceStatus {
     Completed = 'Completed',
     Aborted = 'Aborted',
     Failed = 'Failed',
-    InProgress = 'InProgress',
 }
 
 export const ProcessInstanceStatusLabels: Record<ProcessInstanceStatus, string> = {
@@ -25,7 +23,6 @@ export const ProcessInstanceStatusLabels: Record<ProcessInstanceStatus, string> 
     [ProcessInstanceStatus.Completed]: 'Abgeschlossen',
     [ProcessInstanceStatus.Aborted]: 'Abgebrochen',
     [ProcessInstanceStatus.Failed]: 'Fehlgeschlagen',
-    [ProcessInstanceStatus.InProgress]: 'In Bearbeitung',
 };
 
 type ProcessIconColor = 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
@@ -37,7 +34,6 @@ export const ProcessInstanceStatusColor: Record<ProcessInstanceStatus, ProcessIc
     [ProcessInstanceStatus.Completed]: 'success',
     [ProcessInstanceStatus.Aborted]: 'warning',
     [ProcessInstanceStatus.Failed]: 'error',
-    [ProcessInstanceStatus.InProgress]: 'primary',
 };
 
 export const ProcessInstanceStatusIcons: Record<ProcessInstanceStatus, SvgIconComponent> = {
@@ -47,7 +43,6 @@ export const ProcessInstanceStatusIcons: Record<ProcessInstanceStatus, SvgIconCo
     [ProcessInstanceStatus.Completed]: CheckCircle,
     [ProcessInstanceStatus.Aborted]: StopCircle,
     [ProcessInstanceStatus.Failed]: Cancel,
-    [ProcessInstanceStatus.InProgress]: Edit,
 };
 
 export const ProcessInstanceOverrideStatusColor: ProcessIconColor = 'primary';
