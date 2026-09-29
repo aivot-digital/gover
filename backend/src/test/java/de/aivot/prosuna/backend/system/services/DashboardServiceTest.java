@@ -84,7 +84,7 @@ class DashboardServiceTest {
                 "user-1",
                 false,
                 ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ,
-                List.of(ProcessInstanceStatus.Running.ordinal(), ProcessInstanceStatus.InProgress.ordinal())
+                List.of(ProcessInstanceStatus.Running.ordinal())
         )).thenReturn(2L);
 
         var activity = fixture.service.getActivity(user());

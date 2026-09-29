@@ -96,13 +96,12 @@ public class ProcessListServiceTest {
     }
 
     @Test
-    void inProgressInstancesAndTasksRemainInActiveAndOpenViews() throws Exception {
-        sql("update process_instances set status = 6 where id = 1");
+    void runningInstancesAndInProgressTasksRemainInActiveAndOpenViews() throws Exception {
         sql("update process_instance_tasks set status = 8 where id = 11");
 
         var instances = service.instances("me", PageRequest.of(0, 12), filter("active", "all", null));
         assertEquals(1, instances.getTotalElements());
-        assertEquals(ProcessInstanceStatus.InProgress, instances.getContent().getFirst().status());
+        assertEquals(ProcessInstanceStatus.Running, instances.getContent().getFirst().status());
 
         var tasks = service.tasks("me", PageRequest.of(0, 12), filter("open", "mine", null));
         assertEquals(3, tasks.getTotalElements());

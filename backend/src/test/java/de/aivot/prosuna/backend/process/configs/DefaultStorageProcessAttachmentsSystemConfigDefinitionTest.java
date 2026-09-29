@@ -7,8 +7,6 @@ import de.aivot.prosuna.backend.storage.repositories.StorageProviderRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -22,7 +20,7 @@ class DefaultStorageProcessAttachmentsSystemConfigDefinitionTest {
         var processInstanceRepository = mock(ProcessInstanceRepository.class);
         var definition = createDefinition(processInstanceRepository);
 
-        when(processInstanceRepository.countAllByStatusIn(List.of(ProcessInstanceStatus.Running, ProcessInstanceStatus.InProgress)))
+        when(processInstanceRepository.countAllByStatusIs(ProcessInstanceStatus.Running))
                 .thenReturn(2L);
 
         var exception = assertThrows(

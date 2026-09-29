@@ -83,7 +83,7 @@ import static org.mockito.Mockito.when;
 
 class ProcessNodeExecutionResultHandlerTest {
     @Test
-    void staffUpdateMarksTaskAndInstanceInProgressAndLaterUpdatesPreserveTheirStatus() throws Exception {
+    void staffUpdateMarksTaskInProgressAndKeepsInstanceRunningAcrossLaterUpdates() throws Exception {
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
         var savedInstances = new ArrayList<ProcessInstanceEntity>();
         var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, savedInstances);
@@ -96,20 +96,21 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
-        assertEquals(ProcessInstanceStatus.InProgress, instance.getStatus());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertEquals(1, savedTasks.size());
-        assertEquals(1, savedInstances.size());
+        assertTrue(savedInstances.isEmpty());
 
         handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
         handler.handleResult(logger, null, provider, node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
-        assertEquals(ProcessInstanceStatus.InProgress, instance.getStatus());
-        assertEquals(1, savedInstances.size());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertTrue(savedInstances.isEmpty());
 
         var nextTask = processInstanceTask(null);
         handler.handleResult(logger, null, provider, node, instance, nextTask, task, new ProcessNodeExecutionResultNoop());
         assertEquals(ProcessTaskStatus.Running, nextTask.getStatus());
-        assertEquals(ProcessInstanceStatus.InProgress, instance.getStatus());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertTrue(savedInstances.isEmpty());
     }
 
     @Test
@@ -233,7 +234,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 savedInstances
         );
-        var processInstance = processInstance().setStatus(ProcessInstanceStatus.InProgress);
+        var processInstance = processInstance();
         var task = processInstanceTask(null).setStatus(ProcessTaskStatus.InProgress);
         var newIdentity = identity("representative");
 
