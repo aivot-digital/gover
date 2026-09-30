@@ -48,6 +48,11 @@ public class ProcessInstanceEventEntity {
     private Boolean isAudit = false;
 
     @Nonnull
+    @NotNull(message = "Die Angabe, ob das Ereignis für den Verlauf relevant ist, muss gesetzt sein.")
+    @ColumnDefault("FALSE")
+    private Boolean isHistoryRelevant = false;
+
+    @Nonnull
     @NotNull(message = "Der Titel des Ereignisses muss angegeben werden.")
     @NotBlank(message = "Der Titel des Ereignisses darf nicht leer sein.")
     @Size(min = 3, max = 96, message = "Der Titel des Ereignisses muss zwischen 3 und 96 Zeichen lang sein.")
@@ -74,6 +79,18 @@ public class ProcessInstanceEventEntity {
     @Size(min = 36, max = 36, message = "Die ID des auslösenden Benutzers muss genau 36 Zeichen lang sein.")
     private String triggeringUserId;
 
+    @Nullable
+    @Size(min = 36, max = 36, message = "Die ID der betroffenen Person muss genau 36 Zeichen lang sein.")
+    private String concernedUserId;
+
+    @Nullable
+    @Size(max = 255, message = "Die ID der betroffenen Identität darf maximal 255 Zeichen lang sein.")
+    private String concernedIdentityId;
+
+    @Nullable
+    @Size(max = 255, message = "Der Titel der betroffenen Identität darf maximal 255 Zeichen lang sein.")
+    private String concernedIdentityTitle;
+
 
     // region Constructors
 
@@ -89,22 +106,30 @@ public class ProcessInstanceEventEntity {
                                       @Nonnull ProcessNodeExecutionLogLevel level,
                                       @Nonnull Boolean isTechnical,
                                       @Nonnull Boolean isAudit,
+                                      @Nonnull Boolean isHistoryRelevant,
                                       @Nonnull String title,
                                       @Nonnull String message,
                                       @Nonnull Map<String, Object> details,
                                       @Nonnull Instant timestamp,
-                                      @Nullable String triggeringUserId) {
+                                      @Nullable String triggeringUserId,
+                                      @Nullable String concernedUserId,
+                                      @Nullable String concernedIdentityId,
+                                      @Nullable String concernedIdentityTitle) {
         this.id = id;
         this.processInstanceId = processInstanceId;
         this.processInstanceTaskId = processInstanceTaskId;
         this.level = level;
         this.isTechnical = isTechnical;
         this.isAudit = isAudit;
+        this.isHistoryRelevant = isHistoryRelevant;
         this.title = title;
         this.message = message;
         this.details = details;
         this.timestamp = timestamp;
         this.triggeringUserId = triggeringUserId;
+        this.concernedUserId = concernedUserId;
+        this.concernedIdentityId = concernedIdentityId;
+        this.concernedIdentityTitle = concernedIdentityTitle;
     }
 
 
@@ -116,12 +141,12 @@ public class ProcessInstanceEventEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         ProcessInstanceEventEntity that = (ProcessInstanceEventEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(processInstanceId, that.processInstanceId) && Objects.equals(processInstanceTaskId, that.processInstanceTaskId) && level == that.level && Objects.equals(isTechnical, that.isTechnical) && Objects.equals(isAudit, that.isAudit) && Objects.equals(title, that.title) && Objects.equals(message, that.message) && Objects.equals(details, that.details) && Objects.equals(timestamp, that.timestamp) && Objects.equals(triggeringUserId, that.triggeringUserId);
+        return Objects.equals(id, that.id) && Objects.equals(processInstanceId, that.processInstanceId) && Objects.equals(processInstanceTaskId, that.processInstanceTaskId) && level == that.level && Objects.equals(isTechnical, that.isTechnical) && Objects.equals(isAudit, that.isAudit) && Objects.equals(isHistoryRelevant, that.isHistoryRelevant) && Objects.equals(title, that.title) && Objects.equals(message, that.message) && Objects.equals(details, that.details) && Objects.equals(timestamp, that.timestamp) && Objects.equals(triggeringUserId, that.triggeringUserId) && Objects.equals(concernedUserId, that.concernedUserId) && Objects.equals(concernedIdentityId, that.concernedIdentityId) && Objects.equals(concernedIdentityTitle, that.concernedIdentityTitle);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, processInstanceId, processInstanceTaskId, level, isTechnical, isAudit, title, message, details, timestamp, triggeringUserId);
+        return Objects.hash(id, processInstanceId, processInstanceTaskId, level, isTechnical, isAudit, isHistoryRelevant, title, message, details, timestamp, triggeringUserId, concernedUserId, concernedIdentityId, concernedIdentityTitle);
     }
 
     // endregion
@@ -189,6 +214,16 @@ public class ProcessInstanceEventEntity {
     }
 
     @Nonnull
+    public Boolean getHistoryRelevant() {
+        return isHistoryRelevant;
+    }
+
+    public ProcessInstanceEventEntity setHistoryRelevant(@Nonnull Boolean historyRelevant) {
+        isHistoryRelevant = historyRelevant;
+        return this;
+    }
+
+    @Nonnull
     public String getTitle() {
         return title;
     }
@@ -235,6 +270,36 @@ public class ProcessInstanceEventEntity {
 
     public ProcessInstanceEventEntity setTriggeringUserId(@Nullable String triggeringUserId) {
         this.triggeringUserId = triggeringUserId;
+        return this;
+    }
+
+    @Nullable
+    public String getConcernedUserId() {
+        return concernedUserId;
+    }
+
+    public ProcessInstanceEventEntity setConcernedUserId(@Nullable String concernedUserId) {
+        this.concernedUserId = concernedUserId;
+        return this;
+    }
+
+    @Nullable
+    public String getConcernedIdentityId() {
+        return concernedIdentityId;
+    }
+
+    public ProcessInstanceEventEntity setConcernedIdentityId(@Nullable String concernedIdentityId) {
+        this.concernedIdentityId = concernedIdentityId;
+        return this;
+    }
+
+    @Nullable
+    public String getConcernedIdentityTitle() {
+        return concernedIdentityTitle;
+    }
+
+    public ProcessInstanceEventEntity setConcernedIdentityTitle(@Nullable String concernedIdentityTitle) {
+        this.concernedIdentityTitle = concernedIdentityTitle;
         return this;
     }
 

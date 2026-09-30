@@ -163,11 +163,15 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                     ProcessNodeExecutionLogLevel.Info,
                     attachment.getUploadedByUserId() == null,
                     true,
+                    false,
                     "Anhang erstellt",
                     String.format("Der Anhang %s wurde erstellt.", StringUtils.quote(attachment.getFileName())),
                     details,
                     Instant.now(),
-                    attachment.getUploadedByUserId()
+                    attachment.getUploadedByUserId(),
+                    null,
+                    null,
+                    null
             ));
         } catch (Exception e) {
             logger

@@ -138,11 +138,15 @@ public class ProcessNodeExecutionLogger {
                     level,
                     isTechnical,
                     isAuditable,
+                    false,
                     title,
                     message,
                     details,
                     Instant.now(),
-                    userId
+                    userId,
+                    null,
+                    null,
+                    null
             ));
         } catch (Exception e) {
             logger

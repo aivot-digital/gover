@@ -84,11 +84,15 @@ class ProcessInstanceEventLogServiceTest {
                 ProcessNodeExecutionLogLevel.Warn,
                 true,
                 true,
+                false,
                 "Prüfung verzögert",
                 "Die Prüfung konnte noch nicht abgeschlossen werden.",
                 Map.of("attempt", 2),
                 started.plusSeconds(30),
-                user.getId()
+                user.getId(),
+                null,
+                null,
+                null
         );
 
         when(instanceRepository.findById(12L)).thenReturn(Optional.of(instance));

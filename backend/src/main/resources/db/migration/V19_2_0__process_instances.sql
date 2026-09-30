@@ -2,22 +2,22 @@
 create table process_instances
 (
     -- The unique ID of this process instance
-    id                      bigserial     not null,
+    id                      bigserial    not null,
 
     -- The unique case number of this process instance, used for display purposes and to link to external systems.
     -- Generated using the case_number_type and optional template of the process version.
-    case_number             varchar(36)   not null unique,
+    case_number             varchar(36)  not null unique,
 
     -- The key of this process instance.
     -- Public access to this process instance is done via this key.
-    access_key              varchar(128)  not null unique,
+    access_key              varchar(128) not null unique,
 
     -- The process definition version this instance is based on
-    process_id              int           not null,
+    process_id              int          not null,
 
     -- The version of the process definition this instance is initially based on.
     -- This is not necessarily the same version as all nodes of this process instance reference, because the process definition version might have been updated after this process instance was started.
-    initial_process_version int           not null,
+    initial_process_version int          not null,
 
     -- The status of this process instance
     -- Options are:
@@ -27,38 +27,38 @@ create table process_instances
     --   3 - Completed (all nodes reached an end state)
     --   4 - Aborted (by user)
     --   5 - Failed
-    status                  smallint      not null default 0,
+    status                  smallint     not null default 0,
     -- The status override triggered by nodes
-    status_override         varchar(96)   null,
+    status_override         varchar(96) null,
 
     -- The user assigned to this process instance, if any
-    assigned_user_id        varchar(36)   null,
+    assigned_user_id        varchar(36) null,
 
     -- A list of assigned file numbers for this process instance
     assigned_file_numbers   varchar(96)[] not null default '{}',
 
     -- A list of identities, assigned to this process instance
-    identities              jsonb         not null default '{}',
+    identities              jsonb        not null default '{}',
 
     -- The timestamp when this process instance was started
-    started                 timestamptz   not null default now(),
+    started                 timestamptz  not null default now(),
 
     -- The timestamp when this process instance was last updated
-    updated                 timestamptz   not null default now(),
+    updated                 timestamptz  not null default now(),
 
     -- The timestamp when this process instance was finished either by completion, failure or abortion
-    finished                timestamptz   null,
+    finished                timestamptz null,
 
     -- The total runtime of this process instance
-    runtime                 interval generated always as (finished - started) stored,
+    runtime interval generated always as (finished - started) stored,
 
     -- The initial payload provided when starting this process instance
-    initial_payload         jsonb         not null default '{}',
+    initial_payload         jsonb        not null default '{}',
     -- The ID of the initial node where this process instance started
-    initial_node_id         int           not null,
+    initial_node_id         int          not null,
 
     -- Keep until timestamp
-    keep_until              timestamptz   null,
+    keep_until              timestamptz null,
 
     primary key (id),
     foreign key (process_id) references processes (id) on delete cascade,
@@ -70,8 +70,10 @@ create table process_instances
 -- Custom templates with the same spelling deliberately receive the same search treatment.
 create function compact_case_number_search_key(value text) returns text
     language sql immutable strict parallel safe as $$
-    select case when value ~ '^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$'
-        then replace(value, '-', '') else null end;
+select case
+           when value ~ '^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$'
+        then replace(value, '-', '')
+           else null end;
 $$;
 
 create index process_instances_compact_case_number_search_idx on process_instances
@@ -87,11 +89,11 @@ create table process_instance_tasks
     process_version                   int          not null,
     process_node_id                   int          not null,
     -- The id of the previous task or null if this is the first task of the process instance
-    previous_process_instance_task_id bigint       null,
+    previous_process_instance_task_id bigint null,
     -- The id of the previous node in the process definition or null if this is the first task of the process instance
-    previous_process_node_id          int          null,
+    previous_process_node_id          int null,
     -- The key of the port, used to initialize this task, if any
-    previous_process_node_port_key    varchar(96)  null,
+    previous_process_node_port_key    varchar(96) null,
 
     -- The status of this process task
     -- Values are stable and mapped by ProcessTaskStatusConverter:
@@ -104,16 +106,16 @@ create table process_instance_tasks
     --   6 - Awaiting payment
     status                            smallint     not null default 0,
     -- The status override triggered by nodes
-    status_override                   varchar(96)  null,
+    status_override                   varchar(96) null,
 
     -- The timestamp when this task was started
     started                           timestamptz  not null default now(),
     -- The timestamp when this task was last updated
     updated                           timestamptz  not null default now(),
     -- The timestamp when this task was finished either by completion, failure or abortion
-    finished                          timestamptz  null,
+    finished                          timestamptz null,
     -- The total runtime of this task
-    runtime                           interval     null generated always as (finished - started) stored,
+    runtime interval null generated always as (finished - started) stored,
 
     -- The data this node needs during its runtime
     runtime_data                      jsonb        not null default '{}',
@@ -125,21 +127,21 @@ create table process_instance_tasks
     process_data                      jsonb        not null default '{}',
 
     -- The user assigned to this task, if any
-    assigned_user_id                  varchar(36)  null,
+    assigned_user_id                  varchar(36) null,
 
     -- The customer identity assigned to this task, if any
-    assigned_customer_identity_id     varchar(36)  null,
+    assigned_customer_identity_id     varchar(36) null,
 
     -- The deadline for this task, if any, determined by the time limit of the node
-    deadline                          timestamptz  null,
+    deadline                          timestamptz null,
 
     -- The postponed until timestamp for this task, if any
-    postponed_until                   timestamptz  null,
+    postponed_until                   timestamptz null,
 
     -- The number of retries already attempted for this task
-    retry_count                       int          null     default 0,
+    retry_count                       int null     default 0,
     -- The next retry timestamp for this task, if any
-    next_retry_at                     timestamptz  null,
+    next_retry_at                     timestamptz null,
 
     primary key (id),
     unique (process_instance_id, access_key),
@@ -158,7 +160,7 @@ create table process_instance_events
     -- The process instance this event belongs to
     process_instance_id      bigint      not null,
     -- The process instance task this event belongs to, if any
-    process_instance_task_id bigint      null,
+    process_instance_task_id bigint null,
 
     -- The level of this event
     -- Options are:
@@ -172,6 +174,8 @@ create table process_instance_events
     is_technical             boolean     not null default false,
     -- Whether this is an audit event shown to end users
     is_audit                 boolean     not null default false,
+    -- Whether this is a message displayable in the process history to controlling users
+    is_history_relevant      boolean     not null default false,
 
     -- The title and message of this event
     title                    varchar(96) not null,
@@ -186,8 +190,18 @@ create table process_instance_events
     -- The user who triggered this event, if any
     triggering_user_id       varchar(36) null,
 
+    -- The user who is concerned by this event, if any
+    concerned_user_id        varchar(36) null,
+
+    -- The identity id and title, which is concerned by this event, if any
+    concerned_identity_id    varchar(255) null,
+    concerned_identity_title varchar(255) null,
+
     primary key (id),
     foreign key (triggering_user_id) references users (id) on delete restrict,
     foreign key (process_instance_id) references process_instances (id) on delete cascade,
-    foreign key (process_instance_task_id) references process_instance_tasks (id) on delete cascade
+    foreign key (process_instance_task_id) references process_instance_tasks (id) on delete cascade,
+
+    -- If an identity is concerned by this event, both the id and title must be provided
+    check ((concerned_identity_id is null) = (concerned_identity_title is null))
 );
