@@ -31,6 +31,7 @@ import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/
 import {EmptyDataListPlaceholder} from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {ExpandableCodeBlock} from '../../../components/expandable-code-block/expandable-code-block';
 import {SearchInput} from '../../../components/search-input/search-input';
+import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {humanizeMillisecondsDuration} from '../../../utils/duration-utils';
 import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 import {FormFieldTokens} from '../../../theming/form-field-tokens';
@@ -106,6 +107,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<ProcessInstanceEventLogFilter>('all');
+    const [historyRelevant, setHistoryRelevant] = useState<boolean | undefined>(undefined);
     const [sortOrder, setSortOrder] = useState<ProcessInstanceEventLogSortOrder>('DESC');
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -133,6 +135,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
             size: EVENT_PAGE_SIZE,
             search,
             filter,
+            historyRelevant,
             sortOrder,
             abort: signal,
         })
@@ -155,7 +158,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
                     setIsLoading(false);
                 }
             });
-    }, [filter, instanceId, search, sortOrder, taskId]);
+    }, [filter, historyRelevant, instanceId, search, sortOrder, taskId]);
 
     useEffect(() => {
         if (!open) {
@@ -183,6 +186,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
             size: EVENT_PAGE_SIZE,
             search,
             filter,
+            historyRelevant,
             sortOrder,
         })
             .then((nextEventLog) => {
@@ -255,11 +259,13 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
                 <EventLogToolbar
                     disabled={eventLog == null}
                     filter={filter}
+                    historyRelevant={historyRelevant}
                     loading={isLoading && eventLog != null}
                     search={search}
                     sortOrder={sortOrder}
                     totalEvents={totalEvents}
                     onFilterChange={setFilter}
+                    onHistoryRelevantChange={setHistoryRelevant}
                     onSearchChange={setSearch}
                     onSortOrderChange={setSortOrder}
                 />
@@ -272,6 +278,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
                         <EventLogContent
                             eventLog={eventLog}
                             filter={filter}
+                            historyRelevant={historyRelevant}
                             hasMoreEvents={hasMoreEvents}
                             isLoading={isLoading}
                             isLoadingMore={isLoadingMore}
@@ -390,81 +397,93 @@ function ContextValue(props: {label: string; value: string}) {
 function EventLogToolbar(props: {
     disabled: boolean;
     filter: ProcessInstanceEventLogFilter;
+    historyRelevant: boolean | undefined;
     loading: boolean;
     search: string;
     sortOrder: ProcessInstanceEventLogSortOrder;
     totalEvents: number;
     onFilterChange: (filter: ProcessInstanceEventLogFilter) => void;
+    onHistoryRelevantChange: (value: boolean | undefined) => void;
     onSearchChange: (search: string) => void;
     onSortOrderChange: (sortOrder: ProcessInstanceEventLogSortOrder) => void;
 }) {
     const countLabel = `${props.totalEvents} ${props.totalEvents === 1 ? 'Ereignis' : 'Ereignisse'}`;
     return (
-        <Stack
-            direction="row"
-            spacing={2}
-            sx={{
-                alignItems: 'flex-end',
-                px: 3,
-                pb: 2
-            }}>
-            <SearchInput
-                value={props.search}
-                onChange={props.onSearchChange}
-                label="Ereignisse durchsuchen"
-                placeholder="Titel, Nachricht, Prozesselement oder Auslöser"
-                debounce={300}
-                disabled={props.disabled}
-                sx={{width: 430, minWidth: 320}}
-            />
-            <ToggleButtonGroup
-                value={props.filter}
-                exclusive
-                size="small"
-                onChange={(_event, value: ProcessInstanceEventLogFilter | null) => {
-                    if (value != null) {
-                        props.onFilterChange(value);
-                    }
-                }}
-                aria-label="Ereignisse filtern"
-                disabled={props.disabled}
-            >
-                <ToggleButton value="all">Alle</ToggleButton>
-                <ToggleButton value="notable">Warnungen und Fehler</ToggleButton>
-            </ToggleButtonGroup>
-            <Box sx={{flex: 1}}/>
-            <CircularProgress
-                size={16}
-                aria-label="Ereignisse werden aktualisiert"
-                sx={{visibility: props.loading ? 'visible' : 'hidden', mb: 1.5}}
-            />
-            <Typography
-                variant="body2"
-                sx={{
-                    color: "text.secondary",
-                    whiteSpace: 'nowrap',
-                    minHeight: FormFieldTokens.controlMinHeight,
-                    display: 'flex',
-                    alignItems: 'center',
-                }}>
-                {countLabel}
-            </Typography>
-            <Tooltip
-                arrow
-                title={props.sortOrder === 'DESC' ? 'Älteste Ereignisse zuerst anzeigen' : 'Neueste Ereignisse zuerst anzeigen'}
-            >
-                <span>
-                    <Button
-                        variant="text"
-                        size="small"
-                        disabled={props.disabled}
-                        startIcon={props.sortOrder === 'DESC' ? <ArrowDownward/> : <ArrowUpward/>}
-                        onClick={() => props.onSortOrderChange(props.sortOrder === 'DESC' ? 'ASC' : 'DESC')}
-                    >
-                        {props.sortOrder === 'DESC' ? 'Neueste zuerst' : 'Älteste zuerst'}
-                    </Button>
-                </span>
-            </Tooltip>
+        <Stack spacing={2} sx={{px: 3, pb: 2}}>
+            <Stack direction="row" spacing={2} sx={{alignItems: 'flex-end'}}>
+                <SearchInput
+                    value={props.search}
+                    onChange={props.onSearchChange}
+                    label="Ereignisse durchsuchen"
+                    placeholder="Titel, Nachricht, Prozesselement, Auslöser oder Betroffene"
+                    debounce={300}
+                    disabled={props.disabled}
+                    sx={{flex: 1, minWidth: 320}}
+                />
+                <CircularProgress
+                    size={16}
+                    aria-label="Ereignisse werden aktualisiert"
+                    sx={{visibility: props.loading ? 'visible' : 'hidden', mb: 1.5}}
+                />
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "text.secondary",
+                        whiteSpace: 'nowrap',
+                        minHeight: FormFieldTokens.controlMinHeight,
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}>
+                    {countLabel}
+                </Typography>
+                <Tooltip
+                    arrow
+                    title={props.sortOrder === 'DESC' ? 'Älteste Ereignisse zuerst anzeigen' : 'Neueste Ereignisse zuerst anzeigen'}
+                >
+                    <span>
+                        <Button
+                            variant="text"
+                            size="small"
+                            disabled={props.disabled}
+                            startIcon={props.sortOrder === 'DESC' ? <ArrowDownward/> : <ArrowUpward/>}
+                            onClick={() => props.onSortOrderChange(props.sortOrder === 'DESC' ? 'ASC' : 'DESC')}
+                        >
+                            {props.sortOrder === 'DESC' ? 'Neueste zuerst' : 'Älteste zuerst'}
+                        </Button>
+                    </span>
+                </Tooltip>
+            </Stack>
+            <Stack direction="row" spacing={2} sx={{alignItems: 'flex-end'}}>
+                <ToggleButtonGroup
+                    value={props.filter}
+                    exclusive
+                    size="small"
+                    onChange={(_event, value: ProcessInstanceEventLogFilter | null) => {
+                        if (value != null) {
+                            props.onFilterChange(value);
+                        }
+                    }}
+                    aria-label="Ereignisse filtern"
+                    disabled={props.disabled}
+                >
+                    <ToggleButton value="all">Alle</ToggleButton>
+                    <ToggleButton value="notable">Warnungen und Fehler</ToggleButton>
+                </ToggleButtonGroup>
+                <SelectFieldComponent
+                    label="Verlaufsrelevanz"
+                    value={props.historyRelevant == null ? null : String(props.historyRelevant)}
+                    onChange={value => props.onHistoryRelevantChange(value == null ? undefined : value === 'true')}
+                    options={[
+                        {value: 'true', label: 'Relevant'},
+                        {value: 'false', label: 'Nicht relevant'},
+                    ]}
+                    emptyOptionLabel="Alle"
+                    showOptionalIndicator={false}
+                    disabled={props.disabled}
+                    margin="none"
+                    sx={{width: 240}}
+                />
+            </Stack>
         </Stack>
     );
 }
@@ -472,6 +491,7 @@ function EventLogToolbar(props: {
 function EventLogContent(props: {
     eventLog: ProcessInstanceEventLog | null;
     filter: ProcessInstanceEventLogFilter;
+    historyRelevant: boolean | undefined;
     hasMoreEvents: boolean;
     isLoading: boolean;
     isLoadingMore: boolean;
@@ -487,7 +507,7 @@ function EventLogContent(props: {
     }
 
     if (!props.isLoading && props.eventLog.events.content.length === 0) {
-        const filtered = props.search.trim().length > 0 || props.filter !== 'all';
+        const filtered = props.search.trim().length > 0 || props.filter !== 'all' || props.historyRelevant != null;
         return (
             <Box sx={{flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                 <EmptyDataListPlaceholder
@@ -711,7 +731,7 @@ function EventDetails(props: {event: ProcessInstanceEventLogEntry}) {
                     columnGap: 2,
                     rowGap: 1.25,
                     '& dt': {color: 'text.secondary'},
-                    '& dd': {m: 0, minWidth: 0},
+                    '& dd': {m: 0, minWidth: 0, overflowWrap: 'anywhere'},
                 }}
             >
                 <Typography component="dt" variant="body2">Ereignis-ID</Typography>
@@ -727,6 +747,20 @@ function EventDetails(props: {event: ProcessInstanceEventLogEntry}) {
                 </Stack>
                 <Typography component="dt" variant="body2">Prozesselement</Typography>
                 <Typography component="dd" variant="body2">{event.processNodeName ?? 'Vorgang'}</Typography>
+                <Typography component="dt" variant="body2">Betroffene Person</Typography>
+                <Box component="dd">
+                    <Typography variant="body2">
+                        {event.concernedUserId == null ? '–' : event.concernedUserName?.trim() || 'Unbekannte Person'}
+                    </Typography>
+                    {event.concernedUserId != null &&
+                        <Typography variant="body2" color="text.secondary">{event.concernedUserId}</Typography>}
+                </Box>
+                <Typography component="dt" variant="body2">Betroffene Identität</Typography>
+                <Box component="dd">
+                    <Typography variant="body2">{event.concernedIdentityTitle || event.concernedIdentityId || '–'}</Typography>
+                    {event.concernedIdentityTitle && event.concernedIdentityId != null &&
+                        <Typography variant="body2" color="text.secondary">{event.concernedIdentityId}</Typography>}
+                </Box>
                 <Typography component="dt" variant="body2">Klassifizierung</Typography>
                 <Stack component="dd" direction="row" spacing={1} useFlexGap sx={{
                     flexWrap: "wrap"
@@ -740,6 +774,11 @@ function EventDetails(props: {event: ProcessInstanceEventLogEntry}) {
                         size="small"
                         variant="outlined"
                         label={event.audit ? 'Audit-relevant' : 'Nicht audit-relevant'}
+                    />
+                    <Chip
+                        size="small"
+                        variant="outlined"
+                        label={event.historyRelevant ? 'Verlaufsrelevant' : 'Nicht verlaufsrelevant'}
                     />
                 </Stack>
             </Box>

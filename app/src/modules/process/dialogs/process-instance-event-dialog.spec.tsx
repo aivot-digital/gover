@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
@@ -13,12 +13,17 @@ const firstEvent: ProcessInstanceEventLogEntry = {
     level: ProcessNodeExecutionLogLevel.Info,
     technical: true,
     audit: false,
+    historyRelevant: false,
     title: 'Aufgabe gestartet',
     message: 'Die Aufgabe wurde zur Bearbeitung vorbereitet.',
     details: {},
     timestamp: '2026-08-14T08:05:00Z',
     triggeringUserId: null,
     triggeringUserName: null,
+    concernedUserId: null,
+    concernedUserName: null,
+    concernedIdentityId: null,
+    concernedIdentityTitle: null,
     processNodeName: 'Antrag prüfen',
 };
 
@@ -31,6 +36,11 @@ const secondEvent: ProcessInstanceEventLogEntry = {
     details: {attempt: 2},
     triggeringUserId: '00000000-0000-0000-0000-000000000001',
     triggeringUserName: 'Alex Beispiel',
+    historyRelevant: true,
+    concernedUserId: '00000000-0000-0000-0000-000000000002',
+    concernedUserName: 'Robin Beispiel (inaktiv)',
+    concernedIdentityId: 'identity-2',
+    concernedIdentityTitle: 'Antragstellende Person',
 };
 
 function createEventLog(events = [firstEvent, secondEvent]): ProcessInstanceEventLog {
@@ -83,11 +93,19 @@ describe('ProcessInstanceEventDialog', () => {
         expect(screen.getAllByText('Aufgabe gestartet')).toHaveLength(2);
         expect(screen.getByText('Technisch')).toBeInTheDocument();
         expect(screen.getByText('Nicht audit-relevant')).toBeInTheDocument();
+        expect(screen.getByText('Nicht verlaufsrelevant')).toBeInTheDocument();
+        expect(screen.getByText('Betroffene Person').nextElementSibling).toHaveTextContent('–');
+        expect(screen.getByText('Betroffene Identität').nextElementSibling).toHaveTextContent('–');
 
         await user.click(screen.getByText('Prüfung verzögert').closest('[role="button"]')!);
 
         expect(screen.getByText('Prüfung verzögert', {selector: 'h2'})).toBeInTheDocument();
         expect(screen.getByText('Alex Beispiel', {selector: 'p'})).toBeInTheDocument();
+        expect(screen.getByText('Verlaufsrelevant')).toBeInTheDocument();
+        expect(screen.getByText('Betroffene Person').nextElementSibling).toHaveTextContent('Robin Beispiel (inaktiv)');
+        expect(screen.getByText('Betroffene Person').nextElementSibling).toHaveTextContent(secondEvent.concernedUserId!);
+        expect(screen.getByText('Betroffene Identität').nextElementSibling).toHaveTextContent('Antragstellende Person');
+        expect(screen.getByText('Betroffene Identität').nextElementSibling).toHaveTextContent('identity-2');
         expect(screen.getByTestId('expandable-code-block')).toHaveTextContent('"attempt": 2');
     });
 
@@ -165,5 +183,66 @@ describe('ProcessInstanceEventDialog', () => {
 
         expect(await screen.findByText('V-2026-0012')).toBeInTheDocument();
         expect(getEventLog).toHaveBeenCalledTimes(2);
+    });
+
+    it('combines history relevance with search and warnings, preserves pagination and resets to all', async () => {
+        const page = createEventLog();
+        page.events.page.totalPages = 2;
+        page.events.page.totalElements = 51;
+        const getEventLog = vi.spyOn(ProcessInstanceEventApiService.prototype, 'getEventLog')
+            .mockResolvedValue(page);
+        const user = userEvent.setup();
+        render(<ProcessInstanceEventDialog open onClose={vi.fn()} instanceId={12} taskId={null}/>);
+        await screen.findByText('V-2026-0012');
+        await user.click(screen.getByText('Warnungen und Fehler'));
+        await user.type(screen.getByLabelText('Ereignisse durchsuchen'), 'Robin');
+        await waitFor(() => expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({search: 'Robin'})));
+
+        await user.click(screen.getByRole('combobox', {name: 'Verlaufsrelevanz'}));
+        await user.click(screen.getByRole('option', {name: 'Nicht relevant'}));
+        await waitFor(() => expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({
+            page: 0, historyRelevant: false, filter: 'notable', search: 'Robin',
+        })));
+
+        await user.click(screen.getByRole('button', {name: /Weitere Ereignisse/}));
+        await waitFor(() => expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({
+            page: 1, historyRelevant: false, filter: 'notable', search: 'Robin',
+        })));
+
+        await user.click(screen.getByRole('combobox', {name: 'Verlaufsrelevanz'}));
+        await user.click(screen.getByRole('option', {name: 'Relevant'}));
+        await waitFor(() => expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({page: 0, historyRelevant: true})));
+
+        await user.click(screen.getByRole('combobox', {name: 'Verlaufsrelevanz'}));
+        await user.click(screen.getByRole('option', {name: 'Alle'}));
+        await waitFor(() => expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({page: 0, historyRelevant: undefined})));
+    });
+
+    it('keeps history relevance on retry and displays a filtered empty state', async () => {
+        const getEventLog = vi.spyOn(ProcessInstanceEventApiService.prototype, 'getEventLog')
+            .mockResolvedValueOnce(createEventLog())
+            .mockRejectedValueOnce(new Error('network'))
+            .mockResolvedValueOnce(createEventLog([]));
+        const user = userEvent.setup();
+        render(<ProcessInstanceEventDialog open onClose={vi.fn()} instanceId={12} taskId={null}/>);
+        await screen.findByText('V-2026-0012');
+
+        await user.click(screen.getByRole('combobox', {name: 'Verlaufsrelevanz'}));
+        await user.click(screen.getByRole('option', {name: 'Relevant'}));
+        await user.click(await screen.findByRole('button', {name: 'Erneut versuchen'}));
+
+        expect(await screen.findByText('Keine passenden Ereignisse')).toBeInTheDocument();
+        expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({historyRelevant: true, page: 0}));
+    });
+
+    it('shows the concerned user ID when the user cannot be resolved', async () => {
+        vi.spyOn(ProcessInstanceEventApiService.prototype, 'getEventLog')
+            .mockResolvedValue(createEventLog([{...secondEvent, concernedUserName: null}]));
+        render(<ProcessInstanceEventDialog open onClose={vi.fn()} instanceId={12} taskId={null}/>);
+
+        await screen.findByText('Unbekannte Person');
+        const details = within(screen.getByText('Betroffene Person').nextElementSibling as HTMLElement);
+        expect(details.getByText(secondEvent.concernedUserId!)).toBeInTheDocument();
+        expect(details.queryByText('System')).not.toBeInTheDocument();
     });
 });

@@ -38,12 +38,17 @@ public record ProcessInstanceEventLogDTO(
             @Nonnull ProcessNodeExecutionLogLevel level,
             boolean technical,
             boolean audit,
+            boolean historyRelevant,
             @Nonnull String title,
             @Nonnull String message,
             @Nonnull Map<String, Object> details,
             @Nonnull Instant timestamp,
             @Nullable String triggeringUserId,
             @Nullable String triggeringUserName,
+            @Nullable String concernedUserId,
+            @Nullable String concernedUserName,
+            @Nullable String concernedIdentityId,
+            @Nullable String concernedIdentityTitle,
             @Nullable String processNodeName
     ) {
     }

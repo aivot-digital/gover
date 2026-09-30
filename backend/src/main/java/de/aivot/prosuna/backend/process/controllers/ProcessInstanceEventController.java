@@ -56,7 +56,7 @@ public class ProcessInstanceEventController {
     @GetMapping("")
     @Operation(
             summary = "List Process Instance History Events",
-            description = "List all process instance history events with optional filtering and pagination."
+            description = "List process instance history events with pagination and optional filters, including history relevance, concerned user, and concerned identity."
     )
     public Page<ProcessInstanceEventEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -100,7 +100,7 @@ public class ProcessInstanceEventController {
     @GetMapping("log/")
     @Operation(
             summary = "Retrieve Process Instance Event Log",
-            description = "Retrieve a paginated and enriched event log for a process instance or one of its tasks."
+            description = "Retrieve a paginated and enriched event log with optional history relevance and concerned user or identity filters. Search includes concerned user names and IDs, and identity titles and IDs."
     )
     public ProcessInstanceEventLogDTO getEventLog(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -108,6 +108,10 @@ public class ProcessInstanceEventController {
             @Nullable @RequestParam(required = false) Long processInstanceTaskId,
             @Nullable @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "false") boolean notableOnly,
+            @Nullable @RequestParam(required = false) Boolean historyRelevant,
+            @Nullable @RequestParam(required = false) String concernedUserId,
+            @Nullable @RequestParam(required = false) String concernedIdentityId,
+            @Nullable @RequestParam(required = false) String concernedIdentityTitle,
             @Nonnull @ParameterObject @PageableDefault(
                     size = 50,
                     sort = "timestamp",
@@ -129,6 +133,10 @@ public class ProcessInstanceEventController {
                 processInstanceTaskId,
                 search,
                 notableOnly,
+                historyRelevant,
+                concernedUserId,
+                concernedIdentityId,
+                concernedIdentityTitle,
                 pageable
         );
     }

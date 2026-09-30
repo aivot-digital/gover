@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.filters.ProcessInstanceEventFilter;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
@@ -57,6 +58,10 @@ public class ProcessInstanceEventLogService {
                                                    @Nullable Long processInstanceTaskId,
                                                    @Nullable String search,
                                                    boolean notableOnly,
+                                                   @Nullable Boolean historyRelevant,
+                                                   @Nullable String concernedUserId,
+                                                   @Nullable String concernedIdentityId,
+                                                   @Nullable String concernedIdentityTitle,
                                                    @Nonnull Pageable pageable) throws ResponseException {
         if (search != null && search.length() > 200) {
             throw ResponseException.badRequest("Der Suchbegriff darf höchstens 200 Zeichen lang sein.");
@@ -74,7 +79,13 @@ public class ProcessInstanceEventLogService {
         }
 
         var eventPage = eventRepository.findAll(
-                createSpecification(processInstanceId, processInstanceTaskId, search, notableOnly),
+                createSpecification(processInstanceId, processInstanceTaskId, search, notableOnly)
+                        .and(ProcessInstanceEventFilter.create()
+                                .setHistoryRelevant(historyRelevant)
+                                .setConcernedUserId(concernedUserId)
+                                .setConcernedIdentityId(concernedIdentityId)
+                                .setConcernedIdentityTitle(concernedIdentityTitle)
+                                .build()),
                 normalizePageable(pageable)
         );
 
@@ -87,7 +98,7 @@ public class ProcessInstanceEventLogService {
                 .map(ProcessInstanceTaskEntity::getProcessNodeId)
                 .collect(Collectors.toSet()));
         var usersById = findUsersById(eventPage.getContent().stream()
-                .map(ProcessInstanceEventEntity::getTriggeringUserId)
+                .flatMap(event -> java.util.stream.Stream.of(event.getTriggeringUserId(), event.getConcernedUserId()))
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toSet()));
         var entries = eventPage.map(event -> toLogEntry(event, tasksById, nodesById, usersById));
@@ -141,12 +152,16 @@ public class ProcessInstanceEventLogService {
             var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
             predicates.add(builder.like(builder.lower(root.get("title")), likeSearch));
             predicates.add(builder.like(builder.lower(root.get("message")), likeSearch));
+            predicates.add(builder.like(builder.lower(root.get("concernedUserId")), likeSearch));
+            predicates.add(builder.like(builder.lower(root.get("concernedIdentityId")), likeSearch));
+            predicates.add(builder.like(builder.lower(root.get("concernedIdentityTitle")), likeSearch));
 
             if (!matchingTaskIds.isEmpty()) {
                 predicates.add(root.get("processInstanceTaskId").in(matchingTaskIds));
             }
             if (!matchingUserIds.isEmpty()) {
                 predicates.add(root.get("triggeringUserId").in(matchingUserIds));
+                predicates.add(root.get("concernedUserId").in(matchingUserIds));
             }
             if ("system".contains(normalizedSearch)) {
                 predicates.add(builder.isNull(root.get("triggeringUserId")));
@@ -181,6 +196,7 @@ public class ProcessInstanceEventLogService {
         var task = event.getProcessInstanceTaskId() == null ? null : tasksById.get(event.getProcessInstanceTaskId());
         var node = task == null ? null : nodesById.get(task.getProcessNodeId());
         var triggeringUser = event.getTriggeringUserId() == null ? null : usersById.get(event.getTriggeringUserId());
+        var concernedUser = event.getConcernedUserId() == null ? null : usersById.get(event.getConcernedUserId());
 
         return new ProcessInstanceEventLogDTO.Entry(
                 event.getId(),
@@ -189,12 +205,17 @@ public class ProcessInstanceEventLogService {
                 event.getLevel(),
                 event.getTechnical(),
                 event.getAudit(),
+                event.getHistoryRelevant(),
                 event.getTitle(),
                 event.getMessage(),
                 event.getDetails(),
                 event.getTimestamp(),
                 event.getTriggeringUserId(),
                 triggeringUser == null ? null : resolveUserName(triggeringUser),
+                event.getConcernedUserId(),
+                concernedUser == null ? null : resolveUserName(concernedUser),
+                event.getConcernedIdentityId(),
+                event.getConcernedIdentityTitle(),
                 node == null ? null : resolveNodeName(node, "Prozesselement")
         );
     }

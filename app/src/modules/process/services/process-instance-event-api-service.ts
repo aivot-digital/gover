@@ -6,7 +6,7 @@ import {
     type ProcessInstanceEventLogSortOrder,
 } from '../models/process-instance-event-log';
 
-interface ProcessInstanceEventFilter {
+export interface ProcessInstanceEventFilter {
     triggeringUserId?: string;
     processInstanceId?: number;
     processInstanceTaskId?: number;
@@ -16,6 +16,10 @@ interface ProcessInstanceEventFilter {
     isAudit?: boolean;
     isNotAudit?: boolean;
     title?: string;
+    historyRelevant?: boolean;
+    concernedUserId?: string;
+    concernedIdentityId?: string;
+    concernedIdentityTitle?: string;
 }
 
 export class ProcessInstanceEventApiService extends BaseReadApiService<
@@ -35,6 +39,10 @@ export class ProcessInstanceEventApiService extends BaseReadApiService<
         size?: number;
         search?: string;
         filter?: ProcessInstanceEventLogFilter;
+        historyRelevant?: boolean;
+        concernedUserId?: string;
+        concernedIdentityId?: string;
+        concernedIdentityTitle?: string;
         sortOrder?: ProcessInstanceEventLogSortOrder;
         abort?: AbortSignal;
     }): Promise<ProcessInstanceEventLog> {
@@ -47,6 +55,10 @@ export class ProcessInstanceEventApiService extends BaseReadApiService<
                 size: options.size ?? 50,
                 search: options.search?.trim() || undefined,
                 notableOnly: options.filter === 'notable' ? true : undefined,
+                historyRelevant: options.historyRelevant,
+                concernedUserId: options.concernedUserId,
+                concernedIdentityId: options.concernedIdentityId,
+                concernedIdentityTitle: options.concernedIdentityTitle,
                 sort: `timestamp,${options.sortOrder ?? 'DESC'}`,
             },
         });
@@ -58,6 +70,7 @@ export class ProcessInstanceEventApiService extends BaseReadApiService<
             id: 0,
             isAudit: false,
             isTechnical: false,
+            historyRelevant: false,
             level: ProcessNodeExecutionLogLevel.Debug,
             message: '',
             processInstanceId: 0,
