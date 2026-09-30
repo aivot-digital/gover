@@ -252,15 +252,11 @@ public class ProcessInstanceController {
 
         processNodeExecutionLoggerFactory
                 .create(updatedInstance.getId(), latestTask != null ? latestTask.getId() : null, user.getId(), null)
-                .logf(
-                        ProcessNodeExecutionLogLevel.Info,
-                        true,
-                        true,
-                        "Vorgang neu gestartet",
-                        latestTask == null
-                                ? "Der fehlgeschlagene Vorgang wurde manuell neu gestartet, bevor eine erste Aufgabe angelegt wurde."
-                                : "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt."
-                );
+                .history(ProcessNodeExecutionLogLevel.Info, "Vorgang neu gestartet",
+                        "Die erneute Ausführung des fehlgeschlagenen Vorgangs wurde durch „%s“ angefordert."
+                                .formatted(de.aivot.prosuna.backend.process.models.ProcessHistoryMessages.userName(user)),
+                        Map.of(), user.getId(), null, null);
+
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, ProcessInstanceEntity.class, updatedInstance.getId(), "id", Map.of(
                 "id", updatedInstance.getId(),

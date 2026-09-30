@@ -93,7 +93,7 @@ public class ProcessWorker {
         try {
             instanceNodeProvider = fetchInstanceNodeProvider(payload.processInstanceId, payload.nextNodeId);
         } catch (Exception exception) {
-            logger.logException(exception);
+            logger.logFailure(exception);
             return;
         }
         if (instanceNodeProvider.isEmpty()) {
@@ -115,7 +115,7 @@ public class ProcessWorker {
                     payload.previousNodePortKey
             );
         } catch (Exception exception) {
-            logger.logException(exception);
+            logger.logFailure(exception);
             currentProcessInstance.setStatus(ProcessInstanceStatus.Failed);
             processInstanceRepository.save(currentProcessInstance);
         }
@@ -131,7 +131,7 @@ public class ProcessWorker {
         try {
             instanceNodeProvider = fetchInstanceNodeProvider(payload.currentProcessInstanceId, payload.currentNodeId);
         } catch (Exception exception) {
-            logger.logException(exception);
+            logger.logFailure(exception);
             return;
         }
         if (instanceNodeProvider.isEmpty()) {
@@ -151,7 +151,7 @@ public class ProcessWorker {
                             payload.currentTaskId
                     ));
         } catch (Exception exception) {
-            logger.logException(exception);
+            logger.logFailure(exception);
             currentProcessInstance.setStatus(ProcessInstanceStatus.Failed);
             processInstanceRepository.save(currentProcessInstance);
             return;
@@ -166,7 +166,7 @@ public class ProcessWorker {
                     currentProcessNodeDefinition
             );
         } catch (Exception exception) {
-            logger.logException(exception);
+            logger.logFailure(exception);
             currentProcessInstance.setStatus(ProcessInstanceStatus.Failed);
             processInstanceRepository.save(currentProcessInstance);
         }
@@ -290,7 +290,7 @@ public class ProcessWorker {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
             taskEntity.setFinished(Instant.now());
             processInstanceTaskRepository.save(taskEntity);
-            logger.logException(e);
+            logger.logFailure(e);
             throw e;
         } catch (Exception e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
@@ -302,7 +302,7 @@ public class ProcessWorker {
                     currentNodeProvider.getName(),
                     currentNode.resolveName(currentNodeProvider)
             );
-            logger.logException(ex);
+            logger.logFailure(ex);
             throw ex;
         }
 
@@ -334,7 +334,7 @@ public class ProcessWorker {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
             taskEntity.setFinished(Instant.now());
             processInstanceTaskRepository.save(taskEntity);
-            logger.logException(e);
+            logger.logFailure(e);
             throw e;
         } catch (Exception e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
@@ -346,7 +346,7 @@ public class ProcessWorker {
                     currentNodeProvider.getName(),
                     currentNode.resolveName(currentNodeProvider)
             );
-            logger.logException(ex);
+            logger.logFailure(ex);
             throw ex;
         }
 
@@ -376,7 +376,7 @@ public class ProcessWorker {
                     "Die Konfiguration des Prozessknotens %s konnte nicht abgeleitet werden.",
                     StringUtils.quote(currentNode.resolveName(currentNodeProvider))
             );
-            logger.logException(ex);
+            logger.logFailure(ex);
             throw ex;
         }
 
@@ -385,7 +385,7 @@ public class ProcessWorker {
                     "Die dynamische Konfiguration des Prozessknotens %s konnte nicht aufgelöst werden.",
                     StringUtils.quote(currentNode.resolveName(currentNodeProvider))
             );
-            logger.logException(ex);
+            logger.logFailure(ex);
             throw ex;
         }
 
@@ -418,7 +418,7 @@ public class ProcessWorker {
                     StringUtils.quote(currentNodeProvider.getName()),
                     StringUtils.quote(currentNode.resolveName(currentNodeProvider))
             );
-            logger.logException(ex);
+            logger.logFailure(ex);
             throw ex;
         }
 
@@ -454,7 +454,7 @@ public class ProcessWorker {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
             taskEntity.setFinished(Instant.now());
             processInstanceTaskRepository.save(taskEntity);
-            logger.logException(e);
+            logger.logFailure(e);
             throw e;
         }
     }

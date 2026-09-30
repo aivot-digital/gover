@@ -46,6 +46,8 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.*;
 
+import static de.aivot.prosuna.backend.process.models.ProcessHistoryMessages.*;
+
 @Slf4j
 @Service
 public class ProcessNodeExecutionResultHandler {
@@ -148,8 +150,9 @@ public class ProcessNodeExecutionResultHandler {
             @Nonnull Map<String, IdentityData> additionalIdentities
     ) throws ProcessNodeExecutionException {
         if (processInstance.getStatus() == ProcessInstanceStatus.Completed
-                || processInstance.getStatus() == ProcessInstanceStatus.Aborted) {
-            // A delayed result must not change a finished process or trigger further work.
+                || processInstance.getStatus() == ProcessInstanceStatus.Aborted
+                || processInstanceTask.getStatus() == ProcessTaskStatus.Completed) {
+            // A delayed result must not repeat a completed task or change a finished process.
             return;
         }
 
@@ -247,20 +250,10 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setAssignedUserId(null);
         processInstanceTaskRepository.save(context.processInstanceTask);
 
-        var message = "Die Zuweisung der Aufgabe an die Person mit der ID %s wurde aufgehoben."
-                .formatted(StringUtils.quote(previousAssignedUserId));
-        message += context.triggeringUser != null
-                ? " Ausgelöst durch %s.".formatted(StringUtils.quote(context.triggeringUser.getFullName()))
-                : " Die Ausführung erfolgte automatisch.";
-        context.logger.logf(
-                ProcessNodeExecutionLogLevel.Info,
-                context.triggeringUser == null,
-                true,
-                "Aufgabenzuweisung aufgehoben",
-                Map.of("previousAssignedUserId", previousAssignedUserId),
-                "%s",
-                message
-        );
+        var message = "Die Zuweisung der Aufgabe an %s wurde aufgehoben."
+                .formatted(StringUtils.quote(resolveHistoryUserName(previousAssignedUserId)));
+        history(context, "Aufgabenzuweisung aufgehoben", message,
+                Map.of("previousAssignedUserId", previousAssignedUserId), previousAssignedUserId, null);
     }
 
     private void validateAdditionalIdentities(@Nonnull ProcessInstanceEntity processInstance,
@@ -349,7 +342,7 @@ public class ProcessNodeExecutionResultHandler {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
                         "Die Nachricht an die Identität %s konnte nicht versendet werden: %s",
-                        StringUtils.quote(communicationRequest.recipientIdentityId()),
+                        StringUtils.quote(identityTitle(recipientIdentity)),
                         e.getMessage()
                 );
             }
@@ -411,27 +404,15 @@ public class ProcessNodeExecutionResultHandler {
         eventDetails.put("sendResult", sendResult);
 
         if (recipientIdentity != null) {
-            context.logger.logf(
-                    ProcessNodeExecutionLogLevel.Info,
-                    false,
-                    true,
-                    "Nachricht versendet",
-                    eventDetails,
-                    "Die Nachricht mit dem Betreff %s wurde erfolgreich an die Identität %s versendet.",
-                    StringUtils.quote(message.subject()),
-                    StringUtils.quote(recipientIdentity.identityId())
-            );
+            history(context, "Nachricht versendet",
+                    "Die Nachricht mit dem Betreff %s wurde versendet."
+                            .formatted(StringUtils.quote(message.subject())),
+                    eventDetails, null, recipientIdentity.identityId());
         } else {
-            context.logger.logf(
-                    ProcessNodeExecutionLogLevel.Info,
-                    false,
-                    true,
-                    "Nachricht versendet",
-                    eventDetails,
-                    "Die Nachricht mit dem Betreff %s wurde erfolgreich an die E-Mail-Adresse %s versendet.",
-                    StringUtils.quote(message.subject()),
-                    StringUtils.quote(recipientEmailAddress)
-            );
+            history(context, "Nachricht versendet",
+                    "Die Nachricht mit dem Betreff %s wurde an die E-Mail-Adresse %s versendet."
+                            .formatted(StringUtils.quote(message.subject()), StringUtils.quote(recipientEmailAddress)),
+                    eventDetails, null, null);
         }
     }
 
@@ -528,17 +509,12 @@ public class ProcessNodeExecutionResultHandler {
             processInstanceRepository.save(context.processInstance);
         }
 
-        context.logger.logf(
-                ProcessNodeExecutionLogLevel.Info,
-                false,
-                true,
-                "Zahlung angefordert",
-                "Es wurde eine Zahlung über den Zahlungsanbieter %s mit der Transaktions-ID %s angefordert.",
-                StringUtils.quote(context.result.getPaymentProviderName()),
-                StringUtils.quote(context.result.getTransactionKey())
-        );
-
-        // TODO: Use communication package to send payment request information to target in a later product iteration.
+        var communication = context.result.getCommunicationRequest();
+        var identityId = communication == null ? null : communication.recipientIdentityId();
+        history(context, "Zahlung angefordert",
+                "Eine Zahlung über %s wurde angefordert. Der Vorgang wartet auf die Bestätigung der Zahlung."
+                        .formatted(StringUtils.quote(context.result.getPaymentProviderName())),
+                Map.of("transactionKey", context.result.getTransactionKey()), null, identityId);
     }
 
     private void handleAssigned(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskAssigned> context) throws ProcessNodeExecutionException {
@@ -608,7 +584,7 @@ public class ProcessNodeExecutionResultHandler {
             }
         }
 
-        String assignedUserLabel = StringUtils.quote(assignedUser.getFullName());
+        String assignedUserLabel = StringUtils.quote(userName(assignedUser));
         String logMessageTitle;
         String logMessageDetails;
         if (unchanged) {
@@ -620,22 +596,19 @@ public class ProcessNodeExecutionResultHandler {
         } else {
             logMessageTitle = "Aufgabe neu zugewiesen";
             String previousUserLabel = previousAssignedUser != null
-                    ? StringUtils.quote(previousAssignedUser.getFullName())
-                    : "der Person mit der ID " + StringUtils.quote(previousAssignedUserId);
+                    ? StringUtils.quote(userName(previousAssignedUser))
+                    : StringUtils.quote(userName(null));
             logMessageDetails = "Die Aufgabe wurde von %s auf %s neu zugewiesen."
                     .formatted(previousUserLabel, assignedUserLabel);
         }
-        logMessageDetails += context.triggeringUser != null
-                ? " Ausgelöst durch %s.".formatted(StringUtils.quote(context.triggeringUser.getFullName()))
-                : " Die Ausführung erfolgte automatisch.";
-        context.logger.logf(
-                ProcessNodeExecutionLogLevel.Info,
-                context.triggeringUser == null,
-                true,
-                logMessageTitle,
-                "%s",
-                logMessageDetails
-        );
+        if (!unchanged) {
+            var details = new LinkedHashMap<String, Object>();
+            if (previousAssignedUserId != null) details.put("previousAssignedUserId", previousAssignedUserId);
+            history(context, logMessageTitle, logMessageDetails, details, assignedUser.getId(), null);
+        } else {
+            context.logger.logf(ProcessNodeExecutionLogLevel.Info, true, true,
+                    logMessageTitle, "%s", logMessageDetails);
+        }
 
         if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
             context.processInstance.setStatus(ProcessInstanceStatus.Running);
@@ -661,8 +634,12 @@ public class ProcessNodeExecutionResultHandler {
                 context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
                         e,
                         "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an %s konnte nicht versendet werden.",
-                        StringUtils.quote(assignedUser.getFullName())
+                        StringUtils.quote(userName(assignedUser))
                 ));
+                context.logger.history(ProcessNodeExecutionLogLevel.Warn, "Benachrichtigung fehlgeschlagen",
+                        "Die E-Mail-Benachrichtigung an %s konnte nicht versendet werden. Die Änderung der Zuweisung wurde gespeichert."
+                                .formatted(StringUtils.quote(userName(assignedUser))),
+                        Map.of(), assignedUser.getId(), null, null);
             }
         }
 
@@ -681,22 +658,14 @@ public class ProcessNodeExecutionResultHandler {
                 context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
                         e,
                         "Die E-Mail-Benachrichtigung über das Ende der Aufgabenzuweisung an %s konnte nicht versendet werden.",
-                        StringUtils.quote(previousAssignedUser.getFullName())
+                        StringUtils.quote(userName(previousAssignedUser))
                 ));
+                context.logger.history(ProcessNodeExecutionLogLevel.Warn, "Benachrichtigung fehlgeschlagen",
+                        "Die E-Mail-Benachrichtigung an %s konnte nicht versendet werden. Die Änderung der Zuweisung wurde gespeichert."
+                                .formatted(StringUtils.quote(userName(previousAssignedUser))),
+                        Map.of(), previousAssignedUser.getId(), null, null);
             }
         }
-    }
-
-    private static boolean isSameUser(@Nullable UserEntity user1, @Nullable UserEntity user2) {
-        if (user1 == null && user2 == null) {
-            return true;
-        }
-
-        if (user1 == null || user2 == null) {
-            return false;
-        }
-
-        return Objects.equals(user1.getId(), user2.getId());
     }
 
     private void handleAssignedInstance(HandlerContext<ProcessNodeExecutionResultInstanceAssigned> context) throws ProcessNodeExecutionException {
@@ -722,7 +691,8 @@ public class ProcessNodeExecutionResultHandler {
             }
         }
 
-        var previousAssignedUser = requireOptionalUser(context, context.processInstance.getAssignedUserId());
+        var previousAssignedUserId = context.processInstance.getAssignedUserId();
+        var previousAssignedUser = requireOptionalUser(context, previousAssignedUserId);
         var newlyAssignedUser = requireOptionalUser(context, context.result.getAssignedUserId());
         var triggeringUser = Optional.ofNullable(context.triggeringUser);
 
@@ -745,55 +715,24 @@ public class ProcessNodeExecutionResultHandler {
         boolean sendAssignedEmail = false;
         boolean sendUnassignedEmail = false;
 
-        // Determine the log message based on the previous and newly assigned users
-        if (previousAssignedUser.isEmpty()) {
-
-            // Determine the log message based on the newly assigned user
-            if (newlyAssignedUser.isEmpty()) {
-                logMessageTitle = "Zuweisung zu Vorgang unverändert";
-                logMessageDetailsBuilder
-                        .append("Die Zuweisung zu diesem Vorgang wurde nicht geändert. Es war keine Mitarbeiter:in zugewiesen und es ist weiterhin keine Mitarbeiter:in zugewiesen.");
-            } else {
-                logMessageTitle = "Vorgang zugewiesen";
-                logMessageDetailsBuilder
-                        .append(String.format(
-                                "Die Zuweisung zu diesem Vorgang wurde auf die Mitarbeiter:in %s geändert.",
-                                StringUtils.quote(newlyAssignedUser.get().getFullName())
-                        ));
-                sendAssignedEmail = true;
-            }
+        var unchanged = Objects.equals(previousAssignedUserId, context.result.getAssignedUserId());
+        if (unchanged) {
+            logMessageTitle = "Zuweisung zu Vorgang unverändert";
+            logMessageDetailsBuilder.append("Die Zuständigkeit für den Vorgang wurde nicht geändert.");
+        } else if (newlyAssignedUser.isEmpty()) {
+            logMessageTitle = "Zuweisung zu Vorgang entfernt";
+            logMessageDetailsBuilder.append("Die Zuweisung des Vorgangs an %s wurde aufgehoben."
+                    .formatted(StringUtils.quote(userName(previousAssignedUser.orElse(null)))));
+            sendUnassignedEmail = previousAssignedUser.isPresent();
         } else {
-
-            // Determine the log message based on the newly assigned user
-            if (newlyAssignedUser.isEmpty()) {
-                logMessageTitle = "Zuweisung zu Vorgang entfernt";
-                logMessageDetailsBuilder
-                        .append(String.format(
-                                "Die Zuweisung zu diesem Vorgang zur Mitarbeiter:in %s wurde entfernt.",
-                                StringUtils.quote(previousAssignedUser.get().getFullName())
-                        ));
-                sendUnassignedEmail = true;
-            } else {
-                if (isSameUser(previousAssignedUser.get(), newlyAssignedUser.get())) {
-                    logMessageTitle = "Zuweisung zu Vorgang unverändert";
-                    logMessageDetailsBuilder
-                            .append(String.format(
-                                    "Die Zuweisung zu diesem Vorgang wurde nicht geändert. Es war die Mitarbeiter:in %s zugewiesen und es ist weiterhin die Mitarbeiter:in %s zugewiesen.",
-                                    StringUtils.quote(previousAssignedUser.get().getFullName()),
-                                    StringUtils.quote(newlyAssignedUser.get().getFullName())
-                            ));
-                } else {
-                    logMessageTitle = "Vorgang neu zugewiesen";
-                    logMessageDetailsBuilder
-                            .append(String.format(
-                                    "Die Zuweisung zu diesem Vorgang wurde von der Mitarbeiter:in %s auf die Mitarbeiter:in %s geändert.",
-                                    StringUtils.quote(previousAssignedUser.get().getFullName()),
-                                    StringUtils.quote(newlyAssignedUser.get().getFullName())
-                            ));
-                    sendAssignedEmail = true;
-                    sendUnassignedEmail = true;
-                }
-            }
+            logMessageTitle = previousAssignedUserId == null ? "Vorgang zugewiesen" : "Vorgang neu zugewiesen";
+            logMessageDetailsBuilder.append(previousAssignedUserId == null
+                    ? "Der Vorgang wurde %s zugewiesen.".formatted(StringUtils.quote(userName(newlyAssignedUser.get())))
+                    : "Der Vorgang wurde von %s auf %s neu zugewiesen.".formatted(
+                            StringUtils.quote(userName(previousAssignedUser.orElse(null))),
+                            StringUtils.quote(userName(newlyAssignedUser.get()))));
+            sendAssignedEmail = true;
+            sendUnassignedEmail = previousAssignedUser.isPresent();
         }
 
         if (triggeringUser.isEmpty()) {
@@ -803,17 +742,20 @@ public class ProcessNodeExecutionResultHandler {
             logMessageDetailsBuilder
                     .append(String.format(
                             " Die Änderung wurde durch %s vorgenommen.",
-                            StringUtils.quote(triggeringUser.get().getFullName())
+                            StringUtils.quote(userName(triggeringUser.get()))
                     ));
         }
 
-        context.logger.logf(
-                ProcessNodeExecutionLogLevel.Info,
-                false,
-                true,
-                logMessageTitle,
-                logMessageDetailsBuilder.toString()
-        );
+        if (!unchanged) {
+            var details = new LinkedHashMap<String, Object>();
+            if (previousAssignedUserId != null) details.put("previousAssignedUserId", previousAssignedUserId);
+            context.logger.history(ProcessNodeExecutionLogLevel.Info, logMessageTitle,
+                    logMessageDetailsBuilder.toString(), details,
+                    newlyAssignedUser.map(UserEntity::getId).orElse(previousAssignedUserId), null, null);
+        } else {
+            context.logger.logf(ProcessNodeExecutionLogLevel.Info, true, true,
+                    logMessageTitle, "%s", logMessageDetailsBuilder.toString());
+        }
 
         if (viaPort != null) {
             var completionResult = new ProcessNodeExecutionResultTaskCompleted(viaPort);
@@ -836,8 +778,12 @@ public class ProcessNodeExecutionResultHandler {
                 context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
                         e,
                         "Die E-Mail-Benachrichtigung über den zugewiesenen Vorgang an %s konnte nicht versendet werden.",
-                        StringUtils.quote(newlyAssignedUser.get().getFullName())
+                        StringUtils.quote(userName(newlyAssignedUser.get()))
                 ));
+                context.logger.history(ProcessNodeExecutionLogLevel.Warn, "Benachrichtigung fehlgeschlagen",
+                        "Die E-Mail-Benachrichtigung an %s konnte nicht versendet werden. Die Änderung der Zuweisung wurde gespeichert."
+                                .formatted(StringUtils.quote(userName(newlyAssignedUser.get()))),
+                        Map.of(), newlyAssignedUser.get().getId(), null, null);
             }
         }
 
@@ -853,8 +799,12 @@ public class ProcessNodeExecutionResultHandler {
                 context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
                         e,
                         "Die E-Mail-Benachrichtigung über das Ende der Vorgangszuweisung an %s konnte nicht versendet werden.",
-                        StringUtils.quote(previousAssignedUser.get().getFullName())
+                        StringUtils.quote(userName(previousAssignedUser.get()))
                 ));
+                context.logger.history(ProcessNodeExecutionLogLevel.Warn, "Benachrichtigung fehlgeschlagen",
+                        "Die E-Mail-Benachrichtigung an %s konnte nicht versendet werden. Die Änderung der Zuweisung wurde gespeichert."
+                                .formatted(StringUtils.quote(userName(previousAssignedUser.get()))),
+                        Map.of(), previousAssignedUser.get().getId(), null, null);
             }
         }
     }
@@ -893,6 +843,8 @@ public class ProcessNodeExecutionResultHandler {
 
     private void handleAssignedCustomer(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskAssignedCustomer> context) throws ProcessNodeExecutionException {
         var identityId = context.result.getIdentityId();
+        var unchanged = context.processInstanceTask.getStatus() == ProcessTaskStatus.AwaitingCustomer
+                && Objects.equals(context.processInstanceTask.getAssignedCustomerIdentityId(), identityId);
         if (identityId == null) {
             var communicationRequest = context.result.getCommunicationRequest();
             if (communicationRequest == null || communicationRequest.recipientEmailAddress() == null) {
@@ -904,15 +856,12 @@ public class ProcessNodeExecutionResultHandler {
             context.processInstanceTask.setAssignedCustomerIdentityId(null);
             context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingCustomer);
             assignAndSaveDataLayersAndStatusOverride(context, false);
-            context.logger.logf(
-                    ProcessNodeExecutionLogLevel.Info,
-                    true,
-                    true,
-                    "Aufgabe per E-Mail zugewiesen",
-                    "Die Aufgabe %s wurde per E-Mail an %s eingeladen.",
-                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
-                    StringUtils.quote(communicationRequest.recipientEmailAddress())
-            );
+            if (!unchanged) {
+                history(context, "Warten auf Formulareinreichung",
+                        "Eine Einladung wurde an %s versendet. Die Aufgabe wartet auf die Formulareinreichung."
+                                .formatted(StringUtils.quote(communicationRequest.recipientEmailAddress())),
+                        Map.of(), null, null);
+            }
             return;
         }
 
@@ -935,25 +884,10 @@ public class ProcessNodeExecutionResultHandler {
 
         assignAndSaveDataLayersAndStatusOverride(context, false);
 
-        if (context.triggeringUser != null) {
-            context.logger.logf(
-                    ProcessNodeExecutionLogLevel.Info,
-                    false,
-                    true,
-                    "Aufgabe neu zugewiesen",
-                    "Die Aufgabe wurde durch %s der Identitäts-ID %s zugewiesen.",
-                    StringUtils.quote(context.triggeringUser.getFullName()),
-                    StringUtils.quote(assignedCustomer.identityId())
-            );
-        } else {
-            context.logger.logf(
-                    ProcessNodeExecutionLogLevel.Info,
-                    true,
-                    true,
-                    "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " automatisch zugewiesen",
-                    "Die Aufgabe wurde automatisch der Identitäts-ID %s zugewiesen.",
-                    StringUtils.quote(assignedCustomer.identityId())
-            );
+        if (!unchanged) {
+            history(context, "Warten auf Formulareinreichung",
+                    "Die Aufgabe wartet auf die angeforderten Formulardaten.",
+                    Map.of(), null, identityId);
         }
     }
 
@@ -974,7 +908,7 @@ public class ProcessNodeExecutionResultHandler {
                     "Eingaben für " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " gespeichert",
                     "Für die Aufgabe %s wurden durch die Mitarbeiter:in %s Eingaben abgespeichert.",
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
-                    StringUtils.quote(context.triggeringUser.getFullName())
+                    StringUtils.quote(userName(context.triggeringUser))
             );
         } else {
             context.logger.logf(
@@ -1020,7 +954,18 @@ public class ProcessNodeExecutionResultHandler {
                         .orElse("UNKNOWN"))
                 .orElse("UNKNOWN");
 
-        if (context.triggeringUser != null) {
+        rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
+
+        var completionHistory = context.result.getCompletionHistory();
+        if (completionHistory != null) {
+            var message = completionHistory.message();
+            if (completionHistory.remark() != null && !completionHistory.remark().isBlank()) {
+                message += "\nBemerkung: " + completionHistory.remark();
+            }
+            history(context, completionHistory.title(), message,
+                    Map.of("outgoingPort", port.key(), "nextNode", nextNode),
+                    completionHistory.concernedUserId(), completionHistory.concernedIdentityId());
+        } else if (context.triggeringUser != null) {
             context.logger.logf(
                     ProcessNodeExecutionLogLevel.Info,
                     true,
@@ -1032,7 +977,7 @@ public class ProcessNodeExecutionResultHandler {
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
-                    StringUtils.quote(context.triggeringUser.getFullName()),
+                    StringUtils.quote(userName(context.triggeringUser)),
                     StringUtils.quote(port.label()),
                     StringUtils.quote(nextNode)
             );
@@ -1053,7 +998,6 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
-        rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
     }
 
     private CompletionPath requireCompletionPath(@Nonnull ProcessNodeDefinition<?> provider,
@@ -1094,14 +1038,39 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstance.setKeepUntil(context.result.getRetentionDate());
         processInstanceRepository.save(context.processInstance);
 
-        context.logger.logf(
-                ProcessNodeExecutionLogLevel.Info,
-                true,
-                true,
-                "Vorgang abgeschlossen",
-                "Der Vorgang wurde erfolgreich abgeschlossen. Das abschließende Prozesselement war %s",
-                StringUtils.quote(context.currentNode.resolveName(context.provider))
-        );
+        history(context, "Vorgang abgeschlossen", "Der Vorgang wurde erfolgreich abgeschlossen.",
+                Map.of(), null, null);
+    }
+
+    @Nonnull
+    private String resolveHistoryUserName(@Nullable String userId) {
+        if (userId == null) return userName(null);
+        try {
+            return userName(userService.retrieve(userId).orElse(null));
+        } catch (ResponseException exception) {
+            return userName(null);
+        }
+    }
+
+    private void history(@Nonnull HandlerContext<?> context, @Nonnull String title,
+                         @Nonnull String message, @Nonnull Map<String, Object> details,
+                         @Nullable String concernedUserId, @Nullable String concernedIdentityId) {
+        if (context.triggeringUser != null) {
+            message += " Ausgelöst durch %s.".formatted(StringUtils.quote(userName(context.triggeringUser)));
+        } else if (concernedUserId != null) {
+            message += " Die Ausführung erfolgte automatisch.";
+        }
+        String concernedIdentityTitle = null;
+        if (concernedIdentityId != null) {
+            var identity = context.additionalIdentities.get(concernedIdentityId);
+            if (identity == null && context.processInstance.getIdentities() != null) {
+                identity = context.processInstance.getIdentities().get(concernedIdentityId);
+            }
+            concernedIdentityTitle = identityTitle(identity);
+            message += " Beteiligte Identität: %s.".formatted(StringUtils.quote(concernedIdentityTitle));
+        }
+        context.logger.history(ProcessNodeExecutionLogLevel.Info, title, message, details,
+                concernedUserId, concernedIdentityId, concernedIdentityTitle);
     }
 
     private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?> context,

@@ -7,6 +7,8 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.repositories.VUserSystemPermissionRepository;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
@@ -37,6 +39,7 @@ class ProcessAssignmentServiceTest {
     private final PermissionService permissions = new PermissionService(null, null, systemPermissions, null, null, null, instances);
     private final AuditService auditService = mock(AuditService.class);
     private final ScopedAuditService audit = mock(ScopedAuditService.class);
+    private final ProcessInstanceHistoryEventRepository historyEvents = mock(ProcessInstanceHistoryEventRepository.class);
     private ProcessAssignmentService service;
     private final UserEntity actor = user("actor");
     private final UserEntity recipient = user("recipient");
@@ -49,7 +52,8 @@ class ProcessAssignmentServiceTest {
     void setup() {
         when(auditService.createScopedAuditService(any(), anyString())).thenReturn(audit);
         when(audit.create()).thenAnswer(invocation -> AuditLogPayload.create(audit));
-        service = new ProcessAssignmentService(permissions, users, instances, tasks, auditService);
+        service = new ProcessAssignmentService(permissions, users, instances, tasks, auditService,
+                new ProcessNodeExecutionLoggerFactory(historyEvents));
         when(instances.lockAccessById(17L)).thenReturn(Optional.of(17L));
         when(tasks.findInstanceIdById(5L)).thenReturn(Optional.of(17L));
         when(instances.findById(17L)).thenReturn(Optional.of(instance));
@@ -57,6 +61,15 @@ class ProcessAssignmentServiceTest {
         when(users.findById("recipient")).thenReturn(Optional.of(recipient));
         when(instances.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(tasks.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    @Test
+    void unchangedAssignmentDoesNotCreateHistory() throws Exception {
+        instance.setAssignedUserId("recipient");
+        grant("actor", PROCESS_INSTANCE_REASSIGN);
+        grant("recipient", PROCESS_INSTANCE_READ);
+        service.reassignInstance(actor, 17L, "recipient");
+        verifyNoInteractions(historyEvents);
     }
 
     @Test
@@ -71,6 +84,13 @@ class ProcessAssignmentServiceTest {
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
         verify(audit).addAuditEntry(payload.capture());
         assertNotNull(payload.getValue().getDiff());
+        var event = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(historyEvents).save(event.capture());
+        assertTrue(event.getValue().getHistoryRelevant());
+        assertFalse(event.getValue().getTechnical());
+        assertEquals("actor", event.getValue().getTriggeringUserId());
+        assertEquals("recipient", event.getValue().getConcernedUserId());
+        assertTrue(event.getValue().getMessage().contains("Person ohne verfügbaren Namen"));
     }
 
     @ParameterizedTest
@@ -143,7 +163,7 @@ class ProcessAssignmentServiceTest {
         grant("actor", PROCESS_INSTANCE_REASSIGN);
         assertNull(service.reassignInstance(actor, 17L, null).getAssignedUserId());
         assertEquals("previous", task.getAssignedUserId());
-        verifyNoInteractions(users);
+        verify(users).findById("previous");
         verify(audit).addAuditEntry(any());
     }
 

@@ -10,6 +10,9 @@ import de.aivot.prosuna.backend.process.workers.ProcessWorker;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
+import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -45,6 +48,9 @@ class ProcessInstanceTaskControllerTest {
     @Mock
     private de.aivot.prosuna.backend.process.services.ProcessListService listService;
 
+    @Mock
+    private ProcessInstanceHistoryEventRepository historyEvents;
+
     private ProcessInstanceTaskController controller;
     private Jwt jwt;
 
@@ -57,7 +63,8 @@ class ProcessInstanceTaskControllerTest {
                 processInstanceTaskService,
                 rabbitTemplate,
                 permissionService, mock(de.aivot.prosuna.backend.process.services.ProcessAssignmentService.class),
-                listService
+                listService,
+                new ProcessNodeExecutionLoggerFactory(historyEvents)
         );
 
         jwt = new Jwt(
@@ -89,7 +96,7 @@ class ProcessInstanceTaskControllerTest {
     @Test
     void rerunFailedTask_ShouldMarkTaskAsRestartedAndQueueWork() throws Exception {
         var task = createTask(ProcessTaskStatus.Failed);
-        var user = mock(UserEntity.class);
+        var user = new UserEntity().setId("actor-id").setFullName("Ada Beispiel");
 
         when(processInstanceTaskService.retrieve(task.getId())).thenReturn(Optional.of(task));
         when(processInstanceTaskService.update(task.getId(), task)).thenReturn(task);
@@ -113,6 +120,14 @@ class ProcessInstanceTaskControllerTest {
         assertEquals(task.getPreviousProcessNodeId(), payload.previousNodeId());
         assertEquals(task.getPreviousProcessNodePortKey(), payload.previousNodePortKey());
         assertEquals(task.getProcessNodeId(), payload.nextNodeId());
+        var history = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(historyEvents).save(history.capture());
+        assertEquals(true, history.getValue().getHistoryRelevant());
+        assertEquals("actor-id", history.getValue().getTriggeringUserId());
+        assertEquals("actor-id", history.getValue().getConcernedUserId());
+        assertEquals(task.getId(), history.getValue().getProcessInstanceTaskId());
+        assertEquals("Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde durch „Ada Beispiel“ angefordert.",
+                history.getValue().getMessage());
     }
 
     @Test

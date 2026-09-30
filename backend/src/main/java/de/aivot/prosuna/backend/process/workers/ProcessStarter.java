@@ -95,7 +95,7 @@ public class ProcessStarter {
                         StringUtils.quote(initialNode.resolveName(provider))
                 );
             } catch (Exception e) {
-                logger.logException(e);
+                logger.logFailure(e);
                 processInstance.setStatus(ProcessInstanceStatus.Failed);
                 processInstanceRepository.save(processInstance);
             }
