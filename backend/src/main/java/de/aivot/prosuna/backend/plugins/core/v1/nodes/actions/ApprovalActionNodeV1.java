@@ -45,6 +45,7 @@ import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeCompletionHistory;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
@@ -399,7 +400,11 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
 
         var result = new ProcessNodeExecutionResultTaskCompleted()
-                .setViaPort(port) // Set the desired output port
+                .setViaPort(port)
+                .setCompletionHistory(new ProcessNodeCompletionHistory(
+                        EVENT_APPROVE.equals(event) ? "Freigabe erteilt" : "Freigabe abgelehnt",
+                        EVENT_APPROVE.equals(event) ? "Die Freigabe wurde erteilt." : "Die Freigabe wurde abgelehnt.",
+                        remarkText, context.getCallingUser().getId(), null))
                 .setNodeData(nodeData) // Set the generated node data
                 .setRuntimeData(Map.of()) // Reset runtime data to empty map
                 .setProcessData(updatedProcessData);

@@ -57,6 +57,7 @@ import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolv
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.utils.NumberUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeCompletionHistory;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -484,6 +485,9 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
         return ProcessNodeExecutionResultTaskCompleted
                 .of(PORT_PAID)
+                .setCompletionHistory(new ProcessNodeCompletionHistory(
+                        "Zahlung bestätigt", "Die angeforderte Zahlung wurde als bezahlt bestätigt.",
+                        null, null, context.getConfigurationOfExecutingNode().recipientIdentityId))
                 .setRuntimeData(new LinkedHashMap<>(context.getThisTask().getRuntimeData()))
                 .setNodeData(nodeData)
                 .setProcessData(context.getThisTask().getProcessData());

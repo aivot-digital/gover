@@ -67,6 +67,7 @@ import de.aivot.prosuna.backend.process.services.PublicUrlService;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeCompletionHistory;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -642,23 +643,16 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     );
                 }
             } else {
-                context
-                        .getLogger()
-                        .logf(
-                                ProcessNodeExecutionLogLevel.Info,
-                                false,
-                                true,
-                                "Zahlungsanforderung abgeschlossen",
-                                "Die Zahlungsanforderung mit dem Schlüssel %s wurde erfolgreich abgeschlossen.",
-                                StringUtils.quote(txKey)
-                        );
-
                 nodeData.put(DATA_KEY_PAYMENT_DETAILS, tx.getPaymentInformation());
             }
         }
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
+                .setCompletionHistory(context.getThisTask().getRuntimeData().containsKey(DATA_KEY_PAYMENT_TRANSACTION_KEY)
+                        ? new ProcessNodeCompletionHistory("Zahlung bestätigt",
+                                "Die Zahlung zur Formulareinreichung wurde als bezahlt bestätigt.", null, null, null)
+                        : null)
                 .setRuntimeData(context.getThisTask().getRuntimeData())
                 .setNodeData(nodeData)
                 .setProcessData(nodeInitialPayload);

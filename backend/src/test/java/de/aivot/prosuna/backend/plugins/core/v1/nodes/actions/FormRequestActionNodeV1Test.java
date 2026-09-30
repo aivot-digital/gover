@@ -620,6 +620,8 @@ class FormRequestActionNodeV1Test {
 
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
         assertEquals("submitted", completed.getViaPort());
+        assertEquals("Formulardaten eingereicht", completed.getCompletionHistory().title());
+        assertEquals(completed.getNodeData().get("recipientIdentityId"), completed.getCompletionHistory().concernedIdentityId());
         assertEquals(
                 Map.of(
                         "applicant", Map.of(

@@ -42,6 +42,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeCompletionHistory;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -491,7 +492,10 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         nodeData.put(OUTPUT_PROCESSED_AT, Instant.now());
         nodeData.put(OUTPUT_UNMAPPED, effectiveUiUpdate);
 
-        var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT);
+        var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT)
+                .setCompletionHistory(new ProcessNodeCompletionHistory(
+                        "Manuelle Aufgabe abgeschlossen", "Die manuelle Aufgabe wurde abgeschlossen.",
+                        remark, context.getCallingUser().getId(), null));
         result.setProcessData(updatedProcessData);
         result.setNodeData(nodeData);
         result.setRuntimeData(Map.of());

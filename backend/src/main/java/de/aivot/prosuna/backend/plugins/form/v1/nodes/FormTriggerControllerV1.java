@@ -60,6 +60,8 @@ import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import static de.aivot.prosuna.backend.process.models.ProcessHistoryMessages.identityTitle;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
@@ -740,7 +742,7 @@ public class FormTriggerControllerV1 {
                             null,
                             null
                     );
-            logger.logException(e);
+            logger.logFailure(e);
 
             processInstanceService.update(createdInstance.getId(), createdInstance);
 
@@ -751,7 +753,17 @@ public class FormTriggerControllerV1 {
             throw ResponseException.internalServerError(e);
         }
 
-        return processInstanceService.update(createdInstance.getId(), createdInstance);
+        var savedInstance = processInstanceService.update(createdInstance.getId(), createdInstance);
+        var history = processNodeExecutionLoggerFactory.create(savedInstance.getId(), null, null, null);
+        history.history(ProcessNodeExecutionLogLevel.Info, "Formular eingegangen",
+                "Die Formulareinreichung wurde in den Vorgang übernommen.", Map.of(), null, null, null);
+        for (var identity : identities.values()) {
+            history.history(ProcessNodeExecutionLogLevel.Info, "Identität beteiligt",
+                    "Die Identität „%s“ wurde mit der Formulareinreichung in den Vorgang aufgenommen."
+                            .formatted(identityTitle(identity)),
+                    Map.of(), null, identity.identityId(), identityTitle(identity));
+        }
+        return savedInstance;
     }
 
     @GetMapping("theme/")

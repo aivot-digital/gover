@@ -299,6 +299,9 @@ class ManualActionNodeV1Test {
 
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
         assertEquals("output", completed.getViaPort());
+        assertEquals("Manuelle Aufgabe abgeschlossen", completed.getCompletionHistory().title());
+        assertEquals(completed.getNodeData().get("remark"), completed.getCompletionHistory().remark());
+        assertEquals(completed.getNodeData().get("processedByUserId"), completed.getCompletionHistory().concernedUserId());
         assertEquals(Map.of(), completed.getRuntimeData());
         assertEquals("staff-1", completed.getNodeData().get("processedByUserId"));
         assertEquals("<p>Vor Ort durchgeführt.</p>", completed.getNodeData().get("remark"));

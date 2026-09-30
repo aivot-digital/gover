@@ -654,6 +654,7 @@ class PaymentRequestActionNodeV1Test {
         );
 
         assertEquals("paid", result.getViaPort());
+        assertEquals("Zahlung bestätigt", result.getCompletionHistory().title());
         assertEquals("PAYED", result.getNodeData().get("paymentStatus"));
         assertEquals(paymentInformation, result.getNodeData().get("paymentDetails"));
         assertEquals(Map.of("existing", "value"), result.getProcessData());

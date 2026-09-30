@@ -60,6 +60,7 @@ import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeCompletionHistory;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -627,6 +628,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
         var result = new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_SUBMITTED)
+                .setCompletionHistory(new ProcessNodeCompletionHistory(
+                        "Formulardaten eingereicht", "Die angeforderten Formulardaten wurden eingereicht.",
+                        null, null, (String) nodeData.get(OUTPUT_RECIPIENT_IDENTITY_ID)))
                 .setNodeData(nodeData)
                 .setProcessData(updatedProcessData);
 
