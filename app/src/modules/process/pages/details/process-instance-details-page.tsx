@@ -145,8 +145,11 @@ export function ProcessInstanceDetailsPage() {
                         path: '/process-instances/:id',
                         label: 'Allgemeine Informationen',
                     },
+                    {
+                        path: '/process-instances/:id/history',
+                        label: 'Verlauf',
+                    },
                     ...[
-                        ['history', 'Verlauf'],
                         ['communication', 'Kommunikation'],
                         ['data', 'Vorgangsdaten'],
                     ].map(([path, label]) => ({
