@@ -6,6 +6,7 @@ import PlayCircle from '@aivot/mui-material-symbols-400-n25-outlined/PlayCircle'
 import PauseCircle from '@aivot/mui-material-symbols-400-n25-outlined/PauseCircle';
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import Cancel from '@aivot/mui-material-symbols-400-n25-outlined/Cancel';
+import StopCircle from '@aivot/mui-material-symbols-400-n25-outlined/StopCircle';
 import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/PaymentArrowDown';
 import ContractEdit from '@aivot/mui-material-symbols-400-n25-outlined/ContractEdit';
@@ -71,6 +72,12 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
                     title="Abgeschlossen"
                 >
                     <CheckCircle color="success"/>
+                </Tooltip>
+            );
+        case ProcessTaskStatus.Aborted:
+            return (
+                <Tooltip title="Abgebrochen">
+                    <StopCircle color="error"/>
                 </Tooltip>
             );
         case ProcessTaskStatus.Failed:
