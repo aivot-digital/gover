@@ -9,18 +9,14 @@ import de.aivot.prosuna.backend.lib.services.DeleteEntityService;
 import de.aivot.prosuna.backend.lib.services.ReadEntityService;
 import de.aivot.prosuna.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.storage.models.StorageItemMetadata;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,11 +33,9 @@ import java.util.UUID;
 public class ProcessInstanceAttachmentService implements ReadEntityService<ProcessInstanceAttachmentEntity, UUID>,
         CreateEntityService<ProcessInstanceAttachmentEntity>,
         DeleteEntityService<ProcessInstanceAttachmentEntity, UUID> {
-    private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceAttachmentService.class);
-
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
     @Nullable
-    private final ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository;
+    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final StorageService storageService;
     private final SystemConfigRepository systemConfigRepository;
     private final ProcessInstanceRepository processInstanceRepository;
@@ -51,9 +45,9 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                                             StorageService storageService,
                                             SystemConfigRepository systemConfigRepository,
                                             ProcessInstanceRepository processInstanceRepository,
-                                            ProcessInstanceHistoryEventRepository processInstanceHistoryEventRepository) {
+                                            @Nullable ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
         this.processInstanceAttachmentRepository = processInstanceAttachmentRepository;
-        this.processInstanceHistoryEventRepository = processInstanceHistoryEventRepository;
+        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.storageService = storageService;
         this.systemConfigRepository = systemConfigRepository;
         this.processInstanceRepository = processInstanceRepository;
@@ -138,7 +132,7 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
     }
 
     private void logAttachmentCreationEvent(@Nonnull ProcessInstanceAttachmentEntity attachment) {
-        if (processInstanceHistoryEventRepository == null) {
+        if (processNodeExecutionLoggerFactory == null) {
             return;
         }
 
@@ -155,11 +149,9 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
         details.put("storagePathFromRoot", attachment.getStoragePathFromRoot());
         details.put("uploadedByUserId", attachment.getUploadedByUserId());
 
-        try {
-            processInstanceHistoryEventRepository.save(new ProcessInstanceEventEntity(
-                    null,
-                    attachment.getProcessInstanceId(),
-                    attachment.getProcessInstanceTaskId(),
+        processNodeExecutionLoggerFactory
+                .create(attachment.getProcessInstanceId(), attachment.getProcessInstanceTaskId(), attachment.getUploadedByUserId(), null)
+                .saveEvent(
                     ProcessNodeExecutionLogLevel.Info,
                     attachment.getUploadedByUserId() == null,
                     true,
@@ -168,21 +160,10 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                     String.format("Der Anhang %s wurde erstellt.", StringUtils.quote(attachment.getFileName())),
                     details,
                     Instant.now(),
-                    attachment.getUploadedByUserId(),
                     null,
                     null,
                     null
-            ));
-        } catch (Exception e) {
-            logger
-                    .atError()
-                    .setMessage("Failed to persist process attachment creation event")
-                    .setCause(e)
-                    .addKeyValue("processInstanceId", attachment.getProcessInstanceId())
-                    .addKeyValue("processInstanceTaskId", attachment.getProcessInstanceTaskId())
-                    .addKeyValue("attachmentKey", attachment.getKey())
-                    .log();
-        }
+                );
     }
 
     @Nullable
