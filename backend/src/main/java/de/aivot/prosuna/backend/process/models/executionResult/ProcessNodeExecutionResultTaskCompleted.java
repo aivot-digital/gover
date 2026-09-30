@@ -1,10 +1,24 @@
 package de.aivot.prosuna.backend.process.models.executionResult;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 public class ProcessNodeExecutionResultTaskCompleted extends ProcessNodeExecutionResult {
     @Nonnull
     private String viaPort;
+
+    @Nullable
+    private ProcessNodeCompletionHistory completionHistory;
+
+    @Nullable
+    public ProcessNodeCompletionHistory getCompletionHistory() {
+        return completionHistory;
+    }
+
+    public ProcessNodeExecutionResultTaskCompleted setCompletionHistory(@Nullable ProcessNodeCompletionHistory completionHistory) {
+        this.completionHistory = completionHistory;
+        return this;
+    }
 
     // region constructor
 

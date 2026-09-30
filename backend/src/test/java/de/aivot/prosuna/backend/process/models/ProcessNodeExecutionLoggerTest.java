@@ -29,6 +29,25 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 class ProcessNodeExecutionLoggerTest {
     @Test
+    void executionFailureIsRecordedOnceWithTaskContextAndWithoutRawExceptionInHistory() {
+        var repository = mock(ProcessInstanceHistoryEventRepository.class);
+        var logger = new ProcessNodeExecutionLogger(42L, null, null, null, repository);
+        var taskLogger = logger.withTaskId(9L);
+        var exception = new ProcessNodeExecutionExceptionUnknown("Internal URL, identity-id and credentials");
+
+        taskLogger.logFailure(exception);
+        logger.logFailure(exception);
+
+        var captor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(repository, times(2)).save(captor.capture());
+        var history = captor.getAllValues().stream().filter(ProcessInstanceEventEntity::getHistoryRelevant).toList();
+        assertEquals(1, history.size());
+        assertEquals(9L, history.getFirst().getProcessInstanceTaskId());
+        assertFalse(history.getFirst().getTechnical());
+        assertEquals("Die Verarbeitung konnte nicht abgeschlossen werden.", history.getFirst().getMessage());
+    }
+
+    @Test
     void saveEvent_PersistsAllFieldsWithIndependentTriggeringAndConcernedIdentities() {
         var repository = mock(ProcessInstanceHistoryEventRepository.class);
         var triggeringUserId = "00000000-0000-0000-0000-000000000001";
