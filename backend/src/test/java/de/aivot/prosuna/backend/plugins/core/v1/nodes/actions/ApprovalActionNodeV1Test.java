@@ -236,9 +236,6 @@ class ApprovalActionNodeV1Test {
 
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
         assertEquals("approved", completed.getViaPort());
-        assertEquals("Freigabe erteilt", completed.getCompletionHistory().title());
-        assertEquals(completed.getNodeData().get("remark"), completed.getCompletionHistory().remark());
-        assertEquals(completed.getNodeData().get("processedByUserId"), completed.getCompletionHistory().concernedUserId());
         assertEquals("approved", completed.getNodeData().get("decision"));
         assertEquals("<p>Passt</p>", completed.getNodeData().get("remark"));
         assertEquals("staff-1", completed.getNodeData().get("processedByUserId"));
@@ -252,9 +249,8 @@ class ApprovalActionNodeV1Test {
         );
     }
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"approve", "reject"})
-    void onEventFromStaffTaskView_CustomContentKeepsProcessDataUnchanged(String decision) throws Exception {
+    @Test
+    void onEventFromStaffTaskView_CustomContentKeepsProcessDataUnchanged() throws Exception {
         var configuration = customContentConfiguration();
         var processData = Map.<String, Object>of("status", "offen");
 
@@ -270,12 +266,10 @@ class ApprovalActionNodeV1Test {
                         currentProcessData(processData)
                 ),
                 authored("approvalRemark", "<p>Passt</p>"),
-                decision
+                "approve"
         ).orElseThrow();
 
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
-        assertEquals("approve".equals(decision) ? "Freigabe erteilt" : "Freigabe abgelehnt",
-                completed.getCompletionHistory().title());
         assertEquals(processData, completed.getProcessData());
         assertFalse(completed.getProcessData().containsKey("approvalRemark"));
     }

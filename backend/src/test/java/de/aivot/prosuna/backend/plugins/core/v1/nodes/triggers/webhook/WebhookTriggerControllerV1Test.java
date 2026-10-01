@@ -23,7 +23,6 @@ import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import jakarta.servlet.http.HttpServletRequest;
-import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
@@ -381,8 +380,7 @@ class WebhookTriggerControllerV1Test {
                 processNodeService,
                 processService,
                 processNodeRepository,
-                processNodeDefinitionService,
-                mock(ProcessNodeExecutionLoggerFactory.class, org.mockito.Mockito.RETURNS_DEEP_STUBS)
+                processNodeDefinitionService
         );
 
         return new TestControllerFixture(controller, processInstanceService, createdAttachments, createdAttachmentSets);

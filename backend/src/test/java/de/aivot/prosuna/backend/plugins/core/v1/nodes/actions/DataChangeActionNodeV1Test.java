@@ -253,9 +253,6 @@ class DataChangeActionNodeV1Test {
 
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
         assertEquals("output", completed.getViaPort());
-        assertEquals("Datenbearbeitung abgeschlossen", completed.getCompletionHistory().title());
-        assertEquals(completed.getNodeData().get("remark"), completed.getCompletionHistory().remark());
-        assertEquals(completed.getNodeData().get("processedByUserId"), completed.getCompletionHistory().concernedUserId());
         assertEquals(Map.of(), completed.getRuntimeData());
         assertEquals("staff-1", completed.getNodeData().get("processedByUserId"));
         assertNotNull(completed.getNodeData().get("processedAt"));

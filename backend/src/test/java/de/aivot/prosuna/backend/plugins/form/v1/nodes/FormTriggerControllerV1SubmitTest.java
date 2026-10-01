@@ -256,7 +256,7 @@ class FormTriggerControllerV1SubmitTest {
                 mock(StorageService.class),
                 fileUploadMultipartInputService,
                 elementDataTransformService,
-                mock(ProcessNodeExecutionLoggerFactory.class, org.mockito.Mockito.RETURNS_DEEP_STUBS),
+                mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
                 identityService,
                 mock(PaymentPayloadCreationService.class),

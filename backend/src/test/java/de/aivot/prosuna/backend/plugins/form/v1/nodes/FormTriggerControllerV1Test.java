@@ -122,12 +122,6 @@ class FormTriggerControllerV1Test {
         verify(fixture.processInstanceService()).create(captor.capture());
         assertEquals(identity.withTitle("Antragstellende Person"), captor.getValue().getIdentities().get("applicant"));
         assertNull(identity.title());
-        var history = fixture.historyFactory().create(17L, null, null, null);
-        verify(history).history(eq(de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel.Info),
-                eq("Formular eingegangen"), anyString(), eq(Map.of()), isNull(), isNull(), isNull());
-        verify(history).history(eq(de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel.Info),
-                eq("Identität beteiligt"), eq("Die Identität „Antragstellende Person“ wurde mit der Formulareinreichung in den Vorgang aufgenommen."),
-                eq(Map.of()), isNull(), eq("applicant"), eq("Antragstellende Person"));
     }
 
     @Test
@@ -720,7 +714,7 @@ class FormTriggerControllerV1Test {
                 storageService,
                 mock(FileUploadMultipartInputService.class),
                 mock(ElementDataTransformService.class),
-                mock(ProcessNodeExecutionLoggerFactory.class, org.mockito.Mockito.RETURNS_DEEP_STUBS),
+                mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
                 mock(IdentityService.class),
                 mock(PaymentPayloadCreationService.class),
@@ -889,8 +883,6 @@ class FormTriggerControllerV1Test {
         var processInstanceService = mock(ProcessInstanceService.class);
         var fileUploadMultipartInputService = mock(FileUploadMultipartInputService.class);
 
-        var historyFactory = mock(ProcessNodeExecutionLoggerFactory.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
-
         var controller = new FormTriggerControllerV1(
                 prosunaConfig,
                 elementDerivationService,
@@ -913,7 +905,7 @@ class FormTriggerControllerV1Test {
                 mock(StorageService.class),
                 fileUploadMultipartInputService,
                 elementDataTransformService,
-                historyFactory,
+                mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
                 identityService,
                 paymentRequestCreationService,
@@ -943,8 +935,7 @@ class FormTriggerControllerV1Test {
                 identitySlotService,
                 identityService,
                 processInstanceService,
-                fileUploadMultipartInputService,
-                historyFactory
+                fileUploadMultipartInputService
         );
     }
 
@@ -1035,8 +1026,7 @@ class FormTriggerControllerV1Test {
             IdentitySlotService identitySlotService,
             IdentityService identityService,
             ProcessInstanceService processInstanceService,
-            FileUploadMultipartInputService fileUploadMultipartInputService,
-            ProcessNodeExecutionLoggerFactory historyFactory
+            FileUploadMultipartInputService fileUploadMultipartInputService
     ) {
     }
 

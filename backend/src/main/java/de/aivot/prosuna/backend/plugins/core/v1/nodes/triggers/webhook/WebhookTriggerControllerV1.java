@@ -12,8 +12,6 @@ import de.aivot.prosuna.backend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.utils.specification.SpecificationBuilder;
-import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
-import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.criteria.Root;
@@ -46,14 +44,13 @@ public class WebhookTriggerControllerV1 {
     private final ProcessService processService;
     private final ProcessNodeRepository processNodeRepository;
     private final ProcessNodeDefinitionService processNodeDefinitionService;
-    private final ProcessNodeExecutionLoggerFactory historyLoggerFactory;
 
     @Autowired
     public WebhookTriggerControllerV1(ProcessInstanceService processInstanceService,
                                       ProcessTestClaimRepository processTestClaimRepository,
                                       ProcessInstanceAttachmentService processInstanceAttachmentService,
                                       ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
-                                      ProcessNodeService processNodeService, ProcessService processService, ProcessNodeRepository processNodeRepository, ProcessNodeDefinitionService processNodeDefinitionService, ProcessNodeExecutionLoggerFactory historyLoggerFactory) {
+                                      ProcessNodeService processNodeService, ProcessService processService, ProcessNodeRepository processNodeRepository, ProcessNodeDefinitionService processNodeDefinitionService) {
         this.processInstanceService = processInstanceService;
         this.processTestClaimRepository = processTestClaimRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
@@ -62,7 +59,6 @@ public class WebhookTriggerControllerV1 {
         this.processService = processService;
         this.processNodeRepository = processNodeRepository;
         this.processNodeDefinitionService = processNodeDefinitionService;
-        this.historyLoggerFactory = historyLoggerFactory;
     }
 
 
@@ -359,12 +355,8 @@ public class WebhookTriggerControllerV1 {
                     .setStatus(ProcessInstanceStatus.Created);
 
             processInstanceService.update(createdInstance.getId(), createdInstance);
-            historyLoggerFactory.create(createdInstance.getId(), null, null, null)
-                    .history(ProcessNodeExecutionLogLevel.Info, "Eingang über Webhook",
-                            "Die über einen Webhook übermittelten Daten wurden in den Vorgang übernommen.",
-                            Map.of(), null, null, null);
         } catch (Exception e) {
-            historyLoggerFactory.create(createdInstance.getId(), null, null, null).logFailure(e);
+            // TODO: Log the exception
             createdInstance.setStatus(ProcessInstanceStatus.Failed);
             processInstanceService.update(createdInstance.getId(), createdInstance);
             throw e;

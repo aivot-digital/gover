@@ -20,8 +20,6 @@ import dev.fitko.fitconnect.rest.model.submission.SubmissionForPickup;
 import dev.fitko.fitconnect.sdk.api.Attachment;
 import dev.fitko.fitconnect.sdk.api.ReceivedSubmission;
 import dev.fitko.fitconnect.sdk.clients.Organisation;
-import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
-import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
@@ -48,20 +46,18 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final FitConnectTriggerOrganisationFactoryV1 organisationFactory;
     private final JsonMapper jsonMapper;
-    private final ProcessNodeExecutionLoggerFactory historyLoggerFactory;
 
     public FitConnectTriggerSubmissionImportServiceV1(
             ProcessInstanceService processInstanceService,
             ProcessInstanceAttachmentService processInstanceAttachmentService,
             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
             FitConnectTriggerOrganisationFactoryV1 organisationFactory,
-            JsonMapper jsonMapper, ProcessNodeExecutionLoggerFactory historyLoggerFactory) {
+            JsonMapper jsonMapper) {
         this.processInstanceService = processInstanceService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.organisationFactory = organisationFactory;
         this.jsonMapper = jsonMapper;
-        this.historyLoggerFactory = historyLoggerFactory;
     }
 
     public void importSubmission(@Nullable ProcessTestClaimEntity testClaim,
@@ -127,12 +123,7 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
 
             instance.setStatus(ProcessInstanceStatus.Created);
             processInstanceService.save(instance);
-            historyLoggerFactory.create(instance.getId(), null, null, null)
-                    .history(ProcessNodeExecutionLogLevel.Info, "Eingang über FIT-Connect",
-                            "Die über FIT-Connect eingegangene Einreichung wurde in den Vorgang übernommen.",
-                            Map.of(), null, null, null);
         } catch (Exception e) {
-            historyLoggerFactory.create(instance.getId(), null, null, null).logFailure(e);
             var terminalException = e instanceof TerminalSubmissionException;
             markFailed(instance, terminalAtFitConnect || terminalException);
             if (e instanceof TerminalSubmissionException terminalSubmissionException) {

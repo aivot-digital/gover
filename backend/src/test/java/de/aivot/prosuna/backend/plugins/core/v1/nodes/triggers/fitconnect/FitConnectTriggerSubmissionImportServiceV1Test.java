@@ -28,7 +28,6 @@ import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
 import dev.fitko.fitconnect.sdk.api.event.TransferLog;
 import dev.fitko.fitconnect.sdk.clients.Organisation;
 import dev.fitko.fitconnect.sdk.clients.OrganisationCases;
-import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
@@ -49,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -91,9 +89,6 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         );
 
         assertEquals(List.of(ProcessInstanceStatus.Paused, ProcessInstanceStatus.Created), fixture.savedStatuses());
-        verify(fixture.historyFactory().create(10L, null, null, null))
-                .history(eq(de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel.Info),
-                        eq("Eingang über FIT-Connect"), anyString(), eq(Map.of()), isNull(), isNull(), isNull());
         var importedPayload = fixture.savedPayloads().getFirst();
         assertEquals(Map.of("applicant", "Ada"), importedPayload.get(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD));
         assertEquals(STARTED_AT, importedPayload.get(FitConnectTriggerNodeV1.INITIAL_DATA_KEY_STARTED));
@@ -311,14 +306,12 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
                 .setProcessVersion(3)
                 .setDataKey("fitConnect");
         var config = new FitConnectTriggerConfigV1();
-        var historyFactory = mock(ProcessNodeExecutionLoggerFactory.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
         var service = new FitConnectTriggerSubmissionImportServiceV1(
                 processInstanceService,
                 attachmentService,
                 attachmentSetService,
                 organisationFactory,
-                JsonMapper.builder().build(),
-                historyFactory
+                JsonMapper.builder().build()
         );
 
         return new Fixture(
@@ -334,8 +327,7 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
                 config,
                 savedStatuses,
                 savedPayloads,
-                savedInboundReferences,
-                historyFactory
+                savedInboundReferences
         );
     }
 
@@ -377,8 +369,7 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
             FitConnectTriggerConfigV1 config,
             List<ProcessInstanceStatus> savedStatuses,
             List<Map<String, Object>> savedPayloads,
-            List<String> savedInboundReferences,
-            ProcessNodeExecutionLoggerFactory historyFactory
+            List<String> savedInboundReferences
     ) {
     }
 }
