@@ -23,17 +23,24 @@ import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeCustomerView;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
+import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssignedCustomer;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -42,12 +49,16 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinit
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -55,6 +66,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,10 +75,12 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FormRequestActionNodeV1Test {
@@ -77,16 +91,20 @@ class FormRequestActionNodeV1Test {
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
     private ProsunaConfig prosunaConfig;
     private VDepartmentShadowedService vDepartmentShadowedService;
+    private ProcessInstanceHistoryEventRepository historyRepository;
+    private AssignmentContextAssigneeResolverService assigneeResolver;
     private FormRequestActionNodeV1 node;
 
     @BeforeEach
     void setUp() {
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
         vDepartmentShadowedService = mock(VDepartmentShadowedService.class);
+        historyRepository = mock(ProcessInstanceHistoryEventRepository.class);
+        assigneeResolver = mock(AssignmentContextAssigneeResolverService.class);
         prosunaConfig = new ProsunaConfig();
         prosunaConfig.setProsunaHostname("https://example.test");
         node = new FormRequestActionNodeV1(
-                mock(AssignmentContextAssigneeResolverService.class),
+                assigneeResolver,
                 prosunaConfig,
                 new ElementDataTransformService(),
                 new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
@@ -423,6 +441,7 @@ class FormRequestActionNodeV1Test {
                 .setIdentities(identities);
         var task = new ProcessInstanceTaskEntity().setAccessKey("task-access");
         var context = mock(ProcessNodeExecutionInitContext.class);
+        when(context.getLogger()).thenReturn(mock(ProcessNodeExecutionLogger.class));
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
         when(context.getThisProcessInstance()).thenReturn(instance);
         when(context.getThisTask()).thenReturn(task);
@@ -478,6 +497,8 @@ class FormRequestActionNodeV1Test {
                 .setAccessKey("task-access")
                 .setRuntimeData(Map.of());
         var context = mock(ProcessNodeExecutionContextUIStaff.class);
+        when(context.getLogger()).thenReturn(mock(ProcessNodeExecutionLogger.class));
+        when(context.getCallingUser()).thenReturn(new UserEntity().setId("staff-1").setFullName("Ada Beispiel"));
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
         when(context.getThisProcessInstance()).thenReturn(instance);
         when(context.getThisTask()).thenReturn(task);
@@ -658,6 +679,153 @@ class FormRequestActionNodeV1Test {
     }
 
     @Test
+    void preparationViewsAndAutosaveDoNotCreateHistoryEvents() throws Exception {
+        var configuration = historyConfiguration(false, "existing");
+        var instance = historyInstance(true, "Antragstellende");
+        when(assigneeResolver.resolveAssignee(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(Optional.of("staff-1"));
+
+        node.init(initContext(configuration, instance));
+        var staffContext = staffContext(configuration, instance);
+        node.getStaffTaskView(staffContext);
+        node.onAutoSaveFromStaffTaskView(staffContext, new AuthoredElementValues());
+
+        var customerContext = customerContext(configuration, instance);
+        node.getCustomerTaskView(customerContext);
+        node.onAutoSaveFromCustomerTaskView(customerContext, new AuthoredElementValues(), DerivedRuntimeElementData.empty());
+
+        verifyNoInteractions(historyRepository);
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+            true,  existing, true,  Antragstellende, Antragstellende, die Identität „Antragstellende“
+            false, existing, true,  Antragstellende, Antragstellende, die Identität „Antragstellende“
+            true,  existing, true,  ,               ,               die Identität „applicant“
+            false, existing, true,  ,               ,               die Identität „applicant“
+            true,  new,      false, ,               Vertretung,      die E-Mail-Adresse „invitee@example.test“
+            false, new,      false, ,               Vertretung,      die E-Mail-Adresse „invitee@example.test“
+            true,  ' new ',  false, ,               Vertretung,      die E-Mail-Adresse „invitee@example.test“
+            false, ' new ',  false, ,               Vertretung,      die E-Mail-Adresse „invitee@example.test“
+            true,  new,      true,  Gespeicherte Person, Gespeicherte Person, die Identität „Gespeicherte Person“
+            false, new,      true,  Gespeicherte Person, Gespeicherte Person, die Identität „Gespeicherte Person“
+            true,  new,      true,  ,               ,               die Identität „applicant“
+            false, new,      true,  ,               ,               die Identität „applicant“
+            """)
+    void dispatchCreatesOneHistoryEvent(boolean automatic, String recipientMode, boolean hasIdentity,
+                                       String identityTitle, String expectedTitle, String expectedRecipient) throws Exception {
+        var configuration = historyConfiguration(automatic, recipientMode);
+        var instance = historyInstance(hasIdentity, identityTitle);
+
+        var result = automatic
+                ? node.init(initContext(configuration, instance))
+                : node.onEventFromStaffTaskView(staffContext(configuration, instance),
+                        new AuthoredElementValues()
+                                .putLiteral("subject", "  Daten ergänzen  ")
+                                .putLiteral("body", "Bitte ergänzen"), "send").orElseThrow();
+
+        assertInstanceOf(ProcessNodeExecutionResultTaskAssignedCustomer.class, result);
+        assertEquals(hasIdentity ? RECIPIENT_IDENTITY_ID : null, result.getCommunicationRequest().recipientIdentityId());
+        assertEquals(hasIdentity ? null : "invitee@example.test", result.getCommunicationRequest().recipientEmailAddress());
+        var event = captureHistoryEvent();
+        assertEquals(automatic ? "Automatischer Versand ausgelöst" : "Versand ausgelöst", event.getTitle());
+        assertEquals("Der Versand der Aufforderung mit dem Betreff „Daten ergänzen“ an " + expectedRecipient
+                + (automatic ? " wurde automatisch ausgelöst." : " wurde durch „Ada Beispiel“ ausgelöst."), event.getMessage());
+        assertEquals(automatic ? null : "staff-1", event.getTriggeringUserId());
+        assertEquals(automatic ? null : "staff-1", event.getConcernedUserId());
+        assertEquals(RECIPIENT_IDENTITY_ID, event.getConcernedIdentityId());
+        assertEquals(expectedTitle, event.getConcernedIdentityTitle());
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+            existing, true,  Antragstellende,      Antragstellende,      Antragstellende
+            existing, true,  ,                    ,                     applicant
+            new,      false, ,                    Vertretung,           Vertretung
+            new,      true,  Gespeicherte Person,  Gespeicherte Person,  Gespeicherte Person
+            """)
+    void customerSubmissionCreatesOneHistoryEvent(String recipientMode, boolean hasIdentity, String identityTitle,
+                                                  String expectedTitle, String expectedDisplayName) throws Exception {
+        var configuration = historyConfiguration(true, recipientMode);
+        var instance = historyInstance(hasIdentity, identityTitle);
+
+        var result = node.onEventFromCustomerTaskView(customerContext(configuration, instance),
+                new AuthoredElementValues(), DerivedRuntimeElementData.empty(), "submit").orElseThrow();
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
+        assertEquals("submitted", completed.getViaPort());
+        var event = captureHistoryEvent();
+        assertEquals("Daten eingereicht", event.getTitle());
+        assertEquals("Die angeforderten Daten wurden durch die Identität „" + expectedDisplayName + "“ eingereicht.", event.getMessage());
+        assertNull(event.getTriggeringUserId());
+        assertNull(event.getConcernedUserId());
+        assertEquals(RECIPIENT_IDENTITY_ID, event.getConcernedIdentityId());
+        assertEquals(expectedTitle, event.getConcernedIdentityTitle());
+        assertEquals(RECIPIENT_IDENTITY_ID, event.getDetails().get("identityId"));
+    }
+
+    @Test
+    void rejectedEventsAndInvalidMessagesDoNotCreateHistoryEvents() {
+        var configuration = historyConfiguration(false, "existing");
+        var instance = historyInstance(true, "Antragstellende");
+        var staffContext = staffContext(configuration, instance);
+        var customerContext = customerContext(configuration, instance);
+
+        assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.onEventFromStaffTaskView(staffContext, new AuthoredElementValues(), "unknown"));
+        assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.onEventFromCustomerTaskView(customerContext, new AuthoredElementValues(),
+                        DerivedRuntimeElementData.empty(), "unknown"));
+        assertThrows(ResponseException.class,
+                () -> node.onEventFromStaffTaskView(staffContext, new AuthoredElementValues(), "send"));
+
+        configuration.messageConfig.executionType = SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC;
+        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.onEventFromStaffTaskView(staffContext, new AuthoredElementValues(), "send"));
+        configuration.messageConfig.automaticContent.subject = "";
+        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(configuration, instance)));
+
+        verifyNoInteractions(historyRepository);
+    }
+
+    @Test
+    void invalidInvitationDoesNotCreateDispatchHistory() {
+        var configuration = historyConfiguration(true, "new");
+        configuration.recipientEmailAddress = "invalid";
+        var instance = historyInstance(false, null);
+
+        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(configuration, instance)));
+        configuration.messageConfig.executionType = SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL;
+        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.onEventFromStaffTaskView(staffContext(configuration, instance),
+                        new AuthoredElementValues().putLiteral("subject", "Betreff").putLiteral("body", "Nachricht"), "send"));
+
+        verifyNoInteractions(historyRepository);
+    }
+
+    @Test
+    void failedAttachmentResolutionDoesNotCreateSubmissionHistory() throws Exception {
+        var configuration = historyConfiguration(true, "existing");
+        var files = new FileUploadInputElement();
+        files.setId("files");
+        configuration.uiDefinition.setChildren(List.of(files));
+        var values = new EffectiveElementValues();
+        values.put("files", List.of(new FileUploadInputElementItem()
+                .setUri(FileUploadMultipartInputService.buildAttachmentUri(UUID.randomUUID()))));
+        var derived = new DerivedRuntimeElementData().setEffectiveValues(values);
+        var failure = ResponseException.internalServerError("Anlagen konnten nicht geladen werden.");
+        when(processInstanceAttachmentService.list(any(ProcessInstanceAttachmentFilter.class))).thenThrow(failure);
+
+        assertSame(failure, assertThrows(ResponseException.class,
+                () -> node.onEventFromCustomerTaskView(customerContext(configuration, historyInstance(true, "Antragstellende")),
+                        new AuthoredElementValues(), derived, "submit")));
+
+        verifyNoInteractions(historyRepository);
+    }
+
+    @Test
     void cleanConfigurationForExportRemovesIdentityAndAssignment() {
         var configuration = new AuthoredElementValues();
         configuration.putLiteral(FormRequestActionNodeV1.NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID, RECIPIENT_IDENTITY_ID);
@@ -678,6 +846,80 @@ class FormRequestActionNodeV1Test {
         assertEquals("kept", cleaned.getLiteral("portableValue"));
     }
 
+    private static FormRequestActionNodeV1.NodeConfig historyConfiguration(boolean automatic, String recipientMode) {
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = recipientMode;
+        configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
+        configuration.recipientEmailAddress = "  invitee@example.test  ";
+        configuration.newIdentities = List.of(new IdentityConfigElementSlot()
+                .setId(RECIPIENT_IDENTITY_ID).setTitle("Vertretung").setAllowsMail(true));
+        configuration.uiDefinition = new GroupLayoutElement();
+        configuration.uiDefinition.setId("form");
+        configuration.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        configuration.messageConfig.executionType = automatic
+                ? SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC
+                : SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL;
+        configuration.messageConfig.automaticContent = new SemiAutomaticMessageConfig.AutomaticContent();
+        configuration.messageConfig.automaticContent.subject = "  Daten ergänzen  ";
+        configuration.messageConfig.automaticContent.content = "Bitte ergänzen";
+        configuration.messageConfig.manualContent = new SemiAutomaticMessageConfig.ManualContent();
+        configuration.messageConfig.manualContent.subject = "Daten ergänzen";
+        configuration.messageConfig.manualContent.content = "Bitte ergänzen";
+        return configuration;
+    }
+
+    private static ProcessInstanceEntity historyInstance(boolean hasIdentity, String title) {
+        var identities = new IdentityDataMap();
+        if (hasIdentity) {
+            identities.put(RECIPIENT_IDENTITY_ID, new IdentityData(
+                    "session", RECIPIENT_IDENTITY_ID, IdentityType.Email, null, null, null,
+                    "existing@example.test", Map.of(), null, Map.of(), title));
+        }
+        return new ProcessInstanceEntity().setId(PROCESS_INSTANCE_ID).setAccessKey("instance-access").setIdentities(identities);
+    }
+
+    private static ProcessInstanceTaskEntity historyTask() {
+        return new ProcessInstanceTaskEntity().setId(PROCESS_INSTANCE_TASK_ID).setAccessKey("task-access")
+                .setAssignedUserId("other-staff").setRuntimeData(Map.of()).setNodeData(Map.of()).setProcessData(Map.of());
+    }
+
+    private ProcessNodeExecutionInitContext<FormRequestActionNodeV1.NodeConfig> initContext(
+            FormRequestActionNodeV1.NodeConfig configuration, ProcessInstanceEntity instance) {
+        return new ProcessNodeExecutionInitContext<>(
+                new ProcessNodeExecutionLogger(PROCESS_INSTANCE_ID, PROCESS_INSTANCE_TASK_ID, null, null, historyRepository),
+                new ProcessNodeEntity().setId(1).setProcessId(2).setProcessVersion(3), instance, historyTask(), null,
+                new ProcessExecutionData(), configuration);
+    }
+
+    private ProcessNodeExecutionContextUIStaff<FormRequestActionNodeV1.NodeConfig> staffContext(
+            FormRequestActionNodeV1.NodeConfig configuration, ProcessInstanceEntity instance) {
+        return new ProcessNodeExecutionContextUIStaff<>(
+                new ProcessNodeExecutionLogger(PROCESS_INSTANCE_ID, PROCESS_INSTANCE_TASK_ID, "staff-1", null, historyRepository),
+                new ProcessNodeEntity(), instance, historyTask(), null,
+                new UserEntity().setId("staff-1").setFullName("Ada Beispiel"), configuration, new ProcessExecutionData());
+    }
+
+    private ProcessNodeExecutionContextUICustomer<FormRequestActionNodeV1.NodeConfig> customerContext(
+            FormRequestActionNodeV1.NodeConfig configuration, ProcessInstanceEntity instance) {
+        return new ProcessNodeExecutionContextUICustomer<>(
+                new ProcessNodeExecutionLogger(PROCESS_INSTANCE_ID, PROCESS_INSTANCE_TASK_ID, null, RECIPIENT_IDENTITY_ID, historyRepository),
+                new ProcessNodeEntity(), instance, historyTask(), null, RECIPIENT_IDENTITY_ID, configuration, null);
+    }
+
+    private ProcessInstanceEventEntity captureHistoryEvent() {
+        var captor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(historyRepository).save(captor.capture());
+        var event = captor.getValue();
+        assertEquals(PROCESS_INSTANCE_ID, event.getProcessInstanceId());
+        assertEquals(PROCESS_INSTANCE_TASK_ID, event.getProcessInstanceTaskId());
+        assertEquals(ProcessNodeExecutionLogLevel.Info, event.getLevel());
+        assertFalse(event.getTechnical());
+        assertTrue(event.getAudit());
+        assertTrue(event.getHistoryRelevant());
+        assertNotNull(event.getTimestamp());
+        return event;
+    }
+
     @SuppressWarnings("unchecked")
     private static ProcessNodeExecutionContextUICustomer<FormRequestActionNodeV1.NodeConfig> context(
             FormRequestActionNodeV1.NodeConfig configuration,
@@ -693,6 +935,7 @@ class FormRequestActionNodeV1Test {
             Map<String, Object> runtimeData
     ) {
         var context = mock(ProcessNodeExecutionContextUICustomer.class);
+        when(context.getLogger()).thenReturn(mock(ProcessNodeExecutionLogger.class));
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
         when(context.getThisProcessInstance()).thenReturn(
                 new ProcessInstanceEntity().setId(PROCESS_INSTANCE_ID)

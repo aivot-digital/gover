@@ -220,12 +220,12 @@ public class ProcessNodeExecutionResultHandler {
             }
             default -> throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
-                            Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine unbekanntes Ergebnisklasse erzeugt: „%s“.
+                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine unbekanntes Ergebnisklasse erzeugt: %s.
                             Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
                             """,
-                    provider.getName(),
-                    currentNode.resolveName(provider),
-                    executionResult.getClass().getName()
+                    StringUtils.quote(provider.getName()),
+                    StringUtils.quote(currentNode.resolveName(provider)),
+                    StringUtils.quote(executionResult.getClass().getName())
             );
         }
 
@@ -238,24 +238,36 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
-    private void clearCurrentlyAssignedUser(@Nonnull HandlerContext<?> context) {
+    private void clearCurrentlyAssignedUser(@Nonnull HandlerContext<?> context) throws ProcessNodeExecutionExceptionInvalidAssignment {
         var previousAssignedUserId = context.processInstanceTask.getAssignedUserId();
         if (!Boolean.TRUE.equals(context.result.getClearCurrentlyAssignedUser()) || previousAssignedUserId == null) {
             return;
         }
 
+        var previousAssignedUser = requireOptionalUser(context, previousAssignedUserId)
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
+                        "Die bisherige Aufgabenzuweisung an die Person mit der ID %s konnte nicht aufgelöst werden."
+                                .formatted(StringUtils.quote(previousAssignedUserId))
+                ));
+
         context.processInstanceTask.setAssignedUserId(null);
         processInstanceTaskRepository.save(context.processInstanceTask);
 
-        var message = "Die Zuweisung der Aufgabe an die Person mit der ID %s wurde aufgehoben."
-                .formatted(StringUtils.quote(previousAssignedUserId));
+        var message = "Die Zuweisung der Aufgabe an %s wurde aufgehoben."
+                .formatted(StringUtils.quote(previousAssignedUser.getFullName()));
+
         message += context.triggeringUser != null
-                ? " Ausgelöst durch %s.".formatted(StringUtils.quote(context.triggeringUser.getFullName()))
-                : " Die Ausführung erfolgte automatisch.";
+                ? " Die Aufhebung der Zuweisung wurde ausgelöst durch %s.".formatted(StringUtils.quote(context.triggeringUser.getFullName()))
+                : " Die Aufhebung der Zuweisung erfolgte automatisch.";
+
         context.logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
-                context.triggeringUser == null,
+                false,
                 true,
+                true,
+                previousAssignedUserId,
+                null,
+                null,
                 "Aufgabenzuweisung aufgehoben",
                 Map.of("previousAssignedUserId", previousAssignedUserId),
                 "%s",
@@ -626,13 +638,18 @@ public class ProcessNodeExecutionResultHandler {
                     .formatted(previousUserLabel, assignedUserLabel);
         }
         logMessageDetails += context.triggeringUser != null
-                ? " Ausgelöst durch %s.".formatted(StringUtils.quote(context.triggeringUser.getFullName()))
-                : " Die Ausführung erfolgte automatisch.";
+                ? " die Zuweisung erfolgte durch %s.".formatted(StringUtils.quote(context.triggeringUser.getFullName()))
+                : " Die Zuweisung erfolgte automatisch.";
         context.logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
                 context.triggeringUser == null,
                 true,
+                true,
+                assignedUser.getId(),
+                null,
+                null,
                 logMessageTitle,
+                Map.of(),
                 "%s",
                 logMessageDetails
         );

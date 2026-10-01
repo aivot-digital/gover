@@ -23,6 +23,8 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -51,11 +53,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.URLConnection;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Sends one synchronous message through the communication provider selected for an identity.
@@ -243,9 +241,11 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var content = automaticContent.content.trim();
 
         return createCommunicationResult(
+                context.getLogger(),
                 configuration,
                 context.getCurrentProcessExecutionData(),
                 context.getThisProcessInstance(),
+                context.getThisTask(),
                 subject,
                 content
         );
@@ -338,10 +338,29 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var content = StringUtils.toNullableTrimmedString(update.getLiteral(STAFF_TASK_CONTENT_FIELD_ID));
         validateStaffMessage(subject, content);
 
+        context
+                .getLogger()
+                .logf(
+                        ProcessNodeExecutionLogLevel.Info,
+                        false,
+                        true,
+                        true,
+                        context.getCallingUser().getId(),
+                        null,
+                        null,
+                        "Nachricht verfasst",
+                        Map.of(),
+                        "Die Nachricht mit dem Betreff %s wurde von der Mitarbeiter:in %s verfasst.",
+                        StringUtils.quote(subject),
+                        StringUtils.quote(context.getCallingUser().getFullName())
+                );
+
         return Optional.of(createCommunicationResult(
+                context.getLogger(),
                 configuration,
                 context.getCurrentProcessExecutionData(),
                 context.getThisProcessInstance(),
+                context.getThisTask(),
                 subject,
                 content
         ));
@@ -349,9 +368,11 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
     @Nonnull
     private ProcessNodeExecutionResult createCommunicationResult(
+            @Nonnull ProcessNodeExecutionLogger logger,
             @Nonnull Configuration configuration,
             @Nonnull ProcessExecutionData processExecutionData,
             @Nonnull ProcessInstanceEntity processInstance,
+            @Nonnull ProcessInstanceTaskEntity task,
             @Nonnull String subject,
             @Nonnull String content
     ) throws ProcessNodeExecutionException {
@@ -377,6 +398,22 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         nodeData.put(OUTPUT_BODY, content);
         nodeData.put(OUTPUT_ATTACHMENT_SET_DATA_KEYS, attachmentSetDataKeys);
         nodeData.put(OUTPUT_SENT_AT, sentAt);
+
+        logger
+                .logf(
+                        ProcessNodeExecutionLogLevel.Info,
+                        false,
+                        true,
+                        true,
+                        task.getAssignedUserId(),
+                        identityId,
+                        identity.title(),
+                        "Nachricht versendet",
+                        Map.of(),
+                        "Die Nachricht mit dem Betreff %s wurde an die Identität %s wurde erfolgreich versendet.",
+                        StringUtils.quote(subject),
+                        StringUtils.quote(identity.title())
+                );
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_OUTPUT)

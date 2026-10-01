@@ -29,6 +29,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -366,12 +367,15 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
         final String port;
         final String decision;
+        final boolean approved;
         if (EVENT_APPROVE.equals(event)) {
             port = PORT_APPROVED;
             decision = PORT_APPROVED;
+            approved = true;
         } else if (EVENT_REJECT.equals(event)) {
             port = PORT_REJECTED;
             decision = PORT_REJECTED;
+            approved = false;
         } else {
             throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         }
@@ -403,6 +407,34 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 .setNodeData(nodeData) // Set the generated node data
                 .setRuntimeData(Map.of()) // Reset runtime data to empty map
                 .setProcessData(updatedProcessData);
+
+        StringBuilder logMessage = new StringBuilder();
+        if (approved) {
+            logMessage.append("Die Freigabe wurde durch %s erteilt.");
+        } else {
+            logMessage.append("Die Freigabe wurde durch %s abgelehnt.");
+        }
+        if (StringUtils.isNotNullOrEmpty(remarkText)) {
+            logMessage
+                    .append(" Der folgende Vermerk wurde angegeben: ")
+                    .append(remarkText);
+        }
+
+        context
+                .getLogger()
+                .logf(
+                        ProcessNodeExecutionLogLevel.Info,
+                        false,
+                        true,
+                        true,
+                        context.getThisTask().getAssignedUserId(),
+                        null,
+                        null,
+                        approved ? "Freigabe erteilt" : "Freigabe abgelehnt",
+                        Map.of(),
+                        logMessage.toString(),
+                        StringUtils.quote(context.getCallingUser().getFullName())
+                );
 
         return Optional.of(result);
     }

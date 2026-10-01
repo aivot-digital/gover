@@ -9,15 +9,19 @@ import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
+import de.aivot.prosuna.backend.user.services.UserService;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,15 +42,21 @@ public class ProcessAssignmentService {
     private final ProcessInstanceRepository instances;
     private final ProcessInstanceTaskRepository tasks;
     private final ScopedAuditService audit;
+    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+    private final UserService userService;
+    private final AbstractConfigurableTemplateResolver abstractConfigurableTemplateResolver;
 
     public ProcessAssignmentService(PermissionService permissions, UserRepository users,
                                     ProcessInstanceRepository instances, ProcessInstanceTaskRepository tasks,
-                                    AuditService audit) {
+                                    AuditService audit, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory, UserService userService, AbstractConfigurableTemplateResolver abstractConfigurableTemplateResolver) {
         this.permissions = permissions;
         this.users = users;
         this.instances = instances;
         this.tasks = tasks;
         this.audit = audit.createScopedAuditService(ProcessAssignmentService.class, "Vorgänge");
+        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+        this.userService = userService;
+        this.abstractConfigurableTemplateResolver = abstractConfigurableTemplateResolver;
     }
 
     @Nonnull
@@ -56,11 +66,13 @@ public class ProcessAssignmentService {
         return options(instanceId, false);
     }
 
-    /** Returns eligible recipients for a process node without requiring a human actor. */
+    /**
+     * Returns eligible recipients for a process node without requiring a human actor.
+     */
     @Nonnull
     @Transactional(readOnly = true)
     public List<ProcessAssignmentOptionDTO> runtimeInstanceOptions(@Nonnull Long instanceId,
-                                                                    @Nonnull List<String> additionalPermissions) throws ResponseException {
+                                                                   @Nonnull List<String> additionalPermissions) throws ResponseException {
         if (!instances.existsById(instanceId)) throw ResponseException.notFound();
         return options(instanceId, false).stream()
                 .filter(option -> additionalPermissions.stream().allMatch(permission ->
@@ -68,7 +80,9 @@ public class ProcessAssignmentService {
                 .toList();
     }
 
-    /** Rechecks the recipient immediately before a process node changes the assignment. */
+    /**
+     * Rechecks the recipient immediately before a process node changes the assignment.
+     */
     @Transactional(readOnly = true)
     public void requireRuntimeInstanceAssignee(@Nonnull Long instanceId, @Nonnull String userId) throws ResponseException {
         validateAssignee(userId, instanceId, false);
@@ -86,14 +100,93 @@ public class ProcessAssignmentService {
     public ProcessInstanceEntity reassignInstance(@Nonnull UserEntity actor, @Nonnull Long instanceId,
                                                   @Nullable String assignedUserId) throws ResponseException {
         var instance = requireAssignableInstance(actor.getId(), instanceId);
+
         validateAssignee(assignedUserId, instanceId, false);
+
         var previousUserId = instance.getAssignedUserId();
+        var previousUser = previousUserId != null
+                ? userService
+                .retrieve(previousUserId)
+                .orElseThrow(() -> ResponseException.badRequest("Die vorherige Zuweisung konnte nicht gefunden werden."))
+                : null;
+
         instance.setAssignedUserId(assignedUserId).setUpdated(Instant.now());
+
+        var assignedUser = assignedUserId != null
+                ? userService
+                .retrieve(assignedUserId)
+                .orElseThrow(() -> ResponseException.badRequest("Die ausgewählte Person konnte nicht gefunden werden."))
+                : null;
+
         var result = instances.saveAndFlush(instance);
-        audit.create().withUser(actor).withAuditAction(AuditAction.Update, ProcessInstanceEntity.class, instanceId,
-                        "id", Map.of("id", instanceId, "processDefinitionId", instance.getProcessId()))
+
+        audit
+                .create()
+                .withUser(actor)
+                .withAuditAction(
+                        AuditAction.Update,
+                        ProcessInstanceEntity.class,
+                        instanceId,
+                        "id",
+                        Map.of(
+                                "id", instanceId,
+                                "processDefinitionId", instance.getProcessId()
+                        )
+                )
                 .withDiff(Collections.singletonMap("assignedUserId", previousUserId), Collections.singletonMap("assignedUserId", assignedUserId))
                 .withMessage("Die Zuweisung des Vorgangs mit der ID %s wurde geändert.", instanceId).log();
+
+        String message;
+        if (previousUser == null) {
+            if (assignedUser == null) {
+                message = String.format(
+                        "Die Zuweisung des Vorgangs wurde durch die Mitarbeiter:in %s entfernt.",
+                        StringUtils.quote(actor.getFullName())
+                );
+            } else {
+                message = String.format(
+                        "Die Zuweisung des Vorgangs wurde durch die Mitarbeiter:in %s auf %s gesetzt.",
+                        StringUtils.quote(actor.getFullName()),
+                        StringUtils.quote(assignedUser.getFullName())
+                );
+            }
+        } else {
+            if (assignedUser == null) {
+                message = String.format(
+                        "Die Zuweisung des Vorgangs wurde durch die Mitarbeiter:in %s von %s entfernt.",
+                        StringUtils.quote(actor.getFullName()),
+                        StringUtils.quote(previousUser.getFullName())
+                );
+            } else {
+                message = String.format(
+                        "Die Zuweisung des Vorgangs wurde durch die Mitarbeiter:in %s von %s auf %s geändert.",
+                        StringUtils.quote(actor.getFullName()),
+                        StringUtils.quote(previousUser.getFullName()),
+                        StringUtils.quote(assignedUser.getFullName())
+                );
+            }
+        }
+
+        processNodeExecutionLoggerFactory
+                .create(
+                        instance.getId(),
+                        null,
+                        actor.getId(),
+                        null
+                )
+                .logf(
+                        ProcessNodeExecutionLogLevel.Info,
+                        false,
+                        true,
+                        true,
+                        assignedUserId,
+                        null,
+                        null,
+                        "Zuweisung des Vorgangs geändert",
+                        Map.of(),
+                        message
+                );
+
         return result;
     }
 
@@ -117,6 +210,71 @@ public class ProcessAssignmentService {
                         "id", Map.of("id", taskId, "processInstanceId", task.getProcessInstanceId()))
                 .withDiff(Collections.singletonMap("assignedUserId", previousUserId), Collections.singletonMap("assignedUserId", assignedUserId))
                 .withMessage("Die Zuweisung der Aufgabe mit der ID %s wurde geändert.", taskId).log();
+
+        var previousUser = previousUserId != null
+                ? userService
+                .retrieve(previousUserId)
+                .orElseThrow(() -> ResponseException.badRequest("Die vorherige Zuweisung konnte nicht gefunden werden."))
+                : null;
+
+        var assignedUser = assignedUserId != null
+                ? userService
+                .retrieve(assignedUserId)
+                .orElseThrow(() -> ResponseException.badRequest("Die ausgewählte Person konnte nicht gefunden werden."))
+                : null;
+
+        String message;
+        if (previousUser == null) {
+            if (assignedUser == null) {
+                message = String.format(
+                        "Die Zuweisung der Aufgabe wurde durch die Mitarbeiter:in %s entfernt.",
+                        StringUtils.quote(actor.getFullName())
+                );
+            } else {
+                message = String.format(
+                        "Die Zuweisung der Aufgabe wurde durch die Mitarbeiter:in %s auf %s gesetzt.",
+                        StringUtils.quote(actor.getFullName()),
+                        StringUtils.quote(assignedUser.getFullName())
+                );
+            }
+        } else {
+            if (assignedUser == null) {
+                message = String.format(
+                        "Die Zuweisung der Aufgabe wurde durch die Mitarbeiter:in %s von %s entfernt.",
+                        StringUtils.quote(actor.getFullName()),
+                        StringUtils.quote(previousUser.getFullName())
+                );
+            } else {
+                message = String.format(
+                        "Die Zuweisung der Aufgabe wurde durch die Mitarbeiter:in %s von %s auf %s geändert.",
+                        StringUtils.quote(actor.getFullName()),
+                        StringUtils.quote(previousUser.getFullName()),
+                        StringUtils.quote(assignedUser.getFullName())
+                );
+            }
+        }
+
+        processNodeExecutionLoggerFactory
+                .create(
+                        task.getProcessInstanceId(),
+                        task.getId(),
+                        actor.getId(),
+                        null
+                )
+                .logf(
+                        ProcessNodeExecutionLogLevel.Info,
+                        false,
+                        true,
+                        true,
+                        assignedUserId,
+                        null,
+                        null,
+                        "Zuweisung der Aufgabe geändert",
+                        Map.of(),
+                        message
+                );
+
+
         return result;
     }
 
@@ -189,6 +347,6 @@ public class ProcessAssignmentService {
     private boolean canReceiveAssignment(@Nonnull UserEntity user, @Nonnull Long instanceId, @Nonnull List<String> requiredPermissions) {
         return Boolean.TRUE.equals(user.getEnabled()) && Boolean.FALSE.equals(user.getDeletedInIdp())
                 && requiredPermissions.stream().allMatch(permission ->
-                        permissions.hasProcessInstancePermissionWithoutDeputies(user.getId(), instanceId, permission));
+                permissions.hasProcessInstancePermissionWithoutDeputies(user.getId(), instanceId, permission));
     }
 }

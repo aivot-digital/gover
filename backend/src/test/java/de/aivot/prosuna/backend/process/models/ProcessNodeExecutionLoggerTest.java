@@ -162,6 +162,53 @@ class ProcessNodeExecutionLoggerTest {
     }
 
     @Test
+    void logf_PersistsHistoryRelevanceAndConcernedActors() {
+        var repository = mock(ProcessInstanceHistoryEventRepository.class);
+        var logger = new ProcessNodeExecutionLogger(42L, 9L, "triggering-user", "triggering-identity", repository);
+        var details = Map.<String, Object>of("subject", "Daten ergänzen");
+
+        logger.logf(ProcessNodeExecutionLogLevel.Info, false, true, true,
+                "concerned-user", "recipient", "Vertretung",
+                "Versand ausgelöst", details, "Versand an %s ausgelöst.", "Vertretung");
+
+        var eventCaptor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(repository).save(eventCaptor.capture());
+        var event = eventCaptor.getValue();
+        assertEquals(42L, event.getProcessInstanceId());
+        assertEquals(9L, event.getProcessInstanceTaskId());
+        assertEquals(ProcessNodeExecutionLogLevel.Info, event.getLevel());
+        assertFalse(event.getTechnical());
+        assertTrue(event.getAudit());
+        assertTrue(event.getHistoryRelevant());
+        assertEquals("triggering-user", event.getTriggeringUserId());
+        assertEquals("concerned-user", event.getConcernedUserId());
+        assertEquals("recipient", event.getConcernedIdentityId());
+        assertEquals("Vertretung", event.getConcernedIdentityTitle());
+        assertEquals("Versand ausgelöst", event.getTitle());
+        assertEquals("Versand an Vertretung ausgelöst.", event.getMessage());
+        assertEquals(Map.of("subject", "Daten ergänzen", "identityId", "triggering-identity"), event.getDetails());
+        assertEquals(Map.of("subject", "Daten ergänzen"), details);
+    }
+
+    @Test
+    void logf_WithoutDetailsKeepsHistoryAndConcernedActorsUnset() {
+        var repository = mock(ProcessInstanceHistoryEventRepository.class);
+        var logger = new ProcessNodeExecutionLogger(42L, 9L, null, null, repository);
+
+        logger.logf(ProcessNodeExecutionLogLevel.Info, false, true, "Titel", "Nachricht %s", "formatiert");
+
+        var eventCaptor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(repository).save(eventCaptor.capture());
+        var event = eventCaptor.getValue();
+        assertEquals("Nachricht formatiert", event.getMessage());
+        assertEquals(Map.of(), event.getDetails());
+        assertFalse(event.getHistoryRelevant());
+        assertNull(event.getConcernedUserId());
+        assertNull(event.getConcernedIdentityId());
+        assertNull(event.getConcernedIdentityTitle());
+    }
+
+    @Test
     void logException_PersistsProcessExceptionOnlyOnceAcrossOverloads() {
         var repository = mock(ProcessInstanceHistoryEventRepository.class);
         var logger = new ProcessNodeExecutionLogger(
