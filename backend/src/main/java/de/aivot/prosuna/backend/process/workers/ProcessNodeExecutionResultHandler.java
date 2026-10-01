@@ -253,12 +253,22 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setAssignedUserId(null);
         processInstanceTaskRepository.save(context.processInstanceTask);
 
-        var message = "Die Zuweisung der Aufgabe an %s wurde aufgehoben."
-                .formatted(StringUtils.quote(previousAssignedUser.getFullName()));
-
-        message += context.triggeringUser != null
-                ? " Die Aufhebung der Zuweisung wurde ausgelöst durch %s.".formatted(StringUtils.quote(context.triggeringUser.getFullName()))
-                : " Die Aufhebung der Zuweisung erfolgte automatisch.";
+        // The triggering user initiated the process step; clearing its staff assignment is automatic.
+        var removalDescription = switch (context.result) {
+            case ProcessNodeExecutionResultTaskAssignedCustomer assignedCustomer -> {
+                var identityId = assignedCustomer.getIdentityId();
+                if (identityId == null) {
+                    yield "automatisch aufgehoben, da zur weiteren Bearbeitung per E-Mail eingeladen wurde.";
+                }
+                var identity = context.processInstance.getIdentities().get(identityId);
+                var identityTitle = StringUtils.toNullableTrimmedString(identity.title());
+                yield "automatisch aufgehoben, da die Aufgabe an die Identität %s übergeben wurde."
+                        .formatted(StringUtils.quote(identityTitle != null ? identityTitle : identityId));
+            }
+            case ProcessNodeExecutionResultPaymentRequested ignored ->
+                    "automatisch aufgehoben, da eine Zahlung angefordert wurde.";
+            default -> "im Prozessablauf automatisch aufgehoben.";
+        };
 
         context.logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
@@ -268,10 +278,11 @@ public class ProcessNodeExecutionResultHandler {
                 previousAssignedUserId,
                 null,
                 null,
-                "Aufgabenzuweisung aufgehoben",
+                "Aufgabenzuweisung automatisch aufgehoben",
                 Map.of("previousAssignedUserId", previousAssignedUserId),
-                "%s",
-                message
+                "Die Aufgabenzuweisung an %s wurde %s",
+                StringUtils.quote(previousAssignedUser.getFullName()),
+                removalDescription
         );
     }
 

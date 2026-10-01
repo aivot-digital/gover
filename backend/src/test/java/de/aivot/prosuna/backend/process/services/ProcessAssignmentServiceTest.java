@@ -7,13 +7,16 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.repositories.VUserSystemPermissionRepository;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
+import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,6 +24,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
+import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +37,8 @@ class ProcessAssignmentServiceTest {
     private final ProcessInstanceRepository instances = mock(ProcessInstanceRepository.class);
     private final ProcessInstanceTaskRepository tasks = mock(ProcessInstanceTaskRepository.class);
     private final UserRepository users = mock(UserRepository.class);
+    private final UserService userService = mock(UserService.class);
+    private final ProcessInstanceHistoryEventRepository events = mock(ProcessInstanceHistoryEventRepository.class);
     private final VUserSystemPermissionRepository systemPermissions = mock(VUserSystemPermissionRepository.class);
     private final PermissionService permissions = new PermissionService(null, null, systemPermissions, null, null, null, instances);
     private final AuditService auditService = mock(AuditService.class);
@@ -46,10 +52,13 @@ class ProcessAssignmentServiceTest {
             .setStatus(ProcessTaskStatus.Running).setAssignedUserId("previous");
 
     @BeforeEach
-    void setup() {
+    void setup() throws ResponseException {
         when(auditService.createScopedAuditService(any(), anyString())).thenReturn(audit);
         when(audit.create()).thenAnswer(invocation -> AuditLogPayload.create(audit));
-        service = new ProcessAssignmentService(permissions, users, instances, tasks, auditService);
+        service = new ProcessAssignmentService(permissions, users, instances, tasks, auditService,
+                new ProcessNodeExecutionLoggerFactory(events), userService, mock(AbstractConfigurableTemplateResolver.class));
+        when(userService.retrieve("previous")).thenReturn(Optional.of(user("previous")));
+        when(userService.retrieve("recipient")).thenReturn(Optional.of(recipient));
         when(instances.lockAccessById(17L)).thenReturn(Optional.of(17L));
         when(tasks.findInstanceIdById(5L)).thenReturn(Optional.of(17L));
         when(instances.findById(17L)).thenReturn(Optional.of(instance));
@@ -139,12 +148,18 @@ class ProcessAssignmentServiceTest {
     }
 
     @Test
-    void clearsInstanceAssignmentEvenIfFormerRecipientIsUnavailable() throws Exception {
+    void manualInstanceUnassignmentRetainsItsActorInHistory() throws Exception {
         grant("actor", PROCESS_INSTANCE_REASSIGN);
         assertNull(service.reassignInstance(actor, 17L, null).getAssignedUserId());
         assertEquals("previous", task.getAssignedUserId());
         verifyNoInteractions(users);
         verify(audit).addAuditEntry(any());
+        var event = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(events).save(event.capture());
+        assertEquals("actor", event.getValue().getTriggeringUserId());
+        assertEquals("Zuweisung des Vorgangs geändert", event.getValue().getTitle());
+        assertEquals("Die Zuweisung des Vorgangs wurde durch die Mitarbeiter:in „actor“ von „previous“ entfernt.",
+                event.getValue().getMessage());
     }
 
     @ParameterizedTest
