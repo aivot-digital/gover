@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
@@ -38,7 +39,8 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -46,9 +48,10 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.*;
 
-@Slf4j
 @Service
 public class ProcessNodeExecutionResultHandler {
+    private static final Logger logger = LoggerFactory.getLogger(ProcessNodeExecutionResultHandler.class);
+
     private final RabbitTemplate rabbitTemplate;
     private final CommunicationService communicationService;
     private final ProcessInstanceRepository processInstanceRepository;
@@ -91,18 +94,20 @@ public class ProcessNodeExecutionResultHandler {
         this.processInstanceMailService = processInstanceMailService;
     }
 
-    public void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
-                             @Nullable UserEntity triggeringUser,
-                             @Nonnull ProcessNodeDefinition<?> provider,
-                             @Nonnull ProcessNodeEntity currentNode,
-                             @Nonnull ProcessInstanceEntity processInstance,
-                             @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                             @Nullable ProcessInstanceTaskEntity previousTask,
-                             @Nullable ProcessNodeExecutionResult executionResult) throws ProcessNodeExecutionException {
+    public <NodeConfig> void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
+                                        @Nullable UserEntity triggeringUser,
+                                        @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                        @Nonnull NodeConfig configurationOfExecutingNode,
+                                        @Nonnull ProcessNodeEntity currentNode,
+                                        @Nonnull ProcessInstanceEntity processInstance,
+                                        @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+                                        @Nullable ProcessInstanceTaskEntity previousTask,
+                                        @Nullable ProcessNodeExecutionResult executionResult) throws ProcessNodeExecutionException {
         handleResultInternal(
                 logger,
                 triggeringUser,
                 provider,
+                configurationOfExecutingNode,
                 currentNode,
                 processInstance,
                 processInstanceTask,
@@ -112,10 +117,11 @@ public class ProcessNodeExecutionResultHandler {
         );
     }
 
-    public void handleResultWithAdditionalIdentities(
+    public <NodeConfig> void handleResultWithAdditionalIdentities(
             @Nonnull ProcessNodeExecutionLogger logger,
             @Nullable UserEntity triggeringUser,
-            @Nonnull ProcessNodeDefinition<?> provider,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull NodeConfig configurationOfExecutingNode,
             @Nonnull ProcessNodeEntity currentNode,
             @Nonnull ProcessInstanceEntity processInstance,
             @Nonnull ProcessInstanceTaskEntity processInstanceTask,
@@ -127,6 +133,7 @@ public class ProcessNodeExecutionResultHandler {
                 logger,
                 triggeringUser,
                 provider,
+                configurationOfExecutingNode,
                 currentNode,
                 processInstance,
                 processInstanceTask,
@@ -136,10 +143,11 @@ public class ProcessNodeExecutionResultHandler {
         );
     }
 
-    private void handleResultInternal(
+    private <NodeConfig> void handleResultInternal(
             @Nonnull ProcessNodeExecutionLogger logger,
             @Nullable UserEntity triggeringUser,
-            @Nonnull ProcessNodeDefinition<?> provider,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull NodeConfig configurationOfExecutingNode,
             @Nonnull ProcessNodeEntity currentNode,
             @Nonnull ProcessInstanceEntity processInstance,
             @Nonnull ProcessInstanceTaskEntity processInstanceTask,
@@ -148,8 +156,9 @@ public class ProcessNodeExecutionResultHandler {
             @Nonnull Map<String, IdentityData> additionalIdentities
     ) throws ProcessNodeExecutionException {
         if (processInstance.getStatus() == ProcessInstanceStatus.Completed
-                || processInstance.getStatus() == ProcessInstanceStatus.Aborted) {
-            // A delayed result must not change a finished process or trigger further work.
+                || processInstance.getStatus() == ProcessInstanceStatus.Aborted
+                || processInstanceTask.getStatus() == ProcessTaskStatus.Completed) {
+            // A delayed result must not change a finished process or task, including its stored summary.
             return;
         }
 
@@ -191,6 +200,7 @@ public class ProcessNodeExecutionResultHandler {
                 logger,
                 triggeringUser,
                 provider,
+                configurationOfExecutingNode,
                 currentNode,
                 processInstance,
                 processInstanceTask,
@@ -238,7 +248,7 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
-    private void clearCurrentlyAssignedUser(@Nonnull HandlerContext<?> context) throws ProcessNodeExecutionExceptionInvalidAssignment {
+    private void clearCurrentlyAssignedUser(@Nonnull HandlerContext<?, ?> context) throws ProcessNodeExecutionExceptionInvalidAssignment {
         var previousAssignedUserId = context.processInstanceTask.getAssignedUserId();
         if (!Boolean.TRUE.equals(context.result.getClearCurrentlyAssignedUser()) || previousAssignedUserId == null) {
             return;
@@ -332,7 +342,7 @@ public class ProcessNodeExecutionResultHandler {
         processIdentities.putAll(additionalIdentities);
     }
 
-    private void handleCommunicationRequest(@Nonnull HandlerContext<?> context) throws ProcessNodeExecutionException {
+    private void handleCommunicationRequest(@Nonnull HandlerContext<?, ?> context) throws ProcessNodeExecutionException {
         var communicationRequest = context.result.getCommunicationRequest();
         if (communicationRequest == null) {
             return;
@@ -397,7 +407,7 @@ public class ProcessNodeExecutionResultHandler {
         context.result.setNodeData(nodeData);
     }
 
-    private void logCommunicationSent(@Nonnull HandlerContext<?> context,
+    private void logCommunicationSent(@Nonnull HandlerContext<?, ?> context,
                                       @Nullable IdentityData recipientIdentity,
                                       @Nullable String recipientEmailAddress,
                                       @Nonnull CommunicationMessage message,
@@ -459,7 +469,7 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     @Nonnull
-    private DepartmentEntity resolveSendingDepartment(@Nonnull HandlerContext<?> context)
+    private DepartmentEntity resolveSendingDepartment(@Nonnull HandlerContext<?, ?> context)
             throws ProcessNodeExecutionException {
         final Optional<ProcessEntity> process;
         try {
@@ -542,7 +552,7 @@ public class ProcessNodeExecutionResultHandler {
         processInstanceTaskRepository.save(task);
     }
 
-    private void handlePaymentRequested(@Nonnull HandlerContext<ProcessNodeExecutionResultPaymentRequested> context) {
+    private void handlePaymentRequested(@Nonnull HandlerContext<?, ProcessNodeExecutionResultPaymentRequested> context) {
         context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingPayment);
         assignAndSaveDataLayersAndStatusOverride(context, false);
 
@@ -564,7 +574,7 @@ public class ProcessNodeExecutionResultHandler {
         // TODO: Use communication package to send payment request information to target in a later product iteration.
     }
 
-    private void handleAssigned(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskAssigned> context) throws ProcessNodeExecutionException {
+    private void handleAssigned(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskAssigned> context) throws ProcessNodeExecutionException {
         String previousAssignedUserId = context.processInstanceTask.getAssignedUserId();
 
         UserEntity assignedUser;
@@ -727,7 +737,7 @@ public class ProcessNodeExecutionResultHandler {
         return Objects.equals(user1.getId(), user2.getId());
     }
 
-    private void handleAssignedInstance(HandlerContext<ProcessNodeExecutionResultInstanceAssigned> context) throws ProcessNodeExecutionException {
+    private void handleAssignedInstance(HandlerContext<?, ProcessNodeExecutionResultInstanceAssigned> context) throws ProcessNodeExecutionException {
         var viaPort = context.result.getViaPort();
         if (viaPort != null) {
             requireCompletionPath(context.provider, context.currentNode, viaPort);
@@ -897,7 +907,7 @@ public class ProcessNodeExecutionResultHandler {
      * @return
      * @throws ProcessNodeExecutionExceptionInvalidAssignment
      */
-    private Optional<UserEntity> requireOptionalUser(@Nonnull HandlerContext<?> context,
+    private Optional<UserEntity> requireOptionalUser(@Nonnull HandlerContext<?, ?> context,
                                                      @Nullable String userId) throws ProcessNodeExecutionExceptionInvalidAssignment {
         Optional<UserEntity> user = Optional.empty();
         if (userId != null) {
@@ -919,7 +929,7 @@ public class ProcessNodeExecutionResultHandler {
         return user;
     }
 
-    private void handleAssignedCustomer(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskAssignedCustomer> context) throws ProcessNodeExecutionException {
+    private void handleAssignedCustomer(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskAssignedCustomer> context) throws ProcessNodeExecutionException {
         var identityId = context.result.getIdentityId();
         if (identityId == null) {
             var communicationRequest = context.result.getCommunicationRequest();
@@ -985,7 +995,7 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
-    private void handleTaskUpdated(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskUpdated> context) throws ProcessNodeExecutionException {
+    private void handleTaskUpdated(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskUpdated> context) throws ProcessNodeExecutionException {
         context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
@@ -1016,19 +1026,21 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
-    private void handleTaskComplete(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskCompleted> context) throws ProcessNodeExecutionException {
+    private void handleTaskComplete(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskCompleted> context) throws ProcessNodeExecutionException {
         var completionPath = requireCompletionPath(context.provider, context.currentNode, context.result.getViaPort());
         var port = completionPath.port();
         var outEdge = completionPath.edge();
 
         context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         context.processInstanceTask.setFinished(Instant.now());
-        assignAndSaveDataLayersAndStatusOverride(context, true);
+        applyDataLayersAndStatusOverride(context, true);
 
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
-        if (!context.additionalIdentities.isEmpty()
-                || context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        var updateInstance = !context.additionalIdentities.isEmpty()
+                || context.processInstance.getStatus() != ProcessInstanceStatus.Running;
+        context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        generateAndSaveExecutionSummary(context, context.result.getViaPort());
+        if (updateInstance) {
             processInstanceRepository.save(context.processInstance);
         }
 
@@ -1109,17 +1121,18 @@ public class ProcessNodeExecutionResultHandler {
     private record CompletionPath(ProcessNodePort port, ProcessEdgeEntity edge) {
     }
 
-    private void handleInstanceComplete(@Nonnull HandlerContext<ProcessNodeExecutionResultInstanceCompleted> context) {
+    private void handleInstanceComplete(@Nonnull HandlerContext<?, ProcessNodeExecutionResultInstanceCompleted> context) {
         var completionTime = Instant.now();
 
         context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         context.processInstanceTask.setFinished(completionTime);
-        assignAndSaveDataLayersAndStatusOverride(context, true);
+        applyDataLayersAndStatusOverride(context, true);
 
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
         context.processInstance.setStatus(ProcessInstanceStatus.Completed);
         context.processInstance.setFinished(completionTime);
         context.processInstance.setKeepUntil(context.result.getRetentionDate());
+        generateAndSaveExecutionSummary(context, null);
         processInstanceRepository.save(context.processInstance);
 
         context.logger.logf(
@@ -1132,13 +1145,35 @@ public class ProcessNodeExecutionResultHandler {
         );
     }
 
-    private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?> context,
+    private <NodeConfig> void generateAndSaveExecutionSummary(@Nonnull HandlerContext<NodeConfig, ?> context,
+                                                              @Nullable String viaPort) {
+        String summary = null;
+        try {
+            summary = context.provider.generateExecutionSummary(new ProcessNodeExecutionSummaryContext<>(
+                    context.configurationOfExecutingNode,
+                    context.currentNode,
+                    context.processInstance,
+                    context.processInstanceTask,
+                    context.previousTask,
+                    context.triggeringUser,
+                    viaPort
+            ));
+        } catch (Exception exception) {
+            // A presentation failure must not retry a node that has already performed its execution side effects.
+            logger.warn("Could not generate execution summary for task {} (node definition {}).",
+                    context.processInstanceTask.getId(), context.currentNode.getProcessNodeDefinitionKey(), exception);
+        }
+        context.processInstanceTask.setExecutionSummaryMarkdown(summary == null || summary.isBlank() ? null : summary);
+        processInstanceTaskRepository.save(context.processInstanceTask);
+    }
+
+    private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?, ?> context,
                                                           boolean applyOutputMappings) {
         applyDataLayersAndStatusOverride(context, applyOutputMappings);
         processInstanceTaskRepository.save(context.processInstanceTask);
     }
 
-    private void applyDataLayersAndStatusOverride(@Nonnull HandlerContext<?> context, boolean applyOutputMappings) {
+    private void applyDataLayersAndStatusOverride(@Nonnull HandlerContext<?, ?> context, boolean applyOutputMappings) {
         var newRuntimeData = context.result.getRuntimeData();
         if (newRuntimeData == null) {
             newRuntimeData = new HashMap<>();
@@ -1227,10 +1262,11 @@ public class ProcessNodeExecutionResultHandler {
         return executionData.getProcessData();
     }
 
-    private record HandlerContext<T extends ProcessNodeExecutionResult>(
+    private record HandlerContext<NodeConfig, T extends ProcessNodeExecutionResult>(
             @Nonnull ProcessNodeExecutionLogger logger,
             @Nullable UserEntity triggeringUser,
-            @Nonnull ProcessNodeDefinition<?> provider,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull NodeConfig configurationOfExecutingNode,
             @Nonnull ProcessNodeEntity currentNode,
             @Nonnull ProcessInstanceEntity processInstance,
             @Nonnull ProcessInstanceTaskEntity processInstanceTask,
@@ -1238,11 +1274,12 @@ public class ProcessNodeExecutionResultHandler {
             @Nonnull T result,
             @Nonnull Map<String, IdentityData> additionalIdentities
     ) {
-        public <S extends ProcessNodeExecutionResult> HandlerContext<S> withResult(@Nonnull S newResult) {
+        public <S extends ProcessNodeExecutionResult> HandlerContext<NodeConfig, S> withResult(@Nonnull S newResult) {
             return new HandlerContext<>(
                     logger,
                     triggeringUser,
                     provider,
+                    configurationOfExecutingNode,
                     currentNode,
                     processInstance,
                     processInstanceTask,

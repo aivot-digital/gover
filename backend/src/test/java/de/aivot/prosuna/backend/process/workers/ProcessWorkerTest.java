@@ -19,6 +19,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.services.ProcessDataService;
@@ -29,13 +30,14 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -351,6 +353,57 @@ class ProcessWorkerTest {
         assertEquals(failedTask.getId(), errorEvents.getFirst().getProcessInstanceTaskId());
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void forwardsTheAlreadyDerivedConfigurationFromInitAndResume(boolean resume) throws Exception {
+        var instance = new ProcessInstanceEntity().setId(42L).setProcessId(7).setStatus(ProcessInstanceStatus.Running);
+        var node = new ProcessNodeEntity().setId(11).setProcessVersion(1).setName("Test node")
+                .setConfiguration(new AuthoredElementValues());
+        var task = new ProcessInstanceTaskEntity().setId(100L).setProcessInstanceId(42L).setProcessNodeId(11);
+        @SuppressWarnings("unchecked")
+        ProcessNodeDefinition<AuthoredElementValues> definition = mock(ProcessNodeDefinition.class);
+        var effectiveConfiguration = new AuthoredElementValues().putLiteral("label", "Resolved value");
+        var data = new ProcessExecutionData();
+        var result = new ProcessNodeExecutionResultInstanceCompleted();
+        when(definition.init(any())).thenReturn(result);
+        when(definition.resume(any())).thenReturn(result);
+        var instances = mock(ProcessInstanceRepository.class);
+        when(instances.findById(42L)).thenReturn(Optional.of(instance));
+        var nodes = mock(ProcessNodeRepository.class);
+        when(nodes.findById(11)).thenReturn(Optional.of(node));
+        var definitions = mock(ProcessNodeDefinitionService.class);
+        when(definitions.getProcessNodeDefinition(node)).thenReturn(Optional.of(definition));
+        var tasks = mock(ProcessInstanceTaskRepository.class);
+        when(tasks.findById(100L)).thenReturn(Optional.of(task));
+        when(tasks.save(any())).thenAnswer(invocation -> {
+            ProcessInstanceTaskEntity saved = invocation.getArgument(0);
+            return saved.setId(100L);
+        });
+        var handler = mock(ProcessNodeExecutionResultHandler.class);
+        var dataService = mock(ProcessDataService.class);
+        when(dataService.foldProcessInstanceData(same(instance), isNull(), any())).thenReturn(data);
+        var nodeService = mock(ProcessNodeService.class);
+        when(nodeService.deriveRuntimeConfiguration(node, definition, null, false, data))
+                .thenReturn(new ProcessNodeService.ProcessConfigurationDetails<>(effectiveConfiguration, new DerivedRuntimeElementData()));
+        var executionLogger = mock(ProcessNodeExecutionLogger.class);
+        when(executionLogger.withTaskId(100L)).thenReturn(executionLogger);
+        var loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
+        when(loggerFactory.create(any(), any(), any(), any())).thenReturn(executionLogger);
+        var worker = new ProcessWorker(instances, nodes, definitions, tasks, handler, dataService, loggerFactory, nodeService);
+
+        if (resume) {
+            worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
+            verify(definition).resume(argThat(context -> context.getConfigurationOfExecutingNode() == effectiveConfiguration));
+        } else {
+            worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11));
+            verify(definition).init(argThat(context -> context.getConfigurationOfExecutingNode() == effectiveConfiguration));
+        }
+
+        verify(nodeService).deriveRuntimeConfiguration(node, definition, null, false, data);
+        verify(handler).handleResult(same(executionLogger), isNull(), same(definition), same(effectiveConfiguration),
+                same(node), same(instance), any(ProcessInstanceTaskEntity.class), isNull(), same(result));
+    }
+
     private enum ExecutionFailure {
         RUNTIME_CONFIGURATION,
         PROVIDER,
@@ -497,9 +550,10 @@ class ProcessWorkerTest {
         }
 
         @Override
-        public void handleResult(ProcessNodeExecutionLogger logger,
+        public <NodeConfig> void handleResult(ProcessNodeExecutionLogger logger,
                                  UserEntity triggeringUser,
-                                 ProcessNodeDefinition provider,
+                                 ProcessNodeDefinition<NodeConfig> provider,
+                                 NodeConfig configurationOfExecutingNode,
                                  ProcessNodeEntity currentNode,
                                  ProcessInstanceEntity processInstance,
                                  ProcessInstanceTaskEntity processInstanceTask,

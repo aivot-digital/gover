@@ -1,4 +1,5 @@
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
@@ -120,6 +121,62 @@ describe('Process instance history preview', () => {
             provider(ProcessNodeType.Termination, []),
             provider(ProcessNodeType.Action, ['next', 'rejected'], 'approval'),
         ]);
+    });
+
+    it('shows the stored Markdown for its task before the existing events', async () => {
+        const user = userEvent.setup();
+        const completedTask = {
+            ...task(1, 1, ProcessTaskStatus.Completed),
+            executionSummaryMarkdown: '**Zählerstand:** 17\n\n- Erhöht\n- Gespeichert\n\n[Details](https://example.org/details)',
+        };
+        vi.mocked(ProcessInstanceEventApiService.prototype.listAllOrdered).mockResolvedValue(page([{
+            ...new ProcessInstanceEventApiService().initialize(),
+            id: 7,
+            processInstanceId: 17,
+            processInstanceTaskId: 1,
+            title: 'Vorhandenes Ereignis',
+            message: 'Die Aufgabe wurde zugewiesen.',
+            timestamp: '2026-10-01T10:00:00Z',
+        }]));
+        await renderHistory([node(1, 'Zähler'), node(2, 'Aktuell')], [edge(1, 2)], [completedTask, task(2, 2)]);
+
+        expect(screen.queryByRole('heading', {name: 'Zusammenfassung der Ausführung'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: /^1\. Zähler:/}));
+        const details = within(await screen.findByRole('region', {name: /^1\. Zähler:/}));
+        const summary = details.getByRole('heading', {name: 'Zusammenfassung der Ausführung'});
+        expect(details.getByText('Zählerstand:').tagName).toBe('STRONG');
+        expect(details.getAllByRole('listitem').map(item => item.textContent)).toEqual(['Erhöht', 'Gespeichert']);
+        expect(details.getByRole('link', {name: 'Details'})).toHaveAttribute('href', 'https://example.org/details');
+        const events = details.getByRole('heading', {name: 'Ereignisse und Zwischenergebnisse für diese Aufgabe'});
+        expect(summary.compareDocumentPosition(events) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(details.getByText('Vorhandenes Ereignis')).toBeVisible();
+
+        await user.click(screen.getByRole('button', {name: /^2\. Aktuell:/}));
+        expect(within(await screen.findByRole('region', {name: /^2\. Aktuell:/}))
+            .queryByRole('heading', {name: 'Zusammenfassung der Ausführung'})).not.toBeInTheDocument();
+    });
+
+    it.each([null, '', '  \n\t'])('hides the summary section for absent or blank text (%j)', async (summary) => {
+        const user = userEvent.setup();
+        await renderHistory([node(1, 'Altbestand')], [], [{
+            ...task(1, 1, ProcessTaskStatus.Completed),
+            executionSummaryMarkdown: summary,
+        }]);
+        await user.click(screen.getByRole('button', {name: /^1\. Altbestand:/}));
+        expect(screen.queryByRole('heading', {name: 'Zusammenfassung der Ausführung'})).not.toBeInTheDocument();
+        expect(screen.getByText('Es existieren keine relevanten Zwischenergebnisse für diese Aufgabe.')).toBeVisible();
+    });
+
+    it('renders summary content without executing embedded HTML or unsafe links', async () => {
+        const user = userEvent.setup();
+        await renderHistory([node(1, 'Prüfung')], [], [{
+            ...task(1, 1, ProcessTaskStatus.Completed),
+            executionSummaryMarkdown: '<script>alert("unsafe")</script>\n\n[Unsicher](javascript:alert(1))',
+        }]);
+        await user.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
+        const region = await screen.findByRole('region', {name: /^1\. Prüfung:/});
+        expect(region.querySelector('script')).toBeNull();
+        expect(within(region).getByText('Unsicher')).not.toHaveAttribute('href', 'javascript:alert(1)');
     });
 
     it.each([ProcessNodeType.FlowControl, ProcessNodeType.Termination])(

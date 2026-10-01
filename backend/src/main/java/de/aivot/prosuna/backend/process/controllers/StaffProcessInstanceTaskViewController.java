@@ -269,6 +269,7 @@ public class StaffProcessInstanceTaskViewController {
                                 logger,
                                 user,
                                 taskViewData.provider,
+                                context.getConfigurationOfExecutingNode(),
                                 taskViewData.node,
                                 taskViewData.instance,
                                 taskViewData.task,

@@ -222,6 +222,21 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException;
 
     /**
+     * Generates the Markdown summary stored with a successfully completed task for the internal process history.
+     * The context contains the configuration used for execution and the completed task data after output mappings.
+     * Implementations must only produce text and must not mutate the context or perform execution side effects.
+     * The stored text is not regenerated when the history is read or this definition changes.
+     *
+     * @param context The completed execution, including any identities added at completion.
+     * @return Markdown to persist verbatim, or {@code null} or blank text to omit the summary.
+     * @throws ResponseException If the summary cannot be generated. Summary failures are logged without failing completion.
+     */
+    @Nullable
+    default String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<NodeConfig> context) throws ResponseException {
+        return null;
+    }
+
+    /**
      * Resume a task by this node provider during process instance execution.
      * @param context The context to resume the task for.
      * @return The result of the node execution, or null if not applicable.

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
@@ -57,7 +58,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
     private final UserService users = mock(UserService.class);
     private final RabbitTemplate rabbit = mock(RabbitTemplate.class);
     private final ProcessEdgeRepository edges = mock(ProcessEdgeRepository.class);
-    private final ProcessNodeDefinition<?> definition = mock(ProcessNodeDefinition.class);
+    private final ProcessNodeDefinition<AuthoredElementValues> definition = mock(ProcessNodeDefinition.class);
     private final ProcessService processes = mock(ProcessService.class);
     private final DepartmentService departments = mock(DepartmentService.class);
     private final ProcessNodeEntity node = new ProcessNodeEntity().setId(3).setOutputMappings(Map.of());
@@ -268,7 +269,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
 
     private void handle(ProcessNodeExecutionResult result, @Nullable UserEntity user) throws ProcessNodeExecutionException {
         var logger = new ProcessNodeExecutionLogger(1L, 2L, user == null ? null : user.getId(), null, events);
-        handler.handleResult(logger, user, definition, node, instance, task, null, result);
+        handler.handleResult(logger, user, definition, new AuthoredElementValues(), node, instance, task, null, result);
     }
 
     private void assertAutomaticRemoval(@Nullable UserEntity user, String message) {

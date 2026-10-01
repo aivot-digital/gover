@@ -12,6 +12,7 @@ export interface ProcessInstanceTaskEntity {
     previousProcessNodePortKey: string | null;
     status: ProcessTaskStatus;
     statusOverride: string | null;
+    executionSummaryMarkdown: string | null;
     started: string; // ISO date string
     updated: string; // ISO date string
     finished: string | null; // ISO date string

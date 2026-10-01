@@ -21,6 +21,7 @@ function createTask(
         previousProcessNodePortKey: null,
         status: ProcessTaskStatus.Completed,
         statusOverride: null,
+        executionSummaryMarkdown: null,
         started: `2025-01-01T00:0${id}:00Z`,
         updated: `2025-01-01T00:0${id}:30Z`,
         finished: `2025-01-01T00:0${id}:45Z`,

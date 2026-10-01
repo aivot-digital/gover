@@ -93,6 +93,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(
                 logger, null, new TestProcessNodeDefinition("Formularanforderung"),
+                new AuthoredElementValues(),
                 processNode("Formularanforderung"), instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                         .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
@@ -126,7 +127,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> handler.handleResult(
                 new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Formularanforderung"), processNode("Formularanforderung"),
+                new TestProcessNodeDefinition("Formularanforderung"), new AuthoredElementValues(), processNode("Formularanforderung"),
                 instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                         .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
@@ -151,7 +152,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(
                 new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Zahlung"), processNode("Zahlung"),
+                new TestProcessNodeDefinition("Zahlung"), new AuthoredElementValues(), processNode("Zahlung"),
                 instance, task, null, new ProcessNodeExecutionResultNoop()
         );
 
@@ -173,7 +174,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(
                 new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Formularanforderung"), processNode("Formularanforderung"),
+                new TestProcessNodeDefinition("Formularanforderung"), new AuthoredElementValues(), processNode("Formularanforderung"),
                 instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                         .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
@@ -207,6 +208,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Complete process"),
+                new AuthoredElementValues(),
                 processNode("Complete process"),
                 processInstance,
                 task,
@@ -236,6 +238,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Update task"),
+                new AuthoredElementValues(),
                 processNode("Update task"),
                 processInstance,
                 processInstanceTask(null),
@@ -284,6 +287,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new TestProcessNodeDefinition("Fallback task", List.of(
                         new ProcessNodeOutput("sendResult", "Send result", "Provider result", "Record<string, unknown>")
                 )),
+                new AuthoredElementValues(),
                 processNode("Nachricht", Map.of("sendResult", "delivery")),
                 processInstance,
                 task,
@@ -384,6 +388,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 triggeringUser,
                 new TestProcessNodeDefinition("Payment"),
+                new AuthoredElementValues(),
                 processNode("Payment"),
                 processInstance(identity),
                 task,
@@ -443,6 +448,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Nachricht"),
                 processInstance(identity),
                 task,
@@ -480,6 +486,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Nachricht"),
                 processInstance(),
                 task,
@@ -521,6 +528,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Nachricht"),
                 processInstance(identity),
                 task,
@@ -559,6 +567,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Nachricht"),
                 processInstance(identity),
                 task,
@@ -589,6 +598,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new TestProcessNodeDefinition("Fallback task", List.of(
                         new ProcessNodeOutput("result", "Result", "Mapped result", "string")
                 )),
+                new AuthoredElementValues(),
                 processNode("Pruefung", Map.of("result", "items[0].status")),
                 processInstance(),
                 task,
@@ -621,6 +631,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new TestProcessNodeDefinition("Fallback task", List.of(
                         new ProcessNodeOutput("result", "Result", "Mapped result", "string")
                 )),
+                new AuthoredElementValues(),
                 processNode("Pruefung", Map.of("result", "items[*].status")),
                 processInstance(),
                 task,
@@ -668,6 +679,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 triggeringUser,
                 provider,
+                new AuthoredElementValues(),
                 currentNode,
                 processInstance,
                 processInstanceTask,
@@ -693,6 +705,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"),
                 processInstance(),
                 processInstanceTask(null),
@@ -721,6 +734,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"),
                 instance,
                 processInstanceTask(assignedUser.getId()),
@@ -751,6 +765,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var task = processInstanceTask(previousUser.getId());
 
         handler.handleResult(logger, triggeringUser, new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"), processInstance(), task, null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -776,7 +791,7 @@ class ProcessNodeExecutionResultHandlerTest {
         ), mailService);
 
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), previousUser,
-                new TestProcessNodeDefinition("Fallback task"), processNode("Prüfung"),
+                new TestProcessNodeDefinition("Fallback task"), new AuthoredElementValues(), processNode("Prüfung"),
                 processInstance(), processInstanceTask(previousUser.getId()), null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -795,7 +810,7 @@ class ProcessNodeExecutionResultHandlerTest {
         ), mailService);
 
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), assignedUser,
-                new TestProcessNodeDefinition("Fallback task"), processNode("Prüfung"),
+                new TestProcessNodeDefinition("Fallback task"), new AuthoredElementValues(), processNode("Prüfung"),
                 processInstance(), processInstanceTask(previousUser.getId()), null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -813,6 +828,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var task = processInstanceTask("deleted-user");
 
         handler.handleResult(logger, null, new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"), processInstance(), task, null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -837,6 +853,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var task = processInstanceTask(previousUser.getId());
 
         handler.handleResult(logger, null, new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"), processInstance(), task, null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -865,6 +882,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"),
                 processInstance(),
                 task,
@@ -1259,6 +1277,21 @@ class ProcessNodeExecutionResultHandlerTest {
                     String.format(format, args),
                     details
             ));
+        }
+
+        @Override
+        public void logf(ProcessNodeExecutionLogLevel level,
+                         Boolean isTechnical,
+                         Boolean isAuditable,
+                         Boolean isHistoryRelevant,
+                         String concernedUserId,
+                         String concernedIdentityId,
+                         String concernedIdentityTitle,
+                         String title,
+                         Map<String, Object> details,
+                         String format,
+                         Object... args) {
+            logf(level, isTechnical, isAuditable, title, details, format, args);
         }
 
         @Override
