@@ -509,7 +509,7 @@ public class CustomerProcessInstanceTaskViewController {
                         );
             }
         } catch (Exception e) {
-            logger.logFailure(e);
+            logger.logException(e);
             throw ResponseException.internalServerError(e);
         }
 
@@ -554,7 +554,7 @@ public class CustomerProcessInstanceTaskViewController {
                 );
             }
         } catch (ProcessNodeExecutionException e) {
-            logger.logFailure(e);
+            logger.logException(e);
             throw ResponseException.internalServerError(e);
         }
 

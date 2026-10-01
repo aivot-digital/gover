@@ -20,8 +20,6 @@ import de.aivot.prosuna.backend.utils.specification.SpecificationBuilderArrayCon
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
-import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
@@ -55,21 +53,19 @@ public class ProcessInstanceTaskController {
     private final PermissionService permissionService;
     private final ProcessAssignmentService assignmentService;
     private final ProcessListService listService;
-    private final ProcessNodeExecutionLoggerFactory historyLoggerFactory;
 
     @Autowired
     public ProcessInstanceTaskController(UserService userService,
                                          ProcessInstanceTaskService processInstanceTaskService,
                                          RabbitTemplate rabbitTemplate,
                                          PermissionService permissionService, ProcessAssignmentService assignmentService,
-                                         ProcessListService listService, ProcessNodeExecutionLoggerFactory historyLoggerFactory) {
+                                         ProcessListService listService) {
         this.userService = userService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.rabbitTemplate = rabbitTemplate;
         this.permissionService = permissionService;
         this.assignmentService = assignmentService;
         this.listService = listService;
-        this.historyLoggerFactory = historyLoggerFactory;
     }
 
     @GetMapping("")
@@ -219,11 +215,6 @@ public class ProcessInstanceTaskController {
         );
 
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, payload);
-        historyLoggerFactory.create(taskEntity.getProcessInstanceId(), taskEntity.getId(), user.getId(), null)
-                .history(ProcessNodeExecutionLogLevel.Info, "Aufgabe erneut gestartet",
-                        "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde durch „%s“ angefordert."
-                                .formatted(de.aivot.prosuna.backend.process.models.ProcessHistoryMessages.userName(user)),
-                        Map.of(), user.getId(), null, null);
 
         return taskEntity;
     }

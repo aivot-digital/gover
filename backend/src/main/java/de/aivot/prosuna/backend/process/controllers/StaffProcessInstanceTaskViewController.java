@@ -258,7 +258,7 @@ public class StaffProcessInstanceTaskViewController {
         } catch (ResponseException e) {
             throw e;
         } catch (Exception e) {
-            logger.logFailure(e);
+            logger.logException(e);
             throw ResponseException.internalServerError(e);
         }
 
@@ -276,7 +276,7 @@ public class StaffProcessInstanceTaskViewController {
                                 res.get()
                         );
             } catch (ProcessNodeExecutionException e) {
-                logger.logFailure(e);
+                logger.logException(e);
                 throw ResponseException.internalServerError(e);
             }
         }

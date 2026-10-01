@@ -60,7 +60,7 @@ class AssignmentContextAssigneeResolverServiceTest {
                 .setId(invocation.getArgument(0)).setEnabled(true).setDeletedInIdp(false)));
         var tasks = createProcessInstanceTaskRepository();
         var assignments = new ProcessAssignmentService(permissions, users, mock(ProcessInstanceRepository.class),
-                tasks, mock(AuditService.class), mock(ProcessNodeExecutionLoggerFactory.class));
+                tasks, mock(AuditService.class));
         service = new AssignmentContextAssigneeResolverService(
                 createPotentialAccessRepository(),
                 tasks,

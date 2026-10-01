@@ -9,7 +9,6 @@ import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
-import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
@@ -24,13 +23,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
-import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.*;
-import static de.aivot.prosuna.backend.process.models.ProcessHistoryMessages.userName;
 
 @Service
 public class ProcessAssignmentService {
@@ -42,12 +38,10 @@ public class ProcessAssignmentService {
     private final ProcessInstanceRepository instances;
     private final ProcessInstanceTaskRepository tasks;
     private final ScopedAuditService audit;
-    private final ProcessNodeExecutionLoggerFactory historyLoggerFactory;
 
     public ProcessAssignmentService(PermissionService permissions, UserRepository users,
                                     ProcessInstanceRepository instances, ProcessInstanceTaskRepository tasks,
-                                    AuditService audit, ProcessNodeExecutionLoggerFactory historyLoggerFactory) {
-        this.historyLoggerFactory = historyLoggerFactory;
+                                    AuditService audit) {
         this.permissions = permissions;
         this.users = users;
         this.instances = instances;
@@ -100,7 +94,6 @@ public class ProcessAssignmentService {
                         "id", Map.of("id", instanceId, "processDefinitionId", instance.getProcessId()))
                 .withDiff(Collections.singletonMap("assignedUserId", previousUserId), Collections.singletonMap("assignedUserId", assignedUserId))
                 .withMessage("Die Zuweisung des Vorgangs mit der ID %s wurde geändert.", instanceId).log();
-        recordAssignment(actor, instanceId, null, previousUserId, assignedUserId);
         return result;
     }
 
@@ -124,28 +117,7 @@ public class ProcessAssignmentService {
                         "id", Map.of("id", taskId, "processInstanceId", task.getProcessInstanceId()))
                 .withDiff(Collections.singletonMap("assignedUserId", previousUserId), Collections.singletonMap("assignedUserId", assignedUserId))
                 .withMessage("Die Zuweisung der Aufgabe mit der ID %s wurde geändert.", taskId).log();
-        recordAssignment(actor, instanceId, taskId, previousUserId, assignedUserId);
         return result;
-    }
-
-    private void recordAssignment(@Nonnull UserEntity actor, @Nonnull Long instanceId, @Nullable Long taskId,
-                                  @Nullable String previousUserId, @Nullable String assignedUserId) {
-        if (Objects.equals(previousUserId, assignedUserId)) return;
-        var subject = taskId == null ? "Vorgang" : "Aufgabe";
-        var previousName = previousUserId == null ? null : userName(users.findById(previousUserId).orElse(null));
-        var newName = assignedUserId == null ? null : userName(users.findById(assignedUserId).orElse(null));
-        var message = assignedUserId == null
-                ? "Die Zuweisung an „%s“ wurde aufgehoben.".formatted(previousName)
-                : previousUserId == null
-                ? "Die Zuständigkeit wurde „%s“ zugewiesen.".formatted(newName)
-                : "Die Zuständigkeit wurde von „%s“ auf „%s“ übertragen.".formatted(previousName, newName);
-        message += " Ausgelöst durch „%s“.".formatted(userName(actor));
-        var details = new LinkedHashMap<String, Object>();
-        if (previousUserId != null) details.put("previousAssignedUserId", previousUserId);
-        historyLoggerFactory.create(instanceId, taskId, actor.getId(), null)
-                .history(ProcessNodeExecutionLogLevel.Info,
-                        assignedUserId == null ? "Zuweisung aufgehoben" : subject + " zugewiesen",
-                        message, details, assignedUserId == null ? previousUserId : assignedUserId, null, null);
     }
 
     /**

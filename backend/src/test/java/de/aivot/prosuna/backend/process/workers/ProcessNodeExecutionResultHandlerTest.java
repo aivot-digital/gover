@@ -321,11 +321,8 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(ProcessNodeExecutionLogLevel.Info, event.level());
         assertFalse(event.technical());
         assertEquals(true, event.auditable());
-        assertTrue(event.historyRelevant());
-        assertEquals("applicant", event.concernedIdentityId());
-        assertEquals("Identität ohne Titel", event.concernedIdentityTitle());
         assertEquals(
-                "Die Nachricht mit dem Betreff „Subject“ wurde versendet. Beteiligte Identität: „Identität ohne Titel“.",
+                "Die Nachricht mit dem Betreff „Subject“ wurde erfolgreich an die Identität „applicant“ versendet.",
                 event.message()
         );
 
@@ -1230,15 +1227,6 @@ class ProcessNodeExecutionResultHandlerTest {
         }
 
         @Override
-        public void saveEvent(ProcessNodeExecutionLogLevel level, Boolean technical, Boolean audit,
-                              Boolean historyRelevant, String title, String message, Map<String, Object> details,
-                              java.time.Instant timestamp, String concernedUserId, String concernedIdentityId,
-                              String concernedIdentityTitle) {
-            events.add(new RecordedLogEvent(level, technical, audit, title, message, details,
-                    historyRelevant, concernedUserId, concernedIdentityId, concernedIdentityTitle));
-        }
-
-        @Override
         public void logf(ProcessNodeExecutionLogLevel level,
                          Boolean isTechnical,
                          Boolean isAuditable,
@@ -1251,7 +1239,7 @@ class ProcessNodeExecutionResultHandlerTest {
                     isAuditable,
                     title,
                     String.format(format, args),
-                    Map.of(), false, null, null, null
+                    Map.of()
             ));
         }
 
@@ -1269,7 +1257,7 @@ class ProcessNodeExecutionResultHandlerTest {
                     isAuditable,
                     title,
                     String.format(format, args),
-                    details, false, null, null, null
+                    details
             ));
         }
 
@@ -1290,8 +1278,7 @@ class ProcessNodeExecutionResultHandlerTest {
             boolean auditable,
             String title,
             String message,
-            Map<String, Object> details,
-            boolean historyRelevant, String concernedUserId, String concernedIdentityId, String concernedIdentityTitle
+            Map<String, Object> details
     ) {
     }
 

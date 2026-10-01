@@ -194,13 +194,8 @@ class ProcessWorkerTest {
         var errorEvents = savedEvents.stream()
                 .filter(event -> event.getLevel() == ProcessNodeExecutionLogLevel.Error)
                 .toList();
-        assertEquals(2, errorEvents.size());
-        var history = errorEvents.stream().filter(ProcessInstanceEventEntity::getHistoryRelevant).toList();
-        assertEquals(1, history.size());
-        assertEquals(failedTask.getId(), history.getFirst().getProcessInstanceTaskId());
-        assertFalse(history.getFirst().getTechnical());
-        assertEquals("Die Verarbeitung konnte nicht abgeschlossen werden.", history.getFirst().getMessage());
-        assertEquals(1, errorEvents.stream().filter(ProcessInstanceEventEntity::getTechnical).count());
+        assertEquals(1, errorEvents.size());
+        assertEquals(failedTask.getId(), errorEvents.getFirst().getProcessInstanceTaskId());
     }
 
     @ParameterizedTest
@@ -352,13 +347,8 @@ class ProcessWorkerTest {
         var errorEvents = savedEvents.stream()
                 .filter(event -> event.getLevel() == ProcessNodeExecutionLogLevel.Error)
                 .toList();
-        assertEquals(2, errorEvents.size());
-        var history = errorEvents.stream().filter(ProcessInstanceEventEntity::getHistoryRelevant).toList();
-        assertEquals(1, history.size());
-        assertEquals(failedTask.getId(), history.getFirst().getProcessInstanceTaskId());
-        assertFalse(history.getFirst().getTechnical());
-        assertEquals("Die Verarbeitung konnte nicht abgeschlossen werden.", history.getFirst().getMessage());
-        assertEquals(1, errorEvents.stream().filter(ProcessInstanceEventEntity::getTechnical).count());
+        assertEquals(1, errorEvents.size());
+        assertEquals(failedTask.getId(), errorEvents.getFirst().getProcessInstanceTaskId());
     }
 
     private enum ExecutionFailure {
