@@ -13,9 +13,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Set;
 
 public class ProcessNodeExecutionLogger {
     private static final Logger logger = LoggerFactory.getLogger(ProcessNodeExecutionLogger.class);
@@ -32,8 +29,6 @@ public class ProcessNodeExecutionLogger {
     @Nonnull
     private final ProcessInstanceHistoryEventRepository repository;
 
-    private Set<Exception> historyFailures = Collections.newSetFromMap(new IdentityHashMap<>());
-
     public ProcessNodeExecutionLogger(@Nonnull Long processInstanceId,
                                       @Nullable Long processInstanceTaskId,
                                       @Nullable String userId,
@@ -47,36 +42,13 @@ public class ProcessNodeExecutionLogger {
     }
 
     public ProcessNodeExecutionLogger withTaskId(Long taskId) {
-        var taskLogger = new ProcessNodeExecutionLogger(
+        return new ProcessNodeExecutionLogger(
                 processInstanceId,
                 taskId,
                 userId,
                 identityId,
                 repository
         );
-        taskLogger.historyFailures = historyFailures;
-        return taskLogger;
-    }
-
-    public void history(@Nonnull ProcessNodeExecutionLogLevel level,
-                        @Nonnull String title,
-                        @Nonnull String message,
-                        @Nonnull Map<String, Object> details,
-                        @Nullable String concernedUserId,
-                        @Nullable String concernedIdentityId,
-                        @Nullable String concernedIdentityTitle) {
-        saveEvent(level, false, true, true, title, message, details, Instant.now(),
-                concernedUserId, concernedIdentityId, concernedIdentityTitle);
-    }
-
-    /** Call at execution failure boundaries, not for recoverable notification errors. */
-    public void logFailure(@Nonnull Exception exception) {
-        logException(exception);
-        // Nested worker boundaries share this set, including loggers narrowed to a task.
-        if (historyFailures.add(exception)) {
-            history(ProcessNodeExecutionLogLevel.Error, "Ausführung fehlgeschlagen",
-                    "Die Verarbeitung konnte nicht abgeschlossen werden.", Map.of(), null, null, null);
-        }
     }
 
     public void logf(@Nonnull ProcessNodeExecutionLogLevel level,
