@@ -29,6 +29,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -56,6 +58,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.user;
 
 @Component
 public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<InstanceAssignmentActionNodeV1.Config> {
@@ -87,6 +91,14 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
                                           ProcessAssignmentService assignmentService) {
         this.assigneeResolverService = assigneeResolverService;
         this.assignmentService = assignmentService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<InstanceAssignmentActionNodeV1.Config> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Der Vorgang wurde " + user(summary.data(OUTPUT_ASSIGNED_USER_ID), summary.metadata(ExecutionSummaryMarkdown.ASSIGNED_USER_NAME))
+                + " (durch " + summary.actor() + ") zugewiesen.";
     }
 
     @Nonnull

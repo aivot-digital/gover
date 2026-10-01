@@ -25,6 +25,8 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -50,6 +52,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 
 /**
  * Executes a prompt against the AI Completions API and exposes the response as node outputs.
@@ -85,6 +89,15 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         this.httpService = httpService;
         this.secretService = secretService;
         this.aiPluginProperties = aiPluginProperties;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<AiCompletionActionNodeV1.AiCompletionActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Die KI-Anfrage wurde erfolgreich ausgeführt."
+                + detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL))
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull

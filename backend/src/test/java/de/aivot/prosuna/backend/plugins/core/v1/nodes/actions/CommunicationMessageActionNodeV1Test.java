@@ -28,6 +28,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
+import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -406,6 +408,7 @@ class CommunicationMessageActionNodeV1Test {
         when(context.getCurrentProcessExecutionData()).thenReturn(executionData);
         when(context.getThisProcessInstance()).thenReturn(processInstance);
         when(context.getThisTask()).thenReturn(task);
+        when(context.getLogger()).thenReturn(mock(ProcessNodeExecutionLogger.class));
         when(context.getThisNode()).thenReturn(processNode);
         return context;
     }
@@ -419,10 +422,12 @@ class CommunicationMessageActionNodeV1Test {
     ) {
         var context = (ProcessNodeExecutionContextUIStaff<CommunicationMessageActionNodeV1.Configuration>)
                 mock(ProcessNodeExecutionContextUIStaff.class);
+        when(context.getCallingUser()).thenReturn(new UserEntity().setId("staff-1").setFullName("Ada Beispiel"));
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
         when(context.getCurrentProcessExecutionData()).thenReturn(executionData);
         when(context.getThisProcessInstance()).thenReturn(processInstance);
         when(context.getThisTask()).thenReturn(task);
+        when(context.getLogger()).thenReturn(mock(ProcessNodeExecutionLogger.class));
         return context;
     }
 

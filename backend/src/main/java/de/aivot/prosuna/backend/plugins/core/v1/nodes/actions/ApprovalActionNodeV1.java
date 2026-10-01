@@ -35,6 +35,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
@@ -51,6 +53,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.*;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 @Component
 public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActionNodeV1.ApprovalConfiguration> {
@@ -94,6 +98,19 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         this.elementDataTransformService = elementDataTransformService;
         this.elementDerivationService = elementDerivationService;
         this.authoredInputValueService = authoredInputValueService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<ApprovalActionNodeV1.ApprovalConfiguration> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var configuration = context.configurationOfExecutingNode();
+        var decision = PORT_APPROVED.equals(context.viaPort()) ? "erteilt" : "verweigert";
+        return "Die Freigabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " " + decision + "."
+                + section("Vermerk", summary.data(OUTPUT_REMARK))
+                + section("Freigabekriterien", configuration.criteria)
+                + section("Prüfinhalt", MODE_DATA.equals(configuration.contentMode)
+                        ? summary.taskLink("Für die Prüfung modellierte Daten ansehen") : configuration.customContent);
     }
 
     @Nonnull

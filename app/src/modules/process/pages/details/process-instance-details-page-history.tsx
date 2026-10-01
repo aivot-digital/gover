@@ -3,7 +3,7 @@ import {Alert, Box, Button, Divider, Paper, Skeleton, Stack, Typography} from '@
 import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import Schedule from '@aivot/mui-material-symbols-400-n25-outlined/Schedule';
 import {Accordion, AccordionDetails, AccordionSummary} from '../../../../components/accordion/accordion';
-import {MarkdownContent} from '../../../../components/markdown-content/markdown-content';
+import {ProcessExecutionSummary} from '../../components/process-execution-summary';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {Permission} from '../../../../data/permissions/permission';
 import {useHasProcessInstancePermission} from '../../../permissions/hooks/use-permissions';
@@ -457,7 +457,7 @@ function TimelineItem(props: TimelineItemProps) {
                                 <Typography variant="h6" sx={{mb: 1}}>
                                     Zusammenfassung der Ausführung
                                 </Typography>
-                                <MarkdownContent markdown={task.executionSummaryMarkdown}/>
+                                <ProcessExecutionSummary markdown={task.executionSummaryMarkdown}/>
                             </Box>
                         )}
                         {

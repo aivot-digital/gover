@@ -32,6 +32,8 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
@@ -54,6 +56,9 @@ import java.io.IOException;
 import java.net.URLConnection;
 import java.time.Instant;
 import java.util.*;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 
 /**
  * Sends one synchronous message through the communication provider selected for an identity.
@@ -93,6 +98,16 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         this.storageService = storageService;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<CommunicationMessageActionNodeV1.Configuration> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Die Nachricht wurde" + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT) != null
+                ? summary.metadata(ExecutionSummaryMarkdown.SENT_AT) : context.thisTask().getFinished()) + " erfolgreich versendet."
+                + section("Empfangende Identität", summary.identity(summary.data(OUTPUT_IDENTITY_ID)))
+                + detail("Zustellweg", summary.metadata(ExecutionSummaryMarkdown.DELIVERY_CHANNEL));
     }
 
     @Nonnull

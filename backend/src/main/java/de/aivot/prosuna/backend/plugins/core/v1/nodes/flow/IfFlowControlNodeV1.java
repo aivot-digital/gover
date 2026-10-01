@@ -31,6 +31,8 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -46,6 +48,8 @@ import tools.jackson.core.JacksonException;
 
 import java.util.List;
 import java.util.Map;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 
 @Component
 public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlNodeV1.IfFlowControlNodeConfig> {
@@ -71,6 +75,16 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                                NoCodeEvaluationService noCodeEvaluationService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.noCodeEvaluationService = noCodeEvaluationService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<IfFlowControlNodeV1.IfFlowControlNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var fulfilled = Boolean.TRUE.equals(summary.data(OUTPUT_NAME_CONDITION_VALUE));
+        var path = PORT_NAME_TRUE.equals(context.viaPort()) ? "Bedingung erfüllt" : "Bedingung nicht erfüllt";
+        return "Der Vorgang wurde konditionell in den Ausführungspfad „" + path + "“ eingeleitet."
+                + detail("Ergebnis der Auswertung der Bedingung", fulfilled ? "Wahr" : "Falsch");
     }
 
     @Nonnull

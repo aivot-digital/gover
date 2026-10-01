@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
@@ -105,6 +108,8 @@ class ProcessNodeExecutionResultHandlerTest {
         assertNull(task.getAssignedCustomerIdentityId());
         assertTrue(instance.getIdentities().isEmpty());
         assertEquals(sendResult, task.getNodeData().get("communicationResult"));
+        var receipt = ExecutionSummaryMarkdown.map(task.getRuntimeData().get(ExecutionSummaryMarkdown.RUNTIME_KEY));
+        assertInstanceOf(java.time.Instant.class, receipt.get(ExecutionSummaryMarkdown.SENT_AT));
         assertEquals(List.of(task), savedTasks);
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertEquals(List.of(instance), savedInstances);
@@ -136,6 +141,7 @@ class ProcessNodeExecutionResultHandlerTest {
         ));
 
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertFalse(task.getRuntimeData().containsKey(ExecutionSummaryMarkdown.RUNTIME_KEY));
         assertNull(task.getAssignedCustomerIdentityId());
         assertEquals(List.of(task), savedTasks);
         assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
@@ -372,6 +378,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var identity = identity("applicant");
         var message = CommunicationMessage.of("Payment", "Please pay", "Please pay");
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class))).thenReturn(Map.of());
+        when(communicationService.describeDeliveryChannel(identity)).thenReturn("Servicekonto");
         var triggeringUser = user("user-1", "Trigger User");
 
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
@@ -408,6 +415,9 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(17, messageCaptor.getValue().sendingDepartment().getId());
         assertEquals(ProcessTaskStatus.AwaitingPayment, task.getStatus());
         assertEquals("transaction-1", task.getRuntimeData().get("transactionKey"));
+        var receipt = ExecutionSummaryMarkdown.map(task.getRuntimeData().get(ExecutionSummaryMarkdown.RUNTIME_KEY));
+        assertInstanceOf(java.time.Instant.class, receipt.get(ExecutionSummaryMarkdown.SENT_AT));
+        assertEquals("Servicekonto", receipt.get(ExecutionSummaryMarkdown.DELIVERY_CHANNEL));
         assertEquals(1, savedTasks.size());
         assertEquals(1, logger.events.stream()
                 .filter(event -> event.title().equals("Nachricht versendet"))

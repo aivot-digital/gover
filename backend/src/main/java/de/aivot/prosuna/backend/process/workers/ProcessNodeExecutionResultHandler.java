@@ -36,6 +36,7 @@ import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -393,6 +394,12 @@ public class ProcessNodeExecutionResultHandler {
                     e.getMessage()
             );
         }
+
+        var receipt = new LinkedHashMap<String, Object>();
+        receipt.put(ExecutionSummaryMarkdown.SENT_AT, Instant.now());
+        receipt.put(ExecutionSummaryMarkdown.DELIVERY_CHANNEL, communicationService.describeDeliveryChannel(recipientIdentity));
+        context.result.setRuntimeData(ExecutionSummaryMarkdown.withMetadata(
+                ExecutionSummaryMarkdown.preserveMetadata(context.processInstanceTask.getRuntimeData(), context.result.getRuntimeData()), receipt));
 
         logCommunicationSent(context, recipientIdentity, communicationRequest.recipientEmailAddress(), message, sendResult);
 
@@ -763,6 +770,13 @@ public class ProcessNodeExecutionResultHandler {
         var previousAssignedUser = requireOptionalUser(context, context.processInstance.getAssignedUserId());
         var newlyAssignedUser = requireOptionalUser(context, context.result.getAssignedUserId());
         var triggeringUser = Optional.ofNullable(context.triggeringUser);
+        var assignmentSnapshot = new LinkedHashMap<String, Object>();
+        previousAssignedUser.ifPresent(user -> {
+            assignmentSnapshot.put(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_ID, user.getId());
+            assignmentSnapshot.put(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_NAME, user.getFullName());
+        });
+        newlyAssignedUser.ifPresent(user -> assignmentSnapshot.put(ExecutionSummaryMarkdown.ASSIGNED_USER_NAME, user.getFullName()));
+        context.result.setRuntimeData(ExecutionSummaryMarkdown.withMetadata(context.result.getRuntimeData(), assignmentSnapshot));
 
         context
                 .processInstance
@@ -1174,10 +1188,8 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void applyDataLayersAndStatusOverride(@Nonnull HandlerContext<?, ?> context, boolean applyOutputMappings) {
-        var newRuntimeData = context.result.getRuntimeData();
-        if (newRuntimeData == null) {
-            newRuntimeData = new HashMap<>();
-        }
+        var newRuntimeData = ExecutionSummaryMarkdown.preserveMetadata(
+                context.processInstanceTask.getRuntimeData(), context.result.getRuntimeData());
         context.processInstanceTask.setRuntimeData(newRuntimeData);
 
         var newNodeData = context.result.getNodeData();

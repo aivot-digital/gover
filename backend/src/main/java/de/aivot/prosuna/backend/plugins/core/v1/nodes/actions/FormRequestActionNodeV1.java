@@ -48,6 +48,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -69,6 +71,8 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 @Component
 public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormRequestActionNodeV1.NodeConfig> {
@@ -114,6 +118,17 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         this.authoredInputValueService = authoredInputValueService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FormRequestActionNodeV1.NodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var recipient = summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID));
+        return "Es wurde " + recipient + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
+                + " zur Einreichung von Daten aufgefordert und" + summary.delivery() + " informiert."
+                + " Die Daten wurden" + summary.eventAt("started") + " durch " + recipient + " eingereicht."
+                + section("Eingereichte Daten", summary.taskLink("Aufgabe ansehen"));
     }
 
     @Nonnull

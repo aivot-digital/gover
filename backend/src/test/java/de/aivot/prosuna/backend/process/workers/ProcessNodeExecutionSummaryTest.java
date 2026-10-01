@@ -151,6 +151,34 @@ class ProcessNodeExecutionSummaryTest {
     }
 
     @Test
+    void completionPreservesEarlierNotificationReceiptWhenNodeClearsRuntimeData() throws Exception {
+        var receipt = Map.<String, Object>of("sentAt", "2026-10-01T07:00:00Z", "deliveryChannel", "E-Mail");
+        task.setRuntimeData(Map.of("executionSummary", receipt, "draft", true));
+        when(definition.generateExecutionSummary(any())).thenAnswer(invocation -> {
+            ProcessNodeExecutionSummaryContext<Configuration> context = invocation.getArgument(0);
+            assertEquals(Map.of("executionSummary", receipt), context.thisTask().getRuntimeData());
+            return "Eingereicht.";
+        });
+        handle(new ProcessNodeExecutionResultTaskCompleted("next").setRuntimeData(Map.of()));
+        assertEquals("Eingereicht.", task.getExecutionSummaryMarkdown());
+    }
+
+    @Test
+    void unassignmentCapturesPreviousUserBeforeClearingInstance() throws Exception {
+        instance.setAssignedUserId("actor");
+        when(definition.generateExecutionSummary(any())).thenAnswer(invocation -> {
+            ProcessNodeExecutionSummaryContext<Configuration> context = invocation.getArgument(0);
+            assertNull(context.thisProcessInstance().getAssignedUserId());
+            var snapshot = (Map<?, ?>) context.thisTask().getRuntimeData().get("executionSummary");
+            assertEquals("actor", snapshot.get("previousAssignedUserId"));
+            assertEquals("Ada Beispiel", snapshot.get("previousAssignedUserName"));
+            return "Zuweisung entfernt.";
+        });
+        handle(ProcessNodeExecutionResultInstanceAssigned.clear().setViaPort("next"));
+        assertEquals("Zuweisung entfernt.", task.getExecutionSummaryMarkdown());
+    }
+
+    @Test
     void defaultImplementationCompletesWithoutSummary() throws Exception {
         handle(new ProcessNodeExecutionResultTaskCompleted("next"));
         assertNull(task.getExecutionSummaryMarkdown());

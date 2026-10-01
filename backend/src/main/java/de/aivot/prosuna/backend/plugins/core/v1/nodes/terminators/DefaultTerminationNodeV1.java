@@ -15,6 +15,8 @@ import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -27,6 +29,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.timestamp;
 
 @Component
 public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTerminationNodeV1.DefaultTerminationNodeV1Config> {
@@ -42,6 +46,15 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
 
     private static final Number DEFAULT_RETENTION_VALUE = 30;
     private static final String DEFAULT_RETENTION_UNIT = RETENTION_UNIT_DAYS;
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<DefaultTerminationNodeV1.DefaultTerminationNodeV1Config> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var retention = timestamp(context.thisProcessInstance().getKeepUntil());
+        return "Der Vorgang wurde" + summary.at(context.thisProcessInstance().getFinished()) + " abgeschlossen."
+                + (retention.isEmpty() ? "" : " Das Ende der Aufbewahrungsfrist für die Vorgangsdaten wurde für " + retention + " festgelegt.");
+    }
 
     @Nonnull
     @Override
