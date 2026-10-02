@@ -26,7 +26,7 @@ import {ProcessInstanceEventApiService} from "../../services/process-instance-ev
 import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
 import {showApiErrorSnackbar} from "../../../../slices/snackbar-slice";
 import {getNodeDescription} from "./components/process-flow-editor/utils/node-utils";
-import {Chip} from "../../../../components/chip/chip";
+import {Chip, type ChipProps} from "../../../../components/chip/chip";
 import {formatDateTimeWithRelative} from "../../components/process-detail-values";
 import {useNotImplemented} from "../../../../hooks/use-not-implemented";
 import {humanizeMillisecondsDuration} from "../../../../utils/duration-utils";
@@ -347,6 +347,43 @@ function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEnt
     return [...upcoming.values()];
 }
 
+function getTaskDeadlineChipProps(task?: ProcessInstanceTaskEntity): Pick<ChipProps, 'color' | 'label'> | null {
+    if (task?.deadline == null) {
+        return null;
+    }
+
+    const deadline = Date.parse(task.deadline);
+
+    if (task.finished != null) {
+        const deadlineMet = Date.parse(task.finished) <= deadline;
+        return {
+            color: deadlineMet ? 'success' : 'error',
+            label: deadlineMet ? 'Frist eingehalten' : 'Abgelaufen',
+        };
+    }
+
+    let color: ChipProps['color'] = 'default';
+    if ([
+        ProcessTaskStatus.Running,
+        ProcessTaskStatus.Paused,
+        ProcessTaskStatus.AwaitingCustomer,
+        ProcessTaskStatus.AwaitingPayment,
+    ].includes(task.status)) {
+        const now = Date.now();
+        const started = Date.parse(task.started);
+        if (now > deadline) {
+            color = 'error';
+        } else if (deadline > started && now > started + (deadline - started) / 2) {
+            color = 'warning';
+        }
+    }
+
+    return {
+        color,
+        label: <>{color === 'error' ? 'Abgelaufen' : 'Frist'}: {formatDateTimeWithRelative(task.deadline)}</>,
+    };
+}
+
 interface TimelineItemProps {
     index?: number;
     node: ProcessNodeEntity;
@@ -368,6 +405,7 @@ function TimelineItem(props: TimelineItemProps) {
 
     const id = useId();
     const name = node.name?.trim() || nodeDefinition.name?.trim() || 'Unbenanntes Prozesselement';
+    const deadlineChipProps = getTaskDeadlineChipProps(task);
 
     return (
         <Accordion
@@ -426,9 +464,9 @@ function TimelineItem(props: TimelineItemProps) {
                 </Typography>
 
                 {
-                    task?.deadline != null &&
+                    deadlineChipProps != null &&
                     <Chip
-                        label={<>Frist: {formatDateTimeWithRelative(task.deadline)}</>}
+                        {...deadlineChipProps}
                         size="small"
                         sx={{
                             mx: 1,

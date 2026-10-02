@@ -123,6 +123,94 @@ describe('Process instance history preview', () => {
         ]);
     });
 
+    describe('deadline chips', () => {
+        const started = '2026-10-01T10:00:00Z';
+        const deadline = '2026-10-03T10:00:00Z';
+
+        it.each([
+            {now: '2026-10-02T09:59:59.999Z', color: 'Default', label: 'Frist'},
+            {now: '2026-10-02T10:00:00Z', color: 'Default', label: 'Frist'},
+            {now: '2026-10-02T10:00:00.001Z', color: 'Warning', label: 'Frist'},
+            {now: deadline, color: 'Warning', label: 'Frist'},
+            {now: '2026-10-03T10:00:00.001Z', color: 'Error', label: 'Abgelaufen'},
+        ])('shows $label in $color at $now', async ({now, color, label}) => {
+            vi.spyOn(Date, 'now').mockReturnValue(Date.parse(now));
+            await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1), started, deadline}]);
+
+            const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
+            expect(summary).toHaveAccessibleName(new RegExp(`${label}: 03\\.10\\.2026 – 12:00 Uhr`));
+            expect(summary.querySelector('.MuiChip-root')).toHaveClass(`MuiChip-color${color}`);
+        });
+
+        describe.each([
+            ProcessTaskStatus.Paused,
+            ProcessTaskStatus.AwaitingCustomer,
+            ProcessTaskStatus.AwaitingPayment,
+        ])('open task with status %s', (status) => {
+            it.each([
+                {now: '2026-10-02T12:00:00Z', color: 'Warning', label: 'Frist'},
+                {now: '2026-10-04T10:00:00Z', color: 'Error', label: 'Abgelaufen'},
+            ])('shows $label in $color', async ({now, color, label}) => {
+                vi.spyOn(Date, 'now').mockReturnValue(Date.parse(now));
+                await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1, status), started, deadline}]);
+
+                const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
+                expect(summary).toHaveAccessibleName(new RegExp(`${label}: 03\\.10\\.2026 – 12:00 Uhr`));
+                expect(summary.querySelector('.MuiChip-root')).toHaveClass(`MuiChip-color${color}`);
+            });
+        });
+
+        describe.each(['2026-10-04T10:00:00Z', '2027-10-04T10:00:00Z'])('completed tasks viewed at %s', (now) => {
+            it.each([
+                {finished: '2026-10-02T12:00:00Z', color: 'Success', label: 'Frist eingehalten'},
+                {finished: deadline, color: 'Success', label: 'Frist eingehalten'},
+                {finished: '2026-10-03T10:00:00.001Z', color: 'Error', label: 'Abgelaufen'},
+            ])('shows $label without a timestamp when finished at $finished', async ({finished, color, label}) => {
+                vi.spyOn(Date, 'now').mockReturnValue(Date.parse(now));
+                await renderHistory([node(1, 'Prüfung')], [], [{
+                    ...task(1, 1, ProcessTaskStatus.Completed),
+                    started,
+                    deadline,
+                    finished,
+                }]);
+
+                const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
+                expect(summary).toHaveAccessibleName(`1. Prüfung: ${label}`);
+                const chip = summary.querySelector('.MuiChip-root');
+                expect(chip).toHaveTextContent(new RegExp(`^${label}$`));
+                expect(chip).toHaveClass(`MuiChip-color${color}`);
+            });
+        });
+
+        it.each([
+            ProcessTaskStatus.Completed,
+            ProcessTaskStatus.Aborted,
+            ProcessTaskStatus.Failed,
+            ProcessTaskStatus.Restarted,
+        ])('keeps an inactive %s task without a completion timestamp neutral', async (status) => {
+            vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-04T10:00:00Z'));
+            await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1, status), started, deadline}]);
+
+            const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
+            expect(summary).toHaveAccessibleName(/Frist: 03\.10\.2026 – 12:00 Uhr/);
+            expect(summary.querySelector('.MuiChip-root')).toHaveClass('MuiChip-colorDefault');
+        });
+
+        it('omits deadline chips for tasks without a deadline and upcoming steps', async () => {
+            await renderHistory(
+                [node(1, 'Prüfung'), node(2, 'Nächster Schritt')],
+                [edge(1, 2)],
+                [task(1, 1)],
+            );
+
+            for (const name of [/^1\. Prüfung:/, /^Nächster Schritt:/]) {
+                const summary = screen.getByRole('button', {name});
+                expect(summary.querySelector('.MuiChip-root')).toBeNull();
+                expect(summary).not.toHaveAccessibleName(/Frist|Abgelaufen/);
+            }
+        });
+    });
+
     it('shows the stored Markdown for its task before the existing events', async () => {
         const user = userEvent.setup();
         const completedTask = {
