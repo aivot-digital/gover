@@ -369,13 +369,6 @@ function TimelineItem(props: TimelineItemProps) {
     const id = useId();
     const name = node.name?.trim() || nodeDefinition.name?.trim() || 'Unbenanntes Prozesselement';
 
-    const {
-        label: typeLabel,
-        Icon: TypeIcon,
-        textColor: typeTextColor,
-        bgColor: typeBgColor,
-    } = ProviderTypeStyles[nodeDefinition.type];
-
     return (
         <Accordion
             component={Paper}
@@ -432,17 +425,16 @@ function TimelineItem(props: TimelineItemProps) {
                     {nodeDescription}
                 </Typography>
 
-                <Chip
-                    mode="soft"
-                    icon={<TypeIcon fontSize="small"/>}
-                    label={typeLabel}
-                    sx={{
-                        color: typeTextColor,
-                        backgroundColor: typeBgColor,
-                        mr: 1,
-                    }}
-                    size="small"
-                />
+                {
+                    task?.deadline != null &&
+                    <Chip
+                        label={<>Frist: {formatDateTimeWithRelative(task.deadline)}</>}
+                        size="small"
+                        sx={{
+                            mx: 1,
+                        }}
+                    />
+                }
             </AccordionSummary>
             <AccordionDetails
                 sx={{
