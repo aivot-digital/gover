@@ -503,65 +503,60 @@ function TimelineItem(props: TimelineItemProps) {
                         )}
                         {
                             task.taskEvents.length > 0
-                                ? (
-                                    <Stack
-                                        direction="column"
-                                        spacing={2}
-                                    >
-                                        <Typography
-                                            variant="h6"
-                                        >
-                                            Ereignisse und Zwischenergebnisse für diese Aufgabe
-                                        </Typography>
+                            &&
+                            <Stack
+                                direction="column"
+                                spacing={2}
+                                sx={{
+                                    mb: 3,
+                                }}
+                            >
+                                <Typography
+                                    variant="h6"
+                                >
+                                    Ereignisse und Zwischenergebnisse für diese Aufgabe
+                                </Typography>
 
-                                        {
-                                            task
-                                                .taskEvents
-                                                .map((event) => (
-                                                    <Paper
-                                                        variant="outlined"
+                                {
+                                    task
+                                        .taskEvents
+                                        .map((event) => (
+                                            <Paper
+                                                variant="outlined"
+                                            >
+                                                <Box
+                                                    sx={{
+                                                        p: 2,
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                        }}
                                                     >
-                                                        <Box
-                                                            sx={{
-                                                                p: 2,
-                                                            }}
-                                                        >
-                                                            <Typography
-                                                                sx={{
-                                                                    fontWeight: 600,
-                                                                }}
-                                                            >
-                                                                {event.title}
-                                                            </Typography>
-                                                            <Typography
-                                                                variant="body2"
-                                                            >
-                                                                {event.message}
-                                                            </Typography>
-                                                        </Box>
+                                                        {event.title}
+                                                    </Typography>
+                                                    <Typography
+                                                        variant="body2"
+                                                    >
+                                                        {event.message}
+                                                    </Typography>
+                                                </Box>
 
-                                                        <Divider/>
+                                                <Divider/>
 
-                                                        <Box
-                                                            sx={{
-                                                                p: 2,
-                                                                fontSize: '0.85rem',
-                                                            }}
-                                                        >
-                                                            {formatDateTimeWithRelative(event.timestamp)}
-                                                        </Box>
-                                                    </Paper>
-                                                ))
-                                        }
-                                    </Stack>
-                                )
-                                : (
-                                    <>
-                                        <Typography>
-                                            Es existieren keine relevanten Zwischenergebnisse für diese Aufgabe.
-                                        </Typography>
-                                    </>
-                                )
+                                                <Box
+                                                    sx={{
+                                                        p: 2,
+                                                        fontSize: '0.85rem',
+                                                    }}
+                                                >
+                                                    {formatDateTimeWithRelative(event.timestamp)}
+                                                </Box>
+                                            </Paper>
+                                        ))
+                                }
+                            </Stack>
                         }
 
                         <Stack
