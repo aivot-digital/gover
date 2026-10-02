@@ -24,17 +24,17 @@ public class ProcessInstanceRetentionCleanupService {
     private static final int DEFAULT_CLEANUP_BATCH_SIZE = 500;
 
     private final ProcessInstanceRepository processInstanceRepository;
-    private final ProcessInstanceService processInstanceService;
+    private final ProcessInstanceRetentionDeletionService retentionDeletionService;
     private final ExceptionMailService exceptionMailService;
     private final int cleanupBatchSize;
     private final AtomicBoolean cleanupRunning = new AtomicBoolean(false);
 
     public ProcessInstanceRetentionCleanupService(ProcessInstanceRepository processInstanceRepository,
-                                                  ProcessInstanceService processInstanceService,
+                                                  ProcessInstanceRetentionDeletionService retentionDeletionService,
                                                   ExceptionMailService exceptionMailService,
                                                   @Value("${prosuna.process-instance-retention-cleanup.batch-size:500}") Integer cleanupBatchSize) {
         this.processInstanceRepository = processInstanceRepository;
-        this.processInstanceService = processInstanceService;
+        this.retentionDeletionService = retentionDeletionService;
         this.exceptionMailService = exceptionMailService;
         this.cleanupBatchSize = cleanupBatchSize != null && cleanupBatchSize > 0
                 ? cleanupBatchSize
@@ -100,7 +100,7 @@ public class ProcessInstanceRetentionCleanupService {
             var deletedProcessInstanceCount = 0;
             for (var processInstance : dueProcessInstances) {
                 try {
-                    processInstanceService.deleteEntity(processInstance);
+                    retentionDeletionService.deleteDueProcessInstance(processInstance);
                     deletedProcessInstanceCount++;
 
                     logger.info(

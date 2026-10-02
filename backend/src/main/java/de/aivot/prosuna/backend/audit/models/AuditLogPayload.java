@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.audit.models;
 import de.aivot.prosuna.backend.audit.enums.AuditAction;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -128,6 +129,10 @@ public class AuditLogPayload {
 
     public void log() {
         service.addAuditEntry(this);
+    }
+
+    public void logRequired() throws ResponseException {
+        service.addRequiredAuditEntry(this);
     }
 
     @Nullable
