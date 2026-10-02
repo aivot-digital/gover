@@ -418,9 +418,9 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginBottom
                 maxWidth={680}
             >
-                Nach Abschluss eines Vorgangs bleibt er für diese Dauer gespeichert. Danach werden der Vorgang und alle
-                zugehörigen Anhänge gelöscht. Beim Abschluss kann eine abweichende Frist festgelegt werden. Geben Sie
-                Dauer und Zeiteinheit an, um die versionsspezifischen Einstellungen zu speichern.
+                Nach Abschluss eines Vorgangs bleibt dieser für die angegebene Dauer gespeichert.
+                Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anhänge gelöscht.
+                In Abschluss-Elementen kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
             </ElementEditorSectionHeader>
 
             <Grid container spacing={2} sx={{maxWidth: 680}}>
