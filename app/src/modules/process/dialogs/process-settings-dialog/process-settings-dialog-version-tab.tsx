@@ -20,6 +20,7 @@ import {type SelectFieldComponentOption} from '../../../../components/select-fie
 import {Hint} from '../../../../components/hint/hint';
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
 import {RetentionTimeUnit} from '../../enums/retention-time-unit';
+import {formatNumToGermanNum} from '../../../../utils/format-german-numbers';
 
 interface ProcessSettingsDialogVersionTabProps {
     open: boolean;
@@ -65,7 +66,12 @@ const caseNumberTypeOptions = [
 ];
 
 const PROCESS_VERSION_NOTES_MAX_LENGTH = 2048;
-const MAX_RETENTION_TIME_VALUE = 2_147_483_647;
+const MAX_RETENTION_TIME_VALUES: Record<RetentionTimeUnit, number> = {
+    [RetentionTimeUnit.Days]: 36_524,
+    [RetentionTimeUnit.Weeks]: 5_217,
+    [RetentionTimeUnit.Months]: 1_200,
+    [RetentionTimeUnit.Years]: 100,
+};
 const retentionTimeUnitOptions: SelectFieldComponentOption<RetentionTimeUnit>[] = [
     {value: RetentionTimeUnit.Days, label: 'Tage'},
     {value: RetentionTimeUnit.Weeks, label: 'Wochen'},
@@ -168,11 +174,12 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         if (!Number.isInteger(value) || value < 1) {
             return 'Die Aufbewahrungsdauer muss eine positive ganze Zahl sein.';
         }
-        if (value > MAX_RETENTION_TIME_VALUE) {
-            return 'Die Aufbewahrungsdauer ist zu groß.';
+        if (draft.retentionTimeUnit != null && value > MAX_RETENTION_TIME_VALUES[draft.retentionTimeUnit]) {
+            const unit = retentionTimeUnitOptions.find((option) => option.value === draft.retentionTimeUnit);
+            return `Die Aufbewahrungsdauer darf maximal ${formatNumToGermanNum(MAX_RETENTION_TIME_VALUES[draft.retentionTimeUnit])} ${unit?.label} betragen.`;
         }
         return undefined;
-    }, [draft.retentionTimeValue, isEditable]);
+    }, [draft.retentionTimeValue, draft.retentionTimeUnit, isEditable]);
 
     const retentionTimeUnitError = isEditable && draft.retentionTimeUnit == null
         ? 'Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.'
@@ -435,7 +442,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         }}
                         decimalPlaces={0}
                         minValue={1}
-                        maxValue={MAX_RETENTION_TIME_VALUE}
+                        maxValue={draft.retentionTimeUnit == null ? undefined : MAX_RETENTION_TIME_VALUES[draft.retentionTimeUnit]}
                         required={isEditable}
                         showOptionalIndicator={false}
                         error={hasEditedRetentionTime ? retentionTimeValueError : undefined}

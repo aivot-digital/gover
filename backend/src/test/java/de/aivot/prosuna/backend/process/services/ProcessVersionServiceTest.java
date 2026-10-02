@@ -5,12 +5,15 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.models.ProcessRetentionTime;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.process.services.CaseNumberGeneratorService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessVersionService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +21,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -203,6 +207,44 @@ class ProcessVersionServiceTest {
         assertThrows(ResponseException.class, () -> service.create(version
                 .setRetentionTimeValue(0)
                 .setRetentionTimeUnit(ProcessRetentionTimeUnit.Days)));
+    }
+
+    @ParameterizedTest
+    @EnumSource(ProcessRetentionTimeUnit.class)
+    void createAndUpdate_EnforceRetentionMaximumForEveryUnit(ProcessRetentionTimeUnit unit) throws ResponseException {
+        var repository = mock(ProcessVersionRepository.class);
+        when(repository.save(any(ProcessVersionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var service = new ProcessVersionService(repository, mock(ProcessNodeService.class),
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+        var maximum = (int) ProcessRetentionTime.maximumValue(unit);
+        var version = new ProcessVersionEntity().setProcessId(12).setStatus(ProcessVersionStatus.Drafted)
+                .setRetentionTimeUnit(unit).setRetentionTimeValue(maximum);
+
+        service.create(version);
+        assertThrows(ResponseException.class, () -> service.create(version.setRetentionTimeValue(maximum + 1)));
+
+        var id = ProcessVersionEntityId.of(12, 5);
+        var existing = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
+                .setStatus(ProcessVersionStatus.Drafted);
+        version.setRetentionTimeValue(maximum);
+        service.performUpdate(id, version, existing);
+        assertEquals(maximum, existing.getRetentionTimeValue());
+        assertThrows(ResponseException.class,
+                () -> service.performUpdate(id, version.setRetentionTimeValue(maximum + 1), existing));
+        assertEquals(maximum, existing.getRetentionTimeValue());
+    }
+
+    @Test
+    void validate_ReportsRetentionAboveMaximumBeforePublication() throws ResponseException {
+        var service = new ProcessVersionService(mock(ProcessVersionRepository.class), mock(ProcessNodeService.class),
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+        var version = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
+                .setRetentionTimeValue(101).setRetentionTimeUnit(ProcessRetentionTimeUnit.Years);
+
+        var result = service.validate(version);
+
+        assertTrue(result.versionProblems().contains(
+                "Die Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren."));
     }
 
     @Test

@@ -290,6 +290,93 @@ describe('ProcessSettingsDialogVersionTab', () => {
         });
     });
 
+    it.each([
+        [RetentionTimeUnit.Days, 36_524, 'Tage', '36.524'],
+        [RetentionTimeUnit.Weeks, 5_217, 'Wochen', '5.217'],
+        [RetentionTimeUnit.Months, 1_200, 'Monate', '1.200'],
+        [RetentionTimeUnit.Years, 100, 'Jahre', '100'],
+    ])('enforces the retention maximum in %s', async (unit, maximum, label, formattedMaximum) => {
+        const user = userEvent.setup();
+        const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+            retentionTimeValue: 1,
+            retentionTimeUnit: unit,
+        };
+        const update = vi.spyOn(ProcessDefinitionVersionApiService.prototype, 'update')
+            .mockImplementation(async (_id, updated) => updated);
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    ref={ref}
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                />
+            </Provider>,
+        );
+
+        const duration = screen.getByRole('textbox', {name: /Aufbewahrungsdauer/});
+        await user.clear(duration);
+        await user.type(duration, String(maximum + 1));
+        expect(screen.getByText(`Die Aufbewahrungsdauer darf maximal ${formattedMaximum} ${label} betragen.`))
+            .toBeInTheDocument();
+        act(() => ref.current?.save());
+        expect(update).not.toHaveBeenCalled();
+
+        await user.clear(duration);
+        await user.type(duration, String(maximum));
+        act(() => ref.current?.save());
+        await waitFor(() => expect(update).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({retentionTimeValue: maximum, retentionTimeUnit: unit}),
+        ));
+    });
+
+    it('rechecks the maximum when the retention unit changes', async () => {
+        const user = userEvent.setup();
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+            retentionTimeValue: 1_200,
+            retentionTimeUnit: RetentionTimeUnit.Months,
+        };
+        const onValidationErrorChange = vi.fn();
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                    onValidationErrorChange={onValidationErrorChange}
+                />
+            </Provider>,
+        );
+
+        await user.click(screen.getByRole('combobox', {name: /Zeiteinheit/}));
+        await user.click(await screen.findByText('Jahre'));
+        expect(screen.getByText('Die Aufbewahrungsdauer darf maximal 100 Jahre betragen.'))
+            .toBeInTheDocument();
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(true));
+
+        await user.click(screen.getByRole('combobox', {name: /Zeiteinheit/}));
+        await user.click(await screen.findByText('Monate'));
+        expect(screen.queryByText('Die Aufbewahrungsdauer darf maximal 100 Jahre betragen.'))
+            .not.toBeInTheDocument();
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(false));
+    });
+
     it('shows the configured retention time without allowing changes to a published version', () => {
         const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
         const version = {

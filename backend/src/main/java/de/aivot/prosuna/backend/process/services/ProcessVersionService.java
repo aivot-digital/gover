@@ -153,6 +153,8 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
 
         if (entity.getRetentionTimeValue() == null || entity.getRetentionTimeUnit() == null) {
             problems.add("Legen Sie eine Aufbewahrungsfrist für Vorgänge fest.");
+        } else if (entity.getRetentionTimeValue() > ProcessRetentionTime.maximumValue(entity.getRetentionTimeUnit())) {
+            problems.add("Die Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren.");
         }
 
         if (entity.getLegalSupportDepartmentId() == null) {
@@ -185,6 +187,9 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         }
         if (value == null || unit == null || value <= 0) {
             throw ResponseException.badRequest("Geben Sie für die Aufbewahrungsfrist eine positive ganze Zahl und eine Zeiteinheit an.");
+        }
+        if (value > ProcessRetentionTime.maximumValue(unit)) {
+            throw ResponseException.badRequest("Die Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren.");
         }
 
         try {

@@ -10,6 +10,16 @@ public final class ProcessRetentionTime {
     private ProcessRetentionTime() {
     }
 
+    public static long maximumValue(@Nonnull ProcessRetentionTimeUnit unit) {
+        // Use the shortest possible 100-year calendar span so the limit holds for every start date.
+        return switch (unit) {
+            case Days -> 36_524;
+            case Weeks -> 5_217;
+            case Months -> 1_200;
+            case Years -> 100;
+        };
+    }
+
     @Nonnull
     public static Instant calculate(@Nonnull Instant from, long value, @Nonnull ProcessRetentionTimeUnit unit) {
         if (value <= 0) {
