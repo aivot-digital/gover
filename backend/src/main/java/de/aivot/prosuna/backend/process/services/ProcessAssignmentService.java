@@ -20,8 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -31,7 +32,7 @@ import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermis
 @Service
 public class ProcessAssignmentService {
     private static final Set<ProcessTaskStatus> ACTIVE_TASK_STATUSES = Set.of(ProcessTaskStatus.Running, ProcessTaskStatus.InProgress,
-            ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
+            ProcessTaskStatus.AwaitingStaff, ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
     private static final List<String> TASK_ASSIGNMENT_PERMISSIONS = List.of(PROCESS_INSTANCE_READ, PROCESS_INSTANCE_EDIT_TASK);
     private final PermissionService permissions;
     private final UserRepository users;
@@ -111,11 +112,21 @@ public class ProcessAssignmentService {
         }
         validateAssignee(assignedUserId, task.getProcessInstanceId(), true);
         var previousUserId = task.getAssignedUserId();
-        task.setAssignedUserId(assignedUserId).setUpdated(Instant.now());
+        var previousStatus = task.getStatus();
+        applyTaskAssignment(task, assignedUserId);
+        task.setUpdated(Instant.now());
         var result = tasks.saveAndFlush(task);
+        var oldState = new HashMap<String, Object>();
+        var newState = new HashMap<String, Object>();
+        oldState.put("assignedUserId", previousUserId);
+        newState.put("assignedUserId", assignedUserId);
+        if (previousStatus != result.getStatus()) {
+            oldState.put("status", previousStatus);
+            newState.put("status", result.getStatus());
+        }
         audit.create().withUser(actor).withAuditAction(AuditAction.Update, ProcessInstanceTaskEntity.class, taskId,
                         "id", Map.of("id", taskId, "processInstanceId", task.getProcessInstanceId()))
-                .withDiff(Collections.singletonMap("assignedUserId", previousUserId), Collections.singletonMap("assignedUserId", assignedUserId))
+                .withDiff(oldState, newState)
                 .withMessage("Die Zuweisung der Aufgabe mit der ID %s wurde geändert.", taskId).log();
         return result;
     }
@@ -127,8 +138,16 @@ public class ProcessAssignmentService {
     public void saveRuntimeAssignment(@Nonnull ProcessInstanceTaskEntity task, @Nonnull String assignedUserId) throws ResponseException {
         instances.lockAccessById(task.getProcessInstanceId()).orElseThrow(ResponseException::notFound);
         validateAssignee(assignedUserId, task.getProcessInstanceId(), true);
-        task.setAssignedUserId(assignedUserId);
+        applyTaskAssignment(task, assignedUserId);
         tasks.saveAndFlush(task);
+    }
+
+    private void applyTaskAssignment(@Nonnull ProcessInstanceTaskEntity task, @Nonnull String assignedUserId) {
+        if (!assignedUserId.equals(task.getAssignedUserId()) &&
+                (task.getStatus() == ProcessTaskStatus.Running || task.getStatus() == ProcessTaskStatus.InProgress)) {
+            task.setStatus(ProcessTaskStatus.AwaitingStaff);
+        }
+        task.setAssignedUserId(assignedUserId);
     }
 
     /**

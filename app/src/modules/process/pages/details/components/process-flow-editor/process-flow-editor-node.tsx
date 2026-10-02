@@ -157,6 +157,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 return theme.palette.info.main;
             case ProcessTaskStatus.InProgress:
                 return theme.palette.primary.main;
+            case ProcessTaskStatus.AwaitingStaff:
+                return theme.palette.warning.main;
             case ProcessTaskStatus.AwaitingPayment:
             case ProcessTaskStatus.AwaitingCustomer:
                 return theme.palette.info.main;
@@ -307,7 +309,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         const items: ProcessActionMenuItem[] = [];
 
         if (associatedTask != null) {
-            if (associatedTask.status == ProcessTaskStatus.Running || associatedTask.status == ProcessTaskStatus.InProgress) {
+            if (associatedTask.status == ProcessTaskStatus.Running || associatedTask.status == ProcessTaskStatus.InProgress ||
+                associatedTask.status == ProcessTaskStatus.AwaitingStaff) {
                 items.push({
                     label: 'Aufgabe aufrufen',
                     icon: ModuleIcons.tasks,

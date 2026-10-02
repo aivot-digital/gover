@@ -81,7 +81,8 @@ export function getProcessTaskStatusColor(
 function getProcessTaskStatusIcon(item?: ProcessTaskDetailsPageItem | null): ReactElement | undefined {
     const status = item?.task.status;
 
-    if (status === ProcessTaskStatus.Running || status === ProcessTaskStatus.InProgress) {
+    if (status === ProcessTaskStatus.Running || status === ProcessTaskStatus.InProgress ||
+        status === ProcessTaskStatus.AwaitingStaff) {
         return <AccountCircle fontSize="small" />;
     }
 

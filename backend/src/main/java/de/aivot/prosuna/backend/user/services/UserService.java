@@ -28,6 +28,7 @@ public class UserService implements EntityService<UserEntity, String> {
     private static final List<ProcessTaskStatus> DELETION_BLOCKING_TASK_STATUSES = List.of(
             ProcessTaskStatus.Running,
             ProcessTaskStatus.InProgress,
+            ProcessTaskStatus.AwaitingStaff,
             ProcessTaskStatus.Paused,
             ProcessTaskStatus.Restarted
     );

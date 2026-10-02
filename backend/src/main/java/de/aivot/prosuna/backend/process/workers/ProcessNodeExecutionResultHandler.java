@@ -933,6 +933,8 @@ public class ProcessNodeExecutionResultHandler {
     private void handleTaskUpdated(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskUpdated> context) throws ProcessNodeExecutionException {
         if (context.triggeringUser != null || context.processInstanceTask.getStatus() == ProcessTaskStatus.InProgress) {
             context.processInstanceTask.setStatus(ProcessTaskStatus.InProgress);
+        } else if (context.processInstanceTask.getStatus() == ProcessTaskStatus.AwaitingStaff) {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingStaff);
         } else {
             context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
         }

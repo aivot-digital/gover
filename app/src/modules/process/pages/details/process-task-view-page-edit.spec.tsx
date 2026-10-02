@@ -193,6 +193,21 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         expect(screen.getByText('Eingaben wurden zwischengespeichert')).toBeInTheDocument();
     });
 
+    it('refreshes an awaiting staff task after its first successful save', async () => {
+        testState.item.task.status = ProcessTaskStatus.AwaitingStaff;
+        const {putTaskView} = await renderPage({});
+        testState.nextValues = {subject: literalAuthoredValue('Started')};
+        vi.useFakeTimers();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Werte ändern'}));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(2000);
+        });
+
+        expect(putTaskView).toHaveBeenCalledOnce();
+        expect(testState.refresh).toHaveBeenCalledOnce();
+    });
+
     it('flushes the first change before navigating away', async () => {
         const initialValues = {
             subject: literalAuthoredValue('Existing subject'),

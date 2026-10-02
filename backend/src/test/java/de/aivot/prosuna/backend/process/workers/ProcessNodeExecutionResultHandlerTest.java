@@ -83,6 +83,25 @@ import static org.mockito.Mockito.when;
 
 class ProcessNodeExecutionResultHandlerTest {
     @Test
+    void automaticUpdateKeepsAwaitingStaffUntilSuccessfulStaffUpdate() throws Exception {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, new ArrayList<>());
+        var instance = processInstance();
+        var task = processInstanceTask("staff").setStatus(ProcessTaskStatus.AwaitingStaff);
+        var node = processNode("Prüfung");
+        var provider = new TestProcessNodeDefinition("Prüfung");
+        var result = new ProcessNodeExecutionResultTaskUpdated();
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        handler.handleResult(logger, null, provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.AwaitingStaff, task.getStatus());
+
+        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
+        assertEquals(2, savedTasks.size());
+    }
+
+    @Test
     void staffUpdateMarksTaskInProgressAndKeepsInstanceRunningAcrossLaterUpdates() throws Exception {
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
         var savedInstances = new ArrayList<ProcessInstanceEntity>();

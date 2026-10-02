@@ -160,7 +160,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     setTaskInputDataSaveState(
                         hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved,
                     );
-                    if (item.task.status === ProcessTaskStatus.Running) {
+                    if (item.task.status === ProcessTaskStatus.Running ||
+                        item.task.status === ProcessTaskStatus.AwaitingStaff) {
                         refresh();
                     }
 
@@ -506,7 +507,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                 const updatedTask = await new ProcessInstanceTaskApiService().retrieve(item.task.id);
 
-                if (updatedTask.status === ProcessTaskStatus.Running || updatedTask.status === ProcessTaskStatus.InProgress) {
+                if (updatedTask.status === ProcessTaskStatus.Running || updatedTask.status === ProcessTaskStatus.InProgress ||
+                    updatedTask.status === ProcessTaskStatus.AwaitingStaff) {
                     refresh();
                     setTaskView(updatedTaskView);
                     setTaskInputData(updatedTaskView.data);

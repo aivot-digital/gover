@@ -199,6 +199,7 @@ export function processListColumns<T extends Entry>(tasks: boolean, onChanged: (
                             [
                                 ProcessTaskStatus.Running,
                                 ProcessTaskStatus.InProgress,
+                                ProcessTaskStatus.AwaitingStaff,
                                 ProcessTaskStatus.Paused,
                                 ProcessTaskStatus.AwaitingCustomer,
                                 ProcessTaskStatus.AwaitingPayment,

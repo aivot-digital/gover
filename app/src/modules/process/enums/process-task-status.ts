@@ -8,6 +8,7 @@ export enum ProcessTaskStatus {
     Failed = 'Failed',
     Restarted = 'Restarted',
     InProgress = 'InProgress',
+    AwaitingStaff = 'AwaitingStaff',
 }
 
 export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
@@ -20,6 +21,7 @@ export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
     [ProcessTaskStatus.Failed]: 'Fehlgeschlagen',
     [ProcessTaskStatus.Restarted]: 'Neu gestartet',
     [ProcessTaskStatus.InProgress]: 'In Bearbeitung',
+    [ProcessTaskStatus.AwaitingStaff]: 'Wartet auf Bearbeitung',
 };
 
 export const ProcessTaskStatusColors: Record<ProcessTaskStatus, 'default' | 'primary' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -32,4 +34,5 @@ export const ProcessTaskStatusColors: Record<ProcessTaskStatus, 'default' | 'pri
     [ProcessTaskStatus.Failed]: 'error',
     [ProcessTaskStatus.Restarted]: 'warning',
     [ProcessTaskStatus.InProgress]: 'primary',
+    [ProcessTaskStatus.AwaitingStaff]: 'warning',
 };

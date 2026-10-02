@@ -96,8 +96,9 @@ public class ProcessListServiceTest {
     }
 
     @Test
-    void runningInstancesAndInProgressTasksRemainInActiveAndOpenViews() throws Exception {
+    void runningInstancesAndStaffTasksRemainInActiveAndOpenViews() throws Exception {
         sql("update process_instance_tasks set status = 8 where id = 11");
+        sql("update process_instance_tasks set status = 9 where id = 15");
 
         var instances = service.instances("me", PageRequest.of(0, 12), filter("active", "all", null));
         assertEquals(1, instances.getTotalElements());
@@ -107,6 +108,8 @@ public class ProcessListServiceTest {
         assertEquals(3, tasks.getTotalElements());
         assertEquals(ProcessTaskStatus.InProgress, tasks.getContent().stream()
                 .filter(task -> task.id() == 11L).findFirst().orElseThrow().status());
+        assertEquals(ProcessTaskStatus.AwaitingStaff, tasks.getContent().stream()
+                .filter(task -> task.id() == 15L).findFirst().orElseThrow().status());
         assertEquals(1, service.tasks("me", PageRequest.of(0, 12), filter("overdue", "all", null)).getTotalElements());
     }
 

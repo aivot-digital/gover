@@ -105,19 +105,20 @@ describe('ProcessAssignmentButton', () => {
         expect(options).not.toHaveBeenCalled();
     });
 
-    it('allows reassignment after task work has started', () => {
-        render(
-            <ProcessAssignmentButton
-                instanceId={17}
-                taskId={5}
-                taskStatus={ProcessTaskStatus.InProgress}
-                assignedUserId="former"
-                onAssigned={vi.fn()}
-            />,
-        );
+    it.each([ProcessTaskStatus.InProgress, ProcessTaskStatus.AwaitingStaff])(
+        'allows reassignment of %s tasks', (status) => {
+            render(
+                <ProcessAssignmentButton
+                    instanceId={17}
+                    taskId={5}
+                    taskStatus={status}
+                    assignedUserId="former"
+                    onAssigned={vi.fn()}
+                />,
+            );
 
-        expect(screen.getByRole('button', {name: 'Aufgabe zuweisen'})).toBeEnabled();
-    });
+            expect(screen.getByRole('button', {name: 'Aufgabe zuweisen'})).toBeEnabled();
+        });
 
     it.each([ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted])(
         'disables assignment for %s instances and explains why',
