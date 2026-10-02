@@ -6,8 +6,10 @@ import de.aivot.prosuna.backend.lib.services.EntityService;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeProblems;
+import de.aivot.prosuna.backend.process.models.ProcessRetentionTime;
 import de.aivot.prosuna.backend.process.models.ProcessVersionProblems;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import jakarta.annotation.Nonnull;
@@ -18,8 +20,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.DateTimeException;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -45,6 +50,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     @Override
     public ProcessVersionEntity create(@Nonnull ProcessVersionEntity entity) throws ResponseException {
         caseNumberGeneratorService.validateConfiguration(entity.getCaseNumberType(), entity.getCaseNumberTemplate());
+        validateRetentionConfiguration(entity);
 
         // Fetch the latest version number for the given process definition
         Integer latestVersionNumber = processDefinitionVersionRepository
@@ -94,6 +100,12 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
                                               @Nonnull ProcessVersionEntity entity,
                                               @Nonnull ProcessVersionEntity existingEntity) throws ResponseException {
         caseNumberGeneratorService.validateConfiguration(entity.getCaseNumberType(), entity.getCaseNumberTemplate());
+        validateRetentionConfiguration(entity);
+        if (existingEntity.getStatus() != ProcessVersionStatus.Drafted && (
+                !Objects.equals(existingEntity.getRetentionTimeValue(), entity.getRetentionTimeValue())
+                        || existingEntity.getRetentionTimeUnit() != entity.getRetentionTimeUnit())) {
+            throw ResponseException.conflict("Die Aufbewahrungsfrist einer veröffentlichten Prozessversion kann nicht geändert werden. Erstellen Sie dafür eine neue Version.");
+        }
         existingEntity.setStatus(entity.getStatus());
         existingEntity.setPublicTitle(entity.getPublicTitle());
         existingEntity.setCaseNumberTemplate(entity.getCaseNumberTemplate());
@@ -107,6 +119,8 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         existingEntity.setAccessibilityDepartmentId(entity.getAccessibilityDepartmentId());
         existingEntity.setProcessSpecificPrivacyStatement(entity.getProcessSpecificPrivacyStatement());
         existingEntity.setProcessSpecificAccessibilityStatement(entity.getProcessSpecificAccessibilityStatement());
+        existingEntity.setRetentionTimeValue(entity.getRetentionTimeValue());
+        existingEntity.setRetentionTimeUnit(entity.getRetentionTimeUnit());
         return processDefinitionVersionRepository.save(existingEntity);
     }
 
@@ -137,6 +151,12 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     private List<String> validateProcessVersionFields(@Nonnull ProcessVersionEntity entity) {
         var problems = new LinkedList<String>();
 
+        if (entity.getRetentionTimeValue() == null || entity.getRetentionTimeUnit() == null) {
+            problems.add("Legen Sie eine Aufbewahrungsfrist für Vorgänge fest.");
+        } else if (entity.getRetentionTimeValue() > ProcessRetentionTime.maximumValue(entity.getRetentionTimeUnit())) {
+            problems.add("Die Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren.");
+        }
+
         if (entity.getLegalSupportDepartmentId() == null) {
             problems.add("Der fachliche Support muss eingerichtet sein.");
         }
@@ -154,6 +174,29 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         }
 
         return problems;
+    }
+
+    private void validateRetentionConfiguration(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+        var value = entity.getRetentionTimeValue();
+        var unit = entity.getRetentionTimeUnit();
+        if (value == null && unit == null) {
+            if (entity.getStatus() == ProcessVersionStatus.Published) {
+                throw ResponseException.badRequest("Legen Sie vor der Veröffentlichung eine Aufbewahrungsfrist für Vorgänge fest.");
+            }
+            return;
+        }
+        if (value == null || unit == null || value <= 0) {
+            throw ResponseException.badRequest("Geben Sie für die Aufbewahrungsfrist eine positive ganze Zahl und eine Zeiteinheit an.");
+        }
+        if (value > ProcessRetentionTime.maximumValue(unit)) {
+            throw ResponseException.badRequest("Die Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren.");
+        }
+
+        try {
+            ProcessRetentionTime.calculate(Instant.now(), value, unit);
+        } catch (DateTimeException | ArithmeticException e) {
+            throw ResponseException.badRequest("Die angegebene Aufbewahrungsfrist ist zu groß.");
+        }
     }
 
     private <NodeConfig> Optional<ProcessNodeProblems> val(ProcessNodeEntity node, ProcessNodeDefinition<NodeConfig> provider) throws ResponseException {

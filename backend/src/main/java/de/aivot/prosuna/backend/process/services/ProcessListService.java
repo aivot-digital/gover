@@ -30,8 +30,8 @@ import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermis
 @Service
 @Transactional(readOnly = true)
 public class ProcessListService {
-    public static final List<ProcessTaskStatus> OPEN_TASK_STATUSES = List.of(ProcessTaskStatus.Running,
-            ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
+    public static final List<ProcessTaskStatus> OPEN_TASK_STATUSES = List.of(ProcessTaskStatus.Running, ProcessTaskStatus.InProgress,
+            ProcessTaskStatus.AwaitingStaff, ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
     private final EntityManager em;
     private final PermissionService permissions;
     private final UserRepository users;

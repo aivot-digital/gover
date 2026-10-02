@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceAccessControlPre
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAccessControlPresetFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
@@ -107,7 +108,9 @@ class ProcessControllerTest {
                 Instant.now(),
                 Instant.now(),
                 null
-        ).setThemeId(77);
+        ).setThemeId(77)
+                .setRetentionTimeValue(6)
+                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Months);
 
         var departmentPreset = new ProcessInstanceAccessControlPresetEntity()
                 .setId(1)
@@ -147,6 +150,8 @@ class ProcessControllerTest {
 
         assertEquals(3, result.getProcessVersion());
         assertEquals(77, result.getThemeId());
+        assertEquals(6, result.getRetentionTimeValue());
+        assertEquals(ProcessRetentionTimeUnit.Months, result.getRetentionTimeUnit());
         verify(permissionService)
                 .requireProcessPermission("user-1", 42, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE);
 

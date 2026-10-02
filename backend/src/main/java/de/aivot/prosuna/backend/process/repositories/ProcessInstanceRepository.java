@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +40,8 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
     List<ProcessInstanceEntity> findAllByCreatedForTestClaimId(Integer createdForTestClaimId);
 
     long countAllByStatusIs(ProcessInstanceStatus status);
+
+    long countAllByStatusIn(Collection<ProcessInstanceStatus> statuses);
 
     boolean existsByCaseNumber(String caseNumber);
 
@@ -138,7 +141,7 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
             SELECT COUNT(*)
             FROM process_instances instance
             WHERE instance.created_for_test_claim_id IS NULL
-              AND instance.status = :runningStatus
+              AND instance.status IN (:activeStatuses)
               AND (
                     :hasSystemAccess = true
                     OR EXISTS (
@@ -153,7 +156,7 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
     long countActiveDashboardInstances(@Param("userId") String userId,
                                        @Param("hasSystemAccess") boolean hasSystemAccess,
                                        @Param("permission") String permission,
-                                       @Param("runningStatus") int runningStatus);
+                                       @Param("activeStatuses") Collection<Integer> activeStatuses);
 
     /**
      * Reads the highest increment used for the already rendered static parts of a case number template.

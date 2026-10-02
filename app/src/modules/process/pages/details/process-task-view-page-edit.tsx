@@ -53,7 +53,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const {item} = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
+    const {item, refresh} = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
 
     const pushUpdateTimeoutRef = useRef<number | null>(null);
     const taskSessionRef = useRef(0);
@@ -160,6 +160,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     setTaskInputDataSaveState(
                         hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved,
                     );
+                    if (item.task.status === ProcessTaskStatus.Running ||
+                        item.task.status === ProcessTaskStatus.AwaitingStaff) {
+                        refresh();
+                    }
 
                     return true;
                 })
@@ -192,7 +196,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             return await savePromise;
         },
-        [dispatch, item],
+        [dispatch, item, refresh],
     );
 
     const flushCurrentTaskInputData = useCallback(async (): Promise<boolean> => {
@@ -503,7 +507,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                 const updatedTask = await new ProcessInstanceTaskApiService().retrieve(item.task.id);
 
-                if (updatedTask.status === ProcessTaskStatus.Running) {
+                if (updatedTask.status === ProcessTaskStatus.Running || updatedTask.status === ProcessTaskStatus.InProgress ||
+                    updatedTask.status === ProcessTaskStatus.AwaitingStaff) {
+                    refresh();
                     setTaskView(updatedTaskView);
                     setTaskInputData(updatedTaskView.data);
                     setLastPersistedTaskInputData(updatedTaskView.data);
