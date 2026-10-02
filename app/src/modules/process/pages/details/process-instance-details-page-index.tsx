@@ -39,6 +39,7 @@ import EventAvailable from '@aivot/mui-material-symbols-400-n25-outlined/EventAv
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
+import AutoDelete from "@aivot/mui-material-symbols-400-n25-outlined/AutoDelete";
 
 export function ProcessInstanceDetailsPageIndex() {
     const sectionId = useId();
@@ -169,11 +170,20 @@ export function ProcessInstanceDetailsPageIndex() {
                 ),
         },
     ];
+
     if (instance.finished != null) {
         statusItems.push({
             label: 'Beendet am',
             icon: <EventAvailable />,
             children: formatDateTimeWithRelative(instance.finished),
+        });
+
+        statusItems.push({
+            label: 'Aufbewahrung bis',
+            icon: <AutoDelete />,
+            children: instance.keepUntil == null ?
+                'Keine Aufbewahrungsfrist festgelegt' :
+                formatDateTimeWithRelative(instance.keepUntil),
         });
     }
 

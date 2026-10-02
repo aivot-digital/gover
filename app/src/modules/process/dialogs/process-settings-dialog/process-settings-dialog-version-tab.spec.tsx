@@ -7,6 +7,8 @@ import {Provider} from 'react-redux';
 import {describe, expect, it, vi} from 'vitest';
 import {type ThemeResponseDTO} from '../../../themes/models/theme';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
+import {RetentionTimeUnit} from '../../enums/retention-time-unit';
+import {ProcessStatus} from '../../enums/process-status';
 import {
     ProcessSettingsDialogVersionTab,
     type ProcessSettingsDialogVersionTabHandle,
@@ -32,6 +34,8 @@ describe('ProcessSettingsDialogVersionTab', () => {
             processId: 42,
             processVersion: 7,
             publicTitle: 'Bauantrag',
+            retentionTimeValue: 30,
+            retentionTimeUnit: RetentionTimeUnit.Days,
         };
         const update = vi
             .spyOn(ProcessDefinitionVersionApiService.prototype, 'update')
@@ -70,6 +74,8 @@ describe('ProcessSettingsDialogVersionTab', () => {
             processId: 42,
             processVersion: 7,
             publicTitle: 'Bauantrag',
+            retentionTimeValue: 30,
+            retentionTimeUnit: RetentionTimeUnit.Days,
         };
         const theme = createTheme(11, 'Nordlicht');
         const updatedVersion = {
@@ -113,10 +119,239 @@ describe('ProcessSettingsDialogVersionTab', () => {
                     processDefinitionId: 42,
                     processDefinitionVersion: 7,
                 },
-                expect.objectContaining({themeId: 11}),
+                expect.objectContaining({
+                    themeId: 11,
+                    retentionTimeValue: 30,
+                    retentionTimeUnit: RetentionTimeUnit.Days,
+                }),
             );
             expect(onVersionChange).toHaveBeenCalledWith(updatedVersion);
         });
+    });
+
+    it('saves the retention time and reports unsaved changes', async () => {
+        const user = userEvent.setup();
+        const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+        };
+        const onUnsavedChangesChange = vi.fn();
+        const update = vi
+            .spyOn(ProcessDefinitionVersionApiService.prototype, 'update')
+            .mockImplementation(async (_id, updated) => updated);
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    ref={ref}
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                    onUnsavedChangesChange={onUnsavedChangesChange}
+                />
+            </Provider>,
+        );
+
+        await user.type(screen.getByRole('textbox', {name: /Aufbewahrungsfrist/}), '12');
+        await user.click(screen.getByRole('combobox', {name: /Einheit der Aufbewahrungsfrist/}));
+        await user.click(await screen.findByText('Wochen'));
+
+        await waitFor(() => expect(onUnsavedChangesChange).toHaveBeenLastCalledWith(true));
+        act(() => ref.current?.save());
+
+        await waitFor(() => expect(update).toHaveBeenCalledWith(
+            {processDefinitionId: 42, processDefinitionVersion: 7},
+            expect.objectContaining({
+                retentionTimeValue: 12,
+                retentionTimeUnit: RetentionTimeUnit.Weeks,
+            }),
+        ));
+    });
+
+    it('requires both retention fields before saving other version changes', async () => {
+        const user = userEvent.setup();
+        const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+        };
+        const onValidationErrorChange = vi.fn();
+        const update = vi
+            .spyOn(ProcessDefinitionVersionApiService.prototype, 'update')
+            .mockImplementation(async (_id, updated) => updated);
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    ref={ref}
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                    onValidationErrorChange={onValidationErrorChange}
+                />
+            </Provider>,
+        );
+
+        const duration = screen.getByRole('textbox', {name: 'Aufbewahrungsfrist'});
+        const unit = screen.getByRole('combobox', {name: 'Einheit der Aufbewahrungsfrist'});
+        expect(duration).toHaveAttribute('aria-required', 'true');
+        expect(unit).toHaveAttribute('aria-required', 'true');
+        expect(duration).not.toHaveAttribute('aria-invalid', 'true');
+        expect(unit).not.toHaveAttribute('aria-invalid', 'true');
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsfrist an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
+
+        await user.type(screen.getByRole('textbox', {name: /Öffentliche Bezeichnung/}), ' neu');
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(true));
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsfrist an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
+        act(() => ref.current?.save());
+        expect(update).not.toHaveBeenCalled();
+
+        await user.type(duration, '3');
+        expect(screen.getByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).toBeInTheDocument();
+        act(() => ref.current?.save());
+        expect(update).not.toHaveBeenCalled();
+
+        act(() => ref.current?.reset());
+        expect(screen.getByRole('textbox', {name: 'Aufbewahrungsfrist'})).toHaveValue('');
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsfrist an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
+
+        await user.type(screen.getByRole('textbox', {name: 'Aufbewahrungsfrist'}), '3');
+        await user.click(unit);
+        await user.click(await screen.findByText('Tage'));
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(false));
+        act(() => ref.current?.save());
+        await waitFor(() => expect(update).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+                publicTitle: 'Bauantrag',
+                retentionTimeValue: 3,
+                retentionTimeUnit: RetentionTimeUnit.Days,
+            }),
+        ));
+    });
+
+    it('blocks invalid retention times and restores the original values on reset', async () => {
+        const user = userEvent.setup();
+        const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+            retentionTimeValue: 30,
+            retentionTimeUnit: RetentionTimeUnit.Days,
+        };
+        const onUnsavedChangesChange = vi.fn();
+        const onValidationErrorChange = vi.fn();
+        const update = vi.spyOn(ProcessDefinitionVersionApiService.prototype, 'update');
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    ref={ref}
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                    onUnsavedChangesChange={onUnsavedChangesChange}
+                    onValidationErrorChange={onValidationErrorChange}
+                />
+            </Provider>,
+        );
+
+        const duration = screen.getByRole('textbox', {name: /Aufbewahrungsfrist/});
+        await user.clear(duration);
+        expect(screen.getByText('Geben Sie eine Aufbewahrungsfrist an.')).toBeInTheDocument();
+        await user.type(duration, '0');
+        expect(screen.getByText('Die Aufbewahrungsfrist muss eine positive ganze Zahl sein.')).toBeInTheDocument();
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(true));
+        act(() => ref.current?.save());
+        expect(update).not.toHaveBeenCalled();
+
+        act(() => ref.current?.reset());
+        expect(screen.getByRole('textbox', {name: /Aufbewahrungsfrist/})).toHaveValue('30');
+        expect(screen.getByRole('combobox', {name: /Einheit der Aufbewahrungsfrist/})).toHaveTextContent('Tage');
+        await waitFor(() => {
+            expect(onUnsavedChangesChange).toHaveBeenLastCalledWith(false);
+            expect(onValidationErrorChange).toHaveBeenLastCalledWith(false);
+        });
+    });
+
+    it('shows the configured retention time without allowing changes to a published version', () => {
+        const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+            status: ProcessStatus.Published,
+            retentionTimeValue: 2,
+            retentionTimeUnit: RetentionTimeUnit.Years,
+        };
+        const update = vi.spyOn(ProcessDefinitionVersionApiService.prototype, 'update');
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    ref={ref}
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                />
+            </Provider>,
+        );
+
+        expect(screen.getByRole('textbox', {name: /Aufbewahrungsfrist/})).toHaveValue('2');
+        expect(screen.getByRole('textbox', {name: /Aufbewahrungsfrist/})).toBeDisabled();
+        expect(screen.getByRole('combobox', {name: /Einheit der Aufbewahrungsfrist/})).toHaveTextContent('Jahre');
+        expect(screen.getByRole('combobox', {name: /Einheit der Aufbewahrungsfrist/})).toHaveAttribute('aria-disabled', 'true');
+        act(() => ref.current?.save());
+        expect(update).not.toHaveBeenCalled();
+    });
+
+    it('does not show missing retention errors for a published version', () => {
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+            status: ProcessStatus.Published,
+        };
+        const onValidationErrorChange = vi.fn();
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                    onValidationErrorChange={onValidationErrorChange}
+                />
+            </Provider>,
+        );
+
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsfrist an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Aufbewahrungsfrist'})).toBeDisabled();
+        expect(screen.getByRole('combobox', {name: 'Einheit der Aufbewahrungsfrist'})).toHaveAttribute('aria-disabled', 'true');
+        expect(onValidationErrorChange).toHaveBeenLastCalledWith(false);
     });
 });
 

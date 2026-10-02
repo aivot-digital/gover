@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.audit.services;
 
 import de.aivot.prosuna.backend.audit.entities.AuditLogEntity;
 import de.aivot.prosuna.backend.audit.models.AuditLogPayload;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +34,30 @@ public class ScopedAuditService {
     }
 
     public void addAuditEntry(@Nonnull AuditLogPayload payload) {
+        var auditLog = toAuditLog(payload);
+
+        logAuditEntry(auditLog);
+
+        try {
+            auditLogService.create(auditLog);
+        } catch (Exception e) {
+            logger.atError()
+                    .setMessage("Failed to persist audit log")
+                    .setCause(e)
+                    .addKeyValue("module", module)
+                    .addKeyValue("triggerType", auditLog.getTriggerType())
+                    .log();
+        }
+    }
+
+    /** Persist in the caller's transaction so an operation failure also rolls back this entry. */
+    public void addRequiredAuditEntry(@Nonnull AuditLogPayload payload) throws ResponseException {
+        var auditLog = toAuditLog(payload);
+        auditLogService.createAndFlush(auditLog);
+    }
+
+    @Nonnull
+    private AuditLogEntity toAuditLog(@Nonnull AuditLogPayload payload) {
         var request = getCurrentRequest();
 
         var timestamp = payload.getTimestamp() != null ? payload.getTimestamp() : Instant.now();
@@ -55,7 +80,7 @@ public class ScopedAuditService {
 
         var ipAddress = firstNonBlank(payload.getIpAddress(), extractIpAddress(request));
 
-        var auditLog = new AuditLogEntity()
+        return new AuditLogEntity()
                 .setTimestamp(timestamp)
                 .setActorType(actorType)
                 .setActorId(actorId)
@@ -69,29 +94,20 @@ public class ScopedAuditService {
                 .setDiff(diff)
                 .setMetadata(metadata)
                 .setIpAddress(ipAddress);
+    }
 
+    private void logAuditEntry(@Nonnull AuditLogEntity auditLog) {
         logger.atInfo()
-                .setMessage(message)
-                .addKeyValue("actorType", actorType)
-                .addKeyValue("actorId", actorId)
-                .addKeyValue("origin", origin)
-                .addKeyValue("triggerType", triggerType)
-                .addKeyValue("entityType", entityType)
-                .addKeyValue("entityRef", entityRef)
-                .addKeyValue("entityRefType", entityRefType)
-                .addKeyValue("module", module)
+                .setMessage(auditLog.getMessage())
+                .addKeyValue("actorType", auditLog.getActorType())
+                .addKeyValue("actorId", auditLog.getActorId())
+                .addKeyValue("origin", auditLog.getOrigin())
+                .addKeyValue("triggerType", auditLog.getTriggerType())
+                .addKeyValue("entityType", auditLog.getEntityType())
+                .addKeyValue("entityRef", auditLog.getEntityRef())
+                .addKeyValue("entityRefType", auditLog.getEntityRefType())
+                .addKeyValue("module", auditLog.getModule())
                 .log();
-
-        try {
-            auditLogService.create(auditLog);
-        } catch (Exception e) {
-            logger.atError()
-                    .setMessage("Failed to persist audit log")
-                    .setCause(e)
-                    .addKeyValue("module", module)
-                    .addKeyValue("triggerType", triggerType)
-                    .log();
-        }
     }
 
     @Nullable

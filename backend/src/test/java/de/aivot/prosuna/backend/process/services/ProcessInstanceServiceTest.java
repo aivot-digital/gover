@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
@@ -14,15 +16,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -165,6 +171,57 @@ class ProcessInstanceServiceTest {
         verify(generator).generateCaseNumber(CaseNumberType.UUID_V4, null);
         verify(repository).saveAndFlush(instance);
         assertEquals("generated-uuid", result.getCaseNumber());
+    }
+
+    @Test
+    void deleteEntity_RemovesAttachmentsBeforeTheirSetsAndInstance() throws ResponseException {
+        var attachmentRepository = mock(ProcessInstanceAttachmentRepository.class);
+        var setRepository = mock(ProcessInstanceAttachmentSetRepository.class);
+        var attachmentService = mock(ProcessInstanceAttachmentService.class);
+        var deletedInstance = new ProcessInstanceEntity().setId(42L);
+        var attachment = new ProcessInstanceAttachmentEntity();
+        var set = new ProcessInstanceAttachmentSetEntity();
+        when(attachmentRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(attachment));
+        when(setRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(set));
+        var deletingService = new ProcessInstanceService(repository, attachmentRepository, setRepository,
+                attachmentService, mock(ProcessVersionService.class), generator, transactionManager);
+
+        deletingService.deleteEntity(deletedInstance);
+
+        var order = inOrder(attachmentRepository, attachmentService, setRepository, repository);
+        order.verify(attachmentRepository).findAllByProcessInstanceId(42L);
+        order.verify(attachmentService).deleteEntity(attachment);
+        order.verify(setRepository).deleteAll(List.of(set));
+        order.verify(setRepository).flush();
+        order.verify(repository).delete(deletedInstance);
+    }
+
+    @Test
+    void deleteEntity_StopsBeforeDeletingSetsAndInstanceWhenAttachmentStorageFails() throws ResponseException {
+        var attachmentRepository = mock(ProcessInstanceAttachmentRepository.class);
+        var setRepository = mock(ProcessInstanceAttachmentSetRepository.class);
+        var attachmentService = mock(ProcessInstanceAttachmentService.class);
+        var deletedInstance = new ProcessInstanceEntity().setId(42L);
+        var attachment = new ProcessInstanceAttachmentEntity();
+        when(attachmentRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(attachment));
+        doThrow(ResponseException.internalServerError("Speicherfehler"))
+                .when(attachmentService).deleteEntity(attachment);
+        var deletionTransactionManager = mock(PlatformTransactionManager.class);
+        when(deletionTransactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        var deletingService = new ProcessInstanceService(repository, attachmentRepository, setRepository,
+                attachmentService, mock(ProcessVersionService.class), generator, deletionTransactionManager);
+        var proxyFactory = new ProxyFactory(deletingService);
+        proxyFactory.setProxyTargetClass(true);
+        proxyFactory.addAdvice(new TransactionInterceptor(deletionTransactionManager,
+                new AnnotationTransactionAttributeSource()));
+        var transactionalService = (ProcessInstanceService) proxyFactory.getProxy();
+
+        assertThrows(ResponseException.class, () -> transactionalService.deleteEntity(deletedInstance));
+
+        verify(setRepository, never()).deleteAll(any());
+        verify(repository, never()).delete(deletedInstance);
+        verify(deletionTransactionManager).rollback(any(TransactionStatus.class));
+        verify(deletionTransactionManager, never()).commit(any(TransactionStatus.class));
     }
 
     private void assertRollbackPrecedesRetry() {
