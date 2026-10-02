@@ -483,11 +483,22 @@ function TimelineItem(props: TimelineItemProps) {
                     task != null &&
                     <>
                         {task.executionSummaryMarkdown?.trim() && (
-                            <Box sx={{mb: 2}}>
+                            <Box sx={{mb: 4}}>
                                 <Typography variant="h6" sx={{mb: 1}}>
                                     Zusammenfassung der Ausführung
                                 </Typography>
-                                <ProcessExecutionSummary markdown={task.executionSummaryMarkdown}/>
+
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'background.paper',
+                                    }}
+                                    variant="outlined"
+                                >
+                                    <ProcessExecutionSummary
+                                        markdown={task.executionSummaryMarkdown}
+                                    />
+                                </Paper>
                             </Box>
                         )}
                         {
@@ -512,7 +523,7 @@ function TimelineItem(props: TimelineItemProps) {
                                                     >
                                                         <Box
                                                             sx={{
-                                                                p: 1,
+                                                                p: 2,
                                                             }}
                                                         >
                                                             <Typography
@@ -533,7 +544,7 @@ function TimelineItem(props: TimelineItemProps) {
 
                                                         <Box
                                                             sx={{
-                                                                p: 1,
+                                                                p: 2,
                                                                 fontSize: '0.85rem',
                                                             }}
                                                         >
