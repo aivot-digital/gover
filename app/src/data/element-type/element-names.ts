@@ -7,7 +7,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.Image]: 'Bild',
     [ElementType.GroupLayout]: 'Gruppierung',
     [ElementType.Date]: 'Datum',
-    [ElementType.Step]: 'Abschnitt',
+    [ElementType.Step]: 'Standardabschnitt',
     [ElementType.FormLayout]: 'Formular',
     [ElementType.Headline]: 'Überschrift',
     [ElementType.MultiCheckbox]: 'Mehrfachauswahl',

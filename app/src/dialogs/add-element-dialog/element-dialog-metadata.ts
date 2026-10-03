@@ -128,7 +128,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.SummaryStep]: 'Optionaler Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind.',
     [ElementType.IntroductionStep]: 'Optionaler Abschnitt am Anfang eines mehrstufigen Formulars, der zur Einführung oder zur Erklärung des weiteren Ablaufs genutzt werden kann.',
     [ElementType.SubmitStep]: 'Optionaler Abschnitt am Ende eines Formulars. Zeigt Hinweise vor der Einreichung an und schützt die Übermittlung mit einer Sicherheitsprüfung vor automatisierten Einreichungen (Captcha).',
-    [ElementType.Step]: 'Ein generischer Abschnitt für mehrstufige Formulare, der flexibel mit verschiedenen Elementen befüllt werden kann.',
+    [ElementType.Step]: 'Ein Abschnitt für mehrstufige Formulare, den Sie mit Eingabefeldern, Texten und weiteren Elementen gestalten können.',
 };
 
 export function getElementGroupForType(type: ElementType): ElementTypeGroups | null {
