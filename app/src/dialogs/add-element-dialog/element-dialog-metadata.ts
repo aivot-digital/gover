@@ -59,7 +59,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.ProcessDataKeyInput]: ElementTypeGroups.Input,
     [ElementType.ProcessInstanceAttachmentSetSelect]: ElementTypeGroups.Input,
     [ElementType.ProcessIdentityIdInput]: ElementTypeGroups.Input,
-    [ElementType.SecretSelectInput]: ElementTypeGroups.Input,
+    [ElementType.SecretSelectInput]: null,
     [ElementType.AssetSelectInput]: ElementTypeGroups.Input,
     [ElementType.DepartmentSelectInput]: null,
     [ElementType.HtmlTemplateInput]: ElementTypeGroups.Input,

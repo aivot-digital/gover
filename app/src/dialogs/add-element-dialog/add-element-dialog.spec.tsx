@@ -29,6 +29,33 @@ vi.mock('../../modules/process/pages/details/components/process-node-editor/proc
 }));
 
 describe('AddElementDialog', () => {
+    it.each([ElementType.ConfigLayout, ElementType.GroupLayout])(
+        'does not offer secret selectors for staff-facing parent type %s',
+        async (parentType) => {
+            const user = userEvent.setup();
+            render(
+                <AddElementDialog
+                    show
+                    parentType={parentType}
+                    allParents={[]}
+                    displayContext={ElementDisplayContext.StaffFacing}
+                    limitElementTypes={[ElementType.Text, ElementType.SecretSelectInput]}
+                    onClose={vi.fn()}
+                    onAddElements={vi.fn()}
+                />,
+            );
+
+            const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
+            expect(within(dialog).getByText('Text', {exact: true})).toBeInTheDocument();
+            expect(within(dialog).queryByText('Geheimnis-Auswahl')).not.toBeInTheDocument();
+
+            await user.type(within(dialog).getByRole('searchbox', {name: 'Element suchen'}), 'Geheimnis');
+            expect(await within(dialog).findByText(
+                'Es wurden keine Formularelemente gefunden, die zu Ihrer Suche passen.',
+            )).toBeInTheDocument();
+        },
+    );
+
     it('keeps internal function and layout types out of the element selection', () => {
         render(
             <AddElementDialog
