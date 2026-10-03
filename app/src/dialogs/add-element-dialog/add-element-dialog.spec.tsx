@@ -29,6 +29,32 @@ vi.mock('../../modules/process/pages/details/components/process-node-editor/proc
 }));
 
 describe('AddElementDialog', () => {
+    it('keeps internal function and layout types out of the element selection', () => {
+        render(
+            <AddElementDialog
+                show
+                parentType={ElementType.ConfigLayout}
+                allParents={[]}
+                displayContext={ElementDisplayContext.StaffFacing}
+                limitElementTypes={[
+                    ElementType.GroupLayout,
+                    ElementType.FunctionInput,
+                    ElementType.DialogLayout,
+                    ElementType.StepperLayout,
+                    ElementType.ConfigLayout,
+                    ElementType.TabLayout,
+                ]}
+                onClose={vi.fn()}
+                onAddElements={vi.fn()}
+            />,
+        );
+
+        const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
+        expect(within(dialog).getByRole('button', {name: 'Hinzufügen'})).toBeEnabled();
+        expect(within(dialog).queryByText('Funktionseingabe')).not.toBeInTheDocument();
+        expect(within(dialog).queryByText('Sonstige')).not.toBeInTheDocument();
+    });
+
     it('focuses search on every opening and restores focus after closing with Escape', async () => {
         const user = userEvent.setup();
         const onAddElements = vi.fn();

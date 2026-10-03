@@ -132,7 +132,9 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
 };
 
 export function getElementGroupForType(type: ElementType): ElementTypeGroups | null {
-    return elementGroupMap[type] ?? ElementTypeGroups.Other;
+    const group = elementGroupMap[type];
+    // An explicit null hides the type from authoring selection without disabling its internal use.
+    return group === undefined ? ElementTypeGroups.Other : group;
 }
 
 export function getElementGroupLabelForType(type: ElementType): string {
