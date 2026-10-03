@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {Permission} from '../../../data/permissions/permission';
@@ -165,11 +165,21 @@ describe('ProcessNodeProviderDetails', () => {
             }],
         })}/>);
 
+        const outputSection = screen.getByRole('region', {name: 'Ergebnis'});
+        expect(within(outputSection).getByText('Das berechnete Ergebnis.')).toBeInTheDocument();
+        expect(within(outputSection).getByText('Schlüssel:')).toBeInTheDocument();
+        expect(within(outputSection).getByRole('button', {name: 'Schlüssel result kopieren'})).toBeEnabled();
+
         await user.click(screen.getByRole('button', {
-            name: 'TypeScript-Typdefinition für Ergebnis anzeigen',
+            name: 'Details zu Ergebnis anzeigen',
         }));
 
-        expect(screen.getByRole('dialog', {name: 'TypeScript-Typdefinition'})).toBeInTheDocument();
+        const dialog = screen.getByRole('dialog', {name: 'Details zu den Ausgangsdaten'});
+        expect(dialog).toHaveAccessibleDescription('Das berechnete Ergebnis.');
+        const accessSection = within(dialog).getByRole('region', {name: 'Zugriff auf die Daten'});
+        expect(within(accessSection).getByText(/mit dem Datenschlüssel des Prozesselements kombiniert/)).toBeInTheDocument();
+        expect(within(accessSection).getByRole('button', {name: 'Schlüssel result kopieren'})).toBeEnabled();
+        expect(within(dialog).getByRole('region', {name: 'Datentyp'})).toHaveTextContent('TypeScript');
         expect(screen.getByTestId('expandable-code-block')).toHaveTextContent(
             '{ successful: boolean; value: string }',
         );

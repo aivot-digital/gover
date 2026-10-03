@@ -1,7 +1,7 @@
-import React from 'react';
+import React, {useId} from 'react';
 import {Box, Button, type SxProps, type Theme, Typography} from '@mui/material';
-import Code from '@aivot/mui-material-symbols-400-n25-outlined/Code';
-import {CopyToClipboardButton} from '../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
+import Info from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import {ProcessNodeOutputReference} from './process-node-output-reference';
 
 interface ProcessNodeOutputCardProps {
     label: string;
@@ -19,102 +19,49 @@ export function ProcessNodeOutputCard(props: ProcessNodeOutputCardProps): React.
         onShowTypeDefinition,
         sx,
     } = props;
+    const titleId = useId();
+    const descriptionId = useId();
 
     return (
         <Box
-            sx={{
-                p: 1.5,
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1.5,
-                ...sx,
-            }}
+            component="section"
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
+            sx={[
+                {
+                    p: 1.5,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1.5,
+                },
+                ...(sx == null ? [] : Array.isArray(sx) ? sx : [sx]),
+            ]}
         >
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'start',
-                    gap: 1,
-                }}
-            >
-                <Typography
-                    variant="body2"
-                    sx={{
-                        fontWeight: 600,
-                        minWidth: 0,
-                        flex: '1 1 12rem',
-                        lineHeight: 1.4,
-                        overflowWrap: 'anywhere',
-                    }}
-                >
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                <Typography id={titleId} variant="body1" sx={{fontWeight: 600, minWidth: 0, flex: 1, overflowWrap: 'anywhere'}}>
                     {label}
                 </Typography>
-
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 0.125,
-                        color: 'text.secondary',
-                        flex: '0 1 auto',
-                        minWidth: 0,
-                        maxWidth: '100%',
-                        mt: '1px',
-                    }}
-                >
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: "text.secondary",
-                            fontFamily: 'monospace',
-                            whiteSpace: 'normal',
-                            overflowWrap: 'anywhere',
-                            wordBreak: 'break-word',
-                            fontSize: '0.8125rem',
-                            lineHeight: 1.4
-                        }}>
-                        {outputKey}
-                    </Typography>
-                    <CopyToClipboardButton
-                        text={outputKey}
-                        tooltip="Key kopieren"
-                        copiedTooltip="Key kopiert!"
-                        ariaLabel={`Ausgangsdaten-Key ${outputKey} kopieren`}
+                {onShowTypeDefinition != null && (
+                    <Button
                         size="small"
-                        sx={{
-                            mt: -1,
-                            ml: 0.125,
-                        }}
-                    />
-                </Box>
+                        variant="text"
+                        startIcon={<Info/>}
+                        onClick={onShowTypeDefinition}
+                        aria-label={`Details zu ${label} anzeigen`}
+                        aria-haspopup="dialog"
+                        sx={{flexShrink: 0, mr: -0.75}}
+                    >
+                        Details anzeigen
+                    </Button>
+                )}
             </Box>
-
-            <Typography
-                variant="body2"
-                sx={{
-                    color: "text.secondary",
-                    mt: 0.75
-                }}>
+            <Typography id={descriptionId} variant="body2" color="text.secondary" sx={{mt: 0.5, fontSize: '0.875rem'}}>
                 {description}
             </Typography>
 
-            {
-                onShowTypeDefinition != null &&
-                <Button
-                    size="small"
-                    variant="text"
-                    startIcon={<Code/>}
-                    onClick={onShowTypeDefinition}
-                    aria-label={`TypeScript-Typdefinition für ${label} anzeigen`}
-                    sx={{
-                        mt: 1,
-                        ml: -1,
-                    }}
-                >
-                    Typdefinition anzeigen
-                </Button>
-            }
+            <Box sx={{mt: 1, px: 1, py: 0.5, bgcolor: 'action.hover', borderRadius: 1}}>
+                <ProcessNodeOutputReference value={outputKey}/>
+            </Box>
         </Box>
     );
 }
