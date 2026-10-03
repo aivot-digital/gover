@@ -12,6 +12,7 @@ import {
     ProcessNodeProviderDetailsContent,
     ProcessNodeProviderDetailsHeader,
 } from './process-node-provider-details';
+import {ProcessNodeProviderBadges} from './process-node-provider-badges';
 
 const mocks = vi.hoisted(() => ({
     useHasSystemPermission: vi.fn(),
@@ -33,7 +34,10 @@ describe('ProcessNodeProviderDetails', () => {
     });
 
     it('renders the detailed description, type and documentation link', () => {
-        render(<ProcessNodeProviderDetailsContent provider={createProvider()} showDescription/>);
+        render(<>
+            <ProcessNodeProviderDetailsHeader provider={createProvider()}/>
+            <ProcessNodeProviderDetailsContent provider={createProvider()} showDescription/>
+        </>);
 
         expect(screen.getByText('Markdowninhalt').tagName).toBe('STRONG');
         expect(screen.queryByText('Kurze Zusammenfassung.')).not.toBeInTheDocument();
@@ -44,10 +48,47 @@ describe('ProcessNodeProviderDetails', () => {
         );
     });
 
-    it('shows the full component version and an explicit active status', () => {
-        render(<ProcessNodeProviderDetailsHeader provider={createProvider()}/>);
+    it('keeps the full version in technical information without adding header badges for active elements', () => {
+        render(<>
+            <ProcessNodeProviderDetailsHeader provider={createProvider()}/>
+            <ProcessNodeProviderDetailsContent provider={createProvider()}/>
+        </>);
 
-        expect(screen.getByText('Version 1.4.2')).toBeInTheDocument();
+        expect(screen.getByText('Technische Informationen')).toBeInTheDocument();
+        expect(screen.getByText('Version der Elementdefinition')).toBeInTheDocument();
+        expect(screen.getByText('1.4.2')).toBeInTheDocument();
+        expect(screen.queryByText(/^Version \d/)).not.toBeInTheDocument();
+        expect(screen.queryByText('Typ')).not.toBeInTheDocument();
+        expect(screen.queryByText('Veraltet')).not.toBeInTheDocument();
+    });
+
+    it.each(['', '   '])('does not mark an element with an empty deprecation notice as outdated', (deprecationNotice) => {
+        render(<>
+            <ProcessNodeProviderDetailsHeader provider={createProvider({deprecationNotice})}/>
+            <ProcessNodeProviderDetailsContent provider={createProvider({deprecationNotice})}/>
+        </>);
+
+        expect(screen.queryByText('Veraltet')).not.toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('allows opening deprecation information from the editor badge with the keyboard', async () => {
+        const onShowDeprecationDetails = vi.fn();
+        const user = userEvent.setup();
+
+        render(<ProcessNodeProviderBadges
+            provider={createProvider({deprecationNotice: 'Bitte die Ersatzaktion verwenden.'})}
+            onShowDeprecationDetails={onShowDeprecationDetails}
+        />);
+
+        const badge = screen.getByRole('button', {name: 'Veraltet – Hinweise anzeigen'});
+        expect(badge).toHaveAttribute('aria-haspopup', 'dialog');
+        expect(screen.queryByText(/^Version \d/)).not.toBeInTheDocument();
+
+        await user.tab();
+        expect(badge).toHaveFocus();
+        await user.keyboard('{Enter}');
+        expect(onShowDeprecationDetails).toHaveBeenCalledOnce();
     });
 
     it('shows only the plugin category and key without plugin.read', () => {
@@ -135,10 +176,14 @@ describe('ProcessNodeProviderDetails', () => {
     });
 
     it('renders a deprecation notice as Markdown', () => {
-        render(<ProcessNodeProviderDetailsContent provider={createProvider({
-            deprecationNotice: 'Bitte **Ersatzaktion** verwenden.',
-        })}/>);
+        const provider = createProvider({deprecationNotice: 'Bitte **Ersatzaktion** verwenden.'});
+        render(<>
+            <ProcessNodeProviderDetailsHeader provider={provider}/>
+            <ProcessNodeProviderDetailsContent provider={provider}/>
+        </>);
 
+        expect(screen.getByText('Veraltet')).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveTextContent('Bitte Ersatzaktion verwenden.');
         expect(screen.getByText('Ersatzaktion').tagName).toBe('STRONG');
     });
 });
