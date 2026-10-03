@@ -224,10 +224,8 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         label: val,
                                     });
                                 }}
-                                hint="Dieser Titel wird als Label für dieses Feld im Formular angezeigt und ist u. A. relevant für die Barrierefreiheit."
+                                hint="Dieser Titel wird als Beschriftung des Feldes angezeigt. Nutzen Sie eine kurze, aussagekräftige Bezeichnung."
                                 disabled={!editable}
-                                softLimitCharacters={20}
-                                softLimitCharactersWarning={'Halten Sie das Label so kurz wie möglich (empfohlen max. 20 Zeichen), da es sonst auf kleinen Bildschirmen abgeschnitten werden kann.'}
                             />
                         </Grid>
                     }
