@@ -1,4 +1,4 @@
-import React, {type ReactNode, useMemo, useState} from 'react';
+import React, {type ReactNode, useMemo, useRef, useState} from 'react';
 import Fuse from 'fuse.js';
 import {
     Accordion,
@@ -147,6 +147,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
         nodeTypeLimits,
     } = props;
 
+    const searchInputRef = useRef<HTMLInputElement>(null);
     const [currentTab, setCurrentTab] = useState(0);
     const [search, setSearch] = useState('');
     const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
@@ -208,6 +209,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
             open={open}
             onClose={onClose}
             title={renderTitle}
+            initialFocusRef={searchInputRef}
             titleActions={renderTitleActions}
             tabs={[
                 {label: 'Elemente', value: 0},
@@ -248,6 +250,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                 }}
             >
                 <SearchInput
+                    inputRef={searchInputRef}
                     label="Prozesselement suchen"
                     ariaLabel="Prozesselement suchen"
                     placeholder="Name, Beschreibung oder Plugin durchsuchen"

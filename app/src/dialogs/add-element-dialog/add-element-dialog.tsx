@@ -1,6 +1,6 @@
 import {Box} from '@mui/material';
 import {type AddElementDialogProps} from './add-element-dialog-props';
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
 import {PresetTab} from './tabs/preset-tab';
 import {ElementTab} from './tabs/element-tab';
@@ -22,6 +22,7 @@ import {ReusableUiDefinitionsTab} from './tabs/reusable-ui-definitions-tab';
 
 
 export function AddElementDialog(props: AddElementDialogProps) {
+    const searchInputRef = useRef<HTMLInputElement>(null);
     const [currentTab, setCurrentTab] = useState(0);
     const [showElementInfo, setShowElementInfo] = useState<ElementType>();
     const [showPresetInfo, setShowPresetInfo] = useState<Preset>();
@@ -65,6 +66,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
             open={props.show}
             onClose={handleClose}
             title={renderTitle}
+            initialFocusRef={searchInputRef}
             tabs={[
                 {label: 'Elemente', value: 0},
                 {label: 'Vorlagen', value: 1, hidden: props.hidePresets === true, disabled: true},
@@ -134,6 +136,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                 {
                     currentTab === 0 &&
                     <ElementTab
+                        searchInputRef={searchInputRef}
                         parentType={props.parentType}
                         parentElement={props.parentElement}
                         allParents={props.allParents}

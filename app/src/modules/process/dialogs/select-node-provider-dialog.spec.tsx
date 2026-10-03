@@ -1,4 +1,5 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {useState} from 'react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {
@@ -36,6 +37,50 @@ describe('getSearchedNodeProviders', () => {
 });
 
 describe('SelectNodeProviderDialog', () => {
+    it('focuses search on every opening and restores focus after closing with Escape', async () => {
+        const user = userEvent.setup();
+        const onSelect = vi.fn();
+
+        function Harness() {
+            const [open, setOpen] = useState(false);
+
+            return <>
+                <button onClick={() => setOpen(true)}>Prozesselement hinzufügen</button>
+                <SelectNodeProviderDialog
+                    open={open}
+                    nodeProviders={[createProvider()]}
+                    onClose={() => setOpen(false)}
+                    onSelect={onSelect}
+                />
+            </>;
+        }
+
+        render(<Harness/>);
+        const opener = screen.getByRole('button', {name: 'Prozesselement hinzufügen'});
+        await user.click(opener);
+
+        const dialog = screen.getByRole('dialog', {name: 'Prozesselement hinzufügen'});
+        const search = within(dialog).getByRole('searchbox', {name: 'Prozesselement suchen'});
+        expect(search).toHaveFocus();
+        await user.keyboard('Kurzfassung');
+        expect(search).toHaveValue('Kurzfassung');
+        expect(onSelect).not.toHaveBeenCalled();
+
+        await user.tab({shift: true});
+        expect(within(dialog).getByRole('tab', {name: 'Elemente'})).toHaveFocus();
+        await user.tab();
+        expect(search).toHaveFocus();
+
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(opener).toHaveFocus();
+
+        await user.click(opener);
+        const reopenedSearch = screen.getByRole('searchbox', {name: 'Prozesselement suchen'});
+        expect(reopenedSearch).toHaveFocus();
+        expect(reopenedSearch).toHaveValue('');
+    });
+
     it('shows a single active element without version badges and keeps its full version in the details', async () => {
         const user = userEvent.setup();
         render(<SelectNodeProviderDialog
