@@ -502,14 +502,12 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ReplicatingContainer]: (
         <Box>
             <Typography>
-                Das Strukturierte Listeneingabe-Element ermöglicht Ihnen die wiederholte Abfrage von Datensätzen.
-                Ein Datensatz repräsentiert mehrere zusammengehörige Abfragen wie z.B. Vorname und Nachname.
-                So können Sie beispielsweise Angaben für mehrere Personen erheben, bei denen immer wieder
-                der Vorname und Nachname abgefragt wird.
+                Mit einer Feldgruppe für mehrere Einträge erfassen Sie wiederholt Angaben mit denselben Eingabefeldern.
+                Jeder Eintrag enthält die von Ihnen festgelegten Felder, zum Beispiel Vorname und Nachname für eine Person.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Die Anzahl an abzufragenden Datensätzen kann durch Sie festgelegt werden.
+                Sie können festlegen, wie viele Einträge mindestens erforderlich und höchstens zulässig sind.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -553,8 +551,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.RichText]: (
         <Box>
             <Typography>
-                Das Fließtext-Element ermöglicht Ihnen die Einbindung von formatiertem Text.
-                Auf diese Weise können Sie Nutzer:innen zusätzliche Informationen gezielt darstellen.
+                Die Textanzeige stellt formatierten Text im Formular dar.
+                Sie können damit beispielsweise Erläuterungen oder zusätzliche Informationen anzeigen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -783,9 +781,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <AlertComponent color={'info'}>
                 Für komplexere Eingaben – etwa mit Datumsfeldern oder vielen Datenpunkten – empfiehlt sich die
-                Strukturierte Listeneingabe.
-                Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt
-                für eine deutlich bessere Nutzerfreundlichkeit.
+                Feldgruppe für mehrere Einträge.
+                Sie fasst unterschiedliche Eingabefelder pro Eintrag zusammen und bietet weitere Konfigurationsmöglichkeiten.
             </AlertComponent>
 
             <Divider sx={{my: 4}}>
