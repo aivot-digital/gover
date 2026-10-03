@@ -86,7 +86,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.Image]: 'Bindet ein Bild in den Formularfluss ein.',
     [ElementType.LinkButton]: 'Zeigt einen Button an, der einen Link öffnet oder in Aufgabenansichten ein Ereignis auslöst.',
     [ElementType.GroupLayout]: 'Fasst inhaltlich zusammengehörige Elemente zusammen.',
-    [ElementType.Checkbox]: 'Erfasst eine einzelne Ja-/Nein-Angabe.',
+    [ElementType.Checkbox]: 'Ermöglicht eine einzelne Bestätigung oder das Aktivieren einer Option, zum Beispiel „Abweichende Lieferadresse verwenden“.',
     [ElementType.Date]: 'Erfasst ein einzelnes Datum.',
     [ElementType.Headline]: 'Gliedert Inhalte mit einer Überschrift.',
     [ElementType.MultiCheckbox]: 'Ermöglicht die Auswahl mehrerer Optionen.',

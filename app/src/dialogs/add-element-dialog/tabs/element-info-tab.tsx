@@ -322,8 +322,14 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Checkbox]: (
         <Box>
             <Typography>
-                Das Bestätigung (Ja/Nein)-Element ermöglicht Ihnen die Einholung einfacher Bestätigungen
-                Ihrer Nutzer:innen. Die Eingabe wird als boolscher Wert (Ja/Nein, True/False) verarbeitet.
+                Das Bestätigungsfeld ermöglicht eine einzelne Bestätigung oder das Aktivieren einer Option.
+                Nutzer:innen können das Feld auswählen oder die Auswahl wieder aufheben.
+                Ist das Feld als Pflichtfeld eingerichtet, muss es ausgewählt werden.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Für eine Frage mit den Antwortmöglichkeiten „Ja“ und „Nein“ verwenden Sie die
+                Einzelauswahl mit Optionsfeldern.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -332,8 +338,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <Box sx={{mt: 2}}>
                 <CheckboxFieldComponent
-                    label="Beschriftung des Bestätigungs-Feldes"
-                    hint="Hinweis zur Bestätigung"
+                    label="Abweichende Lieferadresse verwenden"
+                    hint="Aktivieren Sie diese Option, wenn die Lieferung an eine andere Adresse erfolgen soll."
                     value={true}
                     onChange={() => {
                     }}
@@ -342,8 +348,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <Box sx={{mt: 2}}>
                 <CheckboxFieldComponent
-                    label="Fehlerhaftes Bestätigungs-Feld"
-                    error="Fehlermeldung zur Bestätigung"
+                    label="Ich bestätige die Richtigkeit meiner Angaben"
+                    required
+                    error="Bitte bestätigen Sie die Richtigkeit Ihrer Angaben."
                     value={false}
                     onChange={() => {
                     }}

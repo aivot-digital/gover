@@ -191,7 +191,7 @@ const elementConstructors: {
     }),
     [ElementType.Checkbox]: (id) => ({
         ...makeInputBase(ElementType.Checkbox, id),
-        label: 'Bestätigung (Ja/Nein)',
+        label: 'Bestätigungsfeld',
     }),
     [ElementType.Date]: (id) => ({
         ...makeInputBase(ElementType.Date, id),

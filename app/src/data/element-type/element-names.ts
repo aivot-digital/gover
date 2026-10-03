@@ -3,7 +3,7 @@ import {type AnyElement} from '../../models/elements/any-element';
 
 const ElementNames: Record<ElementType, string> = {
     [ElementType.Alert]: 'Hinweis',
-    [ElementType.Checkbox]: 'Bestätigung (Ja/Nein)',
+    [ElementType.Checkbox]: 'Bestätigungsfeld',
     [ElementType.Image]: 'Bild',
     [ElementType.GroupLayout]: 'Gruppierung',
     [ElementType.Date]: 'Datum',
