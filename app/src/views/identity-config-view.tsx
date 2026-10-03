@@ -183,11 +183,9 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                                 color: "text.secondary",
                                 minWidth: 0
                             }}>
-                            Keine Identitäten vorhanden.{' '}
-                            {
-                                element.required &&
-                                <>Mindestens eine Identität ist erforderlich.</>
-                            }
+                            {element.required
+                                ? 'Mindestens eine Identität erforderlich.'
+                                : 'Keine Identität vorhanden.'}
                         </Typography>
                     </Stack>
                 </Box>
