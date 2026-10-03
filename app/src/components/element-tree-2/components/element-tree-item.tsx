@@ -603,7 +603,7 @@ function getIcons<T extends AnyElement>(root: AnyElement,
     if (isAnyInputElement(element) && element.technical) {
         actions.push({
             icon: <VisibilityOffOutlinedIcon/>,
-            tooltip: 'Technisches Feld (im Formular nicht sichtbar)',
+            tooltip: 'Verborgenes Feld (im Formular nicht sichtbar)',
             onClick: createNavigateToTabHandler(DefaultTabs.properties),
         });
     }

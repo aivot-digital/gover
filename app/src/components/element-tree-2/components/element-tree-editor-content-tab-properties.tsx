@@ -316,7 +316,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         }}
                     >
                         <CheckboxFieldComponent
-                            label="Technisches Feld"
+                            label="Verborgenes Feld"
                             value={currentElement.technical ?? undefined}
                             onChange={(checked) => {
                                 onChangeCurrentElement({
@@ -326,7 +326,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                     technical: checked,
                                 });
                             }}
-                            hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
+                            hint="Wird im Formular nicht angezeigt und kann nicht ausgefüllt werden. Der Wert des Feldes kann berechnet und weiterverwendet werden."
                             disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled)}
                         />
                     </Grid>
