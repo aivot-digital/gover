@@ -69,6 +69,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         parentModalZIndex,
         scrollToElement,
         expandCommand,
+        initiallyExpandedSectionIds,
         activeSearchResultPath,
         highlightedElementId,
         highlightedElementSignal,
@@ -150,9 +151,13 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         }),
     }), [editable, isDraggable, valueId, type, pathParts, parentPath]);
 
-    const [isCollapsed, setIsCollapsed] = useState(true);
+    const [isCollapsed, setIsCollapsed] = useState(() => !initiallyExpandedSectionIds.has(valueId));
     const [contextMenuPosition, setContextMenuPosition] = useState<{ mouseX: number; mouseY: number } | null>(null);
-    const lastHandledExpandCommandVersionRef = useRef(0);
+    // Skip commands issued before this section was added. Apply the same rule to
+    // its descendants so an earlier "expand all" does not open their groups.
+    const lastHandledExpandCommandVersionRef = useRef(
+        pathParts.some((id) => initiallyExpandedSectionIds.has(id)) ? expandCommand.version : 0,
+    );
 
     const isHighlighted = useMemo(() => {
         return currentEditedElementId === valueId;
