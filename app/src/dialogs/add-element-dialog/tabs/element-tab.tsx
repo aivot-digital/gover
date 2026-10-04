@@ -82,12 +82,14 @@ export function ElementTab({
                                limitElementTypes,
                                recentElementTypes = [],
                                displayContext,
+                               searchInputRef,
                            }: BaseTabProps & {
     showElementInfo: (type: ElementType) => void;
     highlightedElement?: ElementType;
     limitElementTypes?: ElementType[];
     recentElementTypes?: ElementType[];
     displayContext: ElementDisplayContext;
+    searchInputRef?: React.Ref<HTMLInputElement>;
 }) {
     const [search, setSearch] = useState('');
     const [expandedGroups, setExpandedGroups] = useState<Record<ElementTypeGroups, boolean>>(defaultExpandedGroups);
@@ -235,6 +237,7 @@ export function ElementTab({
                 }}
             >
                 <SearchInput
+                    inputRef={searchInputRef}
                     label="Element suchen"
                     placeholder="Name oder Beschreibung durchsuchen"
                     value={search}

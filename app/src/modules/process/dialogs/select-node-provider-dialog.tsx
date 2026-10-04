@@ -1,4 +1,4 @@
-import React, {type ReactNode, useMemo, useState} from 'react';
+import React, {type ReactNode, useMemo, useRef, useState} from 'react';
 import Fuse from 'fuse.js';
 import {
     Accordion,
@@ -8,7 +8,6 @@ import {
     Box,
     Chip,
     Divider,
-    Stack,
     Typography,
 } from '@mui/material';
 import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
@@ -25,7 +24,7 @@ import {
     getProcessNodeProviderIcon,
     ProcessNodeProviderDetailsContent,
 } from '../components/process-node-provider-details';
-import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
+import {ProcessNodeProviderBadges} from '../components/process-node-provider-badges';
 
 const PROCESS_NODE_TYPE_ORDER = [
     ProcessNodeType.Trigger,
@@ -84,7 +83,21 @@ export function getSearchedNodeProviders(
 ): ProcessNodeProvider[] {
     const trimmedSearch = search.trim();
     if (trimmedSearch.length === 0) {
-        return [...nodeProviders].sort((left, right) => left.name.localeCompare(right.name, 'de'));
+        const providersByKey = new Map<string, ProcessNodeProvider[]>();
+
+        for (const provider of nodeProviders) {
+            const versions = providersByKey.get(provider.key) ?? [];
+            versions.push(provider);
+            providersByKey.set(provider.key, versions);
+        }
+
+        // Keep variants together even when an element is renamed in a newer version.
+        return [...providersByKey.values()]
+            .map((versions) => versions.sort((left, right) => right.majorVersion - left.majorVersion))
+            .sort((left, right) => (
+                left[0].name.localeCompare(right[0].name, 'de') || left[0].key.localeCompare(right[0].key)
+            ))
+            .flat();
     }
 
     const fuse = new Fuse(nodeProviders, {
@@ -103,6 +116,22 @@ export function getSearchedNodeProviders(
     return fuse.search(trimmedSearch).map((entry) => entry.item);
 }
 
+function getProviderKeysWithMultipleVersions(nodeProviders: ProcessNodeProvider[]): Set<string> {
+    const firstVersionByKey = new Map<string, number>();
+    const keysWithMultipleVersions = new Set<string>();
+
+    for (const provider of nodeProviders) {
+        const firstVersion = firstVersionByKey.get(provider.key);
+        if (firstVersion == null) {
+            firstVersionByKey.set(provider.key, provider.majorVersion);
+        } else if (firstVersion !== provider.majorVersion) {
+            keysWithMultipleVersions.add(provider.key);
+        }
+    }
+
+    return keysWithMultipleVersions;
+}
+
 export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): ReactNode {
     const {
         open,
@@ -118,6 +147,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
         nodeTypeLimits,
     } = props;
 
+    const searchInputRef = useRef<HTMLInputElement>(null);
     const [currentTab, setCurrentTab] = useState(0);
     const [search, setSearch] = useState('');
     const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
@@ -134,6 +164,11 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
     const filteredNodeProviders = useMemo(() => (
         getFilteredNodeProviders(renderNodeProviders, renderFilter)
     ), [renderFilter, renderNodeProviders]);
+
+    // Search must not change whether an element needs a version label.
+    const providerKeysWithMultipleVersions = useMemo(() => (
+        getProviderKeysWithMultipleVersions(filteredNodeProviders)
+    ), [filteredNodeProviders]);
 
     const searchedNodeProviders = useMemo(() => (
         getSearchedNodeProviders(filteredNodeProviders, search)
@@ -174,6 +209,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
             open={open}
             onClose={onClose}
             title={renderTitle}
+            initialFocusRef={searchInputRef}
             titleActions={renderTitleActions}
             tabs={[
                 {label: 'Elemente', value: 0},
@@ -194,6 +230,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
             detailsPanel={selectedProvider != null ? (
                 <SelectNodeProviderDetails
                     provider={selectedProvider}
+                    showMajorVersion={providerKeysWithMultipleVersions.has(selectedProvider.key)}
                     primaryActionLabel={renderPrimaryActionLabel}
                     primaryActionIcon={renderPrimaryActionIcon}
                     onAdd={() => {
@@ -213,6 +250,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                 }}
             >
                 <SearchInput
+                    inputRef={searchInputRef}
                     label="Prozesselement suchen"
                     ariaLabel="Prozesselement suchen"
                     placeholder="Name, Beschreibung oder Plugin durchsuchen"
@@ -350,6 +388,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                                             <React.Fragment key={getProviderId(provider)}>
                                                 <SelectNodeProviderDialogRow
                                                     provider={provider}
+                                                    showMajorVersion={providerKeysWithMultipleVersions.has(provider.key)}
                                                     isSelected={selectedProviderId === getProviderId(provider)}
                                                     primaryActionLabel={renderPrimaryActionLabel}
                                                     primaryActionIcon={renderPrimaryActionIcon}
@@ -379,6 +418,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
 
 interface SelectNodeProviderDialogRowProps {
     provider: ProcessNodeProvider;
+    showMajorVersion: boolean;
     isSelected: boolean;
     primaryActionLabel: string;
     primaryActionIcon: ReactNode;
@@ -389,6 +429,7 @@ interface SelectNodeProviderDialogRowProps {
 function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): ReactNode {
     const {
         provider,
+        showMajorVersion,
         isSelected,
         primaryActionLabel,
         primaryActionIcon,
@@ -403,11 +444,7 @@ function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): R
             icon={<ProviderIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
             title={provider.name}
             titleAdornment={(
-                <Chip
-                    size="small"
-                    label={`Version ${provider.componentVersion}`}
-                    sx={{flexShrink: 0}}
-                />
+                <ProcessNodeProviderBadges provider={provider} showMajorVersion={showMajorVersion}/>
             )}
             description={provider.abstractDescription}
             selected={isSelected}
@@ -421,6 +458,7 @@ function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): R
 
 interface SelectNodeProviderDetailsProps {
     provider: ProcessNodeProvider;
+    showMajorVersion: boolean;
     primaryActionLabel: string;
     primaryActionIcon: ReactNode;
     onAdd: () => void;
@@ -430,6 +468,7 @@ interface SelectNodeProviderDetailsProps {
 function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): ReactNode {
     const {
         provider,
+        showMajorVersion,
         primaryActionLabel,
         primaryActionIcon,
         onAdd,
@@ -452,24 +491,7 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
             label={typeLabel}
             title={provider.name}
             titleAdornment={(
-                <Stack direction="row" spacing={1} useFlexGap sx={{flexWrap: 'wrap'}}>
-                    <Chip
-                        size="small"
-                        label={`Version ${provider.componentVersion}`}
-                        sx={{flexShrink: 0}}
-                    />
-                    {
-                        isStringNotNullOrEmpty(provider.deprecationNotice) &&
-                        <Chip
-                            size="small"
-                            label={'Veraltet'}
-                            color={'warning'}
-                            variant="outlined"
-                            sx={{flexShrink: 0}}
-                        />
-                    }
-
-                </Stack>
+                <ProcessNodeProviderBadges provider={provider} showMajorVersion={showMajorVersion}/>
             )}
             description={provider.abstractDescription}
             primaryActionLabel={primaryActionLabel}

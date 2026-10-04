@@ -14,6 +14,7 @@ interface SelectionDialogShellProps {
     open: boolean;
     onClose: () => void;
     onExited?: () => void;
+    initialFocusRef?: React.RefObject<HTMLElement | null>;
     title: ReactNode;
     tabs: SelectionDialogTabDefinition[];
     activeTab: number | string;
@@ -40,6 +41,8 @@ export function SelectionDialogShell(props: SelectionDialogShellProps): ReactNod
             maxWidth={props.showDetailsPanel ? (props.expandedMaxWidth ?? 'lg') : (props.compactMaxWidth ?? 'md')}
             slotProps={{
                 transition: {
+                    // Focus only when opening; tab changes and result updates must not steal focus.
+                    onEnter: () => props.initialFocusRef?.current?.focus(),
                     onExited: props.onExited,
                 }
             }}

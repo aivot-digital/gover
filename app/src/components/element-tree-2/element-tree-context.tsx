@@ -28,6 +28,8 @@ export interface ElementTreeContextType {
     canDropElement: (dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => boolean;
     moveElement: (dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => void;
     expandCommand: ElementTreeExpandCommand;
+    /** Used only when items mount; later expansion choices stay in each item's local state. */
+    initiallyExpandedSectionIds: ReadonlySet<string>;
     activeSearchResultPath?: string[];
     highlightedElementId?: string | null;
     highlightedElementSignal?: number;

@@ -23,6 +23,7 @@ export interface SearchInputProps extends FormFieldLayoutProps {
     label: string;
     placeholder?: string;
     autoFocus?: boolean;
+    inputRef?: React.Ref<HTMLInputElement>;
     controlSx?: SxProps<Theme>;
     disabled?: boolean;
     clearable?: boolean;
@@ -138,6 +139,7 @@ export function SearchInput(props: SearchInputProps) {
                     margin="none"
                     fullWidth={props.fullWidth ?? true}
                     autoFocus={props.autoFocus}
+                    inputRef={props.inputRef}
                     disabled={props.disabled}
                     size={props.size ?? 'small'}
                     sx={[

@@ -100,7 +100,5 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
 
 export const getAutofillOptionsForElementType = (elementType: ElementType) => {
     const allowedValues = ElementAutofillMapping[elementType];
-    const allowedOptions = HtmlAutofillAttributeOptions.filter(option => allowedValues.includes(option.value));
-    allowedOptions.sort((a, b) => allowedValues.indexOf(a.value) - allowedValues.indexOf(b.value));
-    return allowedOptions;
+    return HtmlAutofillAttributeOptions.filter(option => allowedValues.includes(option.value));
 };
