@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.process.utils;
 
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -25,7 +26,7 @@ public final class ExecutionSummaryMarkdown {
     public static final String PREVIOUS_ASSIGNED_USER_NAME = "previousAssignedUserName";
     public static final String ASSIGNED_USER_NAME = "assignedUserName";
     public static final String DOCUMENTS = "documents";
-    private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm:ss z", Locale.GERMAN);
+    private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm:ss", Locale.GERMAN);
     private final ProcessNodeExecutionSummaryContext<?> context;
 
     public ExecutionSummaryMarkdown(@Nonnull ProcessNodeExecutionSummaryContext<?> context) {
@@ -99,7 +100,7 @@ public final class ExecutionSummaryMarkdown {
             return "das System";
         }
         var label = name == null || name.toString().isBlank() ? id : name;
-        return "[" + text(label) + "](/staff/users/" + segment(id) + ")";
+        return StringUtils.quote(text(label));
     }
 
     @Nonnull
