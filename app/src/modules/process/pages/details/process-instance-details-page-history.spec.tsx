@@ -138,7 +138,7 @@ describe('Process instance history preview', () => {
             await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1), started, deadline}]);
 
             const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
-            expect(summary).toHaveAccessibleName(new RegExp(`${label}: 03\\.10\\.2026 – 12:00 Uhr`));
+            expect(summary).toHaveAccessibleName(new RegExp(`${label}: 03\\.10\\.2026 um 12:00 Uhr`));
             expect(summary.querySelector('.MuiChip-root')).toHaveClass(`MuiChip-color${color}`);
         });
 
@@ -155,7 +155,7 @@ describe('Process instance history preview', () => {
                 await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1, status), started, deadline}]);
 
                 const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
-                expect(summary).toHaveAccessibleName(new RegExp(`${label}: 03\\.10\\.2026 – 12:00 Uhr`));
+                expect(summary).toHaveAccessibleName(new RegExp(`${label}: 03\\.10\\.2026 um 12:00 Uhr`));
                 expect(summary.querySelector('.MuiChip-root')).toHaveClass(`MuiChip-color${color}`);
             });
         });
@@ -192,7 +192,7 @@ describe('Process instance history preview', () => {
             await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1, status), started, deadline}]);
 
             const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
-            expect(summary).toHaveAccessibleName(/Frist: 03\.10\.2026 – 12:00 Uhr/);
+            expect(summary).toHaveAccessibleName(/Frist: 03\.10\.2026 um 12:00 Uhr/);
             expect(summary.querySelector('.MuiChip-root')).toHaveClass('MuiChip-colorDefault');
         });
 
@@ -251,8 +251,10 @@ describe('Process instance history preview', () => {
             executionSummaryMarkdown: summary,
         }]);
         await user.click(screen.getByRole('button', {name: /^1\. Altbestand:/}));
-        expect(screen.queryByRole('heading', {name: 'Zusammenfassung der Ausführung'})).not.toBeInTheDocument();
-        expect(screen.getByText('Es existieren keine relevanten Zwischenergebnisse für diese Aufgabe.')).toBeVisible();
+        const details = within(await screen.findByRole('region', {name: /^1\. Altbestand:/}));
+        expect(details.queryByRole('heading', {name: 'Zusammenfassung der Ausführung'})).not.toBeInTheDocument();
+        expect(details.queryByRole('heading', {name: 'Ereignisse und Zwischenergebnisse für diese Aufgabe'})).not.toBeInTheDocument();
+        expect(details.getByRole('button', {name: 'Alle Ereignisse anzeigen'})).toBeVisible();
     });
 
     it('renders summary content without executing embedded HTML or unsafe links', async () => {
