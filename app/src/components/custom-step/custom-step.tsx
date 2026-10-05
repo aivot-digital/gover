@@ -1,71 +1,119 @@
-import {Box, Button, CircularProgress, Collapse, Step, StepContent, StepLabel, type StepProps, useTheme} from '@mui/material';
-import React, {useEffect, useRef} from 'react';
+import {
+    Box,
+    Button,
+    CircularProgress,
+    Collapse,
+    Step,
+    StepContent,
+    StepLabel,
+    type StepProps,
+    useTheme,
+} from '@mui/material';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {getStepIcon} from '../../data/step-icons';
+import {ElementType} from '../../data/element-type/element-type';
 import {isStepElement} from '../../models/elements/steps/step-element';
 import {getElementNameForType} from '../../data/element-type/element-names';
-import CheckCircleTwoToneIcon from '@mui/icons-material/CheckCircleTwoTone';
-import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
-import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
-import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
+import CheckCircleFilledIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircleFilled';
+import ArrowForwardOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
+import ArrowBackOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowBack';
+import SendOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Send';
 import {type CustomStepProps} from './custom-step-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDisableAutoScrollForSteps} from '../../slices/admin-settings-slice';
-import {ErrorAlert} from '../error-alert/error-alert';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {getPreviewHighlightStyles} from '../view-dispatcher/preview-highlight-styles';
 
-export function CustomStep({
-                               stepIndex,
-                               isFirstStep,
-                               isLastStep,
-                               active,
-                               step,
-                               children,
-                               onNext,
-                               onPrevious,
-                               navDirection,
-                               stepRefs,
-                               scrollContainerRef,
-                               isBusy,
-                               isDeriving,
-                               ...passTroughProps
-                           }: CustomStepProps & StepProps) {
+export function CustomStep(props: CustomStepProps & StepProps) {
+    const {
+        stepIndex,
+        isFirstStep,
+        isLastStep,
+        isSubmitStep,
+        active,
+        completed = false,
+        step,
+        children,
+        onNext,
+        onPrevious,
+        navDirection,
+        stepRefs,
+        scrollContainerRef,
+        isBusy,
+        isDeriving,
+        ...passTroughProps
+    } = props;
+
     const theme = useTheme();
     const disableAutoScroll = useAppSelector(selectDisableAutoScrollForSteps);
+    const {
+        highlightedElementId,
+    } = useViewDispatcherContext();
+    const isIntroductionStep = step.type === ElementType.IntroductionStep;
+    const isHighlightedInPreview = highlightedElementId === step.id;
 
     const ref = useRef<HTMLDivElement>(null);
     const headingRef = useRef<HTMLDivElement>(null);
+    const pendingScrollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     stepRefs.current[stepIndex] = ref;
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    const scrollToStep = useCallback((target: HTMLElement | null) => {
+        if (target == null) {
+            return;
+        }
+
+        const container = scrollContainerRef?.current;
+        if (scrollContainerRef != null && container == null) {
+            return;
+        }
+
+        // offsetTop is relative to the nearest positioned ancestor, which may be
+        // a form wrapper rather than the shell or editor's scrolling container.
+        const top = container != null
+            ? target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - container.clientTop
+            : target.getBoundingClientRect().top + window.scrollY;
+
+        (container ?? window).scrollTo({
+            top,
+            behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        });
+    }, [scrollContainerRef, prefersReducedMotion]);
+
+    const cancelPendingScroll = () => {
+        if (pendingScrollRef.current != null) {
+            clearTimeout(pendingScrollRef.current);
+            pendingScrollRef.current = null;
+        }
+    };
+
+    useEffect(() => cancelPendingScroll, []);
+
     const handleExit = () => {
+        cancelPendingScroll();
         if (!disableAutoScroll) {
             if (navDirection === 'next' && ref.current) {
                 // shift scrollTo to next render cycle for compatibility with the editor
-                setTimeout(() => {
-                    (scrollContainerRef?.current ?? window).scrollTo({
-                        top: ref.current?.offsetTop,
-                        behavior: prefersReducedMotion ? 'auto' : 'smooth',
-                    });
+                pendingScrollRef.current = setTimeout(() => {
+                    pendingScrollRef.current = null;
+                    scrollToStep(ref.current);
                 }, 0);
             }
         }
     };
 
     const handleEnter = () => {
+        cancelPendingScroll();
         if (!disableAutoScroll) {
             const previousStepIndex = stepIndex - 1;
-            headingRef.current?.focus();
+            // Keep keyboard focus in the new section without a competing browser scroll.
+            headingRef.current?.focus({preventScroll: true});
             if (navDirection === 'previous' && previousStepIndex >= 0 && stepRefs.current[previousStepIndex]?.current) {
-                (scrollContainerRef?.current ?? window).scrollTo({
-                    top: stepRefs.current[previousStepIndex].current?.offsetTop ?? 0,
-                    behavior: prefersReducedMotion ? 'auto' : 'smooth',
-                });
+                scrollToStep(stepRefs.current[previousStepIndex].current);
                 // Scrolling back to the first element if there are no preceding elements left
             } else if (navDirection === 'previous' && ref.current) {
-                (scrollContainerRef?.current ?? window).scrollTo({
-                    top: ref.current.offsetTop,
-                    behavior: prefersReducedMotion ? 'auto' : 'smooth',
-                });
+                scrollToStep(ref.current);
             }
         }
     };
@@ -73,32 +121,42 @@ export function CustomStep({
     // Scrolling to step title in submitted step
     useEffect(() => {
         if (active && !disableAutoScroll && stepIndex === -1 && ref.current) {
-            (scrollContainerRef?.current ?? window).scrollTo({
-                top: ref.current.offsetTop,
-                behavior: prefersReducedMotion ? 'auto' : 'smooth',
-            });
+            scrollToStep(ref.current);
             if (headingRef.current) {
-                headingRef.current.focus();
+                headingRef.current.focus({preventScroll: true});
             }
         }
-    }, [active, disableAutoScroll, stepIndex, ref]);
+    }, [active, disableAutoScroll, stepIndex, scrollToStep]);
 
     const Icon = getStepIcon(step);
     return (
         <Step
             {...passTroughProps}
+            completed={completed}
             ref={ref}
+            sx={[
+                (theme) => getPreviewHighlightStyles(theme, isHighlightedInPreview),
+                {
+                    '& .MuiStepContent-last': {
+                        position: 'relative',
+                    },
+                    '& .MuiStepContent-last::before': {
+                        content: '""',
+                        width: '1px',
+                        backgroundColor: 'divider',
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        position: 'absolute',
+                    },
+                    '& .Mui-disabled ~ .MuiStepContent-last::before': {
+                        display: 'none',
+                    },
+                },
+                ...(Array.isArray(passTroughProps.sx) ? passTroughProps.sx : [passTroughProps.sx]),
+            ]}
         >
             <StepLabel
-                StepIconComponent={(props) => (
-                    <Icon
-                        sx={{
-                            fontSize: '2rem',
-                            marginLeft: '4px',
-                            color: props.active ? theme.palette.primary.main : 'rgba(0, 0, 0, 0.55)',
-                        }}
-                    />
-                )}
                 sx={{
                     [theme.breakpoints.down('md')]: {
                         '.MuiStepLabel-label': {
@@ -108,6 +166,21 @@ export function CustomStep({
                     '.MuiStepLabel-label': {
                         pt: 0,
                     },
+                }}
+                slots={{
+                    stepIcon: () => (
+                        <Icon
+                            sx={{
+                                fontSize: '2rem',
+                                marginLeft: '4px',
+                                color: active
+                                    ? theme.palette.primary.main
+                                    : completed
+                                        ? theme.palette.text.primary
+                                        : theme.palette.text.secondary,
+                            }}
+                        />
+                    )
                 }}
             >
                 <h2
@@ -125,33 +198,39 @@ export function CustomStep({
                         isStepElement(step) ? step.title ?? 'Unbenannter Abschnitt' : getElementNameForType(step.type)
                     }
                 </h2>
-                <Box
-                    className="completed-step-suffix"
-                    sx={{ml: 0.75}}
-                >
-                    <CheckCircleTwoToneIcon
-                        sx={{
-                            color: theme.palette.primary.main,
-                            transform: 'translateY(5px)',
-                        }}
-                    />
-                </Box>
+                {
+                    completed &&
+                    <Box
+                        component="span"
+                        className="completed-step-suffix"
+                        sx={{ml: 0.75, display: 'inline-flex'}}
+                    >
+                        <CheckCircleFilledIcon
+                            sx={{
+                                color: theme.palette.primary.main,
+                                transform: 'translateY(5px)',
+                            }}
+                        />
+                    </Box>
+                }
             </StepLabel>
             <StepContent
-                TransitionComponent={Collapse}
-                TransitionProps={{onEnter: handleEnter, onExit: handleExit}}
                 transitionDuration={prefersReducedMotion ? 0 : 1000}
                 sx={{
                     [theme.breakpoints.down('md')]: {
                         pl: 4,
                     },
                 }}
+                slots={{
+                    transition: Collapse
+                }}
+                slotProps={{
+                    transition: {onEnter: handleEnter, onExit: handleExit}
+                }}
             >
                 <div>
                     {children}
                 </div>
-
-                <ErrorAlert />
 
                 <Box
                     sx={{
@@ -168,7 +247,9 @@ export function CustomStep({
                     }}
                 >
                     {
-                        (onNext != null) &&
+                        onNext != null &&
+                        !isLastStep &&
+                        !isSubmitStep &&
                         <Button
                             variant="contained"
                             onClick={onNext}
@@ -178,19 +259,38 @@ export function CustomStep({
                             endIcon={(isBusy || isDeriving) ? <CircularProgress
                                 size="1em"
                                 color="inherit"
-                            /> : (isLastStep ? <SendOutlinedIcon /> : <ArrowForwardOutlinedIcon />)}
+                            /> : (isLastStep ? <SendOutlinedIcon/> : <ArrowForwardOutlinedIcon/>)}
                         >
                             {
                                 isDeriving && 'Berechne…'
                             }
                             {
-                                isFirstStep && !isDeriving && 'Antrag beginnen'
+                                isIntroductionStep && !isDeriving && 'Starten'
                             }
                             {
-                                isLastStep && !isDeriving && 'Antrag verbindlich einreichen'
+                                !isIntroductionStep && !isDeriving && 'Weiter'
+                            }
+                        </Button>
+                    }
+                    {
+                        onNext != null &&
+                        isLastStep &&
+                        <Button
+                            variant="contained"
+                            onClick={onNext}
+                            size="large"
+                            color="primary"
+                            disabled={isBusy || isDeriving}
+                            endIcon={(isBusy || isDeriving) ? <CircularProgress
+                                size="1em"
+                                color="inherit"
+                            /> : (isLastStep ? <SendOutlinedIcon/> : <ArrowForwardOutlinedIcon/>)}
+                        >
+                            {
+                                isDeriving && 'Berechne…'
                             }
                             {
-                                !isFirstStep && !isLastStep && !isDeriving && 'Weiter'
+                                isLastStep && !isDeriving && 'Verbindlich einreichen'
                             }
                         </Button>
                     }
@@ -204,14 +304,14 @@ export function CustomStep({
                             startIcon={(isBusy || isDeriving) ? <CircularProgress
                                 size="1em"
                                 color="inherit"
-                            /> : <ArrowBackOutlinedIcon />}
+                            /> : <ArrowBackOutlinedIcon/>}
                             sx={{
                                 mt: 2,
                                 [theme.breakpoints.up('md')]: {
                                     mt: 0,
                                 },
                             }}
-                            disabled={isBusy|| isDeriving}
+                            disabled={isBusy || isDeriving}
                         >
                             Zum vorherigen Abschnitt
                         </Button>

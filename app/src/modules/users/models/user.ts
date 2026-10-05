@@ -6,6 +6,7 @@ export interface User {
     fullName: string;
     enabled: boolean;
     verified: boolean;
-    globalAdmin: boolean;
     deletedInIdp: boolean;
+    systemRoleId: number | null;
+    artificialUser?: boolean | null;
 }

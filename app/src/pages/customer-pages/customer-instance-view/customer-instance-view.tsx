@@ -1,0 +1,255 @@
+import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
+import {Box, ThemeProvider, useTheme} from '@mui/material';
+import {Outlet, useNavigate, useParams} from 'react-router-dom';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+    buildCustomerInstancePath,
+    buildCustomerTaskPath,
+    CustomerTaskViewApiService,
+    getActiveCustomerTasks,
+    getCustomerTasks,
+    ProcessInstanceStatusResponse,
+} from './customer-task-view-api-service';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
+import {setErrorMessage} from '../../../slices/shell-slice';
+import {isApiError} from '../../../models/api-error';
+import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
+import {CustomerInstanceViewHeader} from "./customer-instance-view-header";
+import {SnackbarProvider} from "../../../providers/snackbar-provider";
+import {useAppSelector} from "../../../hooks/use-app-selector";
+import {createAppTheme} from "../../../theming/themes";
+import {BaseTheme} from "../../../theming/base-theme";
+import {CustomerInstanceViewFooter} from "./customer-instance-view-footer";
+import {PrivacyDialog, PrivacyDialogId} from "../../../dialogs/privacy-dialog/privacy-dialog";
+import {showDialog} from "../../../slices/app-slice";
+import {ImprintDialog, ImprintDialogId} from "../../../dialogs/imprint-dialog/imprint-dialog";
+import {AccessibilityDialog, AccessibilityDialogId} from "../../../dialogs/accessibility-dialog/accessibility-dialog";
+import {HelpDialog, HelpDialogId} from "../../../dialogs/help-dialog/help.dialog";
+
+const INSTANCE_POLL_INTERVAL_MS = 2000;
+
+export interface CustomerInstanceViewOutletContext {
+    refreshInstanceStatus: () => Promise<void>;
+    invalidateInstanceTasks: () => void;
+    taskIsActive: boolean;
+}
+
+export function CustomerInstanceView() {
+    const {
+        instanceAccessKey = '',
+        taskAccessKey,
+    } = useParams<{
+        instanceAccessKey: string;
+        taskAccessKey?: string;
+    }>();
+
+    const dispatch = useAppDispatch();
+    const navigate = useNavigate();
+    const baseTheme = useTheme();
+
+    const [instanceStatus, setInstanceStatus] = useState<ProcessInstanceStatusResponse | null | 'failed'>(null);
+    const statusRequestGenerationRef = useRef(0);
+
+    const metaDialog = useAppSelector((state) => state.app.showDialog);
+
+    const resolvedTheme = useMemo(() => {
+        if (instanceStatus == null || instanceStatus === 'failed') {
+            return baseTheme;
+        }
+
+        return createAppTheme(instanceStatus.theme, BaseTheme, baseTheme.palette.mode);
+    }, [baseTheme, instanceStatus]);
+
+    const refreshInstanceStatus = useCallback(async (): Promise<void> => {
+        const requestGeneration = ++statusRequestGenerationRef.current;
+        try {
+            const status = await new CustomerTaskViewApiService()
+                .getInstanceStatus(instanceAccessKey);
+
+            if (requestGeneration === statusRequestGenerationRef.current) {
+                setInstanceStatus(status);
+            }
+        } catch (error) {
+            if (requestGeneration === statusRequestGenerationRef.current) {
+                throw error;
+            }
+
+            // A newer status request or an explicit invalidation already superseded this request.
+        }
+    }, [instanceAccessKey]);
+
+    const fetchInstanceStatus = useCallback(() => {
+        void refreshInstanceStatus()
+            .catch((error) => {
+                if (isApiError(error) && error.displayableToUser) {
+                    dispatch(setErrorMessage({
+                        message: error.message,
+                        status: error.status,
+                    }));
+                } else {
+                    dispatch(setErrorMessage({
+                        message: 'Fehler beim Abrufen des Status des Vorgangs.',
+                        status: isApiError(error) ? error.status : 500,
+                    }));
+                }
+                setInstanceStatus('failed');
+            });
+    }, [dispatch, refreshInstanceStatus]);
+
+    const invalidateInstanceTasks = useCallback(() => {
+        statusRequestGenerationRef.current += 1;
+        setInstanceStatus((currentStatus) => {
+            if (currentStatus == null || currentStatus === 'failed') {
+                return currentStatus;
+            }
+
+            return {
+                ...currentStatus,
+                tasks: null,
+            };
+        });
+    }, []);
+
+    const customerTasks = instanceStatus == null || instanceStatus === 'failed'
+        ? []
+        : getCustomerTasks(instanceStatus.tasks);
+    const activeCustomerTasks = getActiveCustomerTasks(customerTasks);
+    const selectedTask = taskAccessKey == null
+        ? undefined
+        : customerTasks.find((task) => task.accessKey === taskAccessKey);
+    const taskIsActive = selectedTask != null && activeCustomerTasks.includes(selectedTask);
+
+    const outletContext = useMemo<CustomerInstanceViewOutletContext>(() => ({
+        refreshInstanceStatus,
+        invalidateInstanceTasks,
+        taskIsActive,
+    }), [invalidateInstanceTasks, refreshInstanceStatus, taskIsActive]);
+
+    useEffect(() => {
+        fetchInstanceStatus();
+
+        const intervalId = setInterval(() => {
+            fetchInstanceStatus();
+        }, INSTANCE_POLL_INTERVAL_MS);
+
+        return () => {
+            clearInterval(intervalId);
+        };
+    }, [fetchInstanceStatus]);
+
+    useEffect(() => {
+        if (instanceStatus == null || instanceStatus === 'failed' || instanceStatus.tasks == null) {
+            return;
+        }
+
+        const customerTasks = getCustomerTasks(instanceStatus.tasks);
+        if (taskAccessKey != null && customerTasks.some((task) => task.accessKey === taskAccessKey)) {
+            return;
+        }
+
+        const activeTasks = getActiveCustomerTasks(customerTasks);
+        const nextTask = activeTasks[0];
+        if (nextTask != null) {
+            navigate(buildCustomerTaskPath(instanceAccessKey, nextTask.accessKey), {replace: true});
+        } else if (taskAccessKey != null) {
+            navigate(buildCustomerInstancePath(instanceAccessKey), {replace: true});
+        }
+    }, [instanceAccessKey, instanceStatus, navigate, taskAccessKey]);
+
+    if (instanceStatus == null) {
+        return (
+            <LoadingPlaceholder/>
+        );
+    }
+
+    if (instanceStatus == 'failed') {
+        return null;
+    }
+
+    const selectedTaskExists = selectedTask != null;
+
+    return (
+        <ThemeProvider theme={resolvedTheme}>
+            <SnackbarProvider>
+                {/* Own the surface above the outlet so identity steps, task content and empty states stay consistent. */}
+                <Box sx={{
+                    backgroundColor: getCustomerPageSurfaceColor,
+                    color: 'text.primary',
+                    minHeight: '100dvh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    <CustomerInstanceViewHeader
+                        status={instanceStatus}
+                    />
+
+                    <Box component="main" sx={{flex: '1 0 auto', minWidth: 0}}>
+                        <PageWrapper
+                            title={instanceStatus.title}
+                            titlePrefix={AppConfig.providerName}
+                            faviconUrl={instanceStatus.theme.faviconUrl}
+                        >
+                            {
+                                instanceStatus.tasks == null &&
+                                <LoadingPlaceholder/>
+                            }
+
+                            {
+                                instanceStatus.tasks != null && !selectedTaskExists && activeCustomerTasks.length === 0 &&
+                                <NoTaskToDoPlaceholder/>
+                            }
+
+                            {
+                                instanceStatus.tasks != null && activeCustomerTasks.length > 0 && !selectedTaskExists &&
+                                <LoadingPlaceholder/>
+                            }
+
+                            {
+                                instanceStatus.tasks != null && selectedTaskExists &&
+                                <Outlet context={outletContext}/>
+                            }
+                        </PageWrapper>
+                    </Box>
+
+                    <CustomerInstanceViewFooter
+                        status={instanceStatus}
+                    />
+                </Box>
+
+                <PrivacyDialog
+                    onHide={() => dispatch(showDialog(undefined))}
+                    open={metaDialog === PrivacyDialogId}
+                    departmentId={instanceStatus.privacyDepartmentId}
+                />
+
+                <ImprintDialog
+                    onHide={() => dispatch(showDialog(undefined))}
+                    open={metaDialog === ImprintDialogId}
+                    departmentId={instanceStatus.imprintDepartmentId}
+                />
+
+                <AccessibilityDialog
+                    onHide={() => dispatch(showDialog(undefined))}
+                    open={metaDialog === AccessibilityDialogId}
+                    departmentId={instanceStatus.accessibilityDepartmentId}
+                />
+
+                <HelpDialog
+                    onHide={() => dispatch(showDialog(undefined))}
+                    open={metaDialog === HelpDialogId}
+                    technicalSupportDepartmentId={instanceStatus.technicalSupportDepartmentId}
+                    legalSupportDepartmentId={instanceStatus.legalSupportDepartmentId}
+                />
+            </SnackbarProvider>
+        </ThemeProvider>
+    );
+}
+
+function NoTaskToDoPlaceholder() {
+    return (
+        <Box>
+            Freuen Sie sich. Es gibt für Sie nichts zu tun!
+        </Box>
+    );
+}

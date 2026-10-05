@@ -1,6 +1,6 @@
 import {Box, Container, LinearProgress, Typography, useTheme} from '@mui/material';
 import React from 'react';
-import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
+import GppGoodOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/VerifiedUser';
 
 export function ProcessingDataLoaderComponentView({message}: {message?: string}) {
     const theme = useTheme();

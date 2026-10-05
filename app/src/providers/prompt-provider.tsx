@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
-import {PromptDialog, PromptDialogProps} from "../dialogs/prompt-dialog/prompt-dialog";
+import React, {createContext, ReactNode, useContext, useState} from 'react';
+import {PromptDialog, PromptDialogProps} from '../dialogs/prompt-dialog/prompt-dialog';
 
 interface PromptContextProps {
     showPrompt: (options: Omit<PromptDialogProps, "onConfirm" | "onCancel">) => Promise<string | null>;

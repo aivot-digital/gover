@@ -22,6 +22,6 @@ export class SystemConfigsApiService extends CrudApiService<SystemConfigRequestD
     }
 
     public async listDefinitions(): Promise<SystemConfigDefinitionResponseDTO[]> {
-        return await this.api.get<SystemConfigDefinitionResponseDTO[]>(`system-config-definitions/`);
+        return await this.api.get<SystemConfigDefinitionResponseDTO[]>(`system-configs/definitions/`);
     }
 }

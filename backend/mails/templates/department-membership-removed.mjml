@@ -1,0 +1,31 @@
+<mjml lang="de">
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Benachrichtigung über das Ende einer Zugehörigkeit zu einer Organisationseinheit
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        Sie wurden in Prosuna aus einer Organisationseinheit entfernt.
+                        <br/>
+                        Organisationseinheit: <b th:text="${department.name}">Beispiel-Organisationseinheit</b>
+                        <br/>
+                        Entfernt durch: <b th:text="${admin.getFullName()}">Max Mustermann</b>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/default-mail-signature.mjml"/>
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

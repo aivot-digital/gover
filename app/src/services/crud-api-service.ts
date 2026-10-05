@@ -12,6 +12,10 @@ export abstract class CrudApiService<Request, ListRes, PublicListRes, DetailsRes
         this.path = path.endsWith('/') ? path : `${path}/`;
     }
 
+    public buildPath(id: Id): string {
+        return `${this.path}${id}/`;
+    }
+
     public async create(entity: Request): Promise<DetailsRes> {
         return await this.api.post<DetailsRes>(this.path, entity, {});
     }
@@ -69,19 +73,19 @@ export abstract class CrudApiService<Request, ListRes, PublicListRes, DetailsRes
     public abstract initialize(): DetailsRes;
 
     public async retrieve(id: Id): Promise<DetailsRes> {
-        return await this.api.get<DetailsRes>(`${this.path}${id}/`, {});
+        return await this.api.get<DetailsRes>(this.buildPath(id), {});
     }
 
     public async retrievePublic(id: Id): Promise<PublicDetailsRes> {
-        return await this.api.getPublic<PublicDetailsRes>(`${this.path}${id}/`, {});
+        return await this.api.getPublic<PublicDetailsRes>(this.buildPath(id), {});
     }
 
 
     public async update(id: Id, link: Request): Promise<DetailsRes> {
-        return await this.api.put<DetailsRes>(`${this.path}${id}/`, link, {});
+        return await this.api.put<DetailsRes>(this.buildPath(id), link, {});
     }
 
     public async destroy(id: Id): Promise<void> {
-        return await this.api.destroy<void>(`${this.path}${id}/`, {});
+        return await this.api.destroy<void>(this.buildPath(id), {});
     }
 }

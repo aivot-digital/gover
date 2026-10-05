@@ -7,8 +7,8 @@ export enum DateFieldComponentModelMode {
     Year = 'year',
 }
 
-export interface DateFieldElement extends BaseInputElement<string, ElementType.Date> {
-    autocomplete?: string;
-    placeholder?: string;
-    mode?: DateFieldComponentModelMode;
+export interface DateFieldElement extends BaseInputElement<ElementType.Date> {
+    autocomplete: string | null | undefined;
+    placeholder: string | null | undefined;
+    mode: DateFieldComponentModelMode | null | undefined;
 }

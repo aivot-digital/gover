@@ -5,9 +5,9 @@ import {Box, Button, Divider, IconButton, MenuItem, TextField, Typography} from 
 import {ConditionSetOperator} from '../data/condition-set-operator';
 import {ConditionOperator} from '../data/condition-operator';
 import {CodeTabCondition} from './code-tab-condition';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {ElementWithParents} from '../utils/flatten-elements';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 interface CodeTabConditionSetEditorProps {
     element: AnyElement;
@@ -27,7 +27,7 @@ export function CodeTabConditionSetEditor({
                                               shouldReturnString,
                                               suppressConditionUnmetMessage,
                                               editable,
-                                          }: CodeTabConditionSetEditorProps): JSX.Element {
+                                          }: CodeTabConditionSetEditorProps) {
     return (
         <Box>
             <Typography>
@@ -37,7 +37,6 @@ export function CodeTabConditionSetEditor({
                         'Diese Funktion ist wahr, wenn'
                 }
             </Typography>
-
             <TextField
                 select
                 fullWidth
@@ -88,7 +87,6 @@ export function CodeTabConditionSetEditor({
                         )
                 }
             </TextField>
-
             {
                 shouldReturnString &&
                 conditionSet.operator === ConditionSetOperator.Any &&
@@ -137,7 +135,7 @@ export function CodeTabConditionSetEditor({
                                     onChange({
                                         ...conditionSet,
                                         conditions: [
-                                            ...conditionSet.conditions ?? [],
+                                            ...(conditionSet.conditions ?? []),
                                             {
                                                 operator: ConditionOperator.Equals,
                                                 reference: '',
@@ -224,7 +222,7 @@ export function CodeTabConditionSetEditor({
                                     onChange({
                                         ...conditionSet,
                                         conditionsSets: [
-                                            ...conditionSet.conditionsSets ?? [],
+                                            ...(conditionSet.conditionsSets ?? []),
                                             {
                                                 operator: ConditionSetOperator.All,
                                                 conditions: [],
@@ -269,7 +267,7 @@ export function CodeTabConditionSetEditor({
                                                 });
                                             }}
                                         >
-                                            <DeleteForeverOutlinedIcon
+                                            <Delete
                                                 fontSize="small"
                                             />
                                         </IconButton>

@@ -1,6 +1,7 @@
-import {SxProps, Theme} from "@mui/material";
+import {type SxProps, type Theme} from '@mui/material';
+import {type FormFieldLayoutProps} from '../form-field';
 
-export interface NumberFieldComponentProps {
+export interface NumberFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     placeholder?: string;
     decimalPlaces?: number;
@@ -10,12 +11,14 @@ export interface NumberFieldComponentProps {
     required?: boolean;
     disabled?: boolean;
     readOnly?: boolean;
-    value?: number;
-    onChange: (val: number | undefined) => void;
-    onBlur?: (val: number | undefined) => void;
+    busy?: boolean;
+    value?: number | null;
+    onChange: (val: number | null) => void;
+    onBlur?: (val: number | null) => void;
     minValue?: number;
     maxValue?: number;
-    sx?: SxProps<Theme>;
+    controlSx?: SxProps<Theme>;
+    size?: 'small' | 'medium';
     bufferInputUntilBlur?: boolean;
     debounce?: number;
 }
