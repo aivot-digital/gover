@@ -129,11 +129,12 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Zuständige Organisationseinheiten"
+                title="Zuständige Stellen im Formular"
                 variant="h5"
             >
-                Geben Sie hier an, welche Organisationseinheiten für die Bearbeitung der im Formular abgefragten Daten
-                zuständig sind.
+                Wählen Sie bei Bedarf die zuständige und die bewirtschaftende Organisationseinheit aus.
+                Ihre Anschriften werden in den optionalen Abschnitten „Allgemeine Informationen“ und
+                „Abschluss und Einreichung“ angezeigt.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -156,6 +157,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         departments != null &&
                         <DepartmentSelectField
                             label="Zuständige Organisationseinheit"
+                            hint="Die hinterlegte Anschrift wird als „Zuständige Stelle“ angezeigt."
                             value={responsibleDepartment}
                             onChange={(department) => {
                                 onPatch({
@@ -183,6 +185,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         departments != null &&
                         <DepartmentSelectField
                             label="Bewirtschaftende Organisationseinheit"
+                            hint="Die hinterlegte Anschrift wird als „Bewirtschaftende Stelle“ angezeigt."
                             value={managingDepartment}
                             onChange={(department) => {
                                 onPatch({

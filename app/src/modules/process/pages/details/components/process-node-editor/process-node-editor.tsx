@@ -13,7 +13,6 @@ import {
 } from '../../../../services/process-node-provider-api-service';
 import {ProcessNodeEditorProvider} from './process-node-editor-context';
 import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useChangeBlocker} from '../../../../../../hooks/use-change-blocker-2';
@@ -39,6 +38,7 @@ import {
     getProcessNodeProviderIcon,
     ProcessNodeProviderDetailsDialog,
 } from '../../../../components/process-node-provider-details';
+import {ProcessNodeProviderBadges} from '../../../../components/process-node-provider-badges';
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
@@ -473,12 +473,10 @@ export function ProcessNodeEditor(): ReactNode {
                                     }}>
                                     {provider.name}
                                 </Typography>
-                                <Chip
-                                    label={`Version ${provider.majorVersion}`}
-                                    size="small"
-                                    sx={{
-                                        fontWeight: 'normal',
-                                        flexShrink: 0,
+                                <ProcessNodeProviderBadges
+                                    provider={provider}
+                                    onShowDeprecationDetails={() => {
+                                        setIsProviderDetailsDialogOpen(true);
                                     }}
                                 />
                             </Box>

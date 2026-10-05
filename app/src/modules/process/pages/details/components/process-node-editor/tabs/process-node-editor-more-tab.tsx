@@ -4,8 +4,8 @@ import {useProcessNodeEditorContext} from "../process-node-editor-context";
 import {
     RichTextInputComponent
 } from "../../../../../../../components/rich-text-input-component/rich-text-input-component";
-import Typography from "@mui/material/Typography";
 import {ProcessNodeType} from '../../../../../services/process-node-provider-api-service';
+import {ElementEditorSectionHeader} from '../../../../../../../components/element-editor-section-header/element-editor-section-header';
 
 export function ProcessNodeEditorMoreTab() {
     const {
@@ -25,18 +25,9 @@ export function ProcessNodeEditorMoreTab() {
                 pb: 2,
             }}
         >
-            <Typography variant="h4">
-                Weitere Eigenschaften des Elements
-            </Typography>
-            <Typography
-                variant="body1"
-                sx={{
-                    mt: 1,
-                    mb: 2,
-                    maxWidth: 400
-                }}>
+            <ElementEditorSectionHeader title="Weitere Eigenschaften des Elements" disableMarginTop>
                 Konfigurieren Sie zusätzliche Eigenschaften dieses Prozesselementes.
-            </Typography>
+            </ElementEditorSectionHeader>
 
             {
                 showTimeLimit &&

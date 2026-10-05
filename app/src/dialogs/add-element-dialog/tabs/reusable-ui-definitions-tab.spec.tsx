@@ -22,25 +22,63 @@ vi.mock('../../../hooks/use-app-dispatch', () => ({
 }));
 
 describe('ReusableUiDefinitionsTab', () => {
-    it('shows understandable category chips and origin descriptions', () => {
+    it('identifies whole definitions by their source and partial definitions by their own title', () => {
         const options = [
-            createOption(ProcessNodeDefinitionMetadataReusableUiDefinitionKind.CompleteForm, 'Formular'),
+            createOption(ProcessNodeDefinitionMetadataReusableUiDefinitionKind.CompleteForm, 'Gesamtes Formular'),
             createOption(ProcessNodeDefinitionMetadataReusableUiDefinitionKind.FormSection, 'Kontaktdaten', true),
-            createOption(ProcessNodeDefinitionMetadataReusableUiDefinitionKind.UiDefinition, 'Bearbeitungsoberfläche'),
-            createOption(ProcessNodeDefinitionMetadataReusableUiDefinitionKind.StepperSection, 'Prüfung', true),
+            createOption(ProcessNodeDefinitionMetadataReusableUiDefinitionKind.UiDefinition, 'Bearbeitungsoberfläche', false, 'Sachbearbeitung'),
+            createOption(ProcessNodeDefinitionMetadataReusableUiDefinitionKind.StepperSection, 'Prüfung', true, 'Sachbearbeitung'),
             createOption(ProcessNodeDefinitionMetadataReusableUiDefinitionKind.Tab, 'Historie', true, null),
         ];
 
         render(<ReusableUiDefinitionsTab options={options} onAddElements={vi.fn()}/>);
 
+        expect(screen.getAllByRole('heading', {level: 3}).map((heading) => heading.textContent)).toEqual([
+            'Antragstellung',
+            'Kontaktdaten',
+            'Sachbearbeitung',
+            'Prüfung',
+            'Historie',
+        ]);
         expect(screen.getByText('Gesamtes Formular')).toBeInTheDocument();
         expect(screen.getByText('Formularabschnitt')).toBeInTheDocument();
-        expect(screen.getByText('UI-Definition')).toBeInTheDocument();
-        expect(screen.getByText('Stepper-Abschnitt')).toBeInTheDocument();
+        expect(screen.getByText('Gesamte UI-Definition')).toBeInTheDocument();
+        expect(screen.getByText('Abschnitt')).toBeInTheDocument();
         expect(screen.getByText('Tab')).toBeInTheDocument();
-        expect(screen.getAllByText('Ausgangsknoten')).toHaveLength(4);
-        expect(screen.getByText('Unbenanntes Prozesselement')).toBeInTheDocument();
+        expect(screen.getByText('Aus Prozesselement „Antragstellung“')).toBeInTheDocument();
+        expect(screen.getByText('Aus Prozesselement „Sachbearbeitung“')).toBeInTheDocument();
+        expect(screen.getByText('Aus Prozesselement „Unbenanntes Prozesselement“')).toBeInTheDocument();
+        expect(screen.getByText(/Alle Standardabschnitte mit ihren enthaltenen Elementen\./)).toBeInTheDocument();
+        expect(screen.getByText('„Bearbeitungsoberfläche“ mit allen enthaltenen Elementen.')).toBeInTheDocument();
         expect(screen.getByText(/Zusätzlicher Kontext/)).toBeInTheDocument();
+    });
+
+    it('does not repeat the generic UI definition label beside its category', () => {
+        const option = createOption(
+            ProcessNodeDefinitionMetadataReusableUiDefinitionKind.UiDefinition,
+            'UI-Definition',
+        );
+
+        render(<ReusableUiDefinitionsTab options={[option]} onAddElements={vi.fn()}/>);
+
+        expect(screen.getByRole('heading', {name: 'Antragstellung'})).toBeInTheDocument();
+        expect(screen.getByText('Gesamte UI-Definition')).toBeInTheDocument();
+        expect(screen.queryByText('UI-Definition', {exact: true})).not.toBeInTheDocument();
+        expect(screen.getByText('Alle enthaltenen Elemente.')).toBeInTheDocument();
+    });
+
+    it.each([null, '   '])('provides a title for a whole form with an unnamed source (%s)', (originName) => {
+        const option = createOption(
+            ProcessNodeDefinitionMetadataReusableUiDefinitionKind.CompleteForm,
+            'Gesamtes Formular',
+            false,
+            originName,
+        );
+
+        render(<ReusableUiDefinitionsTab options={[option]} onAddElements={vi.fn()}/>);
+
+        expect(screen.getByRole('heading', {name: 'Unbenanntes Prozesselement'})).toBeInTheDocument();
+        expect(screen.getByText('Gesamtes Formular')).toBeInTheDocument();
     });
 
     it('imports complete definitions directly', () => {
@@ -122,7 +160,7 @@ function createOption(
     kind: ProcessNodeDefinitionMetadataReusableUiDefinitionKind,
     label: string,
     partial: boolean = false,
-    originName: string | null = 'Ausgangsknoten',
+    originName: string | null = 'Antragstellung',
 ): ReusableUiDefinitionOption {
     const definition: ProcessNodeDefinitionMetadataReusableUiDefinition = {
         label,

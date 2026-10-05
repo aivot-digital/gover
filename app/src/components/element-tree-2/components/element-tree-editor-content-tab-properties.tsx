@@ -109,7 +109,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const showInputTitleField = isAnyInputElement(currentElement);
     const showInputHintField = isAnyInputElement(currentElement) && !hasSummaryLayoutParent;
     const hasBasicProperties =
-        showInternalNameField ||
         showElementWidthSelector ||
         showInputTitleField ||
         showInputHintField;
@@ -160,7 +159,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     columnSpacing={4}
                 >
                     {
-                        showInternalNameField &&
+                        showInputTitleField &&
                         <Grid
                             size={{
                                 xs: 12,
@@ -168,16 +167,15 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                             }}
                         >
                             <TextFieldComponent
-                                label="Interner Name"
-                                value={currentElement.name}
+                                value={currentElement.label}
+                                label="Titel"
                                 onChange={(val) => {
                                     onChangeCurrentElement({
                                         ...currentElement,
-                                        name: val ?? '',
+                                        label: val,
                                     });
                                 }}
-                                hint="Vergeben Sie einen internen Namen zur besseren Identifikation. Nur für Sie und Ihr Team sichtbar."
-                                maxCharacters={30}
+                                hint="Dieser Titel wird als Beschriftung des Feldes angezeigt. Nutzen Sie eine kurze, aussagekräftige Bezeichnung."
                                 disabled={!editable}
                             />
                         </Grid>
@@ -203,31 +201,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 }}
                                 hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird die volle Breite verwendet."
                                 disabled={!editable}
-                            />
-                        </Grid>
-                    }
-
-                    {
-                        showInputTitleField &&
-                        <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
-                            }}
-                        >
-                            <TextFieldComponent
-                                value={currentElement.label}
-                                label="Titel"
-                                onChange={(val) => {
-                                    onChangeCurrentElement({
-                                        ...currentElement,
-                                        label: val,
-                                    });
-                                }}
-                                hint="Dieser Titel wird als Label für dieses Feld im Formular angezeigt und ist u. A. relevant für die Barrierefreiheit."
-                                disabled={!editable}
-                                softLimitCharacters={20}
-                                softLimitCharactersWarning={'Halten Sie das Label so kurz wie möglich (empfohlen max. 20 Zeichen), da es sonst auf kleinen Bildschirmen abgeschnitten werden kann.'}
                             />
                         </Grid>
                     }
@@ -316,7 +289,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         }}
                     >
                         <CheckboxFieldComponent
-                            label="Technisches Feld"
+                            label="Verborgenes Feld"
                             value={currentElement.technical ?? undefined}
                             onChange={(checked) => {
                                 onChangeCurrentElement({
@@ -326,7 +299,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                     technical: checked,
                                 });
                             }}
-                            hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
+                            hint="Wird im Formular nicht angezeigt und kann nicht ausgefüllt werden. Der Wert des Feldes kann berechnet und weiterverwendet werden."
                             disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled)}
                         />
                     </Grid>
@@ -440,17 +413,38 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
             }
 
             <ElementEditorSectionHeader
-                title="Technische Informationen für Entwickler:innen"
+                title="Weitere Angaben zum Element"
                 sx={{mt: 8}}
-            >
-                Hier finden Sie technische Zusatzinformationen, die insbesondere für Entwickler:innen von Bedeutung sein
-                können.
-            </ElementEditorSectionHeader>
+            />
 
             <Grid
                 container
                 columnSpacing={4}
             >
+                {
+                    showInternalNameField &&
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
+                    >
+                        <TextFieldComponent
+                            label="Bezeichnung in der Formularstruktur"
+                            value={currentElement.name}
+                            onChange={(val) => {
+                                onChangeCurrentElement({
+                                    ...currentElement,
+                                    name: val ?? '',
+                                });
+                            }}
+                            hint="Eine interne Bezeichnung, z. B. eine Abkürzung, kann helfen, das Element in der Formularstruktur leichter wiederzufinden. Ohne diese Angabe wird der Titel, die Feldbeschriftung oder die Elementart verwendet. Im Formular wird die interne Bezeichnung nicht angezeigt."
+                            maxCharacters={30}
+                            disabled={!editable}
+                        />
+                    </Grid>
+                }
+
                 <Grid
                     size={{
                         xs: 12,
@@ -466,6 +460,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 id: id ?? '',
                             });
                         }}
+                        hint="Technische Kennung zur eindeutigen Identifikation des Elements. Sie wird automatisch vergeben und ist vor allem für Entwickler:innen relevant."
                         disabled={!editable || (!allowElementIdEditing && displayContext != ElementDisplayContext.DataObjectSchema)}
                         endAction={{
                             icon: <ContentPasteIcon/>,

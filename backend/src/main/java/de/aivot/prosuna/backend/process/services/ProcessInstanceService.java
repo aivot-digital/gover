@@ -21,6 +21,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Objects;
@@ -122,6 +123,22 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ProcessInstanceEntity delete(@Nonnull Long id) throws ResponseException {
+        var entity = retrieve(id).orElseThrow(ResponseException::notFound);
+        performDelete(entity);
+        return entity;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ProcessInstanceEntity deleteEntity(@Nonnull ProcessInstanceEntity entity) throws ResponseException {
+        performDelete(entity);
+        return entity;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void performDelete(@Nonnull ProcessInstanceEntity entity) throws ResponseException {
         var allAttachments = processInstanceAttachmentRepository
                 .findAllByProcessInstanceId(entity.getId());
@@ -134,6 +151,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
         processInstanceAttachmentSetRepository.deleteAll(
                 processInstanceAttachmentSetRepository.findAllByProcessInstanceId(entity.getId())
         );
+        processInstanceAttachmentSetRepository.flush();
 
         processInstanceRepository.delete(entity);
     }

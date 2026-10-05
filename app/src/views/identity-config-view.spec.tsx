@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {ReactNode} from 'react';
 import {describe, expect, it, vi} from 'vitest';
@@ -69,6 +69,21 @@ describe('IdentityConfigView', () => {
         await user.click(screen.getByText('Vertretung').closest('button')!);
         expect(screen.queryByRole('switch', {name: 'Optional'})).not.toBeInTheDocument();
         expect(screen.getByRole('switch', {name: 'E-Mail-Adresse zulassen'})).toBeInTheDocument();
+
+        const dialog = within(screen.getByRole('dialog'));
+        const title = dialog.getByRole('textbox', {name: 'Titel'});
+        const key = dialog.getByRole('textbox', {name: 'Eindeutiger Schlüssel'});
+        const textboxes = dialog.getAllByRole('textbox');
+
+        expect(textboxes[0]).toBe(title);
+        expect(textboxes.at(-1)).toBe(key);
+        expect(key).toHaveAccessibleDescription(
+            'Über diesen Schlüssel wird die Identität im Prozess referenziert. Er wird automatisch vergeben und kann bei Bedarf angepasst werden.',
+        );
+
+        dialog.getByRole('switch', {name: 'E-Mail-Adresse zulassen'}).focus();
+        await user.tab();
+        expect(key).toHaveFocus();
     });
 
     it('exposes the identity list as one field group without including its action in the name', async () => {

@@ -192,7 +192,8 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
             throw new IllegalArgumentException("Process instance task does not belong to process instance: " + processInstanceTaskId);
         }
 
-        if (task.getStatus() != ProcessTaskStatus.Running) {
+        if (task.getStatus() != ProcessTaskStatus.Running && task.getStatus() != ProcessTaskStatus.InProgress &&
+                task.getStatus() != ProcessTaskStatus.AwaitingStaff) {
             throw new IllegalStateException("Cannot change attachment sets for process instance task that is not running: " + processInstanceTaskId);
         }
     }
