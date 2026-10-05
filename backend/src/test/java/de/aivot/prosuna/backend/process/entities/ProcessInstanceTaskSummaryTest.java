@@ -51,7 +51,7 @@ class ProcessInstanceTaskSummaryTest {
                 )
                 """);
         sql("insert into process_instance_tasks (id) values (9999)");
-        var migration = new ClassPathResource("db/migration/V31_3_0__process_task_execution_summary.sql");
+        var migration = new ClassPathResource("db/migration/V31_4_0__process_task_execution_summary.sql");
         sql(migration.getContentAsString(StandardCharsets.UTF_8));
     }
 
