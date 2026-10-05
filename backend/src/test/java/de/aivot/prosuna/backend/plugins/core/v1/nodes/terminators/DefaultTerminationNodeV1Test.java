@@ -3,15 +3,20 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.terminators;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
+import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
+import de.aivot.prosuna.backend.process.models.ProcessRetentionTime;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,6 +62,21 @@ class DefaultTerminationNodeV1Test {
         config.retentionValue = 1;
         config.retentionUnit = "invalid";
         assertNotNull(node.validateConfiguration(validationContext(config)));
+        assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> node.init(context(config)));
+    }
+
+    @ParameterizedTest
+    @EnumSource(ProcessRetentionTimeUnit.class)
+    void validateConfiguration_EnforcesMaximumForEveryOverrideUnit(ProcessRetentionTimeUnit unit) {
+        var config = new DefaultTerminationNodeV1.DefaultTerminationNodeV1Config();
+        var maximum = ProcessRetentionTime.maximumValue(unit);
+        config.retentionUnit = unit.name().toLowerCase();
+        config.retentionValue = maximum;
+
+        assertNull(node.validateConfiguration(validationContext(config)));
+        config.retentionValue = maximum + 1;
+        assertEquals("Die abweichende Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren.",
+                node.validateConfiguration(validationContext(config)).get("retention_value").getFirst());
         assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> node.init(context(config)));
     }
 

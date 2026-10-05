@@ -14,14 +14,17 @@ import {
     type TaskView,
 } from '../../services/process-instance-task-api-service';
 import {ProcessTaskViewPageEdit} from './process-task-view-page-edit';
+import {ProcessTaskStatus} from '../../enums/process-task-status';
 
 const testState = vi.hoisted(() => ({
     dispatch: vi.fn(),
+    refresh: vi.fn(),
     nextValues: {} as AuthoredElementValues,
     item: {
         task: {
             id: 20,
             processInstanceId: 10,
+            status: 'Running' as ProcessTaskStatus,
         },
         instance: null,
         process: null,
@@ -31,7 +34,7 @@ const testState = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../components/generic-details-page/generic-details-page-context', () => ({
-    useGenericDetailsPageContext: () => ({item: testState.item}),
+    useGenericDetailsPageContext: () => ({item: testState.item, refresh: testState.refresh}),
 }));
 
 vi.mock('../../../../hooks/use-app-dispatch', () => ({
@@ -105,6 +108,8 @@ describe('ProcessTaskViewPageEdit autosave', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         testState.dispatch.mockReset();
+        testState.refresh.mockReset();
+        testState.item.task.status = ProcessTaskStatus.Running;
         testState.nextValues = {};
         vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
     });
@@ -168,6 +173,7 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         expect(putTaskView).toHaveBeenCalledOnce();
         expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues);
         expect(screen.getByText('Eingaben wurden zwischengespeichert')).toBeInTheDocument();
+        expect(testState.refresh).toHaveBeenCalledOnce();
     });
 
     it('ignores an unchanged value notification', async () => {
@@ -183,7 +189,23 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         });
 
         expect(putTaskView).not.toHaveBeenCalled();
+        expect(testState.refresh).not.toHaveBeenCalled();
         expect(screen.getByText('Eingaben wurden zwischengespeichert')).toBeInTheDocument();
+    });
+
+    it('refreshes an awaiting staff task after its first successful save', async () => {
+        testState.item.task.status = ProcessTaskStatus.AwaitingStaff;
+        const {putTaskView} = await renderPage({});
+        testState.nextValues = {subject: literalAuthoredValue('Started')};
+        vi.useFakeTimers();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Werte ändern'}));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(2000);
+        });
+
+        expect(putTaskView).toHaveBeenCalledOnce();
+        expect(testState.refresh).toHaveBeenCalledOnce();
     });
 
     it('flushes the first change before navigating away', async () => {

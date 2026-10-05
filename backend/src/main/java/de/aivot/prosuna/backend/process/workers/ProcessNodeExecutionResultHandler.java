@@ -228,10 +228,15 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
-        if (!(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)
-                && processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(processInstance);
+        if (!(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
+            ensureInstanceRunning(processInstance);
+        }
+    }
+
+    private void ensureInstanceRunning(@Nonnull ProcessInstanceEntity instance) {
+        if (instance.getStatus() != ProcessInstanceStatus.Running) {
+            instance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(instance);
         }
     }
 
@@ -495,10 +500,7 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingPayment);
         assignAndSaveDataLayersAndStatusOverride(context, false);
 
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            context.processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(context.processInstance);
-        }
+        ensureInstanceRunning(context.processInstance);
 
         context.logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
@@ -609,10 +611,7 @@ public class ProcessNodeExecutionResultHandler {
                 logMessageDetails
         );
 
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            context.processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(context.processInstance);
-        }
+        ensureInstanceRunning(context.processInstance);
 
         if (unchanged) {
             return;
@@ -708,7 +707,9 @@ public class ProcessNodeExecutionResultHandler {
         if (viaPort == null) {
             assignAndSaveDataLayersAndStatusOverride(context, false);
         }
-        context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        }
         processInstanceRepository.save(context.processInstance);
 
 
@@ -930,12 +931,20 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleTaskUpdated(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskUpdated> context) throws ProcessNodeExecutionException {
-        context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
+        if (context.triggeringUser != null || context.processInstanceTask.getStatus() == ProcessTaskStatus.InProgress) {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.InProgress);
+        } else if (context.processInstanceTask.getStatus() == ProcessTaskStatus.AwaitingStaff) {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingStaff);
+        } else {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
+        }
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+        if (context.triggeringUser != null && context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
             context.processInstance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(context.processInstance);
+        } else {
+            ensureInstanceRunning(context.processInstance);
         }
 
         if (context.triggeringUser != null) {
@@ -970,10 +979,13 @@ public class ProcessNodeExecutionResultHandler {
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
-        if (!context.additionalIdentities.isEmpty()
-                || context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        if (!context.additionalIdentities.isEmpty()) {
+            if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+                context.processInstance.setStatus(ProcessInstanceStatus.Running);
+            }
             processInstanceRepository.save(context.processInstance);
+        } else {
+            ensureInstanceRunning(context.processInstance);
         }
 
         var nextPayload = new ProcessWorker.DoWorkWorkerPayload(

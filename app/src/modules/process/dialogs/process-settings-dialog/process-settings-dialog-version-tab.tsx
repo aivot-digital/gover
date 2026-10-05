@@ -20,6 +20,7 @@ import {type SelectFieldComponentOption} from '../../../../components/select-fie
 import {Hint} from '../../../../components/hint/hint';
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
 import {RetentionTimeUnit} from '../../enums/retention-time-unit';
+import {formatNumToGermanNum} from '../../../../utils/format-german-numbers';
 
 interface ProcessSettingsDialogVersionTabProps {
     open: boolean;
@@ -65,7 +66,12 @@ const caseNumberTypeOptions = [
 ];
 
 const PROCESS_VERSION_NOTES_MAX_LENGTH = 2048;
-const MAX_RETENTION_TIME_VALUE = 2_147_483_647;
+const MAX_RETENTION_TIME_VALUES: Record<RetentionTimeUnit, number> = {
+    [RetentionTimeUnit.Days]: 36_524,
+    [RetentionTimeUnit.Weeks]: 5_217,
+    [RetentionTimeUnit.Months]: 1_200,
+    [RetentionTimeUnit.Years]: 100,
+};
 const retentionTimeUnitOptions: SelectFieldComponentOption<RetentionTimeUnit>[] = [
     {value: RetentionTimeUnit.Days, label: 'Tage'},
     {value: RetentionTimeUnit.Weeks, label: 'Wochen'},
@@ -163,16 +169,17 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         }
         const value = draft.retentionTimeValue;
         if (value == null) {
-            return 'Geben Sie eine Aufbewahrungsfrist an.';
+            return 'Geben Sie eine Aufbewahrungsdauer an.';
         }
         if (!Number.isInteger(value) || value < 1) {
-            return 'Die Aufbewahrungsfrist muss eine positive ganze Zahl sein.';
+            return 'Die Aufbewahrungsdauer muss eine positive ganze Zahl sein.';
         }
-        if (value > MAX_RETENTION_TIME_VALUE) {
-            return 'Die Aufbewahrungsfrist ist zu groß.';
+        if (draft.retentionTimeUnit != null && value > MAX_RETENTION_TIME_VALUES[draft.retentionTimeUnit]) {
+            const unit = retentionTimeUnitOptions.find((option) => option.value === draft.retentionTimeUnit);
+            return `Die Aufbewahrungsdauer darf maximal ${formatNumToGermanNum(MAX_RETENTION_TIME_VALUES[draft.retentionTimeUnit])} ${unit?.label} betragen.`;
         }
         return undefined;
-    }, [draft.retentionTimeValue, isEditable]);
+    }, [draft.retentionTimeValue, draft.retentionTimeUnit, isEditable]);
 
     const retentionTimeUnitError = isEditable && draft.retentionTimeUnit == null
         ? 'Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.'
@@ -418,15 +425,16 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginBottom
                 maxWidth={680}
             >
-                Die Aufbewahrungsfrist legt fest, wie lange ein Vorgang nach seiner Beendigung gespeichert bleibt.
-                Nach Ablauf der Aufbewahrungsfrist wird der Vorgang vollständig gelöscht.
+                Nach Abschluss eines Vorgangs bleibt dieser für die angegebene Dauer gespeichert.
+                Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anhänge gelöscht.
+                In Abschluss-Elementen kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
             </ElementEditorSectionHeader>
 
             <Grid container spacing={2} sx={{maxWidth: 680}}>
                 <Grid size={{xs: 12, md: 6}}>
                     <NumberFieldComponent
                         key={retentionInputRevision}
-                        label="Aufbewahrungsfrist"
+                        label="Aufbewahrungsdauer"
                         value={draft.retentionTimeValue}
                         onChange={(value) => {
                             setHasEditedRetentionTime(true);
@@ -434,7 +442,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         }}
                         decimalPlaces={0}
                         minValue={1}
-                        maxValue={MAX_RETENTION_TIME_VALUE}
+                        maxValue={draft.retentionTimeUnit == null ? undefined : MAX_RETENTION_TIME_VALUES[draft.retentionTimeUnit]}
                         required={isEditable}
                         showOptionalIndicator={false}
                         error={hasEditedRetentionTime ? retentionTimeValueError : undefined}
@@ -443,7 +451,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 </Grid>
                 <Grid size={{xs: 12, md: 6}}>
                     <SelectFieldComponent<RetentionTimeUnit>
-                        label="Einheit der Aufbewahrungsfrist"
+                        label="Zeiteinheit"
                         value={draft.retentionTimeUnit}
                         onChange={(unit) => {
                             setHasEditedRetentionTime(true);

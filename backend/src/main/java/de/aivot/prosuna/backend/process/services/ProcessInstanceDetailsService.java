@@ -47,8 +47,8 @@ public class ProcessInstanceDetailsService {
         var instance = instances.findById(id).orElseThrow(ResponseException::notFound);
         var process = processes.findById(instance.getProcessId()).orElseThrow(ResponseException::notFound);
         var trigger = nodes.findById(instance.getInitialNodeId());
-        var activeStatuses = Set.of(ProcessTaskStatus.Running, ProcessTaskStatus.Paused,
-                ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
+        var activeStatuses = Set.of(ProcessTaskStatus.Running, ProcessTaskStatus.InProgress, ProcessTaskStatus.AwaitingStaff,
+                ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
         // Only labels needed by the instance view are exposed, never the process configuration.
         var activeTasks = tasks.findAllByProcessInstanceId(id).stream()
                 .filter(task -> activeStatuses.contains(task.getStatus()))

@@ -106,15 +106,19 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         if (configuration.retentionValue == null && configuration.retentionUnit == null) {
             return null;
         }
-        if (configuration.retentionValue == null || positiveWholeNumber(configuration.retentionValue) == null) {
+        var value = positiveWholeNumber(configuration.retentionValue);
+        if (value == null) {
             return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Geben Sie für die abweichende Aufbewahrungsfrist eine positive ganze Zahl an."));
         }
         var unit = parseRetentionUnit(configuration.retentionUnit);
         if (unit == null) {
             return Map.of(RETENTION_UNIT_FIELD_KEY, List.of("Wählen Sie für die abweichende Aufbewahrungsfrist eine Zeiteinheit aus."));
         }
+        if (value > ProcessRetentionTime.maximumValue(unit)) {
+            return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Die abweichende Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren."));
+        }
         try {
-            ProcessRetentionTime.calculate(Instant.now(), positiveWholeNumber(configuration.retentionValue), unit);
+            ProcessRetentionTime.calculate(Instant.now(), value, unit);
         } catch (DateTimeException | ArithmeticException e) {
             return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Die angegebene Aufbewahrungsfrist ist zu groß."));
         }
@@ -165,6 +169,9 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         if (value == null || unit == null) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation("Die abweichende Aufbewahrungsfrist des abschließenden Prozesselements ist ungültig.");
         }
+        if (value > ProcessRetentionTime.maximumValue(unit)) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation("Die abweichende Aufbewahrungsfrist des abschließenden Prozesselements überschreitet die zulässige Höchstdauer von 100 Jahren.");
+        }
         try {
             return result.setRetentionDate(ProcessRetentionTime.calculate(Instant.now(), value, unit));
         } catch (DateTimeException | ArithmeticException e) {
@@ -211,8 +218,8 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         /** If absent together with the unit, the process version controls retention. */
         @InputElementPOJOBinding(id = RETENTION_VALUE_FIELD_KEY, type = ElementType.Number, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Abweichende Aufbewahrungsfrist"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Ohne Angabe gilt die Aufbewahrungsfrist der Prozessversion."),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Ohne Angabe gilt die Aufbewahrungsfrist der Prozessversion. Die Frist darf höchstens 100 Jahre betragen."),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false),
                 @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0)
         })
@@ -222,7 +229,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         /** Required only when an override value is provided. */
         @InputElementPOJOBinding(id = RETENTION_UNIT_FIELD_KEY, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Einheit der Aufbewahrungsfrist"),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 4.0),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         @Nullable

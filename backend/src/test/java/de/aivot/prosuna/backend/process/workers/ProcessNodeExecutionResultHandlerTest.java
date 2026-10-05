@@ -83,6 +83,56 @@ import static org.mockito.Mockito.when;
 
 class ProcessNodeExecutionResultHandlerTest {
     @Test
+    void automaticUpdateKeepsAwaitingStaffUntilSuccessfulStaffUpdate() throws Exception {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, new ArrayList<>());
+        var instance = processInstance();
+        var task = processInstanceTask("staff").setStatus(ProcessTaskStatus.AwaitingStaff);
+        var node = processNode("Prüfung");
+        var provider = new TestProcessNodeDefinition("Prüfung");
+        var result = new ProcessNodeExecutionResultTaskUpdated();
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        handler.handleResult(logger, null, provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.AwaitingStaff, task.getStatus());
+
+        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
+        assertEquals(2, savedTasks.size());
+    }
+
+    @Test
+    void staffUpdateMarksTaskInProgressAndKeepsInstanceRunningAcrossLaterUpdates() throws Exception {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, savedInstances);
+        var instance = processInstance();
+        var task = processInstanceTask("staff");
+        var node = processNode("Prüfung");
+        var provider = new TestProcessNodeDefinition("Prüfung");
+        var result = new ProcessNodeExecutionResultTaskUpdated();
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertEquals(1, savedTasks.size());
+        assertTrue(savedInstances.isEmpty());
+
+        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        handler.handleResult(logger, null, provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertTrue(savedInstances.isEmpty());
+
+        var nextTask = processInstanceTask(null);
+        handler.handleResult(logger, null, provider, node, instance, nextTask, task, new ProcessNodeExecutionResultNoop());
+        assertEquals(ProcessTaskStatus.Running, nextTask.getStatus());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertTrue(savedInstances.isEmpty());
+    }
+
+    @Test
     void handleResult_InvitesCustomerWithoutCreatingAnIdentity() throws Exception {
         var communicationService = mock(CommunicationService.class);
         var sendResult = Map.<String, Object>of("fallback", true, "recipient", "invitee@example.test");
@@ -204,7 +254,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 savedInstances
         );
         var processInstance = processInstance();
-        var task = processInstanceTask(null);
+        var task = processInstanceTask(null).setStatus(ProcessTaskStatus.InProgress);
         var newIdentity = identity("representative");
 
         handler.handleResultWithAdditionalIdentities(

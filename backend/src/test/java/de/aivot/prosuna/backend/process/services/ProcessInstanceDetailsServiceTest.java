@@ -91,7 +91,9 @@ class ProcessInstanceDetailsServiceTest {
         assertEquals("Prüfung", result.processName());
         assertEquals("Fachbereich", result.departmentName());
         assertEquals("Eingang", result.triggerName());
-        assertEquals(4, result.activeTasks().size());
+        assertEquals(6, result.activeTasks().size());
+        assertTrue(result.activeTasks().stream().anyMatch(task -> task.status() == ProcessTaskStatus.InProgress));
+        assertTrue(result.activeTasks().stream().anyMatch(task -> task.status() == ProcessTaskStatus.AwaitingStaff));
         assertTrue(result.activeTasks().stream().allMatch(task -> java.time.Instant.parse("2026-10-01T08:00:00Z").equals(task.deadline())));
         assertEquals("instance-owner", result.instance().getAssignedUserId());
         assertEquals("Vorgang wird geprüft", result.instance().getStatusOverride());
