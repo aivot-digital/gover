@@ -89,12 +89,6 @@ public final class ExecutionSummaryMarkdown {
     }
 
     @Nonnull
-    public String taskLink(@Nonnull String label) {
-        return "[" + text(label) + "](/staff/tasks/" + segment(context.thisProcessInstance().getId())
-                + "/" + segment(context.thisTask().getId()) + ")";
-    }
-
-    @Nonnull
     public static String user(@Nullable Object id, @Nullable Object name) {
         if (id == null) {
             return "das System";

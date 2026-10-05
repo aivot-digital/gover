@@ -98,8 +98,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         var configuration = context.configurationOfExecutingNode();
         return "Die manuelle Aktion wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " als durchgeführt gemeldet."
                 + section("Beschreibung der Aufgabe", configuration.taskDescription)
-                + section("Vermerk", summary.data(OUTPUT_REMARK))
-                + (configuration.uiDefinition == null ? "" : section("Erfasste Daten", summary.taskLink("Aufgabe ansehen")));
+                + section("Vermerk", summary.data(OUTPUT_REMARK));
     }
 
     @Nonnull

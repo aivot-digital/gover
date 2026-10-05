@@ -109,8 +109,11 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         return "Die Freigabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " " + decision + "."
                 + section("Vermerk", summary.data(OUTPUT_REMARK))
                 + section("Freigabekriterien", configuration.criteria)
-                + section("Prüfinhalt", MODE_DATA.equals(configuration.contentMode)
-                        ? summary.taskLink("Für die Prüfung modellierte Daten ansehen") : configuration.customContent);
+                + (
+                MODE_DATA.equals(configuration.contentMode)
+                        ? section("Prüfinhalt", configuration.customContent)
+                        : ""
+        );
     }
 
     @Nonnull
@@ -160,7 +163,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     public String getDescription() {
         return """
                 Erstellt eine zugewiesene Aufgabe, über die eine Mitarbeiter:in einen Vorgang freigeben oder ablehnen kann.
-
+                
                 Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Ausgang fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Elementausgänge bereit.
                 """;
     }

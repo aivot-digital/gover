@@ -127,8 +127,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var recipient = summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID));
         return "Es wurde " + recipient + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
                 + " zur Einreichung von Daten aufgefordert und" + summary.delivery() + " informiert."
-                + " Die Daten wurden" + summary.eventAt("started") + " durch " + recipient + " eingereicht."
-                + section("Eingereichte Daten", summary.taskLink("Aufgabe ansehen"));
+                + " Die Daten wurden" + summary.eventAt("started") + " durch " + recipient + " eingereicht.";
     }
 
     @Nonnull
