@@ -50,6 +50,7 @@ import static org.mockito.Mockito.*;
 class ProcessTaskUnassignmentResultHandlerTest {
     private final ProcessInstanceTaskRepository tasks = mock(ProcessInstanceTaskRepository.class);
     private final ProcessInstanceRepository instances = mock(ProcessInstanceRepository.class);
+    private final ProcessVersionRepository versions = mock(ProcessVersionRepository.class);
     private final ProcessInstanceHistoryEventRepository events = mock(ProcessInstanceHistoryEventRepository.class);
     private final ProcessAssignmentService assignments = mock(ProcessAssignmentService.class);
     private final CommunicationService communication = mock(CommunicationService.class);
@@ -61,19 +62,22 @@ class ProcessTaskUnassignmentResultHandlerTest {
     private final ProcessNodeDefinition<AuthoredElementValues> definition = mock(ProcessNodeDefinition.class);
     private final ProcessService processes = mock(ProcessService.class);
     private final DepartmentService departments = mock(DepartmentService.class);
-    private final ProcessNodeEntity node = new ProcessNodeEntity().setId(3).setOutputMappings(Map.of());
+    private final ProcessNodeEntity node = new ProcessNodeEntity().setId(3).setProcessId(10).setProcessVersion(1)
+            .setOutputMappings(Map.of());
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(1L).setProcessId(10)
             .setStatus(ProcessInstanceStatus.Running).setAssignedUserId("instance-owner").setInitialPayload(Map.of());
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(2L)
             .setProcessInstanceId(1L).setAssignedUserId("task-owner").setAssignedCustomerIdentityId("customer");
     private final UserEntity actor = new UserEntity().setId("actor").setFullName("Ada Beispiel");
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
-            assignments, rabbit, communication, instances, tasks, edges, users, taskMail,
+            assignments, rabbit, communication, instances, versions, tasks, edges, users, taskMail,
             mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class), processes, departments,
             instanceMail);
 
     @BeforeEach
     void setup() throws Exception {
+        when(versions.findById(ProcessVersionEntityId.of(10, 1)))
+                .thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(10).setProcessVersion(1)));
         when(definition.getOutputs()).thenReturn(List.of());
         when(definition.getPorts()).thenReturn(List.of(new ProcessNodePort("success", "Weiter", "Fortsetzen")));
         when(edges.findByFromNodeIdAndViaPort(3, "success"))

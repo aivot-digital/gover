@@ -46,6 +46,7 @@ import static org.mockito.Mockito.*;
 class ProcessNodeExecutionSummaryTest {
     private final ProcessInstanceTaskRepository tasks = mock(ProcessInstanceTaskRepository.class);
     private final ProcessInstanceRepository instances = mock(ProcessInstanceRepository.class);
+    private final ProcessVersionRepository versions = mock(ProcessVersionRepository.class);
     private final ProcessEdgeRepository edges = mock(ProcessEdgeRepository.class);
     private final RabbitTemplate rabbit = mock(RabbitTemplate.class);
     private final UserService users = mock(UserService.class);
@@ -54,6 +55,7 @@ class ProcessNodeExecutionSummaryTest {
     private final ProcessNodeDefinition<Configuration> definition = mock(ProcessNodeDefinition.class, CALLS_REAL_METHODS);
     private final Configuration configuration = new Configuration("Zählerstand");
     private final ProcessNodeEntity node = new ProcessNodeEntity().setId(3).setName("Zähler")
+            .setProcessId(1).setProcessVersion(1)
             .setProcessNodeDefinitionKey("test/counter").setOutputMappings(Map.of("value", "total"));
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(1L)
             .setStatus(ProcessInstanceStatus.Running).setInitialPayload(Map.of("original", true))
@@ -62,12 +64,14 @@ class ProcessNodeExecutionSummaryTest {
             .setProcessInstanceId(1L).setStatus(ProcessTaskStatus.Running);
     private final UserEntity actor = new UserEntity().setId("actor").setFullName("Ada Beispiel");
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
-            mock(ProcessAssignmentService.class), rabbit, null, instances, tasks, edges, users,
+            mock(ProcessAssignmentService.class), rabbit, null, instances, versions, tasks, edges, users,
             mock(ProcessTaskMailService.class), mock(ProcessNodeRepository.class),
             mock(ProcessNodeDefinitionService.class), null, null, mock(ProcessInstanceMailService.class));
 
     @BeforeEach
     void setup() throws Exception {
+        when(versions.findById(ProcessVersionEntityId.of(1, 1)))
+                .thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(1).setProcessVersion(1)));
         when(definition.getOutputs()).thenReturn(List.of(new ProcessNodeOutput("value", "Wert", "Ergebnis", "number")));
         when(definition.getPorts()).thenReturn(List.of(new ProcessNodePort("next", "Weiter", "Fortsetzen")));
         when(edges.findByFromNodeIdAndViaPort(3, "next"))

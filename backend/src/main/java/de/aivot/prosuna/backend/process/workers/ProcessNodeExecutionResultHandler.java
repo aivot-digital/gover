@@ -1199,9 +1199,8 @@ public class ProcessNodeExecutionResultHandler {
         processInstanceTaskRepository.save(context.processInstanceTask);
     }
 
-    private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?, ?> context,
     @Nullable
-    private Instant resolveRetentionDate(@Nonnull HandlerContext<ProcessNodeExecutionResultInstanceCompleted> context,
+    private Instant resolveRetentionDate(@Nonnull HandlerContext<?, ProcessNodeExecutionResultInstanceCompleted> context,
                                          @Nonnull Instant completionTime) throws ProcessNodeExecutionException {
         if (context.result.getRetentionDate() != null) {
             return context.result.getRetentionDate();
@@ -1225,7 +1224,7 @@ public class ProcessNodeExecutionResultHandler {
         return ProcessRetentionTime.calculate(completionTime, version.getRetentionTimeValue(), version.getRetentionTimeUnit());
     }
 
-    private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?> context,
+    private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?, ?> context,
                                                           boolean applyOutputMappings) {
         applyDataLayersAndStatusOverride(context, applyOutputMappings);
         processInstanceTaskRepository.save(context.processInstanceTask);

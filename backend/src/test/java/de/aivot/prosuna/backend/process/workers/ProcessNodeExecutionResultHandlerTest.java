@@ -96,10 +96,10 @@ class ProcessNodeExecutionResultHandlerTest {
         var result = new ProcessNodeExecutionResultTaskUpdated();
         var logger = new RecordingProcessNodeExecutionLogger();
 
-        handler.handleResult(logger, null, provider, node, instance, task, null, result);
+        handler.handleResult(logger, null, provider, new AuthoredElementValues(), node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.AwaitingStaff, task.getStatus());
 
-        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        handler.handleResult(logger, user("staff", "Staff User"), provider, new AuthoredElementValues(), node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
         assertEquals(2, savedTasks.size());
     }
@@ -116,20 +116,20 @@ class ProcessNodeExecutionResultHandlerTest {
         var result = new ProcessNodeExecutionResultTaskUpdated();
         var logger = new RecordingProcessNodeExecutionLogger();
 
-        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        handler.handleResult(logger, user("staff", "Staff User"), provider, new AuthoredElementValues(), node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertEquals(1, savedTasks.size());
         assertTrue(savedInstances.isEmpty());
 
-        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
-        handler.handleResult(logger, null, provider, node, instance, task, null, result);
+        handler.handleResult(logger, user("staff", "Staff User"), provider, new AuthoredElementValues(), node, instance, task, null, result);
+        handler.handleResult(logger, null, provider, new AuthoredElementValues(), node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertTrue(savedInstances.isEmpty());
 
         var nextTask = processInstanceTask(null);
-        handler.handleResult(logger, null, provider, node, instance, nextTask, task, new ProcessNodeExecutionResultNoop());
+        handler.handleResult(logger, null, provider, new AuthoredElementValues(), node, instance, nextTask, task, new ProcessNodeExecutionResultNoop());
         assertEquals(ProcessTaskStatus.Running, nextTask.getStatus());
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertTrue(savedInstances.isEmpty());
@@ -297,6 +297,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
                 new TestProcessNodeDefinition("Complete process"),
+                new AuthoredElementValues(),
                 processNode("Complete process").setProcessVersion(2), instance,
                 processInstanceTask(null), null, new ProcessNodeExecutionResultInstanceCompleted());
 
@@ -315,7 +316,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var instanceWithOverride = processInstance();
 
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Complete process"), processNode("Complete process"),
+                new TestProcessNodeDefinition("Complete process"), new AuthoredElementValues(), processNode("Complete process"),
                 instanceWithOverride, processInstanceTask(null), null,
                 new ProcessNodeExecutionResultInstanceCompleted().setRetentionDate(explicitDate));
         assertEquals(explicitDate, instanceWithOverride.getKeepUntil());
@@ -323,7 +324,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         var draftInstance = processInstance();
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Complete process"), processNode("Complete process"),
+                new TestProcessNodeDefinition("Complete process"), new AuthoredElementValues(), processNode("Complete process"),
                 draftInstance, processInstanceTask(null), null, new ProcessNodeExecutionResultInstanceCompleted());
         assertEquals(ProcessInstanceStatus.Completed, draftInstance.getStatus());
         assertNull(draftInstance.getKeepUntil());
