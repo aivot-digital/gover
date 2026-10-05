@@ -115,6 +115,7 @@ export type ProcessDataKeySuggestion = {
 
 interface ProcessDataKeyInputComponentProps {
     endAction?: EndAction | EndAction[];
+    ariaDescribedBy?: string;
     margin?: FormFieldMargin;
     value: string | null | undefined;
     onChange: (value: string | null) => void;
@@ -215,6 +216,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
             startIcon={`$.${effectivePrefix}`}
             endAction={endActions}
             margin={props.margin}
+            ariaDescribedBy={props.ariaDescribedBy}
             debounce={1000}
             pattern={disableWildCards ? processDataKeyPattern : processDataKeyPatternWithWildcard}
         />

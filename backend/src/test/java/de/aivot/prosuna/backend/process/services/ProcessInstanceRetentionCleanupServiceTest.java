@@ -2,19 +2,16 @@ package de.aivot.prosuna.backend.process.services;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.mail.services.ExceptionMailService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
-import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
-import de.aivot.prosuna.backend.process.services.CaseNumberGeneratorService;
-import de.aivot.prosuna.backend.process.services.ProcessInstanceRetentionCleanupService;
-import de.aivot.prosuna.backend.process.services.ProcessInstanceService;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.PlatformTransactionManager;
 
 import java.lang.reflect.Proxy;
 import java.time.Duration;
@@ -30,7 +27,9 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class ProcessInstanceRetentionCleanupServiceTest {
     @Test
@@ -48,10 +47,10 @@ class ProcessInstanceRetentionCleanupServiceTest {
             }
             default -> null;
         });
-        var processInstanceService = new TestProcessInstanceService();
+        var retentionDeletionService = new TestRetentionDeletionService();
         var service = new ProcessInstanceRetentionCleanupService(
                 processInstanceRepository,
-                processInstanceService,
+                retentionDeletionService,
                 null,
                 3
         );
@@ -67,7 +66,7 @@ class ProcessInstanceRetentionCleanupServiceTest {
             logger.detachAppender(listAppender);
         }
 
-        assertEquals(3, processInstanceService.deletedProcessInstances.size());
+        assertEquals(3, retentionDeletionService.deletedProcessInstances.size());
         assertEquals(3, pageableReference.get().getPageSize());
 
         var loggedMessages = listAppender.list
@@ -89,10 +88,10 @@ class ProcessInstanceRetentionCleanupServiceTest {
             }
             default -> null;
         });
-        var processInstanceService = new TestProcessInstanceService();
+        var retentionDeletionService = new TestRetentionDeletionService();
         var service = new ProcessInstanceRetentionCleanupService(
                 processInstanceRepository,
-                processInstanceService,
+                retentionDeletionService,
                 null,
                 5
         );
@@ -100,7 +99,30 @@ class ProcessInstanceRetentionCleanupServiceTest {
         service.cleanDueProcessInstancesNightly();
 
         assertFalse(findCalled.get());
-        assertTrue(processInstanceService.deletedProcessInstances.isEmpty());
+        assertTrue(retentionDeletionService.deletedProcessInstances.isEmpty());
+    }
+
+    @Test
+    void cleanDueProcessInstancesNightly_ContinuesAfterFailedDeletion() {
+        var processInstanceRepository = createProxy(ProcessInstanceRepository.class, (methodName, args) -> switch (methodName) {
+            case "countByStatusAndKeepUntilLessThanEqual" -> 2L;
+            case "findAllByStatusAndKeepUntilLessThanEqual" -> List.of(createProcessInstance(1L), createProcessInstance(2L));
+            default -> null;
+        });
+        var retentionDeletionService = new TestRetentionDeletionService();
+        retentionDeletionService.failedId = 1L;
+        var exceptionMailService = mock(ExceptionMailService.class);
+        var service = new ProcessInstanceRetentionCleanupService(
+                processInstanceRepository,
+                retentionDeletionService,
+                exceptionMailService,
+                2
+        );
+
+        service.cleanDueProcessInstancesNightly();
+
+        assertEquals(List.of(2L), retentionDeletionService.deletedProcessInstances.stream().map(ProcessInstanceEntity::getId).toList());
+        verify(exceptionMailService).send(any(Exception.class));
     }
 
     private interface ProxyHandler {
@@ -149,17 +171,20 @@ class ProcessInstanceRetentionCleanupServiceTest {
         );
     }
 
-    private static final class TestProcessInstanceService extends ProcessInstanceService {
+    private static final class TestRetentionDeletionService extends ProcessInstanceRetentionDeletionService {
         private final List<ProcessInstanceEntity> deletedProcessInstances = new ArrayList<>();
+        private Long failedId;
 
-        private TestProcessInstanceService() {
-            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class), mock(PlatformTransactionManager.class));
+        private TestRetentionDeletionService() {
+            super(null, mock(AuditService.class));
         }
 
         @Override
-        public ProcessInstanceEntity deleteEntity(ProcessInstanceEntity entity) throws ResponseException {
+        public void deleteDueProcessInstance(ProcessInstanceEntity entity) throws ResponseException {
+            if (entity.getId().equals(failedId)) {
+                throw ResponseException.internalServerError("Audit-Speicherfehler");
+            }
             deletedProcessInstances.add(entity);
-            return entity;
         }
     }
 }

@@ -183,11 +183,9 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                                 color: "text.secondary",
                                 minWidth: 0
                             }}>
-                            Keine Identitäten vorhanden.{' '}
-                            {
-                                element.required &&
-                                <>Mindestens eine Identität ist erforderlich.</>
-                            }
+                            {element.required
+                                ? 'Mindestens eine Identität erforderlich.'
+                                : 'Keine Identität vorhanden.'}
                         </Typography>
                     </Stack>
                 </Box>
@@ -285,42 +283,7 @@ function IdentityConfigSlot(props: {
                         alignItems: "flex-start"
                     }}
                 >
-                    <Grid
-                        size={{
-                            xs: 12,
-                            md: 6,
-                        }}
-                    >
-                        <TextFieldComponent
-                            label="Eindeutiger Schlüssel"
-                            hint="Über diesen eindeutigen Schlüssel werden die Informationen zu dieser Identität im Prozess identifiziert."
-                            value={item.id}
-                            onChange={(val) => {
-                                onChange({
-                                    ...item,
-                                    id: val ?? '',
-                                });
-                            }}
-                            pattern={{
-                                regex: '[a-zA-Z0-9_]+',
-                                message: 'Der eindeutige Schlüssel darf nur Buchstaben (außer Umlaute), Zahlen, Unterstriche enthalten.',
-                            }}
-                            minCharacters={1}
-                            maxCharacters={32}
-                            muiPassTroughProps={{
-                                margin: 'none',
-                            }}
-                            required={true}
-                            disabled={disabled}
-                        />
-                    </Grid>
-
-                    <Grid
-                        size={{
-                            xs: 12,
-                            md: 6,
-                        }}
-                    >
+                    <Grid size={{xs: 12}}>
                         <TextFieldComponent
                             label="Titel"
                             hint="Dieser Titel wird der ausfüllenden Person angezeigt."
@@ -454,6 +417,41 @@ function IdentityConfigSlot(props: {
                             ))
 
                     }
+                </Grid>
+            </Box>
+
+            <Box>
+                <ElementEditorSectionHeader
+                    title="Referenz im Prozess"
+                    variant="h5"
+                    disableMarginTop
+                />
+
+                <Grid container spacing={2}>
+                    <Grid size={{xs: 12, md: 6}}>
+                        <TextFieldComponent
+                            label="Eindeutiger Schlüssel"
+                            hint="Über diesen Schlüssel wird die Identität im Prozess referenziert. Er wird automatisch vergeben und kann bei Bedarf angepasst werden."
+                            value={item.id}
+                            onChange={(val) => {
+                                onChange({
+                                    ...item,
+                                    id: val ?? '',
+                                });
+                            }}
+                            pattern={{
+                                regex: '[a-zA-Z0-9_]+',
+                                message: 'Der eindeutige Schlüssel darf nur Buchstaben von A bis Z, Zahlen und Unterstriche enthalten.',
+                            }}
+                            minCharacters={1}
+                            maxCharacters={32}
+                            muiPassTroughProps={{
+                                margin: 'none',
+                            }}
+                            required={true}
+                            disabled={disabled}
+                        />
+                    </Grid>
                 </Grid>
             </Box>
         </Stack>

@@ -35,6 +35,7 @@ import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
 import {type PluginDTO, PluginsApiService} from '../../../services/plugins-api-service';
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 import {ProcessNodeOutputTypeDialog} from './process-node-output-type-dialog';
+import {ProcessNodeProviderBadges} from './process-node-provider-badges';
 
 const CORE_PLUGIN_KEY = 'de.aivot.core';
 
@@ -138,7 +139,6 @@ export function ProcessNodeProviderDetailsHeader(props: ProcessNodeProviderDetai
     } = props;
     const typeStyle = ProviderTypeStyles[provider.type];
     const ProviderIcon = getProcessNodeProviderIcon(provider);
-    const isDeprecated = isStringNotNullOrEmpty(provider.deprecationNotice);
 
     return (
         <Box
@@ -203,21 +203,7 @@ export function ProcessNodeProviderDetailsHeader(props: ProcessNodeProviderDetai
                         }}>
                         {provider.name}
                     </Typography>
-                    <Chip
-                        size="small"
-                        label={`Version ${provider.componentVersion}`}
-                        sx={{flexShrink: 0}}
-                    />
-                    {
-                        isDeprecated &&
-                        <Chip
-                            size="small"
-                            label="Abgekündigt"
-                            color="warning"
-                            variant="outlined"
-                            sx={{flexShrink: 0}}
-                        />
-                    }
+                    <ProcessNodeProviderBadges provider={provider}/>
                 </Box>
             </Box>
         </Box>
@@ -235,7 +221,6 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
     const [pluginReloadCounter, setPluginReloadCounter] = useState(0);
     const [pluginInfoDialogOpen, setPluginInfoDialogOpen] = useState(false);
     const [typeDialogOutput, setTypeDialogOutput] = useState<ProcessNodeProvider['outputs'][number] | null>(null);
-    const typeStyle = ProviderTypeStyles[provider.type];
     const isDeprecated = isStringNotNullOrEmpty(provider.deprecationNotice);
 
     useEffect(() => {
@@ -300,6 +285,16 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                 />
             }
 
+            {
+                isDeprecated &&
+                <Alert severity="warning">
+                    <MarkdownContent
+                        markdown={provider.deprecationNotice}
+                        sx={{typography: 'body2'}}
+                    />
+                </Alert>
+            }
+
             <Stack
                 direction="row"
                 spacing={1}
@@ -331,40 +326,6 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                 url={provider.documentationUrl}
                 sx={{alignSelf: 'flex-start'}}
             />
-
-            {
-                isDeprecated &&
-                <Alert severity="warning">
-                    <MarkdownContent
-                        markdown={provider.deprecationNotice}
-                        sx={{typography: 'body2'}}
-                    />
-                </Alert>
-            }
-
-            <ProcessNodeProviderDetailsSection title="Allgemein">
-                <ProcessNodeProviderDetailsRow
-                    label="Eindeutiger Schlüssel"
-                    value={provider.key}
-                    monospace
-                />
-                <ProcessNodeProviderDetailsRow label="Typ" value={typeStyle.label}/>
-            </ProcessNodeProviderDetailsSection>
-
-            <ProcessNodeProviderDetailsSection title="Herkunft">
-                <ProcessNodePluginReference
-                    pluginKey={provider.parentPluginKey}
-                    canReadPlugins={canReadPlugins}
-                    loadState={pluginDetails}
-                    plugin={loadedPlugin}
-                    onOpen={() => {
-                        setPluginInfoDialogOpen(true);
-                    }}
-                    onRetry={() => {
-                        setPluginReloadCounter((value) => value + 1);
-                    }}
-                />
-            </ProcessNodeProviderDetailsSection>
 
             <ProcessNodeProviderDetailsSection title="Ausgänge">
                 {
@@ -404,6 +365,33 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                             Dieses Prozesselement erzeugt keine zusätzlichen Ausgangsdaten.
                         </Typography>
                 }
+            </ProcessNodeProviderDetailsSection>
+
+            <ProcessNodeProviderDetailsSection title="Technische Informationen">
+                <ProcessNodeProviderDetailsRow
+                    label="Version der Elementdefinition"
+                    value={provider.componentVersion}
+                    monospace
+                />
+                <ProcessNodeProviderDetailsRow
+                    label="Eindeutiger Schlüssel"
+                    value={provider.key}
+                    monospace
+                />
+                <ProcessNodeProviderDetailsSection title="Herkunft">
+                    <ProcessNodePluginReference
+                        pluginKey={provider.parentPluginKey}
+                        canReadPlugins={canReadPlugins}
+                        loadState={pluginDetails}
+                        plugin={loadedPlugin}
+                        onOpen={() => {
+                            setPluginInfoDialogOpen(true);
+                        }}
+                        onRetry={() => {
+                            setPluginReloadCounter((value) => value + 1);
+                        }}
+                    />
+                </ProcessNodeProviderDetailsSection>
             </ProcessNodeProviderDetailsSection>
 
             <PluginInfoDialog

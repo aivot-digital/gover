@@ -1021,6 +1021,9 @@ export function FormNodeEditorPage() {
             label: 'Zurück zum Prozess',
             onClick: onBackToProcess,
             variant: 'text' as const,
+            activeStyle: {
+                whiteSpace: 'nowrap',
+            },
         },
         {
             label: 'Speichern',

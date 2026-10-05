@@ -21,6 +21,30 @@ import {
 } from './reusable-ui-definition-utils';
 
 describe('reusable UI definition utilities', () => {
+    it.each([ElementType.ConfigLayout, ElementType.GroupLayout])(
+        'excludes direct secret selector imports for staff-facing parent type %s',
+        (parentType) => {
+            const parent = generateElementWithDefaultValues(parentType);
+            const secretDefinition = createDefinition(
+                ProcessNodeDefinitionMetadataReusableUiDefinitionKind.UiDefinition,
+                generateElementWithDefaultValues(ElementType.SecretSelectInput),
+            );
+            const textDefinition = createDefinition(
+                ProcessNodeDefinitionMetadataReusableUiDefinitionKind.UiDefinition,
+                createTextField('tx_import'),
+            );
+
+            const options = createReusableUiDefinitionOptions([secretDefinition, textDefinition], {
+                parentType,
+                parentElement: parent,
+                allParents: [parent],
+                displayContext: ElementDisplayContext.StaffFacing,
+            });
+
+            expect(options.map((option) => option.definition)).toEqual([textDefinition]);
+        },
+    );
+
     it('keeps partial definitions when at least one import mode is compatible', () => {
         const parent = createGroup('gp_target', []);
         const partialDefinition = createDefinition(

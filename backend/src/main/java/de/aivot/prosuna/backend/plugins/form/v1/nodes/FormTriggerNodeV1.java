@@ -196,16 +196,16 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Startet einen Prozess, wenn ein zugeordnetes Formular eingereicht wird.";
+        return "Startet einen neuen Vorgang durch die Einreichung eines Formulars.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Startet einen neuen Prozessvorgang, sobald ein mit dem Prozess verknüpftes Formular erfolgreich eingereicht wurde.
+                Startet einen neuen Vorgang, sobald das Formular erfolgreich eingereicht wurde. Das Formular ist Bestandteil des Auslösers und wird direkt in dessen Konfiguration definiert.
 
-                Zugeordnete Formulardaten, nicht zugeordnete Rohdaten und hochgeladene Anlagen werden für die weitere Prozessausführung übernommen. Zusätzlich stehen der Eingangszeitpunkt und die erzeugte Formularzusammenfassung als Ausgänge bereit.
+                Die eingereichten Formulardaten stehen sowohl über die konfigurierten Datenschlüssel als auch als vollständige Formular-Rohdaten für die weitere Prozessausführung zur Verfügung. Zusätzlich stellt der Auslöser hochgeladene Anlagen, den Eingangszeitpunkt, die erzeugte Formularzusammenfassung und gegebenenfalls Zahlungsdetails als Ausgänge bereit.
                 """;
     }
 
@@ -228,7 +228,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 new ProcessNodePort(
                         PORT_NAME,
                         "Formular eingereicht",
-                        "Der Prozess wird mit den eingereichten Formulardaten gestartet."
+                        "Ein neuer Vorgang wird mit den eingereichten Formulardaten gestartet."
                 )
         );
     }
@@ -240,13 +240,13 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 new ProcessNodeOutput(
                         DATA_KEY_PAYLOAD,
                         "Zugeordnete Formulardaten",
-                        "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden.",
+                        "Enthält alle Formulardaten, die über einen Datenschlüssel zugeordnet wurden.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_UNMAPPED,
                         "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Enthält sämtliche Formulareingaben unter der jeweiligen Element-ID, unabhängig von der Zuordnung über Datenschlüssel.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
@@ -258,7 +258,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 new ProcessNodeOutput(
                         DATA_KEY_STARTED,
                         "Eingangszeitstempel",
-                        "Der Zeitstempel des Dateneingangs an den Auslöser",
+                        "Der Zeitstempel der Formulareinreichung.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -735,7 +735,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Speichern der Formularzusammenfassung als Prozess-Anhang: %s",
+                    "Fehler beim Speichern der Formularzusammenfassung als Vorgangsanlage: %s",
                     e.getMessage()
             );
         }

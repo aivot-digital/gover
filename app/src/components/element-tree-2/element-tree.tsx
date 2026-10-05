@@ -24,6 +24,7 @@ import {ElementTreeEditor} from './components/element-tree-editor';
 import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
 import {IdentityConfigElementSlotWithProviders} from '../../models/elements/form/input/identity-config-element';
 import {ElementType} from '../../data/element-type/element-type';
+import {isSectionElementType} from '../../models/elements/steps/step-element';
 
 export interface ElementTreeProps<T extends AnyElement> {
     value: T;
@@ -91,6 +92,35 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
     const children = useMemo(() => {
         return isAnyElementWithChildren(value) ? value.children ?? [] : [];
     }, [value]);
+
+    // The first snapshot is the baseline: loading a form must not count as adding sections.
+    const knownRootChildrenRef = useRef({
+        rootId: value.id,
+        ids: new Set(children.map((child) => child.id)),
+    });
+    const initiallyExpandedSectionIds = new Set(
+        editable && isFormLayoutElement(value) && knownRootChildrenRef.current.rootId === value.id ?
+            children
+                .filter((child) => !knownRootChildrenRef.current.ids.has(child.id) &&
+                    isSectionElementType(child.type) && isAnyElementWithChildren(child))
+                .map((child) => child.id) :
+            [],
+    );
+
+    useEffect(() => {
+        if (knownRootChildrenRef.current.rootId !== value.id) {
+            knownRootChildrenRef.current = {
+                rootId: value.id,
+                ids: new Set(),
+            };
+        }
+
+        // Retain removed IDs so undo/redo does not classify restored sections as newly added.
+        // Recording IDs after mounting lets new items consume their initial expansion state first.
+        for (const child of children) {
+            knownRootChildrenRef.current.ids.add(child.id);
+        }
+    }, [children, value.id]);
 
     const scrollContainerRef = useRef<HTMLDivElement>(undefined);
     const lastHandledHighlightSignalRef = useRef<number | undefined>(undefined);
@@ -477,6 +507,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 canDropElement: canDropElement,
                                 moveElement: moveElement,
                                 expandCommand: expandCommand,
+                                initiallyExpandedSectionIds: initiallyExpandedSectionIds,
                                 activeSearchResultPath: activeSearchResult?.path,
                                 highlightedElementId: highlightElementId,
                                 highlightedElementSignal: highlightElementSignal,

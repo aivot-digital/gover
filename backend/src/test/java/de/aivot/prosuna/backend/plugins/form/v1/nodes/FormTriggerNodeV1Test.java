@@ -156,7 +156,7 @@ class FormTriggerNodeV1Test {
 
         assertNotNull(output);
         assertEquals("Eingangszeitstempel", output.label());
-        assertEquals("Der Zeitstempel des Dateneingangs an den Auslöser", output.description());
+        assertEquals("Der Zeitstempel der Formulareinreichung.", output.description());
         assertEquals("string", output.typeDefinition());
     }
 

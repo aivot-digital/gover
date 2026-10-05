@@ -68,6 +68,13 @@ public class AuditLogService implements CreateEntityService<AuditLogEntity>, Lis
         return auditLogRepository.save(entity);
     }
 
+    @Nonnull
+    public AuditLogEntity createAndFlush(@Nonnull AuditLogEntity entity) throws ResponseException {
+        var created = create(entity);
+        auditLogRepository.flush();
+        return created;
+    }
+
     @Nullable
     @Override
     public Page<AuditLogEntity> performList(
