@@ -1,5 +1,6 @@
 import {CaseNumberType} from '../enums/case-number-type';
 import {ProcessStatus} from '../enums/process-status';
+import {RetentionTimeUnit} from '../enums/retention-time-unit';
 
 export interface ProcessVersionEntity {
     processId: number;
@@ -9,6 +10,8 @@ export interface ProcessVersionEntity {
     caseNumberType: CaseNumberType;
     caseNumberTemplate: string | null;
     notes: string | null;
+    retentionTimeValue: number | null;
+    retentionTimeUnit: RetentionTimeUnit | null;
     themeId: number | null;
     legalSupportDepartmentId: number | null;
     technicalSupportDepartmentId: number | null;

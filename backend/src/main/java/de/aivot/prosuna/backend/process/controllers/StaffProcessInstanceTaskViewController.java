@@ -91,7 +91,7 @@ public class StaffProcessInstanceTaskViewController {
             summary = "Retrieve Process Instance Task View Layout",
             description = "Retrieves the view layout for a specific task within a process instance. " +
                     "Requires `" + PROCESS_INSTANCE_EDIT_TASK + "` for the task's instance. " +
-                    "The task must belong to the requested instance and be running."
+                    "The task must belong to the requested instance and be open for staff editing."
     )
     public <NodeConfig> TaskViewResponse retrieve(
             @Nonnull @AuthenticationPrincipal Jwt jwt,
@@ -149,7 +149,7 @@ public class StaffProcessInstanceTaskViewController {
     @Operation(
             summary = "Save task inputs or execute a task event",
             description = "Saves draft inputs or executes a staff task event. Requires `" + PROCESS_INSTANCE_EDIT_TASK +
-                    "` for the task's instance. The task must belong to the requested instance and be running."
+                    "` for the task's instance. The task must belong to the requested instance and be open for staff editing."
     )
     public <NodeConfig> TaskViewResponse update(
             @Nonnull @AuthenticationPrincipal Jwt jwt,
@@ -331,7 +331,7 @@ public class StaffProcessInstanceTaskViewController {
     @Operation(
             summary = "Derive and validate staff task inputs",
             description = "Derives and validates inputs for a staff task view. Requires `" + PROCESS_INSTANCE_EDIT_TASK +
-                    "` for the task's instance. The task must belong to the requested instance and be running."
+                    "` for the task's instance. The task must belong to the requested instance and be open for staff editing."
     )
     public <NodeConfig> DerivedRuntimeElementData derive(
             @Nonnull @AuthenticationPrincipal Jwt jwt,

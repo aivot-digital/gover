@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.dtos.ProcessListFilter;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
@@ -92,6 +93,24 @@ public class ProcessListServiceTest {
         assertEquals(1, service.tasks("me", page, filter("overdue", "all", null)).getTotalElements());
         assertEquals(ProcessTaskStatus.Completed, service.tasks("me", page, filter("all", "unassigned", null)).getContent().getFirst().status());
         assertEquals(1, service.tasks("me", page, filter("all", "someone", null)).getTotalElements());
+    }
+
+    @Test
+    void runningInstancesAndStaffTasksRemainInActiveAndOpenViews() throws Exception {
+        sql("update process_instance_tasks set status = 8 where id = 11");
+        sql("update process_instance_tasks set status = 9 where id = 15");
+
+        var instances = service.instances("me", PageRequest.of(0, 12), filter("active", "all", null));
+        assertEquals(1, instances.getTotalElements());
+        assertEquals(ProcessInstanceStatus.Running, instances.getContent().getFirst().status());
+
+        var tasks = service.tasks("me", PageRequest.of(0, 12), filter("open", "mine", null));
+        assertEquals(3, tasks.getTotalElements());
+        assertEquals(ProcessTaskStatus.InProgress, tasks.getContent().stream()
+                .filter(task -> task.id() == 11L).findFirst().orElseThrow().status());
+        assertEquals(ProcessTaskStatus.AwaitingStaff, tasks.getContent().stream()
+                .filter(task -> task.id() == 15L).findFirst().orElseThrow().status());
+        assertEquals(1, service.tasks("me", PageRequest.of(0, 12), filter("overdue", "all", null)).getTotalElements());
     }
 
     @Test

@@ -19,12 +19,15 @@ import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
@@ -44,6 +47,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -81,6 +85,56 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ProcessNodeExecutionResultHandlerTest {
+    @Test
+    void automaticUpdateKeepsAwaitingStaffUntilSuccessfulStaffUpdate() throws Exception {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, new ArrayList<>());
+        var instance = processInstance();
+        var task = processInstanceTask("staff").setStatus(ProcessTaskStatus.AwaitingStaff);
+        var node = processNode("Prüfung");
+        var provider = new TestProcessNodeDefinition("Prüfung");
+        var result = new ProcessNodeExecutionResultTaskUpdated();
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        handler.handleResult(logger, null, provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.AwaitingStaff, task.getStatus());
+
+        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
+        assertEquals(2, savedTasks.size());
+    }
+
+    @Test
+    void staffUpdateMarksTaskInProgressAndKeepsInstanceRunningAcrossLaterUpdates() throws Exception {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, savedInstances);
+        var instance = processInstance();
+        var task = processInstanceTask("staff");
+        var node = processNode("Prüfung");
+        var provider = new TestProcessNodeDefinition("Prüfung");
+        var result = new ProcessNodeExecutionResultTaskUpdated();
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertEquals(1, savedTasks.size());
+        assertTrue(savedInstances.isEmpty());
+
+        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        handler.handleResult(logger, null, provider, node, instance, task, null, result);
+        assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertTrue(savedInstances.isEmpty());
+
+        var nextTask = processInstanceTask(null);
+        handler.handleResult(logger, null, provider, node, instance, nextTask, task, new ProcessNodeExecutionResultNoop());
+        assertEquals(ProcessTaskStatus.Running, nextTask.getStatus());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertTrue(savedInstances.isEmpty());
+    }
+
     @Test
     void handleResult_InvitesCustomerWithoutCreatingAnIdentity() throws Exception {
         var communicationService = mock(CommunicationService.class);
@@ -207,7 +261,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 savedInstances
         );
         var processInstance = processInstance();
-        var task = processInstanceTask(null);
+        var task = processInstanceTask(null).setStatus(ProcessTaskStatus.InProgress);
         var newIdentity = identity("representative");
 
         handler.handleResultWithAdditionalIdentities(
@@ -228,6 +282,51 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
         assertEquals(List.of(processInstance), savedInstances);
         assertEquals(List.of(task), savedTasks);
+    }
+
+    @Test
+    void handleResult_UsesRetentionFromTerminatingNodeVersion() throws Exception {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var versions = mock(ProcessVersionRepository.class);
+        when(versions.findById(ProcessVersionEntityId.of(7, 2))).thenReturn(Optional.of(new ProcessVersionEntity()
+                .setProcessId(7).setProcessVersion(2)
+                .setRetentionTimeValue(1).setRetentionTimeUnit(ProcessRetentionTimeUnit.Weeks)));
+        var handler = createCompletionHandler(savedTasks, savedInstances, versions);
+        var instance = processInstance();
+
+        handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
+                new TestProcessNodeDefinition("Complete process"),
+                processNode("Complete process").setProcessVersion(2), instance,
+                processInstanceTask(null), null, new ProcessNodeExecutionResultInstanceCompleted());
+
+        assertEquals(ProcessInstanceStatus.Completed, instance.getStatus());
+        assertTrue(instance.getKeepUntil().isAfter(Instant.now().plusSeconds(6 * 24 * 60 * 60)));
+        verify(versions).findById(ProcessVersionEntityId.of(7, 2));
+    }
+
+    @Test
+    void handleResult_PrefersExplicitRetentionDateAndAllowsUnconfiguredDraft() throws Exception {
+        var versions = mock(ProcessVersionRepository.class);
+        when(versions.findById(ProcessVersionEntityId.of(7, 1))).thenReturn(Optional.of(new ProcessVersionEntity()
+                .setProcessId(7).setProcessVersion(1)));
+        var handler = createCompletionHandler(new ArrayList<>(), new ArrayList<>(), versions);
+        var explicitDate = Instant.parse("2028-06-01T00:00:00Z");
+        var instanceWithOverride = processInstance();
+
+        handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
+                new TestProcessNodeDefinition("Complete process"), processNode("Complete process"),
+                instanceWithOverride, processInstanceTask(null), null,
+                new ProcessNodeExecutionResultInstanceCompleted().setRetentionDate(explicitDate));
+        assertEquals(explicitDate, instanceWithOverride.getKeepUntil());
+        verifyNoInteractions(versions);
+
+        var draftInstance = processInstance();
+        handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
+                new TestProcessNodeDefinition("Complete process"), processNode("Complete process"),
+                draftInstance, processInstanceTask(null), null, new ProcessNodeExecutionResultInstanceCompleted());
+        assertEquals(ProcessInstanceStatus.Completed, draftInstance.getStatus());
+        assertNull(draftInstance.getKeepUntil());
     }
 
     @Test
@@ -942,6 +1041,28 @@ class ProcessNodeExecutionResultHandlerTest {
                                                                    List<ProcessInstanceEntity> savedInstances,
                                                                    ProcessService processService,
                                                                    DepartmentService departmentService) {
+        var versions = mock(ProcessVersionRepository.class);
+        when(versions.findById(any())).thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(7).setProcessVersion(1)));
+        return createHandler(savedTasks, users, mailService, communicationService, savedInstances,
+                processService, departmentService, versions);
+    }
+
+    private static ProcessNodeExecutionResultHandler createCompletionHandler(List<ProcessInstanceTaskEntity> savedTasks,
+                                                                              List<ProcessInstanceEntity> savedInstances,
+                                                                              ProcessVersionRepository versions) {
+        return createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, savedInstances,
+                new TestProcessService(Optional.of(process())),
+                new TestDepartmentService(Optional.of(department())), versions);
+    }
+
+    private static ProcessNodeExecutionResultHandler createHandler(List<ProcessInstanceTaskEntity> savedTasks,
+                                                                   Map<String, UserEntity> users,
+                                                                   RecordingProcessTaskMailService mailService,
+                                                                   CommunicationService communicationService,
+                                                                   List<ProcessInstanceEntity> savedInstances,
+                                                                   ProcessService processService,
+                                                                   DepartmentService departmentService,
+                                                                   ProcessVersionRepository versions) {
         var assignments = mock(ProcessAssignmentService.class);
         try {
             doAnswer(invocation -> {
@@ -957,6 +1078,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 communicationService,
                 createInstanceRepository(savedInstances),
+                versions,
                 createTaskRepository(savedTasks),
                 proxy(ProcessEdgeRepository.class),
                 new TestUserService(users),

@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 public class AssignmentContextAssigneeResolverService {
     private static final List<ProcessTaskStatus> ACTIVE_TASK_STATUSES = List.of(
             ProcessTaskStatus.Running,
+            ProcessTaskStatus.InProgress,
+            ProcessTaskStatus.AwaitingStaff,
             ProcessTaskStatus.Paused
     );
 

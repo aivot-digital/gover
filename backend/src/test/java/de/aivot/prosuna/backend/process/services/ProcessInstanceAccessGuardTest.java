@@ -45,7 +45,7 @@ class ProcessInstanceAccessGuardTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = ProcessTaskStatus.class, names = {"Running", "Paused", "AwaitingCustomer", "AwaitingPayment"})
+    @EnumSource(value = ProcessTaskStatus.class, names = {"Running", "InProgress", "AwaitingStaff", "Paused", "AwaitingCustomer", "AwaitingPayment"})
     void rejectsLostEditAccessOnEveryActiveStatus(ProcessTaskStatus status) throws Exception {
         task.setStatus(status);
         var before = guard.lockAndSnapshot(17L);

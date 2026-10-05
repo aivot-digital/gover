@@ -10,6 +10,8 @@ import StopCircle from '@aivot/mui-material-symbols-400-n25-outlined/StopCircle'
 import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/PaymentArrowDown';
 import ContractEdit from '@aivot/mui-material-symbols-400-n25-outlined/ContractEdit';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 
 interface ProcessInstanceTaskStatusIconProps {
     status: ProcessTaskStatus;
@@ -37,9 +39,21 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
         case ProcessTaskStatus.Running:
             return (
                 <Tooltip
-                    title="Wird ausgeführt"
+                    title="Gestartet"
                 >
                     <PlayCircle color="info"/>
+                </Tooltip>
+            );
+        case ProcessTaskStatus.InProgress:
+            return (
+                <Tooltip title="In Bearbeitung">
+                    <Edit color="primary"/>
+                </Tooltip>
+            );
+        case ProcessTaskStatus.AwaitingStaff:
+            return (
+                <Tooltip title="Wartet auf Bearbeitung">
+                    <AccountCircle color="warning"/>
                 </Tooltip>
             );
         case ProcessTaskStatus.AwaitingPayment:

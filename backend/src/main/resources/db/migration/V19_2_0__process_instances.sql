@@ -104,6 +104,9 @@ create table process_instance_tasks
     --   4 - Failed
     --   5 - Restarted
     --   6 - Awaiting payment
+    --   7 - Awaiting customer
+    --   8 - In progress
+    --   9 - Awaiting staff
     status                            smallint     not null default 0,
     -- The status override triggered by nodes
     status_override                   varchar(96) null,
