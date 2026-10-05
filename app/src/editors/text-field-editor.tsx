@@ -107,6 +107,12 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                         xs: 12,
                         lg: 4,
                     }}
+                />
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
                 >
                     <CheckboxFieldComponent
                         label="Mehrzeilige Texteingabe"

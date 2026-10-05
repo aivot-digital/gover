@@ -322,8 +322,14 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Checkbox]: (
         <Box>
             <Typography>
-                Das Bestätigung (Ja/Nein)-Element ermöglicht Ihnen die Einholung einfacher Bestätigungen
-                Ihrer Nutzer:innen. Die Eingabe wird als boolscher Wert (Ja/Nein, True/False) verarbeitet.
+                Das Bestätigungsfeld ermöglicht eine einzelne Bestätigung oder das Aktivieren einer Option.
+                Nutzer:innen können das Feld auswählen oder die Auswahl wieder aufheben.
+                Ist das Feld als Pflichtfeld eingerichtet, muss es ausgewählt werden.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Für eine Frage mit den Antwortmöglichkeiten „Ja“ und „Nein“ verwenden Sie die
+                Einzelauswahl mit Optionsfeldern.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -332,8 +338,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <Box sx={{mt: 2}}>
                 <CheckboxFieldComponent
-                    label="Beschriftung des Bestätigungs-Feldes"
-                    hint="Hinweis zur Bestätigung"
+                    label="Abweichende Lieferadresse verwenden"
+                    hint="Aktivieren Sie diese Option, wenn die Lieferung an eine andere Adresse erfolgen soll."
                     value={true}
                     onChange={() => {
                     }}
@@ -342,8 +348,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <Box sx={{mt: 2}}>
                 <CheckboxFieldComponent
-                    label="Fehlerhaftes Bestätigungs-Feld"
-                    error="Fehlermeldung zur Bestätigung"
+                    label="Ich bestätige die Richtigkeit meiner Angaben"
+                    required
+                    error="Bitte bestätigen Sie die Richtigkeit Ihrer Angaben."
                     value={false}
                     onChange={() => {
                     }}
@@ -502,14 +509,12 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ReplicatingContainer]: (
         <Box>
             <Typography>
-                Das Strukturierte Listeneingabe-Element ermöglicht Ihnen die wiederholte Abfrage von Datensätzen.
-                Ein Datensatz repräsentiert mehrere zusammengehörige Abfragen wie z.B. Vorname und Nachname.
-                So können Sie beispielsweise Angaben für mehrere Personen erheben, bei denen immer wieder
-                der Vorname und Nachname abgefragt wird.
+                Mit einer Feldgruppe für mehrere Einträge erfassen Sie wiederholt Angaben mit denselben Eingabefeldern.
+                Jeder Eintrag enthält die von Ihnen festgelegten Felder, zum Beispiel Vorname und Nachname für eine Person.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Die Anzahl an abzufragenden Datensätzen kann durch Sie festgelegt werden.
+                Sie können festlegen, wie viele Einträge mindestens erforderlich und höchstens zulässig sind.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -553,8 +558,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.RichText]: (
         <Box>
             <Typography>
-                Das Fließtext-Element ermöglicht Ihnen die Einbindung von formatiertem Text.
-                Auf diese Weise können Sie Nutzer:innen zusätzliche Informationen gezielt darstellen.
+                Die Textanzeige stellt formatierten Text im Formular dar.
+                Sie können damit beispielsweise Erläuterungen oder zusätzliche Informationen anzeigen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -783,9 +788,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <AlertComponent color={'info'}>
                 Für komplexere Eingaben – etwa mit Datumsfeldern oder vielen Datenpunkten – empfiehlt sich die
-                Strukturierte Listeneingabe.
-                Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt
-                für eine deutlich bessere Nutzerfreundlichkeit.
+                Feldgruppe für mehrere Einträge.
+                Sie fasst unterschiedliche Eingabefelder pro Eintrag zusammen und bietet weitere Konfigurationsmöglichkeiten.
             </AlertComponent>
 
             <Divider sx={{my: 4}}>

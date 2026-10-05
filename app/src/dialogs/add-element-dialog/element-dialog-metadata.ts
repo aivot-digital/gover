@@ -59,7 +59,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.ProcessDataKeyInput]: ElementTypeGroups.Input,
     [ElementType.ProcessInstanceAttachmentSetSelect]: ElementTypeGroups.Input,
     [ElementType.ProcessIdentityIdInput]: ElementTypeGroups.Input,
-    [ElementType.SecretSelectInput]: ElementTypeGroups.Input,
+    [ElementType.SecretSelectInput]: null,
     [ElementType.AssetSelectInput]: ElementTypeGroups.Input,
     [ElementType.DepartmentSelectInput]: null,
     [ElementType.HtmlTemplateInput]: ElementTypeGroups.Input,
@@ -86,13 +86,13 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.Image]: 'Bindet ein Bild in den Formularfluss ein.',
     [ElementType.LinkButton]: 'Zeigt einen Button an, der einen Link öffnet oder in Aufgabenansichten ein Ereignis auslöst.',
     [ElementType.GroupLayout]: 'Fasst inhaltlich zusammengehörige Elemente zusammen.',
-    [ElementType.Checkbox]: 'Erfasst eine einzelne Ja-/Nein-Angabe.',
+    [ElementType.Checkbox]: 'Ermöglicht eine einzelne Bestätigung oder das Aktivieren einer Option, zum Beispiel „Abweichende Lieferadresse verwenden“.',
     [ElementType.Date]: 'Erfasst ein einzelnes Datum.',
     [ElementType.Headline]: 'Gliedert Inhalte mit einer Überschrift.',
     [ElementType.MultiCheckbox]: 'Ermöglicht die Auswahl mehrerer Optionen.',
     [ElementType.Number]: 'Erfasst Zahlenwerte und Mengenangaben.',
-    [ElementType.ReplicatingContainer]: 'Wiederholt eine Elementgruppe mehrfach.',
-    [ElementType.RichText]: 'Zeigt formatierten Fließtext an.',
+    [ElementType.ReplicatingContainer]: 'Erfasst mehrere Einträge mit denselben Eingabefeldern, zum Beispiel Angaben zu mehreren Personen oder Fahrzeugen.',
+    [ElementType.RichText]: 'Zeigt formatierten Text im Formular an, zum Beispiel Erläuterungen oder zusätzliche Informationen.',
     [ElementType.Radio]: 'Ermöglicht genau eine Auswahl per Optionsfeld.',
     [ElementType.Select]: 'Ermöglicht genau eine Auswahl aus vorgegebenen Optionen.',
     [ElementType.Spacer]: 'Erzeugt gezielten Abstand zwischen Inhalten.',
@@ -128,11 +128,13 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.SummaryStep]: 'Optionaler Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind.',
     [ElementType.IntroductionStep]: 'Optionaler Abschnitt am Anfang eines mehrstufigen Formulars, der zur Einführung oder zur Erklärung des weiteren Ablaufs genutzt werden kann.',
     [ElementType.SubmitStep]: 'Optionaler Abschnitt am Ende eines Formulars. Zeigt Hinweise vor der Einreichung an und schützt die Übermittlung mit einer Sicherheitsprüfung vor automatisierten Einreichungen (Captcha).',
-    [ElementType.Step]: 'Ein generischer Abschnitt für mehrstufige Formulare, der flexibel mit verschiedenen Elementen befüllt werden kann.',
+    [ElementType.Step]: 'Ein Abschnitt für mehrstufige Formulare, den Sie mit Eingabefeldern, Texten und weiteren Elementen gestalten können.',
 };
 
 export function getElementGroupForType(type: ElementType): ElementTypeGroups | null {
-    return elementGroupMap[type] ?? ElementTypeGroups.Other;
+    const group = elementGroupMap[type];
+    // An explicit null hides the type from authoring selection without disabling its internal use.
+    return group === undefined ? ElementTypeGroups.Other : group;
 }
 
 export function getElementGroupLabelForType(type: ElementType): string {

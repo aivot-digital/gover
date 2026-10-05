@@ -191,7 +191,7 @@ const elementConstructors: {
     }),
     [ElementType.Checkbox]: (id) => ({
         ...makeInputBase(ElementType.Checkbox, id),
-        label: 'Bestätigung (Ja/Nein)',
+        label: 'Bestätigungsfeld',
     }),
     [ElementType.Date]: (id) => ({
         ...makeInputBase(ElementType.Date, id),
@@ -237,7 +237,7 @@ const elementConstructors: {
     }),
     [ElementType.ReplicatingContainer]: (id) => ({
         ...makeInputBase(ElementType.ReplicatingContainer, id),
-        label: 'Strukturierte Listeneingabe',
+        label: 'Feldgruppe für mehrere Einträge',
         headlineTemplate: 'Datensatz Nr. #',
         children: [],
         minimumRequiredSets: undefined,
@@ -247,7 +247,7 @@ const elementConstructors: {
     }),
     [ElementType.RichText]: (id) => ({
         ...makeFormBase(ElementType.RichText, id),
-        content: 'Fließtext',
+        content: 'Textanzeige',
     }),
     [ElementType.Radio]: (id) => ({
         ...makeInputBase(ElementType.Radio, id),

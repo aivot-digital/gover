@@ -1,9 +1,13 @@
-import {Box} from '@mui/material';
+import {useEffect, useId, useState} from 'react';
+import {Box, Button, Divider, Stack, Typography} from '@mui/material';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
+import Info from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import {useProcessNodeEditorContext} from '../process-node-editor-context';
 import {TextFieldComponent} from '../../../../../../../components/text-field/text-field-component';
-import Typography from '@mui/material/Typography';
-import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
-import {ProcessNodeOutputCard} from '../../../../../components/process-node-output-card';
+import {ElementEditorSectionHeader} from '../../../../../../../components/element-editor-section-header/element-editor-section-header';
+import {ProcessNodeOutputTypeDialog} from '../../../../../components/process-node-output-type-dialog';
+import {ProcessNodeOutputReference} from '../../../../../components/process-node-output-reference';
+import {type ProcessNodeOutput} from '../../../../../services/process-node-provider-api-service';
 import {ProcessDataKeyInputComponent} from '../../../../../../../views/process-data-key-input-field-view';
 
 export function ProcessNodeEditorOutputsTab() {
@@ -14,32 +18,23 @@ export function ProcessNodeEditorOutputsTab() {
         isEditable,
         problems,
     } = useProcessNodeEditorContext();
+    const [typeDialogOutput, setTypeDialogOutput] = useState<ProcessNodeOutput | null>(null);
+    const outputHintId = useId();
     const hasOutputs = provider.outputs.length > 0;
 
-    return (
-        <Box
-            sx={{
-                pt: 1,
-                pb: 2,
-            }}
-        >
-            <Typography variant="h4">
-                Datenschlüssel
-            </Typography>
-            <Typography
-                variant="body1"
-                sx={{
-                    mt: 1,
-                    mb: 2,
-                    maxWidth: 400
-                }}>
-                Über den Datenschlüssel greifen Sie auf Elementdaten sowie auf Ausführungsmetadaten in den geschützten
-                Vorgangsdaten zu.
-            </Typography>
+    useEffect(() => {
+        setTypeDialogOutput(null);
+    }, [localNode.id, provider.key, provider.majorVersion, provider.componentVersion]);
 
+    return (
+        <Box sx={{pt: 1, pb: 2}}>
+            <ElementEditorSectionHeader title="Datenschlüssel des Prozesselements" disableMarginTop>
+                Über diesen Schlüssel greifen Sie in weiteren Prozessschritten auf die Daten des Prozesselements und
+                Informationen zur Ausführung zu.
+            </ElementEditorSectionHeader>
             <TextFieldComponent
                 label="Datenschlüssel"
-                hint="Eindeutiger Schlüssel zur Identifikation dieses Elementes im Vorgang."
+                hint="Der Schlüssel muss innerhalb dieser Prozessversion eindeutig sein. Für die Übersicht empfehlen wir einen sprechenden Schlüssel."
                 value={localNode.dataKey}
                 onChange={(val) => {
                     setNode({
@@ -47,106 +42,84 @@ export function ProcessNodeEditorOutputsTab() {
                         dataKey: val ?? '',
                     }, false);
                 }}
-                required={true}
+                required
                 maxCharacters={32}
                 error={problems?.commonErrors.dataKey}
                 disabled={!isEditable}
             />
 
-            <Typography
-                variant="h4"
-                sx={{
-                    mt: 2,
-                }}
-            >
-                Ausgangsdaten
-            </Typography>
-            {hasOutputs ? <>
-                <Typography
-                    variant="body1"
-                    sx={{
-                        mt: 1,
-                        mb: 2,
-                        maxWidth: 400
-                    }}>
-                    Sie können die Ausgangsdaten dieses Prozesselements optional in die Vorgangsdaten übernehmen.
-                    Ohne Zuordnung bleiben die Werte über die Elementdaten zugänglich.
-                </Typography>
+            <ElementEditorSectionHeader title="Ausgangsdaten" sx={{mt: 2}}>
+                {hasOutputs && <span id={outputHintId}>
+                    Die Ausgangsdaten stehen Ihnen in weiteren Prozessschritten über die Elementdaten zur Verfügung.
+                    Wenn Sie einzelne Werte zusätzlich in den Vorgangsdaten bereitstellen möchten, tragen Sie einen
+                    Zielpfad ein.
+                </span>}
+            </ElementEditorSectionHeader>
 
-                {
-                    provider.outputs.map((output) => (
-                        <ProcessDataKeyInputComponent
-                            key={output.key}
-                            label={output.label}
-                            hint={output.description}
-                            value={localNode.outputMappings?.[output.key] ?? ''}
-                            onChange={(val) => {
-                                setNode({
-                                    ...localNode,
-                                    outputMappings: {
-                                        ...localNode.outputMappings,
-                                        [output.key]: val,
-                                    },
-                                }, false);
-                            }}
-                            disabled={!isEditable}
-                            disableWildCards={true}
-                        />
-                    ))
-                }
+            {hasOutputs ? (
+                <Stack spacing={2} divider={<Divider/>}>
+                    {provider.outputs.map((output, index) => {
+                        const outputTitleId = `${outputHintId}-output-${index}-title`;
+                        const outputDescriptionId = `${outputHintId}-output-${index}-description`;
 
-                <Typography
-                    variant="h4"
-                    sx={{
-                        mt: 4
-                    }}
-                >
-                    Datenstruktur der Ausgangsdaten
-                </Typography>
-                <Typography
-                    variant="body1"
-                    sx={{
-                        mt: 1,
-                        mb: 2,
-                        maxWidth: 400
-                    }}>
-                    Hier sehen Sie die verfügbaren Ausgangsdaten mit ihren Datenpfaden in den Elementdaten und einer
-                    Beschreibung der Werte.
-                </Typography>
-
-                <Box sx={{
-                    mt: 2
-                }}>
-                    {
-                        provider.outputs.map((output) => (
-                            <ProcessNodeOutputCard
-                                key={output.key}
-                                label={output.label}
-                                outputKey={`_.${localNode.dataKey}.${output.key}`}
-                                description={output.description}
-                                sx={{
-                                    mb: 1,
-                                    '&:last-child': {
-                                        mb: 0,
-                                    },
-                                }}
-                            />
-                        ))
-                    }
-                </Box>
-            </> :
+                        return (
+                            <Box key={output.key} component="section" aria-labelledby={outputTitleId} aria-describedby={outputDescriptionId}>
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                    <Typography id={outputTitleId} variant="body1" component="h5" sx={{fontWeight: 600, minWidth: 0, flex: 1, overflowWrap: 'anywhere'}}>
+                                        {output.label}
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        startIcon={<Info/>}
+                                        onClick={() => setTypeDialogOutput(output)}
+                                        aria-label={`Details zu ${output.label} anzeigen`}
+                                        aria-haspopup="dialog"
+                                        sx={{flexShrink: 0}}
+                                    >
+                                        Details anzeigen
+                                    </Button>
+                                </Box>
+                                <Typography id={outputDescriptionId} variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+                                    {output.description}
+                                </Typography>
+                                <Box sx={{mt: 1, px: 1, py: 0.5, bgcolor: 'action.hover', borderRadius: 1}}>
+                                    <ProcessNodeOutputReference value={`_.${localNode.dataKey}.${output.key}`} kind="path"/>
+                                </Box>
+                                <Box sx={{mt: 1.5}}>
+                                    <ProcessDataKeyInputComponent
+                                        label="Zielpfad in den Vorgangsdaten"
+                                        ariaDescribedBy={`${outputTitleId} ${outputDescriptionId} ${outputHintId}`}
+                                        value={localNode.outputMappings?.[output.key] ?? ''}
+                                        onChange={(val) => {
+                                            // The output key fixes the source; mappings store only a process-data target.
+                                            setNode({
+                                                ...localNode,
+                                                outputMappings: {
+                                                    ...localNode.outputMappings,
+                                                    [output.key]: val,
+                                                },
+                                            }, false);
+                                        }}
+                                        disabled={!isEditable}
+                                        disableWildCards
+                                        margin="none"
+                                    />
+                                </Box>
+                            </Box>
+                        );
+                    })}
+                </Stack>
+            ) : (
                 <Box
                     sx={{
-                        mt: 2,
                         p: 2,
-                        width: '100%',
                         display: 'flex',
                         alignItems: 'flex-start',
-                        gap: 2.5,
+                        gap: 2,
                         border: '1px solid',
                         borderColor: 'divider',
                         borderRadius: 1.5,
-                        bgcolor: 'rgba(15, 23, 42, 0.035)',
+                        bgcolor: 'action.hover',
                     }}
                 >
                     <Box
@@ -166,19 +139,22 @@ export function ProcessNodeEditorOutputsTab() {
                     </Box>
                     <Box sx={{minWidth: 0}}>
                         <Typography variant="body1" component="h5" sx={{fontWeight: 600}}>
-                            Keine zuweisbaren Ausgangsdaten
+                            Keine Ausgangsdaten zum Übernehmen
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{mt: 0.75}}>
-                            Dieses Prozesselement stellt keine Ausgangsdaten zur Zuordnung bereit. Es kann Vorgangsdaten
-                            dennoch auf anderem Weg verändern.
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
-                            Metadaten zu seiner Ausführung finden Sie über den Datenschlüssel in den geschützten
-                            Vorgangsdaten.
+                            Dieses Prozesselement stellt keine Ausgangsdaten zum Übernehmen bereit. Es kann Vorgangsdaten
+                            auf anderem Weg verändern.
                         </Typography>
                     </Box>
                 </Box>
-            }
+            )}
+
+            <ProcessNodeOutputTypeDialog
+                open={typeDialogOutput != null}
+                output={typeDialogOutput}
+                dataPath={typeDialogOutput == null ? undefined : `_.${localNode.dataKey}.${typeDialogOutput.key}`}
+                onClose={() => setTypeDialogOutput(null)}
+            />
         </Box>
     );
 }

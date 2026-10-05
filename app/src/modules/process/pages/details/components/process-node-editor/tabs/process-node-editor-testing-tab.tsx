@@ -10,6 +10,7 @@ import {ElementDerivationContext} from '../../../../../../elements/components/el
 import {withDelay} from '../../../../../../../utils/with-delay';
 import {useNavigate} from 'react-router-dom';
 import {getProcessNodeEditURL} from '../../../process-details-page';
+import {ElementEditorSectionHeader} from '../../../../../../../components/element-editor-section-header/element-editor-section-header';
 
 export function ProcessNodeEditorTestingTab(): ReactNode {
     const dispatch = useAppDispatch();
@@ -74,9 +75,7 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
                 pb: 2,
             }}
         >
-            <Typography variant="h4">
-                Prozesselement testen
-            </Typography>
+            <ElementEditorSectionHeader title="Prozesselement testen" disableMarginTop />
 
             {
                 testClaim == null &&

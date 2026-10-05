@@ -190,7 +190,6 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.ProcessAttachmentDisplay,
             ElementType.ProcessInstanceAttachmentSetSelect,
             ElementType.ProcessIdentityIdInput,
-            ElementType.SecretSelectInput,
             ElementType.AssetSelectInput,
             ElementType.HtmlTemplateInput,
             ElementType.PaymentConfigElement,
@@ -226,7 +225,6 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.SummaryLayout,
             ElementType.ProcessAttachmentDisplay,
             ElementType.StoragePathSelector,
-            ElementType.SecretSelectInput,
             ElementType.AssetSelectInput,
         ],
         [ElementType.ReplicatingContainer]: [

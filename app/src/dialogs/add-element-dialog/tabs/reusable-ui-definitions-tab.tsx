@@ -26,8 +26,8 @@ interface ReusableUiDefinitionsTabProps {
 const kindLabels: Record<ProcessNodeDefinitionMetadataReusableUiDefinitionKind, string> = {
     [ProcessNodeDefinitionMetadataReusableUiDefinitionKind.CompleteForm]: 'Gesamtes Formular',
     [ProcessNodeDefinitionMetadataReusableUiDefinitionKind.FormSection]: 'Formularabschnitt',
-    [ProcessNodeDefinitionMetadataReusableUiDefinitionKind.UiDefinition]: 'UI-Definition',
-    [ProcessNodeDefinitionMetadataReusableUiDefinitionKind.StepperSection]: 'Stepper-Abschnitt',
+    [ProcessNodeDefinitionMetadataReusableUiDefinitionKind.UiDefinition]: 'Gesamte UI-Definition',
+    [ProcessNodeDefinitionMetadataReusableUiDefinitionKind.StepperSection]: 'Abschnitt',
     [ProcessNodeDefinitionMetadataReusableUiDefinitionKind.Tab]: 'Tab',
 };
 
@@ -59,6 +59,8 @@ export function ReusableUiDefinitionsTab(props: ReusableUiDefinitionsTabProps): 
                     props.options.map((option, index) => {
                         const definition = option.definition;
                         const originName = stringOrDefault(definition.origin.name, 'Unbenanntes Prozesselement');
+                        // Whole definitions can have generic metadata labels, so identify them by their source.
+                        const title = option.partial ? definition.label : originName;
                         const Icon = getElementIconForType(resolveIconType(option));
 
                         return (
@@ -67,7 +69,7 @@ export function ReusableUiDefinitionsTab(props: ReusableUiDefinitionsTabProps): 
                             >
                                 <SelectionListRow
                                     icon={<Icon/>}
-                                    title={definition.label}
+                                    title={<span role="heading" aria-level={3}>{title}</span>}
                                     titleAdornment={
                                         <Chip
                                             size="small"
@@ -76,12 +78,11 @@ export function ReusableUiDefinitionsTab(props: ReusableUiDefinitionsTabProps): 
                                     }
                                     description={
                                         <span>
+                                            {resolveDescription(option, originName)}
                                             {
                                                 definition.subLabel != null &&
-                                                <>{definition.subLabel}<br/></>
+                                                <><br/>{definition.subLabel}</>
                                             }
-                                            {resolveOriginDescription(definition.kind)}{' '}
-                                            <strong>{originName}</strong>
                                         </span>
                                     }
                                     primaryActionLabel="Kopieren und einfügen"
@@ -142,17 +143,16 @@ function resolveIconType(option: ReusableUiDefinitionOption): ElementType {
     }
 }
 
-function resolveOriginDescription(kind: ProcessNodeDefinitionMetadataReusableUiDefinitionKind): string {
-    switch (kind) {
+function resolveDescription(option: ReusableUiDefinitionOption, originName: string): React.ReactNode {
+    switch (option.definition.kind) {
         case ProcessNodeDefinitionMetadataReusableUiDefinitionKind.CompleteForm:
-            return 'Gesamtes Formular aus dem Prozesselement';
-        case ProcessNodeDefinitionMetadataReusableUiDefinitionKind.FormSection:
-            return 'Abschnitt aus dem Formular des Prozesselements';
-        case ProcessNodeDefinitionMetadataReusableUiDefinitionKind.StepperSection:
-            return 'Abschnitt aus dem Stepper des Prozesselements';
-        case ProcessNodeDefinitionMetadataReusableUiDefinitionKind.Tab:
-            return 'Tab aus der UI-Definition des Prozesselements';
+            // The reusable form contains standard sections; optional special sections are excluded by the backend.
+            return 'Alle Standardabschnitte mit ihren enthaltenen Elementen.';
+        case ProcessNodeDefinitionMetadataReusableUiDefinitionKind.UiDefinition:
+            return option.definition.label === 'UI-Definition' ?
+                'Alle enthaltenen Elemente.' :
+                <>„{option.definition.label}“ mit allen enthaltenen Elementen.</>;
         default:
-            return 'Gesamte UI-Definition des Prozesselements';
+            return <>Aus Prozesselement „{originName}“</>;
     }
 }
