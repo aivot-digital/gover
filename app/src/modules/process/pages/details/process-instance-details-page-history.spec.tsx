@@ -143,11 +143,14 @@ describe('Process instance history preview', () => {
         });
 
         describe.each([
+            ProcessTaskStatus.InProgress,
+            ProcessTaskStatus.AwaitingStaff,
             ProcessTaskStatus.Paused,
             ProcessTaskStatus.AwaitingCustomer,
             ProcessTaskStatus.AwaitingPayment,
         ])('open task with status %s', (status) => {
             it.each([
+                {now: '2026-10-02T09:59:59.999Z', color: 'Default', label: 'Frist'},
                 {now: '2026-10-02T12:00:00Z', color: 'Warning', label: 'Frist'},
                 {now: '2026-10-04T10:00:00Z', color: 'Error', label: 'Abgelaufen'},
             ])('shows $label in $color', async ({now, color, label}) => {
@@ -269,6 +272,39 @@ describe('Process instance history preview', () => {
         expect(within(region).getByText('Unsicher')).not.toHaveAttribute('href', 'javascript:alert(1)');
     });
 
+    it.each([ProcessTaskStatus.AwaitingStaff, ProcessTaskStatus.InProgress])(
+        'shows the upcoming steps of a manual action with status %s',
+        async (status) => {
+            await renderHistory(
+                [
+                    node(1, 'Festsetzung des Steuersatzes'),
+                    node(2, 'Zahlungsaufforderung'),
+                    node(3, 'Bescheiderstellung'),
+                    node(4, 'Versand des Steuerbescheides'),
+                    node(5, 'Vorgang beenden', ProcessNodeType.Termination),
+                ],
+                [edge(1, 2), edge(2, 3), edge(3, 4), edge(4, 5)],
+                [task(1, 1, status)],
+            );
+
+            expect(screen.getByRole('button', {name: /^1\. Festsetzung des Steuersatzes:/})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /^Festsetzung des Steuersatzes:/})).not.toBeInTheDocument();
+            const preview = screen.getAllByRole('button', {
+                name: /^(Zahlungsaufforderung|Bescheiderstellung|Versand des Steuerbescheides|Vorgang beenden):/,
+            });
+            expect(preview).toHaveLength(4);
+            [
+                /^Zahlungsaufforderung:/,
+                /^Bescheiderstellung:/,
+                /^Versand des Steuerbescheides:/,
+                /^Vorgang beenden:/,
+            ].forEach((name, index) => {
+                expect(preview[index]).toHaveAccessibleName(name);
+            });
+            expect(screen.queryByText('Derzeit sind keine nächsten Schritte vorhersehbar.')).not.toBeInTheDocument();
+        },
+    );
+
     it.each([ProcessNodeType.FlowControl, ProcessNodeType.Termination])(
         'includes the next %s node and stops there',
         async (boundaryType) => {
@@ -312,20 +348,29 @@ describe('Process instance history preview', () => {
     });
 
     it('combines all active task statuses in task order and includes shared successors once', async () => {
-        const statuses = [ProcessTaskStatus.Running, ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment];
+        const statuses = [
+            ProcessTaskStatus.Running,
+            ProcessTaskStatus.InProgress,
+            ProcessTaskStatus.AwaitingStaff,
+            ProcessTaskStatus.Paused,
+            ProcessTaskStatus.AwaitingCustomer,
+            ProcessTaskStatus.AwaitingPayment,
+        ];
+        const nextNodeOffset = statuses.length + 1;
+        const sharedNodeId = statuses.length * 2 + 1;
         await renderHistory(
             [
                 ...statuses.map((_, index) => node(index + 1, `Active ${index}`)),
-                ...statuses.map((_, index) => node(index + 5, `Next ${index}`)),
-                node(9, 'Shared', ProcessNodeType.FlowControl),
+                ...statuses.map((_, index) => node(index + nextNodeOffset, `Next ${index}`)),
+                node(sharedNodeId, 'Shared', ProcessNodeType.FlowControl),
             ],
-            statuses.flatMap((_, index) => [edge(index + 1, index + 5), edge(index + 5, 9)]),
+            statuses.flatMap((_, index) => [edge(index + 1, index + nextNodeOffset), edge(index + nextNodeOffset, sharedNodeId)]),
             statuses.map((status, index) => task(index + 1, index + 1, status)),
         );
 
         const preview = screen.getAllByRole('button', {name: /^(Next \d|Shared):/});
-        expect(preview).toHaveLength(5);
-        [/^Next 0:/, /^Shared:/, /^Next 1:/, /^Next 2:/, /^Next 3:/].forEach((name, index) => {
+        expect(preview).toHaveLength(7);
+        [/^Next 0:/, /^Shared:/, /^Next 1:/, /^Next 2:/, /^Next 3:/, /^Next 4:/, /^Next 5:/].forEach((name, index) => {
             expect(preview[index]).toHaveAccessibleName(name);
         });
     });

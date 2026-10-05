@@ -38,6 +38,15 @@ import {
     type ProcessFlowGraphNode,
 } from './components/process-flow-editor/utils/process-flow-graph-utils';
 
+const activeTaskStatuses: ReadonlySet<ProcessTaskStatus> = new Set([
+    ProcessTaskStatus.Running,
+    ProcessTaskStatus.InProgress,
+    ProcessTaskStatus.AwaitingStaff,
+    ProcessTaskStatus.Paused,
+    ProcessTaskStatus.AwaitingCustomer,
+    ProcessTaskStatus.AwaitingPayment,
+]);
+
 export function ProcessInstanceDetailsPageHistory() {
     const {
         item: processInstance,
@@ -302,15 +311,9 @@ async function fetchHistory(processId: number, processInstanceId: number): Promi
 function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEntity[]): ProcessFlowGraphNode[] {
     const nodesById = new Map(graph.nodes.map((node) => [node.node.id, node]));
     const upcoming = new Map<number, ProcessFlowGraphNode>();
-    const activeStatuses = new Set([
-        ProcessTaskStatus.Running,
-        ProcessTaskStatus.Paused,
-        ProcessTaskStatus.AwaitingCustomer,
-        ProcessTaskStatus.AwaitingPayment,
-    ]);
 
     for (const task of tasks) {
-        if (!activeStatuses.has(task.status)) {
+        if (!activeTaskStatuses.has(task.status)) {
             continue;
         }
 
@@ -363,12 +366,7 @@ function getTaskDeadlineChipProps(task?: ProcessInstanceTaskEntity): Pick<ChipPr
     }
 
     let color: ChipProps['color'] = 'default';
-    if ([
-        ProcessTaskStatus.Running,
-        ProcessTaskStatus.Paused,
-        ProcessTaskStatus.AwaitingCustomer,
-        ProcessTaskStatus.AwaitingPayment,
-    ].includes(task.status)) {
+    if (activeTaskStatuses.has(task.status)) {
         const now = Date.now();
         const started = Date.parse(task.started);
         if (now > deadline) {
