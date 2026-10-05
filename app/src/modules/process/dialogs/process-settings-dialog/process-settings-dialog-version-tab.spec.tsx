@@ -157,8 +157,8 @@ describe('ProcessSettingsDialogVersionTab', () => {
             </Provider>,
         );
 
-        await user.type(screen.getByRole('textbox', {name: /Aufbewahrungsfrist/}), '12');
-        await user.click(screen.getByRole('combobox', {name: /Einheit der Aufbewahrungsfrist/}));
+        await user.type(screen.getByRole('textbox', {name: /Aufbewahrungsdauer/}), '12');
+        await user.click(screen.getByRole('combobox', {name: /Zeiteinheit/}));
         await user.click(await screen.findByText('Wochen'));
 
         await waitFor(() => expect(onUnsavedChangesChange).toHaveBeenLastCalledWith(true));
@@ -201,18 +201,18 @@ describe('ProcessSettingsDialogVersionTab', () => {
             </Provider>,
         );
 
-        const duration = screen.getByRole('textbox', {name: 'Aufbewahrungsfrist'});
-        const unit = screen.getByRole('combobox', {name: 'Einheit der Aufbewahrungsfrist'});
+        const duration = screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'});
+        const unit = screen.getByRole('combobox', {name: 'Zeiteinheit'});
         expect(duration).toHaveAttribute('aria-required', 'true');
         expect(unit).toHaveAttribute('aria-required', 'true');
         expect(duration).not.toHaveAttribute('aria-invalid', 'true');
         expect(unit).not.toHaveAttribute('aria-invalid', 'true');
-        expect(screen.queryByText('Geben Sie eine Aufbewahrungsfrist an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
         expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
 
         await user.type(screen.getByRole('textbox', {name: /Öffentliche Bezeichnung/}), ' neu');
         await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(true));
-        expect(screen.queryByText('Geben Sie eine Aufbewahrungsfrist an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
         expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
         act(() => ref.current?.save());
         expect(update).not.toHaveBeenCalled();
@@ -223,11 +223,11 @@ describe('ProcessSettingsDialogVersionTab', () => {
         expect(update).not.toHaveBeenCalled();
 
         act(() => ref.current?.reset());
-        expect(screen.getByRole('textbox', {name: 'Aufbewahrungsfrist'})).toHaveValue('');
-        expect(screen.queryByText('Geben Sie eine Aufbewahrungsfrist an.')).not.toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'})).toHaveValue('');
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
         expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
 
-        await user.type(screen.getByRole('textbox', {name: 'Aufbewahrungsfrist'}), '3');
+        await user.type(screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'}), '3');
         await user.click(unit);
         await user.click(await screen.findByText('Tage'));
         await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(false));
@@ -272,18 +272,18 @@ describe('ProcessSettingsDialogVersionTab', () => {
             </Provider>,
         );
 
-        const duration = screen.getByRole('textbox', {name: /Aufbewahrungsfrist/});
+        const duration = screen.getByRole('textbox', {name: /Aufbewahrungsdauer/});
         await user.clear(duration);
-        expect(screen.getByText('Geben Sie eine Aufbewahrungsfrist an.')).toBeInTheDocument();
+        expect(screen.getByText('Geben Sie eine Aufbewahrungsdauer an.')).toBeInTheDocument();
         await user.type(duration, '0');
-        expect(screen.getByText('Die Aufbewahrungsfrist muss eine positive ganze Zahl sein.')).toBeInTheDocument();
+        expect(screen.getByText('Die Aufbewahrungsdauer muss eine positive ganze Zahl sein.')).toBeInTheDocument();
         await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(true));
         act(() => ref.current?.save());
         expect(update).not.toHaveBeenCalled();
 
         act(() => ref.current?.reset());
-        expect(screen.getByRole('textbox', {name: /Aufbewahrungsfrist/})).toHaveValue('30');
-        expect(screen.getByRole('combobox', {name: /Einheit der Aufbewahrungsfrist/})).toHaveTextContent('Tage');
+        expect(screen.getByRole('textbox', {name: /Aufbewahrungsdauer/})).toHaveValue('30');
+        expect(screen.getByRole('combobox', {name: /Zeiteinheit/})).toHaveTextContent('Tage');
         await waitFor(() => {
             expect(onUnsavedChangesChange).toHaveBeenLastCalledWith(false);
             expect(onValidationErrorChange).toHaveBeenLastCalledWith(false);
@@ -403,10 +403,10 @@ describe('ProcessSettingsDialogVersionTab', () => {
             </Provider>,
         );
 
-        expect(screen.getByRole('textbox', {name: /Aufbewahrungsfrist/})).toHaveValue('2');
-        expect(screen.getByRole('textbox', {name: /Aufbewahrungsfrist/})).toBeDisabled();
-        expect(screen.getByRole('combobox', {name: /Einheit der Aufbewahrungsfrist/})).toHaveTextContent('Jahre');
-        expect(screen.getByRole('combobox', {name: /Einheit der Aufbewahrungsfrist/})).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('textbox', {name: /Aufbewahrungsdauer/})).toHaveValue('2');
+        expect(screen.getByRole('textbox', {name: /Aufbewahrungsdauer/})).toBeDisabled();
+        expect(screen.getByRole('combobox', {name: /Zeiteinheit/})).toHaveTextContent('Jahre');
+        expect(screen.getByRole('combobox', {name: /Zeiteinheit/})).toHaveAttribute('aria-disabled', 'true');
         act(() => ref.current?.save());
         expect(update).not.toHaveBeenCalled();
     });
@@ -434,10 +434,10 @@ describe('ProcessSettingsDialogVersionTab', () => {
             </Provider>,
         );
 
-        expect(screen.queryByText('Geben Sie eine Aufbewahrungsfrist an.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
         expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
-        expect(screen.getByRole('textbox', {name: 'Aufbewahrungsfrist'})).toBeDisabled();
-        expect(screen.getByRole('combobox', {name: 'Einheit der Aufbewahrungsfrist'})).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'})).toBeDisabled();
+        expect(screen.getByRole('combobox', {name: 'Zeiteinheit'})).toHaveAttribute('aria-disabled', 'true');
         expect(onValidationErrorChange).toHaveBeenLastCalledWith(false);
     });
 });
