@@ -42,7 +42,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.when;
 
 class ProcessInstanceAttachmentServiceTest {
@@ -74,15 +73,6 @@ class ProcessInstanceAttachmentServiceTest {
         order.verify(attachmentRepository).flush();
         order.verify(storageService).deleteDocument(5, "/proc-7/instance/attachments/file.pdf");
     }
-
-    @Test
-    void create_LogsAttachmentCreationEvent() throws Exception {
-        var attachmentRepository = mock(ProcessInstanceAttachmentRepository.class);
-        var eventRepository = mock(ProcessInstanceHistoryEventRepository.class);
-        var storageService = mock(StorageService.class);
-        var systemConfigRepository = mock(SystemConfigRepository.class);
-        var processInstanceRepository = mock(ProcessInstanceRepository.class);
-        var processAccessKey = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @BeforeEach
     void setUp() throws Exception {

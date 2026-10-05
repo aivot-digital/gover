@@ -42,6 +42,8 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -61,6 +63,7 @@ class ProcessNodeDefinitionSummariesTest {
     private final ProcessNodeEntity node = new ProcessNodeEntity().setName("Testformular").setDataKey("counter");
     private UserEntity actor = new UserEntity().setId("ada").setFullName("Ada Beispiel");
     private String port = "approved";
+    private ZoneId previousZone;
 
     ProcessNodeDefinitionSummariesTest() {
         var data = new HashMap<String, Object>();
@@ -89,31 +92,42 @@ class ProcessNodeDefinitionSummariesTest {
                         "dataKey", "bescheid", "attachmentKey", "original-attachment")))));
     }
 
+    @BeforeEach
+    void configureBusinessTimezone() {
+        previousZone = ApplicationTimeZone.getZoneId();
+        ApplicationTimeZone.configure(ZoneId.of("Europe/Berlin"));
+    }
+
+    @AfterEach
+    void restoreBusinessTimezone() {
+        ApplicationTimeZone.configure(previousZone);
+    }
+
     static Stream<Arguments> definitions() {
         return Stream.of(
-                Arguments.of(ApprovalActionNodeV1.class, "Die Freigabe wurde am 01.10.2026 um 10:00:00 MESZ durch [Ada Beispiel](/staff/users/ada) erteilt."), 
-                Arguments.of(DataChangeActionNodeV1.class, "Die Daten wurden am 01.10.2026 um 10:00:00 MESZ durch [Ada Beispiel](/staff/users/ada) geändert."), 
-                Arguments.of(ManualActionNodeV1.class, "Die manuelle Aktion wurde am 01.10.2026 um 10:00:00 MESZ durch [Ada Beispiel](/staff/users/ada) als durchgeführt gemeldet."), 
+                Arguments.of(ApprovalActionNodeV1.class, "Die Freigabe wurde am 01.10.2026 um 10:00:00 durch „Ada Beispiel“ erteilt."),
+                Arguments.of(DataChangeActionNodeV1.class, "Die Daten wurden am 01.10.2026 um 10:00:00 durch „Ada Beispiel“ geändert."),
+                Arguments.of(ManualActionNodeV1.class, "Die manuelle Aktion wurde am 01.10.2026 um 10:00:00 durch „Ada Beispiel“ als durchgeführt gemeldet."),
                 Arguments.of(CounterActionNodeV1.class, "Der Zähler „counter“ wurde um 3 erhöht."), 
-                Arguments.of(CommunicationMessageActionNodeV1.class, "Die Nachricht wurde am 01.10.2026 um 09:00:00 MESZ erfolgreich versendet."), 
-                Arguments.of(EMailActionNodeV1.class, "Die E-Mail-Nachricht wurde am 01.10.2026 um 12:00:00 MESZ erfolgreich versendet."), 
-                Arguments.of(FormRequestActionNodeV1.class, "Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 MESZ zur Einreichung von Daten aufgefordert und via E\\-Mail informiert. Die Daten wurden am 01.10.2026 um 11:00:00 MESZ durch die Identität „customer“ eingereicht."), 
-                Arguments.of(PaymentRequestActionNodeV1.class, "Der Bezahlvorgang wurde am 01.10.2026 um 11:00:00 MESZ erfolgreich abgeschlossen."), 
-                Arguments.of(InstanceAssignmentActionNodeV1.class, "Der Vorgang wurde [Ida Beispiel](/staff/users/ida) (durch [Ada Beispiel](/staff/users/ada)) zugewiesen."), 
-                Arguments.of(InstanceUnassignmentActionNodeV1.class, "Die bestehende Zuweisung des Vorgangs wurde entfernt (war zugewiesen an: [Ida Beispiel](/staff/users/ida))."), 
-                Arguments.of(PdfActionNodeV1.class, "Das Dokument „Bescheid\\.pdf“ wurde am 01.10.2026 um 12:00:00 MESZ erfolgreich erstellt."), 
+                Arguments.of(CommunicationMessageActionNodeV1.class, "Die Nachricht wurde am 01.10.2026 um 09:00:00 erfolgreich versendet."),
+                Arguments.of(EMailActionNodeV1.class, "Die E-Mail-Nachricht wurde am 01.10.2026 um 12:00:00 erfolgreich versendet."),
+                Arguments.of(FormRequestActionNodeV1.class, "Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 zur Einreichung von Daten aufgefordert und via E\\-Mail informiert. Die Daten wurden am 01.10.2026 um 11:00:00 durch die Identität „customer“ eingereicht."),
+                Arguments.of(PaymentRequestActionNodeV1.class, "Der Bezahlvorgang wurde am 01.10.2026 um 11:00:00 erfolgreich abgeschlossen."),
+                Arguments.of(InstanceAssignmentActionNodeV1.class, "Der Vorgang wurde „Ida Beispiel“ (durch „Ada Beispiel“) zugewiesen."),
+                Arguments.of(InstanceUnassignmentActionNodeV1.class, "Die bestehende Zuweisung des Vorgangs wurde entfernt (war zugewiesen an: „Ida Beispiel“)."),
+                Arguments.of(PdfActionNodeV1.class, "Das Dokument „Bescheid\\.pdf“ wurde am 01.10.2026 um 12:00:00 erfolgreich erstellt."),
                 Arguments.of(WriteExternalStorageActionNodeV1.class, "Das Dokument „Bescheid\\.pdf“ wurde erfolgreich beim Speicheranbieter „Archiv“ geschrieben."), 
-                Arguments.of(HttpActionNodeV1.class, "Die externe HTTP-Schnittstelle (Endpunkt: https://example\\.org/call) wurde am 01.10.2026 um 12:00:00 MESZ aufgerufen."), 
+                Arguments.of(HttpActionNodeV1.class, "Die externe HTTP-Schnittstelle (Endpunkt: https://example\\.org/call) wurde am 01.10.2026 um 12:00:00 aufgerufen."),
                 Arguments.of(FitConnectSendJsonActionNodeV1.class, "Die Daten wurden erfolgreich an eine FIT-Connect-Schnittstelle übertragen."), 
                 Arguments.of(NoCodeActionNodeV1.class, "Die No-Code-Logik wurde erfolgreich ausgeführt."), 
                 Arguments.of(LowCodeActionNodeV1.class, "Die Low-Code-Logik wurde erfolgreich ausgeführt."), 
                 Arguments.of(DataMappingActionNodeV1.class, "Die Vorgangsdaten wurden anhand von 1 Regel angepasst."), 
                 Arguments.of(DataTypeValidationControlNodeV1.class, "Die Vorgangsdaten wurden erfolgreich validiert."), 
                 Arguments.of(IfFlowControlNodeV1.class, "Der Vorgang wurde konditionell in den Ausführungspfad „Bedingung erfüllt“ eingeleitet."), 
-                Arguments.of(DefaultTerminationNodeV1.class, "Das Ende der Aufbewahrungsfrist für die Vorgangsdaten wurde für 01.10.2027 um 12:00:00 MESZ festgelegt."), 
-                Arguments.of(WebhookTriggerNodeV1.class, "Der Vorgang wurde am 01.10.2026 um 11:00:00 MESZ durch einen Aufruf über einen Webhook ausgelöst (Quelle: https://example\\.org/form)."), 
-                Arguments.of(FitConnectTriggerNodeV1.class, "Der Vorgang wurde am 01.10.2026 um 11:00:00 MESZ durch einen Aufruf über eine FIT-Connect-Schnittstelle ausgelöst."), 
-                Arguments.of(FormTriggerNodeV1.class, "Der Vorgang wurde am 01.10.2026 um 11:00:00 MESZ durch die Übermittlung des Formulars „Testformular“ ausgelöst."), 
+                Arguments.of(DefaultTerminationNodeV1.class, "Das Ende der Aufbewahrungsfrist für die Vorgangsdaten wurde für 01.10.2027 um 12:00:00 festgelegt."),
+                Arguments.of(WebhookTriggerNodeV1.class, "Der Vorgang wurde am 01.10.2026 um 11:00:00 durch einen Aufruf über einen Webhook ausgelöst (Quelle: https://example\\.org/form)."),
+                Arguments.of(FitConnectTriggerNodeV1.class, "Der Vorgang wurde am 01.10.2026 um 11:00:00 durch einen Aufruf über eine FIT-Connect-Schnittstelle ausgelöst."),
+                Arguments.of(FormTriggerNodeV1.class, "Der Vorgang wurde am 01.10.2026 um 11:00:00 durch die Übermittlung des Formulars „Testformular“ ausgelöst."),
                 Arguments.of(AiCompletionActionNodeV1.class, "Die KI-Anfrage wurde erfolgreich ausgeführt."), 
                 Arguments.of(AiProcessDataTransformationActionNodeV1.class, "Die Vorgangsdaten wurden erfolgreich mit KI transformiert.")
         );
@@ -130,17 +144,11 @@ class ProcessNodeDefinitionSummariesTest {
         if (definition instanceof IfFlowControlNodeV1) {
             port = "true";
         }
-        var oldZone = ApplicationTimeZone.getZoneId();
-        try {
-            ApplicationTimeZone.configure(ZoneId.of("Europe/Berlin"));
-            var markdown = summary(definition, config);
-            assertNotNull(markdown);
-            assertTrue(markdown.contains(expected), markdown);
-            assertFalse(markdown.contains("secret"), markdown);
-            assertFalse(markdown.contains("[TIMESTAMP]"), markdown);
-        } finally {
-            ApplicationTimeZone.configure(oldZone);
-        }
+        var markdown = summary(definition, config);
+        assertNotNull(markdown);
+        assertTrue(markdown.contains(expected), markdown);
+        assertFalse(markdown.contains("secret"), markdown);
+        assertFalse(markdown.contains("[TIMESTAMP]"), markdown);
     }
 
     @Test
@@ -227,8 +235,8 @@ class ProcessNodeDefinitionSummariesTest {
         config.formLayout = new de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement().setPublicTitle("Antrag *A*");
         var markdown = summary(definition, config);
         assertTrue(markdown.contains("„Antrag \\*A\\*“"));
-        assertTrue(markdown.contains("11:00:00 MESZ"));
-        assertFalse(markdown.contains("12:00:00 MESZ"));
+        assertTrue(markdown.contains("11:00:00"));
+        assertFalse(markdown.contains("12:00:00"));
         config.formLayout = null;
         node.setName(null);
         assertFalse(summary(definition, config).contains("„“"));
@@ -281,7 +289,7 @@ class ProcessNodeDefinitionSummariesTest {
         var config = new PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig();
         var typed = summary(definition, config);
         assertTrue(typed.contains("Gebühr \\*A\\*: 20,00 Euro"));
-        assertTrue(typed.contains("11:00:00 MESZ"));
+        assertTrue(typed.contains("11:00:00"));
         assertFalse(typed.contains("secret.example"));
         var mapper = JsonMapperTestUtils.createMapper();
         task.setNodeData(mapper.readValue(mapper.writeValueAsString(task.getNodeData()), Map.class));
