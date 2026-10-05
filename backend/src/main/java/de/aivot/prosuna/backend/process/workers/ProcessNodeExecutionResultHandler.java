@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
@@ -25,11 +26,13 @@ import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.ProcessRetentionTime;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
@@ -52,6 +55,7 @@ public class ProcessNodeExecutionResultHandler {
     private final RabbitTemplate rabbitTemplate;
     private final CommunicationService communicationService;
     private final ProcessInstanceRepository processInstanceRepository;
+    private final ProcessVersionRepository processVersionRepository;
     private final ProcessAssignmentService assignmentService;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
@@ -68,6 +72,7 @@ public class ProcessNodeExecutionResultHandler {
                                              RabbitTemplate rabbitTemplate,
                                              CommunicationService communicationService,
                                              ProcessInstanceRepository processInstanceRepository,
+                                             ProcessVersionRepository processVersionRepository,
                                              ProcessInstanceTaskRepository processInstanceTaskRepository,
                                              ProcessEdgeRepository processDefinitionEdgeRepository,
                                              UserService userService,
@@ -80,6 +85,7 @@ public class ProcessNodeExecutionResultHandler {
         this.rabbitTemplate = rabbitTemplate;
         this.communicationService = communicationService;
         this.processInstanceRepository = processInstanceRepository;
+        this.processVersionRepository = processVersionRepository;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
         this.userService = userService;
@@ -222,10 +228,15 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
-        if (!(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)
-                && processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(processInstance);
+        if (!(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
+            ensureInstanceRunning(processInstance);
+        }
+    }
+
+    private void ensureInstanceRunning(@Nonnull ProcessInstanceEntity instance) {
+        if (instance.getStatus() != ProcessInstanceStatus.Running) {
+            instance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(instance);
         }
     }
 
@@ -489,10 +500,7 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingPayment);
         assignAndSaveDataLayersAndStatusOverride(context, false);
 
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            context.processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(context.processInstance);
-        }
+        ensureInstanceRunning(context.processInstance);
 
         context.logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
@@ -603,10 +611,7 @@ public class ProcessNodeExecutionResultHandler {
                 logMessageDetails
         );
 
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            context.processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(context.processInstance);
-        }
+        ensureInstanceRunning(context.processInstance);
 
         if (unchanged) {
             return;
@@ -702,7 +707,9 @@ public class ProcessNodeExecutionResultHandler {
         if (viaPort == null) {
             assignAndSaveDataLayersAndStatusOverride(context, false);
         }
-        context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        }
         processInstanceRepository.save(context.processInstance);
 
 
@@ -924,12 +931,20 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleTaskUpdated(@Nonnull HandlerContext<ProcessNodeExecutionResultTaskUpdated> context) throws ProcessNodeExecutionException {
-        context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
+        if (context.triggeringUser != null || context.processInstanceTask.getStatus() == ProcessTaskStatus.InProgress) {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.InProgress);
+        } else if (context.processInstanceTask.getStatus() == ProcessTaskStatus.AwaitingStaff) {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingStaff);
+        } else {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
+        }
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
-        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+        if (context.triggeringUser != null && context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
             context.processInstance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(context.processInstance);
+        } else {
+            ensureInstanceRunning(context.processInstance);
         }
 
         if (context.triggeringUser != null) {
@@ -964,10 +979,13 @@ public class ProcessNodeExecutionResultHandler {
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
-        if (!context.additionalIdentities.isEmpty()
-                || context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        if (!context.additionalIdentities.isEmpty()) {
+            if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+                context.processInstance.setStatus(ProcessInstanceStatus.Running);
+            }
             processInstanceRepository.save(context.processInstance);
+        } else {
+            ensureInstanceRunning(context.processInstance);
         }
 
         var nextPayload = new ProcessWorker.DoWorkWorkerPayload(
@@ -1047,8 +1065,9 @@ public class ProcessNodeExecutionResultHandler {
     private record CompletionPath(ProcessNodePort port, ProcessEdgeEntity edge) {
     }
 
-    private void handleInstanceComplete(@Nonnull HandlerContext<ProcessNodeExecutionResultInstanceCompleted> context) {
+    private void handleInstanceComplete(@Nonnull HandlerContext<ProcessNodeExecutionResultInstanceCompleted> context) throws ProcessNodeExecutionException {
         var completionTime = Instant.now();
+        var keepUntil = resolveRetentionDate(context, completionTime);
 
         context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         context.processInstanceTask.setFinished(completionTime);
@@ -1057,7 +1076,7 @@ public class ProcessNodeExecutionResultHandler {
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
         context.processInstance.setStatus(ProcessInstanceStatus.Completed);
         context.processInstance.setFinished(completionTime);
-        context.processInstance.setKeepUntil(context.result.getRetentionDate());
+        context.processInstance.setKeepUntil(keepUntil);
         processInstanceRepository.save(context.processInstance);
 
         context.logger.logf(
@@ -1068,6 +1087,31 @@ public class ProcessNodeExecutionResultHandler {
                 "Der Vorgang wurde erfolgreich abgeschlossen. Das abschließende Prozesselement war %s",
                 StringUtils.quote(context.currentNode.resolveName(context.provider))
         );
+    }
+
+    @Nullable
+    private Instant resolveRetentionDate(@Nonnull HandlerContext<ProcessNodeExecutionResultInstanceCompleted> context,
+                                         @Nonnull Instant completionTime) throws ProcessNodeExecutionException {
+        if (context.result.getRetentionDate() != null) {
+            return context.result.getRetentionDate();
+        }
+
+        var versionId = ProcessVersionEntityId.of(context.currentNode.getProcessId(), context.currentNode.getProcessVersion());
+        var version = processVersionRepository.findById(versionId)
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Die Prozessversion %d des abschließenden Prozesselements wurde nicht gefunden.",
+                        context.currentNode.getProcessVersion()
+                ));
+        if (version.getRetentionTimeValue() == null && version.getRetentionTimeUnit() == null) {
+            return null;
+        }
+        if (version.getRetentionTimeValue() == null || version.getRetentionTimeUnit() == null) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    "Die Aufbewahrungsfrist der Prozessversion %d ist unvollständig.",
+                    version.getProcessVersion()
+            );
+        }
+        return ProcessRetentionTime.calculate(completionTime, version.getRetentionTimeValue(), version.getRetentionTimeUnit());
     }
 
     private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?> context,

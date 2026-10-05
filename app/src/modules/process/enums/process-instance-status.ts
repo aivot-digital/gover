@@ -18,7 +18,7 @@ export enum ProcessInstanceStatus {
 
 export const ProcessInstanceStatusLabels: Record<ProcessInstanceStatus, string> = {
     [ProcessInstanceStatus.Created]: 'Erstellt',
-    [ProcessInstanceStatus.Running]: 'In Bearbeitung',
+    [ProcessInstanceStatus.Running]: 'Gestartet',
     [ProcessInstanceStatus.Paused]: 'Pausiert',
     [ProcessInstanceStatus.Completed]: 'Abgeschlossen',
     [ProcessInstanceStatus.Aborted]: 'Abgebrochen',
@@ -29,7 +29,7 @@ type ProcessIconColor = 'primary' | 'secondary' | 'error' | 'info' | 'success' |
 
 export const ProcessInstanceStatusColor: Record<ProcessInstanceStatus, ProcessIconColor> = {
     [ProcessInstanceStatus.Created]: 'info',
-    [ProcessInstanceStatus.Running]: 'primary',
+    [ProcessInstanceStatus.Running]: 'info',
     [ProcessInstanceStatus.Paused]: 'info',
     [ProcessInstanceStatus.Completed]: 'success',
     [ProcessInstanceStatus.Aborted]: 'warning',

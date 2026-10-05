@@ -23,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.*;
@@ -87,10 +88,46 @@ class ProcessAssignmentServiceTest {
         }
         var result = service.reassignTask(actor, 5L, "recipient");
         assertEquals("recipient", result.getAssignedUserId());
-        assertEquals(ProcessTaskStatus.Running, result.getStatus());
+        assertEquals(ProcessTaskStatus.AwaitingStaff, result.getStatus());
         assertNull(result.getFinished());
         assertEquals("previous", instance.getAssignedUserId());
         verify(audit).addAuditEntry(any());
+    }
+
+    @Test
+    void reassigningStartedTaskWaitsForNewAssigneeAndAuditsStatus() throws Exception {
+        grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+        grant("recipient", PROCESS_INSTANCE_READ);
+        grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+        task.setStatus(ProcessTaskStatus.InProgress);
+
+        assertEquals(ProcessTaskStatus.AwaitingStaff, service.reassignTask(actor, 5L, "recipient").getStatus());
+
+        var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
+        verify(audit).addAuditEntry(payload.capture());
+        assertEquals(Map.of("old", ProcessTaskStatus.InProgress, "new", ProcessTaskStatus.AwaitingStaff),
+                payload.getValue().getDiff().get("status"));
+    }
+
+    @Test
+    void assigningSamePersonKeepsWorkInProgress() throws Exception {
+        grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+        grant("recipient", PROCESS_INSTANCE_READ);
+        grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+        task.setStatus(ProcessTaskStatus.InProgress).setAssignedUserId("recipient");
+
+        assertEquals(ProcessTaskStatus.InProgress, service.reassignTask(actor, 5L, "recipient").getStatus());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessTaskStatus.class, names = {"Paused", "AwaitingCustomer", "AwaitingPayment"})
+    void reassignmentPreservesSpecialWaitingStatuses(ProcessTaskStatus status) throws Exception {
+        grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+        grant("recipient", PROCESS_INSTANCE_READ);
+        grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+        task.setStatus(status);
+
+        assertEquals(status, service.reassignTask(actor, 5L, "recipient").getStatus());
     }
 
     @Test
@@ -329,6 +366,7 @@ class ProcessAssignmentServiceTest {
         grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
         service.saveRuntimeAssignment(task, "recipient");
         assertEquals("recipient", task.getAssignedUserId());
+        assertEquals(ProcessTaskStatus.AwaitingStaff, task.getStatus());
         var order = inOrder(instances, tasks);
         order.verify(instances).lockAccessById(17L);
         order.verify(instances).hasPermissionWithoutDeputies("recipient", 17L, PROCESS_INSTANCE_READ);

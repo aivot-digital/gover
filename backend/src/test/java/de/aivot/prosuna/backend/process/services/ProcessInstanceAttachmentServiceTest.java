@@ -31,9 +31,28 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.when;
 
 class ProcessInstanceAttachmentServiceTest {
+    @Test
+    void delete_RemovesStoredDocumentAndItsDatabaseReference() throws Exception {
+        var attachmentRepository = mock(ProcessInstanceAttachmentRepository.class);
+        var storageService = mock(StorageService.class);
+        var service = new ProcessInstanceAttachmentService(attachmentRepository, storageService,
+                mock(SystemConfigRepository.class), mock(ProcessInstanceRepository.class));
+        var attachment = new ProcessInstanceAttachmentEntity()
+                .setStorageProviderId(5)
+                .setStoragePathFromRoot("/proc-7/instance/attachments/file.pdf");
+
+        service.deleteEntity(attachment);
+
+        var order = inOrder(attachmentRepository, storageService);
+        order.verify(attachmentRepository).delete(attachment);
+        order.verify(attachmentRepository).flush();
+        order.verify(storageService).deleteDocument(5, "/proc-7/instance/attachments/file.pdf");
+    }
+
     @Test
     void create_LogsAttachmentCreationEvent() throws Exception {
         var attachmentRepository = mock(ProcessInstanceAttachmentRepository.class);

@@ -14,19 +14,26 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.ProcessRetentionTime;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
-import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.time.ZonedDateTime;
+import java.math.BigDecimal;
+import java.time.DateTimeException;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTerminationNodeV1.DefaultTerminationNodeV1Config> {
@@ -39,9 +46,6 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
     private static final String RETENTION_UNIT_WEEKS = "weeks";
     private static final String RETENTION_UNIT_MONTHS = "months";
     private static final String RETENTION_UNIT_YEARS = "years";
-
-    private static final Number DEFAULT_RETENTION_VALUE = 30;
-    private static final String DEFAULT_RETENTION_UNIT = RETENTION_UNIT_DAYS;
 
     @Nonnull
     @Override
@@ -82,7 +86,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Beendet die Ausführung eines Vorgangs und berechnet/startet die Aufbewahrungsfrist.";
+        return "Beendet einen Vorgang und verwendet die Aufbewahrungsfrist der Prozessversion oder eine eigene Frist.";
     }
 
     @Nonnull
@@ -91,8 +95,34 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         return """
                 Schließt einen laufenden Vorgang regulär ab und beendet damit seine weitere Prozessausführung.
 
-                Beim Abschluss wird die für den Vorgang geltende Aufbewahrungsfrist berechnet und gestartet. Das Element besitzt keinen weiteren Ausgang, da mit seiner Ausführung der gesamte Vorgang beendet wird.
+                Beim Abschluss gilt die Aufbewahrungsfrist der Prozessversion. Optional können Sie für dieses Element eine andere Frist festlegen. Das Element besitzt keinen weiteren Ausgang, da mit seiner Ausführung der gesamte Vorgang beendet wird.
                 """;
+    }
+
+    @Nullable
+    @Override
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeConfigurationValidationContext<DefaultTerminationNodeV1Config> context) {
+        var configuration = context.configuration();
+        if (configuration.retentionValue == null && configuration.retentionUnit == null) {
+            return null;
+        }
+        var value = positiveWholeNumber(configuration.retentionValue);
+        if (value == null) {
+            return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Geben Sie für die abweichende Aufbewahrungsfrist eine positive ganze Zahl an."));
+        }
+        var unit = parseRetentionUnit(configuration.retentionUnit);
+        if (unit == null) {
+            return Map.of(RETENTION_UNIT_FIELD_KEY, List.of("Wählen Sie für die abweichende Aufbewahrungsfrist eine Zeiteinheit aus."));
+        }
+        if (value > ProcessRetentionTime.maximumValue(unit)) {
+            return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Die abweichende Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren."));
+        }
+        try {
+            ProcessRetentionTime.calculate(Instant.now(), value, unit);
+        } catch (DateTimeException | ArithmeticException e) {
+            return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Die angegebene Aufbewahrungsfrist ist zu groß."));
+        }
+        return null;
     }
 
     @Nonnull
@@ -130,21 +160,50 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<DefaultTerminationNodeV1Config> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
-
-        var retentionTimeValue = configuration.retentionValue.longValue();
-        var retentionTimeUnit = configuration.retentionUnit;
-
-        // Apply retention periods in local business time before storing the resulting absolute instant.
-        var retentionTime = ZonedDateTime.now(ApplicationTimeZone.getZoneId());
-        switch (retentionTimeUnit) {
-            case RETENTION_UNIT_DAYS -> retentionTime = retentionTime.plusDays(retentionTimeValue);
-            case RETENTION_UNIT_WEEKS -> retentionTime = retentionTime.plusWeeks(retentionTimeValue);
-            case RETENTION_UNIT_MONTHS -> retentionTime = retentionTime.plusMonths(retentionTimeValue);
-            case RETENTION_UNIT_YEARS -> retentionTime = retentionTime.plusYears(retentionTimeValue);
+        var result = new ProcessNodeExecutionResultInstanceCompleted();
+        if (configuration.retentionValue == null && configuration.retentionUnit == null) {
+            return result;
         }
+        var value = positiveWholeNumber(configuration.retentionValue);
+        var unit = parseRetentionUnit(configuration.retentionUnit);
+        if (value == null || unit == null) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation("Die abweichende Aufbewahrungsfrist des abschließenden Prozesselements ist ungültig.");
+        }
+        if (value > ProcessRetentionTime.maximumValue(unit)) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation("Die abweichende Aufbewahrungsfrist des abschließenden Prozesselements überschreitet die zulässige Höchstdauer von 100 Jahren.");
+        }
+        try {
+            return result.setRetentionDate(ProcessRetentionTime.calculate(Instant.now(), value, unit));
+        } catch (DateTimeException | ArithmeticException e) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(e, "Die abweichende Aufbewahrungsfrist des abschließenden Prozesselements ist zu groß.");
+        }
+    }
 
-        return new ProcessNodeExecutionResultInstanceCompleted()
-                .setRetentionDate(retentionTime.toInstant());
+    @Nullable
+    private static Long positiveWholeNumber(@Nullable Number number) {
+        if (number == null) {
+            return null;
+        }
+        try {
+            var value = new BigDecimal(number.toString()).longValueExact();
+            return value > 0 ? value : null;
+        } catch (NumberFormatException | ArithmeticException e) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private static ProcessRetentionTimeUnit parseRetentionUnit(@Nullable String unit) {
+        if (unit == null) {
+            return null;
+        }
+        return switch (unit) {
+            case RETENTION_UNIT_DAYS -> ProcessRetentionTimeUnit.Days;
+            case RETENTION_UNIT_WEEKS -> ProcessRetentionTimeUnit.Weeks;
+            case RETENTION_UNIT_MONTHS -> ProcessRetentionTimeUnit.Months;
+            case RETENTION_UNIT_YEARS -> ProcessRetentionTimeUnit.Years;
+            default -> null;
+        };
     }
 
     @Nonnull
@@ -153,22 +212,27 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         return DefaultTerminationNodeV1Config.class;
     }
 
+    /** Optional retention override for this termination node. */
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class DefaultTerminationNodeV1Config {
+        /** If absent together with the unit, the process version controls retention. */
         @InputElementPOJOBinding(id = RETENTION_VALUE_FIELD_KEY, type = ElementType.Number, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Aufbewahrungsfrist"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die Aufbewahrungsfrist für die Vorgangsdaten nach Abschluss des Vorgangs an (z.B. '30 Tage', '6 Monate', '1 Jahr')."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Abweichende Aufbewahrungsfrist"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Ohne Angabe gilt die Aufbewahrungsfrist der Prozessversion. Die Frist darf höchstens 100 Jahre betragen."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "required", boolValue = false),
                 @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0)
         })
+        @Nullable
         public Number retentionValue;
 
+        /** Required only when an override value is provided. */
         @InputElementPOJOBinding(id = RETENTION_UNIT_FIELD_KEY, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Einheit der Aufbewahrungsfrist"),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 4.0),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
+        @Nullable
         public String retentionUnit;
     }
 }

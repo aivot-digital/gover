@@ -66,7 +66,8 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
             throw ResponseException.notFound();
         }
         permissions.requireProcessInstancePermission(userId, task.getProcessInstanceId(), PROCESS_INSTANCE_EDIT_TASK);
-        if (task.getStatus() != ProcessTaskStatus.Running) {
+        if (task.getStatus() != ProcessTaskStatus.Running && task.getStatus() != ProcessTaskStatus.InProgress &&
+                task.getStatus() != ProcessTaskStatus.AwaitingStaff) {
             throw ResponseException.forbidden();
         }
         return task;

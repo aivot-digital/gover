@@ -9,6 +9,21 @@ import {ProcessInstanceStatus} from '../../enums/process-instance-status';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
 
 describe('Task header status', () => {
+    it('distinguishes started tasks from staff tasks with saved work', () => {
+        const item = createEmptyProcessTaskDetailsPageItem();
+        item.task.status = ProcessTaskStatus.Running;
+        expect(getProcessTaskStatusLabel(item)).toBe('Gestartet');
+        expect(getProcessTaskStatusColor(item)).toBe('info');
+
+        item.task.status = ProcessTaskStatus.AwaitingStaff;
+        expect(getProcessTaskStatusLabel(item)).toBe('Wartet auf Bearbeitung');
+        expect(getProcessTaskStatusColor(item)).toBe('warning');
+
+        item.task.status = ProcessTaskStatus.InProgress;
+        expect(getProcessTaskStatusLabel(item)).toBe('In Bearbeitung');
+        expect(getProcessTaskStatusColor(item)).toBe('primary');
+    });
+
     it('uses the task status even when its instance has a different status or custom label', () => {
         const item = createEmptyProcessTaskDetailsPageItem();
         item.instance = {
