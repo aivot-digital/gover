@@ -5,6 +5,7 @@ import Schedule from '@aivot/mui-material-symbols-400-n25-outlined/Schedule';
 import {Accordion, AccordionDetails, AccordionSummary} from '../../../../components/accordion/accordion';
 import {ProcessExecutionSummary} from '../../components/process-execution-summary';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
+import {useGenericDetailsPageEvent} from '../../../../components/generic-details-page/use-generic-details-page-event';
 import {Permission} from '../../../../data/permissions/permission';
 import {useHasProcessInstancePermission} from '../../../permissions/hooks/use-permissions';
 import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
@@ -111,6 +112,11 @@ function InstanceHistory(props: InstanceHistoryProps) {
     const canViewProcess = useHasProcessInstancePermission(processInstanceId, Permission.PROCESS_DEFINITION_READ);
 
     const [result, setResult] = useState<HistoryData>();
+    const [refreshCounter, setRefreshCounter] = useState(0);
+
+    useGenericDetailsPageEvent('refresh', () => {
+        setRefreshCounter(counter => counter + 1);
+    });
 
     useEffect(() => {
         if (!canRead || !canViewProcess) {
@@ -118,12 +124,25 @@ function InstanceHistory(props: InstanceHistoryProps) {
             return;
         }
 
+        let isActive = true;
+
+        // Keep the displayed timeline mounted during refreshes to preserve expanded entries.
         fetchHistory(processDefinitionId, processInstanceId)
-            .then(setResult)
+            .then(history => {
+                if (isActive) {
+                    setResult(history);
+                }
+            })
             .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Der Verlauf konnte nicht geladen werden.'));
+                if (isActive) {
+                    dispatch(showApiErrorSnackbar(error, 'Der Verlauf konnte nicht geladen werden.'));
+                }
             });
-    }, [canRead, canViewProcess, processInstanceId, processDefinitionId]);
+
+        return () => {
+            isActive = false;
+        };
+    }, [canRead, canViewProcess, processInstanceId, processDefinitionId, dispatch, refreshCounter]);
 
     if (!canRead) {
         return (

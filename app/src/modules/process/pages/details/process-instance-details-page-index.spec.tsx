@@ -49,6 +49,7 @@ function renderItem(item: ProcessInstanceDetails) {
                     isBusy: false,
                     setIsBusy: vi.fn(),
                     refresh: vi.fn(),
+                    subscribeEvent: vi.fn(() => vi.fn()),
                     isEditable: false,
                 }}
             >

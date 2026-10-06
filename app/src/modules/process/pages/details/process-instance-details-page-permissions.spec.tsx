@@ -54,6 +54,7 @@ function renderPermissions() {
                 isBusy: false,
                 setIsBusy: vi.fn(),
                 refresh: vi.fn(),
+                subscribeEvent: vi.fn(() => vi.fn()),
                 isEditable: access.canEdit,
             }}
         >

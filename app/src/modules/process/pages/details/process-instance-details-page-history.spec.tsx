@@ -1,8 +1,11 @@
-import {render, screen, within} from '@testing-library/react';
+import {act, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
+import {createGenericDetailsPageEventChannel} from '../../../../components/generic-details-page/generic-details-page-events';
+import {Permission} from '../../../../data/permissions/permission';
+import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {type Page} from '../../../../models/dtos/page';
 import {type ProcessDefinitionEdgeEntity} from '../../entities/process-definition-edge-entity';
 import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
@@ -22,10 +25,21 @@ import {
 } from '../../services/process-node-provider-api-service';
 import {ProcessInstanceDetailsPageHistory} from './process-instance-details-page-history';
 
-vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+const mocks = vi.hoisted(() => ({dispatch: vi.fn(), permissions: new Set<string>()}));
+vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => mocks.dispatch}));
 vi.mock('../../../permissions/hooks/use-permissions', () => ({
-    useHasProcessInstancePermission: () => true,
+    useHasProcessInstancePermission: (_id: number, permission: string) => mocks.permissions.has(permission),
 }));
+
+function deferred<T>() {
+    let resolve!: (value: T) => void;
+    let reject!: (error: unknown) => void;
+    const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+        resolve = resolvePromise;
+        reject = rejectPromise;
+    });
+    return {promise, resolve, reject};
+}
 
 function page<T>(content: T[]): Page<T> {
     return {content, page: {size: content.length, number: 0, totalElements: content.length, totalPages: 1}};
@@ -79,7 +93,12 @@ function task(id: number, processNodeId: number, status = ProcessTaskStatus.Runn
     };
 }
 
-async function renderHistory(nodes: ProcessNodeEntity[], edges: ProcessDefinitionEdgeEntity[], tasks: ProcessInstanceTaskEntity[]) {
+async function renderHistory(
+    nodes: ProcessNodeEntity[],
+    edges: ProcessDefinitionEdgeEntity[],
+    tasks: ProcessInstanceTaskEntity[],
+    {waitForLoad = true}: {waitForLoad?: boolean} = {},
+) {
     vi.spyOn(ProcessNodeApiService.prototype, 'listAll').mockResolvedValue(page(nodes));
     vi.spyOn(ProcessDefinitionEdgeApiService.prototype, 'listAll').mockResolvedValue(page(edges));
     vi.spyOn(ProcessInstanceTaskApiService.prototype, 'listAllOrdered').mockResolvedValue(page(tasks));
@@ -93,7 +112,8 @@ async function renderHistory(nodes: ProcessNodeEntity[], edges: ProcessDefinitio
         activeTasks: [],
     };
 
-    render(
+    const eventChannel = createGenericDetailsPageEventChannel();
+    const rendered = render(
         <MemoryRouter>
             <GenericDetailsPageContext.Provider value={{
                 item,
@@ -102,17 +122,22 @@ async function renderHistory(nodes: ProcessNodeEntity[], edges: ProcessDefinitio
                 isBusy: false,
                 setIsBusy: vi.fn(),
                 refresh: vi.fn(),
+                subscribeEvent: eventChannel.subscribeEvent,
                 isEditable: false,
             }}>
                 <ProcessInstanceDetailsPageHistory/>
             </GenericDetailsPageContext.Provider>
         </MemoryRouter>,
     );
-    await screen.findByRole('heading', {name: 'Voraussichtliche nächste Schritte'});
+    if (waitForLoad) {
+        await screen.findByRole('heading', {name: 'Voraussichtliche nächste Schritte'});
+    }
+    return {...rendered, eventChannel};
 }
 
 describe('Process instance history preview', () => {
     beforeEach(() => {
+        mocks.permissions = new Set([Permission.PROCESS_INSTANCE_READ, Permission.PROCESS_DEFINITION_READ]);
         vi.spyOn(ProcessDefinitionApiService.prototype, 'retrieve').mockResolvedValue(ProcessDefinitionApiService.initialize());
         vi.spyOn(ProcessInstanceEventApiService.prototype, 'listAllOrdered').mockResolvedValue(page([]));
         vi.spyOn(ProcessNodeProviderApiService.prototype, 'getNodeProviders').mockResolvedValue([
@@ -121,6 +146,109 @@ describe('Process instance history preview', () => {
             provider(ProcessNodeType.Termination, []),
             provider(ProcessNodeType.Action, ['next', 'rejected'], 'approval'),
         ]);
+    });
+
+    describe('refresh events', () => {
+        it('reloads tasks and keeps the same accordion expanded while loading and after updating', async () => {
+            const user = userEvent.setup();
+            const original = {...task(1, 1), executionSummaryMarkdown: 'Bisherige Zusammenfassung'};
+            const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [original]);
+            const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
+            await user.click(summary);
+            expect(summary).toHaveAttribute('aria-expanded', 'true');
+            const region = screen.getByRole('region', {name: /^1\. Prüfung:/});
+            expect(within(region).getByText('Bisherige Zusammenfassung')).toBeVisible();
+            const refresh = deferred<Page<ProcessInstanceTaskEntity>>();
+            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockReturnValueOnce(refresh.promise);
+
+            act(() => eventChannel.emitEvent('refresh'));
+            expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(2);
+            expect(screen.getByRole('button', {name: /^1\. Prüfung:/})).toBe(summary);
+            expect(summary).toHaveAttribute('aria-expanded', 'true');
+            expect(within(region).getByText('Bisherige Zusammenfassung')).toBeVisible();
+            expect(screen.queryByRole('status', {name: 'Verlauf wird geladen'})).not.toBeInTheDocument();
+
+            await act(async () => refresh.resolve(page([{
+                ...original, executionSummaryMarkdown: 'Aktualisierte Zusammenfassung',
+            }])));
+            expect(screen.getByRole('button', {name: /^1\. Prüfung:/})).toBe(summary);
+            expect(summary).toHaveAttribute('aria-expanded', 'true');
+            expect(screen.getByRole('region', {name: /^1\. Prüfung:/})).toBe(region);
+            expect(within(region).getByText('Aktualisierte Zusammenfassung')).toBeVisible();
+            expect(within(region).queryByText('Bisherige Zusammenfassung')).not.toBeInTheDocument();
+            expect(ProcessInstanceEventApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(2);
+            expect(ProcessDefinitionEdgeApiService.prototype.listAll).toHaveBeenCalledTimes(2);
+        });
+
+        it('keeps the displayed history and reports a failed refresh', async () => {
+            const user = userEvent.setup();
+            const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)]);
+            const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
+            await user.click(summary);
+            const error = new Error('Refresh failed');
+            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockRejectedValueOnce(error);
+
+            await act(async () => eventChannel.emitEvent('refresh'));
+            expect(mocks.dispatch).toHaveBeenCalledWith(showApiErrorSnackbar(error, 'Der Verlauf konnte nicht geladen werden.'));
+            expect(screen.getByRole('button', {name: /^1\. Prüfung:/})).toBe(summary);
+            expect(summary).toHaveAttribute('aria-expanded', 'true');
+            expect(screen.queryByRole('status', {name: 'Verlauf wird geladen'})).not.toBeInTheDocument();
+        });
+
+        it('ignores superseded responses and errors when refreshes overlap', async () => {
+            const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)]);
+            const old = deferred<Page<ProcessInstanceTaskEntity>>();
+            const current = deferred<Page<ProcessInstanceTaskEntity>>();
+            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered)
+                .mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise);
+            act(() => eventChannel.emitEvent('refresh'));
+            act(() => eventChannel.emitEvent('refresh'));
+            await act(async () => current.resolve(page([task(1, 1), task(2, 1)])));
+            expect(screen.getByRole('button', {name: /^2\. Prüfung:/})).toBeInTheDocument();
+
+            await act(async () => old.resolve(page([task(1, 1)])));
+            expect(screen.getByRole('button', {name: /^2\. Prüfung:/})).toBeInTheDocument();
+
+            const failed = deferred<Page<ProcessInstanceTaskEntity>>();
+            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockReturnValueOnce(failed.promise);
+            act(() => eventChannel.emitEvent('refresh'));
+            act(() => eventChannel.emitEvent('refresh'));
+            await waitFor(() => expect(screen.queryByRole('button', {name: /^2\. Prüfung:/})).not.toBeInTheDocument());
+            await act(async () => failed.reject(new Error('Obsolete failure')));
+            expect(mocks.dispatch).not.toHaveBeenCalled();
+        });
+
+        it.each(['success', 'failure'] as const)('ignores late %s after leaving the history', async outcome => {
+            const {eventChannel, unmount} = await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)]);
+            const pending = deferred<Page<ProcessInstanceTaskEntity>>();
+            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockReturnValueOnce(pending.promise);
+            act(() => eventChannel.emitEvent('refresh'));
+            expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(2);
+            unmount();
+            eventChannel.emitEvent('refresh');
+            expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(2);
+            await act(async () => {
+                if (outcome === 'success') {
+                    pending.resolve(page([task(2, 1)]));
+                } else {
+                    pending.reject(new Error('Late failure'));
+                }
+            });
+            expect(mocks.dispatch).not.toHaveBeenCalled();
+        });
+
+        it.each([Permission.PROCESS_INSTANCE_READ, Permission.PROCESS_DEFINITION_READ])(
+            'does not fetch history on entry or refresh without %s',
+            async permission => {
+                mocks.permissions.delete(permission);
+                const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)], {waitForLoad: false});
+                expect(screen.getByRole('alert')).toHaveTextContent(/keine Berechtigung/);
+                await act(async () => eventChannel.emitEvent('refresh'));
+                expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).not.toHaveBeenCalled();
+                expect(ProcessDefinitionApiService.prototype.retrieve).not.toHaveBeenCalled();
+                expect(ProcessInstanceEventApiService.prototype.listAllOrdered).not.toHaveBeenCalled();
+            },
+        );
     });
 
     describe('deadline chips', () => {
