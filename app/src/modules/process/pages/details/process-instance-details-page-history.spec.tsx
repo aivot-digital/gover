@@ -248,6 +248,21 @@ describe('Process instance history preview', () => {
         expect(summary.querySelector('[title]')).toHaveAttribute('title', `1. ${name.trim()}: ${description}`);
     });
 
+    it('renders the complete AI response with lists, tables and code', async () => {
+        const user = userEvent.setup();
+        await renderHistory([node(1, 'KI-Anfrage')], [], [{
+            ...task(1, 1, ProcessTaskStatus.Completed),
+            executionSummaryMarkdown: '**Antwort der KI**\n\n- Erster Punkt\n- Zweiter Punkt\n\n| Feld | Wert |\n| --- | --- |\n| Ergebnis | 42 |\n\n```json\n{"ergebnis": 42}\n```\n\nLetzter Absatz.',
+        }]);
+        await user.click(screen.getByRole('button', {name: 'Alle aufklappen'}));
+        const details = within(screen.getByRole('region', {name: /^1\. KI-Anfrage:/}));
+        expect(details.getAllByRole('listitem')).toHaveLength(2);
+        expect(details.getByRole('table')).toHaveTextContent('Ergebnis');
+        expect(details.getByText('{"ergebnis": 42}').tagName).toBe('CODE');
+        expect(details.getByText('Letzter Absatz.')).toBeVisible();
+        expect(details.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
     describe('refresh events', () => {
         it('reloads tasks and keeps the same accordion expanded while loading and after updating', async () => {
             const user = userEvent.setup();

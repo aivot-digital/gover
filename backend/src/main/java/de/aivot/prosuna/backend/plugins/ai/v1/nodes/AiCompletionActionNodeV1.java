@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 /**
  * Executes a prompt against the AI Completions API and exposes the response as node outputs.
@@ -97,7 +98,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         var summary = new ExecutionSummaryMarkdown(context);
         return "Die KI-Anfrage wurde erfolgreich ausgeführt."
                 + detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL))
-                + detail("Kurzbeschreibung", context.thisNode().getDescription());
+                + detail("Kurzbeschreibung", context.thisNode().getDescription())
+                + section("Antwort der KI", summary.data(OUTPUT_COMPLETION));
     }
 
     @Nonnull

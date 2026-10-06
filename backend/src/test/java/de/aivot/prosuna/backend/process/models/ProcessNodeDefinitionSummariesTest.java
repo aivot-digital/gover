@@ -49,6 +49,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -315,6 +317,27 @@ class ProcessNodeDefinitionSummariesTest {
             assertTrue(markdown.contains("die Identität „" + expected + "“"), markdown);
             assertFalse(markdown.contains("(customer)"), markdown);
         }
+    }
+
+    @Test
+    void aiSummaryPreservesTheCompleteResponseMarkdown() throws Exception {
+        var response = "## Ergebnis\n\n- **Erster Punkt**\n\n| Feld | Wert |\n| --- | --- |\n| Ergebnis | 42 |\n\n"
+                + "```json\n{\"ergebnis\": 42}\n```\n\n" + "Weiterer Absatz.\n\n".repeat(500);
+        task.getNodeData().put("completion", response);
+        task.getNodeData().put("responseModel", "test-model");
+        task.getNodeData().put("prompt", "Nicht Teil der Antwort");
+        var markdown = summary(new AiCompletionActionNodeV1(null, null, null), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
+        assertTrue(markdown.endsWith("\n\n**Antwort der KI**\n\n" + response));
+        assertFalse(markdown.contains("Nicht Teil der Antwort"));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" \n\t"})
+    void aiSummaryOmitsAnEmptyResponse(String response) throws Exception {
+        task.getNodeData().put("completion", response);
+        var markdown = summary(new AiCompletionActionNodeV1(null, null, null), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
+        assertEquals("Die KI-Anfrage wurde erfolgreich ausgeführt.", markdown);
     }
 
     private static ProcessNodeDefinition<?> instantiate(Class<? extends ProcessNodeDefinition<?>> type) throws Exception {
