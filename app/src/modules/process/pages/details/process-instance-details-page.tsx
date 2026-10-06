@@ -12,7 +12,7 @@ import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {getProcessTaskBasePath} from './process-task-view-page';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
-import {ProcessInstanceStatusLabels, ProcessInstanceStatusColor} from '../../enums/process-instance-status';
+import {isProcessInstanceFinished, ProcessInstanceStatusLabels, ProcessInstanceStatusColor} from '../../enums/process-instance-status';
 import {Permission} from '../../../../data/permissions/permission';
 import {useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 
@@ -74,6 +74,8 @@ export function ProcessInstanceDetailsPage() {
                         {
                             tooltip: 'Vorgang aktualisieren',
                             icon: <Refresh />,
+                            disabled: item == null || isProcessInstanceFinished(item.instance.status),
+                            disabledTooltip: item == null ? undefined : 'Dieser Vorgang ist beendet.',
                             onClick: () => controlRef.current?.refresh(),
                         },
                         {

@@ -12,6 +12,7 @@ import {type ProcessInstanceDetails} from '../../entities/process-instance-detai
 import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
 import {type ProcessNodeEntity} from '../../entities/process-node-entity';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
+import {ProcessInstanceStatus} from '../../enums/process-instance-status';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {ProcessDefinitionEdgeApiService} from '../../services/process-definition-edge-api-service';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
@@ -97,13 +98,13 @@ async function renderHistory(
     nodes: ProcessNodeEntity[],
     edges: ProcessDefinitionEdgeEntity[],
     tasks: ProcessInstanceTaskEntity[],
-    {waitForLoad = true}: {waitForLoad?: boolean} = {},
+    {waitForLoad = true, instance}: {waitForLoad?: boolean; instance?: Partial<ProcessInstanceDetails['instance']>} = {},
 ) {
     vi.spyOn(ProcessNodeApiService.prototype, 'listAll').mockResolvedValue(page(nodes));
     vi.spyOn(ProcessDefinitionEdgeApiService.prototype, 'listAll').mockResolvedValue(page(edges));
     vi.spyOn(ProcessInstanceTaskApiService.prototype, 'listAllOrdered').mockResolvedValue(page(tasks));
     const item: ProcessInstanceDetails = {
-        instance: {...new ProcessInstanceApiService().initialize(), id: 17, processId: 10},
+        instance: {...new ProcessInstanceApiService().initialize(), id: 17, processId: 10, ...instance},
         processName: 'Test process',
         departmentId: 1,
         departmentName: null,
@@ -113,10 +114,10 @@ async function renderHistory(
     };
 
     const eventChannel = createGenericDetailsPageEventChannel();
-    const rendered = render(
+    const renderContent = (details: ProcessInstanceDetails) => (
         <MemoryRouter>
             <GenericDetailsPageContext.Provider value={{
-                item,
+                item: details,
                 setItem: vi.fn(),
                 setAdditionalData: vi.fn(),
                 isBusy: false,
@@ -127,12 +128,18 @@ async function renderHistory(
             }}>
                 <ProcessInstanceDetailsPageHistory/>
             </GenericDetailsPageContext.Provider>
-        </MemoryRouter>,
+        </MemoryRouter>
     );
+    const rendered = render(renderContent(item));
     if (waitForLoad) {
-        await screen.findByRole('heading', {name: 'Voraussichtliche nächste Schritte'});
+        await screen.findByRole('heading', {name: 'Verlauf des Vorgangs'});
     }
-    return {...rendered, eventChannel};
+    return {
+        ...rendered, eventChannel,
+        rerenderInstance: (updates: Partial<ProcessInstanceDetails['instance']>) => rendered.rerender(
+            renderContent({...item, instance: {...item.instance, ...updates}}),
+        ),
+    };
 }
 
 describe('Process instance history preview', () => {
@@ -146,6 +153,99 @@ describe('Process instance history preview', () => {
             provider(ProcessNodeType.Termination, []),
             provider(ProcessNodeType.Action, ['next', 'rejected'], 'approval'),
         ]);
+    });
+
+    it.each([
+        [ProcessTaskStatus.Running, 'Dieses Prozesselement wird derzeit ausgeführt.'],
+        [ProcessTaskStatus.InProgress, 'Dieses Prozesselement wird derzeit bearbeitet.'],
+        [ProcessTaskStatus.AwaitingStaff, 'Dieses Prozesselement wartet auf Bearbeitung durch Mitarbeiter:innen.'],
+        [ProcessTaskStatus.AwaitingPayment, 'Dieses Prozesselement wartet auf die Zahlungsbestätigung.'],
+        [ProcessTaskStatus.AwaitingCustomer, 'Dieses Prozesselement wartet auf eine Rückmeldung der zugewiesenen Person.'],
+        [ProcessTaskStatus.Paused, 'Die Ausführung dieses Prozesselements ist pausiert.'],
+    ])('explains an unfinished task with status %s alongside its events', async (status, notice) => {
+        vi.mocked(ProcessInstanceEventApiService.prototype.listAllOrdered).mockResolvedValue(page([{
+            ...new ProcessInstanceEventApiService().initialize(),
+            id: 7,
+            processInstanceTaskId: 1,
+            title: 'Aufgabe zugewiesen',
+            message: 'Die Aufgabe wurde automatisch zugewiesen.',
+        }]));
+        const user = userEvent.setup();
+        await renderHistory([node(1, 'Prüfung')], [], [task(1, 1, status as ProcessTaskStatus)]);
+        await user.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
+        const details = within(screen.getByRole('region', {name: /^1\. Prüfung:/}));
+        expect(details.getByRole('alert')).toHaveTextContent(notice);
+        expect(details.getByText('Aufgabe zugewiesen')).toBeVisible();
+        expect(details.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('expands and collapses tasks together and individually while upcoming entries stay static', async () => {
+        const user = userEvent.setup();
+        const {eventChannel} = await renderHistory(
+            [node(1, 'Prüfung'), node(2, 'Versand')], [edge(1, 2)],
+            [task(1, 1, ProcessTaskStatus.Completed), task(2, 1)],
+        );
+        const first = screen.getByRole('button', {name: /^1\. Prüfung:/});
+        const second = screen.getByRole('button', {name: /^2\. Prüfung:/});
+        expect(screen.getByRole('button', {name: 'Alle zuklappen'})).toBeDisabled();
+        await user.click(screen.getByRole('button', {name: 'Alle aufklappen'}));
+        expect(first).toHaveAttribute('aria-expanded', 'true');
+        expect(second).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByRole('button', {name: 'Alle aufklappen'})).toBeDisabled();
+        expect(within(screen.getByRole('listitem')).queryByRole('button')).not.toBeInTheDocument();
+
+        await user.click(first);
+        expect(first).toHaveAttribute('aria-expanded', 'false');
+        expect(second).toHaveAttribute('aria-expanded', 'true');
+        vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockResolvedValueOnce(page([
+            task(1, 1, ProcessTaskStatus.Completed), task(2, 1), task(3, 2),
+        ]));
+        await act(async () => eventChannel.emitEvent('refresh'));
+        expect(first).toHaveAttribute('aria-expanded', 'false');
+        expect(second).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByRole('button', {name: /^3\. Versand:/})).toHaveAttribute('aria-expanded', 'false');
+        await user.click(screen.getByRole('button', {name: 'Alle zuklappen'}));
+        expect(second).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.getByRole('button', {name: 'Alle zuklappen'})).toBeDisabled();
+    });
+
+    it('starts collapsed when changing to another instance even when task IDs match', async () => {
+        const user = userEvent.setup();
+        const {rerenderInstance} = await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)]);
+        await user.click(screen.getByRole('button', {name: 'Alle aufklappen'}));
+        rerenderInstance({id: 18});
+        expect(await screen.findByRole('button', {name: /^1\. Prüfung:/})).toHaveAttribute('aria-expanded', 'false');
+        expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenLastCalledWith('started', 'ASC', {processInstanceId: 18});
+    });
+
+    it.each([ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted])('hides the entire preview for a %s instance', async (status) => {
+        const {rerenderInstance} = await renderHistory([node(1, 'Prüfung'), node(2, 'Versand')], [edge(1, 2)], [task(1, 1)]);
+        rerenderInstance({status});
+        expect(screen.getByRole('heading', {name: 'Verlauf des Vorgangs'})).toBeVisible();
+        expect(screen.queryByRole('heading', {name: 'Voraussichtliche nächste Schritte'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('list')).not.toBeInTheDocument();
+        expect(screen.queryByText(/Die voraussichtlichen nächsten Prozesselemente/)).not.toBeInTheDocument();
+    });
+
+    it('keeps the preview for a failed instance and omits bulk actions when there are no tasks', async () => {
+        await renderHistory([], [], [], {instance: {status: ProcessInstanceStatus.Failed}});
+        expect(screen.getByRole('heading', {name: 'Voraussichtliche nächste Schritte'})).toBeVisible();
+        expect(screen.queryByRole('button', {name: 'Alle aufklappen'})).not.toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveTextContent('Derzeit sind keine nächsten Schritte vorhersehbar.');
+    });
+
+    it('explains the open choice of an active action with multiple ports', async () => {
+        await renderHistory([node(1, 'Freigabe', 'approval'), node(2, 'Versand')], [edge(1, 2)], [task(1, 1)]);
+        expect(screen.getByRole('alert')).toHaveTextContent('Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Pfaden entschieden werden muss.');
+        expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+    });
+
+    it('preserves complete long labels for assistive technology and tooltips', async () => {
+        const name = 'Ein sehr langer Name des Prozesselements '.repeat(8);
+        const description = 'Eine ausführliche Beschreibung '.repeat(8);
+        await renderHistory([{...node(1, name), description}], [], [task(1, 1)]);
+        const summary = screen.getByRole('button', {name: `1. ${name.trim()}: ${description.trim()}`});
+        expect(summary.querySelector('[title]')).toHaveAttribute('title', `1. ${name.trim()}: ${description}`);
     });
 
     describe('refresh events', () => {
@@ -334,8 +434,7 @@ describe('Process instance history preview', () => {
                 [task(1, 1)],
             );
 
-            for (const name of [/^1\. Prüfung:/, /^Nächster Schritt:/]) {
-                const summary = screen.getByRole('button', {name});
+            for (const summary of [screen.getByRole('button', {name: /^1\. Prüfung:/}), screen.getByRole('listitem')]) {
                 expect(summary.querySelector('.MuiChip-root')).toBeNull();
                 expect(summary).not.toHaveAccessibleName(/Frist|Abgelaufen/);
             }
@@ -385,7 +484,8 @@ describe('Process instance history preview', () => {
         const details = within(await screen.findByRole('region', {name: /^1\. Altbestand:/}));
         expect(details.queryByRole('heading', {name: 'Zusammenfassung der Ausführung'})).not.toBeInTheDocument();
         expect(details.queryByRole('heading', {name: 'Ereignisse und Zwischenergebnisse für diese Aufgabe'})).not.toBeInTheDocument();
-        expect(details.getByRole('button', {name: 'Alle Ereignisse anzeigen'})).toBeVisible();
+        expect(details.getByRole('alert')).toHaveTextContent('Für dieses Prozesselement liegen keine weiteren Details vor.');
+        expect(details.queryByRole('button')).not.toBeInTheDocument();
     });
 
     it('renders summary content without executing embedded HTML or unsafe links', async () => {
@@ -417,9 +517,8 @@ describe('Process instance history preview', () => {
 
             expect(screen.getByRole('button', {name: /^1\. Festsetzung des Steuersatzes:/})).toBeInTheDocument();
             expect(screen.queryByRole('button', {name: /^Festsetzung des Steuersatzes:/})).not.toBeInTheDocument();
-            const preview = screen.getAllByRole('button', {
-                name: /^(Zahlungsaufforderung|Bescheiderstellung|Versand des Steuerbescheides|Vorgang beenden):/,
-            });
+            const preview = within(screen.getByRole('list', {name: 'Voraussichtliche nächste Schritte'})).getAllByRole('listitem');
+            expect(screen.queryByRole('button', {name: /^Zahlungsaufforderung:/})).not.toBeInTheDocument();
             expect(preview).toHaveLength(4);
             [
                 /^Zahlungsaufforderung:/,
@@ -427,7 +526,7 @@ describe('Process instance history preview', () => {
                 /^Versand des Steuerbescheides:/,
                 /^Vorgang beenden:/,
             ].forEach((name, index) => {
-                expect(preview[index]).toHaveAccessibleName(name);
+                expect(preview[index]).toHaveTextContent(name);
             });
             expect(screen.queryByText('Derzeit sind keine nächsten Schritte vorhersehbar.')).not.toBeInTheDocument();
         },
@@ -444,11 +543,11 @@ describe('Process instance history preview', () => {
 
             expect(screen.getByRole('button', {name: /^1\. Past:/})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /^2\. Current:/})).toBeInTheDocument();
-            const preview = screen.getAllByRole('button', {name: /^(Review|Boundary):/});
-            expect(preview[0]).toHaveAccessibleName(/^Review:/);
-            expect(preview[1]).toHaveAccessibleName(/^Boundary:/);
+            const preview = screen.getAllByRole('listitem');
+            expect(preview[0]).toHaveTextContent(/^Review:/);
+            expect(preview[1]).toHaveTextContent(/^Boundary:/);
             expect(screen.queryByRole('button', {name: /^Current:/})).not.toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /Beyond/})).not.toBeInTheDocument();
+            expect(screen.queryByText(/^Beyond:/)).not.toBeInTheDocument();
             expect(ProcessDefinitionEdgeApiService.prototype.listAll).toHaveBeenCalledWith({processDefinitionId: 10});
         },
     );
@@ -460,8 +559,8 @@ describe('Process instance history preview', () => {
             [task(1, 1)],
         );
 
-        expect(screen.getByRole('button', {name: /^Approval:/})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /After approval/})).not.toBeInTheDocument();
+        expect(screen.getByRole('listitem')).toHaveTextContent(/^Approval:/);
+        expect(screen.queryByText(/After approval/)).not.toBeInTheDocument();
     });
 
     it('stops a loop without repeating the active node', async () => {
@@ -472,7 +571,8 @@ describe('Process instance history preview', () => {
         );
 
         expect(screen.getAllByRole('button', {name: /Current:/})).toHaveLength(1);
-        expect(screen.getAllByRole('button', {name: /^Review:/})).toHaveLength(1);
+        expect(screen.getAllByRole('listitem')).toHaveLength(1);
+        expect(screen.getByRole('listitem')).toHaveTextContent(/^Review:/);
     });
 
     it('combines all active task statuses in task order and includes shared successors once', async () => {
@@ -496,10 +596,10 @@ describe('Process instance history preview', () => {
             statuses.map((status, index) => task(index + 1, index + 1, status)),
         );
 
-        const preview = screen.getAllByRole('button', {name: /^(Next \d|Shared):/});
+        const preview = screen.getAllByRole('listitem');
         expect(preview).toHaveLength(7);
         [/^Next 0:/, /^Shared:/, /^Next 1:/, /^Next 2:/, /^Next 3:/, /^Next 4:/, /^Next 5:/].forEach((name, index) => {
-            expect(preview[index]).toHaveAccessibleName(name);
+            expect(preview[index]).toHaveTextContent(name);
         });
     });
 
@@ -512,7 +612,7 @@ describe('Process instance history preview', () => {
         );
 
         expect(screen.getByText('Derzeit sind keine nächsten Schritte vorhersehbar.')).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /^Next:/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
     });
 
     it.each(['unconnected', 'unknown port', 'multiple edges', 'active flow control'])('stops at %s', async (scenario) => {
@@ -526,7 +626,9 @@ describe('Process instance history preview', () => {
             [task(1, 1)],
         );
 
-        expect(screen.getByText('Derzeit sind keine nächsten Schritte vorhersehbar.')).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /^(Next|Other):/})).not.toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveTextContent(scenario === 'multiple edges'
+            ? 'Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Pfaden entschieden werden muss.'
+            : 'Derzeit sind keine nächsten Schritte vorhersehbar.');
+        expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
     });
 });
