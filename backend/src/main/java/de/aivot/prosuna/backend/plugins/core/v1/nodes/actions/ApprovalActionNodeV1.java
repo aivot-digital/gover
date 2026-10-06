@@ -109,11 +109,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         return "Die Freigabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " " + decision + "."
                 + section("Vermerk", summary.data(OUTPUT_REMARK))
                 + section("Freigabekriterien", configuration.criteria)
-                + (
-                MODE_DATA.equals(configuration.contentMode)
-                        ? section("Prüfinhalt", configuration.customContent)
-                        : ""
-        );
+                + section("Prüfinhalt", MODE_CUSTOM_CONTENT.equals(configuration.contentMode)
+                        ? configuration.customContent : null);
     }
 
     @Nonnull

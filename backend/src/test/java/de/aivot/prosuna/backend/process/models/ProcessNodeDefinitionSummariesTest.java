@@ -152,20 +152,21 @@ class ProcessNodeDefinitionSummariesTest {
     }
 
     @Test
-    void approvalRejectionPreservesAuthoredMarkdownAndLinksModeledData() throws Exception {
+    void approvalRejectionPreservesAuthoredMarkdownWithoutTaskLinks() throws Exception {
         port = "rejected";
         var config = new ApprovalActionNodeV1.ApprovalConfiguration();
         config.criteria = "**Kriterien**";
         config.contentMode = "data";
+        config.customContent = "## Eigener Prüfinhalt";
         task.getNodeData().put("remark", "*Nicht erfüllt.*");
         var markdown = summary(new ApprovalActionNodeV1(null, null, null, null), config);
         assertTrue(markdown.contains("verweigert."));
         assertTrue(markdown.contains("**Kriterien**"));
         assertTrue(markdown.contains("*Nicht erfüllt.*"));
-        assertTrue(markdown.contains("(/staff/tasks/1/2)"));
+        assertFalse(markdown.contains("/staff/tasks/"));
         assertFalse(markdown.contains("/edit"));
+        assertFalse(markdown.contains(config.customContent));
         config.contentMode = "custom";
-        config.customContent = "## Eigener Prüfinhalt";
         assertTrue(summary(new ApprovalActionNodeV1(null, null, null, null), config).contains(config.customContent));
     }
 
