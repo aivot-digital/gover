@@ -96,7 +96,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<DataChangeActionNodeV1.DataChangeActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        return "Die Daten wurden" + summary.eventAt("processedAt") + " durch " + summary.actor() + " geändert."
+        return "Die Vorgangsdaten wurden" + summary.eventAt("processedAt") + " durch " + summary.actor() + " geändert."
                 + section("Vermerk", summary.data(OUTPUT_REMARK));
     }
 

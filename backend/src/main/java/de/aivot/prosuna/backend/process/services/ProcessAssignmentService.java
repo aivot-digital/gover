@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
@@ -142,28 +143,28 @@ public class ProcessAssignmentService {
             if (assignedUser == null) {
                 message = String.format(
                         "Die Zuweisung des Vorgangs wurde durch die Mitarbeiter:in %s entfernt.",
-                        StringUtils.quote(actor.getFullName())
+                        ProcessHistoryLabels.quotedUser(actor)
                 );
             } else {
                 message = String.format(
                         "Die Zuweisung des Vorgangs wurde durch die Mitarbeiter:in %s auf %s gesetzt.",
-                        StringUtils.quote(actor.getFullName()),
-                        StringUtils.quote(assignedUser.getFullName())
+                        ProcessHistoryLabels.quotedUser(actor),
+                        ProcessHistoryLabels.quotedUser(assignedUser)
                 );
             }
         } else {
             if (assignedUser == null) {
                 message = String.format(
                         "Die Zuweisung des Vorgangs wurde durch die Mitarbeiter:in %s von %s entfernt.",
-                        StringUtils.quote(actor.getFullName()),
-                        StringUtils.quote(previousUser.getFullName())
+                        ProcessHistoryLabels.quotedUser(actor),
+                        ProcessHistoryLabels.quotedUser(previousUser)
                 );
             } else {
                 message = String.format(
                         "Die Zuweisung des Vorgangs wurde durch die Mitarbeiter:in %s von %s auf %s geändert.",
-                        StringUtils.quote(actor.getFullName()),
-                        StringUtils.quote(previousUser.getFullName()),
-                        StringUtils.quote(assignedUser.getFullName())
+                        ProcessHistoryLabels.quotedUser(actor),
+                        ProcessHistoryLabels.quotedUser(previousUser),
+                        ProcessHistoryLabels.quotedUser(assignedUser)
                 );
             }
         }
@@ -239,28 +240,28 @@ public class ProcessAssignmentService {
             if (assignedUser == null) {
                 message = String.format(
                         "Die Zuweisung der Aufgabe wurde durch die Mitarbeiter:in %s entfernt.",
-                        StringUtils.quote(actor.getFullName())
+                        ProcessHistoryLabels.quotedUser(actor)
                 );
             } else {
                 message = String.format(
                         "Die Zuweisung der Aufgabe wurde durch die Mitarbeiter:in %s auf %s gesetzt.",
-                        StringUtils.quote(actor.getFullName()),
-                        StringUtils.quote(assignedUser.getFullName())
+                        ProcessHistoryLabels.quotedUser(actor),
+                        ProcessHistoryLabels.quotedUser(assignedUser)
                 );
             }
         } else {
             if (assignedUser == null) {
                 message = String.format(
                         "Die Zuweisung der Aufgabe wurde durch die Mitarbeiter:in %s von %s entfernt.",
-                        StringUtils.quote(actor.getFullName()),
-                        StringUtils.quote(previousUser.getFullName())
+                        ProcessHistoryLabels.quotedUser(actor),
+                        ProcessHistoryLabels.quotedUser(previousUser)
                 );
             } else {
                 message = String.format(
                         "Die Zuweisung der Aufgabe wurde durch die Mitarbeiter:in %s von %s auf %s geändert.",
-                        StringUtils.quote(actor.getFullName()),
-                        StringUtils.quote(previousUser.getFullName()),
-                        StringUtils.quote(assignedUser.getFullName())
+                        ProcessHistoryLabels.quotedUser(actor),
+                        ProcessHistoryLabels.quotedUser(previousUser),
+                        ProcessHistoryLabels.quotedUser(assignedUser)
                 );
             }
         }

@@ -96,7 +96,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<ManualActionNodeV1.ManualActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         var configuration = context.configurationOfExecutingNode();
-        return "Die manuelle Aktion wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " als durchgeführt gemeldet."
+        return "Die manuelle Aufgabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " abgeschlossen."
                 + section("Beschreibung der Aufgabe", configuration.taskDescription)
                 + section("Vermerk", summary.data(OUTPUT_REMARK));
     }

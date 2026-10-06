@@ -728,9 +728,9 @@ class FormRequestActionNodeV1Test {
         assertEquals(hasIdentity ? RECIPIENT_IDENTITY_ID : null, result.getCommunicationRequest().recipientIdentityId());
         assertEquals(hasIdentity ? null : "invitee@example.test", result.getCommunicationRequest().recipientEmailAddress());
         var event = captureHistoryEvent();
-        assertEquals(automatic ? "Automatischer Versand ausgelöst" : "Versand ausgelöst", event.getTitle());
+        assertEquals("Versand vorbereitet", event.getTitle());
         assertEquals("Der Versand der Aufforderung mit dem Betreff „Daten ergänzen“ an " + expectedRecipient
-                + (automatic ? " wurde automatisch ausgelöst." : " wurde durch „Ada Beispiel“ ausgelöst."), event.getMessage());
+                + (automatic ? " wurde automatisch vorbereitet." : " wurde durch „Ada Beispiel“ vorbereitet."), event.getMessage());
         assertEquals(automatic ? null : "staff-1", event.getTriggeringUserId());
         assertEquals(automatic ? null : "staff-1", event.getConcernedUserId());
         assertEquals(RECIPIENT_IDENTITY_ID, event.getConcernedIdentityId());

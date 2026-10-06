@@ -48,6 +48,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.CsvSource;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.*;
@@ -106,15 +110,15 @@ class ProcessNodeDefinitionSummariesTest {
     static Stream<Arguments> definitions() {
         return Stream.of(
                 Arguments.of(ApprovalActionNodeV1.class, "Die Freigabe wurde am 01.10.2026 um 10:00:00 durch „Ada Beispiel“ erteilt."),
-                Arguments.of(DataChangeActionNodeV1.class, "Die Daten wurden am 01.10.2026 um 10:00:00 durch „Ada Beispiel“ geändert."),
-                Arguments.of(ManualActionNodeV1.class, "Die manuelle Aktion wurde am 01.10.2026 um 10:00:00 durch „Ada Beispiel“ als durchgeführt gemeldet."),
+                Arguments.of(DataChangeActionNodeV1.class, "Die Vorgangsdaten wurden am 01.10.2026 um 10:00:00 durch „Ada Beispiel“ geändert."),
+                Arguments.of(ManualActionNodeV1.class, "Die manuelle Aufgabe wurde am 01.10.2026 um 10:00:00 durch „Ada Beispiel“ abgeschlossen."),
                 Arguments.of(CounterActionNodeV1.class, "Der Zähler „counter“ wurde um 3 erhöht."), 
                 Arguments.of(CommunicationMessageActionNodeV1.class, "Die Nachricht wurde am 01.10.2026 um 09:00:00 erfolgreich versendet."),
                 Arguments.of(EMailActionNodeV1.class, "Die E-Mail-Nachricht wurde am 01.10.2026 um 12:00:00 erfolgreich versendet."),
-                Arguments.of(FormRequestActionNodeV1.class, "Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 zur Einreichung von Daten aufgefordert und via E\\-Mail informiert. Die Daten wurden am 01.10.2026 um 11:00:00 durch die Identität „customer“ eingereicht."),
-                Arguments.of(PaymentRequestActionNodeV1.class, "Der Bezahlvorgang wurde am 01.10.2026 um 11:00:00 erfolgreich abgeschlossen."),
-                Arguments.of(InstanceAssignmentActionNodeV1.class, "Der Vorgang wurde „Ida Beispiel“ (durch „Ada Beispiel“) zugewiesen."),
-                Arguments.of(InstanceUnassignmentActionNodeV1.class, "Die bestehende Zuweisung des Vorgangs wurde entfernt (war zugewiesen an: „Ida Beispiel“)."),
+                Arguments.of(FormRequestActionNodeV1.class, "Die angeforderten Daten wurden am 01.10.2026 um 11:00:00 durch die Identität „customer“ eingereicht. Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 zur Einreichung von Daten aufgefordert und über E\\-Mail informiert."),
+                Arguments.of(PaymentRequestActionNodeV1.class, "Die Zahlung wurde am 01.10.2026 um 11:00:00 bestätigt."),
+                Arguments.of(InstanceAssignmentActionNodeV1.class, "Der Vorgang wurde „Ida Beispiel“ durch „Ada Beispiel“ zugewiesen."),
+                Arguments.of(InstanceUnassignmentActionNodeV1.class, "Die Zuweisung des Vorgangs an „Ida Beispiel“ wurde aufgehoben."),
                 Arguments.of(PdfActionNodeV1.class, "Das Dokument „Bescheid\\.pdf“ wurde am 01.10.2026 um 12:00:00 erfolgreich erstellt."),
                 Arguments.of(WriteExternalStorageActionNodeV1.class, "Das Dokument „Bescheid\\.pdf“ wurde erfolgreich beim Speicheranbieter „Archiv“ geschrieben."), 
                 Arguments.of(HttpActionNodeV1.class, "Die externe HTTP-Schnittstelle (Endpunkt: https://example\\.org/call) wurde am 01.10.2026 um 12:00:00 aufgerufen."),
@@ -123,7 +127,7 @@ class ProcessNodeDefinitionSummariesTest {
                 Arguments.of(LowCodeActionNodeV1.class, "Die Low-Code-Logik wurde erfolgreich ausgeführt."), 
                 Arguments.of(DataMappingActionNodeV1.class, "Die Vorgangsdaten wurden anhand von 1 Regel angepasst."), 
                 Arguments.of(DataTypeValidationControlNodeV1.class, "Die Vorgangsdaten wurden erfolgreich validiert."), 
-                Arguments.of(IfFlowControlNodeV1.class, "Der Vorgang wurde konditionell in den Ausführungspfad „Bedingung erfüllt“ eingeleitet."), 
+                Arguments.of(IfFlowControlNodeV1.class, "Der Vorgang wurde über den Pfad „Bedingung erfüllt“ fortgesetzt."),
                 Arguments.of(DefaultTerminationNodeV1.class, "Das Ende der Aufbewahrungsfrist für die Vorgangsdaten wurde für 01.10.2027 um 12:00:00 festgelegt."),
                 Arguments.of(WebhookTriggerNodeV1.class, "Der Vorgang wurde am 01.10.2026 um 11:00:00 durch einen Aufruf über einen Webhook ausgelöst (Quelle: https://example\\.org/form)."),
                 Arguments.of(FitConnectTriggerNodeV1.class, "Der Vorgang wurde am 01.10.2026 um 11:00:00 durch einen Aufruf über eine FIT-Connect-Schnittstelle ausgelöst."),
@@ -160,7 +164,7 @@ class ProcessNodeDefinitionSummariesTest {
         config.customContent = "## Eigener Prüfinhalt";
         task.getNodeData().put("remark", "*Nicht erfüllt.*");
         var markdown = summary(new ApprovalActionNodeV1(null, null, null, null), config);
-        assertTrue(markdown.contains("verweigert."));
+        assertTrue(markdown.contains("abgelehnt."));
         assertTrue(markdown.contains("**Kriterien**"));
         assertTrue(markdown.contains("*Nicht erfüllt.*"));
         assertFalse(markdown.contains("/staff/tasks/"));
@@ -296,6 +300,21 @@ class ProcessNodeDefinitionSummariesTest {
         task.setNodeData(mapper.readValue(mapper.writeValueAsString(task.getNodeData()), Map.class));
         task.setRuntimeData(mapper.readValue(mapper.writeValueAsString(task.getRuntimeData()), Map.class));
         assertEquals(typed, summary(definition, config));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"Antragstellende, Antragstellende", "'  Titel *A*  ', Titel \\*A\\*", ", customer", "'', customer", "'   ', customer"})
+    void allIdentitySummariesUseTheTitleOrIdWithoutRepeatingTheId(String title, String expected) throws Exception {
+        var identities = new IdentityDataMap();
+        identities.put("customer", new IdentityData("session", "customer", IdentityType.Email,
+                null, null, null, "person@example.test", Map.of(), null, Map.of(), title));
+        instance.setIdentities(identities);
+        for (var type : List.of(FormRequestActionNodeV1.class, PaymentRequestActionNodeV1.class, CommunicationMessageActionNodeV1.class)) {
+            var definition = instantiate(type);
+            var markdown = summary(definition, definition.getNodeConfigurationClass().getConstructor().newInstance());
+            assertTrue(markdown.contains("die Identität „" + expected + "“"), markdown);
+            assertFalse(markdown.contains("(customer)"), markdown);
+        }
     }
 
     private static ProcessNodeDefinition<?> instantiate(Class<? extends ProcessNodeDefinition<?>> type) throws Exception {

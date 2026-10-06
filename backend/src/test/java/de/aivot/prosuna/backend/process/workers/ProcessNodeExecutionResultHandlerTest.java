@@ -55,6 +55,7 @@ import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -356,10 +357,11 @@ class ProcessNodeExecutionResultHandlerTest {
         assertFalse(processInstance.getIdentities().containsKey(newIdentity.identityId()));
     }
 
-    @Test
-    void handleResult_DispatchesCommunicationAndMapsProviderResultBeforeOutputs() throws Exception {
+    @ParameterizedTest
+    @CsvSource({"' Antragstellende ', Antragstellende", ", applicant", "'', applicant", "'   ', applicant"})
+    void handleResult_DispatchesCommunicationAndMapsProviderResultBeforeOutputs(String title, String expected) throws Exception {
         var communicationService = mock(CommunicationService.class);
-        var identity = providerIdentity("applicant");
+        var identity = providerIdentity("applicant").withTitle(title);
         var message = CommunicationMessage
                 .of("Subject", "Body", "Body")
                 .withSendingContext(
@@ -432,7 +434,7 @@ class ProcessNodeExecutionResultHandlerTest {
         assertFalse(event.technical());
         assertEquals(true, event.auditable());
         assertEquals(
-                "Die Nachricht mit dem Betreff „Subject“ wurde erfolgreich an die Identität „applicant“ versendet.",
+                "Die Nachricht mit dem Betreff „Subject“ wurde erfolgreich an die Identität „" + expected + "“ versendet.",
                 event.message()
         );
 

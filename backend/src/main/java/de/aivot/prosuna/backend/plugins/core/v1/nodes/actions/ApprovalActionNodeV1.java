@@ -48,6 +48,7 @@ import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
@@ -105,7 +106,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<ApprovalActionNodeV1.ApprovalConfiguration> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         var configuration = context.configurationOfExecutingNode();
-        var decision = PORT_APPROVED.equals(context.viaPort()) ? "erteilt" : "verweigert";
+        var decision = PORT_APPROVED.equals(context.viaPort()) ? "erteilt" : "abgelehnt";
         return "Die Freigabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " " + decision + "."
                 + section("Vermerk", summary.data(OUTPUT_REMARK))
                 + section("Freigabekriterien", configuration.criteria)
@@ -450,7 +451,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                         approved ? "Freigabe erteilt" : "Freigabe abgelehnt",
                         Map.of(),
                         logMessage.toString(),
-                        StringUtils.quote(context.getCallingUser().getFullName())
+                        ProcessHistoryLabels.quotedUser(context.getCallingUser())
                 );
 
         return Optional.of(result);

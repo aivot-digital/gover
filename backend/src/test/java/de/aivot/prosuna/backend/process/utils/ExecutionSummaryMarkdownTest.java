@@ -1,7 +1,10 @@
 package de.aivot.prosuna.backend.process.utils;
 
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -11,6 +14,15 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ExecutionSummaryMarkdownTest {
+    @ParameterizedTest
+    @CsvSource({"' Ada Beispiel ', Ada Beispiel", "'Name *A*', Name *A*", ", staff-id", "'', staff-id", "'   ', staff-id"})
+    void resolvesTheSameNameForPlainTextEventsAndMarkdown(String name, String expected) {
+        assertEquals(expected, ProcessHistoryLabels.nameOrId("staff-id", name));
+        assertEquals("„" + expected + "“", ProcessHistoryLabels.quotedUser(new UserEntity().setId("staff-id").setFullName(name)));
+        assertEquals("„" + text(expected) + "“", user("staff-id", name));
+        assertEquals("das System", user(null, null));
+    }
+
     @Test
     void escapesInsertedMarkdownHtmlNewlinesAndTableCells() {
         assertEquals("\\[x\\]\\(javascript:alert\\(1\\)\\) \\<b\\>\\& \\| \\*bold\\*",

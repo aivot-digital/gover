@@ -64,6 +64,7 @@ import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentServic
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -125,9 +126,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FormRequestActionNodeV1.NodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         var recipient = summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID));
-        return "Es wurde " + recipient + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
-                + " zur Einreichung von Daten aufgefordert und" + summary.delivery() + " informiert."
-                + " Die Daten wurden" + summary.eventAt("started") + " durch " + recipient + " eingereicht.";
+        return "Die angeforderten Daten wurden" + summary.eventAt("started") + " durch " + recipient + " eingereicht."
+                + " Es wurde " + recipient + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
+                + " zur Einreichung von Daten aufgefordert und" + summary.delivery() + " informiert.";
     }
 
     @Nonnull
@@ -555,7 +556,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var recipientTitle = resolveRecipientIdentityTitle(processInstance, configuration, recipientId);
         var recipientDescription = request.recipientEmailAddress() != null
                 ? "die E-Mail-Adresse " + StringUtils.quote(request.recipientEmailAddress())
-                : "die Identität " + StringUtils.quote(recipientTitle != null ? recipientTitle : recipientId);
+                : "die Identität " + StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientId, recipientTitle));
 
         logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
@@ -565,12 +566,12 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 triggeringUser != null ? triggeringUser.getId() : null,
                 recipientId,
                 recipientTitle,
-                triggeringUser != null ? "Versand ausgelöst" : "Automatischer Versand ausgelöst",
+                "Versand vorbereitet",
                 Map.of(),
-                "Der Versand der Aufforderung mit dem Betreff %s an %s wurde %s ausgelöst.",
+                "Der Versand der Aufforderung mit dem Betreff %s an %s wurde %s vorbereitet.",
                 StringUtils.quote(request.message().subject()),
                 recipientDescription,
-                triggeringUser != null ? "durch " + StringUtils.quote(triggeringUser.getFullName()) : "automatisch"
+                triggeringUser != null ? "durch " + ProcessHistoryLabels.quotedUser(triggeringUser) : "automatisch"
         );
     }
 
@@ -717,7 +718,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 "Daten eingereicht",
                 Map.of(),
                 "Die angeforderten Daten wurden durch die Identität %s eingereicht.",
-                StringUtils.quote(recipientTitle != null ? recipientTitle : recipientId)
+                StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientId, recipientTitle))
         );
 
         return Optional.of(result);

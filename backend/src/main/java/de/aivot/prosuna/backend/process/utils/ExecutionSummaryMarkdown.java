@@ -78,14 +78,13 @@ public final class ExecutionSummaryMarkdown {
         }
         var identities = context.thisProcessInstance().getIdentities();
         var identity = identities == null ? null : identities.get(identityId.toString());
-        return "die Identität „" + text(identity != null && identity.title() != null && !identity.title().isBlank()
-                ? identity.title() + " (" + identityId + ")" : identityId) + "“";
+        return "die Identität „" + text(ProcessHistoryLabels.nameOrId(identityId, identity == null ? null : identity.title())) + "“";
     }
 
     @Nonnull
     public String delivery() {
         var channel = text(metadata(DELIVERY_CHANNEL));
-        return channel.isEmpty() ? "" : " via " + channel;
+        return channel.isEmpty() ? "" : " über " + channel;
     }
 
     @Nonnull
@@ -93,8 +92,7 @@ public final class ExecutionSummaryMarkdown {
         if (id == null) {
             return "das System";
         }
-        var label = name == null || name.toString().isBlank() ? id : name;
-        return StringUtils.quote(text(label));
+        return StringUtils.quote(text(ProcessHistoryLabels.nameOrId(id, name)));
     }
 
     @Nonnull

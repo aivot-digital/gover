@@ -83,7 +83,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         var summary = new ExecutionSummaryMarkdown(context);
         var fulfilled = Boolean.TRUE.equals(summary.data(OUTPUT_NAME_CONDITION_VALUE));
         var path = PORT_NAME_TRUE.equals(context.viaPort()) ? "Bedingung erfüllt" : "Bedingung nicht erfüllt";
-        return "Der Vorgang wurde konditionell in den Ausführungspfad „" + path + "“ eingeleitet."
+        return "Der Vorgang wurde über den Pfad „" + path + "“ fortgesetzt."
                 + detail("Ergebnis der Auswertung der Bedingung", fulfilled ? "Wahr" : "Falsch");
     }
 

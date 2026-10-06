@@ -48,6 +48,7 @@ import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentServic
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -367,7 +368,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                         Map.of(),
                         "Die Nachricht mit dem Betreff %s wurde von der Mitarbeiter:in %s verfasst.",
                         StringUtils.quote(subject),
-                        StringUtils.quote(context.getCallingUser().getFullName())
+                        ProcessHistoryLabels.quotedUser(context.getCallingUser())
                 );
 
         return Optional.of(createCommunicationResult(
@@ -423,11 +424,11 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                         task.getAssignedUserId(),
                         identityId,
                         identity.title(),
-                        "Nachricht versendet",
+                        "Versand vorbereitet",
                         Map.of(),
-                        "Die Nachricht mit dem Betreff %s wurde an die Identität %s wurde erfolgreich versendet.",
+                        "Der Versand der Nachricht mit dem Betreff %s an die Identität %s wurde vorbereitet.",
                         StringUtils.quote(subject),
-                        StringUtils.quote(identity.title())
+                        StringUtils.quote(ProcessHistoryLabels.nameOrId(identityId, identity.title()))
                 );
 
         return new ProcessNodeExecutionResultTaskCompleted()

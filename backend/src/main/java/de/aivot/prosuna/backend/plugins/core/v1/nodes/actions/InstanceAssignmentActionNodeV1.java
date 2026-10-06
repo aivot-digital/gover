@@ -98,7 +98,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<InstanceAssignmentActionNodeV1.Config> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         return "Der Vorgang wurde " + user(summary.data(OUTPUT_ASSIGNED_USER_ID), summary.metadata(ExecutionSummaryMarkdown.ASSIGNED_USER_NAME))
-                + " (durch " + summary.actor() + ") zugewiesen.";
+                + " durch " + summary.actor() + " zugewiesen.";
     }
 
     @Nonnull

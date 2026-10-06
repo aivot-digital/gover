@@ -32,8 +32,8 @@ public class InstanceUnassignmentActionNodeV1 implements ProcessNodeDefinition<I
         var summary = new ExecutionSummaryMarkdown(context);
         var previousId = summary.metadata(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_ID);
         return previousId == null ? "Der Vorgang hatte keine bestehende Zuweisung."
-                : "Die bestehende Zuweisung des Vorgangs wurde entfernt (war zugewiesen an: "
-                + user(previousId, summary.metadata(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_NAME)) + ").";
+                : "Die Zuweisung des Vorgangs an "
+                + user(previousId, summary.metadata(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_NAME)) + " wurde aufgehoben.";
     }
 
     @Nonnull
