@@ -2,9 +2,9 @@ import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
-import {Box, Button, IconButton, Tab, Tabs, useTheme} from '@mui/material';
+import {Alert, Box, Button, IconButton, Tab, Tabs, useTheme} from '@mui/material';
 import {alpha, keyframes} from '@mui/material/styles';
-import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {Link, Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useProcessDetailsPageContext} from '../../process-details-page-context';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 import {
@@ -12,7 +12,6 @@ import {
     ProcessNodeProviderApiService,
 } from '../../../../services/process-node-provider-api-service';
 import {ProcessNodeEditorProvider} from './process-node-editor-context';
-import {useLocation} from 'react-router';
 import Typography from '@mui/material/Typography';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
@@ -71,6 +70,7 @@ export function ProcessNodeEditor(): ReactNode {
 
     const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
     const [incomingMetadata, setIncomingMetadata] = useState<ProcessNodeDefinitionMetadata | null>(null);
+    const [incomingMetadataLoadFailed, setIncomingMetadataLoadFailed] = useState(false);
 
     const {
         editable,
@@ -135,13 +135,17 @@ export function ProcessNodeEditor(): ReactNode {
 
         setIsNodeLoading(true);
         setShowNodeLoadedFeedback(false);
+        setIncomingMetadata(null);
+        setIncomingMetadataLoadFailed(false);
 
         (async () => {
-            const [node, configurationLayout, problems, incomingMetadata] = await Promise.all([
+            const [node, configurationLayout, problems, metadataResult] = await Promise.all([
                 new ProcessNodeApiService().retrieve(nodeId),
                 new ProcessNodeApiService().getConfigurationLayout(nodeId),
                 new ProcessNodeApiService().validate(nodeId),
-                new ProcessNodeApiService().getIncomingMetadata(nodeId),
+                new ProcessNodeApiService().getIncomingMetadata(nodeId)
+                    .then((metadata) => ({metadata, failed: false}))
+                    .catch(() => ({metadata: null, failed: true})),
             ]);
             const nodeProvider = await new ProcessNodeProviderApiService()
                 .getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion);
@@ -151,10 +155,11 @@ export function ProcessNodeEditor(): ReactNode {
                 configurationLayout,
                 nodeProvider,
                 problems,
-                incomingMetadata,
+                incomingMetadata: metadataResult.metadata,
+                incomingMetadataLoadFailed: metadataResult.failed,
             };
         })()
-            .then(({node, configurationLayout, nodeProvider, problems, incomingMetadata}) => {
+            .then(({node, configurationLayout, nodeProvider, problems, incomingMetadata, incomingMetadataLoadFailed}) => {
                 if (isCancelled) {
                     return;
                 }
@@ -164,6 +169,7 @@ export function ProcessNodeEditor(): ReactNode {
                 setProvider(nodeProvider);
                 setProblems(problems);
                 setIncomingMetadata(incomingMetadata);
+                setIncomingMetadataLoadFailed(incomingMetadataLoadFailed);
                 if (hasEditorContent) {
                     setShowNodeLoadedFeedback(true);
                 }
@@ -534,6 +540,12 @@ export function ProcessNodeEditor(): ReactNode {
                             overflowY: 'auto',
                         }}
                     >
+                        {incomingMetadataLoadFailed && (
+                            <Alert severity="warning" sx={{mb: 2}}>
+                                Auswahlvorschläge und wiederverwendbare Inhalte konnten nicht geladen werden.
+                                Sie können die Konfiguration weiterhin bearbeiten.
+                            </Alert>
+                        )}
                         <ProcessNodeEditorProvider
                             key={nodeId}
                             value={{
@@ -550,6 +562,7 @@ export function ProcessNodeEditor(): ReactNode {
                                 isEditable: editable,
                                 problems: problems,
                                 incomingMetadata,
+                                incomingMetadataLoadFailed,
                             }}
                         >
                             <Outlet/>
