@@ -113,6 +113,31 @@ describe('ProcessIdentityIdInputFieldView', () => {
         expect(screen.queryByText(/nicht mehr verfügbar/)).not.toBeInTheDocument();
     });
 
+    it('shows a failed loading state without reporting an empty identity list', () => {
+        renderWithEditorMetadata(
+            <ProcessIdentityIdInputFieldView {...createBaseProps({value: null})}/>,
+            null,
+            true,
+        );
+
+        expect(screen.getByRole('combobox', {name: /^Prozessidentitaeten/}))
+            .toHaveTextContent('Prozessidentitäten konnten nicht geladen werden');
+        expect(screen.queryByText('Prozessidentitäten werden geladen')).not.toBeInTheDocument();
+    });
+
+    it('preserves saved identity IDs when loading metadata fails', () => {
+        const setValue = vi.fn();
+        renderWithEditorMetadata(
+            <ProcessIdentityIdInputFieldView {...createBaseProps({value: 'citizen', setValue})}/>,
+            null,
+            true,
+        );
+
+        expect(screen.getByText('citizen')).toBeInTheDocument();
+        expect(screen.queryByText(/nicht mehr verfügbar/)).not.toBeInTheDocument();
+        expect(setValue).not.toHaveBeenCalled();
+    });
+
     it('should show an empty state when no identities are forwarded', async () => {
         renderWithEditorMetadata(
             <ProcessIdentityIdInputFieldView
@@ -139,6 +164,7 @@ describe('ProcessIdentityIdInputFieldView', () => {
 function renderWithEditorMetadata(
     children: React.ReactElement,
     metadata: ProcessNodeDefinitionMetadata | null = createMetadata(),
+    incomingMetadataLoadFailed = false,
 ) {
     return render(
         <ProcessNodeEditorProvider
@@ -150,6 +176,7 @@ function renderWithEditorMetadata(
                 setNode: vi.fn(),
                 isEditable: true,
                 problems: null,
+                incomingMetadataLoadFailed,
                 incomingMetadata: metadata,
             }}
         >
