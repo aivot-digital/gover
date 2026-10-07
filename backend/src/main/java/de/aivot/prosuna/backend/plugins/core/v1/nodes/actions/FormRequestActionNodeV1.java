@@ -126,9 +126,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FormRequestActionNodeV1.NodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         var recipient = summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID));
-        return "Die angeforderten Daten wurden" + summary.eventAt("started") + " durch " + recipient + " eingereicht."
-                + " Es wurde " + recipient + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
-                + " zur Einreichung von Daten aufgefordert und" + summary.delivery() + " informiert.";
+        return "Es wurde " + recipient + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
+                + " zur Einreichung von Daten aufgefordert und" + summary.delivery() + " informiert."
+                + " Die angeforderten Daten wurden" + summary.eventAt("started") + " durch " + recipient + " eingereicht.";
     }
 
     @Nonnull
