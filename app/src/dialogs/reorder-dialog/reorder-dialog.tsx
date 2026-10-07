@@ -1,5 +1,4 @@
-import {DndProvider, useDrag, useDrop, XYCoord} from 'react-dnd';
-import {HTML5Backend} from 'react-dnd-html5-backend';
+import {useDrag, useDrop, XYCoord} from 'react-dnd';
 import {DialogProps} from '@mui/material/Dialog';
 import {Button, Dialog, DialogActions, DialogContent, List, ListItem, ListItemIcon, ListItemText} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
@@ -60,28 +59,26 @@ export function ReorderDialog<T>(props: ReorderDialogProps<T> & DialogProps) {
                 {title}
             </DialogTitleWithClose>
             <DialogContent>
-                <DndProvider backend={HTML5Backend}>
-                    <List>
-                        {
-                            buffer.map((item) => {
-                                const {
-                                    primary,
-                                    secondary,
-                                } = getLabel(item.value);
+                <List>
+                    {
+                        buffer.map((item) => {
+                            const {
+                                primary,
+                                secondary,
+                            } = getLabel(item.value);
 
-                                return (
-                                    <SortableListItem
-                                        key={item.index}
-                                        index={item.index}
-                                        primary={primary}
-                                        secondary={secondary}
-                                        onMoveItem={handleMoveItem}
-                                    />
-                                );
-                            })
-                        }
-                    </List>
-                </DndProvider>
+                            return (
+                                <SortableListItem
+                                    key={item.index}
+                                    index={item.index}
+                                    primary={primary}
+                                    secondary={secondary}
+                                    onMoveItem={handleMoveItem}
+                                />
+                            );
+                        })
+                    }
+                </List>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Abbrechen</Button>

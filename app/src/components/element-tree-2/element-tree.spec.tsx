@@ -1,8 +1,10 @@
-import React, {StrictMode, useState} from 'react';
+import React, {type PropsWithChildren, StrictMode, useState} from 'react';
 import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {MemoryRouter} from 'react-router-dom';
+import {DndProvider} from 'react-dnd';
+import {HTML5Backend} from 'react-dnd-html5-backend';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {ElementType} from '../../data/element-type/element-type';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -30,7 +32,7 @@ describe('ElementTree section expansion', () => {
         render(<TestTree value={createForm([
             createSection('existing'),
             createIntroduction(),
-        ])}/>, {wrapper: MemoryRouter});
+        ])}/>, {wrapper: TreeTestWrapper});
 
         expect(screen.getAllByRole('button', {name: 'Ausklappen'})).toHaveLength(2);
         expect(screen.queryByRole('button', {name: 'Neues Element hinzufügen'})).not.toBeInTheDocument();
@@ -40,7 +42,7 @@ describe('ElementTree section expansion', () => {
         'opens a newly added %s from the tree dialog',
         async (sectionLabel) => {
             const user = userEvent.setup();
-            render(<EditableTree initialValue={createForm([createSection('existing')])}/>, {wrapper: MemoryRouter});
+            render(<EditableTree initialValue={createForm([createSection('existing')])}/>, {wrapper: TreeTestWrapper});
 
             await user.click(screen.getByRole('button', {name: 'Neuen Abschnitt hinzufügen'}));
             const dialog = screen.getByRole('dialog', {name: 'Formularabschnitt hinzufügen'});
@@ -56,7 +58,7 @@ describe('ElementTree section expansion', () => {
 
     it('opens multiple sections supplied through external form changes, including empty sections', () => {
         const initial = createForm([createSection('existing')]);
-        const {rerender} = render(<TestTree value={initial}/>, {wrapper: MemoryRouter});
+        const {rerender} = render(<TestTree value={initial}/>, {wrapper: TreeTestWrapper});
 
         rerender(<TestTree value={createForm([
             ...initial.children ?? [],
@@ -72,7 +74,7 @@ describe('ElementTree section expansion', () => {
     });
 
     it('opens new sections under StrictMode', () => {
-        const {rerender} = render(<StrictMode><TestTree value={createForm()}/></StrictMode>, {wrapper: MemoryRouter});
+        const {rerender} = render(<StrictMode><TestTree value={createForm()}/></StrictMode>, {wrapper: TreeTestWrapper});
 
         rerender(<StrictMode><TestTree value={createForm([createSection('new')])}/></StrictMode>);
 
@@ -82,7 +84,7 @@ describe('ElementTree section expansion', () => {
 
     it('keeps nested groups collapsed inside a newly added section', () => {
         const initial = createForm();
-        const {rerender} = render(<TestTree value={initial}/>, {wrapper: MemoryRouter});
+        const {rerender} = render(<TestTree value={initial}/>, {wrapper: TreeTestWrapper});
 
         rerender(<TestTree value={createForm([
             createSection('new', [createGroup('nested', [createField('field', 'Gruppendaten')])]),
@@ -96,7 +98,7 @@ describe('ElementTree section expansion', () => {
 
     it('does not reopen a manually collapsed new section on subsequent edits', async () => {
         const user = userEvent.setup();
-        const {rerender} = render(<TestTree value={createForm()}/>, {wrapper: MemoryRouter});
+        const {rerender} = render(<TestTree value={createForm()}/>, {wrapper: TreeTestWrapper});
         const section = createSection('new');
         rerender(<TestTree value={createForm([section])}/>);
         await user.click(screen.getByRole('button', {name: 'Einklappen'}));
@@ -112,7 +114,7 @@ describe('ElementTree section expansion', () => {
         const user = userEvent.setup();
         const first = createSection('first', [createField('firstField', 'Erster Inhalt')]);
         const second = createSection('second', [createField('secondField', 'Zweiter Inhalt')]);
-        const {rerender} = render(<TestTree value={createForm([first, second])}/>, {wrapper: MemoryRouter});
+        const {rerender} = render(<TestTree value={createForm([first, second])}/>, {wrapper: TreeTestWrapper});
         await user.click(screen.getAllByRole('button', {name: 'Ausklappen'})[0]);
 
         rerender(<TestTree value={createForm([second, first])}/>);
@@ -127,7 +129,7 @@ describe('ElementTree section expansion', () => {
         const user = userEvent.setup();
         const emptyForm = createForm();
         const addedSection = createSection('new');
-        const {rerender} = render(<TestTree value={emptyForm}/>, {wrapper: MemoryRouter});
+        const {rerender} = render(<TestTree value={emptyForm}/>, {wrapper: TreeTestWrapper});
         rerender(<TestTree value={createForm([addedSection])}/>);
         await user.click(screen.getByRole('button', {name: 'Einklappen'}));
 
@@ -139,7 +141,7 @@ describe('ElementTree section expansion', () => {
     });
 
     it('keeps the sections of a different form collapsed when switching roots', () => {
-        const {rerender} = render(<TestTree value={createForm()}/>, {wrapper: MemoryRouter});
+        const {rerender} = render(<TestTree value={createForm()}/>, {wrapper: TreeTestWrapper});
 
         rerender(<TestTree value={{...createForm([createSection('otherSection')]), id: 'otherForm'}}/>);
 
@@ -148,7 +150,7 @@ describe('ElementTree section expansion', () => {
     });
 
     it('does not automatically expand sections received in read-only mode', () => {
-        const {rerender} = render(<TestTree value={createForm()} editable={false}/>, {wrapper: MemoryRouter});
+        const {rerender} = render(<TestTree value={createForm()} editable={false}/>, {wrapper: TreeTestWrapper});
         const updated = createForm([createSection('new')]);
         rerender(<TestTree value={updated} editable={false}/>);
         rerender(<TestTree value={updated}/>);
@@ -163,7 +165,7 @@ describe('ElementTree section expansion', () => {
             type: ElementType.StepperLayout,
             children: [],
         };
-        const {rerender} = render(<TestTree value={initial}/>, {wrapper: MemoryRouter});
+        const {rerender} = render(<TestTree value={initial}/>, {wrapper: TreeTestWrapper});
 
         rerender(<TestTree value={{...initial, children: [createSection('new')]}}/>);
 
@@ -178,7 +180,7 @@ describe('ElementTree section expansion', () => {
             const initial = createForm([
                 createSection('existing', [createGroup('existingGroup', [createField('existingField', 'Bestehende Gruppendaten')])]),
             ]);
-            const {rerender} = render(<TestTree value={initial}/>, {wrapper: MemoryRouter});
+            const {rerender} = render(<TestTree value={initial}/>, {wrapper: TreeTestWrapper});
             await user.click(screen.getByRole('button', {name: command}));
             if (command === 'Elemente ausklappen') {
                 expect(screen.getByText('Bestehende Gruppendaten')).toBeInTheDocument();
@@ -202,6 +204,12 @@ describe('ElementTree section expansion', () => {
         },
     );
 });
+
+function TreeTestWrapper({children}: PropsWithChildren) {
+    return <DndProvider backend={HTML5Backend}>
+        <MemoryRouter>{children}</MemoryRouter>
+    </DndProvider>;
+}
 
 function TestTree({
     value,
