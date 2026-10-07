@@ -35,6 +35,7 @@ export class ProcessInstanceEventApiService extends BaseReadApiService<
     getEventLog(options: {
         processInstanceId: number;
         processInstanceTaskId?: number;
+        includeRestartHistory?: boolean;
         page?: number;
         size?: number;
         search?: string;
@@ -51,6 +52,7 @@ export class ProcessInstanceEventApiService extends BaseReadApiService<
             query: {
                 processInstanceId: options.processInstanceId,
                 processInstanceTaskId: options.processInstanceTaskId,
+                includeRestartHistory: options.includeRestartHistory,
                 page: options.page ?? 0,
                 size: options.size ?? 50,
                 search: options.search?.trim() || undefined,

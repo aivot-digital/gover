@@ -131,6 +131,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
         eventApiService.getEventLog({
             processInstanceId: instanceId,
             processInstanceTaskId: taskId ?? undefined,
+            includeRestartHistory: taskId != null,
             page: 0,
             size: EVENT_PAGE_SIZE,
             search,
@@ -182,6 +183,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
         eventApiService.getEventLog({
             processInstanceId: instanceId,
             processInstanceTaskId: taskId ?? undefined,
+            includeRestartHistory: taskId != null,
             page: nextPage,
             size: EVENT_PAGE_SIZE,
             search,
@@ -336,14 +338,21 @@ function EventLogContextHeader(props: {
             />
             {
                 props.taskRequested && task != null &&
-                <RuntimeContext
-                    label="Aufgabe"
-                    title={task.name}
-                    started={task.started}
-                    finished={task.finished}
-                    runtime={task.runtime}
-                    separated
-                />
+                <Box>
+                    <RuntimeContext
+                        label={`Ausgewählte Aufgabe #${task.id}`}
+                        title={task.name}
+                        started={task.started}
+                        finished={task.finished}
+                        runtime={task.runtime}
+                        separated
+                    />
+                    {task.restartForTaskId != null && (
+                        <Typography variant="body2" color="text.secondary" sx={{pl: 4, mt: 1}}>
+                            Einschließlich früherer Neustartversuche
+                        </Typography>
+                    )}
+                </Box>
             }
         </Box>
     );
@@ -650,6 +659,8 @@ function EventListItem(props: {
                         mt: 0.75
                     }}>
                     {presentation.label} · {props.event.processNodeName ?? 'Vorgang'} · {getEventSource(props.event)}
+                    {props.event.processInstanceTaskId != null && ` · Aufgabe #${props.event.processInstanceTaskId}`}
+                    {props.event.restartForTaskId != null && ` · Neustart von Aufgabe #${props.event.restartForTaskId}`}
                 </Typography>
             </Box>
         </ListItemButton>
@@ -747,6 +758,14 @@ function EventDetails(props: {event: ProcessInstanceEventLogEntry}) {
                 </Stack>
                 <Typography component="dt" variant="body2">Prozesselement</Typography>
                 <Typography component="dd" variant="body2">{event.processNodeName ?? 'Vorgang'}</Typography>
+                {event.processInstanceTaskId != null && <>
+                    <Typography component="dt" variant="body2">Aufgaben-ID</Typography>
+                    <Typography component="dd" variant="body2">{event.processInstanceTaskId}</Typography>
+                </>}
+                {event.restartForTaskId != null && <>
+                    <Typography component="dt" variant="body2">Neustart von</Typography>
+                    <Typography component="dd" variant="body2">Aufgabe #{event.restartForTaskId}</Typography>
+                </>}
                 <Typography component="dt" variant="body2">Betroffene Person</Typography>
                 <Box component="dd">
                     <Typography variant="body2">

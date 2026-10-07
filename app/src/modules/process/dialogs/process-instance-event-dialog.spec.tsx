@@ -10,6 +10,7 @@ const firstEvent: ProcessInstanceEventLogEntry = {
     id: 1,
     processInstanceId: 12,
     processInstanceTaskId: 34,
+    restartForTaskId: null,
     level: ProcessNodeExecutionLogLevel.Info,
     technical: true,
     audit: false,
@@ -54,6 +55,7 @@ function createEventLog(events = [firstEvent, secondEvent]): ProcessInstanceEven
         },
         task: {
             id: 34,
+            restartForTaskId: null,
             name: 'Antrag prüfen',
             started: '2026-08-14T08:04:00Z',
             finished: null,
@@ -73,6 +75,41 @@ function createEventLog(events = [firstEvent, secondEvent]): ProcessInstanceEven
 
 describe('ProcessInstanceEventDialog', () => {
     afterEach(() => vi.restoreAllMocks());
+
+    it('loads earlier restart attempts across pages and identifies each task', async () => {
+        const restarted = {...firstEvent, id: 3, processInstanceTaskId: 36, restartForTaskId: 35};
+        const preceding = {...secondEvent, processInstanceTaskId: 35, restartForTaskId: 34};
+        const firstPage = createEventLog([restarted, preceding]);
+        firstPage.task = {...firstPage.task!, id: 36, restartForTaskId: 35};
+        firstPage.events.page = {number: 0, size: 2, totalElements: 3, totalPages: 2};
+        const secondPage = {...firstPage, events: {
+            content: [firstEvent],
+            page: {...firstPage.events.page, number: 1},
+        }};
+        const getEventLog = vi.spyOn(ProcessInstanceEventApiService.prototype, 'getEventLog')
+            .mockResolvedValueOnce(firstPage).mockResolvedValueOnce(secondPage);
+        const user = userEvent.setup();
+
+        render(<ProcessInstanceEventDialog open onClose={vi.fn()} instanceId={12} taskId={36}/>);
+
+        expect(await screen.findByText('Einschließlich früherer Neustartversuche')).toBeInTheDocument();
+        expect(screen.getByText('Ausgewählte Aufgabe #36')).toBeInTheDocument();
+        expect(screen.getByText('Aufgaben-ID').nextElementSibling).toHaveTextContent('36');
+        expect(screen.getByText('Neustart von').nextElementSibling).toHaveTextContent('Aufgabe #35');
+        expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({
+            processInstanceTaskId: 36, includeRestartHistory: true, page: 0,
+        }));
+
+        await user.click(screen.getByRole('button', {name: /Weitere Ereignisse/}));
+        await waitFor(() => expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({
+            processInstanceTaskId: 36, includeRestartHistory: true, page: 1,
+        })));
+        const originalEvent = await screen.findByText(/Information · Antrag prüfen · System · Aufgabe #34$/);
+        await user.click(originalEvent.closest('[role="button"]')!);
+        expect(screen.getByText('Aufgaben-ID').nextElementSibling).toHaveTextContent('34');
+        expect(screen.queryByText('Neustart von', {selector: 'dt'})).not.toBeInTheDocument();
+        expect(screen.getByText('Ausgewählte Aufgabe #36')).toBeInTheDocument();
+    });
 
     it('renders event context and keeps the selected event in a separate detail pane', async () => {
         vi.spyOn(ProcessInstanceEventApiService.prototype, 'getEventLog')
@@ -94,6 +131,7 @@ describe('ProcessInstanceEventDialog', () => {
         expect(screen.getByText('Technisch')).toBeInTheDocument();
         expect(screen.getByText('Nicht audit-relevant')).toBeInTheDocument();
         expect(screen.getByText('Nicht verlaufsrelevant')).toBeInTheDocument();
+        expect(screen.queryByText('Einschließlich früherer Neustartversuche')).not.toBeInTheDocument();
         expect(screen.getByText('Betroffene Person').nextElementSibling).toHaveTextContent('–');
         expect(screen.getByText('Betroffene Identität').nextElementSibling).toHaveTextContent('–');
 
@@ -129,6 +167,7 @@ describe('ProcessInstanceEventDialog', () => {
         await waitFor(() => expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({
             filter: 'notable',
             processInstanceId: 12,
+            includeRestartHistory: false,
         })));
     });
 
