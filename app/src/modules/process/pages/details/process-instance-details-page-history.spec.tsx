@@ -5,7 +5,6 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {createGenericDetailsPageEventChannel} from '../../../../components/generic-details-page/generic-details-page-events';
 import {Permission} from '../../../../data/permissions/permission';
-import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {type Page} from '../../../../models/dtos/page';
 import {type ProcessDefinitionEdgeEntity} from '../../entities/process-definition-edge-entity';
 import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
@@ -153,6 +152,89 @@ describe('Process instance history preview', () => {
             provider(ProcessNodeType.Termination, []),
             provider(ProcessNodeType.Action, ['next', 'rejected'], 'approval'),
         ]);
+    });
+
+    describe('restarted tasks', () => {
+        it('omits restarted attempts and their details while keeping other tasks in consecutive order', async () => {
+            const user = userEvent.setup();
+            vi.mocked(ProcessInstanceEventApiService.prototype.listAllOrdered).mockResolvedValue(page([{
+                ...new ProcessInstanceEventApiService().initialize(),
+                id: 7,
+                processInstanceTaskId: 2,
+                title: 'Ereignis des vorherigen Versuchs',
+            }]));
+            await renderHistory(
+                [node(1, 'Abgeschlossen'), node(2, 'Prüfung'), node(3, 'Abgebrochen'), node(4, 'Fehlgeschlagen')],
+                [],
+                [
+                    task(1, 1, ProcessTaskStatus.Completed),
+                    {...task(2, 2, ProcessTaskStatus.Restarted), executionSummaryMarkdown: 'Vorheriger Versuch'},
+                    {...task(3, 2), executionSummaryMarkdown: 'Aktueller Versuch'},
+                    task(4, 3, ProcessTaskStatus.Aborted),
+                    task(5, 4, ProcessTaskStatus.Failed),
+                ],
+            );
+
+            expect(screen.getAllByRole('button', {name: /^\d+\./})).toHaveLength(4);
+            expect(screen.getByRole('button', {name: /^1\. Abgeschlossen:/})).toBeVisible();
+            expect(screen.getByRole('button', {name: /^2\. Prüfung:/})).toBeVisible();
+            expect(screen.getByRole('button', {name: /^3\. Abgebrochen:/})).toBeVisible();
+            expect(screen.getByRole('button', {name: /^4\. Fehlgeschlagen:/})).toBeVisible();
+
+            await user.click(screen.getByRole('button', {name: 'Alle aufklappen'}));
+            expect(screen.getByText('Aktueller Versuch')).toBeVisible();
+            expect(screen.queryByText('Vorheriger Versuch')).not.toBeInTheDocument();
+            expect(screen.queryByText('Ereignis des vorherigen Versuchs')).not.toBeInTheDocument();
+            expect(screen.getAllByRole('region', {name: /^\d+\./})).toHaveLength(4);
+            expect(screen.getByRole('button', {name: 'Alle aufklappen'})).toBeDisabled();
+
+            await user.click(screen.getByRole('button', {name: 'Alle zuklappen'}));
+            expect(screen.queryByRole('region', {name: /^\d+\./})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Alle zuklappen'})).toBeDisabled();
+        });
+
+        it('omits task entries and bulk actions when every task was restarted', async () => {
+            await renderHistory([node(1, 'Prüfung')], [], [
+                task(1, 1, ProcessTaskStatus.Restarted),
+                task(2, 1, ProcessTaskStatus.Restarted),
+            ]);
+
+            expect(screen.queryByRole('button', {name: /^\d+\./})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Alle aufklappen'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Alle zuklappen'})).not.toBeInTheDocument();
+        });
+
+        it('loads the remaining history when a restarted task references a missing node', async () => {
+            await renderHistory([node(1, 'Prüfung')], [], [
+                task(1, 999, ProcessTaskStatus.Restarted),
+                task(2, 1),
+            ]);
+
+            expect(screen.getByRole('button', {name: /^1\. Prüfung:/})).toBeVisible();
+            expect(mocks.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('replaces an expanded failed attempt with its new task after refreshing', async () => {
+            const user = userEvent.setup();
+            const failed = {...task(1, 1, ProcessTaskStatus.Failed), executionSummaryMarkdown: 'Vorheriger Versuch'};
+            const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [failed]);
+            await user.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
+            expect(screen.getByText('Vorheriger Versuch')).toBeVisible();
+
+            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockResolvedValueOnce(page([
+                {...failed, status: ProcessTaskStatus.Restarted},
+                {...task(2, 1), executionSummaryMarkdown: 'Aktueller Versuch'},
+            ]));
+            await act(async () => eventChannel.emitEvent('refresh'));
+
+            expect(screen.getAllByRole('button', {name: /^\d+\. Prüfung:/})).toHaveLength(1);
+            expect(screen.getByRole('button', {name: /^1\. Prüfung:/})).toHaveAttribute('aria-expanded', 'false');
+            expect(screen.queryByText('Vorheriger Versuch')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Alle zuklappen'})).toBeDisabled();
+            await user.click(screen.getByRole('button', {name: 'Alle aufklappen'}));
+            expect(screen.getByText('Aktueller Versuch')).toBeVisible();
+            expect(screen.getByRole('button', {name: 'Alle aufklappen'})).toBeDisabled();
+        });
     });
 
     it.each([
@@ -304,7 +386,12 @@ describe('Process instance history preview', () => {
             vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockRejectedValueOnce(error);
 
             await act(async () => eventChannel.emitEvent('refresh'));
-            expect(mocks.dispatch).toHaveBeenCalledWith(showApiErrorSnackbar(error, 'Der Verlauf konnte nicht geladen werden.'));
+            expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({
+                    message: 'Der Verlauf konnte nicht geladen werden.',
+                    severity: 'error',
+                }),
+            }));
             expect(screen.getByRole('button', {name: /^1\. Prüfung:/})).toBe(summary);
             expect(summary).toHaveAttribute('aria-expanded', 'true');
             expect(screen.queryByRole('status', {name: 'Verlauf wird geladen'})).not.toBeInTheDocument();
@@ -432,7 +519,6 @@ describe('Process instance history preview', () => {
             ProcessTaskStatus.Completed,
             ProcessTaskStatus.Aborted,
             ProcessTaskStatus.Failed,
-            ProcessTaskStatus.Restarted,
         ])('keeps an inactive %s task without a completion timestamp neutral', async (status) => {
             vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-04T10:00:00Z'));
             await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1, status), started, deadline}]);
