@@ -1081,7 +1081,8 @@ public class ProcessNodeExecutionResultHandler {
                 context.processInstanceTask.getId(),
                 context.currentNode.getId(),
                 context.result.getViaPort(),
-                outEdge.getToNodeId()
+                outEdge.getToNodeId(),
+                null
         );
 
         var nextNode = processNodeRepository

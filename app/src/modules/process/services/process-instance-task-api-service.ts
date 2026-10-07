@@ -93,6 +93,7 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
             finished: null,
             id: 0,
             previousProcessInstanceTaskId: null,
+            restartForTaskId: null,
             previousProcessNodeId: null,
             previousProcessNodePortKey: null,
             status: ProcessTaskStatus.Running,

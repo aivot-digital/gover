@@ -112,7 +112,8 @@ public class ProcessWorker {
                     currentProcessInstance,
                     payload.previousTaskId,
                     payload.previousNodeId,
-                    payload.previousNodePortKey
+                    payload.previousNodePortKey,
+                    payload.restartForTaskId
             );
         } catch (Exception exception) {
             logger.logException(exception);
@@ -232,7 +233,20 @@ public class ProcessWorker {
                                                     @Nonnull ProcessInstanceEntity processInstance,
                                                     @Nullable Long previousTaskId,
                                                     @Nullable Integer previousNodeId,
-                                                    @Nullable String previousNodePortKey) throws ProcessNodeExecutionException {
+                                                    @Nullable String previousNodePortKey,
+                                                    @Nullable Long restartForTaskId) throws ProcessNodeExecutionException {
+        if (restartForTaskId != null) {
+            var previousAttempt = processInstanceTaskRepository.findById(restartForTaskId)
+                    .orElseThrow(() -> new ProcessNodeExecutionExceptionUnknown(
+                            "Die Aufgabe mit der ID „%d“ wurde nicht gefunden.", restartForTaskId));
+            // The restart command may still be saving the old task's status when queued work begins.
+            if (!processInstance.getId().equals(previousAttempt.getProcessInstanceId())
+                    || !currentNode.getId().equals(previousAttempt.getProcessNodeId())) {
+                throw new ProcessNodeExecutionExceptionUnknown(
+                        "Die Aufgabe mit der ID „%d“ gehört nicht zu diesem Vorgang und Prozesselement.", restartForTaskId);
+            }
+        }
+
         var deadline = currentNode.getTimeLimitDays() != null ?
                 // Preserve the local same-wall-clock-time behavior when task deadlines cross DST changes.
                 ZonedDateTime.now(ApplicationTimeZone.getZoneId()).plusDays(currentNode.getTimeLimitDays()).toInstant() :
@@ -266,7 +280,7 @@ public class ProcessWorker {
                         null,
                         null,
                         null
-                )
+                ).setRestartForTaskId(restartForTaskId)
         );
 
         logger = logger
@@ -468,7 +482,8 @@ public class ProcessWorker {
             @Nullable Long previousTaskId,
             @Nullable Integer previousNodeId,
             @Nullable String previousNodePortKey,
-            @Nonnull Integer nextNodeId
+            @Nonnull Integer nextNodeId,
+            @Nullable Long restartForTaskId
     ) implements Serializable {
 
     }

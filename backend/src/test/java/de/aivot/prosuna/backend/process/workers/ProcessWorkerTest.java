@@ -67,7 +67,7 @@ class ProcessWorkerTest {
                 mock(ProcessNodeService.class)
         );
 
-        worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11));
+        worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
         worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
 
         verifyNoInteractions(nodeRepository, taskRepository, definitionService, resultHandler);
@@ -180,7 +180,7 @@ class ProcessWorkerTest {
                 new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION)
         );
 
-        worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11));
+        worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
 
         assertEquals(ProcessInstanceStatus.Failed, processInstance.getStatus());
         assertEquals(1, savedProcessInstances.size());
@@ -395,7 +395,7 @@ class ProcessWorkerTest {
             worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
             verify(definition).resume(argThat(context -> context.getConfigurationOfExecutingNode() == effectiveConfiguration));
         } else {
-            worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11));
+            worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
             verify(definition).init(argThat(context -> context.getConfigurationOfExecutingNode() == effectiveConfiguration));
         }
 

@@ -211,7 +211,8 @@ public class ProcessInstanceTaskController {
                 taskEntity.getPreviousProcessInstanceTaskId(),
                 taskEntity.getPreviousProcessNodeId(),
                 taskEntity.getPreviousProcessNodePortKey(),
-                taskEntity.getProcessNodeId()
+                taskEntity.getProcessNodeId(),
+                taskEntity.getId()
         );
 
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, payload);

@@ -17,6 +17,7 @@ function createTask(
         processVersion: 1,
         processNodeId,
         previousProcessInstanceTaskId: null,
+        restartForTaskId: null,
         previousProcessNodeId: null,
         previousProcessNodePortKey: null,
         status: ProcessTaskStatus.Completed,

@@ -41,7 +41,7 @@ class ProcessInstanceTaskSummaryTest {
         sql("""
                 create table process_instance_tasks (
                     id bigint primary key, access_key varchar(128), process_instance_id bigint, process_id int,
-                    process_version int, process_node_id int, previous_process_instance_task_id bigint,
+                    process_version int, process_node_id int, previous_process_instance_task_id bigint, restart_for_task_id bigint,
                     previous_process_node_id int, previous_process_node_port_key varchar(96), status smallint,
                     status_override varchar(96), started timestamp with time zone, updated timestamp with time zone,
                     finished timestamp with time zone, runtime interval second, runtime_data text, node_data text,

@@ -8,6 +8,7 @@ export interface ProcessInstanceTaskEntity {
     processVersion: number;
     processNodeId: number;
     previousProcessInstanceTaskId: number | null;
+    restartForTaskId: number | null;
     previousProcessNodeId: number | null;
     previousProcessNodePortKey: string | null;
     status: ProcessTaskStatus;
