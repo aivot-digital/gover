@@ -160,10 +160,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     setTaskInputDataSaveState(
                         hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved,
                     );
-                    if (item.task.status === ProcessTaskStatus.Running ||
-                        item.task.status === ProcessTaskStatus.AwaitingStaff) {
-                        refresh();
-                    }
+                    refresh();
 
                     return true;
                 })

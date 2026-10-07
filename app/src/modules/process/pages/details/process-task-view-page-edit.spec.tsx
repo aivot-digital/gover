@@ -193,8 +193,12 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         expect(screen.getByText('Eingaben wurden zwischengespeichert')).toBeInTheDocument();
     });
 
-    it('refreshes an awaiting staff task after its first successful save', async () => {
-        testState.item.task.status = ProcessTaskStatus.AwaitingStaff;
+    it.each([
+        ProcessTaskStatus.Running,
+        ProcessTaskStatus.AwaitingStaff,
+        ProcessTaskStatus.InProgress,
+    ])('refreshes a %s task after a successful save', async (status) => {
+        testState.item.task.status = status;
         const {putTaskView} = await renderPage({});
         testState.nextValues = {subject: literalAuthoredValue('Started')};
         vi.useFakeTimers();
@@ -206,6 +210,43 @@ describe('ProcessTaskViewPageEdit autosave', () => {
 
         expect(putTaskView).toHaveBeenCalledOnce();
         expect(testState.refresh).toHaveBeenCalledOnce();
+    });
+
+    it('does not refresh task details after a failed save', async () => {
+        const {putTaskView} = await renderPage({});
+        putTaskView.mockRejectedValue({
+            status: 500,
+            message: 'Save failed',
+            details: null,
+            displayableToUser: false,
+        });
+        testState.nextValues = {subject: literalAuthoredValue('Draft')};
+        vi.useFakeTimers();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Werte ändern'}));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(2000);
+        });
+
+        expect(putTaskView).toHaveBeenCalledOnce();
+        expect(testState.refresh).not.toHaveBeenCalled();
+        expect(screen.queryByText('Eingaben wurden zwischengespeichert')).not.toBeInTheDocument();
+    });
+
+    it('keeps offline changes pending without refreshing task details', async () => {
+        const {putTaskView} = await renderPage({});
+        vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+        testState.nextValues = {subject: literalAuthoredValue('Offline draft')};
+        vi.useFakeTimers();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Werte ändern'}));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(2000);
+        });
+
+        expect(putTaskView).not.toHaveBeenCalled();
+        expect(testState.refresh).not.toHaveBeenCalled();
+        expect(screen.getByText('Warten auf Verbindung')).toBeInTheDocument();
     });
 
     it('flushes the first change before navigating away', async () => {
