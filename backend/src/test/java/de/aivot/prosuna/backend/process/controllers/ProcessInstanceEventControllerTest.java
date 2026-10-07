@@ -8,6 +8,8 @@ import de.aivot.prosuna.backend.process.services.ProcessInstanceEventService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.Optional;
@@ -22,16 +24,17 @@ class ProcessInstanceEventControllerTest {
     private final ProcessInstanceEventController controller = new ProcessInstanceEventController(
             users, mock(ProcessInstanceEventService.class), logs, permissions);
 
-    @Test
-    void logFiltersAreForwardedAfterCheckingProcessInstanceAccess() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void logFiltersAreForwardedAfterCheckingProcessInstanceAccess(boolean includeRestartHistory) throws Exception {
         when(users.fromJWT(null)).thenReturn(Optional.of(new UserEntity().setId("actor")));
         var pageable = PageRequest.of(0, 50);
 
-        controller.getEventLog(null, 12L, null, "Robin", true, false, "user-1", "identity-1", "Antrag", pageable);
+        controller.getEventLog(null, 12L, 34L, includeRestartHistory, "Robin", true, false, "user-1", "identity-1", "Antrag", pageable);
 
         var order = inOrder(permissions, logs);
         order.verify(permissions).requireProcessInstancePermission("actor", 12L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ);
-        order.verify(logs).getEventLog(12L, null, "Robin", true, false, "user-1", "identity-1", "Antrag", pageable);
+        order.verify(logs).getEventLog(12L, 34L, includeRestartHistory, "Robin", true, false, "user-1", "identity-1", "Antrag", pageable);
     }
 
     @Test
@@ -41,7 +44,7 @@ class ProcessInstanceEventControllerTest {
                 .requireProcessInstancePermission("actor", 99L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ);
 
         assertThrows(ResponseException.class, () -> controller.getEventLog(
-                null, 99L, null, null, false, false, "actor", null, null, PageRequest.of(0, 50)));
+                null, 99L, 34L, true, null, false, false, "actor", null, null, PageRequest.of(0, 50)));
 
         verifyNoInteractions(logs);
     }

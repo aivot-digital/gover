@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceEventFilter;
+import de.aivot.prosuna.backend.process.projections.ProcessTaskRestartProjection;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +58,7 @@ public class ProcessInstanceEventLogService {
     @Nonnull
     public ProcessInstanceEventLogDTO getEventLog(long processInstanceId,
                                                    @Nullable Long processInstanceTaskId,
+                                                   boolean includeRestartHistory,
                                                    @Nullable String search,
                                                    boolean notableOnly,
                                                    @Nullable Boolean historyRelevant,
@@ -79,7 +82,7 @@ public class ProcessInstanceEventLogService {
         }
 
         var eventPage = eventRepository.findAll(
-                createSpecification(processInstanceId, processInstanceTaskId, search, notableOnly)
+                createSpecification(processInstanceId, task == null ? null : resolveTaskIds(task, includeRestartHistory), search, notableOnly)
                         .and(ProcessInstanceEventFilter.create()
                                 .setHistoryRelevant(historyRelevant)
                                 .setConcernedUserId(concernedUserId)
@@ -113,6 +116,7 @@ public class ProcessInstanceEventLogService {
                 ),
                 task == null ? null : new ProcessInstanceEventLogDTO.TaskContext(
                         task.getId(),
+                        task.getRestartForTaskId(),
                         resolveNodeName(nodeRepository.findById(task.getProcessNodeId()).orElse(null), "Aufgabe"),
                         task.getStarted(),
                         task.getFinished(),
@@ -123,16 +127,34 @@ public class ProcessInstanceEventLogService {
     }
 
     @Nonnull
+    private Set<Long> resolveTaskIds(@Nonnull ProcessInstanceTaskEntity task, boolean includeRestartHistory) {
+        if (!includeRestartHistory || task.getRestartForTaskId() == null) {
+            return Set.of(task.getId());
+        }
+
+        // Only scalar links within the authorized instance and the selected node can enter the chain.
+        var links = taskRepository.findRestartLinks(task.getProcessInstanceId(), task.getProcessNodeId())
+                .stream().collect(Collectors.toMap(ProcessTaskRestartProjection::id, Function.identity()));
+        var taskIds = new HashSet<Long>();
+        taskIds.add(task.getId());
+        var previousId = task.getRestartForTaskId();
+        while (previousId != null && links.containsKey(previousId) && taskIds.add(previousId)) {
+            previousId = links.get(previousId).restartForTaskId();
+        }
+        return taskIds;
+    }
+
+    @Nonnull
     private Specification<ProcessInstanceEventEntity> createSpecification(long processInstanceId,
-                                                                            @Nullable Long processInstanceTaskId,
+                                                                            @Nullable Set<Long> taskIds,
                                                                             @Nullable String search,
                                                                             boolean notableOnly) {
         Specification<ProcessInstanceEventEntity> specification = (root, query, builder) ->
                 builder.equal(root.get("processInstanceId"), processInstanceId);
 
-        if (processInstanceTaskId != null) {
+        if (taskIds != null) {
             specification = specification.and((root, query, builder) ->
-                    builder.equal(root.get("processInstanceTaskId"), processInstanceTaskId));
+                    root.get("processInstanceTaskId").in(taskIds));
         }
         if (notableOnly) {
             specification = specification.and((root, query, builder) ->
@@ -202,6 +224,7 @@ public class ProcessInstanceEventLogService {
                 event.getId(),
                 event.getProcessInstanceId(),
                 event.getProcessInstanceTaskId(),
+                task == null ? null : task.getRestartForTaskId(),
                 event.getLevel(),
                 event.getTechnical(),
                 event.getAudit(),
@@ -282,7 +305,7 @@ public class ProcessInstanceEventLogService {
         return PageRequest.of(
                 Math.max(pageable.getPageNumber(), 0),
                 Math.min(Math.max(pageable.getPageSize(), 1), 100),
-                Sort.by(direction, "timestamp")
+                Sort.by(direction, "timestamp", "id")
         );
     }
 

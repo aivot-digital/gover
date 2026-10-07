@@ -61,7 +61,7 @@ class ProcessInstanceEventLogServiceTest {
                 .thenReturn(new PageImpl<>(List.of()));
         when(users.findIdsByFullNameContaining("robin")).thenReturn(List.of("matching-user"));
 
-        service.getEventLog(12L, null, " Robin ", true, false,
+        service.getEventLog(12L, null, false, " Robin ", true, false,
                 "user-1", "identity-1", "Antrag", PageRequest.of(0, 50));
 
         ArgumentCaptor<Specification<ProcessInstanceEventEntity>> captor = ArgumentCaptor.forClass(Specification.class);
@@ -108,7 +108,7 @@ class ProcessInstanceEventLogServiceTest {
                 .setDetails(Map.of()).setTimestamp(Instant.now()).setConcernedUserId(concernedUserId);
         when(events.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(event)));
 
-        var entry = service.getEventLog(12L, null, null, false, null, null, null, null,
+        var entry = service.getEventLog(12L, null, false, null, false, null, null, null, null,
                 PageRequest.of(0, 50)).events().getContent().getFirst();
 
         assertEquals(concernedUserId, entry.concernedUserId());
@@ -194,6 +194,7 @@ class ProcessInstanceEventLogServiceTest {
         var result = service.getEventLog(
                 12L,
                 34L,
+                false,
                 null,
                 false,
                 null, null, null, null,
@@ -262,7 +263,7 @@ class ProcessInstanceEventLogServiceTest {
 
         var exception = assertThrows(
                 ResponseException.class,
-                () -> service.getEventLog(12L, 34L, null, false, null, null, null, null, PageRequest.of(0, 50))
+                () -> service.getEventLog(12L, 34L, false, null, false, null, null, null, null, PageRequest.of(0, 50))
         );
 
         assertEquals("Die Aufgabe gehört nicht zum angegebenen Vorgang.", exception.getTitle());

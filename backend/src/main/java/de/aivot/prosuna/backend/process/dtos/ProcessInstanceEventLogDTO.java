@@ -24,6 +24,7 @@ public record ProcessInstanceEventLogDTO(
 
     public record TaskContext(
             long id,
+            @Nullable Long restartForTaskId,
             @Nonnull String name,
             @Nonnull Instant started,
             @Nullable Instant finished,
@@ -35,6 +36,7 @@ public record ProcessInstanceEventLogDTO(
             long id,
             long processInstanceId,
             @Nullable Long processInstanceTaskId,
+            @Nullable Long restartForTaskId,
             @Nonnull ProcessNodeExecutionLogLevel level,
             boolean technical,
             boolean audit,
