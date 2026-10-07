@@ -174,7 +174,11 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         layout
                 .findChild(Config.AUTOMATIC_CONTEXT_FIELD_ID, AssignmentContextInputElement.class)
                 .ifPresent(field -> {
-                    field.setAllowedTypes(List.of(AssignmentContextInputElement.ALLOWED_TYPE_USER));
+                    field.setAllowedTypes(List.of(
+                            AssignmentContextInputElement.ALLOWED_TYPE_ORG_UNIT,
+                            AssignmentContextInputElement.ALLOWED_TYPE_TEAM,
+                            AssignmentContextInputElement.ALLOWED_TYPE_USER
+                    ));
                     field.setDisableProcessInstanceAssigneeOption(true);
                     field.setDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions(true);
 
