@@ -630,6 +630,17 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Nonnull
     private ProcessNodeDefinitionMetadata finalizeInputVariableSuggestions(@Nonnull ProcessNodeDefinitionMetadata metadata) {
+        // Draft configurations may contain invalid paths. Keep the usable hints without changing provider metadata.
+        metadata = new ProcessNodeDefinitionMetadata(
+                new ArrayList<>(metadata.reusableUiDefinitions()),
+                new ArrayList<>(metadata.forwardedAttachmentSets()),
+                metadata.forwardedProcessDataKeys().stream()
+                        .filter(key -> ProcessDataValueUtils.isValidDestinationKey(key.processDataKey(), false, true))
+                        .collect(Collectors.toCollection(ArrayList::new)),
+                new ArrayList<>(metadata.forwardedIdentities()),
+                new ArrayList<>(metadata.inputVariables())
+        );
+
         for (var forwardedKey : metadata.forwardedProcessDataKeys()) {
             // Wildcard paths need a concrete row binding or an explicit collection result. Neither is part of the
             // scalar Variable mode in V1, so exposing them as selectable suggestions would create invalid mappings.
