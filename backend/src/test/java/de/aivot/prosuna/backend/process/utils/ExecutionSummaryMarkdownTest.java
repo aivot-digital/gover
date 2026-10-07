@@ -38,8 +38,8 @@ class ExecutionSummaryMarkdownTest {
         var previousZone = ApplicationTimeZone.getZoneId();
         try {
             ApplicationTimeZone.configure(ZoneId.of("Europe/Berlin"));
-            assertEquals("01.10.2026 um 12:00:00", timestamp(Instant.parse("2026-10-01T10:00:00Z")));
-            assertEquals("01.01.2026 um 11:00:00", timestamp("2026-01-01T10:00:00Z"));
+            assertEquals("01.10.2026 um 12:00:00 Uhr", timestamp(Instant.parse("2026-10-01T10:00:00Z")));
+            assertEquals("01.01.2026 um 11:00:00 Uhr", timestamp("2026-01-01T10:00:00Z"));
             assertEquals(timestamp("2026-01-01T11:00:00+01:00"), timestamp("2026-01-01T10:00:00Z"));
             assertEquals("", timestamp("unbekannt"));
         } finally {
