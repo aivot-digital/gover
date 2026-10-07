@@ -321,6 +321,7 @@ async function fetchHistory(processId: number, processInstanceId: number): Promi
 
     const tasksWithNodes: TaskWithNodeAndEvents[] = tasks
         .content
+        .filter((task) => task.status !== ProcessTaskStatus.Restarted)
         .map((task) => {
             const node = nodes
                 .content
