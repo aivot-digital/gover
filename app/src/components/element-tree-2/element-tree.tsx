@@ -1,7 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Typography} from '@mui/material';
-import {DndProvider} from 'react-dnd';
-import {HTML5Backend} from 'react-dnd-html5-backend';
 import {isFormLayoutElement} from '../../models/elements/form-layout-element';
 import {AnyElement} from '../../models/elements/any-element';
 import {AnyElementWithChildren, isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
@@ -495,61 +493,57 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                         minWidth: 0,
                     }}
                 >
-                    <DndProvider
-                        backend={HTML5Backend}
+                    <ElementTreeContextProvider
+                        value={{
+                            root: value,
+                            editable: editable,
+                            parentModalZIndex: parentModalZIndex,
+                            scrollToElement: handleScrollToElement,
+                            canDropElement: canDropElement,
+                            moveElement: moveElement,
+                            expandCommand: expandCommand,
+                            initiallyExpandedSectionIds: initiallyExpandedSectionIds,
+                            activeSearchResultPath: activeSearchResult?.path,
+                            highlightedElementId: highlightElementId,
+                            highlightedElementSignal: highlightElementSignal,
+                            onHoveredElementIdChange: onHoveredElementIdChange,
+                            allElements: allElements,
+                            displayContext: displayContext,
+                            allowElementIdEditing: allowElementIdEditing,
+                            identityMappingInformation: identityMappingInformation,
+                        }}
                     >
-                        <ElementTreeContextProvider
-                            value={{
-                                root: value,
-                                editable: editable,
-                                parentModalZIndex: parentModalZIndex,
-                                scrollToElement: handleScrollToElement,
-                                canDropElement: canDropElement,
-                                moveElement: moveElement,
-                                expandCommand: expandCommand,
-                                initiallyExpandedSectionIds: initiallyExpandedSectionIds,
-                                activeSearchResultPath: activeSearchResult?.path,
-                                highlightedElementId: highlightElementId,
-                                highlightedElementSignal: highlightElementSignal,
-                                onHoveredElementIdChange: onHoveredElementIdChange,
-                                allElements: allElements,
-                                displayContext: displayContext,
-                                allowElementIdEditing: allowElementIdEditing,
-                                identityMappingInformation: identityMappingInformation,
+                        <ElementTreeChildList
+                            parents={[value]}
+                            value={children}
+                            onChange={(changedChildren) => {
+                                onChange({
+                                    ...value,
+                                    children: changedChildren,
+                                } as T);
                             }}
-                        >
-                            <ElementTreeChildList
-                                parents={[value]}
-                                value={children}
-                                onChange={(changedChildren) => {
-                                    onChange({
-                                        ...value,
-                                        children: changedChildren,
-                                    } as T);
-                                }}
-                                addNewElementLabel={isFormLayoutElement(value) ? 'Neuen Abschnitt hinzufügen' : undefined}
-                                addElementDialogTitle={isFormLayoutElement(value) ? 'Formularabschnitt hinzufügen' : undefined}
-                                openAddElementSignal={openRootAddElementSignal}
-                            />
+                            addNewElementLabel={isFormLayoutElement(value) ? 'Neuen Abschnitt hinzufügen' : undefined}
+                            addElementDialogTitle={isFormLayoutElement(value) ? 'Formularabschnitt hinzufügen' : undefined}
+                            openAddElementSignal={openRootAddElementSignal}
+                        />
 
 
-                            <ElementTreeEditor
-                                open={currentEditedElementId === value.id && currentEditorTab != null}
-                                parents={[]}
-                                value={value}
-                                onChange={(updatedValue) => {
-                                    onChange(updatedValue);
-                                    closeElementEditor();
-                                }}
-                                onCancel={closeElementEditor}
-                                onDelete={() => {
-                                    closeElementEditor();
-                                }}
-                                onClone={() => {
-                                }}
-                            />
-                        </ElementTreeContextProvider>
-                    </DndProvider>
+                        <ElementTreeEditor
+                            open={currentEditedElementId === value.id && currentEditorTab != null}
+                            parents={[]}
+                            value={value}
+                            onChange={(updatedValue) => {
+                                onChange(updatedValue);
+                                closeElementEditor();
+                            }}
+                            onCancel={closeElementEditor}
+                            onDelete={() => {
+                                closeElementEditor();
+                            }}
+                            onClone={() => {
+                            }}
+                        />
+                    </ElementTreeContextProvider>
                 </Box>
             </Box>
 
