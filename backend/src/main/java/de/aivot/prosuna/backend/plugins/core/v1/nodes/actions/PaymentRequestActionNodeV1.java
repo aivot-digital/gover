@@ -150,9 +150,9 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 ? details.getTransactionTimestamp() : map(information).get("transactionTimestamp");
         var reference = information instanceof XBezahldienstePaymentInformation details
                 ? details.getTransactionReference() : map(information).get("transactionReference");
-        return "Die Zahlung wurde" + (timestamp(paidAt).isEmpty() ? summary.completedAt() : summary.at(paidAt)) + " bestätigt."
-                + " Es wurde " + summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID))
+        return "Es wurde " + summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID))
                 + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT)) + " zur Zahlung aufgefordert und" + summary.delivery() + " informiert."
+                + " Die Zahlung wurde" + (timestamp(paidAt).isEmpty() ? summary.completedAt() : summary.at(paidAt)) + " bestätigt."
                 + detail("Zahlungszweck", summary.data(OUTPUT_PAYMENT_PURPOSE))
                 + detail("Beschreibung", summary.data(OUTPUT_PAYMENT_DESCRIPTION))
                 + detail("Gesamtbetrag (Euro)", summary.data(OUTPUT_PAYMENT_TOTAL) instanceof Number total
