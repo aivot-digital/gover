@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -139,23 +141,23 @@ class ProcessNodeServiceTest {
 
     @Test
     void deadlineRequiresConnectionAndRemovedPortEdgesRemainValidationProblems() throws Exception {
-        var node = createNode(1, "a").setTimeLimitDays(1);
+        var node = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(1, false)));
         var provider = new HintingTestNodeDefinition();
         assertTrue(service.validate(node, provider, true).isEmpty());
-        node.setTimeLimitStrict(true);
-        var edge = createEdge(10, 1, 2).setViaPort(ProcessNodePortResolver.DEADLINE_PORT_KEY);
+        node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, true)));
+        var edge = createEdge(10, 1, 2).setViaPort("processing_overdue");
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
                 .anyMatch(problem -> problem.contains("Fristüberschreitung")));
-        when(processEdgeRepository.existsByFromNodeIdAndViaPort(1, ProcessNodePortResolver.DEADLINE_PORT_KEY)).thenReturn(true);
+        when(processEdgeRepository.existsByFromNodeIdAndViaPort(1, "processing_overdue")).thenReturn(true);
         when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(List.of(edge));
         assertTrue(service.validate(node, provider, true).isEmpty());
 
-        node.setTimeLimitStrict(false);
+        node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
                 .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
         org.mockito.Mockito.verify(processEdgeRepository, org.mockito.Mockito.never()).delete(any(ProcessEdgeEntity.class));
-        assertEquals(ProcessNodePortResolver.DEADLINE_PORT_KEY, edge.getViaPort());
-        node.setTimeLimitStrict(true).setTimeLimitDays(null);
+        assertEquals("processing_overdue", edge.getViaPort());
+        node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(null, true)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
                 .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
     }
@@ -172,25 +174,25 @@ class ProcessNodeServiceTest {
         var derived = new DerivedRuntimeElementData();
         derived.getEffectiveValues().put("branch", "approved");
         when(elementDerivationService.derive(any(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring))).thenReturn(derived);
-        var node = createNode(1, "a").setTimeLimitDays(2).setTimeLimitStrict(true);
+        var node = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(2, true)));
         var response = de.aivot.prosuna.backend.process.dtos.ProcessNodeResponseDTO.of(node, service.resolvePorts(node));
-        assertEquals(List.of("approved", ProcessNodePortResolver.DEADLINE_PORT_KEY), response.ports().stream().map(ProcessNodePort::key).toList());
+        assertEquals(List.of("approved", "processing_overdue"), response.ports().stream().map(ProcessNodePort::key).toList());
         assertTrue(response.portResolutionProblems().isEmpty());
         org.mockito.Mockito.verify(elementDerivationService).derive(any(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring));
     }
 
     @Test
     void updatePersistsStrictnessAndRetainsTheSoftDueDate() throws Exception {
-        var existing = createNode(1, "a").setTimeLimitDays(3);
-        var submitted = createNode(1, "a").setTimeLimitDays(3).setTimeLimitStrict(true);
+        var existing = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
+        var submitted = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, true)));
         when(processNodeRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         var strict = service.performUpdate(1, submitted, existing);
-        assertTrue(strict.getTimeLimitStrict());
+        assertTrue(strict.getDeadlines().get("processing").strict());
 
-        var soft = service.performUpdate(1, submitted.setTimeLimitStrict(false), existing);
-        assertEquals(false, soft.getTimeLimitStrict());
-        assertEquals(3, soft.getTimeLimitDays());
+        var soft = service.performUpdate(1, submitted.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false))), existing);
+        assertEquals(false, soft.getDeadlines().get("processing").strict());
+        assertEquals(3, soft.getDeadlines().get("processing").days());
         assertEquals(false, soft.getSavedWithErrors());
     }
 
@@ -487,6 +489,13 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void runtimeConfigurationRejectsInvalidDeadlineDurationsBeforeNodeExecution() {
+        var node = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(0, true)));
+        assertThrows(ResponseException.class, () -> service.deriveRuntimeConfiguration(
+                node, new HintingTestNodeDefinition(), null, false, new ProcessExecutionData()));
+    }
+
+    @Test
     void deriveRuntimeConfiguration_ShouldApplyOptedInProviderValidation() throws Exception {
         var derivedData = new DerivedRuntimeElementData();
         when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class))).thenReturn(derivedData);
@@ -762,6 +771,11 @@ class ProcessNodeServiceTest {
         @Override
         public ProcessNodeExecutionType[] getExecutionTypes() {
             return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
+        }
+
+        @Override
+        public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull TestNodeConfig configuration) {
+            return List.of(new ProcessNodeDeadlineDefinition("processing", "Bearbeitung", "Bearbeitungsfrist", new ProcessNodePort("processing_overdue", "Fristüberschreitung", "Fortsetzung")));
         }
 
         @Nonnull

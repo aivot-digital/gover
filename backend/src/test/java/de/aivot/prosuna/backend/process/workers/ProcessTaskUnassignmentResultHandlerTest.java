@@ -75,7 +75,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
             assignments, rabbit, communication, instances, versions, tasks, edges, users, taskMail,
             mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class), processes, departments,
-            instanceMail, nodeService);
+            instanceMail, nodeService, null);
 
     @BeforeEach
     void setup() throws Exception {

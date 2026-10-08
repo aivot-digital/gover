@@ -21,7 +21,6 @@ import de.aivot.prosuna.backend.process.services.ProcessDataService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
-import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.utils.Tuple3;
@@ -35,7 +34,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
@@ -247,10 +245,6 @@ public class ProcessWorker {
             }
         }
 
-        var deadline = currentNode.getTimeLimitDays() != null ?
-                // Preserve the local same-wall-clock-time behavior when task deadlines cross DST changes.
-                ZonedDateTime.now(ApplicationTimeZone.getZoneId()).plusDays(currentNode.getTimeLimitDays()).toInstant() :
-                null;
         var startedAt = Instant.now();
 
         var taskEntity = processInstanceTaskRepository.save(
@@ -276,7 +270,7 @@ public class ProcessWorker {
                         new HashMap<>(),
                         null,
                         null,
-                        deadline,
+                        null,
                         null,
                         null,
                         null

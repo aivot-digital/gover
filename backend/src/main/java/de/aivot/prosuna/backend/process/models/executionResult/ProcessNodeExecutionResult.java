@@ -2,7 +2,6 @@ package de.aivot.prosuna.backend.process.models.executionResult;
 
 import jakarta.annotation.Nullable;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -14,8 +13,8 @@ public abstract class ProcessNodeExecutionResult {
     private @Nullable Boolean clearTaskStatusOverride;
     private @Nullable ProcessNodeExecutionResultCommunicationRequest communicationRequest;
 
-    /** Replace the current task's deadline, including for no-op results. Null preserves the deadline. */
-    private @Nullable Instant newDeadline;
+    /** Select a declared phase deadline. Null preserves the active deadline; an unconfigured phase clears it. */
+    private @Nullable String newDeadlineKey;
 
     /**
      * Clear the current task's staff assignment when true, including for no-op results.
@@ -101,12 +100,12 @@ public abstract class ProcessNodeExecutionResult {
     }
 
     @Nullable
-    public Instant getNewDeadline() {
-        return newDeadline;
+    public String getNewDeadlineKey() {
+        return newDeadlineKey;
     }
 
-    public ProcessNodeExecutionResult setNewDeadline(@Nullable Instant newDeadline) {
-        this.newDeadline = newDeadline;
+    public ProcessNodeExecutionResult setNewDeadlineKey(@Nullable String newDeadlineKey) {
+        this.newDeadlineKey = newDeadlineKey;
         return this;
     }
 }

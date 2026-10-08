@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -10,6 +12,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,24 +27,25 @@ class ProcessEdgeServiceTest {
             var repository = mock(ProcessEdgeRepository.class);
             var nodes = mock(ProcessNodeService.class);
             var service = new ProcessEdgeService(repository, nodes);
-            var source = new ProcessNodeEntity().setId(1).setProcessId(10).setProcessVersion(2).setTimeLimitDays(3);
+            var source = new ProcessNodeEntity().setId(1).setProcessId(10).setProcessVersion(2).setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
             var target = new ProcessNodeEntity().setId(2).setProcessId(10).setProcessVersion(2);
             @SuppressWarnings("unchecked")
             var provider = (ProcessNodeDefinition<Object>) mock(ProcessNodeDefinition.class);
             when(provider.getPorts(any())).thenReturn(List.of());
+            when(provider.getDeadlines(any())).thenReturn(List.of(new ProcessNodeDeadlineDefinition("processing", "Bearbeitung", "Bearbeitungsfrist", new ProcessNodePort("processing_overdue", "Fristüberschreitung", "Fortsetzung"))));
             when(nodes.retrieve(1)).thenReturn(Optional.of(source));
             when(nodes.retrieve(2)).thenReturn(Optional.of(target));
             when(nodes.resolvePorts(source)).thenAnswer(invocation -> resolver.resolve(source, provider, new Object()));
             when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            var edge = new ProcessEdgeEntity(null, 10, 2, 1, 2, ProcessNodePortResolver.DEADLINE_PORT_KEY);
+            var edge = new ProcessEdgeEntity(null, 10, 2, 1, 2, "processing_overdue");
 
             assertThrows(ResponseException.class, () -> service.create(edge));
             verify(repository, never()).save(any());
-            source.setTimeLimitStrict(true);
+            source.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, true)));
             assertSame(edge, service.create(edge));
 
             clearInvocations(repository);
-            source.setTimeLimitStrict(false);
+            source.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
             assertThrows(ResponseException.class, () -> service.performUpdate(5, edge, new ProcessEdgeEntity()));
             verify(repository, never()).save(any());
             service.performDelete(edge);

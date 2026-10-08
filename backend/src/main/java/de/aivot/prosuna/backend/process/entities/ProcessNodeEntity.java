@@ -4,6 +4,9 @@ import de.aivot.prosuna.backend.core.converters.AuthoredElementValuesConverter;
 import de.aivot.prosuna.backend.core.converters.JsonObjectConverter;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
+import de.aivot.prosuna.backend.process.converters.ProcessNodeDeadlinesConverter;
+import jakarta.validation.Valid;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -12,6 +15,7 @@ import jakarta.validation.constraints.*;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Objects;
 
 @Entity
@@ -68,15 +72,15 @@ public class ProcessNodeEntity {
     @Column(columnDefinition = "jsonb")
     private Map<String, String> outputMappings;
 
-    @Nullable
-    @Min(value = 1, message = "Das Zeitlimit in Tagen muss mindestens 1 sein.")
-    @Max(value = 3652, message = "Das Zeitlimit in Tagen darf maximal 3652 sein.")
-    private Integer timeLimitDays;
-
     @Nonnull
-    @NotNull(message = "Geben Sie an, ob die Frist strikt ist.")
-    @Column(nullable = false)
-    private Boolean timeLimitStrict = false;
+    @NotNull(message = "Die Fristen dürfen nicht null sein.")
+    @Convert(converter = ProcessNodeDeadlinesConverter.class)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    private Map<
+            @NotBlank(message = "Der Schlüssel der Frist darf nicht leer sein.")
+            @Size(max = 32, message = "Der Schlüssel der Frist darf maximal 32 Zeichen lang sein.") String,
+            @NotNull(message = "Die Konfiguration einer Frist darf nicht null sein.") @Valid ProcessNodeDeadlineConfiguration
+            > deadlines = new LinkedHashMap<>();
 
     @Nullable
     @Size(max = 1024, message = "Die Anforderungen dürfen maximal 1024 Zeichen lang sein.")
@@ -124,8 +128,7 @@ public class ProcessNodeEntity {
                              @Nonnull Integer processNodeDefinitionVersion,
                              @Nonnull AuthoredElementValues configuration,
                              @Nonnull Map<String, String> outputMappings,
-                             @Nullable Integer timeLimitDays,
-                             @Nullable Boolean timeLimitStrict,
+                             @Nullable Map<String, ProcessNodeDeadlineConfiguration> deadlines,
                              @Nullable String requirements,
                              @Nullable String notes,
                              @Nonnull Boolean savedWithErrors) {
@@ -139,9 +142,7 @@ public class ProcessNodeEntity {
         this.processNodeDefinitionVersion = processNodeDefinitionVersion;
         this.configuration = configuration;
         this.outputMappings = outputMappings;
-        this.timeLimitDays = timeLimitDays;
-        // Older imports omit this flag; constructor-based deserialization must also default to soft.
-        this.timeLimitStrict = Boolean.TRUE.equals(timeLimitStrict);
+        this.deadlines = deadlines == null ? new LinkedHashMap<>() : new LinkedHashMap<>(deadlines);
         this.requirements = requirements;
         this.notes = notes;
         this.savedWithErrors = savedWithErrors;
@@ -174,15 +175,14 @@ public class ProcessNodeEntity {
                 Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(dataKey, that.dataKey) &&
                 Objects.equals(processNodeDefinitionKey, that.processNodeDefinitionKey) &&
                 Objects.equals(processNodeDefinitionVersion, that.processNodeDefinitionVersion) && Objects.equals(configuration, that.configuration) &&
-                Objects.equals(outputMappings, that.outputMappings) && Objects.equals(timeLimitDays, that.timeLimitDays) &&
-                Objects.equals(timeLimitStrict, that.timeLimitStrict) &&
+                Objects.equals(outputMappings, that.outputMappings) && Objects.equals(deadlines, that.deadlines) &&
                 Objects.equals(requirements, that.requirements) && Objects.equals(notes, that.notes) &&
                 Objects.equals(savedWithErrors, that.savedWithErrors) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, processId, processVersion, name, description, dataKey, processNodeDefinitionKey, processNodeDefinitionVersion, configuration, outputMappings, timeLimitDays, timeLimitStrict, requirements, notes, savedWithErrors, created, updated);
+        return Objects.hash(id, processId, processVersion, name, description, dataKey, processNodeDefinitionKey, processNodeDefinitionVersion, configuration, outputMappings, deadlines, requirements, notes, savedWithErrors, created, updated);
     }
 
 
@@ -301,23 +301,13 @@ public class ProcessNodeEntity {
         return this;
     }
 
-    @Nullable
-    public Integer getTimeLimitDays() {
-        return timeLimitDays;
-    }
-
-    public ProcessNodeEntity setTimeLimitDays(@Nullable Integer timeLimitDays) {
-        this.timeLimitDays = timeLimitDays;
-        return this;
-    }
-
     @Nonnull
-    public Boolean getTimeLimitStrict() {
-        return timeLimitStrict;
+    public Map<String, ProcessNodeDeadlineConfiguration> getDeadlines() {
+        return deadlines;
     }
 
-    public ProcessNodeEntity setTimeLimitStrict(@Nonnull Boolean timeLimitStrict) {
-        this.timeLimitStrict = timeLimitStrict;
+    public ProcessNodeEntity setDeadlines(@Nonnull Map<String, ProcessNodeDeadlineConfiguration> deadlines) {
+        this.deadlines = new LinkedHashMap<>(deadlines);
         return this;
     }
 

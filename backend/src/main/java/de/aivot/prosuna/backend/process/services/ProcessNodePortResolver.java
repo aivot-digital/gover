@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,14 +18,6 @@ import java.util.List;
 @Service
 public class ProcessNodePortResolver {
     private static final Logger logger = LoggerFactory.getLogger(ProcessNodePortResolver.class);
-
-    public static final String DEADLINE_PORT_KEY = "__deadline_exceeded";
-    public static final ProcessNodePort DEADLINE_PORT = new ProcessNodePort(
-            DEADLINE_PORT_KEY,
-            "Fristüberschreitung",
-            "Ausgang für die Fortsetzung nach Überschreitung der strikten Frist. Die automatische Weiterleitung ist noch nicht verfügbar."
-    );
-
     private final Validator validator;
 
     public ProcessNodePortResolver(Validator validator) {
@@ -37,45 +30,74 @@ public class ProcessNodePortResolver {
                                                  @Nonnull C configuration) {
         try {
             var ports = provider.getPorts(configuration);
-            var problems = new ArrayList<String>();
-            var keys = new HashSet<String>();
-            if (ports == null) {
-                return failed(node);
+            var definitions = provider.getDeadlines(configuration);
+            if (ports == null || definitions == null) {
+                return failed();
             }
+            var problems = new ArrayList<String>();
+            var portKeys = new HashSet<String>();
+            var deadlineKeys = new HashSet<String>();
             for (var port : ports) {
-                if (port == null) {
-                    problems.add("Die Ausgangsports enthalten einen leeren Eintrag.");
+                validatePort(port, portKeys, problems);
+            }
+            for (var definition : definitions) {
+                if (definition == null) {
+                    problems.add("Die Fristen enthalten einen leeren Eintrag.");
                     continue;
                 }
-                validator.validate(port).stream()
+                validator.validate(definition).stream()
                         .map(violation -> violation.getMessage()).sorted().forEach(problems::add);
-                if (!keys.add(port.key())) {
-                    problems.add("Der Ausgangsschlüssel „%s“ wird mehrfach verwendet.".formatted(port.key()));
+                if (!deadlineKeys.add(definition.key())) {
+                    problems.add("Der Fristschlüssel „%s“ wird mehrfach verwendet.".formatted(definition.key()));
                 }
-                if (DEADLINE_PORT_KEY.equals(port.key())) {
-                    problems.add("Der Ausgangsschlüssel „%s“ ist für Fristüberschreitungen reserviert.".formatted(port.key()));
+                // Reserve every offered expiry key, including soft and unconfigured deadlines.
+                validatePort(definition.port(), portKeys, problems);
+            }
+            if (!problems.isEmpty()) {
+                return new ProcessNodePortResolution(List.of(), problems);
+            }
+            validator.validateProperty(node, "deadlines").stream()
+                    .map(violation -> violation.getMessage()).sorted().forEach(problems::add);
+            if (node.getDeadlines() != null) {
+                node.getDeadlines().values().stream().filter(java.util.Objects::nonNull)
+                        .flatMap(setting -> validator.validate(setting).stream())
+                        .map(violation -> violation.getMessage()).sorted().forEach(problems::add);
+            }
+            if (!problems.isEmpty()) {
+                return new ProcessNodePortResolution(List.of(), problems, definitions);
+            }
+            var effectivePorts = new ArrayList<>(ports);
+            for (var definition : definitions) {
+                var setting = node.getDeadlines().get(definition.key());
+                if (setting != null && setting.days() != null && setting.strict()) {
+                    var port = definition.port();
+                    effectivePorts.add(new ProcessNodePort(port.key(), port.label(), port.description(), definition.key()));
                 }
             }
-            return withDeadline(node, problems.isEmpty() ? ports : List.of(), problems);
+            return new ProcessNodePortResolution(effectivePorts, List.of(), definitions);
         } catch (Exception exception) {
             logger.warn("Could not resolve ports for process node {} ({})", node.getId(), provider.getKey(), exception);
-            return failed(node);
+            return failed();
+        }
+    }
+
+    private void validatePort(@Nullable ProcessNodePort port, @Nonnull HashSet<String> keys, @Nonnull List<String> problems) {
+        if (port == null) {
+            problems.add("Die Ausgangsports enthalten einen leeren Eintrag.");
+            return;
+        }
+        validator.validate(port).stream()
+                .map(violation -> violation.getMessage()).sorted().forEach(problems::add);
+        if (!keys.add(port.key())) {
+            problems.add("Der Ausgangsschlüssel „%s“ wird mehrfach verwendet.".formatted(port.key()));
+        }
+        if (port.deadlineKey() != null) {
+            problems.add("Die Zuordnung eines Ausgangs zu einer Frist wird automatisch ermittelt.");
         }
     }
 
     @Nonnull
-    public static ProcessNodePortResolution failed(@Nonnull ProcessNodeEntity node) {
-        return withDeadline(node, List.of(), List.of("Die Ausgangsports konnten nicht ermittelt werden. Prüfen Sie die Konfiguration des Prozesselements."));
-    }
-
-    @Nonnull
-    private static ProcessNodePortResolution withDeadline(@Nonnull ProcessNodeEntity node,
-                                                          @Nonnull List<ProcessNodePort> ports,
-                                                          @Nonnull List<String> problems) {
-        var effectivePorts = new ArrayList<>(ports);
-        if (node.getTimeLimitDays() != null && Boolean.TRUE.equals(node.getTimeLimitStrict())) {
-            effectivePorts.add(DEADLINE_PORT);
-        }
-        return new ProcessNodePortResolution(effectivePorts, problems);
+    public static ProcessNodePortResolution failed() {
+        return new ProcessNodePortResolution(List.of(), List.of("Die Ausgänge und Fristen konnten nicht ermittelt werden. Prüfen Sie die Konfiguration des Prozesselements."));
     }
 }

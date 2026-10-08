@@ -69,7 +69,7 @@ class ProcessNodeExecutionSummaryTest {
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
             mock(ProcessAssignmentService.class), rabbit, null, instances, versions, tasks, edges, users,
             mock(ProcessTaskMailService.class), mock(ProcessNodeRepository.class),
-            mock(ProcessNodeDefinitionService.class), null, null, mock(ProcessInstanceMailService.class), nodeService);
+            mock(ProcessNodeDefinitionService.class), null, null, mock(ProcessInstanceMailService.class), nodeService, null);
 
     @BeforeEach
     void setup() throws Exception {

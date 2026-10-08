@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -140,7 +141,7 @@ class ProcessControllerTest {
                 .thenReturn(Optional.of(2));
         var originalNode = new ProcessNodeEntity().setId(5).setProcessId(42).setProcessVersion(2)
                 .setConfiguration(new AuthoredElementValues()).setOutputMappings(Map.of())
-                .setTimeLimitDays(3).setTimeLimitStrict(true);
+                .setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, true)));
         when(processDefinitionNodeService.findAllByProcessIdAndProcessVersion(42, 2))
                 .thenReturn(List.of(originalNode));
         when(processDefinitionNodeService.create(any(ProcessNodeEntity.class)))
@@ -162,8 +163,8 @@ class ProcessControllerTest {
         assertEquals(ProcessRetentionTimeUnit.Months, result.getRetentionTimeUnit());
         var nodeCaptor = ArgumentCaptor.forClass(ProcessNodeEntity.class);
         verify(processDefinitionNodeService).create(nodeCaptor.capture());
-        assertEquals(true, nodeCaptor.getValue().getTimeLimitStrict());
-        assertEquals(3, nodeCaptor.getValue().getTimeLimitDays());
+        assertEquals(true, nodeCaptor.getValue().getDeadlines().get("processing").strict());
+        assertEquals(3, nodeCaptor.getValue().getDeadlines().get("processing").days());
         assertEquals(3, nodeCaptor.getValue().getProcessVersion());
         verify(permissionService)
                 .requireProcessPermission("user-1", 42, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE);

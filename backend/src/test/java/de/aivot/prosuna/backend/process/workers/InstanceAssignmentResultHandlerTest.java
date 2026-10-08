@@ -55,7 +55,7 @@ class InstanceAssignmentResultHandlerTest {
             assignments, rabbit, mock(CommunicationService.class), instances, mock(de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository.class), tasks, edges, users,
             mock(ProcessTaskMailService.class), mock(ProcessNodeRepository.class),
             mock(ProcessNodeDefinitionService.class), mock(ProcessService.class),
-            mock(DepartmentService.class), instanceMail, nodeService);
+            mock(DepartmentService.class), instanceMail, nodeService, null);
 
     @BeforeEach
     void setUp() throws Exception {

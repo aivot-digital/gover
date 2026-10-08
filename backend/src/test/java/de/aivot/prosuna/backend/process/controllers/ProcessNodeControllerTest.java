@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
@@ -47,7 +48,7 @@ class ProcessNodeControllerTest {
         var source = new ProcessNodeEntity().setId(7).setProcessId(12).setProcessVersion(5)
                 .setDataKey("source").setProcessNodeDefinitionKey("test.node").setProcessNodeDefinitionVersion(1)
                 .setConfiguration(new AuthoredElementValues()).setOutputMappings(Map.of())
-                .setTimeLimitDays(3).setTimeLimitStrict(strict);
+                .setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, strict)));
         var nodes = mock(ProcessNodeService.class);
         when(nodes.retrieve(7)).thenReturn(Optional.of(source));
         when(nodes.create(any())).thenAnswer(invocation -> ((ProcessNodeEntity) invocation.getArgument(0)).setId(8));
@@ -72,8 +73,8 @@ class ProcessNodeControllerTest {
 
         var result = controller.importNode(null, 20, 1, imported);
 
-        assertEquals(strict, result.timeLimitStrict());
-        assertEquals(3, result.timeLimitDays());
+        assertEquals(strict, result.deadlines().get("processing").strict());
+        assertEquals(3, result.deadlines().get("processing").days());
         assertEquals(20, result.processId());
         assertEquals(1, result.processVersion());
     }

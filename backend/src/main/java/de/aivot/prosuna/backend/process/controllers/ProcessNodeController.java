@@ -463,8 +463,7 @@ public class ProcessNodeController {
                 .setProcessNodeDefinitionVersion(sourceNode.getProcessNodeDefinitionVersion())
                 .setConfiguration(provider.prefillConfigurationOnImport(sourceNode.getConfiguration()))
                 .setOutputMappings(sourceNode.getOutputMappings())
-                .setTimeLimitDays(sourceNode.getTimeLimitDays())
-                .setTimeLimitStrict(sourceNode.getTimeLimitStrict())
+                .setDeadlines(sourceNode.getDeadlines())
                 .setRequirements(sourceNode.getRequirements())
                 .setNotes(sourceNode.getNotes());
 
@@ -499,7 +498,7 @@ public class ProcessNodeController {
     }
 
     @PostMapping("resolve-ports/")
-    @Operation(summary = "Resolve prospective process node ports", description = "Compute authoring ports without saving a node. Requires read permission for the target process.")
+    @Operation(summary = "Resolve prospective process node ports", description = "Compute authoring ports and available phase deadlines without saving a node. Requires read permission for the target process.")
     public ProcessNodePortResolution resolvePorts(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestBody @Valid ProcessNodePortRequestDTO request

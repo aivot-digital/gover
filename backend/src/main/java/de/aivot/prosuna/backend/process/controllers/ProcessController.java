@@ -705,8 +705,7 @@ public class ProcessController {
                             originalNode.getProcessNodeDefinitionVersion(),
                             originalNode.getConfiguration().clone(),
                             new HashMap<>(originalNode.getOutputMappings()),
-                            originalNode.getTimeLimitDays(),
-                            originalNode.getTimeLimitStrict(),
+                            originalNode.getDeadlines(),
                             originalNode.getRequirements(),
                             originalNode.getNotes(),
                             originalNode.getSavedWithErrors()

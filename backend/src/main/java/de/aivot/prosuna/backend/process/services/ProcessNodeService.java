@@ -106,7 +106,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public ProcessNodePortResolution resolvePorts(@Nonnull ProcessNodeEntity node) {
         return processNodeProviderService.getProcessNodeDefinition(node)
                 .map(provider -> resolvePorts(node, provider))
-                .orElseGet(() -> ProcessNodePortResolver.failed(node));
+                .orElseGet(() -> ProcessNodePortResolver.failed());
     }
 
     @Nonnull
@@ -116,7 +116,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             var derived = deriveConfiguration(node, provider, null, false);
             return portResolver.resolve(node, provider, derived.configuration());
         } catch (ResponseException exception) {
-            return ProcessNodePortResolver.failed(node);
+            return ProcessNodePortResolver.failed();
         }
     }
 
@@ -239,8 +239,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         existingEntity.setProcessNodeDefinitionKey(entity.getProcessNodeDefinitionKey());
         existingEntity.setProcessNodeDefinitionVersion(entity.getProcessNodeDefinitionVersion());
         existingEntity.setOutputMappings(entity.getOutputMappings());
-        existingEntity.setTimeLimitDays(entity.getTimeLimitDays());
-        existingEntity.setTimeLimitStrict(entity.getTimeLimitStrict());
+        existingEntity.setDeadlines(entity.getDeadlines());
         existingEntity.setNotes(entity.getNotes());
         existingEntity.setRequirements(entity.getRequirements());
         existingEntity.setConfiguration(entity.getConfiguration());
@@ -360,6 +359,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         // Validate concrete results only after successful derivation. Each provider explicitly guards any checks
         // that belong exclusively to authoring, such as uniqueness within the process definition.
         if (inputModeContext == InputModeEvaluationContext.Runtime && !skipErrors && !derivedData.hasAnyError()) {
+            var deadlineResolution = portResolver.resolve(entity, provider, config);
+            if (!deadlineResolution.problems().isEmpty()) {
+                throw ResponseException.badRequest(String.join(" ", deadlineResolution.problems()));
+            }
             var validationErrors = provider.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                     entity,
                     config,
@@ -823,7 +826,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         }
 
         var resolvedPorts = derivedConfiguration == null
-                ? ProcessNodePortResolver.failed(node)
+                ? ProcessNodePortResolver.failed()
                 : portResolver.resolve(node, provider, derivedConfiguration.configuration());
         problems.addAll(resolvedPorts.problems());
         if (checkPorts) {

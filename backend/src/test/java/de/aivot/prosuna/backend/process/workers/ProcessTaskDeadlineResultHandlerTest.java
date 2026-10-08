@@ -13,6 +13,17 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
+import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.department.services.DepartmentService;
+import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.process.services.ProcessService;
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.communication.services.CommunicationService;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import java.time.Clock;
+import java.time.ZoneId;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
@@ -48,6 +59,14 @@ import static org.mockito.Mockito.*;
 class ProcessTaskDeadlineResultHandlerTest {
     private static final Instant PREVIOUS_DEADLINE = Instant.parse("2030-05-01T10:00:00Z");
     private static final Instant NEW_DEADLINE = Instant.parse("2030-05-03T12:00:00Z");
+    private static final ProcessNodeDeadlineDefinition CUSTOMER = new ProcessNodeDeadlineDefinition(
+            "customer", "Kundenbearbeitung", "Zeit für die Bearbeitung", new ProcessNodePort("customer_overdue", "Fristüberschreitung", "Fortsetzen"));
+    private static final ProcessNodeDeadlineDefinition PREPARATION = new ProcessNodeDeadlineDefinition(
+            "preparation", "Vorbereitung", "Zeit für die Vorbereitung", new ProcessNodePort("preparation_overdue", "Vorbereitung überfällig", "Fortsetzen"));
+    private final ProcessService processes = mock(ProcessService.class);
+    private final DepartmentService departments = mock(DepartmentService.class);
+    private final Clock clock = mock(Clock.class);
+    private final CommunicationService communication = mock(CommunicationService.class);
     private final ProcessInstanceTaskRepository tasks = mock(ProcessInstanceTaskRepository.class);
     private final ProcessInstanceHistoryEventRepository events = mock(ProcessInstanceHistoryEventRepository.class);
     private final ProcessVersionRepository versions = mock(ProcessVersionRepository.class);
@@ -59,24 +78,27 @@ class ProcessTaskDeadlineResultHandlerTest {
     @SuppressWarnings("unchecked")
     private final ProcessNodeDefinition<AuthoredElementValues> definition = mock(ProcessNodeDefinition.class);
     private final ProcessNodeEntity node = new ProcessNodeEntity().setId(3).setProcessId(10).setProcessVersion(1)
-            .setOutputMappings(Map.of());
+            .setOutputMappings(Map.of()).setDeadlines(Map.of("customer", new ProcessNodeDeadlineConfiguration(2, true)));
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(1L).setProcessId(10)
             .setStatus(ProcessInstanceStatus.Running).setInitialPayload(Map.of());
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(2L)
-            .setProcessInstanceId(1L).setStatus(ProcessTaskStatus.Running).setDeadline(PREVIOUS_DEADLINE);
+            .setProcessInstanceId(1L).setStatus(ProcessTaskStatus.Running).setDeadline(PREVIOUS_DEADLINE).setDeadlineKey("preparation");
     private final UserEntity assignee = new UserEntity().setId("staff").setFullName("Anna Beispiel");
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
-            assignments, mock(RabbitTemplate.class), null, mock(ProcessInstanceRepository.class), versions, tasks,
+            assignments, mock(RabbitTemplate.class), communication, mock(ProcessInstanceRepository.class), versions, tasks,
             edges, users, mail, mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class),
-            null, null, null, nodes);
+            processes, departments, null, nodes, new BusinessTime(ZoneId.of("Europe/Berlin"), clock));
 
     @BeforeEach
     void setup() throws Exception {
+        when(clock.withZone(any())).thenReturn(clock);
+        when(clock.getZone()).thenReturn(ZoneId.of("Europe/Berlin"));
+        when(clock.instant()).thenReturn(Instant.parse("2030-05-01T12:00:00Z"));
         when(versions.findById(ProcessVersionEntityId.of(10, 1)))
                 .thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(10).setProcessVersion(1)));
         when(definition.getOutputs()).thenReturn(List.of());
         when(nodes.resolvePorts(node, definition)).thenReturn(new ProcessNodePortResolution(
-                List.of(new ProcessNodePort("success", "Weiter", "Fortsetzen")), List.of()));
+                List.of(new ProcessNodePort("success", "Weiter", "Fortsetzen")), List.of(), List.of(PREPARATION, CUSTOMER)));
         when(edges.findByFromNodeIdAndViaPort(3, "success"))
                 .thenReturn(Optional.of(new ProcessEdgeEntity(1, 10, 1, 3, 4, "success")));
         when(users.retrieve("staff")).thenReturn(Optional.of(assignee));
@@ -89,7 +111,7 @@ class ProcessTaskDeadlineResultHandlerTest {
     @ParameterizedTest
     @MethodSource("executionResults")
     void updatesDeadlineAndRecordsOneHistoryEventAcrossResultTypes(ProcessNodeExecutionResult result) throws Exception {
-        handle(result.setNewDeadline(NEW_DEADLINE));
+        handle(result.setNewDeadlineKey("customer"));
 
         assertEquals(NEW_DEADLINE, task.getDeadline());
         verify(tasks, atLeastOnce()).save(task);
@@ -112,8 +134,8 @@ class ProcessTaskDeadlineResultHandlerTest {
 
     @Test
     void setsAnInitiallyMissingDeadlineAndDoesNotRepeatTheUpdate() throws Exception {
-        task.setDeadline(null);
-        var result = new ProcessNodeExecutionResultNoop().setNewDeadline(NEW_DEADLINE);
+        task.setDeadline(null).setDeadlineKey(null);
+        var result = new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer");
 
         handle(result);
         handle(result);
@@ -125,21 +147,76 @@ class ProcessTaskDeadlineResultHandlerTest {
 
     @ParameterizedTest
     @NullSource
-    @ValueSource(strings = "2030-05-01T10:00:00Z")
+    @ValueSource(strings = "preparation")
     void absentOrIdenticalDeadlineCausesNoAdditionalWrites(@Nullable String deadline) throws Exception {
-        handle(new ProcessNodeExecutionResultNoop().setNewDeadline(deadline == null ? null : Instant.parse(deadline)));
+        handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey(deadline));
 
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
         verifyNoInteractions(tasks, events, mail);
     }
 
     @Test
-    void permitsMovingTheDeadlineIntoThePast() throws Exception {
-        var past = Instant.parse("2000-01-01T00:00:00Z");
-        handle(new ProcessNodeExecutionResultNoop().setNewDeadline(past));
-
-        assertEquals(past, task.getDeadline());
+    void unconfiguredPhaseClearsThePreviousDeadlineAndLogsItsKey() throws Exception {
+        node.setDeadlines(Map.of());
+        handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer"));
+        handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer"));
+        assertNull(task.getDeadline());
+        assertNull(task.getDeadlineKey());
         verify(tasks).save(task);
+        var captor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(events).save(captor.capture());
+        var event = captor.getValue();
+        assertTrue(event.getHistoryRelevant());
+        assertEquals("preparation", event.getDetails().get("previousDeadlineKey"));
+        assertNull(event.getDetails().get("newDeadlineKey"));
+        assertNull(event.getDetails().get("newDeadline"));
+        assertTrue(event.getMessage().contains("aufgehoben"));
+    }
+
+    @Test
+    void computesDaysFromPhaseEntryAcrossDaylightSavingTimeAndDoesNotExtendOnReselection() throws Exception {
+        when(clock.instant()).thenReturn(Instant.parse("2030-03-30T11:00:00Z"));
+        handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer"));
+        assertEquals(Instant.parse("2030-04-01T10:00:00Z"), task.getDeadline());
+        when(clock.instant()).thenReturn(Instant.parse("2030-04-10T10:00:00Z"));
+        handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer"));
+        assertEquals(Instant.parse("2030-04-01T10:00:00Z"), task.getDeadline());
+        assertEquals("customer", task.getDeadlineKey());
+        verify(tasks).save(task);
+        verify(events).save(any());
+    }
+
+    @Test
+    void unknownDeadlineIsRejectedBeforeCommunicationOrAssignment() {
+        var result = ProcessNodeExecutionResultTaskAssigned.of("staff").setNewDeadlineKey("unknown")
+                .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest("customer",
+                        CommunicationMessage.of("Betreff", "Nachricht", "Nachricht", List.of(), List.of())));
+        assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
+        verifyNoInteractions(tasks, events, communication, assignments, mail);
+        assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
+    }
+
+    @Test
+    void failedDispatchPreservesThePreparationDeadline() throws Exception {
+        when(processes.retrieve(10)).thenReturn(Optional.of(new ProcessEntity().setId(10).setDepartmentId(20)));
+        when(departments.retrieve(20)).thenReturn(Optional.of(new DepartmentEntity().setId(20)));
+        when(communication.sendMessage(any(), any())).thenThrow(new CommunicationException("Delivery failed"));
+        var result = ProcessNodeExecutionResultTaskAssignedCustomer.of("customer").setNewDeadlineKey("customer")
+                .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest("customer",
+                        CommunicationMessage.of("Betreff", "Nachricht", "Nachricht", List.of(), List.of())));
+        assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
+        assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
+        assertEquals("preparation", task.getDeadlineKey());
+        verifyNoInteractions(events, mail);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void bothSoftAndHardPhasesReceiveADueDate(boolean strict) throws Exception {
+        node.setDeadlines(Map.of("customer", new ProcessNodeDeadlineConfiguration(2, strict)));
+        handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer"));
+        assertEquals(NEW_DEADLINE, task.getDeadline());
+        assertEquals("customer", task.getDeadlineKey());
     }
 
     @Test
@@ -150,7 +227,7 @@ class ProcessTaskDeadlineResultHandlerTest {
             return null;
         }).when(mail).sendAssigned(isNull(), same(assignee), same(instance), same(task), same(node), same(definition), eq(false));
 
-        handle(ProcessNodeExecutionResultTaskAssigned.of("staff").setNewDeadline(NEW_DEADLINE));
+        handle(ProcessNodeExecutionResultTaskAssigned.of("staff").setNewDeadlineKey("customer"));
 
         verify(mail).sendAssigned(null, assignee, instance, task, node, definition, false);
         verify(tasks).save(task);
@@ -163,7 +240,7 @@ class ProcessTaskDeadlineResultHandlerTest {
         instance.setStatus(instanceStatus);
         task.setStatus(taskStatus);
 
-        handle(new ProcessNodeExecutionResultNoop().setNewDeadline(NEW_DEADLINE));
+        handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer"));
 
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
         verifyNoInteractions(tasks, events, mail);
@@ -174,7 +251,7 @@ class ProcessTaskDeadlineResultHandlerTest {
         doThrow(ResponseException.forbidden()).when(assignments).saveRuntimeAssignment(task, "staff");
 
         assertThrows(ProcessNodeExecutionExceptionInvalidAssignment.class,
-                () -> handle(ProcessNodeExecutionResultTaskAssigned.of("staff").setNewDeadline(NEW_DEADLINE)));
+                () -> handle(ProcessNodeExecutionResultTaskAssigned.of("staff").setNewDeadlineKey("customer")));
 
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
         verifyNoInteractions(tasks, events, mail);
@@ -183,33 +260,39 @@ class ProcessTaskDeadlineResultHandlerTest {
     @Test
     void rejectedCompletionDoesNotChangeDeadlineOrLogSuccess() {
         assertThrows(ProcessNodeExecutionException.class,
-                () -> handle(new ProcessNodeExecutionResultTaskCompleted("missing").setNewDeadline(NEW_DEADLINE)));
+                () -> handle(new ProcessNodeExecutionResultTaskCompleted("missing").setNewDeadlineKey("customer")));
 
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
         verifyNoInteractions(tasks, events, mail);
     }
 
     @Test
-    void completionCannotUseDeadlinePortAfterSwitchingToSoft() throws Exception {
+    void completionRequiresAHardDeadlineForTheActivePhase() throws Exception {
         try (var validators = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
             var resolver = new ProcessNodePortResolver(validators.getValidator());
-            node.setTimeLimitDays(3).setTimeLimitStrict(true);
             when(definition.getPorts(any())).thenReturn(List.of());
+            when(definition.getDeadlines(any())).thenReturn(List.of(PREPARATION, CUSTOMER));
             when(nodes.resolvePorts(node, definition)).thenAnswer(invocation ->
                     resolver.resolve(node, definition, new AuthoredElementValues()));
-            when(edges.findByFromNodeIdAndViaPort(3, ProcessNodePortResolver.DEADLINE_PORT_KEY))
-                    .thenReturn(Optional.of(new ProcessEdgeEntity(1, 10, 1, 3, 4, ProcessNodePortResolver.DEADLINE_PORT_KEY)));
-            var result = new ProcessNodeExecutionResultTaskCompleted(ProcessNodePortResolver.DEADLINE_PORT_KEY);
+            when(edges.findByFromNodeIdAndViaPort(3, "customer_overdue"))
+                    .thenReturn(Optional.of(new ProcessEdgeEntity(1, 10, 1, 3, 4, "customer_overdue")));
+            var result = new ProcessNodeExecutionResultTaskCompleted("customer_overdue");
 
-            node.setTimeLimitStrict(false);
             assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
             assertEquals(ProcessTaskStatus.Running, task.getStatus());
+            task.setDeadlineKey("customer").setDeadline(null);
+            assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
+            task.setDeadline(PREVIOUS_DEADLINE);
+            node.setDeadlines(Map.of("customer", new ProcessNodeDeadlineConfiguration(2, false)));
+            assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
             verifyNoInteractions(tasks, events, edges);
 
-            node.setTimeLimitStrict(true);
+            node.setDeadlines(Map.of("customer", new ProcessNodeDeadlineConfiguration(2, true)));
             handle(result);
             assertEquals(ProcessTaskStatus.Completed, task.getStatus());
-            verify(edges).findByFromNodeIdAndViaPort(3, ProcessNodePortResolver.DEADLINE_PORT_KEY);
+            assertEquals("customer", task.getDeadlineKey());
+            assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
+            verify(edges).findByFromNodeIdAndViaPort(3, "customer_overdue");
         }
     }
 
@@ -218,7 +301,7 @@ class ProcessTaskDeadlineResultHandlerTest {
         when(tasks.save(task)).thenThrow(new IllegalStateException("Persistence failed"));
 
         assertThrows(IllegalStateException.class,
-                () -> handle(new ProcessNodeExecutionResultNoop().setNewDeadline(NEW_DEADLINE)));
+                () -> handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer")));
 
         verifyNoInteractions(events, mail);
     }
@@ -244,11 +327,10 @@ class ProcessTaskDeadlineResultHandlerTest {
         assertTrue(event.getDetails().containsKey("previousDeadline"));
         assertEquals(previousDeadline, event.getDetails().get("previousDeadline"));
         assertEquals(NEW_DEADLINE, event.getDetails().get("newDeadline"));
-        assertEquals(previousDeadline == null
-                ? "Für die Aufgabe wurde eine Frist bis %s gesetzt."
-                        .formatted(ExecutionSummaryMarkdown.timestamp(NEW_DEADLINE))
-                : "Die Frist der Aufgabe wurde von %s auf %s geändert."
-                        .formatted(ExecutionSummaryMarkdown.timestamp(previousDeadline), ExecutionSummaryMarkdown.timestamp(NEW_DEADLINE)),
-                event.getMessage());
+        assertEquals("customer", task.getDeadlineKey());
+        assertEquals("customer", event.getDetails().get("newDeadlineKey"));
+        assertEquals(previousDeadline == null ? null : "preparation", event.getDetails().get("previousDeadlineKey"));
+        assertTrue(event.getMessage().contains(ExecutionSummaryMarkdown.timestamp(NEW_DEADLINE)));
+        assertTrue(event.getMessage().contains("Kundenbearbeitung"));
     }
 }

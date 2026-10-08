@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -35,7 +36,7 @@ class ProcessExportServiceTest {
         var node = new ProcessNodeEntity().setId(1).setProcessId(10).setProcessVersion(2)
                 .setProcessNodeDefinitionKey("test.node").setProcessNodeDefinitionVersion(1)
                 .setConfiguration(new AuthoredElementValues()).setOutputMappings(Map.of())
-                .setTimeLimitDays(3).setTimeLimitStrict(strict);
+                .setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, strict)));
         when(processes.retrieve(10)).thenReturn(Optional.of(new ProcessEntity()));
         when(versions.retrieve(ProcessVersionEntityId.of(10, 2))).thenReturn(Optional.of(new ProcessVersionEntity()));
         when(nodes.list(any(ProcessNodeFilter.class))).thenReturn(new PageImpl<>(List.of(node)));
@@ -49,7 +50,7 @@ class ProcessExportServiceTest {
         var mapper = JsonMapperFactory.getInstance();
         var imported = mapper.readValue(mapper.writeValueAsString(exported), ProcessExportService.ProcessExport.class);
 
-        assertEquals(strict, imported.nodes().getFirst().getTimeLimitStrict());
-        assertEquals(3, imported.nodes().getFirst().getTimeLimitDays());
+        assertEquals(strict, imported.nodes().getFirst().getDeadlines().get("processing").strict());
+        assertEquals(3, imported.nodes().getFirst().getDeadlines().get("processing").days());
     }
 }
