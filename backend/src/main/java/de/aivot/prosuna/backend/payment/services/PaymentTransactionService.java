@@ -157,7 +157,11 @@ public class PaymentTransactionService implements
                     .setMetadata(metadata).log();
             throw e;
         }
-        transactionEntity.setPaymentInformation(xBezahldienstePaymentTransaction.getPaymentInformation());
+        var paymentInformation = xBezahldienstePaymentTransaction.getPaymentInformation();
+        paymentInformation.setTransactionTimestamp(
+                paymentProviderDefinition.fixTransactionTimestamp(paymentInformation.getTransactionTimestamp())
+        );
+        transactionEntity.setPaymentInformation(paymentInformation);
 
         return paymentTransactionRepository.save(transactionEntity);
     }
@@ -289,7 +293,11 @@ public class PaymentTransactionService implements
         // If the payment status has changed, update the transaction and notify all listeners
         if (paymentStatusChanged) {
             // Update and save the transaction
-            transaction.setPaymentInformation(xBezahldiensteTransactionUpdated.getPaymentInformation());
+            var paymentInformation = xBezahldiensteTransactionUpdated.getPaymentInformation();
+            paymentInformation.setTransactionTimestamp(
+                    providerDefinition.fixTransactionTimestamp(paymentInformation.getTransactionTimestamp())
+            );
+            transaction.setPaymentInformation(paymentInformation);
             var updatedTransaction = paymentTransactionRepository.save(transaction);
 
             // Iterate over all listeners and notify them about the change

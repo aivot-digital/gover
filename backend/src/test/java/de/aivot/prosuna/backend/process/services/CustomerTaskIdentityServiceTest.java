@@ -20,6 +20,8 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.http.HttpStatus;
 
 import java.net.URI;
@@ -307,18 +309,27 @@ class CustomerTaskIdentityServiceTest {
         verifyNoInteractions(identityService);
     }
 
-    @Test
-    void getAdditionalIdentitiesForCompletion_ReturnsReadyNewIdentityOnlyForCompletion() throws ResponseException {
+    @ParameterizedTest
+    @EnumSource(IdentityType.class)
+    void getAdditionalIdentitiesForCompletion_CapturesTitleOnlyForNewIdentityOnCompletion(IdentityType type) throws ResponseException {
         var slot = new IdentityConfigElementSlot().setId("representative");
-        var identity = emailIdentity("representative");
+        var identity = type == IdentityType.Email
+                ? emailIdentity("representative")
+                : providerIdentity("representative", UUID.randomUUID(), "user-123");
         var cachedIdentities = new IdentityDataMap();
         cachedIdentities.put(identity.identityId(), identity);
+        var existingIdentity = emailIdentity(REQUIRED_IDENTITY_ID);
+        var storedIdentities = new IdentityDataMap();
+        storedIdentities.put(REQUIRED_IDENTITY_ID, existingIdentity);
         when(identitySlotService.requireConfiguredIdentityId(slot)).thenReturn(identity.identityId());
         when(identityService.getIdentityDataMap("current-session", PROCESS_NODE_ID)).thenReturn(cachedIdentities);
         when(identitySlotService.resolveSlot(slot, cachedIdentities, "current-session", PROCESS_NODE_ID))
-                .thenReturn(identitySlot(identity.identityId(), false, IdentityType.Email, true));
+                .thenReturn(new IdentitySlotResponseDTO(
+                        identity.identityId(), "Vertretung", null, false, true, type,
+                        identity.emailAddress(), true, List.of(), null
+                ));
         var state = service.resolveIdentityState(
-                processInstance(new IdentityDataMap()),
+                processInstance(storedIdentities),
                 processNode,
                 customerViewWithNewIdentity(slot),
                 "current-session"
@@ -329,12 +340,15 @@ class CustomerTaskIdentityServiceTest {
                 new ProcessNodeExecutionResultTaskUpdated()
         ).isEmpty());
         assertEquals(
-                Map.of(identity.identityId(), identity),
+                Map.of(identity.identityId(), identity.withTitle("Vertretung")),
                 service.getAdditionalIdentitiesForCompletion(
                         state,
                         new ProcessNodeExecutionResultInstanceCompleted()
                 )
         );
+        assertNull(identity.title());
+        assertSame(existingIdentity, storedIdentities.get(REQUIRED_IDENTITY_ID));
+        assertNull(storedIdentities.get(REQUIRED_IDENTITY_ID).title());
     }
 
     private static ProcessNodeCustomerView customerView(String requiredIdentityId) {

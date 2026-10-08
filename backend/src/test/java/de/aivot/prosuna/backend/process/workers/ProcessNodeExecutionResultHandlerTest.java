@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
@@ -52,6 +55,7 @@ import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -93,10 +97,10 @@ class ProcessNodeExecutionResultHandlerTest {
         var result = new ProcessNodeExecutionResultTaskUpdated();
         var logger = new RecordingProcessNodeExecutionLogger();
 
-        handler.handleResult(logger, null, provider, node, instance, task, null, result);
+        handler.handleResult(logger, null, provider, new AuthoredElementValues(), node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.AwaitingStaff, task.getStatus());
 
-        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        handler.handleResult(logger, user("staff", "Staff User"), provider, new AuthoredElementValues(), node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
         assertEquals(2, savedTasks.size());
     }
@@ -113,20 +117,20 @@ class ProcessNodeExecutionResultHandlerTest {
         var result = new ProcessNodeExecutionResultTaskUpdated();
         var logger = new RecordingProcessNodeExecutionLogger();
 
-        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
+        handler.handleResult(logger, user("staff", "Staff User"), provider, new AuthoredElementValues(), node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertEquals(1, savedTasks.size());
         assertTrue(savedInstances.isEmpty());
 
-        handler.handleResult(logger, user("staff", "Staff User"), provider, node, instance, task, null, result);
-        handler.handleResult(logger, null, provider, node, instance, task, null, result);
+        handler.handleResult(logger, user("staff", "Staff User"), provider, new AuthoredElementValues(), node, instance, task, null, result);
+        handler.handleResult(logger, null, provider, new AuthoredElementValues(), node, instance, task, null, result);
         assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertTrue(savedInstances.isEmpty());
 
         var nextTask = processInstanceTask(null);
-        handler.handleResult(logger, null, provider, node, instance, nextTask, task, new ProcessNodeExecutionResultNoop());
+        handler.handleResult(logger, null, provider, new AuthoredElementValues(), node, instance, nextTask, task, new ProcessNodeExecutionResultNoop());
         assertEquals(ProcessTaskStatus.Running, nextTask.getStatus());
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertTrue(savedInstances.isEmpty());
@@ -147,6 +151,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(
                 logger, null, new TestProcessNodeDefinition("Formularanforderung"),
+                new AuthoredElementValues(),
                 processNode("Formularanforderung"), instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                         .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
@@ -158,6 +163,8 @@ class ProcessNodeExecutionResultHandlerTest {
         assertNull(task.getAssignedCustomerIdentityId());
         assertTrue(instance.getIdentities().isEmpty());
         assertEquals(sendResult, task.getNodeData().get("communicationResult"));
+        var receipt = ExecutionSummaryMarkdown.map(task.getRuntimeData().get(ExecutionSummaryMarkdown.RUNTIME_KEY));
+        assertInstanceOf(java.time.Instant.class, receipt.get(ExecutionSummaryMarkdown.SENT_AT));
         assertEquals(List.of(task), savedTasks);
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertEquals(List.of(instance), savedInstances);
@@ -180,7 +187,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> handler.handleResult(
                 new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Formularanforderung"), processNode("Formularanforderung"),
+                new TestProcessNodeDefinition("Formularanforderung"), new AuthoredElementValues(), processNode("Formularanforderung"),
                 instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                         .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
@@ -189,6 +196,7 @@ class ProcessNodeExecutionResultHandlerTest {
         ));
 
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertFalse(task.getRuntimeData().containsKey(ExecutionSummaryMarkdown.RUNTIME_KEY));
         assertNull(task.getAssignedCustomerIdentityId());
         assertEquals(List.of(task), savedTasks);
         assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
@@ -205,7 +213,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(
                 new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Zahlung"), processNode("Zahlung"),
+                new TestProcessNodeDefinition("Zahlung"), new AuthoredElementValues(), processNode("Zahlung"),
                 instance, task, null, new ProcessNodeExecutionResultNoop()
         );
 
@@ -227,7 +235,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(
                 new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Formularanforderung"), processNode("Formularanforderung"),
+                new TestProcessNodeDefinition("Formularanforderung"), new AuthoredElementValues(), processNode("Formularanforderung"),
                 instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                         .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
@@ -261,6 +269,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Complete process"),
+                new AuthoredElementValues(),
                 processNode("Complete process"),
                 processInstance,
                 task,
@@ -289,6 +298,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
                 new TestProcessNodeDefinition("Complete process"),
+                new AuthoredElementValues(),
                 processNode("Complete process").setProcessVersion(2), instance,
                 processInstanceTask(null), null, new ProcessNodeExecutionResultInstanceCompleted());
 
@@ -307,7 +317,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var instanceWithOverride = processInstance();
 
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Complete process"), processNode("Complete process"),
+                new TestProcessNodeDefinition("Complete process"), new AuthoredElementValues(), processNode("Complete process"),
                 instanceWithOverride, processInstanceTask(null), null,
                 new ProcessNodeExecutionResultInstanceCompleted().setRetentionDate(explicitDate));
         assertEquals(explicitDate, instanceWithOverride.getKeepUntil());
@@ -315,7 +325,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         var draftInstance = processInstance();
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
-                new TestProcessNodeDefinition("Complete process"), processNode("Complete process"),
+                new TestProcessNodeDefinition("Complete process"), new AuthoredElementValues(), processNode("Complete process"),
                 draftInstance, processInstanceTask(null), null, new ProcessNodeExecutionResultInstanceCompleted());
         assertEquals(ProcessInstanceStatus.Completed, draftInstance.getStatus());
         assertNull(draftInstance.getKeepUntil());
@@ -335,6 +345,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Update task"),
+                new AuthoredElementValues(),
                 processNode("Update task"),
                 processInstance,
                 processInstanceTask(null),
@@ -346,10 +357,11 @@ class ProcessNodeExecutionResultHandlerTest {
         assertFalse(processInstance.getIdentities().containsKey(newIdentity.identityId()));
     }
 
-    @Test
-    void handleResult_DispatchesCommunicationAndMapsProviderResultBeforeOutputs() throws Exception {
+    @ParameterizedTest
+    @CsvSource({"' Antragstellende ', Antragstellende", ", applicant", "'', applicant", "'   ', applicant"})
+    void handleResult_DispatchesCommunicationAndMapsProviderResultBeforeOutputs(String title, String expected) throws Exception {
         var communicationService = mock(CommunicationService.class);
-        var identity = providerIdentity("applicant");
+        var identity = providerIdentity("applicant").withTitle(title);
         var message = CommunicationMessage
                 .of("Subject", "Body", "Body")
                 .withSendingContext(
@@ -383,6 +395,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new TestProcessNodeDefinition("Fallback task", List.of(
                         new ProcessNodeOutput("sendResult", "Send result", "Provider result", "Record<string, unknown>")
                 )),
+                new AuthoredElementValues(),
                 processNode("Nachricht", Map.of("sendResult", "delivery")),
                 processInstance,
                 task,
@@ -421,7 +434,7 @@ class ProcessNodeExecutionResultHandlerTest {
         assertFalse(event.technical());
         assertEquals(true, event.auditable());
         assertEquals(
-                "Die Nachricht mit dem Betreff „Subject“ wurde erfolgreich an die Identität „applicant“ versendet.",
+                "Die Nachricht mit dem Betreff „Subject“ wurde erfolgreich an die Identität „" + expected + "“ versendet.",
                 event.message()
         );
 
@@ -467,6 +480,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var identity = identity("applicant");
         var message = CommunicationMessage.of("Payment", "Please pay", "Please pay");
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class))).thenReturn(Map.of());
+        when(communicationService.describeDeliveryChannel(identity)).thenReturn("Servicekonto");
         var triggeringUser = user("user-1", "Trigger User");
 
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
@@ -483,6 +497,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 triggeringUser,
                 new TestProcessNodeDefinition("Payment"),
+                new AuthoredElementValues(),
                 processNode("Payment"),
                 processInstance(identity),
                 task,
@@ -502,6 +517,9 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(17, messageCaptor.getValue().sendingDepartment().getId());
         assertEquals(ProcessTaskStatus.AwaitingPayment, task.getStatus());
         assertEquals("transaction-1", task.getRuntimeData().get("transactionKey"));
+        var receipt = ExecutionSummaryMarkdown.map(task.getRuntimeData().get(ExecutionSummaryMarkdown.RUNTIME_KEY));
+        assertInstanceOf(java.time.Instant.class, receipt.get(ExecutionSummaryMarkdown.SENT_AT));
+        assertEquals("Servicekonto", receipt.get(ExecutionSummaryMarkdown.DELIVERY_CHANNEL));
         assertEquals(1, savedTasks.size());
         assertEquals(1, logger.events.stream()
                 .filter(event -> event.title().equals("Nachricht versendet"))
@@ -542,6 +560,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Nachricht"),
                 processInstance(identity),
                 task,
@@ -579,6 +598,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Nachricht"),
                 processInstance(),
                 task,
@@ -620,6 +640,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Nachricht"),
                 processInstance(identity),
                 task,
@@ -658,6 +679,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Nachricht"),
                 processInstance(identity),
                 task,
@@ -688,6 +710,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new TestProcessNodeDefinition("Fallback task", List.of(
                         new ProcessNodeOutput("result", "Result", "Mapped result", "string")
                 )),
+                new AuthoredElementValues(),
                 processNode("Pruefung", Map.of("result", "items[0].status")),
                 processInstance(),
                 task,
@@ -720,6 +743,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new TestProcessNodeDefinition("Fallback task", List.of(
                         new ProcessNodeOutput("result", "Result", "Mapped result", "string")
                 )),
+                new AuthoredElementValues(),
                 processNode("Pruefung", Map.of("result", "items[*].status")),
                 processInstance(),
                 task,
@@ -767,6 +791,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 triggeringUser,
                 provider,
+                new AuthoredElementValues(),
                 currentNode,
                 processInstance,
                 processInstanceTask,
@@ -792,6 +817,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"),
                 processInstance(),
                 processInstanceTask(null),
@@ -820,6 +846,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"),
                 instance,
                 processInstanceTask(assignedUser.getId()),
@@ -850,6 +877,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var task = processInstanceTask(previousUser.getId());
 
         handler.handleResult(logger, triggeringUser, new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"), processInstance(), task, null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -875,7 +903,7 @@ class ProcessNodeExecutionResultHandlerTest {
         ), mailService);
 
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), previousUser,
-                new TestProcessNodeDefinition("Fallback task"), processNode("Prüfung"),
+                new TestProcessNodeDefinition("Fallback task"), new AuthoredElementValues(), processNode("Prüfung"),
                 processInstance(), processInstanceTask(previousUser.getId()), null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -894,7 +922,7 @@ class ProcessNodeExecutionResultHandlerTest {
         ), mailService);
 
         handler.handleResult(new RecordingProcessNodeExecutionLogger(), assignedUser,
-                new TestProcessNodeDefinition("Fallback task"), processNode("Prüfung"),
+                new TestProcessNodeDefinition("Fallback task"), new AuthoredElementValues(), processNode("Prüfung"),
                 processInstance(), processInstanceTask(previousUser.getId()), null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -912,6 +940,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var task = processInstanceTask("deleted-user");
 
         handler.handleResult(logger, null, new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"), processInstance(), task, null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -936,6 +965,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var task = processInstanceTask(previousUser.getId());
 
         handler.handleResult(logger, null, new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"), processInstance(), task, null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
@@ -964,6 +994,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
                 processNode("Prüfung"),
                 processInstance(),
                 task,
@@ -1381,6 +1412,21 @@ class ProcessNodeExecutionResultHandlerTest {
                     String.format(format, args),
                     details
             ));
+        }
+
+        @Override
+        public void logf(ProcessNodeExecutionLogLevel level,
+                         Boolean isTechnical,
+                         Boolean isAuditable,
+                         Boolean isHistoryRelevant,
+                         String concernedUserId,
+                         String concernedIdentityId,
+                         String concernedIdentityTitle,
+                         String title,
+                         Map<String, Object> details,
+                         String format,
+                         Object... args) {
+            logf(level, isTechnical, isAuditable, title, details, format, args);
         }
 
         @Override

@@ -30,6 +30,7 @@ import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
@@ -41,6 +42,8 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest;
@@ -62,12 +65,19 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.math.BigDecimal;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.timestamp;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map;
 
 @Component
 public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig> {
@@ -129,6 +139,50 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         this.jsonMapper = jsonMapper;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var information = summary.data(OUTPUT_PAYMENT_DETAILS);
+        var paidAt = information instanceof XBezahldienstePaymentInformation details
+                ? details.getTransactionTimestamp() : map(information).get("transactionTimestamp");
+        var reference = information instanceof XBezahldienstePaymentInformation details
+                ? details.getTransactionReference() : map(information).get("transactionReference");
+        return "Es wurde " + summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID))
+                + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT)) + " zur Zahlung aufgefordert und" + summary.delivery() + " informiert."
+                + " Die Zahlung wurde" + (timestamp(paidAt).isEmpty() ? summary.completedAt() : summary.at(paidAt)) + " bestätigt."
+                + detail("Zahlungszweck", summary.data(OUTPUT_PAYMENT_PURPOSE))
+                + detail("Beschreibung", summary.data(OUTPUT_PAYMENT_DESCRIPTION))
+                + detail("Gesamtbetrag (Euro)", summary.data(OUTPUT_PAYMENT_TOTAL) instanceof Number total
+                        ? NumberUtils.formatGermanNumber(new BigDecimal(total.toString()), 2) : summary.data(OUTPUT_PAYMENT_TOTAL))
+                + detail("Zahlungsanbieter", summary.data(OUTPUT_PAYMENT_PROVIDER_NAME))
+                + detail("Zahlungsreferenz", reference)
+                + summaryPaymentItems(context.thisTask().getRuntimeData().get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD));
+    }
+
+    @Nonnull
+    private String summaryPaymentItems(@Nullable Object rawPayload) {
+        if (rawPayload == null) {
+            return "";
+        }
+        try {
+            var payload = rawPayload instanceof PaymentPayload typed ? typed : jsonMapper.convertValue(rawPayload, PaymentPayload.class);
+            if (payload.getPaymentItems() == null || payload.getPaymentItems().isEmpty()) {
+                return "";
+            }
+            var items = payload.getPaymentItems().stream()
+                    .map(item -> "- " + text(item.getDescription()) + ": "
+                            + NumberUtils.formatGermanNumber(item.getTotalPrice(), 2) + " Euro"
+                            + (item.getTaxRate().signum() > 0
+                            ? " (inkl. " + NumberUtils.formatGermanNumber(item.getTaxRate(), 2) + " % Steuern)" : ""))
+                    .collect(Collectors.joining("\n"));
+            return section("Zahlungspositionen", items);
+        } catch (RuntimeException ignored) {
+            // Older task payloads may be incomplete; retain the confirmed payment and its total.
+            return "";
+        }
     }
 
     @Nonnull
@@ -455,6 +509,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 content,
                 update
         );
+        result.setClearCurrentlyAssignedUser(true);
         return Optional.of(result);
     }
 

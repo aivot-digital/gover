@@ -61,6 +61,7 @@ function renderPage(item = model(), isNewItem = true) {
             <GenericDetailsPageContext.Provider value={{
                 item, isNewItem, isEditable: true, isBusy: false,
                 setItem: vi.fn(), setIsBusy: vi.fn(), setAdditionalData: vi.fn(), refresh: vi.fn(),
+                subscribeEvent: vi.fn(() => vi.fn()),
             }}>
                 <DataObjectSchemaDetailsPageIndex/>
             </GenericDetailsPageContext.Provider>

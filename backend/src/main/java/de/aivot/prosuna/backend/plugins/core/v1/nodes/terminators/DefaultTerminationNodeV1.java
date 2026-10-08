@@ -16,6 +16,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -35,6 +37,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.timestamp;
+
 @Component
 public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTerminationNodeV1.DefaultTerminationNodeV1Config> {
     private static final String NODE_KEY = "default-termination";
@@ -46,6 +50,18 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
     private static final String RETENTION_UNIT_WEEKS = "weeks";
     private static final String RETENTION_UNIT_MONTHS = "months";
     private static final String RETENTION_UNIT_YEARS = "years";
+
+    private static final Number DEFAULT_RETENTION_VALUE = 30;
+    private static final String DEFAULT_RETENTION_UNIT = RETENTION_UNIT_DAYS;
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<DefaultTerminationNodeV1.DefaultTerminationNodeV1Config> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var retention = timestamp(context.thisProcessInstance().getKeepUntil());
+        return "Der Vorgang wurde" + summary.at(context.thisProcessInstance().getFinished()) + " abgeschlossen."
+                + (retention.isEmpty() ? "" : " Das Ende der Aufbewahrungsfrist für die Vorgangsdaten wurde für " + retention + " festgelegt.");
+    }
 
     @Nonnull
     @Override

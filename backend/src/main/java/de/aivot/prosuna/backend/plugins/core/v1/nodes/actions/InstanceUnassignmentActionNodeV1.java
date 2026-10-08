@@ -5,6 +5,8 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -16,11 +18,23 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.user;
+
 @Component
 public class InstanceUnassignmentActionNodeV1 implements ProcessNodeDefinition<InstanceUnassignmentActionNodeV1.Config> {
     public static final String NODE_KEY = "unassign_instance";
 
     private static final String PORT_SUCCESS = "success";
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<InstanceUnassignmentActionNodeV1.Config> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var previousId = summary.metadata(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_ID);
+        return previousId == null ? "Der Vorgang hatte keine bestehende Zuweisung."
+                : "Die Zuweisung des Vorgangs an "
+                + user(previousId, summary.metadata(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_NAME)) + " wurde aufgehoben.";
+    }
 
     @Nonnull
     @Override

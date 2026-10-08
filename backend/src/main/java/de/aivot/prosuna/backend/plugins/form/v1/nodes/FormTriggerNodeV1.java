@@ -48,6 +48,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
@@ -75,6 +77,8 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
 
 @Component
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
@@ -150,6 +154,19 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         this.prosunaConfig = prosunaConfig;
         this.jsonMapper = jsonMapper;
         this.authoredInputValueService = authoredInputValueService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FormTriggerConfigV1> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var configuration = context.configurationOfExecutingNode();
+        var title = configuration.formLayout == null ? null : configuration.formLayout.getPublicTitle();
+        if (title == null || title.isBlank()) {
+            title = context.thisNode().getName();
+        }
+        return "Der Vorgang wurde" + summary.eventAt("started") + " durch die Übermittlung des Formulars"
+                + (title == null || title.isBlank() ? "" : " „" + text(title) + "“") + " ausgelöst.";
     }
 
     @Nonnull

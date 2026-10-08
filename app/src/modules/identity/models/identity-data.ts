@@ -1,6 +1,7 @@
 export interface IdentityData {
     sessionId: string;
     identityId: string;
+    title?: string | null;
     type: 'IdentityProvider' | 'Email';
     providerKey: string | null;
     metadataIdentifier: string | null;

@@ -37,6 +37,8 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -70,6 +72,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.list;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.document;
 
 @Component
 public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> {
@@ -106,6 +115,29 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         this.storageService = storageService;
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var documents = list(summary.metadata(ExecutionSummaryMarkdown.DOCUMENTS));
+        if (documents.isEmpty()) {
+            return "Es wurden keine Dokumente beim Speicheranbieter geschrieben.";
+        }
+        var markdown = new StringBuilder();
+        for (var entry : documents) {
+            var document = map(entry);
+            if (!markdown.isEmpty()) {
+                markdown.append("\n\n");
+            }
+            markdown.append("Das Dokument „").append(text(document.get("fileName")))
+                    .append("“ wurde erfolgreich beim Speicheranbieter „").append(text(document.get("providerName"))).append("“ geschrieben.")
+                    .append(detail("Dateipfad", document.get("path")))
+                    .append(detail("Datenvariable", document.get("dataKey")))
+                    .append(section("Ursprüngliches Dokument", document(document.get("attachmentKey"), document.get("fileName"))));
+        }
+        return markdown.toString();
     }
 
     @Nonnull
@@ -392,6 +424,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         var fileNames = new ArrayList<String>();
         var results = new ArrayList<Map<String, Object>>();
         var createdFolders = new HashSet<String>();
+        var summaryDocuments = new ArrayList<Map<String, Object>>();
 
         for (var rowIndex = 0; rowIndex < attachmentSetConfigs.size(); rowIndex++) {
             var attachmentSetConfig = attachmentSetConfigs.get(rowIndex);
@@ -448,6 +481,13 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                     fileNames.add(storedDocument.getName());
                     setStoragePaths.add(storedDocument.getPathFromRoot());
                     setFileNames.add(storedDocument.getName());
+                    summaryDocuments.add(Map.of(
+                            "providerName", storageProvider.getName(),
+                            "path", storedDocument.getPathFromRoot(),
+                            "fileName", storedDocument.getName(),
+                            "attachmentKey", attachment.getKey(),
+                            "dataKey", attachmentSetDataKey
+                    ));
                 } catch (IOException | ResponseException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
                             e,
@@ -477,7 +517,9 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setNodeData(metadata);
+                .setNodeData(metadata)
+                .setRuntimeData(ExecutionSummaryMarkdown.withMetadata(null,
+                        Map.of(ExecutionSummaryMarkdown.DOCUMENTS, summaryDocuments)));
     }
 
     @Nonnull

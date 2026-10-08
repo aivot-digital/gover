@@ -49,6 +49,7 @@ function renderItem(item: ProcessInstanceDetails) {
                     isBusy: false,
                     setIsBusy: vi.fn(),
                     refresh: vi.fn(),
+                    subscribeEvent: vi.fn(() => vi.fn()),
                     isEditable: false,
                 }}
             >
@@ -173,13 +174,12 @@ describe('Process instance information', () => {
         await screen.findByText('Noch kein Ereignis vorhanden');
     });
 
-    it('copies identifiers individually and shows relative dates like the task view', async () => {
-        vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-23T08:00:00Z'));
+    it('copies identifiers individually and shows the start date and time in the application time zone', async () => {
         const user = userEvent.setup();
         const item = createItem();
         item.instance.assignedFileNumbers = ['AZ-42', 'AZ-43'];
         renderItem(item);
-        expect(screen.getByRole('row', {name: /Gestartet am/})).toHaveTextContent(/\(vor .*\)/);
+        expect(screen.getByRole('row', {name: /Gestartet am/})).toHaveTextContent('22.09.2026 um 10:00 Uhr');
         expect(screen.queryByText('Test-Vorgang')).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'Vorgangskennung kopieren'}));
         expect(copyToClipboardText).toHaveBeenLastCalledWith('V-2026-17');
