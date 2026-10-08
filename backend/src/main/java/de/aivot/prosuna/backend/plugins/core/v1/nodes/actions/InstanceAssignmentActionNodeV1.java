@@ -250,7 +250,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull Config configuration) {
         return List.of(new ProcessNodePort(
                 PORT_SUCCESS,
                 "Zuweisung erfolgt",

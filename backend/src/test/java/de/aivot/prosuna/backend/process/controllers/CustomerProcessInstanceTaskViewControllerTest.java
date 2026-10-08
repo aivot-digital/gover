@@ -1172,7 +1172,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final ProcessNodeEntity node;
 
         private TestProcessNodeService(ProcessNodeEntity node) {
-            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null);
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null);
             this.node = node;
         }
 
@@ -1287,7 +1287,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class FailingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private FailingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -1305,7 +1305,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -1380,7 +1380,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 
@@ -1472,7 +1472,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 
@@ -1572,7 +1572,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 

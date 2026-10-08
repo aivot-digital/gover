@@ -74,7 +74,7 @@ public class InstanceUnassignmentActionNodeV1 implements ProcessNodeDefinition<I
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull Config configuration) {
         return List.of(new ProcessNodePort(
                 PORT_SUCCESS,
                 "Zuweisung entfernt",

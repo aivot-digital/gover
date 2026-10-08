@@ -567,7 +567,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessNodeEntity node;
 
         private TestProcessNodeService(ProcessNodeEntity node) {
-            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null);
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null);
             this.node = node;
         }
 
@@ -595,7 +595,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -780,7 +780,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 
@@ -881,7 +881,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 
@@ -970,7 +970,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 

@@ -181,7 +181,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull EMailActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,

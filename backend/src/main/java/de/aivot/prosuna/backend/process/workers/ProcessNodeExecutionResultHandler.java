@@ -35,6 +35,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
+import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -64,6 +65,7 @@ public class ProcessNodeExecutionResultHandler {
     private final ProcessNodeRepository processNodeRepository;
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final ProcessService processService;
+    private final ProcessNodeService processNodeService;
     private final DepartmentService departmentService;
     private final ProcessInstanceMailService processInstanceMailService;
 
@@ -80,7 +82,8 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessNodeRepository processNodeRepository,
                                              ProcessNodeDefinitionService processNodeDefinitionService,
                                              ProcessService processService,
-                                             DepartmentService departmentService, ProcessInstanceMailService processInstanceMailService) {
+                                             DepartmentService departmentService, ProcessInstanceMailService processInstanceMailService,
+                                             ProcessNodeService processNodeService) {
         this.assignmentService = assignmentService;
         this.rabbitTemplate = rabbitTemplate;
         this.communicationService = communicationService;
@@ -93,6 +96,7 @@ public class ProcessNodeExecutionResultHandler {
         this.processNodeRepository = processNodeRepository;
         this.processNodeDefinitionService = processNodeDefinitionService;
         this.processService = processService;
+        this.processNodeService = processNodeService;
         this.departmentService = departmentService;
         this.processInstanceMailService = processInstanceMailService;
     }
@@ -1043,7 +1047,11 @@ public class ProcessNodeExecutionResultHandler {
     private CompletionPath requireCompletionPath(@Nonnull ProcessNodeDefinition<?> provider,
                                                  @Nonnull ProcessNodeEntity currentNode,
                                                  @Nonnull String viaPort) throws ProcessNodeExecutionExceptionBrokenImplementation {
-        var port = provider.getPorts().stream()
+        var resolution = processNodeService.resolvePorts(currentNode, provider);
+        if (!resolution.problems().isEmpty()) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(String.join(" ", resolution.problems()));
+        }
+        var port = resolution.ports().stream()
                 .filter(candidate -> candidate.key().equals(viaPort))
                 .findFirst()
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(

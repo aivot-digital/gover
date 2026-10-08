@@ -237,7 +237,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull NodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_SUBMITTED,

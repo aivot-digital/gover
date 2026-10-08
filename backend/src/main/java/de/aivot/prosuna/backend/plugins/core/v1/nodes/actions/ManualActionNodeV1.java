@@ -191,7 +191,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull ManualActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_OUTPUT,

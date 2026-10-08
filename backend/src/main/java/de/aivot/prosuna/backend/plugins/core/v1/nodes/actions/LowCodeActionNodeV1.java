@@ -137,7 +137,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull LowCodeActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,

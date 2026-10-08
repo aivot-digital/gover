@@ -163,7 +163,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull DataTypeValidationControlNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME_VALID,

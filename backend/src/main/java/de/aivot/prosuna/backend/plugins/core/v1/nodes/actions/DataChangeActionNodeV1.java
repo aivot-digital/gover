@@ -186,7 +186,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull DataChangeActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_OUTPUT,

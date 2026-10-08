@@ -141,7 +141,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull FitConnectTriggerConfigV1 configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,

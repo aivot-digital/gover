@@ -206,7 +206,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull FormTriggerConfigV1 configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,

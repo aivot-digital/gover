@@ -121,7 +121,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull SendDataFitConnectActionNodeV1Config configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_SUCCESS,

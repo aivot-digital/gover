@@ -175,7 +175,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull AiProcessDataTransformationActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         SUCCESS_PORT,

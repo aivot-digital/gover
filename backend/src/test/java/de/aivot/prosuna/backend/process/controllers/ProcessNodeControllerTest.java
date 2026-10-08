@@ -45,6 +45,7 @@ class ProcessNodeControllerTest {
                 .setProcessVersion(5)
                 .setDataKey("existing-key");
         var processNodeService = mock(ProcessNodeService.class);
+        when(processNodeService.resolvePorts(any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(java.util.List.of(), java.util.List.of()));
         when(processNodeService.retrieve(7)).thenReturn(Optional.of(existingNode));
         when(processNodeService.update(eq(7), any(ProcessNodeEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(1));
@@ -74,9 +75,9 @@ class ProcessNodeControllerTest {
 
         var result = controller.update(jwt, 7, submittedNode, null, null);
 
-        assertEquals(7, result.getId());
-        assertEquals(12, result.getProcessId());
-        assertEquals(5, result.getProcessVersion());
+        assertEquals(7, result.id());
+        assertEquals(12, result.processId());
+        assertEquals(5, result.processVersion());
         verify(permissionService).requireProcessPermission(
                 "user-1",
                 12,

@@ -431,7 +431,7 @@ class ProcessWorkerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 
@@ -466,7 +466,7 @@ class ProcessWorkerTest {
         private final boolean invalidRuntimeConfiguration;
 
         private TestProcessNodeService(boolean invalidRuntimeConfiguration) {
-            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null);
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null);
             this.invalidRuntimeConfiguration = invalidRuntimeConfiguration;
         }
 
@@ -493,7 +493,7 @@ class ProcessWorkerTest {
         private boolean handleResultCalled;
 
         private TestProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override

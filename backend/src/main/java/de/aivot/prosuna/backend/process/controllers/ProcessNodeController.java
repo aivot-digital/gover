@@ -11,6 +11,9 @@ import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.dtos.ProcessNodeResponseDTO;
+import de.aivot.prosuna.backend.process.dtos.ProcessNodePortRequestDTO;
+import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -122,7 +125,7 @@ public class ProcessNodeController {
             summary = "List Process Definition Nodes",
             description = "List all process definition nodes with optional filtering and pagination."
     )
-    public Page<ProcessNodeEntity> list(
+    public Page<ProcessNodeResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessNodeFilter filter
@@ -158,7 +161,7 @@ public class ProcessNodeController {
         }
 
         return processDefinitionNodeService
-                .list(pageable, filter);
+                .list(pageable, filter).map(this::toResponse);
     }
 
     @PostMapping("")
@@ -168,7 +171,7 @@ public class ProcessNodeController {
                     ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
                     "` for the affected process or at system level."
     )
-    public ProcessNodeEntity create(
+    public ProcessNodeResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestBody @Valid ProcessNodeEntity newNode
     ) throws ResponseException {
@@ -198,7 +201,7 @@ public class ProcessNodeController {
                         StringUtils.quote(execUser.getFullName())
                 ).log();
 
-        return result;
+        return toResponse(result);
     }
 
     @GetMapping("{id}/")
@@ -206,7 +209,7 @@ public class ProcessNodeController {
             summary = "Retrieve Process Definition Node",
             description = "Retrieve a process definition node by its ID."
     )
-    public ProcessNodeEntity retrieve(
+    public ProcessNodeResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -224,7 +227,7 @@ public class ProcessNodeController {
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
 
-        return node;
+        return toResponse(node);
     }
 
     @PutMapping("{id}/")
@@ -234,7 +237,7 @@ public class ProcessNodeController {
                     ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
                     "` for the affected process or at system level."
     )
-    public ProcessNodeEntity update(
+    public ProcessNodeResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
             @Nonnull @RequestBody @Valid ProcessNodeEntity updateDTO,
@@ -320,7 +323,7 @@ public class ProcessNodeController {
                         StringUtils.quote(execUser.getFullName())
                 ).log();
 
-        return result;
+        return toResponse(result);
     }
 
     @DeleteMapping("{id}/")
@@ -416,7 +419,7 @@ public class ProcessNodeController {
                     "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
                     "` for the target process or at system level."
     )
-    public ProcessNodeEntity importNode(
+    public ProcessNodeResponseDTO importNode(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer processId,
             @Nonnull @PathVariable Integer processVersion,
@@ -485,9 +488,24 @@ public class ProcessNodeController {
                         StringUtils.quote(String.valueOf(processVersion))
                 ).log();
 
-        return importedNode;
+        return toResponse(importedNode);
     }
 
+
+    @Nonnull
+    private ProcessNodeResponseDTO toResponse(@Nonnull ProcessNodeEntity node) {
+        return ProcessNodeResponseDTO.of(node, processDefinitionNodeService.resolvePorts(node));
+    }
+
+    @PostMapping("resolve-ports/")
+    @Operation(summary = "Resolve prospective process node ports", description = "Compute authoring ports without saving a node. Requires read permission for the target process.")
+    public ProcessNodePortResolution resolvePorts(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestBody @Valid ProcessNodePortRequestDTO request
+    ) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return processDefinitionNodeService.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration());
+    }
 
     @GetMapping("{id}/configuration/")
     @Operation(

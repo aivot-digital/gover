@@ -187,7 +187,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull Configuration configuration) {
         return List.of(new ProcessNodePort(
                 PORT_OUTPUT,
                 "Nachricht versendet",

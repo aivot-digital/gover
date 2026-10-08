@@ -132,8 +132,100 @@ class ProcessNodeServiceTest {
                 processEdgeRepository,
                 config,
                 identityCommunicationAvailabilityService,
-                permissionService
+                permissionService,
+                new ProcessNodePortResolver(jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator())
         );
+    }
+
+    @Test
+    void deadlineRequiresConnectionAndRemovedPortEdgesRemainValidationProblems() throws Exception {
+        var node = createNode(1, "a").setTimeLimitDays(1);
+        var provider = new HintingTestNodeDefinition();
+        var edge = createEdge(10, 1, 2).setViaPort(ProcessNodePortResolver.DEADLINE_PORT_KEY);
+        assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
+                .anyMatch(problem -> problem.contains("Fristüberschreitung")));
+        when(processEdgeRepository.existsByFromNodeIdAndViaPort(1, ProcessNodePortResolver.DEADLINE_PORT_KEY)).thenReturn(true);
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(List.of(edge));
+        assertTrue(service.validate(node, provider, true).isEmpty());
+
+        node.setTimeLimitDays(null);
+        assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
+        org.mockito.Mockito.verify(processEdgeRepository, org.mockito.Mockito.never()).delete(any(ProcessEdgeEntity.class));
+        assertEquals(ProcessNodePortResolver.DEADLINE_PORT_KEY, edge.getViaPort());
+    }
+
+    @Test
+    void resolvesTypedAuthoringConfigurationAndExposesItInNodeResponse() throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Override
+            public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
+                return configuration.branch == null ? List.of() : List.of(new ProcessNodePort(configuration.branch, configuration.branch, "Fortsetzung"));
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(provider)), prosunaConfig);
+        var derived = new DerivedRuntimeElementData();
+        derived.getEffectiveValues().put("branch", "approved");
+        when(elementDerivationService.derive(any(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring))).thenReturn(derived);
+        var node = createNode(1, "a").setTimeLimitDays(2);
+        var response = de.aivot.prosuna.backend.process.dtos.ProcessNodeResponseDTO.of(node, service.resolvePorts(node));
+        assertEquals(List.of("approved", ProcessNodePortResolver.DEADLINE_PORT_KEY), response.ports().stream().map(ProcessNodePort::key).toList());
+        assertTrue(response.portResolutionProblems().isEmpty());
+        org.mockito.Mockito.verify(elementDerivationService).derive(any(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring));
+    }
+
+    @Test
+    void candidateResolutionPreparesDefaultsAndImportsWithoutSaving() throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Override
+            public AuthoredElementValues getInitialConfiguration() {
+                return new AuthoredElementValues().putLiteral("defaultOnly", "default").putLiteral("overridden", "default");
+            }
+
+            @Override
+            public AuthoredElementValues prefillConfigurationOnImport(@Nonnull AuthoredElementValues configuration) {
+                return configuration.putLiteral("imported", "prepared");
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(provider)), prosunaConfig);
+        var user = new de.aivot.prosuna.backend.user.entities.UserEntity().setId("staff");
+        when(processVersionRepository.existsById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION))).thenReturn(true);
+        var authored = new AuthoredElementValues().putLiteral("overridden", null);
+        var node = createNode(1, "a").setConfiguration(authored);
+        assertTrue(service.resolveCandidatePorts(user, node, true, true).problems().isEmpty());
+        var request = org.mockito.ArgumentCaptor.forClass(de.aivot.prosuna.backend.elements.models.ElementDerivationRequest.class);
+        verify(elementDerivationService).derive(request.capture(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring));
+        var prepared = request.getValue().authoredElementValues();
+        assertEquals("default", prepared.getLiteral("defaultOnly"));
+        assertEquals("prepared", prepared.getLiteral("imported"));
+        assertTrue(prepared.containsKey("overridden"));
+        assertNull(prepared.getLiteral("overridden"));
+        assertEquals(1, authored.size());
+        org.mockito.Mockito.verify(processNodeRepository, org.mockito.Mockito.never()).saveAndFlush(any());
+    }
+
+    @Test
+    void candidateResolutionChecksProcessPermissionBeforeReadingConfiguration() throws Exception {
+        var systemPermissions = mock(de.aivot.prosuna.backend.permissions.repositories.VUserSystemPermissionRepository.class);
+        var actualPermissions = new PermissionService(null, null, systemPermissions, null, null, processRepository, null);
+        permissionService = actualPermissions;
+        service = createService(new ProcessNodeDefinitionService(List.of(new HintingTestNodeDefinition())), prosunaConfig);
+        var user = new de.aivot.prosuna.backend.user.entities.UserEntity().setId("staff");
+        var request = new de.aivot.prosuna.backend.process.dtos.ProcessNodePortRequestDTO(createNode(1, "a"), false, false);
+        when(processVersionRepository.existsById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION))).thenReturn(true);
+        var permission = de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider.PROCESS_DEFINITION_READ;
+
+        assertThrows(ResponseException.class, () -> service.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration()));
+        verifyNoInteractions(elementDerivationService);
+        when(processRepository.hasPermission("staff", PROCESS_ID, permission)).thenReturn(true);
+        assertTrue(service.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration()).problems().isEmpty());
+        request.node().setProcessId(PROCESS_ID + 1);
+        assertThrows(ResponseException.class, () -> service.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration()));
+        request.node().setProcessId(PROCESS_ID);
+        when(processRepository.hasPermission("staff", PROCESS_ID, permission)).thenReturn(false);
+        when(systemPermissions.hasPermission("staff", permission)).thenReturn(true);
+        assertTrue(service.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration()).problems().isEmpty());
+        org.mockito.Mockito.verify(processNodeRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test
@@ -654,7 +746,7 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
             return List.of();
         }
 
@@ -704,6 +796,8 @@ class ProcessNodeServiceTest {
         }
 
         public static class TestNodeConfig {
+            @InputElementPOJOBinding(id = "branch", type = ElementType.Text)
+            public String branch;
         }
     }
 
@@ -934,7 +1028,7 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
             return List.of();
         }
 
@@ -1066,7 +1160,7 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
             return List.of();
         }
 
@@ -1173,7 +1267,7 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
             return List.of();
         }
 

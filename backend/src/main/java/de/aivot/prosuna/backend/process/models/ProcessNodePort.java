@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 public record ProcessNodePort (
         @NotNull(message = "Der Schlüssel des Ports darf nicht null sein.")
         @NotBlank(message = "Der Schlüssel des Ports darf nicht leer sein.")
-        @Size(max = 96, message = "Der Schlüssel des Ports darf maximal 96 Zeichen lang sein.")
+        @Size(max = 32, message = "Der Schlüssel des Ports darf maximal 32 Zeichen lang sein.")
         String key,
         @NotNull(message = "Die Beschriftung des Ports darf nicht null sein.")
         @NotBlank(message = "Die Beschriftung des Ports darf nicht leer sein.")

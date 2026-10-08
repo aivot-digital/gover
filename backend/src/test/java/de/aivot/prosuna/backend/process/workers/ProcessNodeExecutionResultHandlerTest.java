@@ -1059,6 +1059,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 processService,
                 departmentService,
+                null,
                 null
         );
     }
@@ -1461,7 +1462,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 

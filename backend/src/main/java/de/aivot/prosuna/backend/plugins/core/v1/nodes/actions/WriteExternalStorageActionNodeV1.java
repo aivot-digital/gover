@@ -256,7 +256,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull WriteExternalStorageActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,

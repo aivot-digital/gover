@@ -216,7 +216,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull PaymentRequestActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_PAID,

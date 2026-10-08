@@ -136,7 +136,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull DataMappingActionNodeV1Config configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,

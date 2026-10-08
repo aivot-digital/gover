@@ -15,21 +15,26 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 
 @Service
 public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Integer> {
 
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
 
+    private final ProcessNodeService processNodeService;
+
     @Autowired
-    public ProcessEdgeService(ProcessEdgeRepository processDefinitionEdgeRepository) {
+    public ProcessEdgeService(ProcessEdgeRepository processDefinitionEdgeRepository, ProcessNodeService processNodeService) {
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
+        this.processNodeService = processNodeService;
     }
 
     @Nonnull
     @Override
     public ProcessEdgeEntity create(@Nonnull ProcessEdgeEntity entity) throws ResponseException {
         entity.setId(null);
+        validateEndpoints(entity);
         return processDefinitionEdgeRepository.save(entity);
     }
 
@@ -68,6 +73,7 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
     public ProcessEdgeEntity performUpdate(@Nonnull Integer id,
                                            @Nonnull ProcessEdgeEntity entity,
                                            @Nonnull ProcessEdgeEntity existingEntity) throws ResponseException {
+        validateEndpoints(entity);
         existingEntity.setProcessId(entity.getProcessId());
         existingEntity.setProcessVersion(entity.getProcessVersion());
         existingEntity.setFromNodeId(entity.getFromNodeId());
@@ -79,6 +85,24 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
     @Override
     public void performDelete(@Nonnull ProcessEdgeEntity entity) throws ResponseException {
         processDefinitionEdgeRepository.delete(entity);
+    }
+
+    private void validateEndpoints(@Nonnull ProcessEdgeEntity edge) throws ResponseException {
+        var source = processNodeService.retrieve(edge.getFromNodeId()).orElseThrow(ResponseException::badRequest);
+        var target = processNodeService.retrieve(edge.getToNodeId()).orElseThrow(ResponseException::badRequest);
+        for (var node : List.of(source, target)) {
+            if (!Objects.equals(node.getProcessId(), edge.getProcessId()) || !Objects.equals(node.getProcessVersion(), edge.getProcessVersion())) {
+                throw ResponseException.badRequest("Quelle und Ziel der Verbindung müssen zur angegebenen Prozessversion gehören.");
+            }
+        }
+        var resolution = processNodeService.resolvePorts(source);
+        if (!resolution.problems().isEmpty() || resolution.ports().stream().noneMatch(port -> port.key().equals(edge.getViaPort()))) {
+            throw ResponseException.badRequest("Der ausgewählte Ausgang ist für dieses Prozesselement nicht verfügbar. Prüfen Sie die Konfiguration.");
+        }
+        var existing = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(edge.getFromNodeId(), edge.getViaPort());
+        if (existing.isPresent() && !Objects.equals(existing.get().getId(), edge.getId())) {
+            throw ResponseException.badRequest("Dieser Ausgang ist bereits verbunden.");
+        }
     }
 
     public List<ProcessEdgeEntity> findAllByProcessIdAndProcessVersion(Integer id, Integer processVersion) {

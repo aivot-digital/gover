@@ -180,7 +180,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull NoCodeActionNodeConfiguration configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,

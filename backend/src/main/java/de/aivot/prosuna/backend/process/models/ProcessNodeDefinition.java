@@ -64,12 +64,16 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     ProcessNodeExecutionType[] getExecutionTypes();
 
     /**
-     * Get the ports of the process node. The ports are outgoing connections that can be used to connect this node to other nodes in the process definition.
+     * Get the outgoing ports for the authored configuration. Return a deterministic, ordered list with unique,
+     * stable keys; keys must not depend on labels, row positions or runtime values. Fields determining ports
+     * must use literal-only inputs. Other deferred inputs and incomplete authoring values can be null.
+     * The platform adds reserved ports, including the deadline port, outside this method.
      *
+     * @param configuration The configuration derived in authoring mode, including defaults.
      * @return The ports of the process node.
      */
     @Nonnull
-    List<ProcessNodePort> getPorts();
+    List<ProcessNodePort> getPorts(@Nonnull NodeConfig configuration) throws ResponseException;
 
     /**
      * Get the outputs of the process node. The outputs are data produced by this node that can be mapped in the node configuration. This list must be equivalent to the data stored

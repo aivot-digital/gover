@@ -203,7 +203,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull ApprovalConfiguration configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_APPROVED,
