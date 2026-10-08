@@ -4,7 +4,6 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
-import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.AiCompletionActionNodeV1;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -78,7 +77,7 @@ class AiCompletionActionNodeV1Test {
             prompts.add(invocation.getArgument(0));
             return completionResponse("First completion");
         });
-        node = createNode(createAiPluginProperties(1000, CONFIGURED_COMPLETION_MAX_TOKENS, 4000));
+        node = createNode();
     }
 
     @Test
@@ -127,7 +126,7 @@ class AiCompletionActionNodeV1Test {
 
     @Test
     void init_ShouldUsePluginDefaultMaxTokensWhenCompletionOverrideIsMissing() throws Exception {
-        var defaultOnlyNode = createNode(createAiPluginProperties(2222, null, 4000));
+        var defaultOnlyNode = createNode();
 
         defaultOnlyNode.init(context(configuration("Prompt")));
 
@@ -224,8 +223,8 @@ class AiCompletionActionNodeV1Test {
         assertEquals("Prompt", cleaned.getLiteral("prompt"));
     }
 
-    private AiCompletionActionNodeV1 createNode(AiPluginProperties properties) {
-        return new AiCompletionActionNodeV1(ChatClient.builder(chatModel), properties, CHAT_TIMEOUT);
+    private AiCompletionActionNodeV1 createNode() {
+        return new AiCompletionActionNodeV1(ChatClient.builder(chatModel));
     }
 
     private static ChatResponse completionResponse(String content) {
@@ -325,22 +324,6 @@ class AiCompletionActionNodeV1Test {
                     default -> unsupported(methodName);
                 })
         );
-    }
-
-    private static AiPluginProperties createAiPluginProperties(int defaultMaxTokens,
-                                                               Integer completionMaxTokens,
-                                                               Integer processDataTransformationMaxTokens) {
-        var properties = new AiPluginProperties();
-        properties.setDefaultMaxTokens(defaultMaxTokens);
-
-        var completion = new AiPluginProperties.CompletionProperties();
-        completion.setMaxTokens(completionMaxTokens);
-        properties.setCompletion(completion);
-
-        var processDataTransformation = new AiPluginProperties.ProcessDataTransformationProperties();
-        processDataTransformation.setMaxTokens(processDataTransformationMaxTokens);
-        properties.setProcessDataTransformation(processDataTransformation);
-        return properties;
     }
 
     @SuppressWarnings("unchecked")

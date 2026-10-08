@@ -203,11 +203,6 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         }
     }
 
-    private <NodeConfig> Optional<ProcessNodeProblems> val(ProcessNodeEntity node, ProcessNodeDefinition<NodeConfig> provider) throws ResponseException {
-        return processNodeService
-                .validate(node, provider, true);
-    }
-
     public Optional<ProcessVersionEntity> getLatestVersion(Integer processDefinitionId) {
         var maxVersion = processDefinitionVersionRepository
                 .maxVersionForProcessDefinition(processDefinitionId)

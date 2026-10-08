@@ -5,7 +5,6 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
-import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.AiProcessDataTransformationActionNodeV1;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -82,7 +81,7 @@ class AiProcessDataTransformationActionNodeV1Test {
             prompts.add(invocation.getArgument(0));
             return completionResponse("{\"decision\":\"approve\",\"person\":{\"name\":\"Ada Lovelace\"}}");
         });
-        node = createNode(createAiPluginProperties(1000, 1337, CONFIGURED_TRANSFORMATION_MAX_TOKENS));
+        node = createNode();
     }
 
     @Test
@@ -151,7 +150,7 @@ class AiProcessDataTransformationActionNodeV1Test {
 
     @Test
     void init_ShouldUsePluginDefaultMaxTokensWhenTransformationOverrideIsMissing() throws Exception {
-        var defaultOnlyNode = createNode(createAiPluginProperties(2222, 1337, null));
+        var defaultOnlyNode = createNode();
 
         defaultOnlyNode.init(context(configuration("Prompt")));
 
@@ -260,8 +259,8 @@ class AiProcessDataTransformationActionNodeV1Test {
         assertEquals(previousMetadata, metadata);
     }
 
-    private AiProcessDataTransformationActionNodeV1 createNode(AiPluginProperties properties) {
-        return new AiProcessDataTransformationActionNodeV1(ChatClient.builder(chatModel), properties, CHAT_TIMEOUT);
+    private AiProcessDataTransformationActionNodeV1 createNode() {
+        return new AiProcessDataTransformationActionNodeV1(ChatClient.builder(chatModel));
     }
 
     private static ChatResponse completionResponse(String content) {
@@ -361,22 +360,6 @@ class AiProcessDataTransformationActionNodeV1Test {
                     default -> unsupported(methodName);
                 })
         );
-    }
-
-    private static AiPluginProperties createAiPluginProperties(int defaultMaxTokens,
-                                                               Integer completionMaxTokens,
-                                                               Integer processDataTransformationMaxTokens) {
-        var properties = new AiPluginProperties();
-        properties.setDefaultMaxTokens(defaultMaxTokens);
-
-        var completion = new AiPluginProperties.CompletionProperties();
-        completion.setMaxTokens(completionMaxTokens);
-        properties.setCompletion(completion);
-
-        var processDataTransformation = new AiPluginProperties.ProcessDataTransformationProperties();
-        processDataTransformation.setMaxTokens(processDataTransformationMaxTokens);
-        properties.setProcessDataTransformation(processDataTransformation);
-        return properties;
     }
 
     @SuppressWarnings("unchecked")
