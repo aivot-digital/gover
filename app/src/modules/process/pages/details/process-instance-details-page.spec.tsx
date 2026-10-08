@@ -8,6 +8,7 @@ import {type GenericPageHeaderProps} from '../../../../components/generic-page-h
 import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
+import {ProcessInstanceStatus} from '../../enums/process-instance-status';
 import {ProcessInstanceDetailsPage} from './process-instance-details-page';
 
 const state = vi.hoisted(() => ({item: undefined as ProcessInstanceDetails | undefined}));
@@ -49,6 +50,20 @@ describe('Instance header active task action', () => {
         renderPage();
         expect(screen.getByRole('button', {name: 'Aktive Aufgabe aufrufen'})).toBeDisabled();
     });
+
+    it.each([ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted])('disables refreshing a %s instance', (status) => {
+        state.item!.instance.status = status;
+        renderPage();
+        expect(screen.getByRole('button', {name: 'Vorgang aktualisieren'})).toBeDisabled();
+    });
+
+    it.each([ProcessInstanceStatus.Created, ProcessInstanceStatus.Running, ProcessInstanceStatus.Paused, ProcessInstanceStatus.Failed])(
+        'allows refreshing a %s instance', (status) => {
+            state.item!.instance.status = status;
+            renderPage();
+            expect(screen.getByRole('button', {name: 'Vorgang aktualisieren'})).toBeEnabled();
+        },
+    );
 
     it('links directly to a single active task', () => {
         state.item!.activeTasks = [

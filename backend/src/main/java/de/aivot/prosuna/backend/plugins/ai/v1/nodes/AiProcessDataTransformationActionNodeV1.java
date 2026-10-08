@@ -26,6 +26,8 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -48,6 +50,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.list;
 
 /**
  * Sends the full process execution data to an AI model and replaces the process data root with the returned JSON object.
@@ -98,6 +104,22 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         this.httpService = httpService;
         this.secretService = secretService;
         this.aiPluginProperties = aiPluginProperties;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var markdown = new StringBuilder("Die Vorgangsdaten wurden erfolgreich mit KI transformiert.")
+                .append(detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL)));
+        var keys = list(summary.data(OUTPUT_TOP_LEVEL_KEYS));
+        if (!keys.isEmpty()) {
+            markdown.append("\n\n**Datenfelder**");
+            for (var key : keys) {
+                markdown.append("\n\n- ").append(text(key));
+            }
+        }
+        return markdown.toString();
     }
 
     @Nonnull

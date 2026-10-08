@@ -113,6 +113,7 @@ class ProcessInstanceTaskControllerTest {
         assertEquals(task.getPreviousProcessNodeId(), payload.previousNodeId());
         assertEquals(task.getPreviousProcessNodePortKey(), payload.previousNodePortKey());
         assertEquals(task.getProcessNodeId(), payload.nextNodeId());
+        assertEquals(task.getId(), payload.restartForTaskId());
     }
 
     @Test

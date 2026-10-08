@@ -24,6 +24,7 @@ import java.util.UUID;
  * @param attributes                     A map of attributes associated with the identity, provides by the identity provider after a successful authentication. For email identities, this map contains only the email address under the key "email".
  * @param communicationProviderBindingId The unique identifier of the communication provider binding associated with this identity, if applicable. This is null for email identities.
  * @param communicationProviderData      A map of data associated with the communication provider for this identity, if applicable. This is null for email identities.
+ * @param title                          The configured slot title captured when the identity is added to a process instance. Null for older identities or identities without a configured title.
  */
 public record IdentityData(
         @Nonnull
@@ -45,7 +46,9 @@ public record IdentityData(
         @Nullable
         Integer communicationProviderBindingId,
         @Nonnull
-        Map<String, Object> communicationProviderData
+        Map<String, Object> communicationProviderData,
+        @Nullable
+        String title
 ) implements Serializable {
     public IdentityData {
         attributes = attributes == null ? Map.of() : attributes;
@@ -70,6 +73,27 @@ public record IdentityData(
                 throw new IllegalArgumentException("Eine Anbieteridentität darf keine direkte E-Mail-Adresse enthalten.");
             }
         }
+    }
+
+    public IdentityData(@Nonnull String sessionId,
+                        @Nonnull String identityId,
+                        @Nonnull IdentityType type,
+                        @Nullable UUID providerKey,
+                        @Nullable String metadataIdentifier,
+                        @Nullable String uniqueIdFromIdentityProvider,
+                        @Nullable String emailAddress,
+                        @Nonnull Map<String, String> attributes,
+                        @Nullable Integer communicationProviderBindingId,
+                        @Nonnull Map<String, Object> communicationProviderData) {
+        this(sessionId, identityId, type, providerKey, metadataIdentifier, uniqueIdFromIdentityProvider,
+                emailAddress, attributes, communicationProviderBindingId, communicationProviderData, null);
+    }
+
+    @Nonnull
+    public IdentityData withTitle(@Nullable String title) {
+        return new IdentityData(sessionId, identityId, type, providerKey, metadataIdentifier,
+                uniqueIdFromIdentityProvider, emailAddress, attributes, communicationProviderBindingId,
+                communicationProviderData, title);
     }
 
     public static IdentityData from(@Nonnull IdentityCacheEntity entity) {

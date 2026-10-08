@@ -9,6 +9,8 @@ import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +36,19 @@ class HtmlTemplateInputElementResolverTest {
                 storageService,
                 new PassthroughTemplateRenderService()
         );
+    }
+
+    @Test
+    void templateNameUsesAssetFileNameAndFallsBackWhenAssetIsUnavailable() throws Exception {
+        var key = UUID.randomUUID();
+        var template = new HtmlTemplateInputElementValue().setAssetKey(key.toString());
+        when(assetService.retrieve(key)).thenReturn(Optional.of(new AssetEntity().setStoragePathFromRoot("templates/Bescheid.html")));
+        assertEquals("Bescheid.html", resolver.getTemplateName(template));
+        when(assetService.retrieve(key)).thenReturn(Optional.empty());
+        assertEquals(key.toString(), resolver.getTemplateName(template));
+        when(assetService.retrieve(key)).thenThrow(new IllegalStateException("Unavailable"));
+        assertEquals(key.toString(), resolver.getTemplateName(template));
+        assertNull(resolver.getTemplateName(null));
     }
 
     @Test

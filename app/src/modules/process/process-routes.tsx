@@ -1,4 +1,5 @@
 import {ProcessInstanceDetailsPageIndex} from './pages/details/process-instance-details-page-index';
+import {ProcessInstanceDetailsPageHistory} from './pages/details/process-instance-details-page-history';
 import {ProcessInstanceDetailsPagePermissions} from './pages/details/process-instance-details-page-permissions';
 import {type RouteObject} from 'react-router-dom';
 import React from 'react';
@@ -83,6 +84,7 @@ export const processRoutes: RouteObject[] = [
         element: <ProcessInstanceDetailsPage/>,
         children: [
             {index: true, element: <ProcessInstanceDetailsPageIndex/>},
+            {path: 'history', element: <ProcessInstanceDetailsPageHistory/>},
             {path: 'permissions', element: <ProcessInstanceDetailsPagePermissions/>},
         ],
     },

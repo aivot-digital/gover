@@ -95,7 +95,7 @@ class InstanceAssignmentResultHandlerTest {
         var node = node();
         node.setOutputMappings(Map.of("assignedUserId", "responsibleUserId"));
 
-        handler.handleResult(logger, null, provider, node, instance, task, null, result("recipient"));
+        handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node, instance, task, null, result("recipient"));
 
         assertEquals("recipient", instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
@@ -116,7 +116,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance();
 
         assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class,
-                () -> handler.handleResult(logger, null, provider, node(), instance, task(), null, result("recipient")));
+                () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task(), null, result("recipient")));
 
         assertEquals("previous", instance.getAssignedUserId());
         verifyNoInteractions(instances, tasks, rabbit, instanceMail);
@@ -129,7 +129,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance();
 
         assertThrows(ProcessNodeExecutionExceptionInvalidAssignment.class,
-                () -> handler.handleResult(logger, null, provider, node(), instance, task(), null, result("recipient")));
+                () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task(), null, result("recipient")));
 
         assertEquals("previous", instance.getAssignedUserId());
         verifyNoInteractions(instances, tasks, rabbit, instanceMail);
@@ -142,7 +142,7 @@ class InstanceAssignmentResultHandlerTest {
         node.setOutputMappings(Map.of("assignedUserId", "case..owner"));
 
         assertThrows(IllegalStateException.class,
-                () -> handler.handleResult(logger, null, provider, node, instance, task(), null, result("recipient")));
+                () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node, instance, task(), null, result("recipient")));
 
         assertEquals("previous", instance.getAssignedUserId());
         verifyNoInteractions(instances, tasks, rabbit, instanceMail);
@@ -153,7 +153,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance();
         var task = task();
 
-        handler.handleResult(logger, null, provider, node(), instance, task, null, result("previous"));
+        handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task, null, result("previous"));
 
         assertEquals("previous", instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
@@ -165,7 +165,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance();
         var task = task();
 
-        handler.handleResult(logger, null, unassignmentProvider, node(), instance, task, null, clearResult());
+        handler.handleResult(logger, null, unassignmentProvider, new InstanceUnassignmentActionNodeV1.Config(), node(), instance, task, null, clearResult());
 
         assertNull(instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
@@ -185,7 +185,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance().setAssignedUserId(null);
         var task = task();
 
-        handler.handleResult(logger, null, unassignmentProvider, node(), instance, task, null, clearResult());
+        handler.handleResult(logger, null, unassignmentProvider, new InstanceUnassignmentActionNodeV1.Config(), node(), instance, task, null, clearResult());
 
         assertNull(instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());

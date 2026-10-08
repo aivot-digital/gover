@@ -19,6 +19,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -31,6 +33,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 
 @Component
 public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionNodeV1.LowCodeActionNodeConfig> {
@@ -49,6 +53,14 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
 
     public LowCodeActionNodeV1(JavascriptEngineFactoryService javascriptEngineFactoryService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<LowCodeActionNodeV1.LowCodeActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Die Low-Code-Logik wurde erfolgreich ausgeführt."
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull

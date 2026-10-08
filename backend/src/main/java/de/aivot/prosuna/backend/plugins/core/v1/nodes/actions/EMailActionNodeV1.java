@@ -29,6 +29,8 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
@@ -57,6 +59,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 
 @Component
 public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV1.EMailActionNodeConfig> {
@@ -98,6 +102,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         this.vDepartmentShadowedService = vDepartmentShadowedService;
         this.themeService = themeService;
         this.systemService = systemService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<EMailActionNodeV1.EMailActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Die E-Mail-Nachricht wurde" + summary.completedAt() + " erfolgreich versendet."
+                + detail("Betreff", summary.data(OUTPUT_NAME_SUBJECT));
     }
 
     @Nonnull

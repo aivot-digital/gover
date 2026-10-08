@@ -312,6 +312,7 @@ function renderPage(isNewItem = false) {
         isBusy: testState.isBusy,
         setIsBusy: vi.fn(),
         refresh: vi.fn(),
+        subscribeEvent: vi.fn(() => vi.fn()),
         isEditable: testState.isEditable,
     };
 

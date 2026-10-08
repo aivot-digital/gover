@@ -16,6 +16,10 @@ export enum ProcessInstanceStatus {
     Failed = 'Failed',
 }
 
+export function isProcessInstanceFinished(status: ProcessInstanceStatus): boolean {
+    return status === ProcessInstanceStatus.Completed || status === ProcessInstanceStatus.Aborted;
+}
+
 export const ProcessInstanceStatusLabels: Record<ProcessInstanceStatus, string> = {
     [ProcessInstanceStatus.Created]: 'Erstellt',
     [ProcessInstanceStatus.Running]: 'Gestartet',

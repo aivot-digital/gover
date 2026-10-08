@@ -597,6 +597,11 @@ public class FormTriggerControllerV1 {
 
         testCaptchaReplayProtection(config.configuration().formLayout, effectiveValues);
 
+        // Capture the configured title once; existing process identities are never enriched on read.
+        for (var slot : identitySlots) {
+            identities.computeIfPresent(slot.id(), (id, identity) -> identity.withTitle(slot.title()));
+        }
+
         var processInstance = startProcess(
                 testClaim,
                 config.configuration().formLayout,

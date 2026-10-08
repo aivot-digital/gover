@@ -164,7 +164,10 @@ public class CustomerTaskIdentityService {
         if (!isCompletingResult(executionResult) || state.newIdentity() == null) {
             return Map.of();
         }
-        return Map.of(state.newIdentity().identityId(), state.newIdentity());
+        var identity = state.newIdentity().withTitle(
+                state.newIdentitySlot() == null ? null : state.newIdentitySlot().title()
+        );
+        return Map.of(identity.identityId(), identity);
     }
 
     public boolean isCompletingResult(@Nonnull ProcessNodeExecutionResult executionResult) {

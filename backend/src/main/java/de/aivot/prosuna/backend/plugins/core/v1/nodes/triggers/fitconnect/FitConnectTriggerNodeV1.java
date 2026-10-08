@@ -25,6 +25,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
@@ -48,6 +50,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map;
 
 @Component
 public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnectTriggerConfigV1> {
@@ -83,6 +88,14 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
         this.publicUrlService = publicUrlService;
         this.processNodeRepository = processNodeRepository;
         this.organisationFactory = organisationFactory;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FitConnectTriggerConfigV1> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Der Vorgang wurde" + summary.eventAt("started") + " durch einen Aufruf über eine FIT-Connect-Schnittstelle ausgelöst."
+                + detail("Zustellpunkt", map(summary.data("submission")).get("destinationId"));
     }
 
     @Nonnull

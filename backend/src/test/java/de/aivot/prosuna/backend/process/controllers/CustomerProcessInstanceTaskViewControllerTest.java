@@ -224,6 +224,23 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void completionForwardsTheConfigurationUsedByTheCustomerEvent() throws Exception {
+        var result = new ProcessNodeExecutionResultInstanceCompleted();
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null, result);
+        var handler = mock(ProcessNodeExecutionResultHandler.class);
+        var fixture = createFixture(provider, new AuthoredElementValues(), handler);
+        when(fixture.customerTaskIdentityService().getAdditionalIdentitiesForCompletion(any(), same(result)))
+                .thenReturn(Map.of());
+
+        fixture.controller().update(fixture.procAccess(), fixture.taskAccess(), "{}", null, null,
+                "inline-submit", Map.of(), null, new MockHttpServletResponse());
+
+        org.junit.jupiter.api.Assertions.assertNotNull(provider.configurationUsedForEvent);
+        verify(handler).handleResult(any(), isNull(), same(provider), same(provider.configurationUsedForEvent),
+                same(fixture.node()), any(), same(fixture.task()), isNull(), same(result));
+    }
+
+    @Test
     void update_PassesNewIdentityToCompletionHandlerAndClearsTaskIdentitySession() throws Exception {
         var completionResult = new ProcessNodeExecutionResultInstanceCompleted();
         var provider = new InlineCustomerTaskProcessNodeDefinition(null, completionResult);
@@ -273,6 +290,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 any(),
                 eq(null),
                 same(provider),
+                same(provider.configurationUsedForEvent),
                 same(fixture.node()),
                 any(ProcessInstanceEntity.class),
                 same(fixture.task()),
@@ -1291,9 +1309,10 @@ class CustomerProcessInstanceTaskViewControllerTest {
         }
 
         @Override
-        public void handleResult(ProcessNodeExecutionLogger logger,
+        public <NodeConfig> void handleResult(ProcessNodeExecutionLogger logger,
                                  UserEntity triggeringUser,
-                                 ProcessNodeDefinition provider,
+                                 ProcessNodeDefinition<NodeConfig> provider,
+                                 NodeConfig configurationOfExecutingNode,
                                  ProcessNodeEntity currentNode,
                                  ProcessInstanceEntity processInstance,
                                  ProcessInstanceTaskEntity processInstanceTask,
@@ -1309,9 +1328,10 @@ class CustomerProcessInstanceTaskViewControllerTest {
         }
 
         @Override
-        public void handleResult(ProcessNodeExecutionLogger logger,
+        public <NodeConfig> void handleResult(ProcessNodeExecutionLogger logger,
                                  UserEntity triggeringUser,
-                                 ProcessNodeDefinition provider,
+                                 ProcessNodeDefinition<NodeConfig> provider,
+                                 NodeConfig configurationOfExecutingNode,
                                  ProcessNodeEntity currentNode,
                                  ProcessInstanceEntity processInstance,
                                  ProcessInstanceTaskEntity processInstanceTask,
@@ -1417,6 +1437,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final String href;
         private final ProcessNodeExecutionResult eventResult;
         private String eventInvokedWith;
+        private AuthoredElementValues configurationUsedForEvent;
 
         private InlineCustomerTaskProcessNodeDefinition(String href) {
             this(href, null);
@@ -1505,6 +1526,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                                                                                 @Nonnull DerivedRuntimeElementData derivedData,
                                                                                 @Nonnull String event) {
             eventInvokedWith = event;
+            configurationUsedForEvent = context.getConfigurationOfExecutingNode();
             if (eventResult != null) {
                 return eventResult.asOptional();
             }

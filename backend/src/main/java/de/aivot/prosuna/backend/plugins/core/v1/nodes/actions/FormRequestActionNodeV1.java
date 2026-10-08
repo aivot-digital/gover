@@ -43,10 +43,13 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -59,7 +62,9 @@ import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolv
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -67,6 +72,8 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 @Component
 public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormRequestActionNodeV1.NodeConfig> {
@@ -112,6 +119,16 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         this.authoredInputValueService = authoredInputValueService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FormRequestActionNodeV1.NodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var recipient = summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID));
+        return "Es wurde " + recipient + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
+                + " zur Einreichung von Daten aufgefordert und" + summary.delivery() + " informiert."
+                + " Die angeforderten Daten wurden" + summary.eventAt("started") + " durch " + recipient + " eingereicht.";
     }
 
     @Nonnull
@@ -383,13 +400,21 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var subject = automaticContent.subject.trim();
         var content = automaticContent.content.trim();
 
-        return createCustomerAssignmentResult(
+        var result = createCustomerAssignmentResult(
                 context.getThisProcessInstance(),
                 context.getThisTask(),
                 configuration,
                 subject,
                 content
         );
+        logDispatchRequested(
+                context.getLogger(),
+                context.getThisProcessInstance(),
+                configuration,
+                result.getCommunicationRequest(),
+                null
+        );
+        return result;
     }
 
     @Nonnull
@@ -507,8 +532,62 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 subject,
                 content
         );
+        result.setClearCurrentlyAssignedUser(true);
+
+        logDispatchRequested(
+                context.getLogger(),
+                context.getThisProcessInstance(),
+                configuration,
+                result.getCommunicationRequest(),
+                context.getCallingUser()
+        );
 
         return Optional.of(result);
+    }
+
+    private void logDispatchRequested(@Nonnull ProcessNodeExecutionLogger logger,
+                                      @Nonnull ProcessInstanceEntity processInstance,
+                                      @Nonnull NodeConfig configuration,
+                                      @Nonnull ProcessNodeExecutionResultCommunicationRequest request,
+                                      @Nullable UserEntity triggeringUser) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var recipientId = request.recipientIdentityId() != null
+                ? request.recipientIdentityId()
+                : requireNewIdentitySlot(configuration).getId();
+        var recipientTitle = resolveRecipientIdentityTitle(processInstance, configuration, recipientId);
+        var recipientDescription = request.recipientEmailAddress() != null
+                ? "die E-Mail-Adresse " + StringUtils.quote(request.recipientEmailAddress())
+                : "die Identität " + StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientId, recipientTitle));
+
+        logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                true,
+                triggeringUser != null ? triggeringUser.getId() : null,
+                recipientId,
+                recipientTitle,
+                "Versand vorbereitet",
+                Map.of(),
+                "Der Versand der Aufforderung mit dem Betreff %s an %s wurde %s vorbereitet.",
+                StringUtils.quote(request.message().subject()),
+                recipientDescription,
+                triggeringUser != null ? "durch " + ProcessHistoryLabels.quotedUser(triggeringUser) : "automatisch"
+        );
+    }
+
+    @Nullable
+    private String resolveRecipientIdentityTitle(@Nonnull ProcessInstanceEntity processInstance,
+                                                  @Nonnull NodeConfig configuration,
+                                                  @Nonnull String recipientId) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var identity = processInstance.getIdentities() == null ? null : processInstance.getIdentities().get(recipientId);
+        if (identity != null) {
+            return StringUtils.toNullableTrimmedString(identity.title());
+        }
+        // New invitees are only persisted after submission; use the configured slot title until then.
+        if (RECIPIENT_MODE_NEW.equals(requireRecipientMode(configuration.recipientMode))) {
+            return StringUtils.toNullableTrimmedString(requireNewIdentitySlot(configuration).getTitle());
+        }
+        return null;
     }
 
     private ProcessNodeExecutionResult createCustomerAssignmentResult(ProcessInstanceEntity processInstance,
@@ -612,13 +691,11 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 derived,
                 context.getThisTask().getProcessData()
         );
+        var recipientId = RECIPIENT_MODE_NEW.equals(requireRecipientMode(configuration.recipientMode))
+                ? requireNewIdentitySlot(configuration).getId()
+                : requireRecipientIdentity(configuration.recipientIdentityId);
         var nodeData = new LinkedHashMap<String, Object>();
-        nodeData.put(
-                OUTPUT_RECIPIENT_IDENTITY_ID,
-                RECIPIENT_MODE_NEW.equals(requireRecipientMode(configuration.recipientMode))
-                        ? requireNewIdentitySlot(configuration).getId()
-                        : requireRecipientIdentity(configuration.recipientIdentityId)
-        );
+        nodeData.put(OUTPUT_RECIPIENT_IDENTITY_ID, recipientId);
         nodeData.put(OUTPUT_PAYLOAD, payload);
         nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
         nodeData.put(OUTPUT_ATTACHMENTS, resolveSubmittedAttachments(context, effectiveValues));
@@ -628,6 +705,21 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 .setViaPort(PORT_SUBMITTED)
                 .setNodeData(nodeData)
                 .setProcessData(updatedProcessData);
+
+        var recipientTitle = resolveRecipientIdentityTitle(context.getThisProcessInstance(), configuration, recipientId);
+        context.getLogger().logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                true,
+                null,
+                recipientId,
+                recipientTitle,
+                "Daten eingereicht",
+                Map.of(),
+                "Die angeforderten Daten wurden durch die Identität %s eingereicht.",
+                StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientId, recipientTitle))
+        );
 
         return Optional.of(result);
     }

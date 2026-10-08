@@ -71,7 +71,7 @@ public class ProcessInstanceTaskController {
     @GetMapping("")
     @Operation(
             summary = "List Process Instance Tasks",
-            description = "List all process instance tasks with optional filtering and pagination."
+            description = "List all process instance tasks with optional filtering and pagination, including stored Markdown execution summaries when available."
     )
     public Page<ProcessInstanceTaskEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -128,7 +128,7 @@ public class ProcessInstanceTaskController {
     @GetMapping("{id}/")
     @Operation(
             summary = "Retrieve Process Instance Task",
-            description = "Retrieve a process instance task by its ID."
+            description = "Retrieve a process instance task by its ID, including its stored Markdown execution summary when available."
     )
     public ProcessInstanceTaskEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -211,7 +211,8 @@ public class ProcessInstanceTaskController {
                 taskEntity.getPreviousProcessInstanceTaskId(),
                 taskEntity.getPreviousProcessNodeId(),
                 taskEntity.getPreviousProcessNodePortKey(),
-                taskEntity.getProcessNodeId()
+                taskEntity.getProcessNodeId(),
+                taskEntity.getId()
         );
 
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, payload);

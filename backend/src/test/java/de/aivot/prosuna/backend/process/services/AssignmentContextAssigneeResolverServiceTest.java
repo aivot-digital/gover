@@ -11,10 +11,12 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskReposito
 import de.aivot.prosuna.backend.process.repositories.VPotentialProcessInstanceAccessRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
+import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
@@ -60,7 +62,8 @@ class AssignmentContextAssigneeResolverServiceTest {
                 .setId(invocation.getArgument(0)).setEnabled(true).setDeletedInIdp(false)));
         var tasks = createProcessInstanceTaskRepository();
         var assignments = new ProcessAssignmentService(permissions, users, mock(ProcessInstanceRepository.class),
-                tasks, mock(AuditService.class));
+                tasks, mock(AuditService.class), mock(ProcessNodeExecutionLoggerFactory.class), mock(UserService.class),
+                mock(AbstractConfigurableTemplateResolver.class));
         service = new AssignmentContextAssigneeResolverService(
                 createPotentialAccessRepository(),
                 tasks,

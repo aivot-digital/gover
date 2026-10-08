@@ -59,6 +59,7 @@ function renderItem(item: ProcessTaskDetailsPageItem) {
                     isBusy: false,
                     setIsBusy: vi.fn(),
                     refresh: vi.fn(),
+                    subscribeEvent: vi.fn(() => vi.fn()),
                     isEditable: false,
                 }}
             >

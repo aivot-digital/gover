@@ -1,0 +1,566 @@
+import {useEffect, useId, useState} from 'react';
+import {Alert, Box, Button, Divider, Paper, Skeleton, Stack, Tooltip, Typography} from '@mui/material';
+import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
+import Schedule from '@aivot/mui-material-symbols-400-n25-outlined/Schedule';
+import {Accordion, AccordionDetails, AccordionSummary} from '../../../../components/accordion/accordion';
+import {ProcessExecutionSummary} from '../../components/process-execution-summary';
+import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
+import {useGenericDetailsPageEvent} from '../../../../components/generic-details-page/use-generic-details-page-event';
+import {Permission} from '../../../../data/permissions/permission';
+import {useHasProcessInstancePermission} from '../../../permissions/hooks/use-permissions';
+import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
+import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
+import {type ProcessNodeEntity} from '../../entities/process-node-entity';
+import {
+    type ProcessNodeProvider,
+    ProcessNodeProviderApiService,
+    ProcessNodeType,
+} from '../../services/process-node-provider-api-service';
+import {ProcessInstanceTaskStatusIcon} from '../../components/process-instance-task-status-icon';
+import {ProcessEntity} from "../../entities/process-entity";
+import {ProcessInstanceEventEntity} from "../../entities/process-instance-event-entity";
+import {ProcessNodeApiService} from "../../services/process-node-api-service";
+import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
+import {ProcessInstanceTaskApiService} from "../../services/process-instance-task-api-service";
+import {ProcessInstanceEventApiService} from "../../services/process-instance-event-api-service";
+import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
+import {showApiErrorSnackbar} from "../../../../slices/snackbar-slice";
+import {getNodeDescription} from "./components/process-flow-editor/utils/node-utils";
+import {Chip, type ChipProps} from "../../../../components/chip/chip";
+import {formatDateTimeWithRelative} from "../../components/process-detail-values";
+import {humanizeMillisecondsDuration} from "../../../../utils/duration-utils";
+import {ProcessDefinitionEdgeApiService} from '../../services/process-definition-edge-api-service';
+import {ProcessTaskStatus} from '../../enums/process-task-status';
+import {isProcessInstanceFinished} from '../../enums/process-instance-status';
+import {
+    buildProcessFlowGraph,
+    type ProcessFlowGraph,
+    type ProcessFlowGraphNode,
+} from './components/process-flow-editor/utils/process-flow-graph-utils';
+
+const activeTaskStatuses: ReadonlySet<ProcessTaskStatus> = new Set([
+    ProcessTaskStatus.Running,
+    ProcessTaskStatus.InProgress,
+    ProcessTaskStatus.AwaitingStaff,
+    ProcessTaskStatus.Paused,
+    ProcessTaskStatus.AwaitingCustomer,
+    ProcessTaskStatus.AwaitingPayment,
+]);
+
+export function ProcessInstanceDetailsPageHistory() {
+    const {
+        item: processInstance,
+    } = useGenericDetailsPageContext<ProcessInstanceDetails, undefined>();
+
+    if (processInstance == null) {
+        return <HistorySkeleton/>;
+    }
+
+    return (
+        <InstanceHistory
+            key={processInstance.instance.id}
+            processInstanceDetails={processInstance}
+        />
+    );
+}
+
+function HistorySkeleton() {
+    return (
+        <Stack
+            spacing={2}
+            role="status"
+            aria-label="Verlauf wird geladen"
+            aria-busy="true"
+        >
+            <Skeleton
+                width="40%"
+                height={32}
+            />
+            {[0, 1, 2].map((index) => (
+                <Skeleton
+                    key={index}
+                    variant="rounded"
+                    height={96}
+                />
+            ))}
+        </Stack>
+    );
+}
+
+interface InstanceHistoryProps {
+    processInstanceDetails: ProcessInstanceDetails;
+}
+
+
+function InstanceHistory(props: InstanceHistoryProps) {
+    const {
+        processInstanceDetails: processInstanceDetails
+    } = props;
+
+    const {
+        instance: processInstance,
+    } = processInstanceDetails;
+
+    const {
+        id: processInstanceId,
+        processId: processDefinitionId,
+    } = processInstance;
+
+    const dispatch = useAppDispatch();
+
+    const canRead = useHasProcessInstancePermission(processInstanceId, Permission.PROCESS_INSTANCE_READ);
+    const canViewProcess = useHasProcessInstancePermission(processInstanceId, Permission.PROCESS_DEFINITION_READ);
+
+    const [result, setResult] = useState<HistoryData>();
+    const [refreshCounter, setRefreshCounter] = useState(0);
+    const [expandedTaskIds, setExpandedTaskIds] = useState<Set<number>>(() => new Set());
+
+    useGenericDetailsPageEvent('refresh', () => {
+        setRefreshCounter(counter => counter + 1);
+    });
+
+    useEffect(() => {
+        if (!canRead || !canViewProcess) {
+            setResult(undefined);
+            return;
+        }
+
+        let isActive = true;
+
+        // Keep the displayed timeline mounted during refreshes to preserve expanded entries.
+        fetchHistory(processDefinitionId, processInstanceId)
+            .then(history => {
+                if (isActive) {
+                    setResult(history);
+                }
+            })
+            .catch((error) => {
+                if (isActive) {
+                    dispatch(showApiErrorSnackbar(error, 'Der Verlauf konnte nicht geladen werden.'));
+                }
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [canRead, canViewProcess, processInstanceId, processDefinitionId, dispatch, refreshCounter]);
+
+    if (!canRead) {
+        return (
+            <Alert severity="info">
+                Sie haben keine Berechtigung mehr, diesen Vorgang einzusehen.
+            </Alert>
+        );
+    }
+
+    if (!canViewProcess) {
+        return (
+            <Alert severity="info">
+                Sie haben keine Berechtigung, den Prozess zu diesem Vorgang einzusehen.
+                Daher kann der Verlauf nicht angezeigt werden.
+            </Alert>
+        );
+    }
+
+    if (result == null) {
+        return <HistorySkeleton/>;
+    }
+
+    return (
+        <Stack spacing={3}>
+            <Box>
+                <Typography variant="h5">
+                    Verlauf des Vorgangs
+                </Typography>
+                <Box
+                    sx={{
+                        mt: 1,
+                        maxWidth: 850,
+                    }}
+                >
+                    <Typography>
+                        Eine Liste aller bereits ausgeführten und derzeit in Ausführung befindlichen Prozesselemente.
+                    </Typography>
+                </Box>
+                {result.tasks.length > 0 && (
+                    <Stack direction="row" spacing={1} sx={{mt: 2}}>
+                        <Button
+                            size="small"
+                            disabled={result.tasks.every(task => expandedTaskIds.has(task.id))}
+                            onClick={() => setExpandedTaskIds(new Set(result.tasks.map(task => task.id)))}
+                        >
+                            Alle aufklappen
+                        </Button>
+                        <Button
+                            size="small"
+                            disabled={!result.tasks.some(task => expandedTaskIds.has(task.id))}
+                            onClick={() => setExpandedTaskIds(new Set())}
+                        >
+                            Alle zuklappen
+                        </Button>
+                    </Stack>
+                )}
+            </Box>
+
+            <Stack
+                direction="column"
+            >
+                {
+                    result
+                        .tasks
+                        .map((task, index) => (
+                            <TimelineItem
+                                key={task.id}
+                                index={index}
+                                task={task}
+                                node={task.node}
+                                nodeDefinition={task.nodeDefinition}
+                                expanded={expandedTaskIds.has(task.id)}
+                                onExpandedChange={(expanded) => setExpandedTaskIds(previous => {
+                                    const next = new Set(previous);
+                                    if (expanded) {
+                                        next.add(task.id);
+                                    } else {
+                                        next.delete(task.id);
+                                    }
+                                    return next;
+                                })}
+                            />
+                        ))
+                }
+            </Stack>
+
+            {!isProcessInstanceFinished(processInstance.status) && <Box>
+                <Typography variant="h5">
+                    Voraussichtliche nächste Schritte
+                </Typography>
+                <Box
+                    sx={{
+                        mt: 1,
+                        maxWidth: 850,
+                    }}
+                >
+                    <Typography>
+                        Die voraussichtlichen nächsten Prozesselemente, die dieser Vorgang durchlaufen wird.
+                        Dieser Pfad kann sich durch Verzweigungen in der Modellierung im Verlauf des Vorgangs verändern
+                        und dient nur als grober Indikator.
+                    </Typography>
+                </Box>
+                {result.preview.nodes.length > 0 ? (
+                    <Stack component="ol" aria-label="Voraussichtliche nächste Schritte" sx={{listStyle: 'none', p: 0, mb: 0, mt: 3}}>
+                        {result.preview.nodes.map(({node, provider}) => (
+                            <Paper
+                                key={node.id}
+                                component="li"
+                                variant="outlined"
+                                sx={{display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1.5, minWidth: 0}}
+                            >
+                                <Schedule color="disabled" sx={{flexShrink: 0}}/>
+                                <TimelineLabel node={node} nodeDefinition={provider}/>
+                            </Paper>
+                        ))}
+                    </Stack>
+                ) : (
+                    <Alert severity="info" sx={{mt: 3}}>
+                        {result.preview.emptyReason === 'multiple-paths'
+                            ? 'Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Pfaden entschieden werden muss.'
+                            : 'Derzeit sind keine nächsten Schritte vorhersehbar.'}
+                    </Alert>
+                )}
+            </Box>}
+        </Stack>
+    );
+}
+
+interface HistoryData {
+    process: ProcessEntity;
+    nodes: ProcessNodeEntity[];
+    tasks: TaskWithNodeAndEvents[];
+    globalEvents: ProcessInstanceEventEntity[];
+    preview: UpcomingStepsPreview;
+}
+
+interface UpcomingStepsPreview {
+    nodes: ProcessFlowGraphNode[];
+    emptyReason: 'multiple-paths' | 'unknown' | null;
+}
+
+type TaskWithNodeAndEvents = ProcessInstanceTaskEntity & {
+    node: ProcessNodeEntity;
+    nodeDefinition: ProcessNodeProvider;
+    taskEvents: ProcessInstanceEventEntity[];
+};
+
+async function fetchHistory(processId: number, processInstanceId: number): Promise<HistoryData> {
+    const [
+        process,
+        nodes,
+        tasks,
+        events,
+        definitions,
+        edges,
+    ] = await Promise.all([
+        new ProcessDefinitionApiService().retrieve(processId),
+        new ProcessNodeApiService().listAll({
+            processId: processId,
+        }),
+        new ProcessInstanceTaskApiService().listAllOrdered('started', 'ASC', {
+            processInstanceId: processInstanceId,
+        }),
+        new ProcessInstanceEventApiService().listAllOrdered('timestamp', 'ASC', {
+            processInstanceId: processInstanceId,
+            historyRelevant: true,
+        }),
+        new ProcessNodeProviderApiService()
+            .getNodeProviders(),
+        new ProcessDefinitionEdgeApiService().listAll({
+            processDefinitionId: processId,
+        }),
+    ]);
+
+
+    const tasksWithNodes: TaskWithNodeAndEvents[] = tasks
+        .content
+        .filter((task) => task.status !== ProcessTaskStatus.Restarted)
+        .map((task) => {
+            const node = nodes
+                .content
+                .find((node) => node.id === task.processNodeId);
+
+            if (node == null) {
+                throw new Error(`Node with ID ${task.processNodeId} not found for task ${task.id}`);
+            }
+
+            const nodeDefinition = definitions
+                .find((definition) => (
+                    definition.key === node.processNodeDefinitionKey &&
+                    definition.majorVersion === node.processNodeDefinitionVersion
+                ));
+            if (nodeDefinition == null) {
+                throw new Error(`Node definition with key ${node.processNodeDefinitionKey} and version ${node.processNodeDefinitionVersion} not found for node ${node.id}`);
+            }
+
+            const taskEvents = events
+                .content
+                .filter((event) => event.processInstanceTaskId === task.id);
+
+            return {
+                ...task,
+                node,
+                nodeDefinition,
+                taskEvents: taskEvents,
+            };
+        });
+
+    return {
+        process,
+        nodes: nodes.content,
+        tasks: tasksWithNodes,
+        preview: getUpcomingNodes(buildProcessFlowGraph(nodes.content, edges.content, definitions), tasks.content),
+        globalEvents: events
+            .content
+            .filter((event) => event.processInstanceTaskId == null)
+    };
+}
+
+function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEntity[]): UpcomingStepsPreview {
+    const nodesById = new Map(graph.nodes.map((node) => [node.node.id, node]));
+    const upcoming = new Map<number, ProcessFlowGraphNode>();
+    let hasOpenBranch = false;
+
+    for (const task of tasks) {
+        if (!activeTaskStatuses.has(task.status)) {
+            continue;
+        }
+
+        const visited = new Set([task.processNodeId]);
+        let current = nodesById.get(task.processNodeId);
+
+        while (current != null) {
+            if (current.provider.ports.length > 1 || current.outgoingEdges.length > 1) {
+                hasOpenBranch = true;
+                break;
+            }
+            // Actions can also choose between ports; that choice is only known at runtime.
+            if (
+                current.provider.type === ProcessNodeType.FlowControl ||
+                current.provider.type === ProcessNodeType.Termination ||
+                current.provider.ports.length !== 1 ||
+                current.outgoingEdges.length !== 1
+            ) {
+                break;
+            }
+
+            const {edge} = current.outgoingEdges[0];
+            if (edge.viaPort !== current.provider.ports[0].key) {
+                break;
+            }
+
+            const next = nodesById.get(edge.toNodeId);
+            if (next == null || visited.has(next.node.id)) {
+                break;
+            }
+
+            visited.add(next.node.id);
+            upcoming.set(next.node.id, next);
+            current = next;
+        }
+    }
+
+    return {
+        nodes: [...upcoming.values()],
+        emptyReason: upcoming.size > 0 ? null : hasOpenBranch ? 'multiple-paths' : 'unknown',
+    };
+}
+
+function getTaskDeadlineChipProps(task?: ProcessInstanceTaskEntity): Pick<ChipProps, 'color' | 'label'> | null {
+    if (task?.deadline == null) {
+        return null;
+    }
+
+    const deadline = Date.parse(task.deadline);
+
+    if (task.finished != null) {
+        const deadlineMet = Date.parse(task.finished) <= deadline;
+        return {
+            color: deadlineMet ? 'success' : 'error',
+            label: deadlineMet ? 'Frist eingehalten' : 'Abgelaufen',
+        };
+    }
+
+    let color: ChipProps['color'] = 'default';
+    if (activeTaskStatuses.has(task.status)) {
+        const now = Date.now();
+        const started = Date.parse(task.started);
+        if (now > deadline) {
+            color = 'error';
+        } else if (deadline > started && now > started + (deadline - started) / 2) {
+            color = 'warning';
+        }
+    }
+
+    return {
+        color,
+        label: <>{color === 'error' ? 'Abgelaufen' : 'Frist'}: {formatDateTimeWithRelative(task.deadline)}</>,
+    };
+}
+
+interface TimelineLabelProps {
+    index?: number;
+    node: ProcessNodeEntity;
+    nodeDefinition: ProcessNodeProvider;
+}
+
+function TimelineLabel({index, node, nodeDefinition}: TimelineLabelProps) {
+    const name = node.name?.trim() || nodeDefinition.name?.trim() || 'Unbenanntes Prozesselement';
+    const description = getNodeDescription(node, nodeDefinition);
+    const title = `${index != null ? `${index + 1}. ` : ''}${name}:`;
+
+    return (
+        <Tooltip title={`${title} ${description}`} describeChild>
+            <Typography variant="body2" noWrap sx={{flex: 1, minWidth: 0}}>
+                <Box component="span" sx={{fontWeight: 600}}>{title}</Box> {description}
+            </Typography>
+        </Tooltip>
+    );
+}
+
+const activeTaskNotices: Partial<Record<ProcessTaskStatus, string>> = {
+    [ProcessTaskStatus.Running]: 'Dieses Prozesselement wird derzeit ausgeführt.',
+    [ProcessTaskStatus.InProgress]: 'Dieses Prozesselement wird derzeit bearbeitet.',
+    [ProcessTaskStatus.AwaitingStaff]: 'Dieses Prozesselement wartet auf Bearbeitung durch Mitarbeiter:innen.',
+    [ProcessTaskStatus.Paused]: 'Die Ausführung dieses Prozesselements ist pausiert.',
+    [ProcessTaskStatus.AwaitingCustomer]: 'Dieses Prozesselement wartet auf eine Rückmeldung der zugewiesenen Person.',
+    [ProcessTaskStatus.AwaitingPayment]: 'Dieses Prozesselement wartet auf die Zahlungsbestätigung.',
+};
+
+interface TimelineItemProps extends TimelineLabelProps {
+    task: TaskWithNodeAndEvents;
+    expanded: boolean;
+    onExpandedChange: (expanded: boolean) => void;
+}
+
+function TimelineItem({index, node, nodeDefinition, task, expanded, onExpandedChange}: TimelineItemProps) {
+    const id = useId();
+    const deadlineChipProps = getTaskDeadlineChipProps(task);
+    const hasSummary = Boolean(task.executionSummaryMarkdown?.trim());
+    const notice = !hasSummary
+        ? activeTaskNotices[task.status] ?? (task.taskEvents.length === 0
+            ? 'Für dieses Prozesselement liegen keine weiteren Details vor.' : undefined)
+        : undefined;
+
+    return (
+        <Accordion
+            component={Paper}
+            expanded={expanded}
+            onChange={(_event, nextExpanded) => onExpandedChange(nextExpanded)}
+            sx={{
+                minWidth: 0,
+                ':not(:first-child):not(:last-child)': {borderRadius: 0},
+                ':first-of-type': {borderBottomLeftRadius: 0, borderBottomRightRadius: 0},
+                ':last-of-type': {borderTopLeftRadius: 0, borderTopRightRadius: 0},
+            }}
+        >
+            <AccordionSummary
+                expandIcon={<KeyboardArrowDown/>}
+                id={`${id}-summary`}
+                aria-controls={`${id}-details`}
+                sx={{
+                    minWidth: 0,
+                    '& .MuiAccordionSummary-content': {minWidth: 0, alignItems: 'center', gap: 2},
+                    '& .MuiSvgIcon-root, & .MuiAccordionSummary-expandIconWrapper': {flexShrink: 0},
+                }}
+            >
+                <ProcessInstanceTaskStatusIcon status={task.status}/>
+                <TimelineLabel index={index} node={node} nodeDefinition={nodeDefinition}/>
+                {deadlineChipProps != null && (
+                    <Chip {...deadlineChipProps} size="small" sx={{mx: 1, flexShrink: 0}}/>
+                )}
+            </AccordionSummary>
+            <AccordionDetails sx={{p: 2}}>
+                {notice != null && <Alert severity="info" sx={{mb: 3}}>{notice}</Alert>}
+                {hasSummary && (
+                    <Box sx={{mb: 4}}>
+                        <Typography variant="h6" sx={{mb: 1}}>
+                            Zusammenfassung der Ausführung
+                        </Typography>
+                        <Paper sx={{p: 2, bgcolor: 'background.paper'}} variant="outlined">
+                            <ProcessExecutionSummary markdown={task.executionSummaryMarkdown!}/>
+                        </Paper>
+                    </Box>
+                )}
+                {task.taskEvents.length > 0 && (
+                    <Stack spacing={2} sx={{mb: 3}}>
+                        <Typography variant="h6">
+                            Ereignisse und Zwischenergebnisse für diese Aufgabe
+                        </Typography>
+                        {task.taskEvents.map(event => (
+                            <Paper key={event.id} variant="outlined">
+                                <Box sx={{p: 2}}>
+                                    <Typography sx={{fontWeight: 600}}>{event.title}</Typography>
+                                    <Typography variant="body2">{event.message}</Typography>
+                                </Box>
+                                <Divider/>
+                                <Box sx={{p: 2, fontSize: '0.85rem'}}>
+                                    {formatDateTimeWithRelative(event.timestamp)}
+                                </Box>
+                            </Paper>
+                        ))}
+                    </Stack>
+                )}
+                <Divider sx={{my: 2}}/>
+                <Typography
+                    color="textSecondary"
+                    sx={{
+                        '& span::before': {content: '" • "'},
+                        '& span:first-of-type::before': {content: '""'},
+                    }}
+                >
+                    <span>Beginn der Ausführung: {formatDateTimeWithRelative(task.started)}</span>
+                    {task.finished != null && <span>Ende der Ausführung: {formatDateTimeWithRelative(task.finished)}</span>}
+                    {task.runtime != null && <span>Ausführungsdauer: {humanizeMillisecondsDuration(task.runtime)}</span>}
+                </Typography>
+            </AccordionDetails>
+        </Accordion>
+    );
+}

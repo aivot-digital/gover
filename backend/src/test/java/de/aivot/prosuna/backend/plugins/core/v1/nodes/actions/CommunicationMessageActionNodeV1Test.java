@@ -28,6 +28,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
+import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -39,6 +41,11 @@ import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentServic
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -211,6 +218,31 @@ class CommunicationMessageActionNodeV1Test {
         assertEquals(result.getNodeData().get("sentAt"), communicationRequest.message().timestamp());
         assertSame(signatureDepartment, communicationRequest.message().signatureDepartment());
         assertEquals(5, result.getNodeData().get("communicationProviderBindingId"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"' Antragstellende ', Antragstellende", ", applicant", "'', applicant", "'   ', applicant"})
+    void preparingCommunicationRecordsOneHistoryEventWithoutClaimingSuccess(String title, String expected) throws Exception {
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
+        var instance = processInstance();
+        instance.getIdentities().computeIfPresent("applicant", (_key, identity) -> identity.withTitle(title));
+        var context = initContext(configuration("automatic"), new ProcessExecutionData(), instance, task());
+        var repository = mock(ProcessInstanceHistoryEventRepository.class);
+        when(context.getLogger()).thenReturn(new ProcessNodeExecutionLogger(PROCESS_INSTANCE_ID, TASK_ID, null, null, repository));
+
+        var result = node.init(context);
+
+        assertNotNull(result.getCommunicationRequest());
+        var captor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(repository).save(captor.capture());
+        var event = captor.getValue();
+        assertEquals("Versand vorbereitet", event.getTitle());
+        assertEquals("Der Versand der Nachricht mit dem Betreff „Subject 123“ an die Identität „" + expected + "“ wurde vorbereitet.", event.getMessage());
+        assertTrue(event.getHistoryRelevant());
+        assertTrue(event.getAudit());
+        assertFalse(event.getTechnical());
+        assertEquals("applicant", event.getConcernedIdentityId());
+        assertEquals(title, event.getConcernedIdentityTitle());
     }
 
     @Test
@@ -406,6 +438,7 @@ class CommunicationMessageActionNodeV1Test {
         when(context.getCurrentProcessExecutionData()).thenReturn(executionData);
         when(context.getThisProcessInstance()).thenReturn(processInstance);
         when(context.getThisTask()).thenReturn(task);
+        when(context.getLogger()).thenReturn(mock(ProcessNodeExecutionLogger.class));
         when(context.getThisNode()).thenReturn(processNode);
         return context;
     }
@@ -419,10 +452,12 @@ class CommunicationMessageActionNodeV1Test {
     ) {
         var context = (ProcessNodeExecutionContextUIStaff<CommunicationMessageActionNodeV1.Configuration>)
                 mock(ProcessNodeExecutionContextUIStaff.class);
+        when(context.getCallingUser()).thenReturn(new UserEntity().setId("staff-1").setFullName("Ada Beispiel"));
         when(context.getConfigurationOfExecutingNode()).thenReturn(configuration);
         when(context.getCurrentProcessExecutionData()).thenReturn(executionData);
         when(context.getThisProcessInstance()).thenReturn(processInstance);
         when(context.getThisTask()).thenReturn(task);
+        when(context.getLogger()).thenReturn(mock(ProcessNodeExecutionLogger.class));
         return context;
     }
 

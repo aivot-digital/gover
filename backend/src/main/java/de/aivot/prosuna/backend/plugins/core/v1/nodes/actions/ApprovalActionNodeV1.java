@@ -29,11 +29,14 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
@@ -45,11 +48,14 @@ import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.*;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 @Component
 public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActionNodeV1.ApprovalConfiguration> {
@@ -93,6 +99,19 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         this.elementDataTransformService = elementDataTransformService;
         this.elementDerivationService = elementDerivationService;
         this.authoredInputValueService = authoredInputValueService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<ApprovalActionNodeV1.ApprovalConfiguration> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var configuration = context.configurationOfExecutingNode();
+        var decision = PORT_APPROVED.equals(context.viaPort()) ? "erteilt" : "abgelehnt";
+        return "Die Freigabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " " + decision + "."
+                + section("Vermerk", summary.data(OUTPUT_REMARK))
+                + section("Freigabekriterien", configuration.criteria)
+                + section("Prüfinhalt", MODE_CUSTOM_CONTENT.equals(configuration.contentMode)
+                        ? configuration.customContent : null);
     }
 
     @Nonnull
@@ -142,7 +161,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     public String getDescription() {
         return """
                 Erstellt eine zugewiesene Aufgabe, über die eine Mitarbeiter:in einen Vorgang freigeben oder ablehnen kann.
-
+                
                 Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Ausgang fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Elementausgänge bereit.
                 """;
     }
@@ -366,12 +385,15 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
         final String port;
         final String decision;
+        final boolean approved;
         if (EVENT_APPROVE.equals(event)) {
             port = PORT_APPROVED;
             decision = PORT_APPROVED;
+            approved = true;
         } else if (EVENT_REJECT.equals(event)) {
             port = PORT_REJECTED;
             decision = PORT_REJECTED;
+            approved = false;
         } else {
             throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         }
@@ -403,6 +425,34 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 .setNodeData(nodeData) // Set the generated node data
                 .setRuntimeData(Map.of()) // Reset runtime data to empty map
                 .setProcessData(updatedProcessData);
+
+        StringBuilder logMessage = new StringBuilder();
+        if (approved) {
+            logMessage.append("Die Freigabe wurde durch %s erteilt.");
+        } else {
+            logMessage.append("Die Freigabe wurde durch %s abgelehnt.");
+        }
+        if (StringUtils.isNotNullOrEmpty(remarkText)) {
+            logMessage
+                    .append(" Der folgende Vermerk wurde angegeben: ")
+                    .append(remarkText);
+        }
+
+        context
+                .getLogger()
+                .logf(
+                        ProcessNodeExecutionLogLevel.Info,
+                        false,
+                        true,
+                        true,
+                        context.getThisTask().getAssignedUserId(),
+                        null,
+                        null,
+                        approved ? "Freigabe erteilt" : "Freigabe abgelehnt",
+                        Map.of(),
+                        logMessage.toString(),
+                        ProcessHistoryLabels.quotedUser(context.getCallingUser())
+                );
 
         return Optional.of(result);
     }

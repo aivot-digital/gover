@@ -17,6 +17,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
@@ -51,6 +53,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+
 @Component
 public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config> {
     public static final String NODE_KEY = "fit_connect_send_json";
@@ -67,6 +71,15 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
     public FitConnectSendJsonActionNodeV1(SecretService secretService, JsonMapper jsonMapper) {
         this.secretService = secretService;
         this.jsonMapper = jsonMapper;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var configuration = context.configurationOfExecutingNode();
+        return "Die Daten wurden erfolgreich an eine FIT-Connect-Schnittstelle übertragen."
+                + detail("Zielsystem", configuration.serviceName) + detail("Zustellpunkt", configuration.destinationId);
     }
 
     @Nonnull
