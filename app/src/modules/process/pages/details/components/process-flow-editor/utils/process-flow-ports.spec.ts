@@ -33,9 +33,12 @@ describe('node-specific outgoing ports', () => {
         expect(edge.viaPort).toBe('b');
     });
 
-    it('lays out an edge whose deadline port has disappeared without discarding it', async () => {
-        const nodes = [node(1, []), node(2, [])];
+    it('preserves the unavailable deadline edge after a saved switch from strict to soft', async () => {
+        const strict = {...node(1, [port('__deadline_exceeded')]), timeLimitDays: 3, timeLimitStrict: true};
+        const target = node(2, []);
         const edges = [{id: 5, fromNodeId: 1, toNodeId: 2, viaPort: '__deadline_exceeded', processId: 1, processVersion: 1}];
+        expect(buildProcessFlowGraph([strict, target], edges, [provider]).edges[0].port).not.toBeNull();
+        const nodes = [{...strict, timeLimitStrict: false, ports: []}, target];
         const result = await layoutElements(nodes, edges, [provider]);
         expect(result.flowNodes).toHaveLength(2);
         expect(result.flowEdges).toHaveLength(1);

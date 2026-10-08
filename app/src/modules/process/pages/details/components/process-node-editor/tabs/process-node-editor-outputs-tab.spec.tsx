@@ -199,6 +199,7 @@ function renderOutputsTab({
         configuration: {},
         outputMappings,
         timeLimitDays: null,
+        timeLimitStrict: false,
         requirements: null,
         notes: null,
         savedWithErrors: false,

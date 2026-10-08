@@ -136,6 +136,7 @@ const attachmentSetOptions: ProcessNodeDefinitionMetadataForwardedAttachmentSet[
         configuration: {},
         outputMappings: {},
         timeLimitDays: null,
+        timeLimitStrict: false,
         requirements: null,
         notes: null,
         savedWithErrors: false,

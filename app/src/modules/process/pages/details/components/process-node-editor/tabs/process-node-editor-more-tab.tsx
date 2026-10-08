@@ -1,5 +1,6 @@
 import {Box} from "@mui/material";
 import {NumberFieldComponent} from "../../../../../../../components/number-field/number-field-component";
+import {CheckboxFieldComponent} from '../../../../../../../components/checkbox-field/checkbox-field-component';
 import {useProcessNodeEditorContext} from "../process-node-editor-context";
 import {
     RichTextInputComponent
@@ -33,7 +34,7 @@ export function ProcessNodeEditorMoreTab() {
                 showTimeLimit &&
                 <NumberFieldComponent
                     label="Frist (Maximale Laufzeit)"
-                    hint="Definiert die Fälligkeit einer Aufgabe in Tagen ab deren Erstellung. Bei festgelegter Frist steht der Ausgang „Fristüberschreitung“ zur Verfügung. Die automatische Weiterleitung bei Fristablauf ist noch nicht verfügbar."
+                    hint="Definiert die Fälligkeit einer Aufgabe in Tagen ab deren Erstellung."
                     suffix="Tage"
                     decimalPlaces={0}
                     minValue={1}
@@ -46,6 +47,23 @@ export function ProcessNodeEditorMoreTab() {
                         }, false);
                     }}
                     disabled={!isEditable}
+                />
+            }
+
+            {
+                showTimeLimit &&
+                <CheckboxFieldComponent
+                    label="Strikt"
+                    hint="Nur bei einer strikten Frist steht der Ausgang „Fristüberschreitung“ zur Verfügung. Eine weiche Frist kann ohne Prozessübergang verstreichen. Die automatische Weiterleitung bei Fristablauf ist noch nicht verfügbar."
+                    value={node.timeLimitStrict}
+                    onChange={(val) => {
+                        setNode({
+                            ...node,
+                            timeLimitStrict: val,
+                        }, false);
+                    }}
+                    disabled={!isEditable || node.timeLimitDays == null}
+                    sx={{mt: 2}}
                 />
             }
 

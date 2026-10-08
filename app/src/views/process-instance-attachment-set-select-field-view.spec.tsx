@@ -198,6 +198,7 @@ function createNode(id: number, name: string): ProcessNodeEntity {
         configuration: {},
         outputMappings: {},
         timeLimitDays: null,
+        timeLimitStrict: false,
         requirements: null,
         notes: null,
         savedWithErrors: false,

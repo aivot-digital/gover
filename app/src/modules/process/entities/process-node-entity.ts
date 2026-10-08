@@ -15,6 +15,7 @@ export interface ProcessNodeEntity {
     configuration: AuthoredElementValues;
     outputMappings: Record<string, any>;
     timeLimitDays: number | null;
+    timeLimitStrict: boolean;
     requirements: string | null;
     notes: string | null;
     savedWithErrors: boolean;

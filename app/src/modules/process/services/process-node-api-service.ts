@@ -44,6 +44,7 @@ export class ProcessNodeApiService extends BaseCrudApiService<
             outputMappings: {},
             requirements: null,
             timeLimitDays: null,
+            timeLimitStrict: false,
             id: 0,
             processId: 0,
             processVersion: 0,
