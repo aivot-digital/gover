@@ -26,7 +26,9 @@ public final class ExecutionSummaryMarkdown {
     public static final String PREVIOUS_ASSIGNED_USER_NAME = "previousAssignedUserName";
     public static final String ASSIGNED_USER_NAME = "assignedUserName";
     public static final String DOCUMENTS = "documents";
-    private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("dd.MM.yyyy 'um' HH:mm:ss 'Uhr'", Locale.GERMAN);
+    private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter
+            .ofPattern("dd.MM.yyyy 'um' HH:mm:ss 'Uhr'", Locale.GERMAN)
+            .withZone(ApplicationTimeZone.getZoneId());
     private final ProcessNodeExecutionSummaryContext<?> context;
 
     public ExecutionSummaryMarkdown(@Nonnull ProcessNodeExecutionSummaryContext<?> context) {
