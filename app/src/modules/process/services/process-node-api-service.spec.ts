@@ -24,6 +24,7 @@ describe('automatic process node data keys', () => {
             .mockImplementationOnce(async (node) => ({
                 ...node,
                 ports: [],
+                deadlineDefinitions: [],
                 portResolutionProblems: [],
                 id: 42,
             }));
@@ -60,23 +61,23 @@ describe('automatic process node data keys', () => {
 
 it('returns saved ports while sending only authoring data and supports prospective imports', async () => {
     const api = new ProcessNodeApiService();
-    expect(api.initialize().timeLimitStrict).toBe(false);
-    const node = {...api.initialize(), id: 12, timeLimitDays: 3, timeLimitStrict: true};
-    const ports = [{key: '__deadline_exceeded', label: 'Fristüberschreitung', description: 'Fristablauf'}];
+    expect(api.initialize().deadlines).toEqual({});
+    const node = {...api.initialize(), id: 12, deadlines: {phase: {days: 3, strict: true}}};
+    const ports = [{key: 'phase_overdue', deadlineKey: 'phase', label: 'Fristüberschreitung', description: 'Fristablauf'}];
     const saved = {...node, ports};
     const fetch = vi.spyOn(api, 'fetch').mockResolvedValue(new Response(JSON.stringify(saved)));
     expect((await api.update(node.id, saved)).ports).toEqual(ports);
     const writeBody = JSON.parse(fetch.mock.calls[0][2] as string);
     expect(writeBody).not.toHaveProperty('ports');
     expect(writeBody).not.toHaveProperty('portResolutionProblems');
-    expect(writeBody.timeLimitDays).toBe(3);
-    expect(writeBody.timeLimitStrict).toBe(true);
+    expect(writeBody.deadlines).toEqual(node.deadlines);
+    expect(writeBody).not.toHaveProperty('deadlineDefinitions');
 
-    fetch.mockResolvedValue(new Response(JSON.stringify({ports, problems: []})));
-    expect(await api.resolvePorts(saved, {forImport: true, useInitialConfiguration: true})).toEqual({ports, problems: []});
+    fetch.mockResolvedValue(new Response(JSON.stringify({ports, problems: [], deadlineDefinitions: []})));
+    expect(await api.resolvePorts(saved, {forImport: true, useInitialConfiguration: true})).toEqual({ports, problems: [], deadlineDefinitions: []});
     expect(fetch.mock.calls[1][0]).toBe('POST');
     expect(fetch.mock.calls[1][1]).toBe('/api/process-nodes/resolve-ports/');
     const preview = JSON.parse(fetch.mock.calls[1][2] as string);
-    expect(preview).toMatchObject({forImport: true, useInitialConfiguration: true, node: {timeLimitDays: 3, timeLimitStrict: true}});
+    expect(preview).toMatchObject({forImport: true, useInitialConfiguration: true, node: {deadlines: node.deadlines}});
     expect(preview.node).not.toHaveProperty('ports');
 });

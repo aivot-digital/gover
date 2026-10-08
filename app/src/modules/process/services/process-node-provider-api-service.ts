@@ -54,6 +54,7 @@ export interface ProcessNodeProvider {
 }
 
 export interface ProcessNodePort {
+    deadlineKey: string | null;
     key: string;
     label: string;
     description: string;
@@ -76,9 +77,15 @@ export class ProcessNodeProviderApiService extends BaseApiService {
     }
 }
 
-export const PROCESS_NODE_DEADLINE_PORT_KEY = '__deadline_exceeded';
+export interface ProcessNodeDeadlineDefinition {
+    key: string;
+    label: string;
+    description: string;
+    port: ProcessNodePort;
+}
 
 export interface ProcessNodePortResolution {
     ports: ProcessNodePort[];
     problems: string[];
+    deadlineDefinitions: ProcessNodeDeadlineDefinition[];
 }

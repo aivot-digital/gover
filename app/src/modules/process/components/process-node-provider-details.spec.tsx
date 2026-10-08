@@ -37,7 +37,7 @@ describe('ProcessNodeProviderDetails', () => {
         const {rerender} = render(<ProcessNodeProviderDetailsContent provider={createProvider()}/>);
         expect(screen.getByText('Die Ausgänge hängen von der Konfiguration des Prozesselements ab.')).toBeInTheDocument();
         rerender(<ProcessNodeProviderDetailsContent provider={createProvider()} ports={[
-            {key: '__deadline_exceeded', label: 'Fristüberschreitung', description: 'Fristablauf'},
+            {key: 'phase_overdue', deadlineKey: 'phase', label: 'Fristüberschreitung', description: 'Fristablauf'},
         ]}/>);
         expect(screen.getByText('Fristüberschreitung')).toBeInTheDocument();
         expect(screen.queryByText('Die Ausgänge hängen von der Konfiguration des Prozesselements ab.')).not.toBeInTheDocument();

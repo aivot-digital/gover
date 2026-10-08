@@ -73,7 +73,7 @@ function node(id: number, name: string, definitionKey: string = ProcessNodeType.
         processVersion: 1,
         processNodeDefinitionKey: definitionKey,
         processNodeDefinitionVersion: 1,
-        ports: ports.map((key) => ({key, label: key, description: ''})),
+        ports: ports.map((key) => ({key, deadlineKey: null, label: key, description: ''})),
     };
 }
 
@@ -324,9 +324,8 @@ describe('Process instance history preview', () => {
 
     it.each([false, true])('uses the resolved ports for a deadline with strictness %s', async strict => {
         const current = {
-            ...node(1, 'Prüfung', ProcessNodeType.Action, strict ? ['next', '__deadline_exceeded'] : ['next']),
-            timeLimitDays: 3,
-            timeLimitStrict: strict,
+            ...node(1, 'Prüfung', ProcessNodeType.Action, strict ? ['next', 'phase_overdue'] : ['next']),
+            deadlines: {phase: {days: 3, strict}},
         };
         await renderHistory([current, node(2, 'Versand')], [edge(1, 2)], [task(1, 1)]);
 

@@ -12,7 +12,7 @@ vi.mock('@xyflow/react', () => ({
 it('allows deleting an unavailable connection and prevents new connections through its anchor', async () => {
     const onDeleteEdge = vi.fn();
     const onConnect = vi.fn();
-    const port = {key: 'removed', label: 'Nicht verfügbar: removed', description: 'Ausgang nicht mehr verfügbar.'};
+    const port = {deadlineKey: null, key: 'removed', label: 'Nicht verfügbar: removed', description: 'Ausgang nicht mehr verfügbar.'};
     render(<ProcessFlowEditorNodeHandle editable isConnected unavailable port={port} onClick={onConnect}
                                         onConnectToExisting={onConnect} onDeleteEdge={onDeleteEdge} wasPerformed={false}/>);
     expect(screen.getByTestId('source-handle')).toHaveAttribute('data-connectable', 'false');

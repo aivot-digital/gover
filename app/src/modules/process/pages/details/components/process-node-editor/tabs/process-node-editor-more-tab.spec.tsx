@@ -1,7 +1,8 @@
 import {useState} from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {literalAuthoredValue} from '../../../../../../../models/element-data';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {type GroupLayout} from '../../../../../../../models/elements/form/layout/group-layout';
 import {type ProcessNodeEntity} from '../../../../../entities/process-node-entity';
 import {ProcessNodeApiService} from '../../../../../services/process-node-api-service';
@@ -13,48 +14,93 @@ vi.mock('../../../../../../../components/rich-text-input-component/rich-text-inp
     RichTextInputComponent: () => null,
 }));
 
-describe('process node deadline strictness', () => {
-    it('defaults to soft and enables the checkbox once a deadline is entered', async () => {
+const deadline = (key: string, label: string) => ({
+    key, label, description: `Zeit für ${label}`,
+    port: {key: `${key}_overdue`, label: `Fristüberschreitung: ${label}`, description: 'Fortsetzen', deadlineKey: null},
+});
+const message = deadline('message', 'Nachrichtenversand');
+const customer = deadline('customer', 'Formulareinreichung');
+const resolution = (deadlineDefinitions = [message, customer]) => ({deadlineDefinitions, ports: [], problems: []});
+
+beforeEach(() => {
+    vi.spyOn(ProcessNodeApiService.prototype, 'resolvePorts').mockResolvedValue(resolution());
+});
+afterEach(() => vi.restoreAllMocks());
+
+describe('configurable phase deadlines', () => {
+    it('defaults to optional soft deadlines and changes each phase independently without updating saved ports', async () => {
         const {setNode} = renderMoreTab();
-        const checkbox = screen.getByRole('checkbox', {name: /^Strikt/});
+        const input = await screen.findByRole('textbox', {name: /^Nachrichtenversand/});
+        const checkbox = screen.getByRole('checkbox', {name: /^Harte Frist: Nachrichtenversand/});
         expect(checkbox).not.toBeChecked();
         expect(checkbox).toBeDisabled();
-        expect(checkbox).toHaveAccessibleDescription(/Nur bei einer strikten Frist/);
-
-        fireEvent.change(screen.getByRole('textbox', {name: /Frist/}), {target: {value: '3'}});
-        expect(checkbox).toBeEnabled();
+        expect(input).toHaveAccessibleDescription(/Ohne Angabe gilt keine Frist/);
+        fireEvent.change(input, {target: {value: '3'}});
         await userEvent.click(checkbox);
-        expect(checkbox).toBeChecked();
-        expect(setNode).toHaveBeenLastCalledWith(expect.objectContaining({timeLimitDays: 3, timeLimitStrict: true}), false);
-
-        await userEvent.click(checkbox);
-        expect(setNode).toHaveBeenLastCalledWith(expect.objectContaining({timeLimitDays: 3, timeLimitStrict: false}), false);
+        expect(setNode).toHaveBeenLastCalledWith(expect.objectContaining({
+            deadlines: {message: {days: 3, strict: true}}, ports: [],
+        }), false);
+        fireEvent.change(screen.getByRole('textbox', {name: /^Formulareinreichung/}), {target: {value: '7'}});
+        expect(setNode).toHaveBeenLastCalledWith(expect.objectContaining({
+            deadlines: {message: {days: 3, strict: true}, customer: {days: 7, strict: false}}, ports: [],
+        }), false);
     });
 
-    it('retains strictness when the deadline is cleared and restores it when a deadline is reentered', () => {
-        const {setNode} = renderMoreTab({timeLimitDays: 3, timeLimitStrict: true});
-        const input = screen.getByRole('textbox', {name: /Frist/});
-        const checkbox = screen.getByRole('checkbox', {name: /^Strikt/});
+    it('retains strictness when the duration is cleared and disables the checkbox', async () => {
+        const {setNode} = renderMoreTab({deadlines: {message: {days: 3, strict: true}}});
+        const input = await screen.findByRole('textbox', {name: /^Nachrichtenversand/});
+        const checkbox = screen.getByRole('checkbox', {name: /^Harte Frist: Nachrichtenversand/});
         fireEvent.change(input, {target: {value: ''}});
         expect(checkbox).toBeChecked();
         expect(checkbox).toBeDisabled();
-        expect(setNode).toHaveBeenLastCalledWith(expect.objectContaining({timeLimitDays: null, timeLimitStrict: true}), false);
-
+        expect(setNode).toHaveBeenLastCalledWith(expect.objectContaining({deadlines: {message: {days: null, strict: true}}}), false);
         fireEvent.change(input, {target: {value: '2'}});
         expect(checkbox).toBeEnabled();
-        expect(checkbox).toBeChecked();
     });
 
-    it('disables deadline settings when the node cannot be edited', () => {
-        renderMoreTab({timeLimitDays: 3, timeLimitStrict: true}, false);
-        expect(screen.getByRole('textbox', {name: /Frist/})).toBeDisabled();
-        expect(screen.getByRole('checkbox', {name: /^Strikt/})).toBeDisabled();
+    it('shows offered deadlines for triggers and respects read-only mode', async () => {
+        renderMoreTab({deadlines: {message: {days: 3, strict: true}}}, false, ProcessNodeType.Trigger);
+        expect(await screen.findByRole('textbox', {name: /^Nachrichtenversand/})).toBeDisabled();
+        expect(screen.getByRole('checkbox', {name: /^Harte Frist: Nachrichtenversand/})).toBeDisabled();
     });
 
-    it('does not show deadline settings for non-action nodes', () => {
-        renderMoreTab({}, true, ProcessNodeType.Trigger);
-        expect(screen.queryByRole('textbox', {name: /Frist/})).not.toBeInTheDocument();
-        expect(screen.queryByRole('checkbox', {name: /^Strikt/})).not.toBeInTheDocument();
+    it('preserves settings for temporarily hidden phases and previews unsaved configuration', async () => {
+        const {updateNode} = renderMoreTab({deadlines: {message: {days: 3, strict: true}}});
+        await screen.findByRole('textbox', {name: /^Nachrichtenversand/});
+        vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockResolvedValueOnce(resolution([customer]));
+        act(() => updateNode({configuration: {executionType: literalAuthoredValue('automatic')}}));
+        await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+        expect(screen.queryByRole('textbox', {name: /^Nachrichtenversand/})).not.toBeInTheDocument();
+        expect(ProcessNodeApiService.prototype.resolvePorts).toHaveBeenLastCalledWith(expect.objectContaining({
+            configuration: {executionType: literalAuthoredValue('automatic')}, deadlines: {message: {days: 3, strict: true}},
+        }));
+        act(() => updateNode({configuration: {executionType: literalAuthoredValue('manual')}}));
+        expect(await screen.findByRole('textbox', {name: /^Nachrichtenversand/})).toHaveValue('3');
+        expect(screen.getByRole('checkbox', {name: /^Harte Frist: Nachrichtenversand/})).toBeChecked();
+    });
+
+    it('ignores outdated preview responses', async () => {
+        let resolveOld!: (value: ReturnType<typeof resolution>) => void;
+        vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
+        const {updateNode} = renderMoreTab();
+        vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockResolvedValueOnce(resolution([customer]));
+        act(() => updateNode({configuration: {executionType: literalAuthoredValue('automatic')}}));
+        await screen.findByRole('textbox', {name: /^Formulareinreichung/});
+        await act(async () => resolveOld(resolution()));
+        expect(screen.queryByRole('textbox', {name: /^Nachrichtenversand/})).not.toBeInTheDocument();
+    });
+
+    it('shows a recoverable error when preview loading fails', async () => {
+        vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockRejectedValueOnce(new Error('Failed'));
+        renderMoreTab();
+        expect(await screen.findByRole('alert')).toHaveTextContent('Fristen konnten nicht geladen werden');
+    });
+
+    it('has no deadline controls when the provider offers no phases', async () => {
+        vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockResolvedValueOnce(resolution([]));
+        renderMoreTab();
+        await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+        expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     });
 });
 
@@ -66,8 +112,10 @@ function renderMoreTab(overrides: Partial<ProcessNodeEntity> = {}, isEditable = 
         majorVersion: 1, parentPluginKey: 'test', name: 'Test', abstractDescription: '', description: '',
         deprecationNotice: null, documentationUrl: null, type, executionTypes: [], outputs: [],
     };
+    let updateNode!: (update: Partial<ProcessNodeEntity>) => void;
     function Harness() {
         const [currentNode, setCurrentNode] = useState(node);
+        updateNode = (update) => setCurrentNode((current) => ({...current, ...update}));
         return <ProcessNodeEditorProvider value={{
             node: currentNode,
             provider,
@@ -85,5 +133,5 @@ function renderMoreTab(overrides: Partial<ProcessNodeEntity> = {}, isEditable = 
         </ProcessNodeEditorProvider>;
     }
     render(<Harness/>);
-    return {setNode};
+    return {setNode, updateNode: (update: Partial<ProcessNodeEntity>) => updateNode(update)};
 }

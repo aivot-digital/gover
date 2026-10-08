@@ -64,6 +64,7 @@ export function buildProcessFlowGraph(
                     label: `Nicht verfügbar: ${key}`,
                     description: 'Dieser Ausgang ist nicht mehr verfügbar. Entfernen Sie die Verbindung oder stellen Sie die Konfiguration wieder her.',
                     unavailable: true,
+                    deadlineKey: null,
                 })),
             ],
             outgoingEdges: [],

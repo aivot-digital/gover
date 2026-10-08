@@ -43,8 +43,8 @@ export class ProcessNodeApiService extends BaseCrudApiService<
             notes: null,
             outputMappings: {},
             requirements: null,
-            timeLimitDays: null,
-            timeLimitStrict: false,
+            deadlines: {},
+            deadlineDefinitions: [],
             id: 0,
             processId: 0,
             processVersion: 0,
@@ -139,6 +139,6 @@ export class ProcessNodeApiService extends BaseCrudApiService<
 }
 
 export function toProcessNodeWrite(node: ProcessNodeWrite): ProcessNodeWrite {
-    const {ports: _ports, portResolutionProblems: _problems, ...authored} = node as ProcessNodeEntity;
+    const {ports: _ports, portResolutionProblems: _problems, deadlineDefinitions: _deadlines, ...authored} = node as ProcessNodeEntity;
     return authored;
 }

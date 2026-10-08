@@ -1,20 +1,25 @@
 import {type ProcessDefinitionEdgeEntity} from '../entities/process-definition-edge-entity';
-import {PROCESS_NODE_DEADLINE_PORT_KEY, type ProcessNodePort} from '../services/process-node-provider-api-service';
+import {type ProcessNodePort} from '../services/process-node-provider-api-service';
 
 export function getDefaultProcessNodePort(ports: ProcessNodePort[]): ProcessNodePort | undefined {
-    return ports.find((port) => port.key !== PROCESS_NODE_DEADLINE_PORT_KEY);
+    return ports.find((port) => port.deadlineKey == null);
 }
 
 export function mapReplacementPorts(
     outgoingEdges: ProcessDefinitionEdgeEntity[],
+    sourcePorts: ProcessNodePort[],
     replacementPorts: ProcessNodePort[],
 ): Map<number, string | null> {
-    const availableKeys = new Set(replacementPorts.map((port) => port.key));
+    const availablePorts = new Map(replacementPorts.map((port) => [port.key, port]));
+    const sourceByKey = new Map(sourcePorts.map((port) => [port.key, port]));
     const result = new Map<number, string | null>();
 
-    // Reserve same-key matches before considering fallbacks, including the reserved deadline path.
+    // Preserve exact matches before assigning fallbacks; expiry paths retain their phase identity.
     for (const edge of outgoingEdges) {
-        if (availableKeys.delete(edge.viaPort)) {
+        const source = sourceByKey.get(edge.viaPort);
+        const replacement = availablePorts.get(edge.viaPort);
+        if (source && replacement && source.deadlineKey === replacement.deadlineKey) {
+            availablePorts.delete(edge.viaPort);
             result.set(edge.id, edge.viaPort);
         }
     }
@@ -22,11 +27,12 @@ export function mapReplacementPorts(
         if (result.has(edge.id)) {
             continue;
         }
-        const replacementKey = edge.viaPort === PROCESS_NODE_DEADLINE_PORT_KEY ? undefined
-            : Array.from(availableKeys).find((key) => key !== PROCESS_NODE_DEADLINE_PORT_KEY);
-        result.set(edge.id, replacementKey ?? null);
-        if (replacementKey != null) {
-            availableKeys.delete(replacementKey);
+        const source = sourceByKey.get(edge.viaPort);
+        const replacement = source && Array.from(availablePorts.values())
+            .find((port) => port.deadlineKey === source.deadlineKey);
+        result.set(edge.id, replacement?.key ?? null);
+        if (replacement) {
+            availablePorts.delete(replacement.key);
         }
     }
     return result;

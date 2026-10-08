@@ -10,7 +10,7 @@ const provider: ProcessNodeProvider = {
     deprecationNotice: null, documentationUrl: null, type: ProcessNodeType.Action,
     executionTypes: [ProcessNodeExecutionType.Automatic], outputs: [],
 };
-const port = (key: string): ProcessNodePort => ({key, label: key, description: 'Fortsetzen'});
+const port = (key: string): ProcessNodePort => ({key, deadlineKey: null, label: key, description: 'Fortsetzen'});
 const node = (id: number, ports: ProcessNodePort[]) => ({
     ...ProcessNodeApiService.initialize(), id, processNodeDefinitionKey: provider.key,
     processNodeDefinitionVersion: 1, ports,
@@ -25,24 +25,24 @@ describe('node-specific outgoing ports', () => {
         expect(graph.nodes.map((item) => item.displayPorts.map((item) => item.key))).toEqual([['a', 'b'], ['c']]);
         expect(graph.edges[0].port?.label).toBe('b');
 
-        const saved = {...first, ports: [port('a'), port('__deadline_exceeded')]};
+        const saved = {...first, ports: [port('a'), port('phase_overdue')]};
         const updated = buildProcessFlowGraph([saved, second], [edge], [provider]);
         expect(updated.edges[0].port).toBeNull();
         expect(updated.nodes[0].displayPorts.at(-1)).toMatchObject({key: 'b', unavailable: true});
-        expect(saved.ports.map((item) => item.key)).toEqual(['a', '__deadline_exceeded']);
+        expect(saved.ports.map((item) => item.key)).toEqual(['a', 'phase_overdue']);
         expect(edge.viaPort).toBe('b');
     });
 
     it('preserves the unavailable deadline edge after a saved switch from strict to soft', async () => {
-        const strict = {...node(1, [port('__deadline_exceeded')]), timeLimitDays: 3, timeLimitStrict: true};
+        const strict = {...node(1, [port('phase_overdue')]), deadlines: {phase: {days: 3, strict: true}}};
         const target = node(2, []);
-        const edges = [{id: 5, fromNodeId: 1, toNodeId: 2, viaPort: '__deadline_exceeded', processId: 1, processVersion: 1}];
+        const edges = [{id: 5, fromNodeId: 1, toNodeId: 2, viaPort: 'phase_overdue', processId: 1, processVersion: 1}];
         expect(buildProcessFlowGraph([strict, target], edges, [provider]).edges[0].port).not.toBeNull();
-        const nodes = [{...strict, timeLimitStrict: false, ports: []}, target];
+        const nodes = [{...strict, deadlines: {phase: {days: 3, strict: false}}, ports: []}, target];
         const result = await layoutElements(nodes, edges, [provider]);
         expect(result.flowNodes).toHaveLength(2);
         expect(result.flowEdges).toHaveLength(1);
-        expect(result.flowEdges[0]).toMatchObject({id: '5', sourceHandle: '__deadline_exceeded'});
+        expect(result.flowEdges[0]).toMatchObject({id: '5', sourceHandle: 'phase_overdue'});
         expect(result.flowEdges[0].data?.graphEdge.port).toBeNull();
         expect(result.flowNodes[0].data.graphNode.displayPorts[0].unavailable).toBe(true);
     });

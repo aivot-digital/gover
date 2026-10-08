@@ -17,7 +17,6 @@ import {GenericPageHeader} from '../../../../components/generic-page-header/gene
 import {
     type ProcessNodeProvider,
     type ProcessNodePort,
-    PROCESS_NODE_DEADLINE_PORT_KEY,
     ProcessNodeProviderApiService,
     ProcessNodeType,
 } from '../../services/process-node-provider-api-service';
@@ -433,7 +432,7 @@ function buildNodeReplacementPlan(
             getProviderPortOrderIndex(node.ports, leftEdge.viaPort) - getProviderPortOrderIndex(node.ports, rightEdge.viaPort) ||
             leftEdge.id - rightEdge.id
         ));
-    const replacementPortMapping = mapReplacementPorts(outgoingEdges, replacementPorts);
+    const replacementPortMapping = mapReplacementPorts(outgoingEdges, node.ports, replacementPorts);
     const unchangedOutgoingEdges: ProcessDefinitionEdgeEntity[] = [];
     const recreatedOutgoingEdges: RecreatedEdgePlan[] = [];
     const removedOutgoingEdges: ProcessDefinitionEdgeEntity[] = [];
@@ -1544,7 +1543,7 @@ export function ProcessDetailsPage(): ReactNode {
         const remainingEdges = processFlow.edges.filter((edge) => (
             !edgesToRemove.some((edgeToRemove) => edgeToRemove.id === edge.id)
         ));
-        const regularPorts = node.ports.filter((port) => port.key !== PROCESS_NODE_DEADLINE_PORT_KEY);
+        const regularPorts = node.ports.filter((port) => port.deadlineKey == null);
         const bridgeTargetEdge = node.portResolutionProblems.length === 0 && regularPorts.length === 1 && outgoingEdges.length === 1 && outgoingEdges[0].viaPort === regularPorts[0].key
             ? outgoingEdges[0]
             : null;

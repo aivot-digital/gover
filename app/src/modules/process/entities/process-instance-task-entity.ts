@@ -27,4 +27,5 @@ export interface ProcessInstanceTaskEntity {
     assignedUserId: string | null;
     assignedCustomerIdentityId: string | null;
     deadline: string | null; // ISO date string
+    deadlineKey: string | null;
 }
