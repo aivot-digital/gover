@@ -62,9 +62,9 @@ class AiProcessDataTransformationActionNodeV1Test {
     private static final Integer NODE_ID = 123;
     private static final Long PROCESS_INSTANCE_ID = 99L;
     private static final Long TASK_ID = 456L;
-    private static final int CONFIGURED_TRANSFORMATION_MAX_TOKENS = 4096;
+    private static final int CENTRAL_MAX_TOKENS = 4096;
     private static final String CENTRAL_MODEL = "central-model";
-    private static final Duration CHAT_TIMEOUT = Duration.ofMinutes(2);
+    private static final Duration CENTRAL_CHAT_TIMEOUT = Duration.ofMinutes(2);
 
     private final List<Prompt> prompts = new ArrayList<>();
     private ChatModel chatModel;
@@ -76,6 +76,10 @@ class AiProcessDataTransformationActionNodeV1Test {
         when(chatModel.getOptions()).thenReturn(OpenAiChatOptions.builder()
                 .model(CENTRAL_MODEL)
                 .temperature(0.25d)
+                .topP(0.7d)
+                .n(2)
+                .maxTokens(CENTRAL_MAX_TOKENS)
+                .timeout(CENTRAL_CHAT_TIMEOUT)
                 .build());
         when(chatModel.call(any(Prompt.class))).thenAnswer(invocation -> {
             prompts.add(invocation.getArgument(0));
@@ -85,7 +89,7 @@ class AiProcessDataTransformationActionNodeV1Test {
     }
 
     @Test
-    void init_ShouldUseCentralSpringAiModelAndTransformProcessData() throws Exception {
+    void init_ShouldUseCentralSpringAiOptionsAndTransformProcessData() throws Exception {
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
                 node.init(context(configuration("Use formalized applicant data.")))
@@ -125,11 +129,11 @@ class AiProcessDataTransformationActionNodeV1Test {
 
         var options = assertInstanceOf(OpenAiChatOptions.class, prompt.getOptions());
         assertEquals(CENTRAL_MODEL, options.getModel());
-        assertEquals(0.01d, options.getTemperature());
-        assertEquals(0.9d, options.getTopP());
-        assertEquals(1, options.getN());
-        assertEquals(CONFIGURED_TRANSFORMATION_MAX_TOKENS, options.getMaxTokens());
-        assertEquals(CHAT_TIMEOUT, options.getTimeout());
+        assertEquals(0.25d, options.getTemperature());
+        assertEquals(0.7d, options.getTopP());
+        assertEquals(2, options.getN());
+        assertEquals(CENTRAL_MAX_TOKENS, options.getMaxTokens());
+        assertEquals(CENTRAL_CHAT_TIMEOUT, options.getTimeout());
     }
 
     @Test
@@ -149,13 +153,16 @@ class AiProcessDataTransformationActionNodeV1Test {
     }
 
     @Test
-    void init_ShouldUsePluginDefaultMaxTokensWhenTransformationOverrideIsMissing() throws Exception {
-        var defaultOnlyNode = createNode();
+    void init_ShouldLeaveMaxTokensUnsetWhenCentralModelDoesNotConfigureLimit() throws Exception {
+        when(chatModel.getOptions()).thenReturn(OpenAiChatOptions.builder()
+                .model(CENTRAL_MODEL)
+                .build());
+        var nodeWithoutTokenLimit = createNode();
 
-        defaultOnlyNode.init(context(configuration("Prompt")));
+        nodeWithoutTokenLimit.init(context(configuration("Prompt")));
 
         var options = assertInstanceOf(OpenAiChatOptions.class, prompts.getFirst().getOptions());
-        assertEquals(2222, options.getMaxTokens());
+        assertNull(options.getMaxTokens());
     }
 
     @Test
