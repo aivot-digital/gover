@@ -18,7 +18,7 @@ class ProcessNodeResponseDTOTest {
         var node = new ProcessNodeEntity().setId(1).setProcessId(2).setProcessVersion(3)
                 .setName("Prüfung").setDataKey("test").setProcessNodeDefinitionKey("test.node")
                 .setProcessNodeDefinitionVersion(1).setConfiguration(new AuthoredElementValues())
-                .setOutputMappings(Map.of()).setTimeLimitDays(1);
+                .setOutputMappings(Map.of()).setTimeLimitDays(1).setTimeLimitStrict(true);
         node.prePersist();
         var resolution = new ProcessNodePortResolution(List.of(ProcessNodePortResolver.DEADLINE_PORT), List.of());
         var mapper = JsonMapperFactory.getInstance();
@@ -27,9 +27,22 @@ class ProcessNodeResponseDTOTest {
 
         authored.forEach((key, value) -> assertEquals(value, response.get(key), "Changed existing field: " + key));
         assertEquals("Prüfung", response.get("displayName"));
+        assertEquals(true, response.get("timeLimitStrict"));
         assertTrue(response.containsKey("ports"));
         assertEquals(List.of(), response.get("portResolutionProblems"));
         assertFalse(authored.containsKey("ports"));
         assertFalse(authored.containsKey("portResolutionProblems"));
+    }
+
+    @Test
+    void missingStrictnessDefaultsToSoftAndExplicitValuesRoundTrip() {
+        var mapper = JsonMapperFactory.getInstance();
+        assertFalse(mapper.readValue("{\"timeLimitDays\":3}", ProcessNodeEntity.class).getTimeLimitStrict());
+        for (var strict : List.of(false, true)) {
+            var node = new ProcessNodeEntity().setTimeLimitDays(3).setTimeLimitStrict(strict);
+            var restored = mapper.readValue(mapper.writeValueAsString(node), ProcessNodeEntity.class);
+            assertEquals(strict, restored.getTimeLimitStrict());
+            assertEquals(3, restored.getTimeLimitDays());
+        }
     }
 }

@@ -21,6 +21,7 @@ import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
+import de.aivot.prosuna.backend.process.services.ProcessNodePortResolver;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -186,6 +187,30 @@ class ProcessTaskDeadlineResultHandlerTest {
 
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
         verifyNoInteractions(tasks, events, mail);
+    }
+
+    @Test
+    void completionCannotUseDeadlinePortAfterSwitchingToSoft() throws Exception {
+        try (var validators = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+            var resolver = new ProcessNodePortResolver(validators.getValidator());
+            node.setTimeLimitDays(3).setTimeLimitStrict(true);
+            when(definition.getPorts(any())).thenReturn(List.of());
+            when(nodes.resolvePorts(node, definition)).thenAnswer(invocation ->
+                    resolver.resolve(node, definition, new AuthoredElementValues()));
+            when(edges.findByFromNodeIdAndViaPort(3, ProcessNodePortResolver.DEADLINE_PORT_KEY))
+                    .thenReturn(Optional.of(new ProcessEdgeEntity(1, 10, 1, 3, 4, ProcessNodePortResolver.DEADLINE_PORT_KEY)));
+            var result = new ProcessNodeExecutionResultTaskCompleted(ProcessNodePortResolver.DEADLINE_PORT_KEY);
+
+            node.setTimeLimitStrict(false);
+            assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
+            assertEquals(ProcessTaskStatus.Running, task.getStatus());
+            verifyNoInteractions(tasks, events, edges);
+
+            node.setTimeLimitStrict(true);
+            handle(result);
+            assertEquals(ProcessTaskStatus.Completed, task.getStatus());
+            verify(edges).findByFromNodeIdAndViaPort(3, ProcessNodePortResolver.DEADLINE_PORT_KEY);
+        }
     }
 
     @Test

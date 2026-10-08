@@ -73,6 +73,11 @@ public class ProcessNodeEntity {
     @Max(value = 3652, message = "Das Zeitlimit in Tagen darf maximal 3652 sein.")
     private Integer timeLimitDays;
 
+    @Nonnull
+    @NotNull(message = "Geben Sie an, ob die Frist strikt ist.")
+    @Column(nullable = false)
+    private Boolean timeLimitStrict = false;
+
     @Nullable
     @Size(max = 1024, message = "Die Anforderungen dürfen maximal 1024 Zeichen lang sein.")
     private String requirements;
@@ -120,6 +125,7 @@ public class ProcessNodeEntity {
                              @Nonnull AuthoredElementValues configuration,
                              @Nonnull Map<String, String> outputMappings,
                              @Nullable Integer timeLimitDays,
+                             @Nullable Boolean timeLimitStrict,
                              @Nullable String requirements,
                              @Nullable String notes,
                              @Nonnull Boolean savedWithErrors) {
@@ -134,6 +140,8 @@ public class ProcessNodeEntity {
         this.configuration = configuration;
         this.outputMappings = outputMappings;
         this.timeLimitDays = timeLimitDays;
+        // Older imports omit this flag; constructor-based deserialization must also default to soft.
+        this.timeLimitStrict = Boolean.TRUE.equals(timeLimitStrict);
         this.requirements = requirements;
         this.notes = notes;
         this.savedWithErrors = savedWithErrors;
@@ -167,13 +175,14 @@ public class ProcessNodeEntity {
                 Objects.equals(processNodeDefinitionKey, that.processNodeDefinitionKey) &&
                 Objects.equals(processNodeDefinitionVersion, that.processNodeDefinitionVersion) && Objects.equals(configuration, that.configuration) &&
                 Objects.equals(outputMappings, that.outputMappings) && Objects.equals(timeLimitDays, that.timeLimitDays) &&
+                Objects.equals(timeLimitStrict, that.timeLimitStrict) &&
                 Objects.equals(requirements, that.requirements) && Objects.equals(notes, that.notes) &&
                 Objects.equals(savedWithErrors, that.savedWithErrors) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, processId, processVersion, name, description, dataKey, processNodeDefinitionKey, processNodeDefinitionVersion, configuration, outputMappings, timeLimitDays, requirements, notes, savedWithErrors, created, updated);
+        return Objects.hash(id, processId, processVersion, name, description, dataKey, processNodeDefinitionKey, processNodeDefinitionVersion, configuration, outputMappings, timeLimitDays, timeLimitStrict, requirements, notes, savedWithErrors, created, updated);
     }
 
 
@@ -299,6 +308,16 @@ public class ProcessNodeEntity {
 
     public ProcessNodeEntity setTimeLimitDays(@Nullable Integer timeLimitDays) {
         this.timeLimitDays = timeLimitDays;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getTimeLimitStrict() {
+        return timeLimitStrict;
+    }
+
+    public ProcessNodeEntity setTimeLimitStrict(@Nonnull Boolean timeLimitStrict) {
+        this.timeLimitStrict = timeLimitStrict;
         return this;
     }
 

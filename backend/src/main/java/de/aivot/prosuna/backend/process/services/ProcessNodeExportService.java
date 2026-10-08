@@ -60,6 +60,7 @@ public class ProcessNodeExportService {
                 cleanedConfiguration, // configuration
                 Map.of(), // outputMappings
                 node.getTimeLimitDays(), // timeLimitDays
+                node.getTimeLimitStrict(), // timeLimitStrict
                 node.getRequirements(), // requirements
                 null, // notes
                 false // savedWithErrors

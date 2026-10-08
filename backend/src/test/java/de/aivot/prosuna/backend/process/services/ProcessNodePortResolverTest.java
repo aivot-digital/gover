@@ -7,6 +7,9 @@ import jakarta.validation.Validation;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,11 +42,11 @@ class ProcessNodePortResolverTest {
     }
 
     @Test
-    void alwaysAppendsExactlyOneDeadlinePortAndDoesNotMutateProviderPorts() throws Exception {
+    void appendsExactlyOneStrictDeadlinePortAndDoesNotMutateProviderPorts() throws Exception {
         var provider = provider();
         var ports = List.of(port("a"));
         when(provider.getPorts(any())).thenReturn(ports);
-        var node = new ProcessNodeEntity().setTimeLimitDays(3);
+        var node = new ProcessNodeEntity().setTimeLimitDays(3).setTimeLimitStrict(true);
         var result = resolver.resolve(node, provider, new Configuration(List.of()));
 
         assertEquals(List.of("a", ProcessNodePortResolver.DEADLINE_PORT_KEY), result.ports().stream().map(ProcessNodePort::key).toList());
@@ -56,10 +59,24 @@ class ProcessNodePortResolverTest {
         assertEquals(List.of(ProcessNodePortResolver.DEADLINE_PORT), resolver.resolve(node, provider, new Configuration(List.of())).ports());
     }
 
-    @Test
-    void invalidProviderResultsRemainProblemsAndKeepDeadlineAvailable() throws Exception {
+    @ParameterizedTest
+    @CsvSource({", false, false", ", true, false", "1, false, false", "1, true, true"})
+    void exposesDeadlineOnlyWhenConfiguredAndStrict(Integer days, boolean strict, boolean expected) throws Exception {
+        var node = new ProcessNodeEntity().setTimeLimitDays(days).setTimeLimitStrict(strict);
         var provider = provider();
-        var node = new ProcessNodeEntity().setTimeLimitDays(1);
+        when(provider.getPorts(any())).thenReturn(List.of());
+        var expectedPorts = expected ? List.of(ProcessNodePortResolver.DEADLINE_PORT) : List.of();
+
+        assertEquals(expectedPorts, resolver.resolve(node, provider, new Configuration(List.of())).ports());
+        assertEquals(expectedPorts, ProcessNodePortResolver.failed(node).ports());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void invalidProviderResultsRemainProblemsAndRespectDeadlineStrictness(boolean strict) throws Exception {
+        var provider = provider();
+        var node = new ProcessNodeEntity().setTimeLimitDays(1).setTimeLimitStrict(strict);
+        var expectedPorts = strict ? List.of(ProcessNodePortResolver.DEADLINE_PORT) : List.of();
         for (var ports : List.of(
                 List.of(port("duplicate"), port("duplicate")),
                 List.of(port(ProcessNodePortResolver.DEADLINE_PORT_KEY)),
@@ -71,13 +88,13 @@ class ProcessNodePortResolverTest {
             when(provider.getPorts(any())).thenReturn(ports);
             var result = resolver.resolve(node, provider, new Configuration(List.of()));
             assertFalse(result.problems().isEmpty());
-            assertEquals(List.of(ProcessNodePortResolver.DEADLINE_PORT), result.ports());
+            assertEquals(expectedPorts, result.ports());
         }
         when(provider.getPorts(any())).thenReturn(null);
         assertFalse(resolver.resolve(node, provider, new Configuration(List.of())).problems().isEmpty());
         when(provider.getPorts(any())).thenThrow(new IllegalArgumentException("Internal details"));
         var failed = resolver.resolve(node, provider, new Configuration(List.of()));
-        assertEquals(List.of(ProcessNodePortResolver.DEADLINE_PORT), failed.ports());
+        assertEquals(expectedPorts, failed.ports());
         assertFalse(String.join(" ", failed.problems()).contains("Internal details"));
     }
 

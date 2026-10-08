@@ -22,7 +22,7 @@ public class ProcessNodePortResolver {
     public static final ProcessNodePort DEADLINE_PORT = new ProcessNodePort(
             DEADLINE_PORT_KEY,
             "Fristüberschreitung",
-            "Ausgang für die Fortsetzung nach Überschreitung der festgelegten Frist. Die automatische Weiterleitung ist noch nicht verfügbar."
+            "Ausgang für die Fortsetzung nach Überschreitung der strikten Frist. Die automatische Weiterleitung ist noch nicht verfügbar."
     );
 
     private final Validator validator;
@@ -73,7 +73,7 @@ public class ProcessNodePortResolver {
                                                           @Nonnull List<ProcessNodePort> ports,
                                                           @Nonnull List<String> problems) {
         var effectivePorts = new ArrayList<>(ports);
-        if (node.getTimeLimitDays() != null) {
+        if (node.getTimeLimitDays() != null && Boolean.TRUE.equals(node.getTimeLimitStrict())) {
             effectivePorts.add(DEADLINE_PORT);
         }
         return new ProcessNodePortResolution(effectivePorts, problems);

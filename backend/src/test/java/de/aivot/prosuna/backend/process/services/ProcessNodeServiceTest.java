@@ -141,6 +141,8 @@ class ProcessNodeServiceTest {
     void deadlineRequiresConnectionAndRemovedPortEdgesRemainValidationProblems() throws Exception {
         var node = createNode(1, "a").setTimeLimitDays(1);
         var provider = new HintingTestNodeDefinition();
+        assertTrue(service.validate(node, provider, true).isEmpty());
+        node.setTimeLimitStrict(true);
         var edge = createEdge(10, 1, 2).setViaPort(ProcessNodePortResolver.DEADLINE_PORT_KEY);
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
                 .anyMatch(problem -> problem.contains("Fristüberschreitung")));
@@ -148,11 +150,14 @@ class ProcessNodeServiceTest {
         when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(List.of(edge));
         assertTrue(service.validate(node, provider, true).isEmpty());
 
-        node.setTimeLimitDays(null);
+        node.setTimeLimitStrict(false);
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
                 .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
         org.mockito.Mockito.verify(processEdgeRepository, org.mockito.Mockito.never()).delete(any(ProcessEdgeEntity.class));
         assertEquals(ProcessNodePortResolver.DEADLINE_PORT_KEY, edge.getViaPort());
+        node.setTimeLimitStrict(true).setTimeLimitDays(null);
+        assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
     }
 
     @Test
@@ -167,11 +172,26 @@ class ProcessNodeServiceTest {
         var derived = new DerivedRuntimeElementData();
         derived.getEffectiveValues().put("branch", "approved");
         when(elementDerivationService.derive(any(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring))).thenReturn(derived);
-        var node = createNode(1, "a").setTimeLimitDays(2);
+        var node = createNode(1, "a").setTimeLimitDays(2).setTimeLimitStrict(true);
         var response = de.aivot.prosuna.backend.process.dtos.ProcessNodeResponseDTO.of(node, service.resolvePorts(node));
         assertEquals(List.of("approved", ProcessNodePortResolver.DEADLINE_PORT_KEY), response.ports().stream().map(ProcessNodePort::key).toList());
         assertTrue(response.portResolutionProblems().isEmpty());
         org.mockito.Mockito.verify(elementDerivationService).derive(any(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring));
+    }
+
+    @Test
+    void updatePersistsStrictnessAndRetainsTheSoftDueDate() throws Exception {
+        var existing = createNode(1, "a").setTimeLimitDays(3);
+        var submitted = createNode(1, "a").setTimeLimitDays(3).setTimeLimitStrict(true);
+        when(processNodeRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var strict = service.performUpdate(1, submitted, existing);
+        assertTrue(strict.getTimeLimitStrict());
+
+        var soft = service.performUpdate(1, submitted.setTimeLimitStrict(false), existing);
+        assertEquals(false, soft.getTimeLimitStrict());
+        assertEquals(3, soft.getTimeLimitDays());
+        assertEquals(false, soft.getSavedWithErrors());
     }
 
     @Test

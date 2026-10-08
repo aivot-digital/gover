@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,38 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.any;
 
 class ProcessEdgeServiceTest {
+    @Test
+    void acceptsDeadlineEdgesOnlyWhileTheSourceDeadlineIsStrict() throws Exception {
+        try (var validators = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+            var resolver = new ProcessNodePortResolver(validators.getValidator());
+            var repository = mock(ProcessEdgeRepository.class);
+            var nodes = mock(ProcessNodeService.class);
+            var service = new ProcessEdgeService(repository, nodes);
+            var source = new ProcessNodeEntity().setId(1).setProcessId(10).setProcessVersion(2).setTimeLimitDays(3);
+            var target = new ProcessNodeEntity().setId(2).setProcessId(10).setProcessVersion(2);
+            @SuppressWarnings("unchecked")
+            var provider = (ProcessNodeDefinition<Object>) mock(ProcessNodeDefinition.class);
+            when(provider.getPorts(any())).thenReturn(List.of());
+            when(nodes.retrieve(1)).thenReturn(Optional.of(source));
+            when(nodes.retrieve(2)).thenReturn(Optional.of(target));
+            when(nodes.resolvePorts(source)).thenAnswer(invocation -> resolver.resolve(source, provider, new Object()));
+            when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+            var edge = new ProcessEdgeEntity(null, 10, 2, 1, 2, ProcessNodePortResolver.DEADLINE_PORT_KEY);
+
+            assertThrows(ResponseException.class, () -> service.create(edge));
+            verify(repository, never()).save(any());
+            source.setTimeLimitStrict(true);
+            assertSame(edge, service.create(edge));
+
+            clearInvocations(repository);
+            source.setTimeLimitStrict(false);
+            assertThrows(ResponseException.class, () -> service.performUpdate(5, edge, new ProcessEdgeEntity()));
+            verify(repository, never()).save(any());
+            service.performDelete(edge);
+            verify(repository).delete(edge);
+        }
+    }
+
     @Test
     void acceptsOnlyCurrentlyAvailablePortsWithinTheSameProcessVersion() throws Exception {
         var repository = mock(ProcessEdgeRepository.class);

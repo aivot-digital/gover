@@ -68,6 +68,7 @@ class ProcessDataServiceTest {
                 new AuthoredElementValues(),
                 Map.of(),
                 null,
+                false,
                 null,
                 null,
                 false
@@ -205,7 +206,7 @@ class ProcessDataServiceTest {
         );
         var initialNode = new ProcessNodeEntity(
                 11, 7, 1, "Start", null, "start", "test/start", 1,
-                new AuthoredElementValues(), Map.of(), null, null, null, false
+                new AuthoredElementValues(), Map.of(), null, false, null, null, false
         );
         var nodeRepository = mock(ProcessNodeRepository.class);
         when(nodeRepository.findAllByProcessId(7)).thenReturn(List.of(initialNode));

@@ -240,6 +240,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         existingEntity.setProcessNodeDefinitionVersion(entity.getProcessNodeDefinitionVersion());
         existingEntity.setOutputMappings(entity.getOutputMappings());
         existingEntity.setTimeLimitDays(entity.getTimeLimitDays());
+        existingEntity.setTimeLimitStrict(entity.getTimeLimitStrict());
         existingEntity.setNotes(entity.getNotes());
         existingEntity.setRequirements(entity.getRequirements());
         existingEntity.setConfiguration(entity.getConfiguration());

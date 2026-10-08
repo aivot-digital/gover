@@ -464,6 +464,7 @@ public class ProcessNodeController {
                 .setConfiguration(provider.prefillConfigurationOnImport(sourceNode.getConfiguration()))
                 .setOutputMappings(sourceNode.getOutputMappings())
                 .setTimeLimitDays(sourceNode.getTimeLimitDays())
+                .setTimeLimitStrict(sourceNode.getTimeLimitStrict())
                 .setRequirements(sourceNode.getRequirements())
                 .setNotes(sourceNode.getNotes());
 

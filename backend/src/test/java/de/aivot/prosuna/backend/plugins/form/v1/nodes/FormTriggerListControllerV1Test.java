@@ -113,6 +113,7 @@ class FormTriggerListControllerV1Test {
                 configuration,
                 Map.of(),
                 null,
+                false,
                 null,
                 null,
                 false
@@ -214,6 +215,7 @@ class FormTriggerListControllerV1Test {
                 configuration,
                 Map.of(),
                 null,
+                false,
                 null,
                 null,
                 false
