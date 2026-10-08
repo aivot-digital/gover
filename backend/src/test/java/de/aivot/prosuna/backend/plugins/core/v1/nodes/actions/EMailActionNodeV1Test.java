@@ -129,6 +129,18 @@ class EMailActionNodeV1Test {
     }
 
     @Test
+    void deadlineDefinitionsFollowTheAuthoredDispatchMode() {
+        var config = new EMailActionNodeV1.EMailActionNodeConfig();
+        assertEquals(List.of(), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        config.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        config.messageConfig.executionType = "manual";
+        assertEquals(List.of("messageDispatch"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        assertEquals("message_dispatch_overdue", node.getDeadlines(config).getFirst().port().key());
+        config.messageConfig.executionType = "automatic";
+        assertEquals(List.of(), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+    }
+
+    @Test
     void configurationUsesSharedSemiAutomaticMessageLayout() throws Exception {
         var processNode = processNode();
         var layout = node.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
@@ -206,6 +218,7 @@ class EMailActionNodeV1Test {
                 ProcessNodeExecutionResultTaskCompleted.class,
                 node.init(initContext(configuration, processData, processInstance(), task()))
         );
+        assertNull(result.getNewDeadlineKey());
 
         verify(mailService).sendMail(
                 same(departmentTheme),
@@ -257,6 +270,7 @@ class EMailActionNodeV1Test {
                 ProcessNodeExecutionResultTaskAssigned.class,
                 node.init(initContext(configuration, processData, processInstance, task, processNode))
         );
+        assertEquals("messageDispatch", result.getNewDeadlineKey());
 
         assertEquals("staff-1", result.getAssignedUserId());
         assertEquals(Map.of("name", "Ada"), result.getProcessData());

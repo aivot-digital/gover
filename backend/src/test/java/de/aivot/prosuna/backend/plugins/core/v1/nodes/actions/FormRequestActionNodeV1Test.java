@@ -114,6 +114,18 @@ class FormRequestActionNodeV1Test {
     }
 
     @Test
+    void deadlineDefinitionsFollowTheAuthoredDispatchMode() {
+        var config = new FormRequestActionNodeV1.NodeConfig();
+        assertEquals(List.of("formSubmission"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        config.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        config.messageConfig.executionType = "manual";
+        assertEquals(List.of("messageDispatch", "formSubmission"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        assertEquals("message_dispatch_overdue", node.getDeadlines(config).getFirst().port().key());
+        config.messageConfig.executionType = "automatic";
+        assertEquals(List.of("formSubmission"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+    }
+
+    @Test
     void configurationLayoutExplainsTheAutomaticallyAppendedFormLink() throws Exception {
         var processNode = mock(ProcessNodeEntity.class);
         when(processNode.getProcessId()).thenReturn(42);
@@ -685,14 +697,14 @@ class FormRequestActionNodeV1Test {
         when(assigneeResolver.resolveAssignee(any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(Optional.of("staff-1"));
 
-        node.init(initContext(configuration, instance));
+        assertEquals("messageDispatch", node.init(initContext(configuration, instance)).getNewDeadlineKey());
         var staffContext = staffContext(configuration, instance);
         node.getStaffTaskView(staffContext);
-        node.onAutoSaveFromStaffTaskView(staffContext, new AuthoredElementValues());
+        assertNull(node.onAutoSaveFromStaffTaskView(staffContext, new AuthoredElementValues()).orElseThrow().getNewDeadlineKey());
 
         var customerContext = customerContext(configuration, instance);
         node.getCustomerTaskView(customerContext);
-        node.onAutoSaveFromCustomerTaskView(customerContext, new AuthoredElementValues(), DerivedRuntimeElementData.empty());
+        assertNull(node.onAutoSaveFromCustomerTaskView(customerContext, new AuthoredElementValues(), DerivedRuntimeElementData.empty()).orElseThrow().getNewDeadlineKey());
 
         verifyNoInteractions(historyRepository);
     }
@@ -723,6 +735,7 @@ class FormRequestActionNodeV1Test {
                         new AuthoredElementValues()
                                 .putLiteral("subject", "  Daten ergänzen  ")
                                 .putLiteral("body", "Bitte ergänzen"), "send").orElseThrow();
+        assertEquals("formSubmission", result.getNewDeadlineKey());
 
         assertInstanceOf(ProcessNodeExecutionResultTaskAssignedCustomer.class, result);
         assertEquals(hasIdentity ? RECIPIENT_IDENTITY_ID : null, result.getCommunicationRequest().recipientIdentityId());
@@ -751,6 +764,7 @@ class FormRequestActionNodeV1Test {
 
         var result = node.onEventFromCustomerTaskView(customerContext(configuration, instance),
                 new AuthoredElementValues(), DerivedRuntimeElementData.empty(), "submit").orElseThrow();
+        assertNull(result.getNewDeadlineKey());
 
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
         assertEquals("submitted", completed.getViaPort());

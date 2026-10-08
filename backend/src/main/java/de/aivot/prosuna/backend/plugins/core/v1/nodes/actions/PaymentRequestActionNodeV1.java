@@ -81,6 +81,17 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.ma
 
 @Component
 public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig> {
+    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "messageDispatch", "Versand der Nachricht",
+            "Zeit für die Vorbereitung und den Versand der Nachricht.",
+            new ProcessNodePort("message_dispatch_overdue", "Fristüberschreitung: Nachrichtenversand",
+                    "Fortsetzung nach Überschreitung der harten Frist für den Nachrichtenversand."));
+    private static final ProcessNodeDeadlineDefinition PAYMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "payment", "Zahlung",
+            "Zeit für die Kund:in zur Zahlung ab Versand der Zahlungsaufforderung.",
+            new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Zahlung."));
+
     public static final String NODE_KEY = "payment_request";
 
     private static final String PORT_PAID = "paid";
@@ -270,6 +281,13 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull PaymentRequestActionNodeConfig configuration) {
+        return SemiAutomaticMessageConfig.isManual(configuration.messageConfig)
+                ? List.of(MESSAGE_DISPATCH_DEADLINE, PAYMENT_DEADLINE) : List.of(PAYMENT_DEADLINE);
+    }
+
+    @Nonnull
+    @Override
     public List<ProcessNodePort> getPorts(@Nonnull PaymentRequestActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
@@ -426,6 +444,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(MESSAGE_DISPATCH_DEADLINE.key())
                 .setRuntimeData(runtimeData)
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }
@@ -816,6 +835,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 transaction.getKey(),
                 resolvedConfiguration.paymentProvider().getName()
         )
+                .setNewDeadlineKey(PAYMENT_DEADLINE.key())
                 .setRuntimeData(runtimeData)
                 .setNodeData(createNodeData(
                         resolvedConfiguration.recipientIdentityId(),

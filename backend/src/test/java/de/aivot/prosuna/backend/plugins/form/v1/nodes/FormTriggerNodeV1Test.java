@@ -65,6 +65,9 @@ import de.aivot.prosuna.backend.services.PdfService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -100,6 +103,7 @@ class FormTriggerNodeV1Test {
     private PdfService pdfService;
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
     private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
+    private PaymentPayloadCreationService paymentPayloadCreationService;
     private PaymentTransactionService paymentTransactionService;
     private PaymentProviderRepository paymentProviderRepository;
     private PaymentProviderDefinitionsService paymentProviderDefinitionsService;
@@ -114,11 +118,23 @@ class FormTriggerNodeV1Test {
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
         processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
         paymentTransactionService = mock(PaymentTransactionService.class);
+        paymentPayloadCreationService = mock(PaymentPayloadCreationService.class);
         paymentProviderRepository = mock(PaymentProviderRepository.class);
         paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
         processService = mock(ProcessService.class);
         templateRenderService = new TemplateRenderService(new JavascriptEngineFactoryService(List.of()));
         node = createNode(mock(PublicUrlService.class));
+    }
+
+    @Test
+    void offersPaymentDeadlineOnlyWhenPaymentIsConfigured() {
+        var configuration = new FormTriggerConfigV1();
+        assertTrue(node.getDeadlines(configuration).isEmpty());
+        configuration.payment = new PaymentConfigElementValue(null, null, null, null, null, null, null, null);
+        assertTrue(node.getDeadlines(configuration).isEmpty());
+        configuration.payment = new PaymentConfigElementValue(UUID.randomUUID(), null, null, null, null, null, null, null);
+        assertEquals(List.of("payment"), node.getDeadlines(configuration).stream().map(definition -> definition.key()).toList());
+        assertEquals("payment_overdue", node.getDeadlines(configuration).getFirst().port().key());
     }
 
     @Test
@@ -466,6 +482,36 @@ class FormTriggerNodeV1Test {
         assertTrue(files.getFirst().getUri().startsWith(FileUploadMultipartInputService.PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX));
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void activatesPaymentDeadlineOnlyForAnActualPaymentRequest(boolean requestsPayment) throws Exception {
+        var configuration = configuration("antrag-online", validFormLayout());
+        var providerKey = UUID.randomUUID();
+        configuration.payment = new PaymentConfigElementValue(providerKey, null, null, null, null, null, null, null);
+        when(pdfService.generateCustomerSummary(any(), any(), any(), any(), any(), any())).thenReturn(new byte[]{1, 2, 3});
+        when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentSetEntity.class).setId(321));
+        when(processInstanceAttachmentService.create(any(ProcessInstanceAttachmentEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentEntity.class)
+                        .setKey(UUID.randomUUID()).setStorageProviderId(7).setStoragePathFromRoot("summary.pdf"));
+        when(paymentProviderRepository.findById(providerKey)).thenReturn(Optional.of(paymentProvider(providerKey)));
+        when(paymentPayloadCreationService.createRequest(any(), any(), any()))
+                .thenReturn(requestsPayment ? Optional.of(new PaymentPayload()) : Optional.empty());
+        when(paymentTransactionService.create(any(), any(), any()))
+                .thenReturn(paymentTransaction(providerKey, XBezahldienstStatus.INITIAL));
+
+        var result = node.init(context(configuration, Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of())));
+
+        if (requestsPayment) {
+            assertInstanceOf(ProcessNodeExecutionResultPaymentRequested.class, result);
+            assertEquals("payment", result.getNewDeadlineKey());
+        } else {
+            assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
+            assertEquals(null, result.getNewDeadlineKey());
+            verifyNoInteractions(paymentTransactionService);
+        }
+    }
+
     @Test
     void cleanConfigurationForExport_ShouldRemoveSystemLocalIdentityAndPaymentConfiguration() {
         var configuration = new AuthoredElementValues();
@@ -741,7 +787,7 @@ class FormTriggerNodeV1Test {
         return new FormTriggerNodeV1(
                 publicUrlService,
                 processNodeRepository,
-                mock(PaymentPayloadCreationService.class),
+                paymentPayloadCreationService,
                 templateRenderService,
                 paymentTransactionService,
                 paymentProviderRepository,

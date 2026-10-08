@@ -82,6 +82,12 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.te
 
 @Component
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
+    private static final ProcessNodeDeadlineDefinition PAYMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "payment", "Zahlung",
+            "Zeit für die Kund:in zur Zahlung ab Erstellung der Zahlungsanforderung.",
+            new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Zahlung."));
+
     public static final String NODE_KEY = "form";
     private static final String PORT_NAME = "input";
     private static final String COPY_VALUE_TEMPLATE_PATH_SEGMENT = "__copy_value__";
@@ -219,6 +225,13 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Override
     public ProcessNodeExecutionType[] getExecutionTypes() {
         return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.SemiAutomatic};
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull FormTriggerConfigV1 configuration) {
+        return configuration.payment != null && configuration.payment.paymentProviderKey() != null
+                ? List.of(PAYMENT_DEADLINE) : List.of();
     }
 
     @Nonnull
@@ -574,6 +587,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         transaction.getKey(),
                         paymentProvider.getName()
                 )
+                        .setNewDeadlineKey(PAYMENT_DEADLINE.key())
                         .setNodeData(nodeData)
                         .setRuntimeData(Map.of(
                                 DATA_KEY_PAYMENT_PAYLOAD, paymentRequest.get(),

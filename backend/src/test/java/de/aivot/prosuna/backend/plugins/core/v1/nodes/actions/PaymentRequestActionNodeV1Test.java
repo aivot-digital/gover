@@ -133,6 +133,18 @@ class PaymentRequestActionNodeV1Test {
     }
 
     @Test
+    void deadlineDefinitionsFollowTheAuthoredDispatchMode() {
+        var config = new PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig();
+        assertEquals(List.of("payment"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        config.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        config.messageConfig.executionType = "manual";
+        assertEquals(List.of("messageDispatch", "payment"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        assertEquals("message_dispatch_overdue", node.getDeadlines(config).getFirst().port().key());
+        config.messageConfig.executionType = "automatic";
+        assertEquals(List.of("payment"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+    }
+
+    @Test
     void configurationLayout_ExposesIdentityPaymentAndBothExecutionModes() throws Exception {
         var layout = node.getConfigurationLayout(configurationLayoutContext());
 
@@ -242,6 +254,7 @@ class PaymentRequestActionNodeV1Test {
                 ProcessNodeExecutionResultPaymentRequested.class,
                 node.init(context(configuration, processData, processInstance(identity), task()))
         );
+        assertEquals("payment", result.getNewDeadlineKey());
 
         assertNull(result.getClearCurrentlyAssignedUser());
         assertEquals("tx-1", result.getTransactionKey());
@@ -331,6 +344,7 @@ class PaymentRequestActionNodeV1Test {
                 ProcessNodeExecutionResultTaskAssigned.class,
                 node.init(context(configuration, processData, processInstance(identity), task()))
         );
+        assertEquals("messageDispatch", result.getNewDeadlineKey());
 
         assertEquals("staff-1", result.getAssignedUserId());
         assertEquals(paymentPayload, result.getRuntimeData().get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD));
@@ -433,6 +447,7 @@ class PaymentRequestActionNodeV1Test {
                         "send"
                 ).orElseThrow()
         );
+        assertEquals("payment", result.getNewDeadlineKey());
 
         assertEquals(Boolean.TRUE, result.getClearCurrentlyAssignedUser());
         var communicationRequest = result.getCommunicationRequest();
@@ -628,6 +643,7 @@ class PaymentRequestActionNodeV1Test {
                 processInstance(recipientIdentity()),
                 task(Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"), Map.of(), Map.of())
         ));
+        assertNull(result.getNewDeadlineKey());
 
         assertInstanceOf(ProcessNodeExecutionResultNoop.class, result);
     }
@@ -652,6 +668,7 @@ class PaymentRequestActionNodeV1Test {
                         )
                 ))
         );
+        assertNull(result.getNewDeadlineKey());
 
         assertEquals("paid", result.getViaPort());
         assertEquals("PAYED", result.getNodeData().get("paymentStatus"));

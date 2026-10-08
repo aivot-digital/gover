@@ -52,6 +52,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -74,6 +75,19 @@ class CommunicationMessageActionNodeV1Test {
     private static final Integer NODE_ID = 17;
     private static final Long PROCESS_INSTANCE_ID = 99L;
     private static final Long TASK_ID = 123L;
+
+    @Test
+    void deadlineDefinitionsFollowTheAuthoredDispatchMode() {
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
+        var config = new CommunicationMessageActionNodeV1.Configuration();
+        assertEquals(List.of(), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        config.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        config.messageConfig.executionType = "manual";
+        assertEquals(List.of("messageDispatch"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        assertEquals("message_dispatch_overdue", node.getDeadlines(config).getFirst().port().key());
+        config.messageConfig.executionType = "automatic";
+        assertEquals(List.of(), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+    }
 
     @Test
     void metadataExposesAutomaticAndSemiAutomaticExecutionAndTypedOutputs() {
@@ -207,6 +221,7 @@ class CommunicationMessageActionNodeV1Test {
         var context = initContext(configuration, executionData, processInstance, mock(ProcessInstanceTaskEntity.class));
 
         var result = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.init(context));
+        assertNull(result.getNewDeadlineKey());
 
         var communicationRequest = result.getCommunicationRequest();
         assertNotNull(communicationRequest);
@@ -269,6 +284,7 @@ class CommunicationMessageActionNodeV1Test {
         )).thenReturn(Optional.of("staff-1"));
 
         var result = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, node.init(context));
+        assertEquals("messageDispatch", result.getNewDeadlineKey());
 
         assertEquals("staff-1", result.getAssignedUserId());
         assertEquals(Map.of("caseNumber", "123"), result.getProcessData());

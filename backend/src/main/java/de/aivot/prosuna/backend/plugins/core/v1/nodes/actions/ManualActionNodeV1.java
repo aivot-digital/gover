@@ -58,6 +58,12 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.se
 
 @Component
 public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNodeV1.ManualActionNodeConfig> {
+    private static final ProcessNodeDeadlineDefinition PROCESSING_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "processing", "Bearbeitung",
+            "Zeit für die Bearbeitung der Aufgabe.",
+            new ProcessNodePort("processing_overdue", "Fristüberschreitung: Bearbeitung",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Bearbeitung."));
+
     public static final String NODE_KEY = "manual_action";
 
     private static final String PORT_OUTPUT = "output";
@@ -205,6 +211,12 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     @Nonnull
     @Override
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull ManualActionNodeConfig configuration) {
+        return List.of(PROCESSING_DEADLINE);
+    }
+
+    @Nonnull
+    @Override
     public List<ProcessNodePort> getPorts(@Nonnull ManualActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
@@ -286,6 +298,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(PROCESSING_DEADLINE.key())
                 .setProcessData(workingProcessData)
                 .setRuntimeData(Map.of());
     }
