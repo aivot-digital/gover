@@ -20,10 +20,12 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
+import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -69,17 +71,19 @@ class ProcessTaskUnassignmentResultHandlerTest {
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(2L)
             .setProcessInstanceId(1L).setAssignedUserId("task-owner").setAssignedCustomerIdentityId("customer");
     private final UserEntity actor = new UserEntity().setId("actor").setFullName("Ada Beispiel");
+    private final ProcessNodeService nodeService = mock(ProcessNodeService.class);
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
             assignments, rabbit, communication, instances, versions, tasks, edges, users, taskMail,
             mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class), processes, departments,
-            instanceMail);
+            instanceMail, nodeService);
 
     @BeforeEach
     void setup() throws Exception {
         when(versions.findById(ProcessVersionEntityId.of(10, 1)))
                 .thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(10).setProcessVersion(1)));
         when(definition.getOutputs()).thenReturn(List.of());
-        when(definition.getPorts()).thenReturn(List.of(new ProcessNodePort("success", "Weiter", "Fortsetzen")));
+        when(nodeService.resolvePorts(node, definition)).thenReturn(new ProcessNodePortResolution(
+                List.of(new ProcessNodePort("success", "Weiter", "Fortsetzen")), List.of()));
         when(edges.findByFromNodeIdAndViaPort(3, "success"))
                 .thenReturn(Optional.of(new ProcessEdgeEntity(1, 1, 1, 3, 4, "success")));
         when(users.retrieve("task-owner"))

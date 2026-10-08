@@ -76,14 +76,14 @@ class InstanceAssignmentResultHandlerTest {
         var task = task();
         var completion = new de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted().setViaPort("configured");
         completion.setProcessData(Map.of());
-        handler.handleResult(logger, null, provider, node(), instance, task, null, completion);
+        handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task, null, completion);
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
         verify(rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE), any(ProcessWorker.DoWorkWorkerPayload.class));
 
         clearInvocations(tasks, rabbit);
         when(nodeService.resolvePorts(any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(java.util.List.of(), java.util.List.of()));
         var newTask = task();
-        assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handler.handleResult(logger, null, provider, node(), instance(), newTask, null, completion));
+        assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance(), newTask, null, completion));
         verify(tasks, never()).save(any());
         verifyNoInteractions(rabbit);
     }

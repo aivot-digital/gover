@@ -252,6 +252,7 @@ public class ProcessNodeExecutionResultHandler {
         }
 
         clearCurrentlyAssignedUser(context);
+        updateTaskDeadline(context);
 
         if (!(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
             ensureInstanceRunning(processInstance);
@@ -263,6 +264,39 @@ public class ProcessNodeExecutionResultHandler {
             instance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(instance);
         }
+    }
+
+    private void updateTaskDeadline(@Nonnull HandlerContext<?, ?> context) {
+        var newDeadline = context.result.getNewDeadline();
+        var previousDeadline = context.processInstanceTask.getDeadline();
+        if (newDeadline == null || newDeadline.equals(previousDeadline)) {
+            return;
+        }
+
+        context.processInstanceTask.setDeadline(newDeadline);
+        processInstanceTaskRepository.save(context.processInstanceTask);
+
+        var details = new LinkedHashMap<String, Object>();
+        details.put("previousDeadline", previousDeadline);
+        details.put("newDeadline", newDeadline);
+        var message = previousDeadline == null
+                ? "Für die Aufgabe wurde eine Frist bis %s gesetzt."
+                        .formatted(ExecutionSummaryMarkdown.timestamp(newDeadline))
+                : "Die Frist der Aufgabe wurde von %s auf %s geändert."
+                        .formatted(ExecutionSummaryMarkdown.timestamp(previousDeadline), ExecutionSummaryMarkdown.timestamp(newDeadline));
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                true,
+                null,
+                null,
+                null,
+                "Frist der Aufgabe geändert",
+                details,
+                "%s",
+                message
+        );
     }
 
     private void clearCurrentlyAssignedUser(@Nonnull HandlerContext<?, ?> context) throws ProcessNodeExecutionExceptionInvalidAssignment {
@@ -634,6 +668,9 @@ public class ProcessNodeExecutionResultHandler {
             throw new ProcessNodeExecutionExceptionInvalidAssignment(exception,
                     "Die ausgewählte Person hat nicht die erforderlichen Berechtigungen für diese Aufgabe. Bitte wählen Sie eine andere berechtigte Person aus.");
         }
+
+        // Assignment notifications must already contain the new deadline.
+        updateTaskDeadline(context);
 
         boolean unchanged = Objects.equals(previousAssignedUserId, assignedUser.getId());
         UserEntity previousAssignedUser = null;
