@@ -45,7 +45,7 @@ function page<T>(content: T[]): Page<T> {
     return {content, page: {size: content.length, number: 0, totalElements: content.length, totalPages: 1}};
 }
 
-function provider(type: ProcessNodeType, ports = ['next'], key: string = type): ProcessNodeProvider {
+function provider(type: ProcessNodeType, key: string = type): ProcessNodeProvider {
     return {
         key,
         componentKey: key,
@@ -60,12 +60,11 @@ function provider(type: ProcessNodeType, ports = ['next'], key: string = type): 
         description: '',
         documentationUrl: null,
         parentPluginKey: 'test',
-        ports: ports.map((key) => ({key, label: key, description: ''})),
         outputs: [],
     };
 }
 
-function node(id: number, name: string, definitionKey: string = ProcessNodeType.Action): ProcessNodeEntity {
+function node(id: number, name: string, definitionKey: string = ProcessNodeType.Action, ports = ['next']): ProcessNodeEntity {
     return {
         ...ProcessNodeApiService.initialize(),
         id,
@@ -74,6 +73,7 @@ function node(id: number, name: string, definitionKey: string = ProcessNodeType.
         processVersion: 1,
         processNodeDefinitionKey: definitionKey,
         processNodeDefinitionVersion: 1,
+        ports: ports.map((key) => ({key, label: key, description: ''})),
     };
 }
 
@@ -149,8 +149,8 @@ describe('Process instance history preview', () => {
         vi.spyOn(ProcessNodeProviderApiService.prototype, 'getNodeProviders').mockResolvedValue([
             provider(ProcessNodeType.Action),
             provider(ProcessNodeType.FlowControl),
-            provider(ProcessNodeType.Termination, []),
-            provider(ProcessNodeType.Action, ['next', 'rejected'], 'approval'),
+            provider(ProcessNodeType.Termination),
+            provider(ProcessNodeType.Action, 'approval'),
         ]);
     });
 
@@ -317,9 +317,25 @@ describe('Process instance history preview', () => {
     });
 
     it('explains the open choice of an active action with multiple ports', async () => {
-        await renderHistory([node(1, 'Freigabe', 'approval'), node(2, 'Versand')], [edge(1, 2)], [task(1, 1)]);
+        await renderHistory([node(1, 'Freigabe', 'approval', ['next', 'rejected']), node(2, 'Versand')], [edge(1, 2)], [task(1, 1)]);
         expect(screen.getByRole('alert')).toHaveTextContent('Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Pfaden entschieden werden muss.');
         expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+    });
+
+    it.each([false, true])('uses the resolved ports for a deadline with strictness %s', async strict => {
+        const current = {
+            ...node(1, 'Prüfung', ProcessNodeType.Action, strict ? ['next', '__deadline_exceeded'] : ['next']),
+            timeLimitDays: 3,
+            timeLimitStrict: strict,
+        };
+        await renderHistory([current, node(2, 'Versand')], [edge(1, 2)], [task(1, 1)]);
+
+        if (strict) {
+            expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+            expect(screen.getByRole('alert')).toHaveTextContent(/mehreren möglichen Pfaden/);
+        } else {
+            expect(screen.getByRole('listitem')).toHaveTextContent(/^Versand:/);
+        }
     });
 
     it('preserves complete long labels for assistive technology and tooltips', async () => {
@@ -610,7 +626,7 @@ describe('Process instance history preview', () => {
                     node(2, 'Zahlungsaufforderung'),
                     node(3, 'Bescheiderstellung'),
                     node(4, 'Versand des Steuerbescheides'),
-                    node(5, 'Vorgang beenden', ProcessNodeType.Termination),
+                    node(5, 'Vorgang beenden', ProcessNodeType.Termination, []),
                 ],
                 [edge(1, 2), edge(2, 3), edge(3, 4), edge(4, 5)],
                 [task(1, 1, status)],
@@ -655,7 +671,7 @@ describe('Process instance history preview', () => {
 
     it('does not predict the result of an action with multiple ports even with only one connected port', async () => {
         await renderHistory(
-            [node(1, 'Current'), node(2, 'Approval', 'approval'), node(3, 'After approval')],
+            [node(1, 'Current'), node(2, 'Approval', 'approval', ['next', 'rejected']), node(3, 'After approval')],
             [edge(1, 2), edge(2, 3)],
             [task(1, 1)],
         );

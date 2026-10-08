@@ -377,7 +377,7 @@ function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEnt
         let current = nodesById.get(task.processNodeId);
 
         while (current != null) {
-            if (current.provider.ports.length > 1 || current.outgoingEdges.length > 1) {
+            if (current.node.ports.length > 1 || current.outgoingEdges.length > 1) {
                 hasOpenBranch = true;
                 break;
             }
@@ -385,14 +385,14 @@ function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEnt
             if (
                 current.provider.type === ProcessNodeType.FlowControl ||
                 current.provider.type === ProcessNodeType.Termination ||
-                current.provider.ports.length !== 1 ||
+                current.node.ports.length !== 1 ||
                 current.outgoingEdges.length !== 1
             ) {
                 break;
             }
 
             const {edge} = current.outgoingEdges[0];
-            if (edge.viaPort !== current.provider.ports[0].key) {
+            if (edge.viaPort !== current.node.ports[0].key) {
                 break;
             }
 
