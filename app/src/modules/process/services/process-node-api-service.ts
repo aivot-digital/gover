@@ -1,5 +1,7 @@
+import {type RequestOptions} from '../../../services/base-api-service';
+import {type ProcessNodePortResolution} from './process-node-provider-api-service';
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
-import {type ProcessNodeEntity} from '../entities/process-node-entity';
+import {type ProcessNodeEntity, type ProcessNodeWrite} from '../entities/process-node-entity';
 import {type ProcessNodeExport} from '../entities/process-node-export';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {generateProcessNodeDataKey} from '../utils/process-node-data-key';
@@ -19,10 +21,10 @@ interface ProcessDefinitionNodeFilter {
 }
 
 export class ProcessNodeApiService extends BaseCrudApiService<
+    ProcessNodeWrite,
     ProcessNodeEntity,
     ProcessNodeEntity,
-    ProcessNodeEntity,
-    ProcessNodeEntity,
+    ProcessNodeWrite,
     number,
     ProcessDefinitionNodeFilter
 > {
@@ -36,6 +38,8 @@ export class ProcessNodeApiService extends BaseCrudApiService<
 
     public static initialize(): ProcessNodeEntity {
         return {
+            ports: [],
+            portResolutionProblems: [],
             notes: null,
             outputMappings: {},
             requirements: null,
@@ -55,7 +59,7 @@ export class ProcessNodeApiService extends BaseCrudApiService<
         };
     }
 
-    public async createWithGeneratedDataKey(node: ProcessNodeEntity): Promise<ProcessNodeEntity> {
+    public async createWithGeneratedDataKey(node: ProcessNodeWrite): Promise<ProcessNodeEntity> {
         for (let attempt = 0; ; attempt++) {
             try {
                 return await this.create({
@@ -72,6 +76,18 @@ export class ProcessNodeApiService extends BaseCrudApiService<
                     throw error;
             }
         }
+    }
+
+    public override create(node: ProcessNodeWrite): Promise<ProcessNodeEntity> {
+        return super.create(toProcessNodeWrite(node));
+    }
+
+    public override update(id: number, node: ProcessNodeWrite, options?: RequestOptions): Promise<ProcessNodeEntity> {
+        return super.update(id, toProcessNodeWrite(node), options);
+    }
+
+    public resolvePorts(node: ProcessNodeWrite, options: {forImport?: boolean; useInitialConfiguration?: boolean} = {}): Promise<ProcessNodePortResolution> {
+        return this.post(`${this.path}resolve-ports/`, {node: toProcessNodeWrite(node), ...options});
     }
 
     public getConfigurationLayout(id: number): Promise<GroupLayout> {
@@ -119,4 +135,9 @@ export class ProcessNodeApiService extends BaseCrudApiService<
             return null;
         }
     }
+}
+
+export function toProcessNodeWrite(node: ProcessNodeWrite): ProcessNodeWrite {
+    const {ports: _ports, portResolutionProblems: _problems, ...authored} = node as ProcessNodeEntity;
+    return authored;
 }

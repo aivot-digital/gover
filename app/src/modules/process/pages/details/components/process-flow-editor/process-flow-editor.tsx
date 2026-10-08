@@ -488,6 +488,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const [canvasTriggerLaneHeaderPosition, setCanvasTriggerLaneHeaderPosition] = useState<CanvasTriggerLaneHeaderPosition | null>(null);
     const [layoutError, setLayoutError] = useState<ProcessFlowEditorLayoutError | null>(null);
     const [layoutAttempt, setLayoutAttempt] = useState(0);
+    const [providerDetailsNodeId, setProviderDetailsNodeId] = useState<number | null>(null);
     const [providerDetailsDialogProvider, setProviderDetailsDialogProvider] = useState<ProcessNodeProvider | null>(null);
     const [eventDialogTarget, setEventDialogTarget] = useState<ProcessFlowEditorEventDialogTarget | null>(null);
 
@@ -505,8 +506,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const hasProcessNodes = processFlow.nodes.length > 0;
     const canAddTrigger = isEditable && onAddTrigger != null;
     const handleAddTrigger = onAddTrigger ?? NOOP_ADD_TRIGGER;
-    const handleShowNodeProviderDetails = useCallback((provider: ProcessNodeProvider): void => {
+    const handleShowNodeProviderDetails = useCallback((provider: ProcessNodeProvider, node: ProcessNodeEntity): void => {
         setProviderDetailsDialogProvider(provider);
+        setProviderDetailsNodeId(node.id);
     }, []);
     const handleShowTaskEvents = useCallback((taskId: number): void => {
         if (runtimeData == null) {
@@ -959,6 +961,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                 <ProcessNodeProviderDetailsDialog
                     open={providerDetailsDialogProvider != null}
                     provider={providerDetailsDialogProvider}
+                    ports={processFlow.nodes.find((node) => node.id === providerDetailsNodeId)?.ports}
                     onClose={() => {
                         setProviderDetailsDialogProvider(null);
                     }}

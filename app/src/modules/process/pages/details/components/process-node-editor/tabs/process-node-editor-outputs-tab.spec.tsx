@@ -189,6 +189,8 @@ function renderOutputsTab({
         id: 1,
         processId: 2,
         processVersion: 1,
+        ports: [],
+        portResolutionProblems: [],
         processNodeDefinitionKey: 'test-node',
         processNodeDefinitionVersion: 1,
         name: null,
@@ -217,7 +219,6 @@ function renderOutputsTab({
         description: '',
         documentationUrl: null,
         parentPluginKey: 'test-plugin',
-        ports: [],
         outputs,
     };
     const setNode = vi.fn();

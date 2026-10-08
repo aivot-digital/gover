@@ -33,7 +33,7 @@ export function ProcessNodeEditorMoreTab() {
                 showTimeLimit &&
                 <NumberFieldComponent
                     label="Frist (Maximale Laufzeit)"
-                    hint="Definiert die Fälligkeit einer Aufgabe in Tagen ab deren Erstellung. Die Frist kann für Auswertungen, Hinweise oder spätere Ablaufsteuerung genutzt werden."
+                    hint="Definiert die Fälligkeit einer Aufgabe in Tagen ab deren Erstellung. Bei festgelegter Frist steht der Ausgang „Fristüberschreitung“ zur Verfügung. Die automatische Weiterleitung bei Fristablauf ist noch nicht verfügbar."
                     suffix="Tage"
                     decimalPlaces={0}
                     minValue={1}

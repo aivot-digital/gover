@@ -1,3 +1,5 @@
+import {type ApiError} from '../../../../models/api-error';
+import {getDefaultProcessNodePort, mapReplacementPorts} from '../../utils/process-node-ports';
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Button, Divider, Paper, Typography} from '@mui/material';
 import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
@@ -14,6 +16,8 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
 import {
     type ProcessNodeProvider,
+    type ProcessNodePort,
+    PROCESS_NODE_DEADLINE_PORT_KEY,
     ProcessNodeProviderApiService,
     ProcessNodeType,
 } from '../../services/process-node-provider-api-service';
@@ -360,11 +364,11 @@ function isFollowUpCandidateProvider(
         edge.viaPort === newNodeFor.viaPort
     ));
 
-    return !requiresOutgoingPort || provider.ports.length > 0;
+    return !requiresOutgoingPort || provider.type !== ProcessNodeType.Termination;
 }
 
 function isInbetweenCandidateProvider(provider: ProcessNodeProvider): boolean {
-    return provider.type !== ProcessNodeType.Trigger && provider.ports.length > 0;
+    return provider.type !== ProcessNodeType.Trigger && provider.type !== ProcessNodeType.Termination;
 }
 
 function getUnavailableProcessNodeProviderMessage(provider: ProcessNodeProvider): string {
@@ -408,16 +412,16 @@ function formatRemovedOutgoingConnectionsMessage(removedOutgoingEdgeCount: numbe
         : `${removedOutgoingEdgeCount} ausgehende Verbindungen konnten nicht übernommen werden und wurden entfernt.`;
 }
 
-function getProviderPortOrderIndex(provider: ProcessNodeProvider, portKey: string): number {
-    const portIndex = provider.ports.findIndex((port) => port.key === portKey);
+function getProviderPortOrderIndex(ports: ProcessNodePort[], portKey: string): number {
+    const portIndex = ports.findIndex((port) => port.key === portKey);
     return portIndex === -1 ? Number.MAX_SAFE_INTEGER : portIndex;
 }
 
 function buildNodeReplacementPlan(
     processFlow: ProcessFlow,
     node: ProcessNodeEntity,
-    currentProvider: ProcessNodeProvider,
     replacementProvider: ProcessNodeProvider,
+    replacementPorts: ProcessNodePort[],
 ): NodeReplacementPlan {
     // Preserve outgoing connections deterministically: keep same-key ports first, then map any
     // remaining edges onto the remaining replacement ports in order. Extra edges are dropped when
@@ -426,31 +430,21 @@ function buildNodeReplacementPlan(
         .edges
         .filter((edge) => edge.fromNodeId === node.id)
         .sort((leftEdge, rightEdge) => (
-            getProviderPortOrderIndex(currentProvider, leftEdge.viaPort) - getProviderPortOrderIndex(currentProvider, rightEdge.viaPort) ||
+            getProviderPortOrderIndex(node.ports, leftEdge.viaPort) - getProviderPortOrderIndex(node.ports, rightEdge.viaPort) ||
             leftEdge.id - rightEdge.id
         ));
-    const replacementPortKeys = replacementProvider.ports.map((port) => port.key);
-    const usedReplacementPortKeys = new Set<string>();
+    const replacementPortMapping = mapReplacementPorts(outgoingEdges, replacementPorts);
     const unchangedOutgoingEdges: ProcessDefinitionEdgeEntity[] = [];
     const recreatedOutgoingEdges: RecreatedEdgePlan[] = [];
     const removedOutgoingEdges: ProcessDefinitionEdgeEntity[] = [];
 
     for (const outgoingEdge of outgoingEdges) {
-        const preferredReplacementPortKey = replacementPortKeys.find((portKey) => (
-            portKey === outgoingEdge.viaPort &&
-            !usedReplacementPortKeys.has(portKey)
-        ));
-        const fallbackReplacementPortKey = replacementPortKeys.find((portKey) => (
-            !usedReplacementPortKeys.has(portKey)
-        ));
-        const replacementPortKey = preferredReplacementPortKey ?? fallbackReplacementPortKey ?? null;
+        const replacementPortKey = replacementPortMapping.get(outgoingEdge.id);
 
         if (replacementPortKey == null) {
             removedOutgoingEdges.push(outgoingEdge);
             continue;
         }
-
-        usedReplacementPortKeys.add(replacementPortKey);
 
         if (replacementPortKey === outgoingEdge.viaPort) {
             unchangedOutgoingEdges.push(outgoingEdge);
@@ -1249,6 +1243,14 @@ export function ProcessDetailsPage(): ReactNode {
         setShowAddTriggerDialog(false);
     }, []);
 
+    const requireCandidatePorts = async (node: ProcessNodeEntity, useInitialConfiguration = false, forImport = false): Promise<ProcessNodePort[]> => {
+        const resolution = await new ProcessNodeApiService().resolvePorts(node, {useInitialConfiguration, forImport});
+        if (resolution.problems.length > 0) {
+            throw {status: 400, message: resolution.problems.join(' '), details: null, displayableToUser: true} satisfies ApiError;
+        }
+        return resolution.ports;
+    };
+
     const handleAddFollowUpNode = async (nodeProvider: ProcessNodeProvider): Promise<void> => {
         if (processFlow == null) {
             return;
@@ -1258,83 +1260,81 @@ export function ProcessDetailsPage(): ReactNode {
             return;
         }
 
-        dispatch(setLoadingMessage({
-            message: 'Füge Prozesselement hinzu',
-            blocking: false,
-            estimatedTime: 1000,
-        }));
+        try {
+            dispatch(setLoadingMessage({
+                message: 'Füge Prozesselement hinzu',
+                blocking: false,
+                estimatedTime: 1000,
+            }));
 
-        const existingEdge = processFlow.edges.find((edge) => (
-            edge.fromNodeId === newNodeFor.fromNodeId &&
-            edge.viaPort === newNodeFor.viaPort
-        ));
+            const existingEdge = processFlow.edges.find((edge) => (
+                edge.fromNodeId === newNodeFor.fromNodeId &&
+                edge.viaPort === newNodeFor.viaPort
+            ));
 
-        const newNode = await new ProcessNodeApiService()
-            .createWithGeneratedDataKey({
+            const candidate = {
                 ...ProcessNodeApiService.initialize(),
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
                 processNodeDefinitionKey: nodeProvider.key,
                 processNodeDefinitionVersion: nodeProvider.majorVersion,
-            });
-
-        const edgeApi = new ProcessDefinitionEdgeApiService();
-
-        if (existingEdge != null) {
-            if (nodeProvider.ports.length === 0) {
-                dispatch(addSnackbarMessage({
-                    key: 'process-follow-up-node-missing-port',
-                    type: SnackbarType.AutoHiding,
-                    severity: SnackbarSeverity.Warning,
-                    message: 'Dieser Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
-                }));
-                dispatch(clearLoadingMessage());
+            };
+            const ports = await requireCandidatePorts(candidate, true);
+            const defaultPort = getDefaultProcessNodePort(ports);
+            if (existingEdge != null && defaultPort == null) {
+                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen fachlichen Ausgang besitzt.'));
                 return;
             }
+            const newNode = await new ProcessNodeApiService().createWithGeneratedDataKey(candidate);
 
-            await edgeApi.destroy(existingEdge.id);
-        }
+            const edgeApi = new ProcessDefinitionEdgeApiService();
 
-        const newEdge = await edgeApi
-            .create({
-                id: 0,
-                processId: processFlow.definition.id,
-                processVersion: processFlow.version.processVersion,
-                fromNodeId: newNodeFor.fromNodeId,
-                toNodeId: newNode.id,
-                viaPort: newNodeFor.viaPort,
-            });
+            if (existingEdge != null) {
+                await edgeApi.destroy(existingEdge.id);
+            }
 
-        let newlyCreatedFollowUpEdge: ProcessDefinitionEdgeEntity | null = null;
-        if (existingEdge != null) {
-            newlyCreatedFollowUpEdge = await new ProcessDefinitionEdgeApiService()
+            const newEdge = await edgeApi
                 .create({
-                    ...existingEdge,
                     id: 0,
-                    fromNodeId: newNode.id,
-                    viaPort: nodeProvider.ports[0].key,
+                    processId: processFlow.definition.id,
+                    processVersion: processFlow.version.processVersion,
+                    fromNodeId: newNodeFor.fromNodeId,
+                    toNodeId: newNode.id,
+                    viaPort: newNodeFor.viaPort,
                 });
+
+            let newlyCreatedFollowUpEdge: ProcessDefinitionEdgeEntity | null = null;
+            if (existingEdge != null) {
+                newlyCreatedFollowUpEdge = await new ProcessDefinitionEdgeApiService()
+                    .create({
+                        ...existingEdge,
+                        id: 0,
+                        fromNodeId: newNode.id,
+                        viaPort: defaultPort!.key,
+                    });
+            }
+
+            setProcessFlow({
+                ...processFlow,
+                nodes: [
+                    ...processFlow.nodes,
+                    newNode,
+                ],
+                edges: [
+                    ...processFlow.edges.filter((edge) => edge.id !== existingEdge?.id),
+                    newEdge,
+                    ...(newlyCreatedFollowUpEdge != null ? [newlyCreatedFollowUpEdge] : []),
+                ],
+            });
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht eingefügt werden.'));
+        } finally {
+            dispatch(clearLoadingMessage());
         }
-
-        setProcessFlow({
-            ...processFlow,
-            nodes: [
-                ...processFlow.nodes,
-                newNode,
-            ],
-            edges: [
-                ...processFlow.edges.filter((edge) => edge.id !== existingEdge?.id),
-                newEdge,
-                ...(newlyCreatedFollowUpEdge != null ? [newlyCreatedFollowUpEdge] : []),
-            ],
-        });
-
-        dispatch(clearLoadingMessage());
     };
 
     const handleAddImportedFollowUpNode = useCallback(async (
         importedNode: ProcessNodeEntity,
-        importedProvider: ProcessNodeProvider,
     ): Promise<void> => {
         if (processFlow == null || newNodeFor == null) {
             return;
@@ -1348,7 +1348,7 @@ export function ProcessDetailsPage(): ReactNode {
         const edgeApi = new ProcessDefinitionEdgeApiService();
 
         if (existingEdge != null) {
-            if (importedProvider.ports.length === 0) {
+            if (getDefaultProcessNodePort(importedNode.ports) == null) {
                 throw new Error('imported-follow-up-node-missing-port');
             }
 
@@ -1370,7 +1370,7 @@ export function ProcessDetailsPage(): ReactNode {
                 ...existingEdge,
                 id: 0,
                 fromNodeId: importedNode.id,
-                viaPort: importedProvider.ports[0].key,
+                viaPort: getDefaultProcessNodePort(importedNode.ports)!.key,
             });
         }
 
@@ -1407,77 +1407,74 @@ export function ProcessDetailsPage(): ReactNode {
             return;
         }
 
-        dispatch(setLoadingMessage({
-            message: 'Füge Prozesselement hinzu',
-            blocking: false,
-            estimatedTime: 1000,
-        }));
-
-        if (nodeProvider.ports.length === 0) {
-            dispatch(addSnackbarMessage({
-                key: 'process-inbetween-node-missing-port',
-                type: SnackbarType.AutoHiding,
-                severity: SnackbarSeverity.Warning,
-                message: 'Dieser Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
+        try {
+            dispatch(setLoadingMessage({
+                message: 'Füge Prozesselement hinzu',
+                blocking: false,
+                estimatedTime: 1000,
             }));
-            dispatch(clearLoadingMessage());
-            return;
-        }
 
-        const edgeApi = new ProcessDefinitionEdgeApiService();
+            const edgeApi = new ProcessDefinitionEdgeApiService();
 
-        await edgeApi.destroy(existingEdge.id);
-
-        const newNode = await new ProcessNodeApiService()
-            .createWithGeneratedDataKey({
+            const candidate = {
                 ...ProcessNodeApiService.initialize(),
                 processId: processFlow.definition.id,
                 processVersion: processFlow.version.processVersion,
                 processNodeDefinitionKey: nodeProvider.key,
                 processNodeDefinitionVersion: nodeProvider.majorVersion,
+            };
+            const ports = await requireCandidatePorts(candidate, true);
+            const defaultPort = getDefaultProcessNodePort(ports);
+            if (defaultPort == null) {
+                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen fachlichen Ausgang besitzt.'));
+                return;
+            }
+            const newNode = await new ProcessNodeApiService().createWithGeneratedDataKey(candidate);
+            await edgeApi.destroy(existingEdge.id);
+
+            const newEdgeToNewNode = await edgeApi
+                .create({
+                    id: 0,
+                    processId: processFlow.definition.id,
+                    processVersion: processFlow.version.processVersion,
+                    fromNodeId: existingEdge.fromNodeId,
+                    toNodeId: newNode.id,
+                    viaPort: existingEdge.viaPort,
+                });
+
+            const newEdgeFromNewNode = await edgeApi
+                .create({
+                    id: 0,
+                    processId: processFlow.definition.id,
+                    processVersion: processFlow.version.processVersion,
+                    fromNodeId: newNode.id,
+                    toNodeId: existingEdge.toNodeId,
+                    viaPort: defaultPort!.key,
+                });
+
+            setProcessFlow({
+                ...processFlow,
+                nodes: [
+                    ...processFlow.nodes,
+                    newNode,
+                ],
+                edges: [
+                    ...processFlow.edges.filter((edge) => edge.id !== existingEdge.id),
+                    newEdgeToNewNode,
+                    newEdgeFromNewNode,
+                ],
             });
 
-        const newEdgeToNewNode = await edgeApi
-            .create({
-                id: 0,
-                processId: processFlow.definition.id,
-                processVersion: processFlow.version.processVersion,
-                fromNodeId: existingEdge.fromNodeId,
-                toNodeId: newNode.id,
-                viaPort: existingEdge.viaPort,
-            });
-
-        const newEdgeFromNewNode = await edgeApi
-            .create({
-                id: 0,
-                processId: processFlow.definition.id,
-                processVersion: processFlow.version.processVersion,
-                fromNodeId: newNode.id,
-                toNodeId: existingEdge.toNodeId,
-                viaPort: nodeProvider.ports[0].key,
-            });
-
-        setProcessFlow({
-            ...processFlow,
-            nodes: [
-                ...processFlow.nodes,
-                newNode,
-            ],
-            edges: [
-                ...processFlow.edges.filter((edge) => edge.id !== existingEdge.id),
-                newEdgeToNewNode,
-                newEdgeFromNewNode,
-            ],
-        });
-
-        setNewNodeOnEdgeId(null);
-
-        dispatch(clearLoadingMessage());
+            setNewNodeOnEdgeId(null);
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht eingefügt werden.'));
+        } finally {
+            dispatch(clearLoadingMessage());
+        }
     };
 
     const handleAddImportedInbetweenNode = useCallback(async (
         importedNode: ProcessNodeEntity,
-        importedProvider: ProcessNodeProvider,
     ): Promise<void> => {
         if (processFlow == null || newNodeOnEdgeId == null) {
             return;
@@ -1491,7 +1488,7 @@ export function ProcessDetailsPage(): ReactNode {
             return;
         }
 
-        if (importedProvider.ports.length === 0) {
+        if (getDefaultProcessNodePort(importedNode.ports) == null) {
             throw new Error('imported-inbetween-node-missing-port');
         }
 
@@ -1514,7 +1511,7 @@ export function ProcessDetailsPage(): ReactNode {
             processVersion: processFlow.version.processVersion,
             fromNodeId: importedNode.id,
             toNodeId: existingEdge.toNodeId,
-            viaPort: importedProvider.ports[0].key,
+            viaPort: getDefaultProcessNodePort(importedNode.ports)!.key,
         });
 
         setProcessFlow({
@@ -1538,10 +1535,6 @@ export function ProcessDetailsPage(): ReactNode {
             return;
         }
 
-        const nodeProvider = flowNodeProviderCache[getProcessNodeProviderKey(
-            node.processNodeDefinitionKey,
-            node.processNodeDefinitionVersion,
-        )];
         const incomingEdges = processFlow.edges.filter((edge) => edge.toNodeId === node.id);
         const outgoingEdges = processFlow.edges.filter((edge) => edge.fromNodeId === node.id);
         const edgesToRemove = processFlow.edges.filter((edge) => (
@@ -1551,12 +1544,17 @@ export function ProcessDetailsPage(): ReactNode {
         const remainingEdges = processFlow.edges.filter((edge) => (
             !edgesToRemove.some((edgeToRemove) => edgeToRemove.id === edge.id)
         ));
-        const bridgeTargetEdge = nodeProvider?.ports.length === 1 && outgoingEdges.length === 1
+        const regularPorts = node.ports.filter((port) => port.key !== PROCESS_NODE_DEADLINE_PORT_KEY);
+        const bridgeTargetEdge = node.portResolutionProblems.length === 0 && regularPorts.length === 1 && outgoingEdges.length === 1 && outgoingEdges[0].viaPort === regularPorts[0].key
             ? outgoingEdges[0]
             : null;
         const bridgeEdgePayloads = bridgeTargetEdge == null
             ? []
             : incomingEdges
+                .filter((incomingEdge) => {
+                    const source = processFlow.nodes.find((candidate) => candidate.id === incomingEdge.fromNodeId);
+                    return source != null && source.portResolutionProblems.length === 0 && source.ports.some((port) => port.key === incomingEdge.viaPort);
+                })
                 .map((incomingEdge) => ({
                     id: 0,
                     processId: processFlow.definition.id,
@@ -1938,18 +1936,25 @@ export function ProcessDetailsPage(): ReactNode {
                 return;
             }
 
+            const importedPorts = await requireCandidatePorts({
+                ...ProcessNodeApiService.initialize(),
+                ...importedNodeExport.node,
+                processId: processFlow.definition.id,
+                processVersion: processFlow.version.processVersion,
+            }, true, true);
+
             if (context === 'follow-up' && newNodeFor != null) {
                 const requiresOutgoingPort = processFlow.edges.some((edge) => (
                     edge.fromNodeId === newNodeFor.fromNodeId &&
                     edge.viaPort === newNodeFor.viaPort
                 ));
-                if (requiresOutgoingPort && importedProvider.ports.length === 0) {
+                if (requiresOutgoingPort && getDefaultProcessNodePort(importedPorts) == null) {
                     dispatch(showErrorSnackbar('Dieser importierte Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
                     return;
                 }
             }
 
-            if (context === 'in-between' && importedProvider.ports.length === 0) {
+            if (context === 'in-between' && getDefaultProcessNodePort(importedPorts) == null) {
                 dispatch(showErrorSnackbar('Dieser importierte Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
                 return;
             }
@@ -1976,9 +1981,9 @@ export function ProcessDetailsPage(): ReactNode {
             if (context === 'trigger') {
                 handleAddImportedTriggerNode(importedNode);
             } else if (context === 'follow-up') {
-                await handleAddImportedFollowUpNode(importedNode, importedProvider);
+                await handleAddImportedFollowUpNode(importedNode);
             } else {
-                await handleAddImportedInbetweenNode(importedNode, importedProvider);
+                await handleAddImportedInbetweenNode(importedNode);
             }
 
             dispatch(showSuccessSnackbar('Das Prozesselement wurde importiert.'));
@@ -2049,7 +2054,20 @@ export function ProcessDetailsPage(): ReactNode {
             return;
         }
 
-        const replacementPlan = buildNodeReplacementPlan(processFlow, node, currentProvider, replacementProvider);
+        let replacementPorts: ProcessNodePort[];
+        try {
+            replacementPorts = await requireCandidatePorts({
+                ...node,
+                processNodeDefinitionKey: replacementProvider.key,
+                processNodeDefinitionVersion: replacementProvider.majorVersion,
+                configuration: {},
+                outputMappings: {},
+            });
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Die Ausgänge des Ersatzes konnten nicht ermittelt werden.'));
+            return;
+        }
+        const replacementPlan = buildNodeReplacementPlan(processFlow, node, replacementProvider, replacementPorts);
         const preservedOutgoingEdgeCount = replacementPlan.unchangedOutgoingEdges.length + replacementPlan.recreatedOutgoingEdges.length;
         const removedOutgoingEdgeCount = replacementPlan.removedOutgoingEdges.length;
         const outgoingConnectionSummary = formatOutgoingConnectionSummary(

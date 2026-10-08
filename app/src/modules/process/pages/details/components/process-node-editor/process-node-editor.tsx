@@ -613,6 +613,7 @@ export function ProcessNodeEditor(): ReactNode {
             <ProcessNodeProviderDetailsDialog
                 open={isProviderDetailsDialogOpen}
                 provider={provider}
+                ports={originalNode?.ports}
                 onClose={() => {
                     setIsProviderDetailsDialogOpen(false);
                 }}

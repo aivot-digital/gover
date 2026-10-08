@@ -23,6 +23,8 @@ describe('automatic process node data keys', () => {
             })
             .mockImplementationOnce(async (node) => ({
                 ...node,
+                ports: [],
+                portResolutionProblems: [],
                 id: 42,
             }));
         const input = {
@@ -54,4 +56,25 @@ describe('automatic process node data keys', () => {
         await expect(api.createWithGeneratedDataKey(api.initialize())).rejects.toMatchObject({status: 409});
         expect(create).toHaveBeenCalledTimes(1);
     });
+});
+
+it('returns saved ports while sending only authoring data and supports prospective imports', async () => {
+    const api = new ProcessNodeApiService();
+    const node = {...api.initialize(), id: 12, timeLimitDays: 3};
+    const ports = [{key: '__deadline_exceeded', label: 'Fristüberschreitung', description: 'Fristablauf'}];
+    const saved = {...node, ports};
+    const fetch = vi.spyOn(api, 'fetch').mockResolvedValue(new Response(JSON.stringify(saved)));
+    expect((await api.update(node.id, saved)).ports).toEqual(ports);
+    const writeBody = JSON.parse(fetch.mock.calls[0][2] as string);
+    expect(writeBody).not.toHaveProperty('ports');
+    expect(writeBody).not.toHaveProperty('portResolutionProblems');
+    expect(writeBody.timeLimitDays).toBe(3);
+
+    fetch.mockResolvedValue(new Response(JSON.stringify({ports, problems: []})));
+    expect(await api.resolvePorts(saved, {forImport: true, useInitialConfiguration: true})).toEqual({ports, problems: []});
+    expect(fetch.mock.calls[1][0]).toBe('POST');
+    expect(fetch.mock.calls[1][1]).toBe('/api/process-nodes/resolve-ports/');
+    const preview = JSON.parse(fetch.mock.calls[1][2] as string);
+    expect(preview).toMatchObject({forImport: true, useInitialConfiguration: true, node: {timeLimitDays: 3}});
+    expect(preview.node).not.toHaveProperty('ports');
 });

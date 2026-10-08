@@ -150,6 +150,8 @@ function createNode(id: number, name: string): ProcessNodeEntity {
         name,
         processId: 1,
         processVersion: 1,
+        ports: [],
+        portResolutionProblems: [],
         processNodeDefinitionKey: 'test',
         processNodeDefinitionVersion: 1,
         description: null,

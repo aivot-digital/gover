@@ -9,8 +9,13 @@ import {
 export interface ProcessFlowGraphNode {
     node: ProcessNodeEntity;
     provider: ProcessNodeProvider;
+    displayPorts: ProcessFlowDisplayPort[];
     outgoingEdges: ProcessFlowGraphEdge[];
     incomingEdges: ProcessFlowGraphEdge[];
+}
+
+export interface ProcessFlowDisplayPort extends ProcessNodePort {
+    unavailable?: boolean;
 }
 
 export interface ProcessFlowGraphEdge {
@@ -44,9 +49,23 @@ export function buildProcessFlowGraph(
             throw new Error(`Missing node provider ${node.processNodeDefinitionKey}@${node.processNodeDefinitionVersion} for process node ${node.id}`);
         }
 
+        const missingPortKeys = new Set(edges
+            .filter((edge) => edge.fromNodeId === node.id && !node.ports.some((port) => port.key === edge.viaPort))
+            .map((edge) => edge.viaPort));
+
         return {
             node,
             provider,
+            // Presentation anchors keep obsolete connections removable without advertising them as valid ports.
+            displayPorts: [
+                ...node.ports,
+                ...Array.from(missingPortKeys).sort().map((key) => ({
+                    key,
+                    label: `Nicht verfügbar: ${key}`,
+                    description: 'Dieser Ausgang ist nicht mehr verfügbar. Entfernen Sie die Verbindung oder stellen Sie die Konfiguration wieder her.',
+                    unavailable: true,
+                })),
+            ],
             outgoingEdges: [],
             incomingEdges: [],
         };
@@ -63,7 +82,7 @@ export function buildProcessFlowGraph(
 
         const graphEdge: ProcessFlowGraphEdge = {
             edge,
-            port: sourceNode.provider.ports.find((port) => port.key === edge.viaPort) ?? null,
+            port: sourceNode.node.ports.find((port) => port.key === edge.viaPort) ?? null,
             isFeedbackEdge: false,
         };
 
@@ -75,7 +94,7 @@ export function buildProcessFlowGraph(
 
     for (const graphNode of graphNodes) {
         graphNode.outgoingEdges.sort((a, b) => (
-            getProviderPortIndex(graphNode.provider, a.port?.key) - getProviderPortIndex(graphNode.provider, b.port?.key) ||
+            getProviderPortIndex(graphNode.node, a.port?.key) - getProviderPortIndex(graphNode.node, b.port?.key) ||
             a.edge.toNodeId - b.edge.toNodeId ||
             a.edge.id - b.edge.id
         ));
@@ -93,12 +112,12 @@ export function buildProcessFlowGraph(
     };
 }
 
-function getProviderPortIndex(provider: ProcessNodeProvider, portKey?: string | null): number {
+function getProviderPortIndex(node: ProcessNodeEntity, portKey?: string | null): number {
     if (portKey == null) {
         return Number.MAX_SAFE_INTEGER;
     }
 
-    const portIndex = provider.ports.findIndex((port) => port.key === portKey);
+    const portIndex = node.ports.findIndex((port) => port.key === portKey);
     return portIndex === -1 ? Number.MAX_SAFE_INTEGER : portIndex;
 }
 

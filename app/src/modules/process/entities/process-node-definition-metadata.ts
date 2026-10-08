@@ -1,5 +1,5 @@
 import {type UiDefinitionInputFieldElementItem} from '../../../models/elements/form/input/ui-definition-input-field-element';
-import {type ProcessNodeEntity} from './process-node-entity';
+import {type ProcessNodeWrite} from './process-node-entity';
 import {type InputVariableSuggestion} from '../../../models/input-mode';
 
 export interface ProcessNodeDefinitionMetadata {
@@ -14,7 +14,7 @@ export interface ProcessNodeDefinitionMetadataReusableUiDefinition {
     label: string;
     subLabel: string | null;
     uiDefinition: UiDefinitionInputFieldElementItem;
-    origin: ProcessNodeEntity;
+    origin: ProcessNodeWrite;
     kind: ProcessNodeDefinitionMetadataReusableUiDefinitionKind;
 }
 
@@ -31,14 +31,14 @@ export interface ProcessNodeDefinitionMetadataForwardedAttachmentSet {
     label: string;
     subLabel: string | null;
     isMultifile: boolean;
-    origin: ProcessNodeEntity;
+    origin: ProcessNodeWrite;
 }
 
 export interface ProcessNodeDefinitionMetadataForwardedProcessDataKey {
     processDataKey: string;
     label: string;
     subLabel: string | null;
-    origin: ProcessNodeEntity;
+    origin: ProcessNodeWrite;
 }
 
 export interface ProcessNodeDefinitionMetadataForwardedIdentity {
@@ -46,5 +46,5 @@ export interface ProcessNodeDefinitionMetadataForwardedIdentity {
     label: string;
     subLabel: string | null;
     identityProviderKeys: string[];
-    origin: ProcessNodeEntity;
+    origin: ProcessNodeWrite;
 }
