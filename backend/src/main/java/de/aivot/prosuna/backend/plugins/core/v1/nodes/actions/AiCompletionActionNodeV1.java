@@ -1,4 +1,4 @@
-package de.aivot.prosuna.backend.plugins.ai.v1.nodes;
+package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
@@ -11,8 +11,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElem
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
-import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
+import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -33,11 +32,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -64,23 +60,10 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     private static final String LEGACY_API_KEY_SECRET_FIELD_ID = "apiKeySecret";
     private static final String LEGACY_MODEL_FIELD_ID = "model";
 
-    private static final double DEFAULT_TEMPERATURE = 0.01d;
-    private static final double DEFAULT_TOP_P = 0.9d;
-    private static final int DEFAULT_N = 1;
-
     private final ChatClient chatClient;
 
-    public AiCompletionActionNodeV1(ChatClient.Builder chatClientBuilder,
-                                    AiPluginProperties aiPluginProperties,
-                                    @Value("${spring.ai.openai.chat.timeout}") Duration chatTimeout) {
-        chatClient = chatClientBuilder
-                .defaultOptions(OpenAiChatOptions.builder()
-                        .temperature(DEFAULT_TEMPERATURE)
-                        .topP(DEFAULT_TOP_P)
-                        .n(DEFAULT_N)
-                        .maxTokens(aiPluginProperties.getCompletionMaxTokens())
-                        .timeout(chatTimeout))
-                .build();
+    public AiCompletionActionNodeV1(ChatClient.Builder chatClientBuilder) {
+        chatClient = chatClientBuilder.build();
     }
 
     @Nonnull
@@ -98,7 +81,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return AiPlugin.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -130,7 +113,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     public String getDescription() {
         return """
                 Sendet einen konfigurierten Prompt an das zentral für Prosuna eingerichtete KI-Modell und stellt die erzeugte Antwort für nachfolgende Prozesselemente bereit.
-
+                
                 Der Prompt wird in der Elementkonfiguration festgelegt. Neben dem ersten Antworttext liefert das Element den Abschlussgrund, das tatsächlich verwendete Modell und die gemeldeten Nutzungsinformationen als Ausgänge.
                 """;
     }

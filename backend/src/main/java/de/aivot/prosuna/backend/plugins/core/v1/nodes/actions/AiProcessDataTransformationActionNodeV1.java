@@ -1,4 +1,4 @@
-package de.aivot.prosuna.backend.plugins.ai.v1.nodes;
+package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
@@ -12,8 +12,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElem
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
-import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
+import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
@@ -35,12 +34,9 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -68,10 +64,6 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private static final String LEGACY_API_KEY_SECRET_FIELD_ID = "apiKeySecret";
     private static final String LEGACY_MODEL_FIELD_ID = "model";
 
-    private static final double DEFAULT_TEMPERATURE = 0.01d;
-    private static final double DEFAULT_TOP_P = 0.9d;
-    private static final int DEFAULT_N = 1;
-
     private static final Pattern JSON_CODE_FENCE_PATTERN = Pattern.compile("^```(?:json)?\\s*(.*?)\\s*```$", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 
     private static final String SYSTEM_PROMPT = """
@@ -89,16 +81,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     private final ChatClient chatClient;
 
-    public AiProcessDataTransformationActionNodeV1(ChatClient.Builder chatClientBuilder,
-                                                   AiPluginProperties aiPluginProperties,
-                                                   @Value("${spring.ai.openai.chat.timeout}") Duration chatTimeout) {
+    public AiProcessDataTransformationActionNodeV1(ChatClient.Builder chatClientBuilder) {
         chatClient = chatClientBuilder
-                .defaultOptions(OpenAiChatOptions.builder()
-                        .temperature(DEFAULT_TEMPERATURE)
-                        .topP(DEFAULT_TOP_P)
-                        .n(DEFAULT_N)
-                        .maxTokens(aiPluginProperties.getProcessDataTransformationMaxTokens())
-                        .timeout(chatTimeout))
                 .build();
     }
 
@@ -117,7 +101,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return AiPlugin.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -149,7 +133,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     public String getDescription() {
         return """
                 Verwendet das zentral für Prosuna eingerichtete KI-Modell, um die vollständigen Laufzeitdaten eines Vorgangs in ein neues JSON-Objekt zu transformieren.
-
+                
                 Der Prompt wird in der Elementkonfiguration festgelegt und kann die aktuellen Vorgangsdaten einbeziehen. Das von der KI zurückgegebene JSON-Objekt ersetzt anschließend die bisherigen Vorgangsdaten vollständig. Informationen zu Modell, Abschlussgrund, Nutzung und erzeugten Top-Level-Schlüsseln stehen als Ausgänge zur Verfügung.
                 """;
     }
