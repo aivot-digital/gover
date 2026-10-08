@@ -114,3 +114,15 @@ The package-info.java file should contain the module name and description.
 Preserve existing auditable actions, including staff-side mutations, and add the relevant `ScopedAuditService` events when extending them.
 Record the actual outcome: do not log an operation as successful before it succeeds. Failure or denied-access events, where applicable, are distinct from success events.
 Prefer services for these events, with justified controller exceptions. Cover changed audit behavior with focused tests.
+
+# Process Node Ports
+
+Implement `ProcessNodeDefinition.getPorts(@Nonnull NodeConfig configuration)` to return the outgoing connections available for a node's authored configuration. The former parameterless method is no longer supported; rebuild external plugins against the new interface and deploy matching backend and frontend versions together.
+
+Use deterministic order and stable, unique keys of at most 32 characters. For configurable choices, store an explicit stable key in the configuration instead of deriving it from a label or row index. Fields determining the port set must use literal-only inputs; runtime variables, templates and expressions may decide which port is selected during execution, but must not change the available ports. Handle incomplete authoring configuration and null fields gracefully and report required configuration through the existing validation contract.
+
+Do not return the reserved key `__deadline_exceeded`. The platform appends the port labelled `Fristüberschreitung` whenever `timeLimitDays` is set, including when no regular ports exist. Like all other ports, it must be connected before publication. Automatic routing when a deadline expires is a separate feature and is not implemented yet. Existing models with deadlines need this connection before they can be published again.
+
+Provider metadata no longer contains `ports`. Node list, detail, create, update and import responses contain computed `ports` and `portResolutionProblems`. These fields are read-only and are not persisted or exported. Use `POST /api/process-nodes/resolve-ports/` with `{node, forImport, useInitialConfiguration}` to inspect a prospective node without saving it; process read permission is required. Set `useInitialConfiguration` for new nodes and `forImport` for imported nodes. Replacements resolve their actual replacement configuration. The response contains `{ports, problems}`.
+
+The editor updates ports after saving. Edges referencing a removed port remain stored, are shown as unavailable connections, and prevent publication until corrected. A failed port resolution is an authoring problem, not a valid empty set. All backend connection checks and execution transitions use the shared authoring port resolution.
