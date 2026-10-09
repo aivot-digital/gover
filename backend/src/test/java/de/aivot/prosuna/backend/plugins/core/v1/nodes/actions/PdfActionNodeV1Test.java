@@ -30,6 +30,8 @@ import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Proxy;
@@ -89,7 +91,7 @@ class PdfActionNodeV1Test {
                         .getArgument(0, ProcessInstanceAttachmentSetEntity.class)
                         .setId(321));
 
-        node = createNode(new PassthroughTemplateRenderService());
+        node = createNode(new TemplateRenderService(new JavascriptEngineFactoryService(List.of())));
     }
 
     @Test
@@ -161,6 +163,62 @@ class PdfActionNodeV1Test {
         assertEquals("report.pdf", result.getNodeData().get("fileName"));
     }
 
+    @ParameterizedTest
+    @MethodSource("templateLikeInputs")
+    void init_PreservesTemplateSyntaxInCodeTemplateDataInAllSections(String input) throws Exception {
+        var section = "<html><body>{{ $.input }}|{! $.input !}</body></html>";
+        var configuration = codeConfiguration(section + "<!-- KOPFZEILE -->" + section + "<!-- FUSSZEILE -->" + section);
+        var data = new ProcessExecutionData()
+                .addProcessData("input", input)
+                .addProcessData("secret", "must-not-appear");
+
+        node.init(context(configuration, data));
+
+        var expectedSection = "<html><body>" + input + "|" + input + "</body></html>";
+        verify(pdfService).generatePdfFromHtml(expectedSection, expectedSection, expectedSection);
+    }
+
+    @ParameterizedTest
+    @MethodSource("templateLikeInputs")
+    void init_PreservesTemplateSyntaxInAssetDataAndSlotsInAllSections(String input) throws Exception {
+        var assetKey = UUID.randomUUID();
+        var section = "<html><body>{{ $.input }}"
+                + "<div data-slot=\"text\" data-slot-type=\"text\">Default text</div>"
+                + "<section data-slot=\"richtext\" data-slot-type=\"richtext\">Default content</section>"
+                + "</body></html>";
+        var html = section + "<!-- KOPFZEILE -->" + section + "<!-- FUSSZEILE -->" + section;
+        when(assetService.retrieve(assetKey)).thenReturn(Optional.of(
+                new AssetEntity().setKey(assetKey).setStorageProviderId(11).setStoragePathFromRoot("templates/test.html")
+        ));
+        when(storageService.getDocumentContent(11, "templates/test.html"))
+                .thenReturn(new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
+        var configuration = assetConfiguration(assetKey);
+        configuration.contentHtmlTemplate.setSlots(Map.of("text", "{{ $.input }}", "richtext", "{{ $.input }}"));
+        var data = new ProcessExecutionData()
+                .addProcessData("input", input)
+                .addProcessData("secret", "must-not-appear");
+
+        node.init(context(configuration, data));
+
+        var expectedSection = "<html><body>" + input
+                + "<div data-slot=\"text\" data-slot-type=\"text\">" + input + "</div>"
+                + "<section data-slot=\"richtext\" data-slot-type=\"richtext\"><p>" + input + "</p>\n</section>"
+                + "</body></html>";
+        verify(pdfService).generatePdfFromHtml(expectedSection, expectedSection, expectedSection);
+    }
+
+    private static List<String> templateLikeInputs() {
+        return List.of(
+                "{{ 7 * 7 }}",
+                "{{ $.secret }}",
+                "{! $.secret !}",
+                "{% if true %}visible{% endif %}",
+                "{# keep this comment #}",
+                "{{ unclosed",
+                "{% if true %}unclosed"
+        );
+    }
+
     @Test
     void getMetadata_ShouldForwardPdfAttachmentSetAsSingleFile() {
         var metadata = node.getMetadata(processNode(), codeConfiguration("<html></html>"), ProcessNodeDefinitionMetadata.empty());
@@ -174,14 +232,19 @@ class PdfActionNodeV1Test {
     }
 
     private static ProcessNodeExecutionInitContext context(String html) {
+        return context(codeConfiguration(html), new ProcessExecutionData());
+    }
+
+    private static ProcessNodeExecutionInitContext<PdfActionNodeV1.PdfActionNodeConfig> context(
+            PdfActionNodeV1.PdfActionNodeConfig configuration, ProcessExecutionData data) {
         return new ProcessNodeExecutionInitContext(
                 logger(),
                 processNode(),
                 processInstance(),
                 task(),
                 null,
-                new ProcessExecutionData(),
-                codeConfiguration(html)
+                data,
+                configuration
         );
     }
 
@@ -292,17 +355,6 @@ class PdfActionNodeV1Test {
                     default -> unsupported(methodName);
                 })
         );
-    }
-
-    private static class PassthroughTemplateRenderService extends TemplateRenderService {
-        private PassthroughTemplateRenderService() {
-            super(null);
-        }
-
-        @Override
-        public String interpolate(ProcessExecutionData foldedProcessData, String template) {
-            return template;
-        }
     }
 
     @FunctionalInterface
