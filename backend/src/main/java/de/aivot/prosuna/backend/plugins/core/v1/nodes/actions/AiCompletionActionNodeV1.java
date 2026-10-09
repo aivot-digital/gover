@@ -25,6 +25,8 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -38,6 +40,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 /**
  * Executes a prompt against the centrally configured AI model and exposes the response as node outputs.
@@ -64,6 +69,16 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
     public AiCompletionActionNodeV1(ChatClient.Builder chatClientBuilder) {
         chatClient = chatClientBuilder.build();
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<AiCompletionActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Die KI-Anfrage wurde erfolgreich ausgeführt."
+                + detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL))
+                + detail("Kurzbeschreibung", context.thisNode().getDescription())
+                + section("Antwort der KI", summary.data(OUTPUT_COMPLETION));
     }
 
     @Nonnull

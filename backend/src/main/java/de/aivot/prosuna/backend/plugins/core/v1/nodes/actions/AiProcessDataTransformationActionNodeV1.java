@@ -27,6 +27,8 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -42,6 +44,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.list;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
 
 /**
  * Sends the full process execution data to the centrally configured AI model and replaces the process data root with the returned JSON object.
@@ -84,6 +90,22 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     public AiProcessDataTransformationActionNodeV1(ChatClient.Builder chatClientBuilder) {
         chatClient = chatClientBuilder
                 .build();
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<AiProcessDataTransformationActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var markdown = new StringBuilder("Die Vorgangsdaten wurden erfolgreich mit KI transformiert.")
+                .append(detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL)));
+        var keys = list(summary.data(OUTPUT_TOP_LEVEL_KEYS));
+        if (!keys.isEmpty()) {
+            markdown.append("\n\n**Datenfelder**");
+            for (var key : keys) {
+                markdown.append("\n\n- ").append(text(key));
+            }
+        }
+        return markdown.toString();
     }
 
     @Nonnull
