@@ -8,7 +8,11 @@ import jakarta.validation.constraints.NotNull;
 /** A prospective node; initial/import configuration is prepared without persisting it. */
 public record ProcessNodePortRequestDTO(
         @Nonnull @NotNull @Valid ProcessNodeEntity node,
-        boolean forImport,
-        boolean useInitialConfiguration
+        @Nonnull Boolean forImport,
+        @Nonnull Boolean useInitialConfiguration
 ) {
+    public ProcessNodePortRequestDTO {
+        forImport = Boolean.TRUE.equals(forImport);
+        useInitialConfiguration = Boolean.TRUE.equals(useInitialConfiguration);
+    }
 }

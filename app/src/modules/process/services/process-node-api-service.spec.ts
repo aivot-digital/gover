@@ -81,3 +81,32 @@ it('returns saved ports while sending only authoring data and supports prospecti
     expect(preview).toMatchObject({forImport: true, useInitialConfiguration: true, node: {deadlines: node.deadlines}});
     expect(preview.node).not.toHaveProperty('ports');
 });
+
+describe('port resolution options', () => {
+    it.each([
+        [undefined, false, false],
+        [{}, false, false],
+        [{forImport: false}, false, false],
+        [{forImport: true}, true, false],
+        [{useInitialConfiguration: false}, false, false],
+        [{useInitialConfiguration: true}, false, true],
+        [{forImport: undefined, useInitialConfiguration: undefined}, false, false],
+        [{forImport: false, useInitialConfiguration: false}, false, false],
+        [{forImport: false, useInitialConfiguration: true}, false, true],
+        [{forImport: true, useInitialConfiguration: false}, true, false],
+        [{forImport: true, useInitialConfiguration: true}, true, true],
+    ] as const)('serializes options %j as explicit booleans', async (options, forImport, useInitialConfiguration) => {
+        const api = new ProcessNodeApiService();
+        const node = api.initialize();
+        const resolution = {ports: [], problems: [], deadlineDefinitions: []};
+        const fetch = vi.spyOn(api, 'fetch').mockResolvedValue(new Response(JSON.stringify(resolution)));
+
+        expect(await api.resolvePorts(node, options)).toEqual(resolution);
+
+        const payload = JSON.parse(fetch.mock.calls[0][2] as string);
+        expect(payload).toMatchObject({forImport, useInitialConfiguration, node: {dataKey: node.dataKey}});
+        expect(payload.node).not.toHaveProperty('ports');
+        expect(payload.node).not.toHaveProperty('portResolutionProblems');
+        expect(payload.node).not.toHaveProperty('deadlineDefinitions');
+    });
+});

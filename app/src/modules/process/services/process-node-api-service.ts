@@ -88,7 +88,11 @@ export class ProcessNodeApiService extends BaseCrudApiService<
     }
 
     public resolvePorts(node: ProcessNodeWrite, options: {forImport?: boolean; useInitialConfiguration?: boolean} = {}): Promise<ProcessNodePortResolution> {
-        return this.post(`${this.path}resolve-ports/`, {node: toProcessNodeWrite(node), ...options});
+        return this.post(`${this.path}resolve-ports/`, {
+            node: toProcessNodeWrite(node),
+            forImport: options.forImport ?? false,
+            useInitialConfiguration: options.useInitialConfiguration ?? false,
+        });
     }
 
     public getConfigurationLayout(id: number): Promise<GroupLayout> {

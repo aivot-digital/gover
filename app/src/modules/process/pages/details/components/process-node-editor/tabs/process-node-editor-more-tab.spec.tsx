@@ -31,6 +31,8 @@ describe('configurable phase deadlines', () => {
     it('defaults to optional soft deadlines and changes each phase independently without updating saved ports', async () => {
         const {setNode} = renderMoreTab();
         const input = await screen.findByRole('textbox', {name: /^Nachrichtenversand/});
+        expect(screen.getByRole('heading', {name: 'Fristen', level: 5})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Anforderungen und Anmerkungen', level: 5})).toBeInTheDocument();
         const checkbox = screen.getByRole('checkbox', {name: /^Harte Frist: Nachrichtenversand/});
         expect(checkbox).not.toBeChecked();
         expect(checkbox).toBeDisabled();
@@ -70,6 +72,7 @@ describe('configurable phase deadlines', () => {
         vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockResolvedValueOnce(resolution([customer]));
         act(() => updateNode({configuration: {executionType: literalAuthoredValue('automatic')}}));
         await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+        expect(screen.getByRole('heading', {name: 'Fristen', level: 5})).toBeInTheDocument();
         expect(screen.queryByRole('textbox', {name: /^Nachrichtenversand/})).not.toBeInTheDocument();
         expect(ProcessNodeApiService.prototype.resolvePorts).toHaveBeenLastCalledWith(expect.objectContaining({
             configuration: {executionType: literalAuthoredValue('automatic')}, deadlines: {message: {days: 3, strict: true}},
@@ -83,6 +86,8 @@ describe('configurable phase deadlines', () => {
         let resolveOld!: (value: ReturnType<typeof resolution>) => void;
         vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }));
         const {updateNode} = renderMoreTab();
+        expect(screen.queryByRole('heading', {name: 'Fristen'})).not.toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Anforderungen und Anmerkungen', level: 5})).toBeInTheDocument();
         vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockResolvedValueOnce(resolution([customer]));
         act(() => updateNode({configuration: {executionType: literalAuthoredValue('automatic')}}));
         await screen.findByRole('textbox', {name: /^Formulareinreichung/});
@@ -94,6 +99,8 @@ describe('configurable phase deadlines', () => {
         vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockRejectedValueOnce(new Error('Failed'));
         renderMoreTab();
         expect(await screen.findByRole('alert')).toHaveTextContent('Fristen konnten nicht geladen werden');
+        expect(screen.queryByRole('heading', {name: 'Fristen'})).not.toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Anforderungen und Anmerkungen', level: 5})).toBeInTheDocument();
     });
 
     it('has no deadline controls when the provider offers no phases', async () => {
@@ -101,6 +108,8 @@ describe('configurable phase deadlines', () => {
         renderMoreTab();
         await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(screen.queryByRole('heading', {name: 'Fristen'})).not.toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Anforderungen und Anmerkungen', level: 5})).toBeInTheDocument();
     });
 });
 

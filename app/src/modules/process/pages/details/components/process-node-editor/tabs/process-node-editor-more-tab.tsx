@@ -57,6 +57,9 @@ export function ProcessNodeEditorMoreTab() {
                 Konfigurieren Sie zusätzliche Eigenschaften dieses Prozesselementes.
             </ElementEditorSectionHeader>
 
+            {!loading && definitions.length > 0 && (
+                <ElementEditorSectionHeader title="Fristen" variant="h5"/>
+            )}
             {loading && <Box role="status">Verfügbare Fristen werden geladen …</Box>}
             {problems.length > 0 && <Alert severity="warning">{problems.join(' ')}</Alert>}
             {!loading && definitions.map((definition) => {
@@ -90,6 +93,7 @@ export function ProcessNodeEditorMoreTab() {
                 </Box>;
             })}
 
+            <ElementEditorSectionHeader title="Anforderungen und Anmerkungen" variant="h5"/>
             <RichTextInputComponent
                 label="Fachliche Anforderungen"
                 hint="Beschreiben Sie die fachliche Logik oder Vorgaben, die mit diesem Prozesselement umgesetzt werden."
@@ -99,9 +103,6 @@ export function ProcessNodeEditorMoreTab() {
                         ...node,
                         requirements: val,
                     }, false);
-                }}
-                sx={{
-                    mt: definitions.length > 0 ? 2 : 0,
                 }}
                 disabled={!isEditable}
             />
