@@ -25,6 +25,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class HtmlTemplateInputElementResolver {
@@ -61,6 +63,9 @@ public class HtmlTemplateInputElementResolver {
         this.templateRenderService = templateRenderService;
     }
 
+    /**
+     * Renders the full asset template and its slot templates. The result is final HTML and must not be interpolated again.
+     */
     @Nonnull
     public String resolve(@Nullable HtmlTemplateInputElementValue value, @Nonnull ProcessExecutionData processExecutionData) throws ProcessNodeExecutionException {
         if (value == null) {
@@ -131,12 +136,18 @@ public class HtmlTemplateInputElementResolver {
             }
         }
 
-        return applySlotValues(templateHtml, renderedTemplates);
+        // Replace slot defaults before rendering, but keep the already rendered slot contents out of the parser.
+        // Otherwise template delimiters originating in process data would become executable template expressions.
+        var slotContents = new LinkedHashMap<String, String>();
+        var preparedTemplate = applySlotValues(templateHtml, renderedTemplates, slotContents);
+        var renderedHtml = templateRenderService.interpolate(processExecutionData, preparedTemplate);
+        return restoreSlotContents(renderedHtml, slotContents);
     }
 
     @Nonnull
     private String applySlotValues(@Nonnull String templateHtml,
-                                   @Nonnull Map<String, String> renderedTemplates) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+                                   @Nonnull Map<String, String> renderedTemplates,
+                                   @Nonnull Map<String, String> slotContents) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var resolvedHtml = new StringBuilder(templateHtml.length());
         var cursor = 0;
 
@@ -183,8 +194,10 @@ public class HtmlTemplateInputElementResolver {
             slotType = slotType.trim().toLowerCase(Locale.ROOT);
 
             if (SLOT_TYPE_IMAGE.equals(slotType)) {
+                var imageUrl = HtmlUtils.htmlEscape(createAssetUrl(slotId, slotValue));
+                var placeholder = protectSlotContent(templateHtml, imageUrl, slotContents);
                 resolvedHtml.append(templateHtml, cursor, startTag.start());
-                resolvedHtml.append(setAttribute(templateHtml, startTag, "src", createAssetUrl(slotId, slotValue)));
+                resolvedHtml.append(setAttribute(templateHtml, startTag, "src", placeholder));
                 cursor = startTag.end() + 1;
                 continue;
             }
@@ -198,11 +211,10 @@ public class HtmlTemplateInputElementResolver {
                 }
 
                 resolvedHtml.append(templateHtml, cursor, startTag.end() + 1);
-                if (SLOT_TYPE_TEXT.equals(slotType)) {
-                    resolvedHtml.append(HtmlUtils.htmlEscape(slotValue));
-                } else {
-                    resolvedHtml.append(MARKDOWN_DIALECT.render(slotValue));
-                }
+                var slotContent = SLOT_TYPE_TEXT.equals(slotType)
+                        ? HtmlUtils.htmlEscape(slotValue)
+                        : MARKDOWN_DIALECT.render(slotValue);
+                resolvedHtml.append(protectSlotContent(templateHtml, slotContent, slotContents));
                 cursor = closeTag.start();
                 continue;
             }
@@ -212,6 +224,36 @@ public class HtmlTemplateInputElementResolver {
         }
 
         return resolvedHtml.toString();
+    }
+
+    @Nonnull
+    private String protectSlotContent(@Nonnull String templateHtml,
+                                      @Nonnull String slotContent,
+                                      @Nonnull Map<String, String> slotContents) {
+        String placeholder;
+        do {
+            placeholder = "PROSUNA_SLOT_" + UUID.randomUUID() + "_END";
+        } while (templateHtml.contains(placeholder) || slotContent.contains(placeholder) || slotContents.containsKey(placeholder));
+        slotContents.put(placeholder, slotContent);
+        return placeholder;
+    }
+
+    @Nonnull
+    private String restoreSlotContents(@Nonnull String renderedHtml,
+                                       @Nonnull Map<String, String> slotContents) {
+        if (slotContents.isEmpty()) {
+            return renderedHtml;
+        }
+
+        var pattern = Pattern.compile(String.join("|", slotContents.keySet().stream().map(Pattern::quote).toList()));
+        var matcher = pattern.matcher(renderedHtml);
+        var result = new StringBuilder();
+        // Match only the rendered template, never replacement contents, even if a value contains another placeholder.
+        while (matcher.find()) {
+            matcher.appendReplacement(result, Matcher.quoteReplacement(slotContents.get(matcher.group())));
+        }
+        matcher.appendTail(result);
+        return result.toString();
     }
 
     @Nonnull
