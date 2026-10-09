@@ -1,11 +1,21 @@
 import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
-import {Alert, Box, CircularProgress, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {
+    Alert,
+    Box,
+    CircularProgress,
+    Dialog,
+    DialogContent,
+    Paper,
+    ThemeProvider,
+    Typography,
+    useTheme
+} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {showDialog} from '../../../slices/app-slice';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {
     selectDevToolsTab,
-    setDevToolsTab,
+    setDevToolsTab, toggleAiChat,
     toggleAutoScrollForSteps,
     toggleComponentTree,
     toggleElementContextMenu,
@@ -77,10 +87,7 @@ import {
     FormDetailsPageMoreMenu,
     FormDetailsPageMoreMenuItem,
 } from '../../forms/pages/details/components/form-details-page-more-menu';
-import {
-    ElementDerivationContext,
-    type ElementDerivationContextHandle,
-} from '../components/element-derivation-context';
+import {ElementDerivationContext, type ElementDerivationContextHandle,} from '../components/element-derivation-context';
 import {useChangeBlocker} from '../../../hooks/use-change-blocker-2';
 import {AddElementDialog} from '../../../dialogs/add-element-dialog/add-element-dialog';
 import {ProcessEntity} from '../../process/entities/process-entity';
@@ -136,6 +143,8 @@ import {isApiError} from '../../../models/api-error';
 import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
 import {RichtextComponent} from '../../../components/richtext/richtext.component';
 import {resolvePrintablePdfFilename} from '../../forms/utils/printable-pdf-filename';
+import {AiChatWindow} from "../../ai/components/ai-chat-window/ai-chat-window";
+import Chat from "@aivot/mui-material-symbols-400-n25-outlined/Chat";
 
 export const DialogSearchParam = 'dialog';
 
@@ -188,6 +197,8 @@ export function FormNodeEditorPage() {
     const testClaimRef = useRef<ProcessTestClaimEntity | null>(null);
     const [formTheme, setFormTheme] = useState<ResolvedThemeDTO>();
     const [draftPreviewThemeChain, setDraftPreviewThemeChain] = useState<AppTheme[] | null>(null);
+
+    const [lockEditing, setLockEditing] = useState(false);
 
     const [identityMappingInformation, setIdentityMappingInformation] = useState<IdentityConfigElementSlotWithProviders[]>([]);
     const [showIdentityDialog, setShowIdentityDialog] = useState(false);
@@ -515,6 +526,7 @@ export function FormNodeEditorPage() {
         disableAutoScrollForSteps,
         disableElementContextMenu,
         hideComponentTree,
+        hideAiChat,
     } = useAppSelector((state: RootState) => state.adminSettings);
 
     const [pastLoadedForm, setPastLoadedForm] = useState<FormLayoutElement[]>([]);
@@ -932,6 +944,16 @@ export function FormNodeEditorPage() {
             checked: !hideComponentTree,
             onToggle: () => {
                 dispatch(toggleComponentTree());
+            },
+        },
+        {
+            type: 'toggle',
+            label: 'KI-Chat anzeigen',
+            icon: <Chat/>,
+            checked: !hideAiChat,
+            visible: AppConfig.aiEnabled,
+            onToggle: () => {
+                dispatch(toggleAiChat());
             },
         },
         {
@@ -1414,8 +1436,8 @@ export function FormNodeEditorPage() {
                                 !hideComponentTree &&
                                 (
                                     <Allotment.Pane
-                                        minSize={480}
-                                        preferredSize={480}
+                                        minSize={380}
+                                        preferredSize={380}
                                     >
                                         <Paper
                                             sx={{
@@ -1431,7 +1453,7 @@ export function FormNodeEditorPage() {
                                             <ElementTree
                                                 value={formLayout}
                                                 onChange={handlePatch}
-                                                editable={isEditable}
+                                                editable={isEditable && !lockEditing}
                                                 displayContext={ElementDisplayContext.CustomerFacing}
                                                 allowElementIdEditing={false}
                                                 highlightElementId={highlightElementId}
@@ -1442,8 +1464,35 @@ export function FormNodeEditorPage() {
                                             />
                                         </Paper>
                                     </Allotment.Pane>
-                                )}
-
+                                )
+                            }
+                            {/* AI Chat */}
+                            {
+                                !hideAiChat &&
+                                AppConfig.aiEnabled &&
+                                (
+                                    <Allotment.Pane
+                                        minSize={380}
+                                        preferredSize={380}
+                                    >
+                                        <AiChatWindow
+                                            rootElement={formLayout}
+                                            targetRootType={ElementType.FormLayout}
+                                            onElementChange={(element) => {
+                                                if (element.type === ElementType.FormLayout) {
+                                                    handlePatch(element as FormLayoutElement);
+                                                }
+                                            }}
+                                            onThinking={(isThinking) => {
+                                                setLockEditing(isThinking);
+                                            }}
+                                            onClose={() => {
+                                                dispatch(toggleAiChat());
+                                            }}
+                                        />
+                                    </Allotment.Pane>
+                                )
+                            }
                         </Allotment>
                     </RootStructureActionsContextProvider>
 
@@ -1472,7 +1521,6 @@ export function FormNodeEditorPage() {
 
                         </Allotment.Pane>
                     )}
-
                 </Allotment>
             </Box>
 

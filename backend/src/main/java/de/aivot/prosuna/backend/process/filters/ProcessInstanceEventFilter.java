@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
@@ -20,6 +21,14 @@ public class ProcessInstanceEventFilter implements Filter<ProcessInstanceEventEn
     private Boolean isAudit;
     private Boolean isNotAudit;
     private String title;
+    @Nullable
+    private Boolean historyRelevant;
+    @Nullable
+    private String concernedUserId;
+    @Nullable
+    private String concernedIdentityId;
+    @Nullable
+    private String concernedIdentityTitle;
 
     public static ProcessInstanceEventFilter create() {
         return new ProcessInstanceEventFilter();
@@ -39,6 +48,10 @@ public class ProcessInstanceEventFilter implements Filter<ProcessInstanceEventEn
                 .withNotEquals("isTechnical", isNotTechnical)
                 .withEquals("isAudit", isAudit)
                 .withNotEquals("isAudit", isNotAudit)
+                .withEquals("isHistoryRelevant", historyRelevant)
+                .withEquals("concernedUserId", concernedUserId)
+                .withEquals("concernedIdentityId", concernedIdentityId)
+                .withContains("concernedIdentityTitle", concernedIdentityTitle)
                 .withContains("title", title);
 
         return builder.build();
@@ -131,6 +144,46 @@ public class ProcessInstanceEventFilter implements Filter<ProcessInstanceEventEn
 
     public ProcessInstanceEventFilter setTitle(String title) {
         this.title = title;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getHistoryRelevant() {
+        return historyRelevant;
+    }
+
+    public ProcessInstanceEventFilter setHistoryRelevant(@Nullable Boolean historyRelevant) {
+        this.historyRelevant = historyRelevant;
+        return this;
+    }
+
+    @Nullable
+    public String getConcernedUserId() {
+        return concernedUserId;
+    }
+
+    public ProcessInstanceEventFilter setConcernedUserId(@Nullable String concernedUserId) {
+        this.concernedUserId = concernedUserId;
+        return this;
+    }
+
+    @Nullable
+    public String getConcernedIdentityId() {
+        return concernedIdentityId;
+    }
+
+    public ProcessInstanceEventFilter setConcernedIdentityId(@Nullable String concernedIdentityId) {
+        this.concernedIdentityId = concernedIdentityId;
+        return this;
+    }
+
+    @Nullable
+    public String getConcernedIdentityTitle() {
+        return concernedIdentityTitle;
+    }
+
+    public ProcessInstanceEventFilter setConcernedIdentityTitle(@Nullable String concernedIdentityTitle) {
+        this.concernedIdentityTitle = concernedIdentityTitle;
         return this;
     }
 }

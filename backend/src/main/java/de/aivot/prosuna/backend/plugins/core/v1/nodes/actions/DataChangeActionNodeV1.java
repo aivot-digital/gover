@@ -34,6 +34,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
@@ -53,6 +55,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 @Component
 public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeActionNodeV1.DataChangeActionNodeConfig> {
@@ -86,6 +90,14 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         this.elementDataTransformService = elementDataTransformService;
         this.elementDerivationService = elementDerivationService;
         this.authoredInputValueService = authoredInputValueService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<DataChangeActionNodeV1.DataChangeActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Die Vorgangsdaten wurden" + summary.eventAt("processedAt") + " durch " + summary.actor() + " geändert."
+                + section("Vermerk", summary.data(OUTPUT_REMARK));
     }
 
     @Nonnull

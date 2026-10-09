@@ -44,7 +44,7 @@ export function StatusTable(props: StatusTableProps) {
             }}
         >
             {
-                props.description != null &&
+                props.label != null &&
                 <Box
                     sx={{
                         display: "flex",

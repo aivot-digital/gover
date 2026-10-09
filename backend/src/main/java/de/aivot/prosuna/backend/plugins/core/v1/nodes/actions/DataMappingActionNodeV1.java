@@ -23,6 +23,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
@@ -39,6 +41,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.list;
+
 @Component
 public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappingActionNodeV1.DataMappingActionNodeV1Config> {
     public static final String NODE_KEY = "data_mapping";
@@ -47,6 +53,26 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
 
     private record RuleExecutionResult(Object sourceValue,
                                        Object mappedValue) {
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<DataMappingActionNodeV1.DataMappingActionNodeV1Config> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var ruleCount = summary.data("mappedRuleCount");
+        var singular = ruleCount instanceof Number count && count.longValue() == 1;
+        var markdown = new StringBuilder("Die Vorgangsdaten wurden anhand von " + text(ruleCount)
+                + (singular ? " Regel angepasst." : " Regeln angepasst."));
+        for (var entry : list(summary.data("mappedValues"))) {
+            var rule = map(entry);
+            var action = Boolean.TRUE.equals(rule.get("deleteOnly")) ? "Gelöscht"
+                    : Boolean.TRUE.equals(rule.get("cleanupSource")) ? "Verschoben" : "Kopiert";
+            markdown.append("\n\n- ").append(action).append(": ").append(text(rule.get("originalPath")));
+            if (!Boolean.TRUE.equals(rule.get("deleteOnly"))) {
+                markdown.append(" → ").append(text(rule.get("newPath")));
+            }
+        }
+        return markdown.toString();
     }
 
     @Nonnull

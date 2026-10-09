@@ -67,23 +67,16 @@ export function formatDateTimeWithRelative(value?: string | null, fallback = 'Ni
         return <ProcessEmptyValue>{fallback}</ProcessEmptyValue>;
     }
 
-    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy – HH:mm');
-    const relative = formatRelativeInstantInApplicationTimeZone(value);
-    if (formatted == null || relative == null) {
+    const formattedDate = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy');
+    const formattedTime = formatInstantInApplicationTimeZone(value, 'HH:mm');
+
+    if (formattedDate == null || formattedTime == null) {
         return <ProcessEmptyValue>{fallback}</ProcessEmptyValue>;
     }
 
     return (
         <Box component="span">
-            {formatted} Uhr{' '}
-            <Box
-                component="span"
-                sx={{
-                    color: 'text.secondary',
-                }}
-            >
-                ({relative})
-            </Box>
+            {formattedDate} um {formattedTime} Uhr
         </Box>
     );
 }

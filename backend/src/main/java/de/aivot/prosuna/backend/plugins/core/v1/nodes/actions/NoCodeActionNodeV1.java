@@ -27,6 +27,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -51,6 +53,8 @@ import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 
 @Component
 public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNodeV1.NoCodeActionNodeConfiguration> {
@@ -83,6 +87,14 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
     public NoCodeActionNodeV1(NoCodeEvaluationService noCodeEvaluationService) {
         this.noCodeEvaluationService = noCodeEvaluationService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<NoCodeActionNodeV1.NoCodeActionNodeConfiguration> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Die No-Code-Logik wurde erfolgreich ausgeführt."
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
