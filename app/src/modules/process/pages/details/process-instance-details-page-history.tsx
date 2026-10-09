@@ -414,6 +414,9 @@ function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEnt
 }
 
 function getTaskDeadlineChipProps(task?: ProcessInstanceTaskEntity): Pick<ChipProps, 'color' | 'label'> | null {
+    if (task?.status === ProcessTaskStatus.DeadlineExceeded) {
+        return {color: 'error', label: 'Frist überschritten'};
+    }
     if (task?.deadline == null) {
         return null;
     }

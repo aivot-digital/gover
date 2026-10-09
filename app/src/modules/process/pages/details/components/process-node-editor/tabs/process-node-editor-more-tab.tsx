@@ -81,7 +81,7 @@ export function ProcessNodeEditorMoreTab() {
                     />
                     <CheckboxFieldComponent
                         label={`Harte Frist: ${definition.label}`}
-                        hint={`Stellt den Ausgang „${definition.port.label}“ bereit. Ohne diese Option kann die Frist ohne Prozessübergang verstreichen. Die automatische Weiterleitung bei Fristablauf ist noch nicht verfügbar.`}
+                        hint={`Bei Fristüberschreitung wird die Aufgabe beendet und der Prozess über den Ausgang „${definition.port.label}“ fortgesetzt. Ohne diese Option kann die Frist ohne Prozessübergang verstreichen.`}
                         value={setting.strict}
                         onChange={(value) => setNode({
                             ...node,

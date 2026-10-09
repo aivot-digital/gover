@@ -172,6 +172,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 return theme.palette.warning.main;
             case ProcessTaskStatus.Aborted:
             case ProcessTaskStatus.Failed:
+            case ProcessTaskStatus.DeadlineExceeded:
                 return theme.palette.error.main;
             default:
                 return null;

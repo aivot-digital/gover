@@ -12,6 +12,7 @@ import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/Payme
 import ContractEdit from '@aivot/mui-material-symbols-400-n25-outlined/ContractEdit';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
+import TimerOff from '@aivot/mui-material-symbols-400-n25-outlined/TimerOff';
 
 interface ProcessInstanceTaskStatusIconProps {
     status: ProcessTaskStatus;
@@ -36,6 +37,8 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
     }
 
     switch (status) {
+        case ProcessTaskStatus.DeadlineExceeded:
+            return <Tooltip title="Frist überschritten"><TimerOff color="error"/></Tooltip>;
         case ProcessTaskStatus.Running:
             return (
                 <Tooltip

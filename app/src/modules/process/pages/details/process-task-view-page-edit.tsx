@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Stack, Typography} from '@mui/material';
+import {Alert, Box, Stack, Typography} from '@mui/material';
 import {Blocker, useBeforeUnload, useBlocker, useNavigate} from 'react-router-dom';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
@@ -44,6 +44,7 @@ import {ProcessInstanceAttachmentSetApiService} from '../../services/process-ins
 import {ProcessTaskViewAttachmentProvider} from './process-task-view-attachment-context';
 import {BaseApiService} from '../../../../services/base-api-service';
 import {TaskViewEventButtons} from '../../components/task-view-event-buttons';
+import {isTaskDeadlineExceededError} from '../../utils/task-deadline-error';
 
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
 const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
@@ -64,6 +65,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const isResolvingBlockedNavigationRef = useRef(false);
     const ignoreAuthoredValuesChangeRef = useRef(false);
     const skipChangeBlockerRef = useRef(false);
+    const deadlineExceededRef = useRef(false);
+    const [deadlineExceeded, setDeadlineExceeded] = useState(false);
 
     const [taskView, setTaskView] = useState<TaskView>();
     const [taskInputData, setTaskInputData] = useState<AuthoredElementValues>({});
@@ -104,9 +107,25 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         ),
     );
 
+    const handleDeadlineExceeded = useCallback((error: unknown): boolean => {
+        if (!isTaskDeadlineExceededError(error)) return false;
+        deadlineExceededRef.current = true;
+        setDeadlineExceeded(true);
+        pendingOfflineRetryRef.current = false;
+        skipChangeBlockerRef.current = true;
+        setPendingBlockedNavigation(null);
+        if (pushUpdateTimeoutRef.current != null) {
+            window.clearTimeout(pushUpdateTimeoutRef.current);
+            pushUpdateTimeoutRef.current = null;
+        }
+        dispatchProcessAssignedTaskCountRefreshEvent();
+        refresh();
+        return true;
+    }, [refresh]);
+
     const saveTaskInputData = useCallback(
         async (payload: AuthoredElementValues): Promise<boolean> => {
-            if (item == null) {
+            if (item == null || deadlineExceededRef.current) {
                 return false;
             }
 
@@ -123,6 +142,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             if (inFlightSavePromiseRef.current != null) {
                 await inFlightSavePromiseRef.current;
+
+                if (deadlineExceededRef.current) return false;
 
                 if (deepEquals(payload, lastPersistedTaskInputDataRef.current)) {
                     return true;
@@ -172,6 +193,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         return false;
                     }
 
+                    if (handleDeadlineExceeded(err)) return false;
+
                     if (isOfflineApiError(err)) {
                         pendingOfflineRetryRef.current = true;
                         setTaskInputDataSaveState(ProcessTaskInputSaveState.RetryQueued);
@@ -196,7 +219,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             return await savePromise;
         },
-        [dispatch, item, refresh],
+        [dispatch, handleDeadlineExceeded, item, refresh],
     );
 
     const flushCurrentTaskInputData = useCallback(async (): Promise<boolean> => {
@@ -238,6 +261,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         let cancelled = false;
         const currentTaskSession = ++taskSessionRef.current;
 
+        deadlineExceededRef.current = false;
+        setDeadlineExceeded(false);
+
         pendingOfflineRetryRef.current = false;
         inFlightSavePromiseRef.current = null;
         isResolvingBlockedNavigationRef.current = false;
@@ -248,6 +274,12 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         if (pushUpdateTimeoutRef.current != null) {
             window.clearTimeout(pushUpdateTimeoutRef.current);
             pushUpdateTimeoutRef.current = null;
+        }
+
+        if (item?.task.status === ProcessTaskStatus.DeadlineExceeded) {
+            deadlineExceededRef.current = true;
+            skipChangeBlockerRef.current = true;
+            return () => { cancelled = true; };
         }
 
         if (item == null) {
@@ -304,7 +336,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, item?.task.id, item?.task.processInstanceId]);
+    }, [dispatch, item?.task.id, item?.task.processInstanceId, item?.task.status === ProcessTaskStatus.DeadlineExceeded]);
 
     useEffect(() => {
         const handleOnline = () => {
@@ -467,7 +499,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     );
 
     const handleTaskViewEvent = async (evt: TaskViewEvent, eventPayload: AuthoredElementValues) => {
-        if (item == null || taskView == null) {
+        if (item == null || taskView == null || deadlineExceededRef.current) {
             return;
         }
 
@@ -482,6 +514,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         if (inFlightSavePromiseRef.current != null) {
             await inFlightSavePromiseRef.current;
         }
+
+        if (deadlineExceededRef.current) return;
 
         dispatch(
             setLoadingMessage({
@@ -530,6 +564,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }, 1);
             })
             .catch((err) => {
+                if (handleDeadlineExceeded(err)) {
+                    return;
+                }
                 if (isApiError(err) && isDerivedRuntimeElementData(err.details)) {
                     dispatch(showErrorSnackbar(err.message));
                     setDerivedErrors(err.details);
@@ -539,7 +576,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             })
             .finally(() => {
                 ignoreAuthoredValuesChangeRef.current = false;
-                if (!shouldNavigateAway) {
+                if (!shouldNavigateAway && !deadlineExceededRef.current) {
                     skipChangeBlockerRef.current = false;
                 }
                 dispatch(clearLoadingMessage());
@@ -564,7 +601,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             return;
         }
 
-        if (ignoreAuthoredValuesChangeRef.current) {
+        if (ignoreAuthoredValuesChangeRef.current || deadlineExceededRef.current) {
             return;
         }
 
@@ -690,6 +727,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
     if (item == null) {
         return <GenericDetailsSkeleton />;
+    }
+
+    if (deadlineExceeded || item.task.status === ProcessTaskStatus.DeadlineExceeded) {
+        return <Alert severity="error">Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
     }
 
     return (

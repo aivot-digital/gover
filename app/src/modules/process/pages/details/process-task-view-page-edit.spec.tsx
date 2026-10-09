@@ -118,6 +118,37 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         vi.useRealTimers();
     });
 
+    it('does not load an editable view for an already expired task', async () => {
+        testState.item.task.status = ProcessTaskStatus.DeadlineExceeded;
+        const getTaskView = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getStaffTaskView');
+        const router = createMemoryRouter([{path: '/', element: <ProcessTaskViewPageEdit/>}]);
+        render(<RouterProvider router={router}/>);
+
+        expect(screen.getByRole('alert')).toHaveTextContent('Eine Bearbeitung ist nicht mehr möglich.');
+        expect(getTaskView).not.toHaveBeenCalled();
+    });
+
+    it('stops autosave and refreshes the task when its deadline expires', async () => {
+        const {putTaskView} = await renderPage({});
+        putTaskView.mockRejectedValue({
+            status: 409,
+            message: 'Frist überschritten',
+            displayableToUser: true,
+            details: {reason: 'task_deadline_exceeded'},
+        });
+        vi.useFakeTimers();
+        testState.nextValues = {field: literalAuthoredValue('Late input')};
+        fireEvent.click(screen.getByRole('button', {name: 'Werte ändern'}));
+        await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+
+        expect(screen.getByRole('alert')).toHaveTextContent('Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen.');
+        expect(screen.queryByRole('button', {name: 'Werte ändern'})).not.toBeInTheDocument();
+        expect(testState.refresh).toHaveBeenCalledOnce();
+        fireEvent(window, new Event('online'));
+        await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+        expect(putTaskView).toHaveBeenCalledOnce();
+    });
+
     it.each([
         {
             description: 'the first row of a replicating list is removed',
