@@ -2,11 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect;
 
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessTestClaimEntity;
+import de.aivot.prosuna.backend.process.entities.*;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
@@ -19,6 +15,7 @@ import dev.fitko.fitconnect.rest.model.event.problems.metadata.UnsupportedDataSc
 import dev.fitko.fitconnect.rest.model.submission.SubmissionForPickup;
 import dev.fitko.fitconnect.sdk.api.Attachment;
 import dev.fitko.fitconnect.sdk.api.ReceivedSubmission;
+import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
 import dev.fitko.fitconnect.sdk.clients.Organisation;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -29,13 +26,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-/** Imports one callback submission into a paused process instance and acknowledges it afterwards. */
+/**
+ * Imports one callback submission into a paused process instance and acknowledges it afterwards.
+ */
 @Service
 public class FitConnectTriggerSubmissionImportServiceV1 {
     private static final Logger logger = LoggerFactory.getLogger(FitConnectTriggerSubmissionImportServiceV1.class);
@@ -225,10 +220,9 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
                 .entries()
                 .stream()
                 .filter(event -> event.event() == Event.SUBMIT_SUBMISSION)
-                .map(event -> event.issueTime())
-                .filter(java.util.Objects::nonNull)
-                .max(Date::compareTo)
-                .map(Date::toInstant)
+                .map(CaseEvent::issueTime)
+                .filter(Objects::nonNull)
+                .max(Instant::compareTo)
                 .orElse(null);
     }
 
