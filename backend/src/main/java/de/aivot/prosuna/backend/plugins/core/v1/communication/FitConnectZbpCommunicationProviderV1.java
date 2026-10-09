@@ -1,12 +1,12 @@
 package de.aivot.prosuna.backend.plugins.core.v1.communication;
 
+import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefinition;
-import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -15,7 +15,10 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
@@ -36,14 +39,10 @@ import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
 import dev.fitko.fitconnect.rest.model.event.EventState;
 import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
 import dev.fitko.fitconnect.sdk.FitConnectSdk;
-import dev.fitko.fitconnect.sdk.api.Addressing;
-import dev.fitko.fitconnect.sdk.api.Attachment;
-import dev.fitko.fitconnect.sdk.api.OutgoingSubmission;
-import dev.fitko.fitconnect.sdk.api.Participant;
-import dev.fitko.fitconnect.sdk.api.SubmissionData;
+import dev.fitko.fitconnect.sdk.api.*;
 import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
 import dev.fitko.fitconnect.sdk.clients.OnlineService;
-import dev.fitko.fitconnect.zbp.internal.ZBPEnvelopeBuilder;
+import dev.fitko.fitconnect.zbp.ZBPEnvelopeBuilder;
 import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
 import dev.fitko.fitconnect.zbp.model.AuthorKeyPair;
 import dev.fitko.fitconnect.zbp.model.CreateMessage;
@@ -61,7 +60,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Sends identity-bound messages and attachments to ZBP through the FIT-Connect bridge service. */
+/**
+ * Sends identity-bound messages and attachments to ZBP through the FIT-Connect bridge service.
+ */
 @Component
 public class FitConnectZbpCommunicationProviderV1 implements CommunicationProviderDefinition<FitConnectZbpCommunicationProviderV1.Config, FitConnectZbpCommunicationProviderV1.IdentityBinding> {
     public static final String COMPONENT_KEY = "fit_connect_zbp_communication_provider";

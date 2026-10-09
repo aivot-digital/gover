@@ -1,20 +1,16 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
-import de.aivot.prosuna.backend.process.entities.ProcessEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
-import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
+import de.aivot.prosuna.backend.process.entities.*;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
-import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
@@ -33,27 +29,13 @@ import dev.fitko.fitconnect.sdk.exceptions.FitConnectSenderException;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.Instant;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class FitConnectSendJsonActionNodeV1Test {
     private static final UUID DESTINATION_ID = UUID.fromString("22cc92dc-6145-4d29-ab18-4e8b4baaf3a8");
@@ -274,7 +256,7 @@ class FitConnectSendJsonActionNodeV1Test {
         return new TransferLog(List.of(
                 CaseEvent.builder()
                         .event(event)
-                        .issueTime(new Date())
+                        .issueTime(Instant.now())
                         .problems(List.of())
                         .build()
         ));
