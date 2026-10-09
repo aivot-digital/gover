@@ -67,6 +67,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -249,6 +250,14 @@ class WriteExternalStorageActionNodeV1Test {
         ), result.getNodeData().get("storagePathsFromRoot"));
         assertEquals(List.of("alpha.PDF", "zeta.docx", "hundeversicherung.pdf"), result.getNodeData().get("fileNames"));
         assertEquals(3, result.getNodeData().get("count"));
+        var snapshot = de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map(result.getRuntimeData().get("executionSummary"));
+        var documents = de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.list(snapshot.get("documents"));
+        assertEquals(3, documents.size());
+        var firstDocument = de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map(documents.getFirst());
+        assertEquals("/case/123/documents/alpha.PDF", firstDocument.get("path"));
+        assertEquals("documents", firstDocument.get("dataKey"));
+        assertNotNull(firstDocument.get("attachmentKey"));
+        assertNotNull(firstDocument.get("providerName"));
         assertEquals(List.of(
                 new StoredDocument("/case/123/documents/alpha.PDF", "alpha.PDF"),
                 new StoredDocument("/case/123/documents/zeta.docx", "zeta.docx"),

@@ -216,7 +216,8 @@ public class ProcessInstanceController {
                     null,
                     null,
                     null,
-                    processInstance.getInitialNodeId()
+                    processInstance.getInitialNodeId(),
+                    null
             );
         } else {
             if (latestTask.getStatus() != ProcessTaskStatus.Failed) {
@@ -228,7 +229,8 @@ public class ProcessInstanceController {
                     latestTask.getPreviousProcessInstanceTaskId(),
                     latestTask.getPreviousProcessNodeId(),
                     latestTask.getPreviousProcessNodePortKey(),
-                    latestTask.getProcessNodeId()
+                    latestTask.getProcessNodeId(),
+                    latestTask.getId()
             );
         }
 

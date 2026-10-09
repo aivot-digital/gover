@@ -32,6 +32,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
@@ -51,6 +53,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 @Component
 public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNodeV1.ManualActionNodeConfig> {
@@ -85,6 +89,16 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         this.elementDataTransformService = elementDataTransformService;
         this.elementDerivationService = elementDerivationService;
         this.authoredInputValueService = authoredInputValueService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<ManualActionNodeV1.ManualActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var configuration = context.configurationOfExecutingNode();
+        return "Die manuelle Aufgabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " abgeschlossen."
+                + section("Beschreibung der Aufgabe", configuration.taskDescription)
+                + section("Vermerk", summary.data(OUTPUT_REMARK));
     }
 
     @Nonnull

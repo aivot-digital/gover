@@ -152,6 +152,38 @@ function renderList(
 describe('ProcessInstanceIdentityList', () => {
     afterEach(() => vi.restoreAllMocks());
 
+    it.each([emailIdentity, providerIdentity])('shows the stored title and key for $type identities', (identity) => {
+        renderList({[identity.identityId]: {...identity, title: 'Kontaktperson'}}, false, false);
+
+        const article = screen.getByRole('article', {name: `Identität Kontaktperson (${identity.identityId})`});
+        expect(within(article).getByRole('heading', {level: 3, name: 'Kontaktperson'})).toBeInTheDocument();
+        expect(within(article).getByText(identity.identityId)).toBeInTheDocument();
+        if (identity.type === 'Email') {
+            expect(within(article).getByRole('table', {
+                name: `Attribute der Identität Kontaktperson (${identity.identityId})`,
+            })).toBeInTheDocument();
+        }
+    });
+
+    it.each([undefined, null, '', '   '])('keeps the key as the only heading when the title is %s', (title) => {
+        renderList({contact: {...emailIdentity, title}});
+
+        const article = screen.getByRole('article', {name: 'Identität contact'});
+        expect(within(article).getByRole('heading', {level: 3, name: 'contact'})).toBeInTheDocument();
+        expect(within(article).getAllByText('contact')).toHaveLength(1);
+    });
+
+    it('keeps sorting by key when the titles have a different order', () => {
+        renderList({
+            zeta: {...emailIdentity, identityId: 'zeta', title: 'Antragstellende Person'},
+            alpha: {...emailIdentity, identityId: 'alpha', title: 'Vertretung'},
+        });
+
+        const articles = screen.getAllByRole('article');
+        expect(within(articles[0]).getByRole('heading', {name: 'Vertretung'})).toBeInTheDocument();
+        expect(within(articles[1]).getByRole('heading', {name: 'Antragstellende Person'})).toBeInTheDocument();
+    });
+
     it('resolves and displays the selected identity provider, binding, and communication provider', async () => {
         const listIdentityProviders = mockIdentityProviders();
         const {listProviders, listBindings} = mockCommunicationProviders();

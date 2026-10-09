@@ -19,6 +19,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 import java.util.Map;
@@ -101,6 +102,17 @@ class CommunicationServiceTest {
         when(definition.supportsIdentityProvider(identityProvider)).thenReturn(true);
         when(configurationService.mapProviderConfiguration(provider, definition)).thenReturn("provider-config");
         when(configurationService.mapBindingConfiguration(binding, identityProvider, definition)).thenReturn("binding-config");
+    }
+
+    @Test
+    void deliveryChannelUsesSelectedBindingAndToleratesUnavailableMetadata() {
+        assertEquals("E-Mail", communicationService.describeDeliveryChannel(null));
+        binding.setName("Servicekonto");
+        assertEquals("Servicekonto", communicationService.describeDeliveryChannel(identity));
+        when(bindingRepository.findById(12)).thenReturn(Optional.empty());
+        assertNull(communicationService.describeDeliveryChannel(identity));
+        when(bindingRepository.findById(12)).thenThrow(new IllegalStateException("Unavailable"));
+        assertNull(communicationService.describeDeliveryChannel(identity));
     }
 
     @Test

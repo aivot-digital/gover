@@ -11,6 +11,7 @@ export interface ProcessInstanceEventLogContext {
 
 export interface ProcessInstanceEventLogTaskContext {
     id: number;
+    restartForTaskId: number | null;
     name: string;
     started: string;
     finished: string | null;
@@ -21,15 +22,21 @@ export interface ProcessInstanceEventLogEntry {
     id: number;
     processInstanceId: number;
     processInstanceTaskId: number | null;
+    restartForTaskId: number | null;
     level: ProcessNodeExecutionLogLevel;
     technical: boolean;
     audit: boolean;
+    historyRelevant: boolean;
     title: string;
     message: string;
     details: Record<string, unknown>;
     timestamp: string;
     triggeringUserId: string | null;
     triggeringUserName: string | null;
+    concernedUserId: string | null;
+    concernedUserName: string | null;
+    concernedIdentityId: string | null;
+    concernedIdentityTitle: string | null;
     processNodeName: string | null;
 }
 

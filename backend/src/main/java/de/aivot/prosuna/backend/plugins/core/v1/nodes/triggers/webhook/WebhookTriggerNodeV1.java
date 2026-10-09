@@ -30,6 +30,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -52,6 +54,9 @@ import java.util.LinkedList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.safeUrl;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map;
 
 @Component
 public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTriggerConfigV1> {
@@ -81,6 +86,20 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                                 ProcessNodeRepository processDefinitionNodeRepository) {
         this.publicUrlService = publicUrlService;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<WebhookTriggerConfigV1> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var headers = map(map(summary.data("request")).get("headers"));
+        var referrer = headers.entrySet().stream()
+                .filter(entry -> "referer".equalsIgnoreCase(entry.getKey().toString()))
+                .map(entry -> entry.getValue() instanceof java.util.List<?> values ? values.isEmpty() ? "" : values.getFirst() : entry.getValue())
+                .findFirst().orElse(null);
+        var source = safeUrl(referrer);
+        return "Der Vorgang wurde" + summary.eventAt("started") + " durch einen Aufruf über einen Webhook ausgelöst"
+                + (source.isEmpty() ? "" : " (Quelle: " + source + ")") + ".";
     }
 
     @Nonnull
