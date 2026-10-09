@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.process.models.ProcessTaskDeadlineExceededData;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
@@ -674,6 +675,17 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             );
         }
 
+        if (!provider.getDeadlines(configuration.configuration()).isEmpty()) {
+            var prefix = ProcessTaskDeadlineExceededData.NODE_DATA_KEY;
+            for (var field : List.of(Map.entry("deadlineKey", "Schlüssel der überschrittenen Frist"),
+                    Map.entry("label", "Bezeichnung der überschrittenen Frist"),
+                    Map.entry("deadline", "Zeitpunkt der überschrittenen Frist"),
+                    Map.entry("processedAt", "Zeitpunkt der Fristverarbeitung"))) {
+                currentMetadata.addInputVariable(new InputVariableSuggestion(InputVariableSource.ElementData,
+                        prefix + "." + field.getKey(), node.getDataKey(), field.getValue(),
+                        "Steht nach einer harten Fristüberschreitung zur Verfügung.", node));
+            }
+        }
         addElementMetadataSuggestions(currentMetadata, node);
 
         return currentMetadata;

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.process.models.ProcessTaskDeadlineExceededData;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
@@ -35,6 +36,10 @@ public class ProcessNodePortResolver {
                 return failed();
             }
             var problems = new ArrayList<String>();
+            if (provider.getOutputs().stream().anyMatch(output ->
+                    ProcessTaskDeadlineExceededData.NODE_DATA_KEY.equals(output.key()))) {
+                problems.add("Der Elementdatenschlüssel „_deadlineExceeded“ ist für Fristüberschreitungen reserviert.");
+            }
             var portKeys = new HashSet<String>();
             var deadlineKeys = new HashSet<String>();
             for (var port : ports) {

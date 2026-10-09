@@ -29,6 +29,14 @@ class ProcessNodePortResolverTest {
     static void closeValidators() { VALIDATORS.close(); }
 
     @Test
+    void reservesDeadlineMetadataAgainstProviderOutputCollisions() {
+        when(provider.getOutputs()).thenReturn(List.of(new ProcessNodeOutput("_deadlineExceeded", "Collision", "Reserved", "object")));
+        var result = resolver.resolve(node, provider, List.of());
+        assertTrue(result.ports().isEmpty());
+        assertTrue(result.problems().stream().anyMatch(problem -> problem.contains("_deadlineExceeded")));
+    }
+
+    @Test
     void resolvesZeroOneAndManyPortsFromConfigurationInProviderOrder() throws Exception {
         when(provider.getPorts(any())).thenAnswer(invocation -> ((List<String>) invocation.getArgument(0))
                 .stream().map(ProcessNodePortResolverTest::port).toList());

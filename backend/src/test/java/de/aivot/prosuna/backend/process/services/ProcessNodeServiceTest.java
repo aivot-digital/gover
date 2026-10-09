@@ -332,6 +332,11 @@ class ProcessNodeServiceTest {
                         variable.path().equals("result") &&
                         variable.nodeDataKey().equals("a")
         ));
+        for (var field : List.of("deadlineKey", "label", "deadline", "processedAt")) {
+            assertTrue(result.inputVariables().stream().anyMatch(variable ->
+                    variable.source() == InputVariableSource.ElementData &&
+                            variable.path().equals("_deadlineExceeded." + field) && variable.nodeDataKey().equals("a")));
+        }
         assertTrue(result.inputVariables().stream().anyMatch(variable ->
                 variable.source() == InputVariableSource.ProcessData &&
                         variable.path().equals("foo.bar")

@@ -35,6 +35,34 @@ import static org.mockito.Mockito.when;
 
 class ProcessDataServiceTest {
     @Test
+    void downstreamNodesCanResolveExpiredPhaseWithoutChangingProcessData() {
+        var instance = new ProcessInstanceEntity(
+                42L, "CASE-42", "access-key", 7, 1, ProcessInstanceStatus.Running,
+                null, null, List.of(), new IdentityDataMap(), Instant.now(), Instant.now(),
+                null, null, Map.of(), 11, null, null);
+        var node = new ProcessNodeEntity().setId(11).setProcessId(7).setDataKey("request");
+        var deadlineData = new de.aivot.prosuna.backend.process.models.ProcessTaskDeadlineExceededData(
+                "customer", "Kundenbearbeitung", Instant.EPOCH, Instant.EPOCH.plusSeconds(30)).toMap();
+        var expiredTask = new ProcessInstanceTaskEntity().setId(20L).setProcessNodeId(11)
+                .setStatus(de.aivot.prosuna.backend.process.enums.ProcessTaskStatus.DeadlineExceeded)
+                .setNodeData(Map.of("_deadlineExceeded", deadlineData)).setProcessData(Map.of("existing", true));
+        var nodes = mock(ProcessNodeRepository.class);
+        when(nodes.findAllByProcessId(7)).thenReturn(List.of(node));
+        when(nodes.findById(11)).thenReturn(Optional.of(node));
+        var tasks = mock(ProcessInstanceTaskRepository.class);
+        when(tasks.getLatestTasksByProcessInstanceId(42L)).thenReturn(List.of(expiredTask));
+
+        var data = new ProcessDataService(tasks, nodes, mock(ProcessInstanceAttachmentRepository.class),
+                mock(ProcessInstanceAttachmentSetRepository.class), JsonMapperTestUtils.createMapper())
+                .foldProcessInstanceData(instance, 11, new ProcessInstanceTaskEntity().setId(21L));
+
+        var result = new InputVariableResolver().resolve(new InputVariableReference(InputVariableSource.ElementData,
+                "_deadlineExceeded.deadlineKey", "request"), data);
+        assertEquals(new InputVariableResolver.Resolution(true, "customer"), result);
+        assertEquals(Map.of("existing", true), data.get("$"));
+    }
+
+    @Test
     void foldProcessInstanceData_IncludesAttachmentSetsWithContainedAttachments() {
         var instance = new ProcessInstanceEntity(
                 42L,

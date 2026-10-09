@@ -63,7 +63,7 @@ class ProcessInstanceRestartHistoryTest {
                     started timestamp with time zone default current_timestamp, updated timestamp with time zone,
                     finished timestamp with time zone, runtime interval second, runtime_data text default '{}', node_data text default '{}',
                     process_data text default '{}', process_data_diff text default '{}', assigned_user_id varchar(36),
-                    assigned_customer_identity_id varchar(36), deadline timestamp with time zone,
+                    assigned_customer_identity_id varchar(36), deadline timestamp with time zone, deadline_key varchar(32),
                     postponed_until timestamp with time zone, retry_count int, next_retry_at timestamp with time zone,
                     foreign key (process_instance_id) references process_instances(id) on delete cascade
                 )
