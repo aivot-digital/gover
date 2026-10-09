@@ -21,6 +21,7 @@ import de.aivot.prosuna.backend.process.services.ProcessDataService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.utils.Tuple3;
@@ -52,6 +53,7 @@ public class ProcessWorker {
     private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final ProcessNodeService processNodeService;
+    private final ProcessTaskExecutionService execution;
 
     @Autowired
     public ProcessWorker(ProcessInstanceRepository processInstanceRepository,
@@ -61,7 +63,7 @@ public class ProcessWorker {
                          ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                          ProcessDataService processDataService,
                          ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
-                         ProcessNodeService processNodeService) {
+                         ProcessNodeService processNodeService, ProcessTaskExecutionService execution) {
         this.processInstanceRepository = processInstanceRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
@@ -70,6 +72,7 @@ public class ProcessWorker {
         this.processDataService = processDataService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.processNodeService = processNodeService;
+        this.execution = execution;
     }
 
     @Bean
@@ -84,6 +87,31 @@ public class ProcessWorker {
 
     @RabbitListener(queues = DO_WORK_ON_INSTANCE_QUEUE)
     public void doWorkOnNextNode(DoWorkWorkerPayload payload) {
+        try {
+            execution.inInstance(payload.processInstanceId(), () -> {
+                doWorkOnNextNodeLocked(payload, ProcessTaskStatus.Completed);
+                return null;
+            });
+        } catch (ResponseException exception) {
+            processNodeExecutionLoggerFactory.create(payload.processInstanceId(), null, null, null).logException(exception);
+        }
+    }
+
+    public void doWorkAfterDeadline(@Nonnull DoWorkWorkerPayload payload) throws ResponseException {
+        execution.inInstance(payload.processInstanceId(), () -> {
+            doWorkOnNextNodeLocked(payload, ProcessTaskStatus.DeadlineExceeded);
+            return null;
+        });
+    }
+
+    private void doWorkOnNextNodeLocked(@Nonnull DoWorkWorkerPayload payload, @Nonnull ProcessTaskStatus predecessorStatus) {
+        if (payload.previousTaskId() != null && payload.restartForTaskId() == null) {
+            var predecessor = processInstanceTaskRepository.findById(payload.previousTaskId());
+            // A queued normal transition may outlive a rolled-back request or a deadline transition.
+            if (predecessor.isEmpty() || predecessor.get().getStatus() != predecessorStatus
+                    || !payload.processInstanceId().equals(predecessor.get().getProcessInstanceId())
+                    || !java.util.Objects.equals(payload.previousNodeId(), predecessor.get().getProcessNodeId())) return;
+        }
         ProcessNodeExecutionLogger logger = processNodeExecutionLoggerFactory
                 .create(payload.processInstanceId(), null, null, null);
 
@@ -122,6 +150,18 @@ public class ProcessWorker {
 
     @RabbitListener(queues = RESUME_WORK_ON_INSTANCE_QUEUE)
     public void resumeWorkOnCurrentNode(ResumeWorkWorkerPayload payload) {
+        try {
+            execution.executeBackground(payload.currentProcessInstanceId(), payload.currentTaskId(), () -> {
+                resumeWorkOnCurrentNodeLocked(payload);
+                return null;
+            });
+        } catch (ResponseException exception) {
+            processNodeExecutionLoggerFactory.create(payload.currentProcessInstanceId(), payload.currentTaskId(), null, null)
+                    .logException(exception);
+        }
+    }
+
+    private void resumeWorkOnCurrentNodeLocked(ResumeWorkWorkerPayload payload) {
         var logger = processNodeExecutionLoggerFactory
                 .create(payload.currentProcessInstanceId(), payload.currentTaskId, null, null);
 
@@ -183,7 +223,8 @@ public class ProcessWorker {
                 ));
 
         if (instance.getStatus() == ProcessInstanceStatus.Completed
-                || instance.getStatus() == ProcessInstanceStatus.Aborted) {
+                || instance.getStatus() == ProcessInstanceStatus.Aborted
+                || instance.getStatus() == ProcessInstanceStatus.Paused) {
             // Ignore queued work that arrived after the process reached a terminal state.
             return Optional.empty();
         }

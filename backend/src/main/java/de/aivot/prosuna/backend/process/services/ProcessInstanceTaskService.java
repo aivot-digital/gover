@@ -55,6 +55,12 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
         return processInstanceTaskRepository.findById(id);
     }
 
+    public void authorizeStaffMutation(@Nonnull String userId, @Nonnull Long instanceId, @Nonnull Long taskId) throws ResponseException {
+        var task = retrieve(taskId).orElseThrow(ResponseException::notFound);
+        if (!instanceId.equals(task.getProcessInstanceId())) throw ResponseException.notFound();
+        permissions.requireProcessInstancePermission(userId, instanceId, PROCESS_INSTANCE_EDIT_TASK);
+    }
+
     @Nonnull
     public ProcessInstanceTaskEntity retrieveForStaffView(@Nonnull String userId,
                                                          @Nonnull Long instanceId,
@@ -97,10 +103,7 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
         existingEntity.setStatus(entity.getStatus());
         existingEntity.setStatusOverride(entity.getStatusOverride());
 
-        if (entity.getStatus() == ProcessTaskStatus.Completed ||
-            entity.getStatus() == ProcessTaskStatus.Failed ||
-            entity.getStatus() == ProcessTaskStatus.Aborted
-        ) {
+        if (entity.getStatus().isTerminal() && existingEntity.getFinished() == null) {
             existingEntity.setFinished(Instant.now());
         }
 

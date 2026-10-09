@@ -18,6 +18,17 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInstanceTaskEntity, Long>, JpaSpecificationExecutor<ProcessInstanceTaskEntity> {
+    @Nonnull
+    @Query("""
+            select task.id from ProcessInstanceTaskEntity task
+            join ProcessInstanceEntity instance on instance.id = task.processInstanceId
+            where task.id > :afterId and task.deadline <= :now and task.deadlineKey is not null
+              and task.status in :statuses and instance.status = de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus.Running
+            order by task.id
+            """)
+    List<Long> findDueDeadlineIds(@Param("afterId") long afterId, @Nonnull @Param("now") Instant now,
+                                  @Nonnull @Param("statuses") Collection<ProcessTaskStatus> statuses, @Nonnull Pageable page);
+
     Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdOrderByStartedDescIdDesc(Long processInstanceId);
 
     Optional<ProcessInstanceTaskEntity> findByProcessInstanceIdAndAccessKey(Long processInstanceId, String accessKey);
@@ -32,6 +43,8 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
     Optional<Long> findInstanceIdById(@Param("id") Long id);
 
     List<ProcessInstanceTaskEntity> findAllByProcessInstanceId(Long processInstanceId);
+
+    boolean existsByPreviousProcessInstanceTaskId(Long previousProcessInstanceTaskId);
 
     @Nonnull
     @Query("""

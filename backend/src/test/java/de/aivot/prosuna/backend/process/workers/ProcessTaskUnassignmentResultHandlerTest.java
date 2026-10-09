@@ -69,7 +69,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(1L).setProcessId(10)
             .setStatus(ProcessInstanceStatus.Running).setAssignedUserId("instance-owner").setInitialPayload(Map.of());
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(2L)
-            .setProcessInstanceId(1L).setAssignedUserId("task-owner").setAssignedCustomerIdentityId("customer");
+            .setProcessInstanceId(1L).setStatus(ProcessTaskStatus.Running).setAssignedUserId("task-owner").setAssignedCustomerIdentityId("customer");
     private final UserEntity actor = new UserEntity().setId("actor").setFullName("Ada Beispiel");
     private final ProcessNodeService nodeService = mock(ProcessNodeService.class);
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(

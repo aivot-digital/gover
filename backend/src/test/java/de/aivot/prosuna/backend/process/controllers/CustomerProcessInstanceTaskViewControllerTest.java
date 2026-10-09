@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import static de.aivot.prosuna.backend.process.ProcessTaskExecutionTestSupport.passthrough;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.*;
@@ -115,6 +116,21 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals(AlertType.Success, alert.getAlertType());
         assertEquals(List.of(), response.events());
         assertEquals(Map.of(), response.data());
+        assertNull(response.existingIdentitySlot());
+        assertNull(response.newIdentitySlot());
+    }
+
+    @Test
+    void retrieveShowsExpiredTaskWithoutCompletionMessageOrActions() throws ResponseException {
+        var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), new AuthoredElementValues());
+        fixture.task().setStatus(ProcessTaskStatus.DeadlineExceeded);
+
+        var response = fixture.controller().retrieve(fixture.procAccess(), fixture.taskAccess(), null, null);
+
+        var alert = response.layout().findChild("deadline-exceeded", AlertContentElement.class).orElseThrow();
+        assertEquals("Frist überschritten", alert.getTitle());
+        assertEquals(AlertType.Error, alert.getAlertType());
+        assertEquals(List.of(), response.events());
         assertNull(response.existingIdentitySlot());
         assertNull(response.newIdentitySlot());
     }
@@ -508,7 +524,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
                 customerTaskIdentityService,
-                mock(IdentitySlotService.class)
+                mock(IdentitySlotService.class),
+                passthrough()
         );
 
         var response = controller.update(
@@ -528,7 +545,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals("saved", response.data().getLiteral("extra"));
         assertEquals(List.of(new TaskViewEvent("Submit", "submit")), response.events());
         assertEquals("value", task.getRuntimeData().get("keep"));
-        assertEquals(2, provider.taskViewInvocationCount);
+        assertEquals(3, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -618,7 +635,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
                 mockCustomerTaskIdentityService(),
-                mock(IdentitySlotService.class)
+                mock(IdentitySlotService.class),
+                passthrough()
         );
 
         var response = controller.update(
@@ -637,7 +655,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals(normalizedInputs, response.data());
         assertEquals("customer-root", response.layout().getId());
         assertEquals(List.of(new TaskViewEvent("Submit", "submit")), response.events());
-        assertEquals(1, provider.taskViewInvocationCount);
+        assertEquals(2, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -959,7 +977,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
                 customerTaskIdentityService,
-                identitySlotService
+                identitySlotService,
+                passthrough()
         );
 
         return new CustomerTaskControllerFixture(
@@ -1065,7 +1084,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 prosunaConfig,
                 themeService,
                 customerTaskIdentityService,
-                mock(IdentitySlotService.class)
+                mock(IdentitySlotService.class),
+                passthrough()
         );
 
         return new PaymentConfirmationControllerFixture(

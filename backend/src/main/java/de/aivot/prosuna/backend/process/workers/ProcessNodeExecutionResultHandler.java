@@ -174,7 +174,7 @@ public class ProcessNodeExecutionResultHandler {
     ) throws ProcessNodeExecutionException {
         if (processInstance.getStatus() == ProcessInstanceStatus.Completed
                 || processInstance.getStatus() == ProcessInstanceStatus.Aborted
-                || processInstanceTask.getStatus() == ProcessTaskStatus.Completed) {
+                || processInstanceTask.getStatus().isTerminal()) {
             // A delayed result must not change a finished process or task, including its stored summary.
             return;
         }

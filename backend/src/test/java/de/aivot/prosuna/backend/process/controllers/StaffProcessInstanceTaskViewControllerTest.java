@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import static de.aivot.prosuna.backend.process.ProcessTaskExecutionTestSupport.passthrough;
 import de.aivot.prosuna.backend.core.converters.JsonObjectConverter;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -94,7 +95,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         var inputs = mock(FileUploadMultipartInputService.class);
         var data = mock(ProcessDataService.class);
         var controller = new StaffProcessInstanceTaskViewController(instanceService, taskService, definitions, nodes,
-                handler, userService, logger, derivation, inputs, data);
+                handler, userService, logger, derivation, inputs, data, passthrough());
 
         var error = assertThrows(ResponseException.class, () -> {
             switch (operation) {
@@ -223,7 +224,8 @@ class StaffProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeExecutionLoggerFactory(),
                 elementDerivationService,
                 new PassthroughTaskViewMultipartInputService(),
-                new TestProcessDataService()
+                new TestProcessDataService(),
+                passthrough()
         );
 
         controller.derive(
@@ -539,7 +541,8 @@ class StaffProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeExecutionLoggerFactory(),
                 elementDerivationService,
                 new PassthroughTaskViewMultipartInputService(),
-                new TestProcessDataService()
+                new TestProcessDataService(),
+                passthrough()
         );
 
         return new StaffTaskControllerFixture(jwt, instance, task, controller);

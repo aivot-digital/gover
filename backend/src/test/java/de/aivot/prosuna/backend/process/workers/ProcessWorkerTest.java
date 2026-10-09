@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import static de.aivot.prosuna.backend.process.ProcessTaskExecutionTestSupport.passthrough;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -64,7 +65,8 @@ class ProcessWorkerTest {
                 resultHandler,
                 mock(ProcessDataService.class),
                 mock(ProcessNodeExecutionLoggerFactory.class),
-                mock(ProcessNodeService.class)
+                mock(ProcessNodeService.class),
+                passthrough()
         );
 
         worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
@@ -177,7 +179,8 @@ class ProcessWorkerTest {
                         JsonMapperTestUtils.createMapper()
                 ),
                 new ProcessNodeExecutionLoggerFactory(processInstanceHistoryEventRepository),
-                new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION)
+                new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION),
+                passthrough()
         );
 
         worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
@@ -329,7 +332,8 @@ class ProcessWorkerTest {
                         JsonMapperTestUtils.createMapper()
                 ),
                 new ProcessNodeExecutionLoggerFactory(processInstanceHistoryEventRepository),
-                new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION)
+                new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION),
+                passthrough()
         );
 
         worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
@@ -389,7 +393,7 @@ class ProcessWorkerTest {
         when(executionLogger.withTaskId(100L)).thenReturn(executionLogger);
         var loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
         when(loggerFactory.create(any(), any(), any(), any())).thenReturn(executionLogger);
-        var worker = new ProcessWorker(instances, nodes, definitions, tasks, handler, dataService, loggerFactory, nodeService);
+        var worker = new ProcessWorker(instances, nodes, definitions, tasks, handler, dataService, loggerFactory, nodeService, passthrough());
 
         if (resume) {
             worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
