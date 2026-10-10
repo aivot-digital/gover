@@ -12,6 +12,8 @@ import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityResultState;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityAuthTokenData;
+import de.aivot.prosuna.backend.identity.models.IdentityAuthenticationRedirect;
+import de.aivot.prosuna.backend.identity.models.IdentityCallbackResult;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -60,6 +62,7 @@ public class IdentityService {
     private static final int STATE_NONCE_NUM_BYTES = 32;
     private static final int SESSION_ID_NUM_BYTES = 96;
     private static final int ENTITY_ID_NUM_BYTES = 32;
+    private static final int FLOW_BINDING_SECRET_NUM_BYTES = 64;
     private static final String PKCE_METHOD_S256 = "S256";
 
     private final ProsunaConfig prosunaConfig;
@@ -187,11 +190,11 @@ public class IdentityService {
      * @param providerKey      The key of the identity provider. Can be <code>null</code>.
      * @param origin           The referer of the request, typically from the "Referer" header. Can be <code>null</code>.
      * @param additionalScopes A list of additional scopes to include in the request. Can be <code>null</code>.
-     * @return A {@link URI} representing the constructed redirect URL.
+     * @return The redirect to the identity provider and the secret that callers must store as flow binding cookie in the current browser.
      * @throws ResponseException If the provider key is invalid, the provider is not enabled, the referer is invalid, or any required configuration is missing.
      */
     @Nonnull
-    public URI createRedirectURL(
+    public IdentityAuthenticationRedirect createRedirectURL(
             @Nullable String preexistingIdentitySessionId,
             @Nonnull UUID providerKey,
             @Nonnull String identityId,
@@ -208,6 +211,10 @@ public class IdentityService {
         }
 
         var entityId = generateEntityId();
+
+        // Only the browser that started the authentication receives this secret. The callback requires it, so nobody
+        // can let another person complete an authentication into an identity session they started.
+        var flowBindingSecret = generateFlowBindingSecret();
 
         // Create a new cache entity
         var identityCacheEntity = new IdentityCacheEntity(
@@ -227,12 +234,14 @@ public class IdentityService {
                 null
         );
 
+        identityCacheEntity.setFlowBindingHash(hashFlowBindingSecret(flowBindingSecret));
+
         var combinedScopes = getCombinedScopes(provider, additionalScopes);
 
         var resolvedAuthorizationUri = resolveRelativeOrAbsoluteURL(provider.getAuthorizationEndpoint());
 
         // Create the callback URI
-        var callbackUri = createCallbackUri(provider, identityCacheEntity);
+        var callbackUri = createCallbackUri(providerKey, entityId);
 
         // Create the redirect URL
         var builder = UriComponentsBuilder
@@ -290,9 +299,13 @@ public class IdentityService {
 
         identityCacheRepository.save(identityCacheEntity);
 
-        return builder
-                .build()
-                .toUri();
+        return new IdentityAuthenticationRedirect(
+                builder
+                        .build()
+                        .toUri(),
+                flowBindingSecret,
+                getCallbackPath(providerKey, entityId)
+        );
     }
 
     /**
@@ -301,21 +314,25 @@ public class IdentityService {
      * <p>This method processes the authorization code received from the identity provider,
      * retrieves the authentication token, fetches user information, performs a logout with the identity provider, and caches the identity data for future use.</p>
      *
+     * <p>The callback is only accepted from the browser that started the authentication. After a successful callback,
+     * the identity session receives a new ID, and the callback cannot be used again.</p>
+     *
      * @param providerKey       The key of the identity provider. Can be <code>null</code>.
+     * @param flowBindingSecret The secret from the flow binding cookie of the browser. Can be <code>null</code>.
      * @param authorizationCode The authorization code received from the identity provider. Must not be <code>null</code>.
-     * @return The {@link IdentityCacheEntity} containing the cached identity data.
+     * @return The URL to redirect to and the identity session that contains the authenticated identity.
      * @throws ResponseException If the authorization code is missing, the identity provider is invalid or not enabled, the token cannot be retrieved, user information cannot be
      *                           fetched, or logout fails.
      */
     @Nonnull
-    public String handleCallback(
+    public IdentityCallbackResult handleCallback(
             @Nullable UUID providerKey,
             @Nonnull String identityCacheEntityId,
-            @Nonnull String identitySessionId,
+            @Nullable String flowBindingSecret,
             @Nullable String authorizationCode,
             @Nonnull String state
     ) throws ResponseException {
-        var identity = getValidatedIdentitySession(identityCacheEntityId, identitySessionId, state);
+        var identity = getValidatedIdentitySession(identityCacheEntityId, flowBindingSecret, state);
 
         if (authorizationCode == null) {
             throw ResponseException
@@ -330,7 +347,7 @@ public class IdentityService {
         var authToken = fetchAuthToken(
                 provider,
                 authorizationCode,
-                createCallbackUri(provider, identity),
+                createCallbackUri(provider.getKey(), identity.getId()),
                 identity.getCodeVerifier()
         );
 
@@ -356,15 +373,22 @@ public class IdentityService {
 
         identity.setUniqueIdFromIdentityProvider(uniqueIdFromIdentityProvider);
         identity.setIdentityData(userInfo);
+        // The authentication is complete, so its one-time values must not allow another callback.
+        identity.setStateNonce("");
+        identity.setCodeVerifier(null);
+        identity.setFlowBindingHash(null);
         deleteOtherIdentitiesForSlot(identity, false);
+        var identitySessionId = rotateIdentitySessionId(identity);
         identityCacheRepository
                 .save(identity);
 
-        return UriComponentsBuilder
+        var redirectUrl = UriComponentsBuilder
                 .fromUriString(getStoredOrigin(identity))
                 .queryParam(IdentityQueryParameterConstants.RESULT_STATE_CODE, IdentityResultState.Success.getKey())
                 .build()
                 .toString();
+
+        return new IdentityCallbackResult(redirectUrl, identitySessionId);
     }
 
     /**
@@ -378,21 +402,24 @@ public class IdentityService {
      *   <li><code>state</code>: A state code indicating the type of error, defaulting to "UnknownError".</li>
      * </ul>
      *
-     * @param identitySessionId The identity session identifier from the callback path.
+     * <p>The failed authentication is removed, so its callback cannot be used again.</p>
+     *
+     * @param flowBindingSecret The secret from the flow binding cookie of the browser. Can be <code>null</code>.
      * @param state             The OIDC state nonce returned by the identity provider.
      * @param error             The error code or message. Must not be <code>null</code>.
      * @param errorDescription  A detailed description of the error. Can be <code>null</code>.
      * @return A string representing the constructed error redirect URL.
-     * @throws ResponseException If the identity session is invalid, the state nonce does not match, or the cached origin is missing.
+     * @throws ResponseException If the authentication was not started in this browser, the state nonce does not match, or the cached origin is missing.
      */
     public String createErrorRedirectURL(
             @Nonnull String identityCacheEntityId,
-            @Nonnull String identitySessionId,
+            @Nullable String flowBindingSecret,
             @Nonnull String state,
             @Nonnull String error,
             @Nullable String errorDescription
     ) throws ResponseException {
-        var identity = getValidatedIdentitySession(identityCacheEntityId, identitySessionId, state);
+        var identity = getValidatedIdentitySession(identityCacheEntityId, flowBindingSecret, state);
+        identityCacheRepository.delete(identity);
 
         return UriComponentsBuilder
                 .fromUriString(getStoredOrigin(identity))
@@ -556,7 +583,7 @@ public class IdentityService {
     @Nonnull
     private IdentityCacheEntity getValidatedIdentitySession(
             @Nonnull String identityCacheEntityId,
-            @Nonnull String identitySessionId,
+            @Nullable String flowBindingSecret,
             @Nullable String state
     ) throws ResponseException {
         var identity = identityCacheRepository
@@ -565,8 +592,12 @@ public class IdentityService {
                         .badRequest("Die Identitätssitzung existiert nicht.")
                 );
 
-        if (!Objects.equals(identity.getSessionId(), identitySessionId)) {
-            throw ResponseException.badRequest("Die Identitätssitzung ist ungültig.");
+        // The state and the callback path are known to whoever started the authentication. Only the flow binding
+        // cookie proves that the callback reaches the same browser.
+        if (!matchesFlowBinding(identity, flowBindingSecret)) {
+            throw ResponseException.badRequest(
+                    "Die Anmeldung kann diesem Browser nicht zugeordnet werden. Starten Sie die Anmeldung erneut."
+            );
         }
 
         var storedStateNonce = getStoredStateNonce(identity);
@@ -599,8 +630,8 @@ public class IdentityService {
         if (StringUtils.isNullOrEmpty(identity.getStateNonce())) {
             throw ResponseException
                     .internalServerError(
-                            "Für die Identitätssitzung %s wurde kein state-Nonce gespeichert."
-                                    .formatted(identity.getSessionId())
+                            "Für die Anmeldung %s wurde kein state-Nonce gespeichert."
+                                    .formatted(identity.getId())
                     );
         }
 
@@ -612,8 +643,8 @@ public class IdentityService {
         if (StringUtils.isNullOrEmpty(identity.getOrigin())) {
             throw ResponseException
                     .internalServerError(
-                            "Für die Identitätssitzung %s wurde keine Ursprungs-URL gespeichert."
-                                    .formatted(identity.getSessionId())
+                            "Für die Anmeldung %s wurde keine Ursprungs-URL gespeichert."
+                                    .formatted(identity.getId())
                     );
         }
 
@@ -625,8 +656,8 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Die gespeicherte Ursprungs-URL der Identitätssitzung %s ist ungültig.",
-                            identity.getSessionId()
+                            "Die gespeicherte Ursprungs-URL der Anmeldung %s ist ungültig.",
+                            identity.getId()
                     );
         }
     }
@@ -909,9 +940,71 @@ public class IdentityService {
         return RandomUtils.generateRandomString(ENTITY_ID_NUM_BYTES);
     }
 
-    private String createCallbackUri(@Nonnull IdentityProviderEntity provider, @Nonnull IdentityCacheEntity cacheEntity) {
+    @Nonnull
+    private static String generateFlowBindingSecret() {
+        return RandomUtils.generateRandomString(FLOW_BINDING_SECRET_NUM_BYTES);
+    }
+
+    @Nonnull
+    private static String hashFlowBindingSecret(@Nonnull String flowBindingSecret) {
+        try {
+            var hash = MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(flowBindingSecret.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Der SHA-256 Algorithmus wird nicht unterstützt.", e);
+        }
+    }
+
+    private static boolean matchesFlowBinding(@Nonnull IdentityCacheEntity identity,
+                                              @Nullable String flowBindingSecret) {
+        var storedHash = identity.getFlowBindingHash();
+        if (StringUtils.isNullOrEmpty(storedHash) || StringUtils.isNullOrEmpty(flowBindingSecret)) {
+            return false;
+        }
+
+        return MessageDigest.isEqual(
+                storedHash.getBytes(StandardCharsets.UTF_8),
+                hashFlowBindingSecret(flowBindingSecret).getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    /**
+     * Moves all identities of the session to a new session ID and returns it.
+     * <p>
+     * An authentication must never complete into a session ID that may already be known to someone else.
+     */
+    @Nonnull
+    private String rotateIdentitySessionId(@Nonnull IdentityCacheEntity identity) {
+        var newIdentitySessionId = generateSessionId();
+        var otherSessionIdentities = identityCacheRepository
+                .findAllBySessionId(identity.getSessionId())
+                .stream()
+                .filter(existing -> !Objects.equals(existing.getId(), identity.getId()))
+                .map(existing -> existing.setSessionId(newIdentitySessionId))
+                .toList();
+        identityCacheRepository.saveAll(otherSessionIdentities);
+        identity.setSessionId(newIdentitySessionId);
+        return newIdentitySessionId;
+    }
+
+    /**
+     * Returns the path of the callback for an authentication. The flow binding cookie is restricted to this path.
+     */
+    @Nonnull
+    public String getCallbackPath(@Nonnull UUID providerKey, @Nonnull String identityCacheEntityId) {
+        return URI
+                .create(createCallbackUri(providerKey, identityCacheEntityId))
+                .getPath();
+    }
+
+    @Nonnull
+    private String createCallbackUri(@Nonnull UUID providerKey, @Nonnull String identityCacheEntityId) {
+        // The callback deliberately does not contain the identity session ID, so the session cannot leak through the
+        // identity provider or the browser history.
         return prosunaConfig
-                .createUrl("/api/public/identity/" + provider.getKey() + "/callback/" + cacheEntity.getSessionId() + "/" + cacheEntity.getId() + "/");
+                .createUrl("/api/public/identity/" + providerKey + "/callback/" + identityCacheEntityId + "/");
     }
 
     // endregion

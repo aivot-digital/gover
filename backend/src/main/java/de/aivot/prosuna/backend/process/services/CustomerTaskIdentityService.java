@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityAuthenticationRedirect;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
@@ -20,7 +21,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -125,7 +125,7 @@ public class CustomerTaskIdentityService {
     }
 
     @Nonnull
-    public URI createAuthenticationRedirect(@Nonnull ProcessInstanceEntity processInstance,
+    public IdentityAuthenticationRedirect createAuthenticationRedirect(@Nonnull ProcessInstanceEntity processInstance,
                                             @Nonnull ProcessNodeEntity processNode,
                                             @Nonnull ProcessNodeCustomerView processNodeCustomerView,
                                             @Nullable String identitySessionId,
