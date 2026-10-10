@@ -347,6 +347,12 @@ export function DataObjectItemDetailsPageIndex() {
                     handleInputChange('data')(changedElementData);
                 }}
                 onDerivedDataChange={setDerivedData}
+                onDerive={(authoredElementValues, derivationOptions) => {
+                    const itemsApi = new DataObjectItemsApiService(api, dataObjectSchema.key);
+                    return isNewItem || originalDataObjectItem == null
+                        ? itemsApi.deriveNew(authoredElementValues, derivationOptions)
+                        : itemsApi.derive(originalDataObjectItem.id, authoredElementValues, derivationOptions);
+                }}
                 disabled={!isEditable}
             />
 

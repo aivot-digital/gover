@@ -445,6 +445,20 @@ export function DataObjectSchemaDetailsPageIndex() {
                     }}
                     displayContext={ElementDisplayContext.DataObjectSchema}
                     disabled={isBusy || !isEditable}
+                    onDerive={(schema, authoredElementValues, derivationOptions) => {
+                        const schemasApi = new DataObjectSchemasApiService(api);
+                        if (isNewItem || originalDataObject == null) {
+                            return schemasApi.deriveNew(schema as GroupLayout, authoredElementValues, derivationOptions);
+                        }
+                        // The backend only derives an unsaved schema for users who may update it.
+                        // Everyone else previews the stored schema.
+                        return schemasApi.derive(
+                            originalDataObject.key,
+                            isEditable ? schema as GroupLayout : null,
+                            authoredElementValues,
+                            derivationOptions,
+                        );
+                    }}
                 />
 
                 {

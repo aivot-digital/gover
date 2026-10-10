@@ -10,6 +10,12 @@ import de.aivot.prosuna.backend.config.filters.SystemConfigFilter;
 import de.aivot.prosuna.backend.config.models.SystemConfigDefinition;
 import de.aivot.prosuna.backend.config.permissions.ConfigPermissionProvider;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.elements.dtos.ElementValuesDerivationRequestDTO;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -31,7 +37,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * This controller provides functionality to list, retrieve and update system configurations.
@@ -48,16 +56,19 @@ public class SystemConfigController {
     private final SystemConfigService systemConfigService;
     private final UserService userService;
     private final PermissionService permissionService;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public SystemConfigController(AuditService auditService,
                                   SystemConfigService systemConfigService,
                                   UserService userService,
-                                  PermissionService permissionService) {
+                                  PermissionService permissionService,
+                                  ElementDerivationService elementDerivationService) {
         this.auditService = auditService.createScopedAuditService(SystemConfigController.class, "Systemkonfiguration");
         this.systemConfigService = systemConfigService;
         this.userService = userService;
         this.permissionService = permissionService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @GetMapping("")
@@ -103,6 +114,44 @@ public class SystemConfigController {
 
         return systemConfigService
                 .getSystemConfigDefinitions();
+    }
+
+    @PostMapping("definitions/derive/")
+    @Operation(
+            summary = "Derive System Configuration Category",
+            description = "Derives configuration values against the configuration elements of all system configuration definitions in a category. " +
+                    "Requires the system-level permission `" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "`."
+    )
+    public DerivedRuntimeElementData deriveCategory(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestParam String category,
+            @Nonnull @Valid @RequestBody ElementValuesDerivationRequestDTO request
+    ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
+
+        var configElements = systemConfigService
+                .getSystemConfigDefinitions()
+                .stream()
+                .filter(definition -> definition.getCategory().equals(category))
+                .map(SystemConfigDefinition::getConfigElement)
+                .filter(BaseFormElement.class::isInstance)
+                .map(BaseFormElement.class::cast)
+                .collect(Collectors.toCollection(LinkedList::new));
+
+        if (configElements.isEmpty()) {
+            throw ResponseException.notFound();
+        }
+
+        var categoryLayout = new GroupLayoutElement()
+                .setChildren(configElements);
+        categoryLayout.setId(category);
+
+        return elementDerivationService.derive(new ElementDerivationRequest(
+                categoryLayout,
+                request.authoredElementValues(),
+                request.derivationOptions()
+        ));
     }
 
     @PutMapping("{key}/")

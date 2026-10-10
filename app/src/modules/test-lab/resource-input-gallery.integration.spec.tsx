@@ -3,7 +3,6 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {ResourceInputGallery} from './resource-input-gallery';
 import {AssetsApiService} from '../assets/assets-api-service';
 import {SecretsApiService} from '../secrets/secrets-api-service';
-import {ElementsApiService} from '../elements/elements-api-service';
 import {AssetVisibility} from '../assets/models/asset-visibility';
 
 const mocks = vi.hoisted(() => ({dispatch: vi.fn(), api: {}, assetDialog: vi.fn()}));
@@ -42,7 +41,6 @@ describe('ResourceInputGallery through the view dispatcher', () => {
         vi.spyOn(SecretsApiService.prototype, 'retrieve').mockResolvedValue({
             key: 'secret-key', name: 'Produktionszugang', description: 'Externer Dienst', value: 'never-show-this',
         });
-        vi.spyOn(ElementsApiService.prototype, 'derive');
     });
 
     it('renders the actual resource elements with normal field dimensions and semantics', () => {
@@ -64,7 +62,6 @@ describe('ResourceInputGallery through the view dispatcher', () => {
             visibility: AssetVisibility.Private,
             mimetype: ['application/x-pem-file', 'application/pkix-cert'],
         }));
-        expect(ElementsApiService.prototype.derive).not.toHaveBeenCalled();
     });
 
     it('preserves literal references through selection, read-only mode and clearing', async () => {
@@ -89,6 +86,5 @@ describe('ResourceInputGallery through the view dispatcher', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Zugangsschlüssel: Auswahl entfernen'}));
         expect(screen.getByRole('button', {name: 'Client-Zertifikat – optional Kein Zertifikat ausgewählt'})).toBeEnabled();
         expect(screen.getByRole('button', {name: 'Zugangsschlüssel Geheimnis auswählen'})).toBeEnabled();
-        expect(ElementsApiService.prototype.derive).not.toHaveBeenCalled();
     });
 });

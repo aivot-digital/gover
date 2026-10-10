@@ -1,7 +1,8 @@
 import {BaseApiService} from '../../services/base-api-service';
 import {type SortOrder} from '../../components/generic-list/generic-list-props';
 import {type Page} from '../../models/dtos/page';
-import {type AuthoredElementValues} from '../../models/element-data';
+import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../../models/element-data';
+import {type ElementDerivationOptions} from '../elements/elements-api-service';
 import {
     CommunicationConfigurationLayout,
     CommunicationProvider,
@@ -93,6 +94,20 @@ export class CommunicationProvidersApiService extends BaseApiService {
         });
     }
 
+    public deriveProviderConfiguration(definitionKey: string,
+                                       version: number,
+                                       authoredElementValues: AuthoredElementValues,
+                                       derivationOptions: ElementDerivationOptions,
+                                       abort?: AbortSignal): Promise<DerivedRuntimeElementData> {
+        return this.post(`${this.path}definitions/configuration/derive/`, {
+            authoredElementValues,
+            derivationOptions,
+        }, {
+            query: {definitionKey, version},
+            abort,
+        });
+    }
+
     public async getProviderTestingLayout(id: number): Promise<CommunicationTestingLayout | null> {
         const response = await this.fetch('GET', `${this.path}${id}/test/`);
         const body = await response.text();
@@ -102,6 +117,18 @@ export class CommunicationProvidersApiService extends BaseApiService {
         }
 
         return JSON.parse(body) as CommunicationTestingLayout | null;
+    }
+
+    public deriveProviderTestingInputs(id: number,
+                                       authoredElementValues: AuthoredElementValues,
+                                       derivationOptions: ElementDerivationOptions,
+                                       abort?: AbortSignal): Promise<DerivedRuntimeElementData> {
+        return this.post(`${this.path}${id}/test/derive/`, {
+            authoredElementValues,
+            derivationOptions,
+        }, {
+            abort,
+        });
     }
 
     public testProvider(id: number, inputs: AuthoredElementValues): Promise<CommunicationTestResultLayout> {
@@ -116,6 +143,20 @@ export class CommunicationProvidersApiService extends BaseApiService {
                                          identityProviderKey: string): Promise<CommunicationConfigurationLayout> {
         return this.get(`${this.path}bindings/configuration/`, {
             query: {communicationProviderId, identityProviderKey},
+        });
+    }
+
+    public deriveBindingConfiguration(communicationProviderId: number,
+                                      identityProviderKey: string,
+                                      authoredElementValues: AuthoredElementValues,
+                                      derivationOptions: ElementDerivationOptions,
+                                      abort?: AbortSignal): Promise<DerivedRuntimeElementData> {
+        return this.post(`${this.path}bindings/configuration/derive/`, {
+            authoredElementValues,
+            derivationOptions,
+        }, {
+            query: {communicationProviderId, identityProviderKey},
+            abort,
         });
     }
 

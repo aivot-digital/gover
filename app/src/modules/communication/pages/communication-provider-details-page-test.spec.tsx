@@ -8,7 +8,6 @@ import {
     type CommunicationTestingLayout,
     type CommunicationTestResultLayout,
 } from '../models';
-import {ElementsApiService} from '../../elements/elements-api-service';
 import {CommunicationProviderDetailsPageTest} from './communication-provider-details-page-test';
 
 const testState = vi.hoisted(() => ({
@@ -112,7 +111,7 @@ describe('CommunicationProviderDetailsPageTest', () => {
             .mockResolvedValue(testingLayout);
         const testProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'testProvider')
             .mockResolvedValue(testResultLayout);
-        const derive = vi.spyOn(ElementsApiService.prototype, 'derive')
+        const derive = vi.spyOn(CommunicationProvidersApiService.prototype, 'deriveProviderTestingInputs')
             .mockResolvedValue({effectiveValues: {}, elementStates: {}});
 
         render(<CommunicationProviderDetailsPageTest/>);
@@ -123,21 +122,17 @@ describe('CommunicationProviderDetailsPageTest', () => {
 
         const expectedInputs = {'test-recipient': 'test@example.com'};
         await waitFor(() => expect(testProvider).toHaveBeenCalledWith(7, expectedInputs));
-        expect(derive).toHaveBeenCalledWith({
-            element: testingLayout,
-            authoredElementValues: expectedInputs,
-            derivationOptions: {
-                skipErrorsForElementIds: [],
-                skipVisibilitiesForElementIds: [],
-                skipOverridesForElementIds: [],
-                skipValuesForElementIds: [],
-            },
-            processExecutionData: {
-                $: {},
-                $$: {},
-                _: {},
-            },
-        });
+        const derivationOptions = {
+            skipErrorsForElementIds: [],
+            skipVisibilitiesForElementIds: [],
+            skipOverridesForElementIds: [],
+            skipValuesForElementIds: [],
+        };
+        expect(derive).toHaveBeenCalledWith(7, expectedInputs, derivationOptions);
+
+        // Live derivation of the testing inputs also uses the provider's own testing endpoint.
+        await testState.derivationContextProps[testingLayout.id]?.onDerive(expectedInputs, derivationOptions);
+        expect(derive).toHaveBeenLastCalledWith(7, expectedInputs, derivationOptions, undefined);
         await screen.findByTestId(`element-derivation-context-${testResultLayout.id}`);
         expect(testState.derivationContextProps[testResultLayout.id]).toMatchObject({
             element: testResultLayout,
@@ -163,7 +158,7 @@ describe('CommunicationProviderDetailsPageTest', () => {
         const elementStates: ComputedElementErrors = {
             'test-recipient': {error: 'Die Testempfängeradresse ist erforderlich.'},
         };
-        vi.spyOn(ElementsApiService.prototype, 'derive')
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'deriveProviderTestingInputs')
             .mockResolvedValue({effectiveValues: {}, elementStates});
 
         render(<CommunicationProviderDetailsPageTest/>);
@@ -183,7 +178,7 @@ describe('CommunicationProviderDetailsPageTest', () => {
             .mockResolvedValue(null);
         const testProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'testProvider')
             .mockResolvedValue(testResultLayout);
-        const derive = vi.spyOn(ElementsApiService.prototype, 'derive');
+        const derive = vi.spyOn(CommunicationProvidersApiService.prototype, 'deriveProviderTestingInputs');
 
         render(<CommunicationProviderDetailsPageTest/>);
 
