@@ -7,6 +7,13 @@ import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.prosuna.backend.dataObject.filters.DataObjectSchemaFilter;
 import de.aivot.prosuna.backend.dataObject.permissions.DataObjectPermissionProvider;
 import de.aivot.prosuna.backend.dataObject.services.DataObjectSchemaService;
+import de.aivot.prosuna.backend.elements.dtos.ElementDraftDerivationRequestDTO;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
+import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -41,17 +48,20 @@ public class DataObjectSchemaController {
     private final DataObjectSchemaService service;
     private final UserService userService;
     private final PermissionService permissionService;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public DataObjectSchemaController(AuditService auditService,
                                       DataObjectSchemaService service,
                                       UserService userService,
-                                      PermissionService permissionService) {
+                                      PermissionService permissionService,
+                                      ElementDerivationService elementDerivationService) {
         this.auditService = auditService.createScopedAuditService(DataObjectSchemaController.class, "Datenmodelle");
 
         this.service = service;
         this.userService = userService;
         this.permissionService = permissionService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @GetMapping("")
@@ -126,6 +136,80 @@ public class DataObjectSchemaController {
         return service
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
+    }
+
+    @PostMapping("derive/")
+    @Operation(
+            summary = "Derive New Data Object Schema",
+            description = "Derives values entered into the unsaved schema of a new data object schema. " +
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE + "`."
+    )
+    public DerivedRuntimeElementData deriveNew(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @Valid @RequestBody ElementDraftDerivationRequestDTO request
+    ) throws ResponseException {
+        // Deriving executes the element functions of the schema on the server. An unsaved schema is therefore only
+        // accepted from users who could also store it.
+        permissionService
+                .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE);
+
+        if (request.element() == null) {
+            throw ResponseException.badRequest("Für ein neues Datenmodell muss das Schema angegeben werden.");
+        }
+
+        return deriveUnsavedSchema(request.element(), request);
+    }
+
+    @PostMapping("{key}/derive/")
+    @Operation(
+            summary = "Derive Data Object Schema",
+            description = "Derives values entered into the schema of a data object schema. " +
+                    "Without a schema in the request, the stored schema is derived, which requires the system-level permission `" +
+                    DataObjectPermissionProvider.OBJECT_SCHEMA_READ + "`. " +
+                    "Deriving an unsaved schema requires the system-level permission `" +
+                    DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE + "`."
+    )
+    public DerivedRuntimeElementData derive(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String key,
+            @Nonnull @Valid @RequestBody ElementDraftDerivationRequestDTO request
+    ) throws ResponseException {
+        // Deriving executes the element functions of the schema on the server. An unsaved schema is therefore only
+        // accepted from users who could also store it.
+        permissionService
+                .requireSystemPermission(jwt, request.element() != null
+                        ? DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE
+                        : DataObjectPermissionProvider.OBJECT_SCHEMA_READ);
+
+        var storedSchema = service
+                .retrieve(key)
+                .orElseThrow(ResponseException::notFound);
+
+        if (request.element() != null) {
+            return deriveUnsavedSchema(request.element(), request);
+        }
+
+        return elementDerivationService.derive(new ElementDerivationRequest(
+                storedSchema.getSchema(),
+                request.authoredElementValues(),
+                request.derivationOptions()
+        ));
+    }
+
+    @Nonnull
+    private DerivedRuntimeElementData deriveUnsavedSchema(@Nonnull BaseElement schema,
+                                                          @Nonnull ElementDraftDerivationRequestDTO request) throws ResponseException {
+        if (schema.getType() != ElementType.GroupLayout) {
+            throw ResponseException.badRequest("Das Schema eines Datenmodells muss ein Gruppenlayout sein.");
+        }
+
+        ElementStreamUtils.applyAction(schema, BaseElement::recalculateReferencedIds);
+
+        return elementDerivationService.derive(new ElementDerivationRequest(
+                schema,
+                request.authoredElementValues(),
+                request.derivationOptions()
+        ));
     }
 
     @PutMapping("{key}/")

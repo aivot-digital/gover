@@ -7,6 +7,8 @@ import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntityId;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.prosuna.backend.dataObject.repositories.DataObjectItemRepository;
 import de.aivot.prosuna.backend.dataObject.repositories.DataObjectSchemaRepository;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
@@ -117,6 +119,30 @@ class DataObjectItemServiceTest {
         var error = assertThrows(ResponseException.class, () -> service.create(entity(malformed)));
         assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
         verify(items, never()).save(any());
+    }
+
+    @Test
+    void deriveItemEditorData_ShouldValidateCustomIdsOnlyForNewItems() {
+        var id = text("$id");
+        id.setRequired(true);
+        var name = text("name");
+        name.setRequired(true);
+        var root = new GroupLayoutElement();
+        root.setId("root");
+        root.setChildren(List.of(id, name));
+        var schema = new DataObjectSchemaEntity()
+                .setKey("custom")
+                .setIdGen(DataObjectItemService.ID_GEN_CUSTOM)
+                .setSchema(root);
+        var values = new AuthoredElementValues();
+        values.putLiteral("name", "Ada");
+
+        var newItemData = service.deriveItemEditorData(schema, false, values, new ElementDerivationOptions());
+        var existingItemData = service.deriveItemEditorData(schema, true, values, new ElementDerivationOptions());
+
+        assertTrue(newItemData.hasAnyError());
+        assertFalse(existingItemData.hasAnyError());
+        assertEquals(2, schema.getSchema().getChildren().size());
     }
 
     private static TextInputElement text(String id) {

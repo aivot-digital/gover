@@ -5,9 +5,12 @@ import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntityId;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.prosuna.backend.dataObject.repositories.DataObjectItemRepository;
 import de.aivot.prosuna.backend.dataObject.repositories.DataObjectSchemaRepository;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -199,6 +202,34 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
         return dataObjectItemRepository
                 .save(existingEntity);
+    }
+
+    /**
+     * Derives values entered in the item editor against the stored schema.
+     *
+     * @param existingItem whether the values belong to an existing item instead of a new one
+     */
+    @Nonnull
+    public DerivedRuntimeElementData deriveItemEditorData(@Nonnull DataObjectSchemaEntity schema,
+                                                          boolean existingItem,
+                                                          @Nonnull AuthoredElementValues authoredElementValues,
+                                                          @Nonnull ElementDerivationOptions derivationOptions) {
+        var layout = schema.getSchema();
+
+        if (existingItem && ID_GEN_CUSTOM.equals(schema.getIdGen())) {
+            // Custom IDs are only entered when an item is created. The editor of existing items does not show the ID
+            // field, so it must not be validated either. Copy the schema to leave the managed entity untouched.
+            layout = JsonMapperFactory
+                    .getInstance()
+                    .convertValue(layout, GroupLayoutElement.class);
+            layout.getChildren().removeIf(child -> ID_FIELD_NAME.equals(child.getId()));
+        }
+
+        return elementDerivationService.derive(new ElementDerivationRequest(
+                layout,
+                authoredElementValues,
+                derivationOptions
+        ));
     }
 
     @Nonnull
