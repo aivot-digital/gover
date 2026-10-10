@@ -14,6 +14,8 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefini
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderBindingRepository;
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderRepository;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -210,6 +212,21 @@ public class CommunicationProviderManagementService {
     }
 
     @Nonnull
+    public DerivedRuntimeElementData deriveProviderConfiguration(@Nonnull String definitionKey,
+                                                                 @Nonnull Integer version,
+                                                                 @Nonnull AuthoredElementValues values,
+                                                                 @Nonnull ElementDerivationOptions options) throws ResponseException {
+        return configurationService.deriveLayout(getProviderConfigurationLayout(definitionKey, version), values, options);
+    }
+
+    @Nonnull
+    public DerivedRuntimeElementData deriveProviderTestingInputs(@Nonnull Integer providerId,
+                                                                 @Nonnull AuthoredElementValues values,
+                                                                 @Nonnull ElementDerivationOptions options) throws ResponseException {
+        return configurationService.deriveLayout(getProviderTestingLayout(providerId), values, options);
+    }
+
+    @Nonnull
     public GroupLayoutElement testProvider(@Nonnull Integer providerId,
                                            @Nonnull AuthoredElementValues inputs) throws ResponseException {
         var provider = getProvider(providerId);
@@ -239,6 +256,14 @@ public class CommunicationProviderManagementService {
             throw ResponseException.badRequest("Der Kommunikationsanbieter unterstützt diesen Identitätsanbieter nicht.");
         }
         return definition.getIdentityProviderBindingConfigLayout(identityProvider);
+    }
+
+    @Nonnull
+    public DerivedRuntimeElementData deriveBindingConfiguration(@Nonnull Integer providerId,
+                                                                @Nonnull UUID identityProviderKey,
+                                                                @Nonnull AuthoredElementValues values,
+                                                                @Nonnull ElementDerivationOptions options) throws ResponseException {
+        return configurationService.deriveLayout(getBindingConfigurationLayout(providerId, identityProviderKey), values, options);
     }
 
     private void validateProvider(@Nonnull CommunicationProviderEntity provider) throws ResponseException {
