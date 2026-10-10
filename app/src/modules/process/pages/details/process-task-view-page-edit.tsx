@@ -18,7 +18,7 @@ import {
 } from '../../../../models/element-data';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../../slices/shell-slice';
-import {showApiErrorSnackbar, showErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showWarningSnackbar} from '../../../../slices/snackbar-slice';
 import {withDelay} from '../../../../utils/with-delay';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
 import {
@@ -29,6 +29,7 @@ import {
 } from './process-task-view-page';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
+import {getPreviewableAttachmentMediaType} from '../../utils/process-attachment-preview';
 import {isApiError, isApiUnreachableError, isOfflineApiError} from '../../../../models/api-error';
 import {
     ProcessTaskInputSaveState,
@@ -441,7 +442,19 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 const blob = await new BaseApiService().getBlob(
                     `/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=false`,
                 );
-                const objectUrl = URL.createObjectURL(blob);
+
+                // A blob URL belongs to the application origin. Opening active content such as HTML or SVG
+                // there would execute its scripts with the session of the staff user, so only inert media
+                // types are previewed. All other attachments are downloaded instead.
+                const previewMediaType = getPreviewableAttachmentMediaType(blob.type);
+                if (previewMediaType == null) {
+                    previewWindow.close();
+                    dispatch(showWarningSnackbar('Dieser Dateityp kann nicht in der Vorschau angezeigt werden. Der Anhang wird stattdessen heruntergeladen.'));
+                    await handleDownloadAttachment(attachment);
+                    return;
+                }
+
+                const objectUrl = URL.createObjectURL(new Blob([blob], {type: previewMediaType}));
                 previewWindow.location.replace(objectUrl);
 
                 window.setTimeout(() => {
@@ -452,7 +465,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht angezeigt werden.'));
             }
         },
-        [dispatch],
+        [dispatch, handleDownloadAttachment],
     );
 
     const taskViewAttachmentContextValue = useMemo(
