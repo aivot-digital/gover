@@ -22,12 +22,17 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,11 +40,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class IdentityServiceTest {
@@ -47,6 +54,7 @@ class IdentityServiceTest {
     private static final String VALID_ORIGIN = "https://example.com/origin";
     private static final String VALID_STATE = "state-nonce";
     private static final String VALID_IDENTITY_ID = "identity-1";
+    private static final String VALID_FLOW_SECRET = "flow-binding-secret";
 
     private ProsunaConfig prosunaConfig;
     private IdentityProviderService identityProviderService;
@@ -69,6 +77,8 @@ class IdentityServiceTest {
                 identityProviderService,
                 identityCacheRepository
         );
+        when(prosunaConfig.createUrl(anyString()))
+                .thenAnswer(invocation -> VALID_HOSTNAME + invocation.getArgument(0));
     }
 
     @Test
@@ -155,7 +165,7 @@ class IdentityServiceTest {
         when(identityCacheRepository.save(any(IdentityCacheEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_ORIGIN, additionalScopes, null);
+        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_ORIGIN, additionalScopes, null).redirectUri();
 
         var savedIdentityCaptor = ArgumentCaptor.forClass(IdentityCacheEntity.class);
         verify(identityCacheRepository).save(savedIdentityCaptor.capture());
@@ -244,7 +254,7 @@ class IdentityServiceTest {
         when(identityCacheRepository.save(any(IdentityCacheEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_HOSTNAME, additionalScopes, null);
+        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_HOSTNAME, additionalScopes, null).redirectUri();
 
         assertTrue(result.toString().contains("scope=scope1%20scope2%20scope3"));
     }
@@ -259,7 +269,7 @@ class IdentityServiceTest {
                 .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, cacheEntityId, sessionId, null, VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, null, VALID_STATE)
         );
 
         assertEquals("Es wurde kein Autorisierungscode übergeben.", exception.getMessage());
@@ -276,7 +286,7 @@ class IdentityServiceTest {
                 .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
         );
 
         assertEquals("Der Identitätsanbieter existiert nicht.", exception.getMessage());
@@ -289,7 +299,7 @@ class IdentityServiceTest {
         var sessionId = "identity-session-id";
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
         );
 
         assertEquals("Die Identitätssitzung existiert nicht.", exception.getMessage());
@@ -366,7 +376,7 @@ class IdentityServiceTest {
         when(httpService.get(any(URI.class), any(HttpServiceHeaders.class))).thenReturn(mockUserInfoResponse);
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
 
-        String result = identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE);
+        String result = identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE).redirectUrl();
 
         assertNotNull(result);
         assertTrue(result.contains("identity-state=0"));
@@ -410,7 +420,7 @@ class IdentityServiceTest {
 
         for (int attempt = 0; attempt < 3; attempt++) {
             var exception = assertThrows(ResponseException.class, () ->
-                    identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
+                    identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
             );
             assertTrue(exception.getMessage().contains("Identitätenkennung sub keinen Wert"));
         }
@@ -445,7 +455,7 @@ class IdentityServiceTest {
         )).thenReturn(mockResponse);
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
         );
 
         assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Identitätsanbieter null (" + providerKey + "): 400", exception.getMessage());
@@ -497,7 +507,7 @@ class IdentityServiceTest {
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
 
-        String result = identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE);
+        String result = identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE).redirectUrl();
 
         assertNotNull(result);
         String expectedUrl = UriComponentsBuilder
@@ -557,7 +567,7 @@ class IdentityServiceTest {
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
 
-        String result = identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE);
+        String result = identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE).redirectUrl();
 
         assertNotNull(result);
         String expectedUrl = UriComponentsBuilder
@@ -580,7 +590,7 @@ class IdentityServiceTest {
                 .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, "different-state")));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
         );
 
         assertEquals("Der state-Parameter ist ungültig.", exception.getMessage());
@@ -596,10 +606,10 @@ class IdentityServiceTest {
                 .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, "")));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
         );
 
-        assertEquals("Für die Identitätssitzung " + sessionId + " wurde kein state-Nonce gespeichert.", exception.getMessage());
+        assertEquals("Für die Anmeldung " + cacheEntityId + " wurde kein state-Nonce gespeichert.", exception.getMessage());
     }
 
     @Test
@@ -613,7 +623,7 @@ class IdentityServiceTest {
 
         String result = identityService.createErrorRedirectURL(
                 cacheEntityId,
-                sessionId,
+                VALID_FLOW_SECRET,
                 VALID_STATE,
                 "access_denied",
                 "The user denied access."
@@ -639,10 +649,156 @@ class IdentityServiceTest {
                 .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, "", VALID_STATE)));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createErrorRedirectURL(cacheEntityId, sessionId, VALID_STATE, "access_denied", null)
+                identityService.createErrorRedirectURL(cacheEntityId, VALID_FLOW_SECRET, VALID_STATE, "access_denied", null)
         );
 
-        assertEquals("Für die Identitätssitzung " + sessionId + " wurde keine Ursprungs-URL gespeichert.", exception.getMessage());
+        assertEquals("Für die Anmeldung " + cacheEntityId + " wurde keine Ursprungs-URL gespeichert.", exception.getMessage());
+    }
+
+    @Test
+    void createRedirectURL_ShouldBindTheAuthenticationToTheBrowserWithoutExposingTheSession() throws ResponseException {
+        UUID providerKey = UUID.randomUUID();
+        var provider = new IdentityProviderEntity()
+                .setKey(providerKey)
+                .setMetadataIdentifier("meta")
+                .setClientId("client-id")
+                .setAuthorizationEndpoint("https://auth.example.com/authorize")
+                .setDefaultScopes(List.of("openid"))
+                .setIsEnabled(true);
+        provider.setAdditionalParams(List.of());
+        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
+        when(prosunaConfig.getProsunaHostname()).thenReturn(VALID_HOSTNAME);
+
+        var redirect = identityService.createRedirectURL(
+                "existing-session-id",
+                providerKey,
+                VALID_IDENTITY_ID,
+                VALID_ORIGIN,
+                List.of(),
+                7
+        );
+
+        var savedIdentityCaptor = ArgumentCaptor.forClass(IdentityCacheEntity.class);
+        verify(identityCacheRepository).save(savedIdentityCaptor.capture());
+        var savedIdentity = savedIdentityCaptor.getValue();
+        var redirectUri = UriComponentsBuilder
+                .fromUri(redirect.redirectUri())
+                .build()
+                .getQueryParams()
+                .getFirst(IdentityQueryParameterConstants.AUTH_ENDPOINT_REDIRECT_URI);
+
+        assertEquals("existing-session-id", savedIdentity.getSessionId());
+        assertTrue(redirect.flowBindingSecret().length() >= 32);
+        assertEquals(hashFlowBindingSecret(redirect.flowBindingSecret()), savedIdentity.getFlowBindingHash());
+        assertEquals(
+                "/api/public/identity/" + providerKey + "/callback/" + savedIdentity.getId() + "/",
+                redirect.callbackPath()
+        );
+        assertEquals(VALID_HOSTNAME + redirect.callbackPath(), redirectUri);
+        assertFalse(redirect.redirectUri().toString().contains("existing-session-id"));
+    }
+
+    @Test
+    void handleCallback_ShouldRejectCallbacksWithoutFlowBindingCookie() {
+        UUID providerKey = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, "identity-session-id", providerKey, VALID_ORIGIN, VALID_STATE)));
+
+        ResponseException exception = assertThrows(ResponseException.class, () ->
+                identityService.handleCallback(providerKey, cacheEntityId, null, "auth-code", VALID_STATE)
+        );
+
+        assertEquals("Die Anmeldung kann diesem Browser nicht zugeordnet werden. Starten Sie die Anmeldung erneut.", exception.getMessage());
+        verifyNoInteractions(httpService);
+        verify(identityCacheRepository, never()).save(any());
+    }
+
+    @Test
+    void handleCallback_ShouldRejectCallbacksFromAnotherBrowser() {
+        UUID providerKey = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, "identity-session-id", providerKey, VALID_ORIGIN, VALID_STATE)));
+
+        ResponseException exception = assertThrows(ResponseException.class, () ->
+                identityService.handleCallback(providerKey, cacheEntityId, "secret-of-another-browser", "auth-code", VALID_STATE)
+        );
+
+        assertEquals("Die Anmeldung kann diesem Browser nicht zugeordnet werden. Starten Sie die Anmeldung erneut.", exception.getMessage());
+        verifyNoInteractions(httpService);
+        verify(identityCacheRepository, never()).save(any());
+    }
+
+    @Test
+    void handleCallback_ShouldRotateTheSessionAndPreventAnotherCallback() throws Exception {
+        UUID providerKey = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
+        var provider = new IdentityProviderEntity()
+                .setKey(providerKey)
+                .setMetadataIdentifier("meta")
+                .setUniqueIdAttribute("sub")
+                .setIsEnabled(true)
+                .setTokenEndpoint("https://auth.example.com/token")
+                .setUserinfoEndpoint("https://auth.example.com/userinfo")
+                .setAttributes(List.of());
+        var identity = createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE)
+                .setCodeVerifier("code-verifier");
+        var otherSlot = createIdentityCacheEntity("other-slot", sessionId, providerKey, VALID_ORIGIN, VALID_STATE)
+                .setIdentityId("representative")
+                .setIdentityData(Map.of("sub", "representative"));
+
+        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
+        when(identityCacheRepository.findById(cacheEntityId)).thenReturn(Optional.of(identity));
+        when(identityCacheRepository.findAllBySessionId(sessionId)).thenReturn(List.of(identity, otherSlot));
+        var tokenResponse = mockHttpResponse(200, """
+                {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
+                """);
+        when(httpService.postFormUrlEncoded(any(URI.class), anyMap())).thenReturn(tokenResponse);
+        var userInfoResponse = mockHttpResponse(200, "{\"sub\": \"provider-user-123\"}");
+        when(httpService.get(any(URI.class), any(HttpServiceHeaders.class))).thenReturn(userInfoResponse);
+
+        var result = identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE);
+
+        assertNotEquals(sessionId, result.identitySessionId());
+        assertEquals(result.identitySessionId(), identity.getSessionId());
+        assertEquals(result.identitySessionId(), otherSlot.getSessionId());
+        verify(identityCacheRepository).saveAll(List.of(otherSlot));
+        assertEquals("", identity.getStateNonce());
+        assertNull(identity.getCodeVerifier());
+        assertNull(identity.getFlowBindingHash());
+
+        ResponseException exception = assertThrows(ResponseException.class, () ->
+                identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
+        );
+        assertEquals("Die Anmeldung kann diesem Browser nicht zugeordnet werden. Starten Sie die Anmeldung erneut.", exception.getMessage());
+    }
+
+    @Test
+    void createErrorRedirectURL_ShouldRejectCallbacksFromAnotherBrowser() {
+        UUID providerKey = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, "identity-session-id", providerKey, VALID_ORIGIN, VALID_STATE)));
+
+        assertThrows(ResponseException.class, () ->
+                identityService.createErrorRedirectURL(cacheEntityId, null, VALID_STATE, "access_denied", null)
+        );
+
+        verify(identityCacheRepository, never()).delete(any());
+    }
+
+    @Test
+    void createErrorRedirectURL_ShouldRemoveTheFailedAuthentication() throws ResponseException {
+        UUID providerKey = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var identity = createIdentityCacheEntity(cacheEntityId, "identity-session-id", providerKey, VALID_ORIGIN, VALID_STATE);
+        when(identityCacheRepository.findById(cacheEntityId)).thenReturn(Optional.of(identity));
+
+        identityService.createErrorRedirectURL(cacheEntityId, VALID_FLOW_SECRET, VALID_STATE, "access_denied", null);
+
+        verify(identityCacheRepository).delete(identity);
     }
 
     private IdentityCacheEntity createIdentityCacheEntity(
@@ -667,7 +823,18 @@ class IdentityServiceTest {
                 null,
                 null,
                 null
-        );
+        ).setFlowBindingHash(hashFlowBindingSecret(VALID_FLOW_SECRET));
+    }
+
+    private static String hashFlowBindingSecret(String flowBindingSecret) {
+        try {
+            var hash = MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(flowBindingSecret.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @SuppressWarnings("unchecked")

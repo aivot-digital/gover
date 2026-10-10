@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.identity.filters.IdentityProviderFilter;
 import de.aivot.prosuna.backend.identity.permissions.IdentityProviderPermissionProvider;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
+import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -22,6 +23,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springdoc.core.annotations.ParameterObject;
@@ -220,12 +222,13 @@ public class IdentityProviderController {
     public IdentityProviderTestStartResponseDTO startTest(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID key,
-            @Nonnull @Valid @RequestBody IdentityProviderTestStartRequestDTO requestDTO
+            @Nonnull @Valid @RequestBody IdentityProviderTestStartRequestDTO requestDTO,
+            @Nonnull HttpServletResponse response
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE);
 
-        var redirectUrl = identityService
+        var redirect = identityService
                 .createRedirectURL(
                         null,
                         key,
@@ -235,7 +238,8 @@ public class IdentityProviderController {
                         0
                 );
 
-        return new IdentityProviderTestStartResponseDTO(redirectUrl.toString());
+        response.addCookie(IdentityCookieUtils.createFlowBindingCookie(redirect));
+        return new IdentityProviderTestStartResponseDTO(redirect.redirectUri().toString());
     }
 
     @DeleteMapping("{key}/")
