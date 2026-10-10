@@ -1,5 +1,5 @@
 import React, {type ComponentProps} from 'react';
-import {act, fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createMemoryRouter, Link, RouterProvider} from 'react-router-dom';
 import {ElementType} from '../../../../data/element-type/element-type';
@@ -15,6 +15,9 @@ import {
 } from '../../services/process-instance-task-api-service';
 import {ProcessTaskViewPageEdit} from './process-task-view-page-edit';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
+import {BaseApiService} from '../../../../services/base-api-service';
+import type {ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
+import {SnackbarSeverity} from '../../../../slices/shell-slice';
 
 const testState = vi.hoisted(() => ({
     dispatch: vi.fn(),
@@ -31,6 +34,10 @@ const testState = vi.hoisted(() => ({
         node: null,
         provider: null,
     },
+    attachment: {
+        key: 'attachment-key',
+        fileName: 'Rechnung.html',
+    } as ProcessInstanceAttachmentEntity,
 }));
 
 vi.mock('../../../../components/generic-details-page/generic-details-page-context', () => ({
@@ -45,8 +52,24 @@ vi.mock('../../../../utils/with-delay', () => ({
     withDelay: <T,>(promise: Promise<T>) => promise,
 }));
 
-vi.mock('../../../elements/components/element-derivation-context', () => ({
-    ElementDerivationContext: (props: ComponentProps<typeof ElementDerivationContext>) => (
+vi.mock('../../../elements/components/element-derivation-context', async () => {
+    const {useOptionalProcessTaskViewAttachmentContext} = await vi.importActual<
+        typeof import('./process-task-view-attachment-context')
+    >('./process-task-view-attachment-context');
+
+    function ViewAttachmentButton() {
+        const attachmentContext = useOptionalProcessTaskViewAttachmentContext();
+        return (
+            <button
+                type="button"
+                onClick={() => void attachmentContext?.viewAttachment(testState.attachment)}
+            >
+                Anhang ansehen
+            </button>
+        );
+    }
+
+    return {ElementDerivationContext: (props: ComponentProps<typeof ElementDerivationContext>) => (
         <>
             <button
                 type="button"
@@ -60,9 +83,10 @@ vi.mock('../../../elements/components/element-derivation-context', () => ({
             >
                 Unveränderte Werte melden
             </button>
+            <ViewAttachmentButton/>
         </>
-    ),
-}));
+    )};
+});
 
 const layout = generateElementWithDefaultValues(ElementType.GroupLayout);
 
@@ -231,4 +255,68 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         expect(screen.getByText('Zielseite')).toBeInTheDocument();
         expect(screen.queryByText('Ungespeicherte Eingaben')).not.toBeInTheDocument();
     });
+});
+
+describe('ProcessTaskViewPageEdit attachment preview', () => {
+    const createObjectURL = vi.fn();
+    const revokeObjectURL = vi.fn();
+
+    beforeEach(() => {
+        vi.restoreAllMocks();
+        testState.dispatch.mockReset();
+        testState.item.task.status = ProcessTaskStatus.Running;
+        createObjectURL.mockReset().mockReturnValue('blob:preview');
+        revokeObjectURL.mockReset();
+        Object.defineProperty(URL, 'createObjectURL', {configurable: true, value: createObjectURL});
+        Object.defineProperty(URL, 'revokeObjectURL', {configurable: true, value: revokeObjectURL});
+        vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+    });
+
+    function mockPreviewWindow() {
+        const previewWindow = {
+            opener: {},
+            document: {title: '', body: {textContent: ''}},
+            location: {replace: vi.fn()},
+            close: vi.fn(),
+        };
+        vi.spyOn(window, 'open').mockReturnValue(previewWindow as unknown as Window);
+        return previewWindow;
+    }
+
+    it('previews inert attachments with the checked media type', async () => {
+        const previewWindow = mockPreviewWindow();
+        vi.spyOn(BaseApiService.prototype, 'getBlob')
+            .mockResolvedValue(new Blob(['%PDF'], {type: 'application/pdf'}));
+        await renderPage({});
+
+        fireEvent.click(screen.getByRole('button', {name: 'Anhang ansehen'}));
+
+        await waitFor(() => expect(previewWindow.location.replace).toHaveBeenCalledWith('blob:preview'));
+        expect(createObjectURL.mock.calls[0][0]).toHaveProperty('type', 'application/pdf');
+        expect(previewWindow.close).not.toHaveBeenCalled();
+    });
+
+    it.each(['text/html', 'image/svg+xml', 'application/xml', 'application/octet-stream'])(
+        'downloads %s attachments instead of opening them on the application origin',
+        async (mediaType) => {
+            const previewWindow = mockPreviewWindow();
+            const getBlob = vi.spyOn(BaseApiService.prototype, 'getBlob')
+                .mockResolvedValue(new Blob(['<script>alert(1)</script>'], {type: mediaType}));
+            await renderPage({});
+
+            fireEvent.click(screen.getByRole('button', {name: 'Anhang ansehen'}));
+
+            await waitFor(() => expect(getBlob).toHaveBeenLastCalledWith(
+                '/api/process-instance-attachments/attachment-key/file/?download=true',
+            ));
+            expect(previewWindow.close).toHaveBeenCalledOnce();
+            expect(previewWindow.location.replace).not.toHaveBeenCalled();
+            expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({
+                    message: 'Dieser Dateityp kann nicht in der Vorschau angezeigt werden. Der Anhang wird stattdessen heruntergeladen.',
+                    severity: SnackbarSeverity.Warning,
+                }),
+            }));
+        },
+    );
 });
