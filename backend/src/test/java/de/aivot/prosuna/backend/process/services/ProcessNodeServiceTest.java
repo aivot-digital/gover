@@ -5,13 +5,19 @@ import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.core.enums.ModuleFlags;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -48,6 +54,8 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -58,11 +66,14 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -524,6 +535,107 @@ class ProcessNodeServiceTest {
         );
 
         assertEquals("forbidden", exception.getMessage());
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldDeriveStoredUiDefinitionWithoutDraft() throws Exception {
+        var storedUiDefinition = new GroupLayoutElement();
+        storedUiDefinition.setId("stored");
+        var node = createNode(1, "a");
+        node.getConfiguration().putLiteral(UiDefinitionTestNodeDefinition.FIELD_ID, storedUiDefinition);
+        var identities = new IdentityDataMap();
+
+        service.deriveUiDefinitionForAuthoring(
+                node,
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                null,
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                identities
+        );
+
+        var request = ArgumentCaptor.forClass(ElementDerivationRequest.class);
+        verify(elementDerivationService).derive(request.capture(), eq(identities), any(ElementDerivationLogger.class));
+        assertEquals("stored", request.getValue().element().getId());
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldDeriveDraftInsteadOfStoredUiDefinition() throws Exception {
+        var storedUiDefinition = new GroupLayoutElement();
+        storedUiDefinition.setId("stored");
+        var node = createNode(1, "a");
+        node.getConfiguration().putLiteral(UiDefinitionTestNodeDefinition.FIELD_ID, storedUiDefinition);
+        var draftUiDefinition = new GroupLayoutElement();
+        draftUiDefinition.setId("draft");
+        var identities = new IdentityDataMap();
+
+        service.deriveUiDefinitionForAuthoring(
+                node,
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                draftUiDefinition,
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                identities
+        );
+
+        var request = ArgumentCaptor.forClass(ElementDerivationRequest.class);
+        verify(elementDerivationService).derive(request.capture(), eq(identities), any(ElementDerivationLogger.class));
+        assertSame(draftUiDefinition, request.getValue().element());
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldRejectFieldsThatAreNoUiDefinitionFields() {
+        var exception = assertThrows(ResponseException.class, () -> service.deriveUiDefinitionForAuthoring(
+                createNode(1, "a"),
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.OTHER_FIELD_ID,
+                new GroupLayoutElement(),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new IdentityDataMap()
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(elementDerivationService, never()).derive(any(), any(IdentityDataMap.class), any(ElementDerivationLogger.class));
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldRejectDraftsOfAnotherElementType() {
+        var exception = assertThrows(ResponseException.class, () -> service.deriveUiDefinitionForAuthoring(
+                createNode(1, "a"),
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                new ConfigLayoutElement(),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new IdentityDataMap()
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(elementDerivationService, never()).derive(any(), any(IdentityDataMap.class), any(ElementDerivationLogger.class));
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldReturnEmptyDataWithoutStoredUiDefinition() throws Exception {
+        var result = service.deriveUiDefinitionForAuthoring(
+                createNode(1, "a"),
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                null,
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new IdentityDataMap()
+        );
+
+        assertTrue(result.getEffectiveValues().isEmpty());
+        verify(elementDerivationService, never()).derive(any(), any(IdentityDataMap.class), any(ElementDerivationLogger.class));
     }
 
     private ProcessEntity createProcess() {
@@ -988,6 +1100,37 @@ class ProcessNodeServiceTest {
             return new AuthoredElementValues()
                     .putLiteral("defaultOnly", "default")
                     .putLiteral("overridden", "default");
+        }
+    }
+
+    private static final class UiDefinitionTestNodeDefinition extends HintingTestNodeDefinition {
+        private static final String FIELD_ID = "uiDefinition";
+        private static final String OTHER_FIELD_ID = "other";
+
+        private UiDefinitionTestNodeDefinition() {
+            super("ui-definition-node", ProcessNodeType.Action);
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(
+                @Nonnull ProcessNodeDefinitionConfigurationLayoutContext context
+        ) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+
+            var uiDefinitionField = new UiDefinitionInputElement()
+                    .setElementType(ElementType.GroupLayout);
+            uiDefinitionField.setId(FIELD_ID);
+            uiDefinitionField.setLabel("UI definition");
+            layout.addChild(uiDefinitionField);
+
+            var otherField = new TextInputElement();
+            otherField.setId(OTHER_FIELD_ID);
+            otherField.setLabel("Other");
+            layout.addChild(otherField);
+
+            return layout;
         }
     }
 
