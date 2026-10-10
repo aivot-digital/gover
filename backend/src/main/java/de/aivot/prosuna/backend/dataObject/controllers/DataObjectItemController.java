@@ -11,6 +11,8 @@ import de.aivot.prosuna.backend.dataObject.filters.DataObjectItemFilter;
 import de.aivot.prosuna.backend.dataObject.permissions.DataObjectPermissionProvider;
 import de.aivot.prosuna.backend.dataObject.services.DataObjectItemService;
 import de.aivot.prosuna.backend.dataObject.services.DataObjectSchemaService;
+import de.aivot.prosuna.backend.elements.dtos.ElementValuesDerivationRequestDTO;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -136,6 +138,64 @@ public class DataObjectItemController {
 
         return DataObjectItemResponseDTO
                 .fromEntity(created);
+    }
+
+    @PostMapping("derive/")
+    @Operation(
+            summary = "Derive New Data Object Item",
+            description = "Derives values entered for a new data object item against the stored schema. " +
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_CREATE + "`."
+    )
+    public DerivedRuntimeElementData deriveNew(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String schemaKey,
+            @Nonnull @Valid @RequestBody ElementValuesDerivationRequestDTO request
+    ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_ITEM_CREATE);
+
+        var schema = schemaService
+                .retrieve(schemaKey)
+                .orElseThrow(ResponseException::notFound);
+
+        return service.deriveItemEditorData(
+                schema,
+                false,
+                request.authoredElementValues(),
+                request.derivationOptions()
+        );
+    }
+
+    @PostMapping("{itemId}/derive/")
+    @Operation(
+            summary = "Derive Data Object Item",
+            description = "Derives values entered for an existing data object item against the stored schema. " +
+                    "Requires the system-level permission `" + DataObjectPermissionProvider.OBJECT_ITEM_READ + "`."
+    )
+    public DerivedRuntimeElementData derive(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String schemaKey,
+            @Nonnull @PathVariable String itemId,
+            @Nonnull @Valid @RequestBody ElementValuesDerivationRequestDTO request
+    ) throws ResponseException {
+        // The editor also derives the values of read-only users, and the schema is loaded on the server.
+        permissionService
+                .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_ITEM_READ);
+
+        var schema = schemaService
+                .retrieve(schemaKey)
+                .orElseThrow(ResponseException::notFound);
+
+        if (!service.exists(new DataObjectItemEntityId(schemaKey, itemId))) {
+            throw ResponseException.notFound();
+        }
+
+        return service.deriveItemEditorData(
+                schema,
+                true,
+                request.authoredElementValues(),
+                request.derivationOptions()
+        );
     }
 
     @GetMapping("{itemId}/")
