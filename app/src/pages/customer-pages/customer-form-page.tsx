@@ -513,7 +513,7 @@ export function CustomerFormPage() {
                             }}
                             onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
                             onEvent={handleSubmitEvent}
-                            onDeriveOverride={handleDerive}
+                            onDerive={(values, derivationOptions) => handleDerive(values, derivationOptions.skipErrorsForElementIds)}
                         />
                     }
                     {
