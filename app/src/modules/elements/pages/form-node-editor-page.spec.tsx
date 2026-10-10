@@ -25,6 +25,13 @@ const mocks = vi.hoisted(() => ({
     observeScrollContainer: vi.fn(),
     submitValues: {} as Record<string, unknown>,
     uploadTextFile: vi.fn(),
+    canUpdateProcess: true,
+    onDerive: undefined as undefined | ((values: Record<string, unknown>, derivationOptions: unknown, abort?: AbortSignal) => Promise<unknown>),
+}));
+
+vi.mock('../../permissions/hooks/use-permissions', async (importOriginal) => ({
+    ...await importOriginal<typeof import('../../permissions/hooks/use-permissions')>(),
+    useHasProcessPermission: () => mocks.canUpdateProcess,
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
@@ -142,13 +149,15 @@ vi.mock('../../forms/pages/details/components/form-details-page-more-menu', () =
 
 vi.mock('../components/element-derivation-context', () => ({
     ElementDerivationContext: React.forwardRef((
-        {onEvent, scrollContainerRef}: {
+        {onEvent, onDerive, scrollContainerRef}: {
             onEvent: (values: Record<string, unknown>, event: string) => Promise<void>;
+            onDerive?: (values: Record<string, unknown>, derivationOptions: unknown, abort?: AbortSignal) => Promise<unknown>;
             scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
         },
         ref,
     ) => {
         mocks.observeScrollContainer(scrollContainerRef);
+        mocks.onDerive = onDerive;
         React.useImperativeHandle(ref, () => ({
             replaceAuthoredElementValues: mocks.replaceAuthoredElementValues,
         }));
@@ -217,6 +226,8 @@ describe('FormNodeEditorPage error handling', () => {
         mocks.replaceAuthoredElementValues.mockReset().mockResolvedValue(undefined);
         mocks.submitValues = {};
         mocks.uploadTextFile.mockReset().mockResolvedValue('<xdf/>');
+        mocks.canUpdateProcess = true;
+        mocks.onDerive = undefined;
 
         Object.defineProperty(window, 'matchMedia', {
             configurable: true,
@@ -229,6 +240,10 @@ describe('FormNodeEditorPage error handling', () => {
 
         vi.spyOn(ProcessNodeApiService.prototype, 'retrieve').mockResolvedValue(createNode());
         vi.spyOn(ProcessNodeApiService.prototype, 'update').mockResolvedValue(createNode());
+        vi.spyOn(ProcessNodeApiService.prototype, 'deriveUiDefinition').mockResolvedValue({
+            effectiveValues: {},
+            elementStates: {},
+        });
         vi.spyOn(ProcessDefinitionApiService.prototype, 'retrieve').mockResolvedValue(createProcess());
         vi.spyOn(ProcessDefinitionVersionApiService.prototype, 'retrieve').mockResolvedValue(createProcessVersion());
         vi.spyOn(ProcessTestClaimApiService.prototype, 'listAll').mockResolvedValue(createPage([createTestClaim()]));
@@ -341,6 +356,41 @@ describe('FormNodeEditorPage error handling', () => {
 
         expect(mocks.replaceAuthoredElementValues).toHaveBeenCalledOnce();
         expect(mocks.replaceAuthoredElementValues).toHaveBeenCalledWith({field: 'imported'});
+    });
+
+    it('derives the unsaved form through the node endpoint when the process may be updated', async () => {
+        await renderLoadedEditor();
+        const values = {field: literalAuthoredValue('value')};
+        const derivationOptions = createDerivationOptions();
+
+        await mocks.onDerive?.(values, derivationOptions);
+
+        expect(ProcessNodeApiService.prototype.deriveUiDefinition).toHaveBeenCalledWith(
+            1,
+            'formLayout',
+            expect.objectContaining({type: ElementType.FormLayout}),
+            values,
+            derivationOptions,
+            undefined,
+        );
+    });
+
+    it('derives the stored form when the process may not be updated', async () => {
+        mocks.canUpdateProcess = false;
+        await renderLoadedEditor();
+        const values = {field: literalAuthoredValue('value')};
+        const derivationOptions = createDerivationOptions();
+
+        await mocks.onDerive?.(values, derivationOptions);
+
+        expect(ProcessNodeApiService.prototype.deriveUiDefinition).toHaveBeenCalledWith(
+            1,
+            'formLayout',
+            null,
+            values,
+            derivationOptions,
+            undefined,
+        );
     });
 
     it('uses the localized fallback for a non-displayable cost API error and aborts submission', async () => {
@@ -456,6 +506,15 @@ function createFormLayout(children: any[] = []): any {
         publicTitle: 'Testformular',
         responsibleDepartmentId: null,
         type: ElementType.FormLayout,
+    };
+}
+
+function createDerivationOptions() {
+    return {
+        skipErrorsForElementIds: ['ALL'],
+        skipVisibilitiesForElementIds: [],
+        skipOverridesForElementIds: [],
+        skipValuesForElementIds: [],
     };
 }
 

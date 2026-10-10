@@ -58,6 +58,7 @@ export function CommunicationBindingDialog({binding, identityProviderKey, provid
         if (request.communicationProviderId == null || !request.name.trim() || !request.description.trim() || layout == null) return;
         void onSave({...request, communicationProviderId: request.communicationProviderId, name: request.name.trim(), description: request.description.trim()});
     };
+    const communicationProviderId = request.communicationProviderId;
 
     return (
         <Dialog open onClose={close} fullWidth maxWidth="sm" aria-labelledby="communication-binding-dialog-title">
@@ -103,7 +104,7 @@ export function CommunicationBindingDialog({binding, identityProviderKey, provid
                     onChange={value => updateRequest('description', value ?? '')}
                     disabled={busy}
                 />
-                {layout != null && (
+                {layout != null && communicationProviderId != null && (
                     <Box sx={{
                         // The fields already supply their standard vertical margins.
                         '& > .MuiGrid-root > .MuiGrid-container': {rowGap: 0},
@@ -112,6 +113,14 @@ export function CommunicationBindingDialog({binding, identityProviderKey, provid
                             element={layout}
                             authoredElementValues={request.configuration}
                             onAuthoredElementValuesChange={value => updateRequest('configuration', value)}
+                            onDerive={(authoredElementValues, derivationOptions, abort) => new CommunicationProvidersApiService()
+                                .deriveBindingConfiguration(
+                                    communicationProviderId,
+                                    identityProviderKey,
+                                    authoredElementValues,
+                                    derivationOptions,
+                                    abort,
+                                )}
                             disabled={busy}
                         />
                     </Box>

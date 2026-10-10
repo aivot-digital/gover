@@ -6,8 +6,8 @@ import {ElementDisplayContext} from '../../data/element-type/element-child-optio
 import {ElementType} from '../../data/element-type/element-type';
 import {type UiDefinitionInputFieldElementItem} from '../../models/elements/form/input/ui-definition-input-field-element';
 import {UiDefinitionInputFieldComponent} from './ui-definition-input-field-component';
-import {ElementsApiService} from '../../modules/elements/elements-api-service';
-import {getLiteralElementValue, literalAuthoredValue} from '../../models/element-data';
+import {type ElementDerivationOptions} from '../../modules/elements/elements-api-service';
+import {type AuthoredElementValues, getLiteralElementValue, literalAuthoredValue} from '../../models/element-data';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type TextFieldElement} from '../../models/elements/form/input/text-field-element';
@@ -65,10 +65,14 @@ describe('UiDefinitionInputFieldComponent', () => {
         };
         const requiredError = 'Bitte geben Sie einen Namen ein.';
         const lengthError = 'Bitte geben Sie mindestens drei Zeichen ein.';
-        const derive = vi.spyOn(ElementsApiService.prototype, 'derive').mockImplementation(async (request) => {
-            const name = getLiteralElementValue<string>(request.authoredElementValues, 'name') ?? '';
-            const field = (request.element as GroupLayout).children?.[0] as TextFieldElement;
-            const validate = !request.derivationOptions?.skipErrorsForElementIds?.includes('ALL');
+        const derive = vi.fn(async (
+            uiDefinition: UiDefinitionInputFieldElementItem,
+            authoredElementValues: AuthoredElementValues,
+            derivationOptions: ElementDerivationOptions,
+        ) => {
+            const name = getLiteralElementValue<string>(authoredElementValues, 'name') ?? '';
+            const field = (uiDefinition as GroupLayout).children?.[0] as TextFieldElement;
+            const validate = !derivationOptions.skipErrorsForElementIds.includes('ALL');
             return {
                 effectiveValues: {name},
                 elementStates: {
@@ -87,6 +91,7 @@ describe('UiDefinitionInputFieldComponent', () => {
             value={value}
             onChange={vi.fn()}
             displayContext={ElementDisplayContext.StaffFacing}
+            onDerive={derive}
         />);
         await user.click(screen.getByRole('button', {name: 'Bearbeiten'}));
         const input = await screen.findByRole('textbox', {name: 'Name'});
@@ -114,20 +119,23 @@ describe('UiDefinitionInputFieldComponent', () => {
         await user.click(validate);
         expect(await screen.findByRole('listitem')).toHaveTextContent(lengthError);
         expect(input).toHaveAccessibleDescription('Bitte geben Sie mindestens drei Zeichen ein. Noch mindestens zwei Zeichen');
-        expect(derive).toHaveBeenLastCalledWith(expect.objectContaining({
-            authoredElementValues: {name: literalAuthoredValue('A')},
-            element: expect.objectContaining({children: [expect.objectContaining({minCharacters: 3})]}),
-            derivationOptions: expect.objectContaining({skipErrorsForElementIds: []}),
-        }), expect.anything());
+        expect(derive).toHaveBeenLastCalledWith(
+            expect.objectContaining({children: [expect.objectContaining({minCharacters: 3})]}),
+            {name: literalAuthoredValue('A')},
+            expect.objectContaining({skipErrorsForElementIds: []}),
+            undefined,
+        );
         await waitFor(() => expect(validate).toBeEnabled());
 
         await user.type(input, 'da');
         await user.click(validate);
         await waitFor(() => expect(validate).toBeEnabled());
-        expect(derive).toHaveBeenLastCalledWith(expect.objectContaining({
-            authoredElementValues: {name: literalAuthoredValue('Ada')},
-            derivationOptions: expect.objectContaining({skipErrorsForElementIds: []}),
-        }), expect.anything());
+        expect(derive).toHaveBeenLastCalledWith(
+            expect.anything(),
+            {name: literalAuthoredValue('Ada')},
+            expect.objectContaining({skipErrorsForElementIds: []}),
+            undefined,
+        );
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         expect(input).not.toHaveAttribute('aria-invalid', 'true');
 

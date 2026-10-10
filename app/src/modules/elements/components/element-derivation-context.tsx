@@ -33,7 +33,7 @@ import {isAnyInputElement} from '../../../models/elements/form/input/any-input-e
 import {isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
 import {isReplicatingContainerLayout} from '../../../models/elements/form/layout/replicating-container-layout';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {ElementsApiService} from '../elements-api-service';
+import {type ElementDerivationOptions} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {isApiError} from '../../../models/api-error';
 import {
@@ -68,7 +68,15 @@ interface ElementDerivationContextProps {
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
     suppressErrors?: boolean;
-    onDeriveOverride?: (aev: AuthoredElementValues, skipErrorsForElements: string[]) => Promise<DerivedRuntimeElementData>;
+    /**
+     * Derives the authored values through a dedicated, permission-checked backend endpoint of the use case.
+     * Without it, the element tree is rendered without server-side derivation.
+     */
+    onDerive?: (
+        authoredElementValues: AuthoredElementValues,
+        derivationOptions: ElementDerivationOptions,
+        abort?: AbortSignal,
+    ) => Promise<DerivedRuntimeElementData>;
     onEvent?: (values: AuthoredElementValues, event: string) => Promise<boolean | void>;
     mode?: ViewDispatcherMode;
     disableValidation?: boolean;
@@ -146,7 +154,7 @@ export const ElementDerivationContext = forwardRef<
         onDerivationStarted,
         onDerivationFinished,
         suppressErrors,
-        onDeriveOverride,
+        onDerive,
         onEvent,
         mode: renderMode = ViewDispatcherMode.Viewer,
         disableValidation = false,
@@ -328,6 +336,11 @@ export const ElementDerivationContext = forwardRef<
         abort?: AbortSignal,
         preserveErrorsFrom?: DerivedRuntimeElementData,
     ) => {
+        if (onDerive == null) {
+            // Derivation executes element functions on the server, so there is no generic fallback endpoint.
+            return baseDerivedData;
+        }
+
         const normalizedAuthoredElementValues = normalizeReplicatingContainerValues(element, authoredElementValues);
 
         try {
@@ -336,24 +349,12 @@ export const ElementDerivationContext = forwardRef<
             }
 
             const requestId = ++deriveRequestIdRef.current;
-            let derivedRuntimeElementData = await (onDeriveOverride != null ? onDeriveOverride(normalizedAuthoredElementValues, skipErrorsForElements) : new ElementsApiService()
-                .derive({
-                    element: element,
-                    authoredElementValues: normalizedAuthoredElementValues,
-                    derivationOptions: {
-                        skipErrorsForElementIds: disableValidation && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : skipErrorsForElements,
-                        skipVisibilitiesForElementIds: disableVisibilities && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : [],
-                        skipOverridesForElementIds: [],
-                        skipValuesForElementIds: [],
-                    },
-                    processExecutionData: {
-                        $: {},
-                        $$: {},
-                        _: {},
-                    },
-                }, {
-                    abort: abort,
-                }));
+            let derivedRuntimeElementData = await onDerive(normalizedAuthoredElementValues, {
+                skipErrorsForElementIds: disableValidation && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : skipErrorsForElements,
+                skipVisibilitiesForElementIds: disableVisibilities && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : [],
+                skipOverridesForElementIds: [],
+                skipValuesForElementIds: [],
+            }, abort);
 
             if (preserveErrorsFrom != null) {
                 derivedRuntimeElementData = preserveDerivedErrors(preserveErrorsFrom, derivedRuntimeElementData);

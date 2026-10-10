@@ -432,7 +432,7 @@ export const FormIdentitySelectionControls = forwardRef<
                                 setCommunicationChanged(true);
                             }}
                             onDerivedDataChange={setDerivedData}
-                            onDeriveOverride={handleCommunicationDerive}
+                            onDerive={(values, derivationOptions) => handleCommunicationDerive(values, derivationOptions.skipErrorsForElementIds)}
                             deriveOnMount={false}
                         />
                     }

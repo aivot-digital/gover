@@ -28,7 +28,8 @@ import {ElementTree} from '../element-tree-2/element-tree';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {ElementDerivationContext, type ElementDerivationContextHandle} from '../../modules/elements/components/element-derivation-context';
 import {Allotment} from 'allotment';
-import {AuthoredElementValues} from '../../models/element-data';
+import {AuthoredElementValues, type DerivedRuntimeElementData} from '../../models/element-data';
+import {type ElementDerivationOptions} from '../../modules/elements/elements-api-service';
 import {ElementChildOptions, ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {Hint} from '../hint/hint';
 import {humanizeNumberCapitalized} from '../../utils/humanization-utils';
@@ -78,6 +79,16 @@ export interface UiDefinitionInputFieldComponentProps extends FormFieldLayoutPro
     displayContext: ElementDisplayContext;
     openOverride?: () => void;
     controlSx?: SxProps<Theme>;
+    /**
+     * Derives values entered into the edited UI definition through a dedicated, permission-checked endpoint.
+     * Without it, the preview is rendered without server-side derivation.
+     */
+    onDerive?: (
+        uiDefinition: UiDefinitionInputFieldElementItem,
+        authoredElementValues: AuthoredElementValues,
+        derivationOptions: ElementDerivationOptions,
+        abort?: AbortSignal,
+    ) => Promise<DerivedRuntimeElementData>;
 }
 
 function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string {
@@ -114,6 +125,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         onChange,
         displayContext,
         openOverride,
+        onDerive,
     } = props;
 
     const generatedId = useNormalizedReactId();
@@ -686,6 +698,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                                     element={effectiveValue}
                                                     authoredElementValues={inputData}
                                                     onAuthoredElementValuesChange={setInputData}
+                                                    onDerive={onDerive == null ? undefined : (authoredElementValues, derivationOptions, abort) => (
+                                                        onDerive(effectiveValue, authoredElementValues, derivationOptions, abort)
+                                                    )}
                                                     highlightedElementId={hoveredTreeElementId}
                                                     disableVisibilities={disableVisibilities}
                                                     mode={ViewDispatcherMode.Editor}

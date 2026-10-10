@@ -16,7 +16,6 @@ import {
     showErrorSnackbar,
 } from '../../../slices/snackbar-slice';
 import {ElementDerivationContext} from '../../elements/components/element-derivation-context';
-import {ElementsApiService} from '../../elements/elements-api-service';
 import {CommunicationProvidersApiService} from '../communication-providers-api-service';
 import {
     type CommunicationProvider,
@@ -112,20 +111,11 @@ export function CommunicationProviderDetailsPageTest() {
         setTestResult(null);
         try {
             if (layoutState.layout != null) {
-                const derivedData = await new ElementsApiService().derive({
-                    element: layoutState.layout,
-                    authoredElementValues: inputs,
-                    derivationOptions: {
-                        skipErrorsForElementIds: [],
-                        skipVisibilitiesForElementIds: [],
-                        skipOverridesForElementIds: [],
-                        skipValuesForElementIds: [],
-                    },
-                    processExecutionData: {
-                        $: {},
-                        $$: {},
-                        _: {},
-                    },
+                const derivedData = await new CommunicationProvidersApiService().deriveProviderTestingInputs(provider.id, inputs, {
+                    skipErrorsForElementIds: [],
+                    skipVisibilitiesForElementIds: [],
+                    skipOverridesForElementIds: [],
+                    skipValuesForElementIds: [],
                 });
 
                 if (hasAnyErrorRecursivelyInParent(layoutState.layout, derivedData.elementStates)) {
@@ -192,6 +182,8 @@ export function CommunicationProviderDetailsPageTest() {
                                     setInputs(values);
                                     setTestResult(null);
                                 }}
+                                onDerive={(authoredElementValues, derivationOptions, abort) => new CommunicationProvidersApiService()
+                                    .deriveProviderTestingInputs(provider.id, authoredElementValues, derivationOptions, abort)}
                                 computedErrors={computedErrors}
                                 disabled={isTesting}
                             />

@@ -21,7 +21,8 @@ import {
     type ElementDerivationContextHandle,
     useElementDerivationContext,
 } from './element-derivation-context';
-import {useViewDispatcherContext} from '../../../components/view-dispatcher/view-dispatcher.context';
+import {type ElementDerivationOptions} from '../elements-api-service';
+import {useViewDispatcherContext, ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 
 const observeViewProps = vi.hoisted(() => vi.fn());
 const observeScrollContexts = vi.hoisted(() => vi.fn());
@@ -193,7 +194,7 @@ describe('ElementDerivationContext', () => {
                     onAuthoredElementValuesChange={setValues}
                     derivedData={trigger === 'customer form navigation' ? controlledData : undefined}
                     onDerivedDataChange={trigger === 'customer form navigation' ? setControlledData : undefined}
-                    onDeriveOverride={derive}
+                    onDerive={derive}
                     deriveOnMount={false}
                     showErrorSummary
                 />;
@@ -216,7 +217,11 @@ describe('ElementDerivationContext', () => {
             expect(screen.getByTestId('field-error')).toBeEmptyDOMElement();
             expect(screen.queryByRole('alert')).not.toBeInTheDocument();
             expect(screen.getByTestId('field-effective-value')).toHaveTextContent('"valid"');
-            expect(derive).toHaveBeenLastCalledWith({field: literalAuthoredValue('valid')}, []);
+            expect(derive).toHaveBeenLastCalledWith(
+                {field: literalAuthoredValue('valid')},
+                expect.objectContaining({skipErrorsForElementIds: []}),
+                undefined,
+            );
             await act(async () => {
                 resolveValidation(valid);
                 await revalidation;
@@ -242,7 +247,7 @@ describe('ElementDerivationContext', () => {
                 onAuthoredElementValuesChange={setValues}
                 derivedData={controlled ? data : undefined}
                 onDerivedDataChange={controlled ? setData : undefined}
-                onDeriveOverride={() => pending}
+                onDerive={() => pending}
                 deriveOnMount={false}
                 showErrorSummary
             />;
@@ -275,7 +280,7 @@ describe('ElementDerivationContext', () => {
                 authoredElementValues={values}
                 onAuthoredElementValuesChange={setValues}
                 computedErrors={errors}
-                onDeriveOverride={derive}
+                onDerive={derive}
                 taskViewMode={taskViewMode}
                 showErrorSummary
             />;
@@ -330,7 +335,11 @@ describe('ElementDerivationContext', () => {
 
         expect(harness.latest().effectiveValues.field).toBeNull();
         expect(previous.effectiveValues.field).toBe(120);
-        expect(harness.derive).toHaveBeenLastCalledWith(updated, ['ALL']);
+        expect(harness.derive).toHaveBeenLastCalledWith(
+            updated,
+            expect.objectContaining({skipErrorsForElementIds: ['ALL']}),
+            undefined,
+        );
         expect(harness.derive).toHaveBeenCalledTimes(2);
         await harness.finish(createDerivedRuntimeElementData({effectiveValues: {field: result}}));
         // Null is a legitimate backend result, including deliberately deferred authoring evaluation.
@@ -523,7 +532,7 @@ describe('ElementDerivationContext', () => {
                 },
             },
         });
-        const onDeriveOverride = vi.fn().mockResolvedValue(importedDerivedData);
+        const onDerive = vi.fn().mockResolvedValue(importedDerivedData);
 
         render(
             <ElementDerivationContext
@@ -542,7 +551,7 @@ describe('ElementDerivationContext', () => {
                 })}
                 onAuthoredElementValuesChange={onAuthoredElementValuesChange}
                 onDerivedDataChange={onDerivedDataChange}
-                onDeriveOverride={onDeriveOverride}
+                onDerive={onDerive}
                 deriveOnMount={false}
             />,
         );
@@ -552,14 +561,70 @@ describe('ElementDerivationContext', () => {
         });
 
         expect(onAuthoredElementValuesChange).toHaveBeenCalledWith({field: literalAuthoredValue('imported')});
-        expect(onDeriveOverride).toHaveBeenCalledOnce();
-        expect(onDeriveOverride).toHaveBeenCalledWith({field: literalAuthoredValue('imported')}, ['ALL']);
+        expect(onDerive).toHaveBeenCalledOnce();
+        expect(onDerive).toHaveBeenCalledWith(
+            {field: literalAuthoredValue('imported')},
+            expect.objectContaining({skipErrorsForElementIds: ['ALL']}),
+            undefined,
+        );
         expect(onDerivedDataChange.mock.calls[0][0].elementStates.field?.error).toBeNull();
         expect(onDerivedDataChange).toHaveBeenLastCalledWith(importedDerivedData);
     });
 
+    it('renders without server-side derivation when no derive function is given', async () => {
+        const onDerivationStarted = vi.fn();
+        const contextRef = React.createRef<ElementDerivationContextHandle>();
+
+        render(
+            <ElementDerivationContext
+                ref={contextRef}
+                element={createRootElement()}
+                authoredElementValues={{field: literalAuthoredValue('supplied')}}
+                derivedData={createDerivedRuntimeElementData({effectiveValues: {field: 'supplied'}})}
+                onAuthoredElementValuesChange={vi.fn()}
+                onDerivationStarted={onDerivationStarted}
+            />,
+        );
+
+        let validated: DerivedRuntimeElementData | undefined;
+        await act(async () => {
+            validated = await contextRef.current?.validate();
+        });
+
+        expect(onDerivationStarted).not.toHaveBeenCalled();
+        expect(validated?.effectiveValues).toEqual({field: 'supplied'});
+    });
+
+    it('passes the editor toggles as derivation options to the derive function', async () => {
+        const onDerive = vi.fn().mockResolvedValue(createDerivedRuntimeElementData());
+
+        render(
+            <ElementDerivationContext
+                element={createRootElement()}
+                authoredElementValues={{field: literalAuthoredValue('value')}}
+                onAuthoredElementValuesChange={vi.fn()}
+                onDerive={onDerive}
+                mode={ViewDispatcherMode.Editor}
+                disableValidation
+                disableVisibilities
+            />,
+        );
+
+        await waitFor(() => expect(onDerive).toHaveBeenCalledOnce());
+        expect(onDerive).toHaveBeenCalledWith(
+            {field: literalAuthoredValue('value')},
+            {
+                skipErrorsForElementIds: ['ALL'],
+                skipVisibilitiesForElementIds: ['ALL'],
+                skipOverridesForElementIds: [],
+                skipValuesForElementIds: [],
+            },
+            expect.any(AbortSignal),
+        );
+    });
+
     it('can use supplied derived data without deriving again on mount', async () => {
-        const onDeriveOverride = vi.fn().mockResolvedValue(createDerivedRuntimeElementData());
+        const onDerive = vi.fn().mockResolvedValue(createDerivedRuntimeElementData());
 
         render(
             <ElementDerivationContext
@@ -567,12 +632,12 @@ describe('ElementDerivationContext', () => {
                 authoredElementValues={{field: literalAuthoredValue('supplied')}}
                 derivedData={createDerivedRuntimeElementData({effectiveValues: {field: 'supplied'}})}
                 onAuthoredElementValuesChange={vi.fn()}
-                onDeriveOverride={onDeriveOverride}
+                onDerive={onDerive}
                 deriveOnMount={false}
             />,
         );
 
-        await waitFor(() => expect(onDeriveOverride).not.toHaveBeenCalled());
+        await waitFor(() => expect(onDerive).not.toHaveBeenCalled());
     });
 
     it('should not persist external computed errors when authored values change', async () => {
@@ -591,7 +656,7 @@ describe('ElementDerivationContext', () => {
                 onAuthoredElementValuesChange={onAuthoredElementValuesChange}
                 onDerivedDataChange={onDerivedDataChange}
                 computedErrors={computedErrors}
-                onDeriveOverride={() => Promise.resolve(createDerivedRuntimeElementData())}
+                onDerive={() => Promise.resolve(createDerivedRuntimeElementData())}
             />,
         );
 
@@ -622,7 +687,7 @@ describe('ElementDerivationContext', () => {
                 authoredElementValues={{field: literalAuthoredValue(null)}}
                 onAuthoredElementValuesChange={onAuthoredElementValuesChange}
                 onDerivedDataChange={onDerivedDataChange}
-                onDeriveOverride={() => Promise.resolve(createDerivedRuntimeElementData())}
+                onDerive={() => Promise.resolve(createDerivedRuntimeElementData())}
                 inputModesEnabled
             />,
         );
@@ -656,7 +721,7 @@ describe('ElementDerivationContext', () => {
                 ],
             },
         };
-        const onDeriveOverride = vi.fn((authoredElementValues: AuthoredElementValues) => {
+        const onDerive = vi.fn((authoredElementValues: AuthoredElementValues) => {
             const rows = getLiteralElementValue<Array<{id?: string | null}>>(authoredElementValues, 'rows') ?? [];
 
             return Promise.resolve(createDerivedRuntimeElementData({
@@ -685,17 +750,17 @@ describe('ElementDerivationContext', () => {
         render(
             <ReplicatingContainerDerivationHarness
                 onDerivedDataChange={onDerivedDataChange}
-                onDeriveOverride={onDeriveOverride}
+                onDerive={onDerive}
                 computedErrors={computedErrors}
             />
         );
 
-        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(onDerive).toHaveBeenCalledTimes(1));
         expect(screen.getByTestId('row-1-error')).toHaveTextContent('External row error');
 
         fireEvent.click(screen.getByRole('button', {name: 'Datensatz hinzufügen'}));
 
-        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(onDerive).toHaveBeenCalledTimes(2));
         expect(screen.getByTestId('row-2-visible')).toHaveTextContent('false');
         expect(screen.getByTestId('row-2-disabled')).toHaveTextContent('true');
         expect(screen.getByTestId('row-2-value-source')).toHaveTextContent(ComputedElementValueSource.Derived);
@@ -706,9 +771,9 @@ describe('ElementDerivationContext', () => {
         const onDerivedDataChange = vi.fn();
         const validationError = 'Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.';
         let shouldReturnValidationErrors = true;
-        const onDeriveOverride = vi.fn((authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[]) => {
+        const onDerive = vi.fn((authoredElementValues: AuthoredElementValues, derivationOptions: ElementDerivationOptions) => {
             const rows = getLiteralElementValue<Array<{id?: string | null}>>(authoredElementValues, 'rows') ?? [];
-            const shouldIncludeErrors = !skipErrorsForElements.includes('ALL') && shouldReturnValidationErrors;
+            const shouldIncludeErrors = !derivationOptions.skipErrorsForElementIds.includes('ALL') && shouldReturnValidationErrors;
 
             return Promise.resolve(createDerivedRuntimeElementData({
                 effectiveValues: {},
@@ -736,19 +801,19 @@ describe('ElementDerivationContext', () => {
         render(
             <ReplicatingContainerDerivationHarness
                 onDerivedDataChange={onDerivedDataChange}
-                onDeriveOverride={onDeriveOverride}
+                onDerive={onDerive}
             />
         );
 
-        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(onDerive).toHaveBeenCalledTimes(1));
 
         fireEvent.click(screen.getByRole('button', {name: 'Validieren'}));
         await waitFor(() => expect(screen.getByTestId('field-error')).toHaveTextContent(validationError));
         expect(screen.getByTestId('row-1-error')).toHaveTextContent('Fehler in row-1');
 
         fireEvent.click(screen.getByRole('button', {name: 'Datensatz hinzufügen'}));
-        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(3));
-        expect(onDeriveOverride).toHaveBeenLastCalledWith(
+        await waitFor(() => expect(onDerive).toHaveBeenCalledTimes(3));
+        expect(onDerive).toHaveBeenLastCalledWith(
             expect.objectContaining({
                 rows: literalAuthoredValue([
                     {
@@ -763,25 +828,26 @@ describe('ElementDerivationContext', () => {
                     },
                 ]),
             }),
-            ['ALL'],
+            expect.objectContaining({skipErrorsForElementIds: ['ALL']}),
+            undefined,
         );
         expect(screen.getByTestId('field-error')).toHaveTextContent(validationError);
         expect(screen.getByTestId('row-1-error')).toHaveTextContent('Fehler in row-1');
         expect(screen.getByTestId('row-2-error')).toBeEmptyDOMElement();
 
         fireEvent.click(screen.getByRole('button', {name: 'Validieren'}));
-        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(4));
+        await waitFor(() => expect(onDerive).toHaveBeenCalledTimes(4));
         expect(screen.getByTestId('row-1-error')).toHaveTextContent('Fehler in row-1');
         expect(screen.getByTestId('row-2-error')).toHaveTextContent('Fehler in row-2');
 
         fireEvent.click(screen.getByRole('button', {name: 'Ersten Datensatz ändern'}));
-        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(5));
+        await waitFor(() => expect(onDerive).toHaveBeenCalledTimes(5));
         expect(screen.getByTestId('row-1-error')).toBeEmptyDOMElement();
         expect(screen.getByTestId('row-2-error')).toHaveTextContent('Fehler in row-2');
 
         shouldReturnValidationErrors = false;
         fireEvent.click(screen.getByRole('button', {name: 'Validieren'}));
-        await waitFor(() => expect(onDeriveOverride).toHaveBeenCalledTimes(6));
+        await waitFor(() => expect(onDerive).toHaveBeenCalledTimes(6));
         expect(screen.getByTestId('field-error')).toBeEmptyDOMElement();
         expect(screen.getByTestId('row-1-error')).toBeEmptyDOMElement();
         expect(screen.getByTestId('row-2-error')).toBeEmptyDOMElement();
@@ -802,7 +868,7 @@ async function projectContainerRows(
         authoredElementValues={{}}
         onAuthoredElementValuesChange={vi.fn()}
         onDerivedDataChange={onDerivedDataChange}
-        onDeriveOverride={() => Promise.resolve(previous)}
+        onDerive={() => Promise.resolve(previous)}
     />);
     await waitFor(() => expect(onDerivedDataChange).toHaveBeenCalled());
     onDerivedDataChange.mockClear();
@@ -834,7 +900,7 @@ async function setupOptimisticEdit(
         authoredElementValues={initial}
         onAuthoredElementValuesChange={vi.fn()}
         onDerivedDataChange={onDerivedDataChange}
-        onDeriveOverride={derive}
+        onDerive={derive}
         inputModesEnabled
     />);
     await waitFor(() => expect(onDerivedDataChange).toHaveBeenCalled());
@@ -856,14 +922,14 @@ async function setupOptimisticEdit(
 
 interface ReplicatingContainerDerivationHarnessProps {
     onDerivedDataChange: (derivedData: DerivedRuntimeElementData) => void;
-    onDeriveOverride: (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[]) => Promise<DerivedRuntimeElementData>;
+    onDerive: (authoredElementValues: AuthoredElementValues, derivationOptions: ElementDerivationOptions) => Promise<DerivedRuntimeElementData>;
     computedErrors?: ComputedElementErrors;
 }
 
 function ReplicatingContainerDerivationHarness(props: ReplicatingContainerDerivationHarnessProps) {
     const {
         onDerivedDataChange,
-        onDeriveOverride,
+        onDerive,
         computedErrors,
     } = props;
     const element = React.useMemo(() => createRootElementWithReplicatingContainer(), []);
@@ -885,7 +951,7 @@ function ReplicatingContainerDerivationHarness(props: ReplicatingContainerDeriva
             authoredElementValues={authoredElementValues}
             onAuthoredElementValuesChange={setAuthoredElementValues}
             onDerivedDataChange={onDerivedDataChange}
-            onDeriveOverride={onDeriveOverride}
+            onDerive={onDerive}
             computedErrors={computedErrors}
         />
     );

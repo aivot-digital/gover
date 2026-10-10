@@ -8,6 +8,7 @@ import {ProcessNodeProblems} from '../entities/process-node-problems';
 import {type ProcessNodeDefinitionMetadata} from '../entities/process-node-definition-metadata';
 import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../../../models/element-data';
 import {type ElementDerivationOptions} from '../../elements/elements-api-service';
+import {type AnyElement} from '../../../models/elements/any-element';
 
 interface ProcessDefinitionNodeFilter {
     id: number;
@@ -90,6 +91,29 @@ export class ProcessNodeApiService extends BaseCrudApiService<
         return this.post(`${this.path}${id}/derive-configuration/`, {
             authoredElementValues,
             derivationOptions,
+        });
+    }
+
+    /**
+     * Derives values entered into a UI definition configured in a UI definition field of the node.
+     * An unsaved UI definition requires the permission to update the node's process; without it,
+     * pass null to derive the stored UI definition.
+     */
+    public deriveUiDefinition(
+        id: number,
+        fieldId: string,
+        unsavedUiDefinition: AnyElement | null,
+        authoredElementValues: AuthoredElementValues,
+        derivationOptions: ElementDerivationOptions,
+        abort?: AbortSignal,
+    ): Promise<DerivedRuntimeElementData> {
+        return this.post(`${this.path}${id}/derive-ui-definition/`, {
+            fieldId,
+            uiDefinition: unsavedUiDefinition,
+            authoredElementValues,
+            derivationOptions,
+        }, {
+            abort,
         });
     }
 
