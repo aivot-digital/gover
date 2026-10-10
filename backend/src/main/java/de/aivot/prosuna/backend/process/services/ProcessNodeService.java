@@ -9,12 +9,16 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.input.LiteralAuthoredInputValue;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -270,6 +274,82 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var layout = getConfigLayoutElement(entity, provider, user);
         var request = new ElementDerivationRequest(layout, authoredElementValues, derivationOptions);
         return elementDerivationService.derive(request, InputModeEvaluationContext.Authoring);
+    }
+
+    /**
+     * Derives a UI definition that is configured in a UI definition field of the node.
+     * <p>
+     * The field must exist in the trusted node configuration layout. Callers must only pass an unsaved UI definition
+     * for users who may update the node, because its element functions are executed on the server.
+     *
+     * @param draftUiDefinition the unsaved UI definition, or {@code null} to derive the stored UI definition
+     * @param identities        the identities of the caller that are related to this node
+     */
+    @Nonnull
+    public <NodeConfig> DerivedRuntimeElementData deriveUiDefinitionForAuthoring(
+            @Nonnull ProcessNodeEntity entity,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nullable UserEntity user,
+            @Nonnull String fieldId,
+            @Nullable BaseElement draftUiDefinition,
+            @Nonnull AuthoredElementValues authoredElementValues,
+            @Nonnull ElementDerivationOptions derivationOptions,
+            @Nonnull IdentityDataMap identities
+    ) throws ResponseException {
+        var layout = getConfigLayoutElement(entity, provider, user);
+        var field = findUiDefinitionField(layout, fieldId);
+
+        BaseElement uiDefinition;
+        if (draftUiDefinition != null) {
+            uiDefinition = draftUiDefinition;
+            ElementStreamUtils.applyAction(uiDefinition, BaseElement::recalculateReferencedIds);
+        } else {
+            uiDefinition = getStoredUiDefinition(entity, field);
+        }
+
+        if (uiDefinition == null) {
+            return DerivedRuntimeElementData.empty();
+        }
+
+        if (field.getElementType() != null && uiDefinition.getType() != field.getElementType()) {
+            throw ResponseException.badRequest(
+                    "Die UI-Definition muss vom Typ %s sein.",
+                    field.getElementType().name()
+            );
+        }
+
+        var request = new ElementDerivationRequest(uiDefinition, authoredElementValues, derivationOptions);
+        return elementDerivationService.derive(request, identities, new ElementDerivationLogger());
+    }
+
+    @Nonnull
+    private UiDefinitionInputElement findUiDefinitionField(@Nonnull ConfigLayoutElement layout,
+                                                           @Nonnull String fieldId) throws ResponseException {
+        var fields = new LinkedList<UiDefinitionInputElement>();
+        ElementStreamUtils.applyAction(layout, element -> {
+            if (element instanceof UiDefinitionInputElement uiDefinitionInput && fieldId.equals(element.getId())) {
+                fields.add(uiDefinitionInput);
+            }
+        });
+
+        if (fields.isEmpty()) {
+            throw ResponseException.badRequest(
+                    "Das Feld %s ist kein Feld für eine UI-Definition dieses Prozesselements.",
+                    StringUtils.quote(fieldId)
+            );
+        }
+
+        return fields.getFirst();
+    }
+
+    @Nullable
+    private BaseElement getStoredUiDefinition(@Nonnull ProcessNodeEntity entity,
+                                              @Nonnull UiDefinitionInputElement field) throws ResponseException {
+        try {
+            return field.formatValue(entity.getConfiguration().getLiteral(field.getId()));
+        } catch (IllegalArgumentException e) {
+            throw ResponseException.badRequest("Die gespeicherte UI-Definition dieses Prozesselements ist ungültig.");
+        }
     }
 
     @Nonnull
