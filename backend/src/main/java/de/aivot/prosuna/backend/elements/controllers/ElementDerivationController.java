@@ -1,14 +1,7 @@
 package de.aivot.prosuna.backend.elements.controllers;
 
-import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
-import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
-import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
-import de.aivot.prosuna.backend.identity.constants.IdentityQueryParameterConstants;
-import de.aivot.prosuna.backend.identity.controllers.IdentityController;
-import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -16,10 +9,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Provides structural operations on element trees.
+ * <p>
+ * Element trees are deliberately not derived here. Deriving executes element functions on the server, so each
+ * derivation must use a dedicated endpoint that loads or authorizes the element tree for its resource.
+ */
 @RestController
 @RequestMapping("/api/elements/")
 @Tag(
@@ -28,34 +26,6 @@ import org.springframework.web.bind.annotation.*;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ElementDerivationController {
-    private final ElementDerivationService elementDerivationServiceV2;
-    private final IdentityService identityService;
-
-    public ElementDerivationController(ElementDerivationService elementDerivationServiceV2, IdentityService identityService) {
-        this.elementDerivationServiceV2 = elementDerivationServiceV2;
-        this.identityService = identityService;
-    }
-
-    @PostMapping("derive/")
-    @Operation(
-            summary = "Derive Element",
-            description = "Derives an element based on the provided data in the request."
-    )
-    public DerivedRuntimeElementData derive(
-            @Nonnull @RequestBody @Valid ElementDerivationRequest request,
-            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
-            @Nullable @RequestParam(value = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID, required = false) Integer relatedProcessNodeId
-    ) throws ResponseException {
-        ElementStreamUtils
-                .applyAction(request.element(), BaseElement::recalculateReferencedIds);
-
-        var identities = identityService
-                .getIdentityDataMap(identitySessionId, relatedProcessNodeId);
-
-        return elementDerivationServiceV2
-                .derive(request, identities, new ElementDerivationLogger());
-    }
-
     @PostMapping("recalculate-referenced-ids/")
     @Operation(
             summary = "Recalculate Referenced IDs",
