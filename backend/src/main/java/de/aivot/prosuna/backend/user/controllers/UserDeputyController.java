@@ -123,16 +123,17 @@ public class UserDeputyController extends GenericCrudController<UserDeputyEntity
     @Override
     protected void checkCreatePermissions(@Nonnull UserEntity execUser,
                                           @Nonnull UserDeputyEntity newItem) throws ResponseException {
-        testPermissionOrRelated(execUser, UserPermissionProvider.DEPUTY_CREATE, newItem);
+        // A deputy relation grants the deputy all permissions of the original user. Creating one
+        // therefore always requires the global permission, even for relations the user is part of.
+        requireDeputyPermission(execUser, UserPermissionProvider.DEPUTY_CREATE);
     }
 
     @Override
     protected void checkUpdatePermission(@Nonnull UserEntity execUser,
                                          @Nonnull Integer itemid) throws ResponseException {
-        var entity = userDeputyService
-                .retrieve(itemid)
-                .orElseThrow(ResponseException::notFound);
-        testPermissionOrRelated(execUser, UserPermissionProvider.DEPUTY_UPDATE, entity);
+        // Updating the validity period changes when the inherited permissions apply, so it
+        // requires the global permission like creating a relation.
+        requireDeputyPermission(execUser, UserPermissionProvider.DEPUTY_UPDATE);
     }
 
     @Override
@@ -151,12 +152,20 @@ public class UserDeputyController extends GenericCrudController<UserDeputyEntity
             return;
         }
 
-        // Fallback rule: users without the global permission may still access their own deputy relations.
+        // Fallback rule: users without the global permission may still read or remove their own
+        // deputy relations. Neither operation can extend the effective permissions of any user.
         if (isRelatedToUser(deputyEntity, user.getId())) {
             return;
         }
 
         throw ResponseException.forbidden();
+    }
+
+    private void requireDeputyPermission(@Nonnull UserEntity user,
+                                         @Nonnull String permission) throws ResponseException {
+        if (!hasDeputyPermission(user.getId(), permission)) {
+            throw ResponseException.forbidden();
+        }
     }
 
     private boolean hasDeputyPermission(@Nonnull String userId,
