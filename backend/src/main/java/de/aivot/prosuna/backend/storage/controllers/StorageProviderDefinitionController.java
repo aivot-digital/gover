@@ -1,6 +1,10 @@
 package de.aivot.prosuna.backend.storage.controllers;
 
+import de.aivot.prosuna.backend.elements.dtos.ElementValuesDerivationRequestDTO;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -13,11 +17,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,12 +40,15 @@ import java.util.List;
 public class StorageProviderDefinitionController {
     private final List<StorageProviderDefinition<?>> storageProviderDefinitions;
     private final PermissionService permissionService;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public StorageProviderDefinitionController(List<StorageProviderDefinition<?>> storageProviderDefinitions,
-                                               PermissionService permissionService) {
+                                               PermissionService permissionService,
+                                               ElementDerivationService elementDerivationService) {
         this.storageProviderDefinitions = storageProviderDefinitions;
         this.permissionService = permissionService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @GetMapping("")
@@ -81,6 +91,40 @@ public class StorageProviderDefinitionController {
                 .findFirst()
                 .map(StorageProviderDefinitionDTO::from)
                 .orElseThrow(ResponseException::notFound);
+    }
+
+    @PostMapping("{key}/{version}/derive/")
+    @Operation(
+            summary = "Derive Storage Provider Configuration",
+            description = "Derives configuration values against the backend-defined configuration layout of a storage provider definition. " +
+                    "Requires at least one of the system-level permissions `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_READ + "` or `" +
+                    StoragePermissionProvider.STORAGE_PROVIDER_CREATE + "`."
+    )
+    public DerivedRuntimeElementData derive(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String key,
+            @Nonnull @PathVariable Integer version,
+            @Nonnull @Valid @RequestBody ElementValuesDerivationRequestDTO request
+    ) throws ResponseException {
+        requireDefinitionAccess(jwt);
+
+        var definition = storageProviderDefinitions
+                .stream()
+                .filter(def -> def.getKey().equals(key) && def.getMajorVersion().equals(version))
+                .findFirst()
+                .orElseThrow(ResponseException::notFound);
+
+        var layout = definition.getProviderConfigLayout();
+        if (layout == null) {
+            return DerivedRuntimeElementData.empty();
+        }
+
+        return elementDerivationService.derive(new ElementDerivationRequest(
+                layout,
+                request.authoredElementValues(),
+                request.derivationOptions()
+        ));
     }
 
     private void requireDefinitionAccess(@Nullable Jwt jwt) throws ResponseException {
