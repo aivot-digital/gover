@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConf
 import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityAuthenticationRedirect;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -15,7 +16,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -144,7 +144,7 @@ public class IdentitySlotService {
     }
 
     @Nonnull
-    public URI createAuthenticationRedirect(@Nonnull IdentityConfigElementSlot slot,
+    public IdentityAuthenticationRedirect createAuthenticationRedirect(@Nonnull IdentityConfigElementSlot slot,
                                             @Nonnull String requestedIdentityId,
                                             @Nonnull UUID providerKey,
                                             @Nullable String identitySessionId,
