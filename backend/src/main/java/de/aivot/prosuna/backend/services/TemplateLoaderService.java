@@ -14,6 +14,14 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 
 import java.util.Map;
 
+/**
+ * Renders the mail and PDF templates of the application.
+ * <p>
+ * Templates are only resolved from the bundled classpath templates and from the {@code ./templates/} directory, which
+ * operators can use to override them. Asset storage must never be a template source: assets can be created by staff
+ * members with ordinary permissions, and the templates are evaluated with Spring expressions and the data of the
+ * rendered mail or document.
+ */
 public class TemplateLoaderService {
     public String processTemplate(
             String templateName,
@@ -26,7 +34,6 @@ public class TemplateLoaderService {
         templateEngine.addDialect(new QrCodeDialect());
         templateEngine.addDialect(new MarkdownDialect());
 
-        templateEngine.addTemplateResolver(getAssetTemplateResolver(mode));
         templateEngine.addTemplateResolver(getFileTemplateResolver(mode));
         templateEngine.addTemplateResolver(getClassLoaderTemplateResolver(mode));
 
@@ -34,18 +41,6 @@ public class TemplateLoaderService {
         context.setVariables(templateData);
 
         return templateEngine.process(templateName, context);
-    }
-
-    private ITemplateResolver getAssetTemplateResolver(TemplateMode mode) {
-        var resolver = new FileTemplateResolver();
-
-        resolver.setPrefix("./data/assets/");
-        resolver.setTemplateMode(mode);
-        resolver.setCharacterEncoding("UTF-8");
-        resolver.setCheckExistence(true);
-        resolver.setOrder(0);
-
-        return resolver;
     }
 
     private ITemplateResolver getFileTemplateResolver(TemplateMode mode) {
