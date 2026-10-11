@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {ProcessNodeEditor} from './process-node-editor';
 import {useProcessNodeEditorContext} from './process-node-editor-context';
@@ -95,7 +95,8 @@ function renderEditor() {
 
 describe('ProcessNodeEditor metadata loading', () => {
     beforeEach(() => {
-        HTMLElement.prototype.scrollTo = vi.fn();
+        // jsdom does not implement element scrolling, which the editor uses on navigation.
+        Object.defineProperty(HTMLElement.prototype, 'scrollTo', {value: vi.fn(), configurable: true, writable: true});
         testState.save.mockImplementation(async (node: ProcessNodeEntity) => node);
         vi.spyOn(ProcessNodeApiService.prototype, 'retrieve').mockImplementation(async (id) => createNode(id));
         vi.spyOn(ProcessNodeApiService.prototype, 'getConfigurationLayout')
@@ -103,6 +104,10 @@ describe('ProcessNodeEditor metadata loading', () => {
         vi.spyOn(ProcessNodeApiService.prototype, 'validate').mockResolvedValue(null);
         vi.spyOn(ProcessNodeApiService.prototype, 'getIncomingMetadata').mockResolvedValue(createMetadata());
         vi.spyOn(ProcessNodeProviderApiService.prototype, 'getNodeProvider').mockResolvedValue(provider);
+    });
+
+    afterEach(() => {
+        Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo');
     });
 
     it('opens, edits and saves after a metadata failure without losing saved paths or variable references', async () => {
