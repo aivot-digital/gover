@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, type MockInstance, vi} from 'vitest';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {ProcessNodeEditor} from './process-node-editor';
 import {useProcessNodeEditorContext} from './process-node-editor-context';
@@ -94,7 +94,10 @@ function renderEditor() {
 }
 
 describe('ProcessNodeEditor metadata loading', () => {
+    let logError: MockInstance<typeof console.error>;
+
     beforeEach(() => {
+        logError = vi.spyOn(console, 'error').mockImplementation(() => {});
         // jsdom does not implement element scrolling, which the editor uses on navigation.
         Object.defineProperty(HTMLElement.prototype, 'scrollTo', {value: vi.fn(), configurable: true, writable: true});
         testState.save.mockImplementation(async (node: ProcessNodeEntity) => node);
@@ -111,10 +114,12 @@ describe('ProcessNodeEditor metadata loading', () => {
     });
 
     it('opens, edits and saves after a metadata failure without losing saved paths or variable references', async () => {
-        vi.mocked(ProcessNodeApiService.prototype.getIncomingMetadata).mockRejectedValue(new Error('Metadata failed'));
+        const error = new Error('Metadata failed');
+        vi.mocked(ProcessNodeApiService.prototype.getIncomingMetadata).mockRejectedValue(error);
         renderEditor();
 
         expect(await screen.findByRole('alert')).toHaveTextContent(warning);
+        expect(logError).toHaveBeenCalledWith(error);
         expect(screen.getByRole('textbox', {name: /Gespeicherter Pfad/})).toHaveValue('name');
         expect(screen.queryByRole('button', {name: 'Vorgangsdatenpfad auswählen'})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Konfiguration speichern'})).toBeDisabled();
@@ -166,6 +171,21 @@ describe('ProcessNodeEditor metadata loading', () => {
         expect(screen.getByRole('textbox', {name: /Gespeicherter Pfad/})).toHaveValue('name');
     });
 
+    it('keeps the shown node and its suggestions when the next node cannot be loaded', async () => {
+        const router = renderEditor();
+        await screen.findByRole('textbox', {name: 'Name bearbeiten'});
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockRejectedValue(new Error('Node failed'));
+
+        await act(() => router.navigate('/processes/10/versions/1/nodes/2/tabs/configuration'));
+
+        await waitFor(() => expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({message: 'Die Details für das Prozesselement konnten nicht geladen werden.'}),
+        })));
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Element 1');
+        expect(screen.getByRole('textbox', {name: /Gespeicherter Pfad/})).toHaveAttribute('readonly');
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
     it.each(['resolve', 'reject'] as const)('ignores a late metadata %s after switching nodes', async (outcome) => {
         const pending = Promise.withResolvers<ProcessNodeDefinitionMetadata>();
         vi.mocked(ProcessNodeApiService.prototype.getIncomingMetadata).mockReturnValueOnce(pending.promise);
@@ -186,7 +206,6 @@ describe('ProcessNodeEditor metadata loading', () => {
     it.each(['retrieve', 'getConfigurationLayout', 'validate', 'getNodeProvider'] as const)
     ('still reports a required %s request failure', async (method) => {
         const error = new Error('Required data failed');
-        const logError = vi.spyOn(console, 'error').mockImplementation(() => {});
         if (method === 'getNodeProvider') {
             vi.mocked(ProcessNodeProviderApiService.prototype.getNodeProvider).mockRejectedValue(error);
         } else {

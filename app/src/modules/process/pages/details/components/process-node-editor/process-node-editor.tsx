@@ -40,6 +40,11 @@ import {
 } from '../../../../components/process-node-provider-details';
 import {ProcessNodeProviderBadges} from '../../../../components/process-node-provider-badges';
 
+type IncomingMetadataState =
+    | {status: 'loading'}
+    | {status: 'loaded'; metadata: ProcessNodeDefinitionMetadata}
+    | {status: 'failed'};
+
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
 const processNodeEditorLoadedSidebarFlashLight = keyframes`
@@ -69,8 +74,8 @@ export function ProcessNodeEditor(): ReactNode {
     const theme = useTheme();
 
     const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
-    const [incomingMetadata, setIncomingMetadata] = useState<ProcessNodeDefinitionMetadata | null>(null);
-    const [incomingMetadataLoadFailed, setIncomingMetadataLoadFailed] = useState(false);
+    // Replaced together with the node so the suggestions always belong to the configuration on screen.
+    const [incomingMetadataState, setIncomingMetadataState] = useState<IncomingMetadataState>({status: 'loading'});
 
     const {
         editable,
@@ -131,21 +136,24 @@ export function ProcessNodeEditor(): ReactNode {
             setEditedNode(null);
             setLayout(null);
             setProvider(null);
+            setIncomingMetadataState({status: 'loading'});
         }
 
         setIsNodeLoading(true);
         setShowNodeLoadedFeedback(false);
-        setIncomingMetadata(null);
-        setIncomingMetadataLoadFailed(false);
 
         (async () => {
-            const [node, configurationLayout, problems, metadataResult] = await Promise.all([
+            const [node, configurationLayout, problems, incomingMetadataState] = await Promise.all([
                 new ProcessNodeApiService().retrieve(nodeId),
                 new ProcessNodeApiService().getConfigurationLayout(nodeId),
                 new ProcessNodeApiService().validate(nodeId),
+                // Suggestions are optional, so their failure must not keep the configuration from opening.
                 new ProcessNodeApiService().getIncomingMetadata(nodeId)
-                    .then((metadata) => ({metadata, failed: false}))
-                    .catch(() => ({metadata: null, failed: true})),
+                    .then((metadata): IncomingMetadataState => ({status: 'loaded', metadata}))
+                    .catch((error): IncomingMetadataState => {
+                        console.error(error);
+                        return {status: 'failed'};
+                    }),
             ]);
             const nodeProvider = await new ProcessNodeProviderApiService()
                 .getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion);
@@ -155,11 +163,10 @@ export function ProcessNodeEditor(): ReactNode {
                 configurationLayout,
                 nodeProvider,
                 problems,
-                incomingMetadata: metadataResult.metadata,
-                incomingMetadataLoadFailed: metadataResult.failed,
+                incomingMetadataState,
             };
         })()
-            .then(({node, configurationLayout, nodeProvider, problems, incomingMetadata, incomingMetadataLoadFailed}) => {
+            .then(({node, configurationLayout, nodeProvider, problems, incomingMetadataState}) => {
                 if (isCancelled) {
                     return;
                 }
@@ -168,8 +175,7 @@ export function ProcessNodeEditor(): ReactNode {
                 setLayout(configurationLayout);
                 setProvider(nodeProvider);
                 setProblems(problems);
-                setIncomingMetadata(incomingMetadata);
-                setIncomingMetadataLoadFailed(incomingMetadataLoadFailed);
+                setIncomingMetadataState(incomingMetadataState);
                 if (hasEditorContent) {
                     setShowNodeLoadedFeedback(true);
                 }
@@ -540,7 +546,7 @@ export function ProcessNodeEditor(): ReactNode {
                             overflowY: 'auto',
                         }}
                     >
-                        {incomingMetadataLoadFailed && (
+                        {incomingMetadataState.status === 'failed' && (
                             <Alert severity="warning" sx={{mb: 2}}>
                                 Auswahlvorschläge und wiederverwendbare Inhalte konnten nicht geladen werden.
                                 Sie können die Konfiguration weiterhin bearbeiten.
@@ -561,8 +567,10 @@ export function ProcessNodeEditor(): ReactNode {
                                 },
                                 isEditable: editable,
                                 problems: problems,
-                                incomingMetadata,
-                                incomingMetadataLoadFailed,
+                                incomingMetadata: incomingMetadataState.status === 'loaded'
+                                    ? incomingMetadataState.metadata
+                                    : null,
+                                incomingMetadataLoadFailed: incomingMetadataState.status === 'failed',
                             }}
                         >
                             <Outlet/>
