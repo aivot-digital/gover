@@ -164,14 +164,14 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
 
     const canDropElement = useCallback((dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => {
         return canDropElementInTree(value, dragItem, targetParentPath, targetIndex, displayContext);
-    }, [value]);
+    }, [value, displayContext]);
 
     const moveElement = useCallback((dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => {
         const updatedValue = moveElementInTree(value, dragItem, targetParentPath, targetIndex, displayContext);
         if (updatedValue !== value) {
             onChange(updatedValue as T);
         }
-    }, [value, onChange]);
+    }, [value, displayContext, onChange]);
 
     const flattenedSearchResults = useMemo(() => {
         if (!isAnyElementWithChildren(value)) {

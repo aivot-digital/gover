@@ -1,5 +1,5 @@
 import React, {type PropsWithChildren, StrictMode, useState} from 'react';
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {MemoryRouter} from 'react-router-dom';
@@ -204,6 +204,23 @@ describe('ElementTree section expansion', () => {
     );
 });
 
+describe('ElementTree drag and drop', () => {
+    it('validates drops against the current display context', async () => {
+        const onChange = vi.fn();
+        const group = createGroup('group', [createHeadline('headline', 'Überschrift'), createField('field', 'Feld')]);
+        const {rerender} = render(<TestTree value={group} onChange={onChange}/>, {wrapper: TreeTestWrapper});
+
+        await dragToSlot('Überschrift', 'group', 2);
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect((onChange.mock.calls[0][0] as GroupLayout).children.map(child => child.id)).toEqual(['field', 'headline']);
+
+        // Data object schemas do not accept headlines inside groups.
+        rerender(<TestTree value={group} onChange={onChange} displayContext={ElementDisplayContext.DataObjectSchema}/>);
+        await dragToSlot('Überschrift', 'group', 2);
+        expect(onChange).toHaveBeenCalledTimes(1);
+    });
+});
+
 function TreeTestWrapper({children}: PropsWithChildren) {
     return <DragAndDropProvider>
         <MemoryRouter>{children}</MemoryRouter>
@@ -214,16 +231,18 @@ function TestTree({
     value,
     editable = true,
     onChange = vi.fn(),
+    displayContext = ElementDisplayContext.CustomerFacing,
 }: {
     value: AnyElement;
     editable?: boolean;
     onChange?: (value: AnyElement) => void;
+    displayContext?: ElementDisplayContext;
 }) {
     return <ElementTree
         value={value}
         onChange={onChange}
         editable={editable}
-        displayContext={ElementDisplayContext.CustomerFacing}
+        displayContext={displayContext}
         allowElementIdEditing={false}
     />;
 }
@@ -252,4 +271,22 @@ function createGroup(id: string, children: AnyFormElement[]): GroupLayout {
 
 function createField(id: string, label: string): AnyFormElement {
     return {...generateElementWithDefaultValues(ElementType.Text), id, label};
+}
+
+function createHeadline(id: string, content: string): AnyFormElement {
+    return {...generateElementWithDefaultValues(ElementType.Headline), id, content};
+}
+
+async function dragToSlot(label: string, parentId: string, targetIndex: number) {
+    // React DnD marks connected drag sources as draggable.
+    const source = screen.getByText(label).closest('[draggable="true"]');
+    expect(source).not.toBeNull();
+    const target = screen.getByTestId(`element-tree-drop-slot-${parentId}.${targetIndex}`);
+    const event = {dataTransfer: {types: [], setData: vi.fn()}, clientX: 0, clientY: 1};
+    fireEvent.dragStart(source!, event);
+    fireEvent.dragEnter(target, event);
+    fireEvent.dragOver(target, event);
+    fireEvent.drop(target, event);
+    fireEvent.dragEnd(source!, event);
+    await act(async () => {});
 }
