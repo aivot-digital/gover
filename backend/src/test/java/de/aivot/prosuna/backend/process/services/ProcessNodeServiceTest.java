@@ -335,6 +335,41 @@ class ProcessNodeServiceTest {
         assertEquals(metadata.reusableUiDefinitions(), result.reusableUiDefinitions());
     }
 
+    @Test
+    void incomingMetadata_ShouldSkipUpstreamNodesWhoseMetadataCannotBeCalculated() throws Exception {
+        useBrokenMetadataProvider();
+        var broken = createNode(1, "broken").setProcessNodeDefinitionKey("test.process.broken-node");
+        var unavailable = createNode(2, "unavailable").setProcessNodeDefinitionKey("test.process.missing");
+        var source = createNode(3, "source");
+        var target = createNode(4, "target");
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(broken, unavailable, source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2), createEdge(2, 2, 3), createEdge(3, 3, 4)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of("source"), result.forwardedProcessDataKeys().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList());
+        assertEquals(List.of("source-identity"), result.forwardedIdentities().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedIdentity::identityId).toList());
+        assertEquals(List.of("source"), result.inputVariables().stream()
+                .filter(variable -> variable.source() == InputVariableSource.ProcessData)
+                .map(variable -> variable.path()).toList());
+    }
+
+    private void useBrokenMetadataProvider() {
+        var brokenProvider = new HintingTestNodeDefinition("broken-node", ProcessNodeType.Action) {
+            @Override
+            public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity node,
+                                                             @Nonnull TestNodeConfig configuration,
+                                                             @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+                throw new NullPointerException("Incomplete draft configuration.");
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(new HintingTestNodeDefinition(), brokenProvider)), prosunaConfig);
+    }
+
     private void useMetadataProvider(ProcessNodeDefinitionMetadata metadata, ProcessNodeType type) {
         var provider = new HintingTestNodeDefinition("hint-node", type) {
             @Override
@@ -952,6 +987,56 @@ class ProcessNodeServiceTest {
                         .get(IdentityIdValidationTestNodeDefinition.FIELD_ID)
                         .getError()
         );
+    }
+
+    @Test
+    void validate_ShouldReportUnresolvableProcessIdentitiesWhenUpstreamMetadataFails() throws Exception {
+        useBrokenMetadataProvider();
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var brokenNode = createNode(1, "broken").setProcessNodeDefinitionKey("test.process.broken-node");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "broken-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(brokenNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, brokenNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var problems = service.validate(targetNode, provider, false).orElseThrow();
+
+        assertEquals(
+                List.of("Identity: Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden."),
+                problems.problems()
+        );
+    }
+
+    @Test
+    void validate_ShouldAcceptAvailableProcessIdentityWhenAnotherUpstreamNodeIsSkipped() throws Exception {
+        useBrokenMetadataProvider();
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var brokenNode = createNode(1, "broken").setProcessNodeDefinitionKey("test.process.broken-node");
+        var sourceNode = createNode(2, "source");
+        var targetNode = createNode(3, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "source-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(brokenNode, sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2), createEdge(2, 2, 3)));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var result = service.validate(targetNode, provider, false);
+
+        assertTrue(result.isEmpty());
     }
 
     @Test
