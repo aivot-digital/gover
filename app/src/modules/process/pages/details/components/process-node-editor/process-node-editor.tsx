@@ -271,6 +271,7 @@ export function ProcessNodeEditor(): ReactNode {
         }
         return 'configuration';
     }, [location]);
+    const tabUsesIncomingMetadata = currentTab === 'configuration' || currentTab === 'outputs';
 
     const editorTabContentContainerRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
@@ -546,10 +547,10 @@ export function ProcessNodeEditor(): ReactNode {
                             overflowY: 'auto',
                         }}
                     >
-                        {incomingMetadataState.status === 'failed' && (
+                        {incomingMetadataState.status === 'failed' && tabUsesIncomingMetadata && (
                             <Alert severity="warning" sx={{mb: 2}}>
                                 Auswahlvorschläge und wiederverwendbare Inhalte konnten nicht geladen werden.
-                                Sie können die Konfiguration weiterhin bearbeiten.
+                                {editable && ' Sie können die Konfiguration weiterhin bearbeiten.'}
                             </Alert>
                         )}
                         <ProcessNodeEditorProvider

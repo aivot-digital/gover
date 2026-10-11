@@ -71,10 +71,10 @@ function EditorFields() {
     </>;
 }
 
-function EditorPage() {
+function EditorPage({editable}: {editable: boolean}) {
     const [version, setVersion] = useState(0);
     return <ProcessDetailsPageProvider value={{
-        editable: true, structureEditable: true, onSave: testState.save,
+        editable, structureEditable: editable, onSave: testState.save,
         onDelete: async () => {}, onStartReplaceNode: () => {}, testClaim: null,
         nodeRefreshSignal: {nodeId: 1, version}, nodeProblems: [], showNodeProblemsForNodes: {},
     }}>
@@ -83,12 +83,15 @@ function EditorPage() {
     </ProcessDetailsPageProvider>;
 }
 
-function renderEditor() {
+function renderEditor({editable = true, tab = 'configuration'}: {editable?: boolean; tab?: string} = {}) {
     const router = createMemoryRouter([{
         path: '/processes/10/versions/1/nodes/:nodeId',
-        element: <EditorPage/>,
-        children: [{path: 'tabs/configuration', element: <EditorFields/>}],
-    }], {initialEntries: ['/processes/10/versions/1/nodes/1/tabs/configuration']});
+        element: <EditorPage editable={editable}/>,
+        children: [
+            {path: 'tabs/configuration', element: <EditorFields/>},
+            {path: 'tabs/more', element: <EditorFields/>},
+        ],
+    }], {initialEntries: [`/processes/10/versions/1/nodes/1/tabs/${tab}`]});
     render(<RouterProvider router={router}/>);
     return router;
 }
@@ -118,7 +121,7 @@ describe('ProcessNodeEditor metadata loading', () => {
         vi.mocked(ProcessNodeApiService.prototype.getIncomingMetadata).mockRejectedValue(error);
         renderEditor();
 
-        expect(await screen.findByRole('alert')).toHaveTextContent(warning);
+        expect(await screen.findByRole('alert')).toHaveTextContent(`${warning} Sie können die Konfiguration weiterhin bearbeiten.`);
         expect(logError).toHaveBeenCalledWith(error);
         expect(screen.getByRole('textbox', {name: /Gespeicherter Pfad/})).toHaveValue('name');
         expect(screen.queryByRole('button', {name: 'Vorgangsdatenpfad auswählen'})).not.toBeInTheDocument();
@@ -132,6 +135,23 @@ describe('ProcessNodeEditor metadata loading', () => {
             name: 'Geändert', outputMappings: {result: 'name'}, configuration: createNode(1).configuration,
         });
         await waitFor(() => expect(screen.getByRole('button', {name: 'Konfiguration speichern'})).toBeDisabled());
+    });
+
+    it('does not offer editing in the metadata warning when the configuration is read-only', async () => {
+        vi.mocked(ProcessNodeApiService.prototype.getIncomingMetadata).mockRejectedValue(new Error('Metadata failed'));
+        renderEditor({editable: false});
+
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent(warning);
+        expect(alert).not.toHaveTextContent('bearbeiten');
+    });
+
+    it('shows the metadata warning only on tabs that use suggestions', async () => {
+        vi.mocked(ProcessNodeApiService.prototype.getIncomingMetadata).mockRejectedValue(new Error('Metadata failed'));
+        renderEditor({tab: 'more'});
+
+        await screen.findByRole('textbox', {name: 'Name bearbeiten'});
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('does not warn for successfully loaded empty metadata', async () => {
