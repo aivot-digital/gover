@@ -299,6 +299,32 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void incomingMetadata_ShouldAddHintsToACopyOfIncompleteImmutableProviderMetadata() throws Exception {
+        var source = createNode(1, "source");
+        source.getOutputMappings().put("result", "mapped.result");
+        var target = createNode(2, "target");
+        var hint = new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("person.name", "Name", null, source);
+        // Plugin providers may return immutable lists or leave lists unset despite the non-null contract.
+        var metadata = new ProcessNodeDefinitionMetadata(null, null, List.of(hint), null, List.of());
+        useMetadataProvider(metadata, ProcessNodeType.Action);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of("person.name", "mapped.result"), result.forwardedProcessDataKeys().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList());
+        assertTrue(result.inputVariables().stream().anyMatch(variable -> variable.source() == InputVariableSource.ElementData));
+        assertEquals(List.of(), result.reusableUiDefinitions());
+        assertEquals(List.of(), result.forwardedAttachmentSets());
+        assertEquals(List.of(), result.forwardedIdentities());
+        assertEquals(List.of(hint), metadata.forwardedProcessDataKeys());
+        assertEquals(List.of(), metadata.inputVariables());
+    }
+
+    @Test
     void incomingMetadata_ShouldKeepValidFormPathsIncludingWildcards() throws Exception {
         var source = createNode(1, "source");
         var target = createNode(2, "target");

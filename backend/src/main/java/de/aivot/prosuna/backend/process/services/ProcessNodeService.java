@@ -618,11 +618,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                                                                                            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
                                                                                            @Nonnull ProcessNodeDefinitionMetadata previousMetadata) throws ResponseException {
         var configuration = deriveConfiguration(node, provider, null, true);
-        var currentMetadata = provider.getMetadata(
+        // The returned metadata belongs to the provider. Add the service hints to a copy that is always mutable.
+        var currentMetadata = ProcessNodeDefinitionMetadata.reuse(provider.getMetadata(
                 node,
                 configuration.configuration(),
                 previousMetadata
-        );
+        ));
 
         for (var output : provider.getOutputs()) {
             currentMetadata.addInputVariable(new InputVariableSuggestion(
