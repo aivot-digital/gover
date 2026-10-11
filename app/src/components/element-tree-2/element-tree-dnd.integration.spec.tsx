@@ -1,12 +1,22 @@
-import React, {type PropsWithChildren, StrictMode, useState} from 'react';
-import {act, fireEvent, render, screen, within} from '@testing-library/react';
+import React, {type PropsWithChildren, useState} from 'react';
+import {act, fireEvent, render, screen, waitForElementToBeRemoved, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {configureStore} from '@reduxjs/toolkit';
 import {Provider as StoreProvider} from 'react-redux';
 import {MemoryRouter} from 'react-router-dom';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {AppProvider} from '../../providers/app-provider';
 import {useColorMode} from '../../providers/color-mode-context';
-import {store} from '../../store.customer';
+import {DragAndDropProvider} from '../../providers/drag-and-drop-provider';
+import {authReducer} from '../../slices/auth-slice';
+import {identityReducer} from '../../slices/identity-slice';
+import {adminSettingsReducer} from '../../slices/admin-settings-slice';
+import {appReducer} from '../../slices/app-slice';
+import {userReducer} from '../../slices/user-slice';
+import {systemConfigReducer} from '../../slices/system-config-slice';
+import {stepperReducer} from '../../slices/stepper-slice';
+import {shellReducer} from '../../slices/shell-slice';
+import {loggingReducer} from '../../slices/logging-slice';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {ElementType} from '../../data/element-type/element-type';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
@@ -18,7 +28,6 @@ import {ElementTree} from './element-tree';
 vi.mock('../../modules/process/pages/details/components/process-node-editor/process-node-editor-context', () => ({
     useOptionalProcessNodeEditorContext: () => null,
 }));
-vi.mock('./components/element-tree-editor', () => ({ElementTreeEditor: () => null}));
 vi.mock('../code-editor/code-editor', () => ({CodeEditor: () => <div/>}));
 vi.mock('allotment', () => ({
     Allotment: Object.assign(
@@ -29,21 +38,44 @@ vi.mock('allotment', () => ({
 
 afterEach(() => {
     vi.useRealTimers();
+    // The element editor is addressed through the URL hash, which outlives a single test.
+    window.history.replaceState(null, '', '/');
 });
 
 describe.each([false, true])('shared HTML5 backend (StrictMode: %s)', (strictMode) => {
-    function Wrapper({children}: PropsWithChildren) {
-        const app = <StoreProvider store={store}>
-            <AppProvider>
-                <MemoryRouter>{children}</MemoryRouter>
-            </AppProvider>
-        </StoreProvider>;
-        return strictMode ? <StrictMode>{app}</StrictMode> : app;
+    function renderStaffApp(ui: React.ReactElement) {
+        // Mirror the staff shell with a fresh store, so tests do not share Redux state.
+        const store = configureStore({
+            reducer: {
+                auth: authReducer,
+                identity: identityReducer,
+                adminSettings: adminSettingsReducer,
+                app: appReducer,
+                user: userReducer,
+                systemConfig: systemConfigReducer,
+                stepper: stepperReducer,
+                shell: shellReducer,
+                logging: loggingReducer,
+            },
+        });
+
+        function Wrapper({children}: PropsWithChildren) {
+            return <StoreProvider store={store}>
+                <DragAndDropProvider>
+                    <AppProvider>
+                        <MemoryRouter>{children}</MemoryRouter>
+                    </AppProvider>
+                </DragAndDropProvider>
+            </StoreProvider>;
+        }
+
+        // StrictMode must wrap the root, otherwise React does not replay the providers' effects.
+        return render(ui, {wrapper: Wrapper, reactStrictMode: strictMode});
     }
 
     it('keeps dragging after replacing a tree and repeatedly opening a sort dialog', async () => {
         const user = userEvent.setup();
-        const {rerender} = render(<EditorScene treeId="first"/>, {wrapper: Wrapper});
+        const {rerender} = renderStaffApp(<EditorScene treeId="first"/>);
 
         // The old provider's passive cleanup used to clear the manager already adopted by the new tree.
         rerender(<EditorScene treeId="second"/>);
@@ -54,14 +86,14 @@ describe.each([false, true])('shared HTML5 backend (StrictMode: %s)', (strictMod
             await user.click(within(dialog).getByRole('button', {name: 'Abbrechen'}));
         }
 
-        await dragTreeFieldToEnd();
+        await dragTreeFieldToEnd('second');
         expect(screen.getByRole('status', {name: 'Baumreihenfolge'})).toHaveTextContent('second-last,second-first');
         expect(screen.queryByText('Anzeigefehler')).not.toBeInTheDocument();
     });
 
     it('sorts in a portal while a tree remains mounted and survives a theme change', async () => {
         const user = userEvent.setup();
-        render(<EditorScene treeId="tree"/>, {wrapper: Wrapper});
+        renderStaffApp(<EditorScene treeId="tree"/>);
         await user.click(screen.getByRole('button', {name: 'Dunkel'}));
         await user.click(screen.getByRole('button', {name: 'Sortieren'}));
 
@@ -76,31 +108,57 @@ describe.each([false, true])('shared HTML5 backend (StrictMode: %s)', (strictMod
         await user.click(within(dialog).getByRole('button', {name: 'Reihenfolge speichern'}));
         expect(screen.getByRole('status', {name: 'Parameterreihenfolge'})).toHaveTextContent('Beta,Alpha');
 
-        await dragTreeFieldToEnd();
+        await dragTreeFieldToEnd('tree');
         expect(screen.getByRole('status', {name: 'Baumreihenfolge'})).toHaveTextContent('tree-last,tree-first');
     });
 
+    it('completes a drag that is running while the application re-renders', async () => {
+        const {rerender} = renderStaffApp(<EditorScene treeId="tree"/>);
+
+        // Re-rendering the providers must not replace the manager that owns the running drag.
+        startDrag(getTreeField('Erstes Feld'));
+        rerender(<EditorScene treeId="tree"/>);
+        await dropAndEndDrag(getTreeField('Erstes Feld'), getTreeEndSlot('tree'));
+
+        expect(screen.getByRole('status', {name: 'Baumreihenfolge'})).toHaveTextContent('tree-last,tree-first');
+    });
+
+    it('keeps dragging after opening and closing the element editor of a tree field', async () => {
+        const user = userEvent.setup();
+        renderStaffApp(<EditorScene treeId="tree"/>);
+
+        await user.click(screen.getByText('Erstes Feld'));
+        const editorTabs = await screen.findByRole('tablist');
+        await user.click(screen.getByRole('button', {name: 'Abbrechen'}));
+        await waitForElementToBeRemoved(editorTabs);
+        expect(window.location.hash).toBe('');
+
+        await dragTreeFieldToEnd('tree');
+        expect(screen.getByRole('status', {name: 'Baumreihenfolge'})).toHaveTextContent('tree-last,tree-first');
+        expect(screen.queryByText('Anzeigefehler')).not.toBeInTheDocument();
+    });
+
     it('supports removing all consumers and remounting the whole application', async () => {
-        const firstApp = render(<EditorScene treeId="first"/>, {wrapper: Wrapper});
+        const firstApp = renderStaffApp(<EditorScene treeId="first"/>);
         firstApp.rerender(<EditorScene treeId={null}/>);
         firstApp.rerender(<EditorScene treeId="second"/>);
-        await dragTreeFieldToEnd();
+        await dragTreeFieldToEnd('second');
         expect(screen.getByRole('status', {name: 'Baumreihenfolge'})).toHaveTextContent('second-last,second-first');
         firstApp.unmount();
 
-        render(<EditorScene treeId="third"/>, {wrapper: Wrapper});
-        await dragTreeFieldToEnd();
+        renderStaffApp(<EditorScene treeId="third"/>);
+        await dragTreeFieldToEnd('third');
         expect(screen.getByRole('status', {name: 'Baumreihenfolge'})).toHaveTextContent('third-last,third-first');
     });
 
     it('reopens the UI definition dialog with a real element tree after closing', async () => {
         vi.useFakeTimers();
-        render(<UiDefinitionInputFieldComponent
+        renderStaffApp(<UiDefinitionInputFieldComponent
             label="Testoberfläche"
             value={{...generateElementWithDefaultValues(ElementType.GroupLayout), children: []}}
             onChange={vi.fn()}
             displayContext={ElementDisplayContext.StaffFacing}
-        />, {wrapper: Wrapper});
+        />);
 
         for (let attempt = 0; attempt < 2; attempt++) {
             fireEvent.click(screen.getByRole('button', {name: 'Bearbeiten'}));
@@ -168,20 +226,34 @@ function ReorderControls() {
     </>;
 }
 
-async function dragTreeFieldToEnd() {
-    const source = screen.getByText('Erstes Feld').closest('[draggable="true"]');
-    const target = screen.getByRole('button', {name: 'Neues Element hinzufügen'}).previousElementSibling;
+function getTreeField(label: string): Element {
+    // React DnD marks connected drag sources as draggable.
+    const source = screen.getByText(label).closest('[draggable="true"]');
     expect(source).not.toBeNull();
-    expect(target).not.toBeNull();
-    await dragAndDrop(source!, target!);
+    return source!;
 }
 
-async function dragAndDrop(source: Element, target: Element) {
-    const event = {dataTransfer: {types: [], setData: vi.fn()}, clientX: 0, clientY: 1};
-    fireEvent.dragStart(source, event);
-    fireEvent.dragEnter(target, event);
-    fireEvent.dragOver(target, event);
-    fireEvent.drop(target, event);
-    fireEvent.dragEnd(source, event);
+function getTreeEndSlot(treeId: string): Element {
+    // The root list of each test tree holds two fields, so its third drop slot appends.
+    return screen.getByTestId(`element-tree-drop-slot-${treeId}.2`);
+}
+
+async function dragTreeFieldToEnd(treeId: string) {
+    const source = getTreeField('Erstes Feld');
+    startDrag(source);
+    await dropAndEndDrag(source, getTreeEndSlot(treeId));
+}
+
+const dragEvent = {dataTransfer: {types: [], setData: vi.fn()}, clientX: 0, clientY: 1};
+
+function startDrag(source: Element) {
+    fireEvent.dragStart(source, dragEvent);
+}
+
+async function dropAndEndDrag(source: Element, target: Element) {
+    fireEvent.dragEnter(target, dragEvent);
+    fireEvent.dragOver(target, dragEvent);
+    fireEvent.drop(target, dragEvent);
+    fireEvent.dragEnd(source, dragEvent);
     await act(async () => {});
 }

@@ -3,8 +3,6 @@ import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {MemoryRouter} from 'react-router-dom';
-import {DndProvider} from 'react-dnd';
-import {HTML5Backend} from 'react-dnd-html5-backend';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {ElementType} from '../../data/element-type/element-type';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -14,6 +12,7 @@ import {type StepperLayoutElement} from '../../models/elements/form/layout/stepp
 import {type AnyFormElement} from '../../models/elements/form/any-form-element';
 import {type StepElement} from '../../models/elements/steps/step-element';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
+import {DragAndDropProvider} from '../../providers/drag-and-drop-provider';
 import {ElementTree} from './element-tree';
 
 vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
@@ -206,9 +205,9 @@ describe('ElementTree section expansion', () => {
 });
 
 function TreeTestWrapper({children}: PropsWithChildren) {
-    return <DndProvider backend={HTML5Backend}>
+    return <DragAndDropProvider>
         <MemoryRouter>{children}</MemoryRouter>
-    </DndProvider>;
+    </DragAndDropProvider>;
 }
 
 function TestTree({

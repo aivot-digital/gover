@@ -9,8 +9,6 @@ import {createAppTheme, createDefaultAppTheme} from '../theming/themes';
 import {StorageKey} from '../data/storage-key';
 import {StorageScope, StorageService} from '../services/storage-service';
 import {ColorModeContext, type ColorModePreference} from './color-mode-context';
-import {DndProvider} from 'react-dnd';
-import {HTML5Backend} from 'react-dnd-html5-backend';
 
 export function AppProvider({children, theme: __theme}: PropsWithChildren<{ theme?: Theme }>) {
     const systemPrefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -43,23 +41,19 @@ export function AppProvider({children, theme: __theme}: PropsWithChildren<{ them
     );
 
     return (
-        // Keep one provider mounted across route and dialog changes: React DnD's
-        // cleanup of local providers can clear a manager still used by another editor.
-        <DndProvider backend={HTML5Backend}>
-            <ColorModeContext.Provider value={colorModeContext}>
-                <ThemeProvider theme={theme}>
-                    <CssBaseline enableColorScheme/>
-                    <TextBalanceProvider>
-                        <SnackbarProvider>
-                            <PromptProvider>
-                                <ConfirmProvider>
-                                    {children}
-                                </ConfirmProvider>
-                            </PromptProvider>
-                        </SnackbarProvider>
-                    </TextBalanceProvider>
-                </ThemeProvider>
-            </ColorModeContext.Provider>
-        </DndProvider>
+        <ColorModeContext.Provider value={colorModeContext}>
+            <ThemeProvider theme={theme}>
+                <CssBaseline enableColorScheme/>
+                <TextBalanceProvider>
+                    <SnackbarProvider>
+                        <PromptProvider>
+                            <ConfirmProvider>
+                                {children}
+                            </ConfirmProvider>
+                        </PromptProvider>
+                    </SnackbarProvider>
+                </TextBalanceProvider>
+            </ThemeProvider>
+        </ColorModeContext.Provider>
     );
 }

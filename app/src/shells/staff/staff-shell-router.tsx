@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/react';
 import {createBrowserRouter, RouterProvider} from 'react-router-dom';
 import {StaffShell} from './staff-shell';
 import {AppProvider} from '../../providers/app-provider';
+import {DragAndDropProvider} from '../../providers/drag-and-drop-provider';
 import {store} from '../../store.staff';
 import {Provider as StoreProvide} from 'react-redux';
 import {assetsRoutes} from '../../modules/assets/assets-routes';
@@ -92,9 +93,11 @@ const router = sentryCreateBrowserRouter(
 export function StaffShellRouter() {
     return (
         <StoreProvide store={store}>
-            <AppProvider>
-                <RouterProvider router={router} />
-            </AppProvider>
+            <DragAndDropProvider>
+                <AppProvider>
+                    <RouterProvider router={router} />
+                </AppProvider>
+            </DragAndDropProvider>
         </StoreProvide>
     );
 }
