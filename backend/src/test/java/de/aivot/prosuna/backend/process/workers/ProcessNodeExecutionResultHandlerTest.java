@@ -2,6 +2,8 @@ package de.aivot.prosuna.backend.process.workers;
 
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageAttachment;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
@@ -150,7 +152,12 @@ class ProcessNodeExecutionResultHandlerTest {
                 processNode("Formularanforderung"), instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                         .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
-                                "invitee@example.test", CommunicationMessage.of("Daten ergänzen", "Bitte ergänzen", "Bitte ergänzen")
+                                "invitee@example.test",
+                                new CommunicationMessage.Builder()
+                                        .subject("Daten ergänzen")
+                                        .body("Bitte ergänzen")
+                                        .htmlBody("Bitte ergänzen")
+                                        .build()
                         ))
         );
 
@@ -184,7 +191,12 @@ class ProcessNodeExecutionResultHandlerTest {
                 instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                         .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
-                                "invitee@example.test", CommunicationMessage.of("Daten ergänzen", "Bitte ergänzen", "Bitte ergänzen")
+                                "invitee@example.test",
+                                new CommunicationMessage.Builder()
+                                        .subject("Daten ergänzen")
+                                        .body("Bitte ergänzen")
+                                        .htmlBody("Bitte ergänzen")
+                                        .build()
                         ))
         ));
 
@@ -231,7 +243,12 @@ class ProcessNodeExecutionResultHandlerTest {
                 instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                         .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
-                                "invitee@example.test", CommunicationMessage.of("Daten ergänzen", "Bitte ergänzen", "Bitte ergänzen")
+                                "invitee@example.test",
+                                new CommunicationMessage.Builder()
+                                        .subject("Daten ergänzen")
+                                        .body("Bitte ergänzen")
+                                        .htmlBody("Bitte ergänzen")
+                                        .build()
                         ))
         );
 
@@ -350,16 +367,23 @@ class ProcessNodeExecutionResultHandlerTest {
     void handleResult_DispatchesCommunicationAndMapsProviderResultBeforeOutputs() throws Exception {
         var communicationService = mock(CommunicationService.class);
         var identity = providerIdentity("applicant");
-        var message = CommunicationMessage
-                .of("Subject", "Body", "Body")
-                .withSendingContext(
-                        user("stale-user", "Stale User"),
-                        new DepartmentEntity().setId(99).setName("Stale Department")
-                )
-                .withSignatureDepartment(new VDepartmentShadowedEntity()
+        var originalUser = user("stale-user", "Stale User");
+        var originalDepartment = new DepartmentEntity().setId(99).setName("Stale Department");
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .callToActions(List.of(new CommunicationMessageCallToAction("Open", "https://example.test/task")))
+                .timestamp(Instant.parse("2026-01-01T12:00:00Z"))
+                .attachments(List.of(mock(CommunicationMessageAttachment.class)))
+                .sendingUser(originalUser)
+                .sendingDepartment(originalDepartment)
+                .signatureDepartment(new VDepartmentShadowedEntity()
                         .setId(23)
                         .setName("Bürgerbüro")
-                        .setDefaultMailSignature("Viele Grüße"));
+                        .setDefaultMailSignature("Viele Grüße"))
+                .referenceId("reference-1")
+                .build();
         var sendResult = Map.<String, Object>of(
                 "submissionId", "submission-1",
                 "status", "SUBMITTED"
@@ -403,11 +427,20 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(message.subject(), sentMessage.subject());
         assertEquals(message.body(), sentMessage.body());
         assertEquals(message.htmlBody(), sentMessage.htmlBody());
+        assertEquals(message.callToActions(), sentMessage.callToActions());
         assertEquals(message.timestamp(), sentMessage.timestamp());
+        assertEquals(message.attachments(), sentMessage.attachments());
+        assertEquals(message.referenceId(), sentMessage.referenceId());
         assertNull(sentMessage.sendingUser());
         assertEquals(17, sentMessage.sendingDepartment().getId());
         assertEquals("Fachbereich Leistungen", sentMessage.sendingDepartment().getName());
         assertEquals(23, sentMessage.signatureDepartment().getId());
+        assertSame(message.signatureDepartment(), sentMessage.signatureDepartment());
+        assertSame(originalUser, message.sendingUser());
+        assertSame(originalDepartment, message.sendingDepartment());
+        assertEquals("stale-user", originalUser.getId());
+        assertEquals(99, originalDepartment.getId());
+        assertEquals("Stale Department", originalDepartment.getName());
         assertEquals(sendResult, task.getNodeData().get("sendResult"));
         assertEquals(Map.of("delivery", sendResult), task.getProcessData());
         assertEquals(ProcessTaskStatus.Running, task.getStatus());
@@ -465,7 +498,11 @@ class ProcessNodeExecutionResultHandlerTest {
     void handleResult_AppliesPaymentRequestedOnlyAfterCommunicationSucceeds() throws Exception {
         var communicationService = mock(CommunicationService.class);
         var identity = identity("applicant");
-        var message = CommunicationMessage.of("Payment", "Please pay", "Please pay");
+        var message = new CommunicationMessage.Builder()
+                .subject("Payment")
+                .body("Please pay")
+                .htmlBody("Please pay")
+                .build();
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class))).thenReturn(Map.of());
         var triggeringUser = user("user-1", "Trigger User");
 
@@ -524,7 +561,11 @@ class ProcessNodeExecutionResultHandlerTest {
     void handleResult_MarksTaskFailedWhenCommunicationFails() throws Exception {
         var communicationService = mock(CommunicationService.class);
         var identity = identity("applicant");
-        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .build();
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class)))
                 .thenThrow(new CommunicationException("Versand fehlgeschlagen"));
 
@@ -586,7 +627,11 @@ class ProcessNodeExecutionResultHandlerTest {
                 new ProcessNodeExecutionResultTaskUpdated()
                         .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                                 "missing",
-                                CommunicationMessage.of("Subject", "Body", "Body"),
+                                new CommunicationMessage.Builder()
+                                        .subject("Subject")
+                                        .body("Body")
+                                        .htmlBody("Body")
+                                        .build(),
                                 null
                         ))
         ));
@@ -627,7 +672,11 @@ class ProcessNodeExecutionResultHandlerTest {
                 new ProcessNodeExecutionResultTaskUpdated()
                         .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                                 identity.identityId(),
-                                CommunicationMessage.of("Subject", "Body", "Body"),
+                                new CommunicationMessage.Builder()
+                                        .subject("Subject")
+                                        .body("Body")
+                                        .htmlBody("Body")
+                                        .build(),
                                 null
                         ))
         ));
@@ -665,7 +714,11 @@ class ProcessNodeExecutionResultHandlerTest {
                 new ProcessNodeExecutionResultTaskUpdated()
                         .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                                 identity.identityId(),
-                                CommunicationMessage.of("Subject", "Body", "Body"),
+                                new CommunicationMessage.Builder()
+                                        .subject("Subject")
+                                        .body("Body")
+                                        .htmlBody("Body")
+                                        .build(),
                                 null
                         ))
         ));

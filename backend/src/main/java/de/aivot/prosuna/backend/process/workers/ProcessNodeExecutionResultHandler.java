@@ -295,10 +295,19 @@ public class ProcessNodeExecutionResultHandler {
             }
         }
 
-        var message = communicationRequest.message().withSendingContext(
-                context.triggeringUser,
-                resolveSendingDepartment(context)
-        );
+        var originalMessage = communicationRequest.message();
+        var message = new CommunicationMessage.Builder()
+                .subject(originalMessage.subject())
+                .body(originalMessage.body())
+                .htmlBody(originalMessage.htmlBody())
+                .callToActions(originalMessage.callToActions())
+                .timestamp(originalMessage.timestamp())
+                .attachments(originalMessage.attachments())
+                .sendingUser(context.triggeringUser)
+                .sendingDepartment(resolveSendingDepartment(context))
+                .signatureDepartment(originalMessage.signatureDepartment())
+                .referenceId(originalMessage.referenceId())
+                .build();
 
         final Map<String, Object> sendResult;
         try {

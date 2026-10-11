@@ -390,7 +390,11 @@ class MailCommunicationProviderV1Test {
     }
 
     private static CommunicationMessage message() {
-        return CommunicationMessage.of("Subject", "Body", "Body");
+        return new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .build();
     }
 
     private static CommunicationProviderEntity provider() {

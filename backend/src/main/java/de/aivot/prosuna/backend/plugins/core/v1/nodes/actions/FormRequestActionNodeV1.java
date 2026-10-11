@@ -525,16 +525,16 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var customerLink = prosunaConfig
                 .createUrl("/process/", processInstance.getAccessKey(), "tasks", task.getAccessKey());
 
-        var message = CommunicationMessage.of(
-                subject,
-                content,
-                content,
-                List.of(new CommunicationMessageCallToAction("Daten einreichen", customerLink)),
-                List.of()
-        ).withSignatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
-                configuration.messageConfig,
-                vDepartmentShadowedService
-        ));
+        var message = new CommunicationMessage.Builder()
+                .subject(subject)
+                .body(content)
+                .htmlBody(content)
+                .callToActions(List.of(new CommunicationMessageCallToAction("Daten einreichen", customerLink)))
+                .signatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
+                        configuration.messageConfig,
+                        vDepartmentShadowedService
+                ))
+                .build();
 
         var communicationRequest = newRecipient
                 ? ProcessNodeExecutionResultCommunicationRequest.toEmail(requireInvitationEmail(configuration.recipientEmailAddress), message)
