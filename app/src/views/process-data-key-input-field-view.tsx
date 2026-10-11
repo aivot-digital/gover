@@ -1,5 +1,5 @@
 import {processDataPathPattern} from '../utils/process-data-path';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {BaseViewProps} from './base-view';
 import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
@@ -175,15 +175,24 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
         );
     }, [disableWildCards, hasProcessDataKeyMetadata, opec, prefix, providedSuggestions, scopeProcessDataKey]);
 
+    // Only a changed scope invalidates the selected path. Suggestions can be incomplete, for example when an
+    // upstream node is broken, so a saved path that is merely missing from them must stay unchanged.
+    const checkedScopeProcessDataKeyRef = useRef(scopeProcessDataKey);
     useEffect(() => {
-        if (!hasScopeProcessDataKey || !hasProcessDataKeyMetadata || value == null) {
+        if (!hasProcessDataKeyMetadata) {
+            return;
+        }
+
+        const scopeChanged = checkedScopeProcessDataKeyRef.current !== scopeProcessDataKey;
+        checkedScopeProcessDataKeyRef.current = scopeProcessDataKey;
+        if (!scopeChanged || !hasScopeProcessDataKey || value == null) {
             return;
         }
 
         if (!suggestions.some((suggestion) => suggestion.id === value)) {
             onChange(null);
         }
-    }, [hasProcessDataKeyMetadata, hasScopeProcessDataKey, onChange, suggestions, value]);
+    }, [hasProcessDataKeyMetadata, hasScopeProcessDataKey, onChange, scopeProcessDataKey, suggestions, value]);
 
     const readOnly = hasScopeProcessDataKey && hasProcessDataKeyMetadata;
     const interactionDisabled = Boolean(disabled || busy || readOnly);
