@@ -655,26 +655,33 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Nonnull
     private ProcessNodeDefinitionMetadata finalizeInputVariableSuggestions(@Nonnull ProcessNodeDefinitionMetadata metadata) {
-        // Draft configurations may contain invalid paths. Keep the usable hints without changing provider metadata.
-        metadata = new ProcessNodeDefinitionMetadata(
-                new ArrayList<>(metadata.reusableUiDefinitions()),
-                new ArrayList<>(metadata.forwardedAttachmentSets()),
-                metadata.forwardedProcessDataKeys().stream()
-                        .filter(key -> ProcessDataValueUtils.isValidDestinationKey(key.processDataKey(), false, true))
-                        .collect(Collectors.toCollection(ArrayList::new)),
-                new ArrayList<>(metadata.forwardedIdentities()),
-                new ArrayList<>(metadata.inputVariables())
-        );
+        // Draft configurations may contain invalid paths. Forward only valid keys, in the canonical form that the
+        // editor compares with saved paths. The metadata is the service's own copy, so it can be changed in place.
+        var forwardedKeys = new ArrayList<>(metadata.forwardedProcessDataKeys());
+        metadata.forwardedProcessDataKeys().clear();
 
-        for (var forwardedKey : metadata.forwardedProcessDataKeys()) {
+        for (var forwardedKey : forwardedKeys) {
+            var segments = parseForwardedProcessDataKey(forwardedKey.processDataKey());
+            if (segments == null) {
+                continue;
+            }
+
+            var processDataKey = ProcessDataValueUtils.formatDestinationKeySegments(segments);
+            metadata.addForwardedProcessDataKey(new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
+                    processDataKey,
+                    forwardedKey.label(),
+                    forwardedKey.subLabel(),
+                    forwardedKey.origin()
+            ));
+
             // Wildcard paths need a concrete row binding or an explicit collection result. Neither is part of the
             // scalar Variable mode in V1, so exposing them as selectable suggestions would create invalid mappings.
-            if (ProcessDataValueUtils.hasWildcardSegment(forwardedKey.processDataKey())) {
+            if (segments.contains("*")) {
                 continue;
             }
             metadata.addInputVariable(new InputVariableSuggestion(
                     InputVariableSource.ProcessData,
-                    forwardedKey.processDataKey(),
+                    processDataKey,
                     null,
                     forwardedKey.label(),
                     forwardedKey.subLabel(),
@@ -695,6 +702,16 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         addProtectedProcessDataSuggestion(metadata, "attachmentSets", "Anlagensätze");
         addProtectedProcessDataSuggestion(metadata, "currentTaskId", "Aktuelle Aufgaben-ID");
         return metadata;
+    }
+
+    @Nullable
+    private static List<String> parseForwardedProcessDataKey(@Nullable String processDataKey) {
+        try {
+            var segments = ProcessDataValueUtils.parseDestinationKeySegments(processDataKey, false);
+            return segments.isEmpty() ? null : segments;
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
     private void addProtectedProcessDataSuggestion(@Nonnull ProcessNodeDefinitionMetadata metadata,

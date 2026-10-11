@@ -299,6 +299,29 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void incomingMetadata_ShouldForwardCanonicalDataKeys() throws Exception {
+        var source = createNode(1, "source");
+        var target = createNode(2, "target");
+        var metadata = ProcessNodeDefinitionMetadata.empty()
+                .addForwardedProcessDataKey(" person . name", "Name", null, source)
+                .addForwardedProcessDataKey("people [*]. name", "Names", null, source)
+                .addForwardedProcessDataKey("people[ 0 ].name ", "First name", null, source);
+        useMetadataProvider(metadata, ProcessNodeType.Action);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of("person.name", "people[*].name", "people[0].name"), result.forwardedProcessDataKeys().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList());
+        assertEquals(List.of("person.name", "people[0].name"), result.inputVariables().stream()
+                .filter(variable -> variable.source() == InputVariableSource.ProcessData)
+                .map(variable -> variable.path()).toList());
+    }
+
+    @Test
     void incomingMetadata_ShouldAddHintsToACopyOfIncompleteImmutableProviderMetadata() throws Exception {
         var source = createNode(1, "source");
         source.getOutputMappings().put("result", "mapped.result");
