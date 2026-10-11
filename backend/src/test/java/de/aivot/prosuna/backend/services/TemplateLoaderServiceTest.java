@@ -31,21 +31,55 @@ import de.aivot.prosuna.backend.services.pdf.MarkdownDialect;
 import de.aivot.prosuna.backend.services.pdf.PdfElement;
 import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
 import org.junit.jupiter.api.Test;
+import org.thymeleaf.exceptions.TemplateInputException;
 import org.thymeleaf.templatemode.TemplateMode;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TemplateLoaderServiceTest {
+
+    @Test
+    void processTemplate_DoesNotResolveTemplatesFromAssetStorage() throws IOException {
+        // The default local asset storage is rooted at ./data/assets/. Files stored there must never become templates.
+        var assetDirectory = Path.of("data", "assets");
+        var createdDirectories = new LinkedList<Path>();
+        for (var directory = assetDirectory; directory != null && !Files.exists(directory); directory = directory.getParent()) {
+            createdDirectories.addFirst(directory);
+        }
+        Files.createDirectories(assetDirectory);
+        var templateName = "template-loader-test-" + UUID.randomUUID() + ".html";
+        var assetFile = assetDirectory.resolve(templateName);
+        Files.writeString(assetFile, "<p>Vorlage aus den Dateien & Medien</p>");
+
+        try {
+            assertThrows(
+                    TemplateInputException.class,
+                    () -> new TemplateLoaderService().processTemplate(templateName, Map.of(), TemplateMode.HTML)
+            );
+        } finally {
+            Files.deleteIfExists(assetFile);
+            var directories = createdDirectories.descendingIterator();
+            while (directories.hasNext()) {
+                Files.deleteIfExists(directories.next());
+            }
+        }
+    }
 
     @Test
     void checkboxTemplate_RendersHintOnlyOnceInBlankPrint() {
