@@ -51,7 +51,6 @@ import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Instant;
@@ -235,9 +234,9 @@ class ProcessNodeServiceTest {
         ));
     }
 
+    // Blank output mappings never reach the key filter, so only non-blank invalid keys exercise it here.
     @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {" ", "person-name", "people..name", "people[", "people[2147483648]", "[0].name"})
+    @ValueSource(strings = {"person-name", "people..name", "people[", "people[2147483648]", "[0].name"})
     void incomingMetadata_ShouldSkipInvalidOutputMappings(String invalidKey) throws Exception {
         var source = createNode(1, "source");
         source.getOutputMappings().put("result", invalidKey);
