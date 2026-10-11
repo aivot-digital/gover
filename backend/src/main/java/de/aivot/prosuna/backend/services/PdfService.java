@@ -154,7 +154,7 @@ public class PdfService {
         dto.put("managingDepartment", managingDepartment);
         dto.put("theme", theme);
 
-        return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
+        return generateGotenbergPdf(dto);
     }
 
     public byte[] generateCustomerSummary(FormLayoutElement formLayoutElement,
@@ -344,7 +344,7 @@ public class PdfService {
         dto.put("managingDepartment", findDepartment(form.getManagingDepartmentId()));
         dto.put("theme", formTheme);
 
-        return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
+        return generateGotenbergPdf(dto);
     }
 
     @Nonnull
@@ -387,8 +387,8 @@ public class PdfService {
                 .orElse(null);
     }
 
-    private byte[] generateGotenbergPdf(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
-        String template = loadContentTemplate(pdfTemplateKey, dto);
+    private byte[] generateGotenbergPdf(Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
+        String template = loadTemplate("form.html", dto);
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
 
@@ -467,22 +467,6 @@ public class PdfService {
         }
 
         return response.body();
-    }
-
-    private String loadContentTemplate(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) {
-        if (pdfTemplateKey != null) {
-            try {
-                var res = loadTemplate(pdfTemplateKey.toString(), dto);
-                if (StringUtils.isNotNullOrEmpty(res)) {
-                    return res;
-                }
-                return loadTemplate("form.html", dto);
-            } catch (Exception e) {
-                return loadTemplate("form.html", dto);
-            }
-        } else {
-            return loadTemplate("form.html", dto);
-        }
     }
 
     private String loadTemplate(String templateName, Map<String, Object> data) {
