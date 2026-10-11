@@ -304,9 +304,9 @@ public class ProcessNodeExecutionResultHandler {
                 .timestamp(originalMessage.timestamp())
                 .attachments(originalMessage.attachments())
                 .sendingUser(context.triggeringUser)
-                .sendingDepartment(resolveSendingDepartment(context))
+                .sendingDepartment(resolveSendingDepartment(context, originalMessage.signatureDepartment()))
                 .signatureDepartment(originalMessage.signatureDepartment())
-                .referenceId(originalMessage.referenceId())
+                .referenceId(context.processInstance.getCaseNumber())
                 .build();
 
         final Map<String, Object> sendResult;
@@ -360,6 +360,7 @@ public class ProcessNodeExecutionResultHandler {
         messageDetails.put("subject", message.subject());
         messageDetails.put("body", message.body());
         messageDetails.put("htmlBody", message.htmlBody());
+        messageDetails.put("referenceId", message.referenceId());
         messageDetails.put("sendingUser", createSendingUserDetails(message.sendingUser()));
         messageDetails.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));
         messageDetails.put("signatureDepartment", createSignatureDepartmentDetails(message.signatureDepartment()));
@@ -407,8 +408,23 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     @Nonnull
-    private DepartmentEntity resolveSendingDepartment(@Nonnull HandlerContext<?> context)
+    private DepartmentEntity resolveSendingDepartment(@Nonnull HandlerContext<?> context,
+                                                       @Nullable VDepartmentShadowedEntity signatureDepartment)
             throws ProcessNodeExecutionException {
+        if (signatureDepartment != null) {
+            var departmentId = signatureDepartment.getId();
+            var department = departmentId == null
+                    ? Optional.<DepartmentEntity>empty()
+                    : departmentService.retrieve(departmentId);
+            if (department.isEmpty()) {
+                markTaskFailed(context.processInstanceTask);
+                throw new ProcessNodeExecutionExceptionMissingValue(
+                        "Die ausgewählte Organisationseinheit für die E-Mail-Signatur ist nicht vorhanden."
+                );
+            }
+            return department.get();
+        }
+
         final Optional<ProcessEntity> process;
         try {
             process = processService.retrieve(context.processInstance.getProcessId());
