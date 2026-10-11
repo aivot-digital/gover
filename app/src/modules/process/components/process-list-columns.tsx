@@ -151,15 +151,22 @@ export function processListColumns<T extends Entry>(tasks: boolean, onChanged: (
             headerName: tasks ? 'Aufgabenstatus' : 'Vorgangsstatus',
             width: 165,
             renderCell: ({row}) => {
-                const label = tasks
-                    ? ProcessTaskStatusLabels[row.status as ProcessTaskStatus]
-                    : ProcessInstanceStatusLabels[row.status as ProcessInstanceStatus];
+                const identityLabel = tasks && row.status === ProcessTaskStatus.AwaitingCustomer
+                    ? (row as ProcessTaskListEntry).assignedCustomerIdentityLabel?.trim()
+                    : undefined;
+                const label = identityLabel
+                    ? `Wartet auf ${identityLabel}`
+                    : tasks
+                        ? ProcessTaskStatusLabels[row.status as ProcessTaskStatus]
+                        : ProcessInstanceStatusLabels[row.status as ProcessInstanceStatus];
                 const customLabel = row.statusOverride?.trim();
                 return (
                     <Tooltip
                         arrow
                         title={
-                            customLabel && customLabel !== label ? `${customLabel} (Systemstatus: ${label})` : ''
+                            customLabel && customLabel !== label
+                                ? `${customLabel} (Systemstatus: ${label})`
+                                : identityLabel ? label : ''
                         }
                     >
                         <Box
