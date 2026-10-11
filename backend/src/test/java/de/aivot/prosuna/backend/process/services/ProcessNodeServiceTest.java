@@ -48,6 +48,10 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -62,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -132,7 +137,8 @@ class ProcessNodeServiceTest {
                 processEdgeRepository,
                 config,
                 identityCommunicationAvailabilityService,
-                permissionService
+                permissionService,
+                new ProcessVersionDraftGuard(processVersionRepository)
         );
     }
 
@@ -437,6 +443,47 @@ class ProcessNodeServiceTest {
         assertEquals(unrelated, assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> service.create(node)));
     }
 
+    @ParameterizedTest
+    @EnumSource(value = ProcessVersionStatus.class, names = {"Published", "Revoked"})
+    void writes_ShouldRejectNodesOfVersionsThatAreNoLongerDrafts(ProcessVersionStatus status) {
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION)))
+                .thenReturn(Optional.of(createProcessVersion().setStatus(status)));
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.create(createNode(3, "new")));
+        assertConflict(() -> service.performUpdate(2, createNode(2, "changed"), existingNode));
+        assertConflict(() -> service.performDelete(existingNode));
+
+        assertEquals("existing", existingNode.getDataKey());
+        verify(processNodeRepository, never()).saveAndFlush(any(ProcessNodeEntity.class));
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+        verify(processNodeRepository, never()).delete(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performUpdate_ShouldRejectMovingNodeIntoPublishedVersion() {
+        var publishedVersion = PROCESS_VERSION - 1;
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, publishedVersion)))
+                .thenReturn(Optional.of(createProcessVersion()
+                        .setProcessVersion(publishedVersion)
+                        .setStatus(ProcessVersionStatus.Published)));
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing").setProcessVersion(publishedVersion), existingNode));
+
+        assertEquals(PROCESS_VERSION, existingNode.getProcessVersion());
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performDelete_ShouldDeleteNodesOfDrafts() throws Exception {
+        var node = createNode(2, "existing");
+
+        service.performDelete(node);
+
+        verify(processNodeRepository).delete(node);
+    }
+
     @Test
     void create_ShouldAllowNegativeNodeTypeLimit() throws Exception {
         prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, -1));
@@ -545,6 +592,11 @@ class ProcessNodeServiceTest {
                 .setPublicTitle("Draft")
                 .setCreated(Instant.now())
                 .setUpdated(Instant.now());
+    }
+
+    private static void assertConflict(Executable executable) {
+        var exception = assertThrows(ResponseException.class, executable);
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
     }
 
     private ProcessNodeEntity createNode(int id, String dataKey) {
