@@ -680,7 +680,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             dispatch(clearLoadingMessage());
             isResolvingBlockedNavigationRef.current = false;
 
-            if (shouldProceed && deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current)) {
+            // After a deadline expiry only the expiry notice is rendered, so the confirmation dialog could never resolve it.
+            if (deadlineExceededRef.current || (shouldProceed && deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current))) {
                 blockedNavigation.proceed?.();
                 return;
             }
