@@ -32,6 +32,8 @@ import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermis
 public class ProcessListService {
     public static final List<ProcessTaskStatus> OPEN_TASK_STATUSES = List.of(ProcessTaskStatus.Running, ProcessTaskStatus.InProgress,
             ProcessTaskStatus.AwaitingStaff, ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
+    public static final List<ProcessInstanceStatus> ACTIVE_INSTANCE_STATUSES = List.of(ProcessInstanceStatus.Created,
+            ProcessInstanceStatus.Running, ProcessInstanceStatus.Paused);
     private final EntityManager em;
     private final PermissionService permissions;
     private final UserRepository users;
@@ -54,7 +56,8 @@ public class ProcessListService {
                 fileNumbers(row), row.get("processId", Integer.class), row.get("processVersion", Integer.class),
                 row.get("processName", String.class), row.get("assignedUserId", String.class), row.get("assignedUserId") == null ? null : names.get(row.get("assignedUserId")),
                 row.get("status", ProcessInstanceStatus.class), row.get("statusOverride", String.class),
-                row.get("started", Instant.class), row.get("finished", Instant.class), row.get("testClaim") != null));
+                row.get("started", Instant.class), row.get("deadline", Instant.class), row.get("finished", Instant.class),
+                row.get("testClaim") != null));
     }
 
     @Nonnull
@@ -153,10 +156,10 @@ public class ProcessListService {
         columns.add(r.process.get("id").alias("processId"));
         columns.add((tasks ? owner.get("processVersion") : owner.get("initialProcessVersion")).alias("processVersion"));
         columns.add(r.process.get("internalTitle").alias("processName"));
-        for (var field : List.of("assignedUserId", "status", "statusOverride", "started", "finished")) columns.add(owner.get(field).alias(field));
+        // Instance rows carry the soft process deadline, task rows the deadline of the task phase.
+        for (var field : List.of("assignedUserId", "status", "statusOverride", "started", "deadline", "finished")) columns.add(owner.get(field).alias(field));
         columns.add(r.instance.get("createdForTestClaimId").alias("testClaim"));
         if (tasks) {
-            columns.add(owner.get("deadline").alias("deadline"));
             columns.add(r.node.get("name").alias("taskName"));
             columns.add(r.node.get("description").alias("description"));
             columns.add(r.node.get("processNodeDefinitionKey").alias("definitionKey"));
@@ -166,10 +169,9 @@ public class ProcessListService {
         var orders = new ArrayList<Order>();
         for (var order : page.getSort()) {
             Expression<?> field = switch (order.getProperty()) {
-                case "id", "started", "finished", "status" -> owner.get(order.getProperty());
+                case "id", "started", "deadline", "finished", "status" -> owner.get(order.getProperty());
                 case "caseNumber" -> r.instance.get("caseNumber");
                 case "processName" -> cb.lower(r.process.get("internalTitle"));
-                case "deadline" -> tasks ? owner.get("deadline") : null;
                 default -> null;
             };
             if (field == null) throw ResponseException.badRequest("Nach dieser Spalte kann nicht sortiert werden.");
@@ -247,7 +249,7 @@ public class ProcessListService {
         if (roots.task == null) {
             return switch (view) {
                 case "all" -> cb.conjunction();
-                case "active" -> roots.instance.get("status").in(ProcessInstanceStatus.Created, ProcessInstanceStatus.Running, ProcessInstanceStatus.Paused);
+                case "active" -> roots.instance.get("status").in(ACTIVE_INSTANCE_STATUSES);
                 case "ended" -> roots.instance.get("status").in(ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted);
                 case "failed" -> cb.equal(roots.instance.get("status"), ProcessInstanceStatus.Failed);
                 default -> throw ResponseException.badRequest("Diese Vorgangsansicht ist nicht verfügbar.");

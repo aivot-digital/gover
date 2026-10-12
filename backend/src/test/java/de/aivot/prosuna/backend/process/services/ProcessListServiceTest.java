@@ -60,11 +60,11 @@ public class ProcessListServiceTest {
         sql("drop table if exists processes");
         sql("create table processes (id int primary key, internal_title varchar)");
         sql("create table process_nodes (id int primary key, name varchar, description varchar, process_node_definition_key varchar, process_node_definition_version int)");
-        sql("create table process_instances (id bigint primary key, case_number varchar, assigned_file_numbers varchar array, process_id int, initial_process_version int, assigned_user_id varchar, status smallint, status_override varchar, started timestamp with time zone, finished timestamp with time zone, created_for_test_claim_id int)");
+        sql("create table process_instances (id bigint primary key, case_number varchar, assigned_file_numbers varchar array, process_id int, initial_process_version int, assigned_user_id varchar, status smallint, status_override varchar, started timestamp with time zone, finished timestamp with time zone, created_for_test_claim_id int, deadline timestamp with time zone)");
         sql("create table process_instance_tasks (id bigint primary key, process_instance_id bigint, process_node_id int, process_version int, assigned_user_id varchar, status smallint, status_override varchar, started timestamp with time zone, finished timestamp with time zone, deadline timestamp with time zone)");
         sql("insert into processes values (10, 'Anmeldung'), (20, 'Geschützt')");
         sql("insert into process_nodes values (100, 'Prüfung', 'Unterlagen prüfen', 'missing', 1)");
-        sql("insert into process_instances values (1, 'ABC-100', ARRAY['AZ-2026', '100%_literal'], 10, 1, null, 1, 'Eigener Status', CURRENT_TIMESTAMP, null, null), (2, 'ABC-200', ARRAY['AZ-Alt'], 10, 2, 'someone', 3, null, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1), (3, 'SECRET', ARRAY['AZ-secret'], 20, 1, 'secret-user', 5, null, CURRENT_TIMESTAMP, null, null)");
+        sql("insert into process_instances values (1, 'ABC-100', ARRAY['AZ-2026', '100%_literal'], 10, 1, null, 1, 'Eigener Status', CURRENT_TIMESTAMP, null, null, DATEADD('DAY',2,CURRENT_TIMESTAMP)), (2, 'ABC-200', ARRAY['AZ-Alt'], 10, 2, 'someone', 3, null, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, null), (3, 'SECRET', ARRAY['AZ-secret'], 20, 1, 'secret-user', 5, null, CURRENT_TIMESTAMP, null, null, DATEADD('DAY',1,CURRENT_TIMESTAMP))");
         sql("insert into process_instance_tasks values (11,1,100,1,'me',0,'Fachliche Prüfung',CURRENT_TIMESTAMP,null,DATEADD('DAY',-1,CURRENT_TIMESTAMP)), (12,1,100,1,'someone',7,null,CURRENT_TIMESTAMP,null,null), (13,2,100,2,null,2,null,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,DATEADD('DAY',-1,CURRENT_TIMESTAMP)), (14,3,100,1,'me',0,null,CURRENT_TIMESTAMP,null,DATEADD('DAY',-2,CURRENT_TIMESTAMP)), (15,1,100,1,'me',6,null,CURRENT_TIMESTAMP,null,null), (16,1,100,1,'me',1,null,CURRENT_TIMESTAMP,null,null)");
     }
 
@@ -80,6 +80,17 @@ public class ProcessListServiceTest {
         assertEquals(0, service.instances("me", PageRequest.of(0, 12), filter("all", "all", null)).getTotalElements());
         when(permissions.hasSystemPermission("me", PROCESS_INSTANCE_READ)).thenReturn(true);
         assertEquals(3, service.instances("me", PageRequest.of(0, 12), filter("all", "all", null)).getTotalElements());
+    }
+
+    @Test
+    void instanceRowsExposeTheirOwnDeadlineAndSortMissingDeadlinesLast() throws Exception {
+        when(permissions.hasSystemPermission("me", PROCESS_INSTANCE_READ)).thenReturn(true);
+        var ascending = service.instances("me", PageRequest.of(0, 12, Sort.by("deadline")), filter("all", "all", null));
+        assertEquals(List.of(3L, 1L, 2L), ascending.getContent().stream().map(row -> row.id()).toList());
+        assertNotNull(ascending.getContent().getFirst().deadline());
+        assertNull(ascending.getContent().getLast().deadline());
+        var descending = service.instances("me", PageRequest.of(0, 12, Sort.by(Sort.Direction.DESC, "deadline")), filter("all", "all", null));
+        assertEquals(List.of(1L, 3L, 2L), descending.getContent().stream().map(row -> row.id()).toList());
     }
 
     @Test
