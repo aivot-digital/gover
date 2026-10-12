@@ -59,7 +59,7 @@ class InstanceAssignmentResultHandlerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        when(nodeService.resolvePorts(any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(
+        when(nodeService.resolvePorts(any(), any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(
                 java.util.List.of(new de.aivot.prosuna.backend.process.models.ProcessNodePort("success", "Erfolg", "Fortsetzen")), java.util.List.of()));
         when(users.retrieve("previous")).thenReturn(Optional.of(user("previous")));
         when(users.retrieve("recipient")).thenReturn(Optional.of(user("recipient")));
@@ -70,7 +70,7 @@ class InstanceAssignmentResultHandlerTest {
     @Test
     void completionUsesResolvedNodePortsAndRejectsPortsRemovedByConfiguration() throws Exception {
         var dynamic = new de.aivot.prosuna.backend.process.models.ProcessNodePort("configured", "Konfiguriert", "Fortsetzen");
-        when(nodeService.resolvePorts(any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(java.util.List.of(dynamic), java.util.List.of()));
+        when(nodeService.resolvePorts(any(), any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(java.util.List.of(dynamic), java.util.List.of()));
         when(edges.findByFromNodeIdAndViaPort(12, "configured")).thenReturn(Optional.of(new ProcessEdgeEntity(1, 42, 3, 12, 13, "configured")));
         var instance = instance();
         var task = task();
@@ -81,7 +81,7 @@ class InstanceAssignmentResultHandlerTest {
         verify(rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE), any(ProcessWorker.DoWorkWorkerPayload.class));
 
         clearInvocations(tasks, rabbit);
-        when(nodeService.resolvePorts(any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(java.util.List.of(), java.util.List.of()));
+        when(nodeService.resolvePorts(any(), any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(java.util.List.of(), java.util.List.of()));
         var newTask = task();
         assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance(), newTask, null, completion));
         verify(tasks, never()).save(any());

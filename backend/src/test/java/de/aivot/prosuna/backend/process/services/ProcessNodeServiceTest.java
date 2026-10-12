@@ -135,7 +135,8 @@ class ProcessNodeServiceTest {
                 config,
                 identityCommunicationAvailabilityService,
                 permissionService,
-                new ProcessNodePortResolver(jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator())
+                new ProcessNodePortResolver(jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator()),
+                new ProcessNodePortResolutionCache(de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper())
         );
     }
 

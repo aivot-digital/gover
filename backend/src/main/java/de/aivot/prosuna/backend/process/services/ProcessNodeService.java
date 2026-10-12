@@ -77,6 +77,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private final IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
     private final PermissionService permissionService;
     private final ProcessNodePortResolver portResolver;
+    private final ProcessNodePortResolutionCache portResolutionCache;
 
     @Autowired
     public ProcessNodeService(ProcessNodeRepository processNodeRepository,
@@ -89,7 +90,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                               ProsunaConfig prosunaConfig,
                               IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService,
                               PermissionService permissionService,
-                              ProcessNodePortResolver portResolver) {
+                              ProcessNodePortResolver portResolver,
+                              ProcessNodePortResolutionCache portResolutionCache) {
         this.processNodeRepository = processNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.elementDerivationService = elementDerivationService;
@@ -101,6 +103,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         this.identityCommunicationAvailabilityService = identityCommunicationAvailabilityService;
         this.permissionService = permissionService;
         this.portResolver = portResolver;
+        this.portResolutionCache = portResolutionCache;
     }
 
     @Nonnull
@@ -113,12 +116,25 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     @Nonnull
     public <C> ProcessNodePortResolution resolvePorts(@Nonnull ProcessNodeEntity node,
                                                        @Nonnull ProcessNodeDefinition<C> provider) {
-        try {
-            var derived = deriveConfiguration(node, provider, null, false);
-            return portResolver.resolve(node, provider, derived.configuration());
-        } catch (ResponseException exception) {
-            return ProcessNodePortResolver.failed();
-        }
+        return portResolutionCache.resolve(node, () -> {
+            try {
+                var derived = deriveConfiguration(node, provider, null, false);
+                return portResolver.resolve(node, provider, derived.configuration());
+            } catch (ResponseException exception) {
+                return ProcessNodePortResolver.failed();
+            }
+        });
+    }
+
+    /**
+     * Resolves ports from an already derived configuration, e.g. the runtime configuration of an executing node.
+     * Ports only depend on literal values, so this matches the authoring resolution without deriving it again.
+     */
+    @Nonnull
+    public <C> ProcessNodePortResolution resolvePorts(@Nonnull ProcessNodeEntity node,
+                                                       @Nonnull ProcessNodeDefinition<C> provider,
+                                                       @Nonnull C configuration) {
+        return portResolver.resolve(node, provider, configuration);
     }
 
     @Nonnull

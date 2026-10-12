@@ -97,7 +97,7 @@ class ProcessTaskDeadlineResultHandlerTest {
         when(versions.findById(ProcessVersionEntityId.of(10, 1)))
                 .thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(10).setProcessVersion(1)));
         when(definition.getOutputs()).thenReturn(List.of());
-        when(nodes.resolvePorts(node, definition)).thenReturn(new ProcessNodePortResolution(
+        when(nodes.resolvePorts(eq(node), eq(definition), any())).thenReturn(new ProcessNodePortResolution(
                 List.of(new ProcessNodePort("success", "Weiter", "Fortsetzen")), List.of(), List.of(PREPARATION, CUSTOMER)));
         when(edges.findByFromNodeIdAndViaPort(3, "success"))
                 .thenReturn(Optional.of(new ProcessEdgeEntity(1, 10, 1, 3, 4, "success")));
@@ -277,8 +277,8 @@ class ProcessTaskDeadlineResultHandlerTest {
             var resolver = new ProcessNodePortResolver(validators.getValidator());
             when(definition.getPorts(any())).thenReturn(List.of());
             when(definition.getDeadlines(any())).thenReturn(List.of(PREPARATION, CUSTOMER));
-            when(nodes.resolvePorts(node, definition)).thenAnswer(invocation ->
-                    resolver.resolve(node, definition, new AuthoredElementValues()));
+            when(nodes.resolvePorts(eq(node), eq(definition), any())).thenAnswer(invocation ->
+                    resolver.resolve(node, definition, invocation.<AuthoredElementValues>getArgument(2)));
             when(edges.findByFromNodeIdAndViaPort(3, "customer_overdue"))
                     .thenReturn(Optional.of(new ProcessEdgeEntity(1, 10, 1, 3, 4, "customer_overdue")));
             var result = new ProcessNodeExecutionResultTaskCompleted("customer_overdue");
@@ -299,6 +299,19 @@ class ProcessTaskDeadlineResultHandlerTest {
             assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
             verify(edges).findByFromNodeIdAndViaPort(3, "customer_overdue");
         }
+    }
+
+    @Test
+    void resolvesRuntimePortsFromTheExecutingConfigurationWithoutDerivingItAgain() throws Exception {
+        var configuration = new AuthoredElementValues();
+        var result = new ProcessNodeExecutionResultTaskCompleted("success").setNewDeadlineKey("customer");
+
+        handler.handleResult(new ProcessNodeExecutionLogger(1L, 2L, null, null, events), null,
+                definition, configuration, node, instance, task, null, result);
+
+        assertEquals(ProcessTaskStatus.Completed, task.getStatus());
+        verify(nodes, times(2)).resolvePorts(same(node), same(definition), same(configuration));
+        verify(nodes, never()).resolvePorts(any(), any());
     }
 
     @Test

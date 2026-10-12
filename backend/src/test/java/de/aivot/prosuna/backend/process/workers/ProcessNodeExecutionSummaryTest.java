@@ -76,7 +76,7 @@ class ProcessNodeExecutionSummaryTest {
         when(versions.findById(ProcessVersionEntityId.of(1, 1)))
                 .thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(1).setProcessVersion(1)));
         when(definition.getOutputs()).thenReturn(List.of(new ProcessNodeOutput("value", "Wert", "Ergebnis", "number")));
-        when(nodeService.resolvePorts(node, definition)).thenReturn(new ProcessNodePortResolution(
+        when(nodeService.resolvePorts(eq(node), eq(definition), any())).thenReturn(new ProcessNodePortResolution(
                 List.of(new ProcessNodePort("next", "Weiter", "Fortsetzen")), List.of()));
         when(edges.findByFromNodeIdAndViaPort(3, "next"))
                 .thenReturn(Optional.of(new ProcessEdgeEntity(1, 1, 1, 3, 4, "next")));

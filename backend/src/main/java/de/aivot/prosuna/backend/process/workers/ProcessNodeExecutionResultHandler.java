@@ -213,7 +213,7 @@ public class ProcessNodeExecutionResultHandler {
                 additionalIdentities
         );
 
-        var selectedDeadline = resolveSelectedDeadline(currentNode, provider, executionResult);
+        var selectedDeadline = resolveSelectedDeadline(currentNode, provider, configurationOfExecutingNode, executionResult);
         var context = new HandlerContext<>(
                 logger,
                 triggeringUser,
@@ -274,14 +274,15 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     @Nullable
-    private ProcessNodeDeadlineDefinition resolveSelectedDeadline(@Nonnull ProcessNodeEntity node,
-                                                                  @Nonnull ProcessNodeDefinition<?> provider,
-                                                                  @Nonnull ProcessNodeExecutionResult result)
+    private <C> ProcessNodeDeadlineDefinition resolveSelectedDeadline(@Nonnull ProcessNodeEntity node,
+                                                                      @Nonnull ProcessNodeDefinition<C> provider,
+                                                                      @Nonnull C configuration,
+                                                                      @Nonnull ProcessNodeExecutionResult result)
             throws ProcessNodeExecutionExceptionBrokenImplementation {
         if (result.getNewDeadlineKey() == null) {
             return null;
         }
-        var resolution = processNodeService.resolvePorts(node, provider);
+        var resolution = processNodeService.resolvePorts(node, provider, configuration);
         if (!resolution.problems().isEmpty()) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(String.join(" ", resolution.problems()));
         }
@@ -835,7 +836,7 @@ public class ProcessNodeExecutionResultHandler {
     private void handleAssignedInstance(HandlerContext<?, ProcessNodeExecutionResultInstanceAssigned> context) throws ProcessNodeExecutionException {
         var viaPort = context.result.getViaPort();
         if (viaPort != null) {
-            requireCompletionPath(context.provider, context.currentNode, context.processInstanceTask, viaPort);
+            requireCompletionPath(context, viaPort);
             var processData = context.result.getProcessData() != null
                     ? context.result.getProcessData()
                     : context.previousTask != null
@@ -1139,7 +1140,7 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleTaskComplete(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskCompleted> context) throws ProcessNodeExecutionException {
-        var completionPath = requireCompletionPath(context.provider, context.currentNode, context.processInstanceTask, context.result.getViaPort());
+        var completionPath = requireCompletionPath(context, context.result.getViaPort());
         var port = completionPath.port();
         var outEdge = completionPath.edge();
 
@@ -1211,11 +1212,12 @@ public class ProcessNodeExecutionResultHandler {
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
     }
 
-    private CompletionPath requireCompletionPath(@Nonnull ProcessNodeDefinition<?> provider,
-                                                 @Nonnull ProcessNodeEntity currentNode,
-                                                 @Nonnull ProcessInstanceTaskEntity task,
-                                                 @Nonnull String viaPort) throws ProcessNodeExecutionExceptionBrokenImplementation {
-        var resolution = processNodeService.resolvePorts(currentNode, provider);
+    private <C> CompletionPath requireCompletionPath(@Nonnull HandlerContext<C, ?> context,
+                                                    @Nonnull String viaPort) throws ProcessNodeExecutionExceptionBrokenImplementation {
+        var provider = context.provider;
+        var currentNode = context.currentNode;
+        var task = context.processInstanceTask;
+        var resolution = processNodeService.resolvePorts(currentNode, provider, context.configurationOfExecutingNode);
         if (!resolution.problems().isEmpty()) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(String.join(" ", resolution.problems()));
         }

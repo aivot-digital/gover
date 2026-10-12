@@ -82,7 +82,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
         when(versions.findById(ProcessVersionEntityId.of(10, 1)))
                 .thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(10).setProcessVersion(1)));
         when(definition.getOutputs()).thenReturn(List.of());
-        when(nodeService.resolvePorts(node, definition)).thenReturn(new ProcessNodePortResolution(
+        when(nodeService.resolvePorts(eq(node), eq(definition), any())).thenReturn(new ProcessNodePortResolution(
                 List.of(new ProcessNodePort("success", "Weiter", "Fortsetzen")), List.of()));
         when(edges.findByFromNodeIdAndViaPort(3, "success"))
                 .thenReturn(Optional.of(new ProcessEdgeEntity(1, 1, 1, 3, 4, "success")));
