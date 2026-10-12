@@ -35,6 +35,7 @@ import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.prosuna.backend.payment.services.PaymentTaskAttemptService;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -127,6 +128,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private final JsonMapper jsonMapper;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
     private final VDepartmentShadowedService vDepartmentShadowedService;
+    private final PaymentTaskAttemptService paymentTaskAttemptService;
 
     public PaymentRequestActionNodeV1(PaymentPayloadCreationService paymentPayloadCreationService,
                                       PaymentTransactionService paymentTransactionService,
@@ -136,7 +138,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                                       ProsunaConfig prosunaConfig,
                                       JsonMapper jsonMapper,
                                       AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
-                                      VDepartmentShadowedService vDepartmentShadowedService) {
+                                      VDepartmentShadowedService vDepartmentShadowedService,
+                                      PaymentTaskAttemptService paymentTaskAttemptService) {
         this.paymentPayloadCreationService = paymentPayloadCreationService;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderRepository = paymentProviderRepository;
@@ -146,6 +149,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         this.jsonMapper = jsonMapper;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
+        this.paymentTaskAttemptService = paymentTaskAttemptService;
     }
 
     @Nonnull
@@ -357,6 +361,11 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<PaymentRequestActionNodeConfig> context) throws ProcessNodeExecutionException {
+        var paidAttempt = paymentTaskAttemptService.findPaidEarlierAttempt(context.getThisTask());
+        if (paidAttempt.isPresent()) {
+            return completeWithEarlierPayment(context, paidAttempt.get());
+        }
+
         var configuration = context.getConfigurationOfExecutingNode();
 
         if (SemiAutomaticMessageConfig.isAutomatic(configuration.messageConfig)) {
@@ -375,6 +384,25 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
                 StringUtils.quote(executionType)
         );
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResult completeWithEarlierPayment(
+            @Nonnull ProcessNodeExecutionInitContext<PaymentRequestActionNodeConfig> context,
+            @Nonnull PaymentTaskAttemptService.PaidAttempt paidAttempt
+    ) {
+        var transaction = paidAttempt.transaction();
+        // Keep the earlier request data, so outputs, the customer view and the payment confirmation stay available.
+        var nodeData = new LinkedHashMap<>(paidAttempt.attempt().getNodeData());
+        nodeData.put(OUTPUT_PAYMENT_STATUS, resolveStatus(transaction).getKey());
+        nodeData.put(OUTPUT_PAYMENT_DETAILS, transaction.getPaymentInformation());
+        paymentTaskAttemptService.logReuse(context.getLogger(), paidAttempt);
+
+        return ProcessNodeExecutionResultTaskCompleted
+                .of(PORT_PAID)
+                .setRuntimeData(new LinkedHashMap<>(paidAttempt.attempt().getRuntimeData()))
+                .setNodeData(nodeData)
+                .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }
 
     @Nonnull

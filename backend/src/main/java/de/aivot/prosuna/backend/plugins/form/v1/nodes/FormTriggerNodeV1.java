@@ -33,6 +33,7 @@ import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.prosuna.backend.payment.services.PaymentTaskAttemptService;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
@@ -131,6 +132,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final JsonMapper jsonMapper;
     private final AuthoredInputValueService authoredInputValueService;
+    private final PaymentTaskAttemptService paymentTaskAttemptService;
 
     public FormTriggerNodeV1(PublicUrlService publicUrlService,
                              ProcessNodeRepository processNodeRepository,
@@ -145,7 +147,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
                              ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                              JsonMapper jsonMapper,
-                             AuthoredInputValueService authoredInputValueService) {
+                             AuthoredInputValueService authoredInputValueService,
+                             PaymentTaskAttemptService paymentTaskAttemptService) {
         this.publicUrlService = publicUrlService;
         this.processNodeRepository = processNodeRepository;
         this.pdfService = pdfService;
@@ -160,6 +163,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         this.prosunaConfig = prosunaConfig;
         this.jsonMapper = jsonMapper;
         this.authoredInputValueService = authoredInputValueService;
+        this.paymentTaskAttemptService = paymentTaskAttemptService;
     }
 
     @Nonnull
@@ -529,6 +533,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .payment;
 
         if (paymentConfig != null && paymentConfig.paymentProviderKey() != null) {
+            var paidAttempt = paymentTaskAttemptService.findPaidEarlierAttempt(context.getThisTask());
+            if (paidAttempt.isPresent()) {
+                paymentTaskAttemptService.logReuse(context.getLogger(), paidAttempt.get());
+                return complete(context, nodeData, paidAttempt.get().attempt().getRuntimeData());
+            }
+
             var paymentProvider = paymentProviderRepository
                     .findById(paymentConfig.paymentProviderKey())
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
@@ -624,6 +634,13 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Nonnull
     private ProcessNodeExecutionResult complete(@Nonnull ProcessNodeExecutionInitContext<FormTriggerConfigV1> context,
                                                 @Nonnull Map<String, Object> nodeData) throws ProcessNodeExecutionException {
+        return complete(context, nodeData, context.getThisTask().getRuntimeData());
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResult complete(@Nonnull ProcessNodeExecutionInitContext<FormTriggerConfigV1> context,
+                                                @Nonnull Map<String, Object> nodeData,
+                                                @Nonnull Map<String, Object> runtimeData) throws ProcessNodeExecutionException {
         var processInstanceInitialPayload = context
                 .getThisProcessInstance()
                 .getInitialPayload();
@@ -638,10 +655,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             }
         }
 
-        if (context.getThisTask().getRuntimeData().containsKey(DATA_KEY_PAYMENT_TRANSACTION_KEY)) {
-            var txKey = context
-                    .getThisTask()
-                    .getRuntimeData()
+        if (runtimeData.containsKey(DATA_KEY_PAYMENT_TRANSACTION_KEY)) {
+            var txKey = runtimeData
                     .get(DATA_KEY_PAYMENT_TRANSACTION_KEY)
                     .toString();
 
@@ -690,7 +705,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setRuntimeData(context.getThisTask().getRuntimeData())
+                .setRuntimeData(runtimeData)
                 .setNodeData(nodeData)
                 .setProcessData(nodeInitialPayload);
     }
