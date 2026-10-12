@@ -131,12 +131,12 @@ Back up these Docker volumes regularly:
 - `prosuna_database_data`
 - `keycloak_database_data`
 - `prosuna_data`
-- `rabbitmq_data`
 - `caddy_data`
 - `caddy_config`
 
 The database volumes and `prosuna_data` are the critical application data.
 `caddy_data` contains the TLS certificates and ACME account data.
+RabbitMQ needs no backup: Prosuna stores pending background work in the database and publishes it again when the message broker starts empty.
 
 **Attention:** Make sure to stop the stack before backing up the volumes to avoid data corruption:
 
