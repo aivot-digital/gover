@@ -21,12 +21,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -42,7 +37,7 @@ class ProcessWorkerRestartTest {
         fixture.existing.put(100L, new ProcessInstanceTaskEntity().setId(100L).setProcessInstanceId(42L)
                 .setProcessNodeId(11).setStatus(oldStatus).setRestartForTaskId(99L));
 
-        fixture.worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, 5L, 10, "approved", 11, 100L));
+        fixture.worker.workOnNodeLocked(new ProcessWorker.DoWorkWorkerPayload(42L, 5L, 10, "approved", 11, 100L));
 
         assertEquals(1, fixture.saved.size());
         var task = fixture.saved.getFirst();
@@ -55,7 +50,7 @@ class ProcessWorkerRestartTest {
         order.verify(fixture.definition).init(any());
 
         task.setStatus(ProcessTaskStatus.Failed);
-        fixture.worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, 5L, 10, "approved", 11, task.getId()));
+        fixture.worker.workOnNodeLocked(new ProcessWorker.DoWorkWorkerPayload(42L, 5L, 10, "approved", 11, task.getId()));
         assertEquals(task.getId(), fixture.saved.getLast().getRestartForTaskId());
         assertEquals(100L, task.getRestartForTaskId());
     }
@@ -70,7 +65,7 @@ class ProcessWorkerRestartTest {
             fixture.existing.put(previousTask, new ProcessInstanceTaskEntity().setId(previousTask)
                     .setProcessInstanceId(42L).setProcessNodeId(previousNode).setStatus(ProcessTaskStatus.Completed));
         }
-        fixture.worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, previousTask, previousNode, "next", 11, null));
+        fixture.worker.workOnNodeLocked(new ProcessWorker.DoWorkWorkerPayload(42L, previousTask, previousNode, "next", 11, null));
         assertEquals(1, fixture.saved.size());
         assertNull(fixture.saved.getFirst().getRestartForTaskId());
         verify(fixture.definition).init(any());
@@ -85,37 +80,10 @@ class ProcessWorkerRestartTest {
                     .setProcessInstanceId(invalid.equals("instance") ? 99L : 42L)
                     .setProcessNodeId(invalid.equals("node") ? 99 : 11));
         }
-        fixture.worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, 100L));
+        fixture.worker.workOnNodeLocked(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, 100L));
         assertTrue(fixture.saved.isEmpty());
         verify(fixture.definition, never()).init(any());
         assertEquals(ProcessInstanceStatus.Failed, fixture.instance.getStatus());
-    }
-
-    @Test
-    void normalQueueCannotContinueAnExpiredTaskButItsWorkRequestCan() throws Exception {
-        var fixture = new Fixture();
-        fixture.existing.put(5L, new ProcessInstanceTaskEntity().setId(5L).setProcessInstanceId(42L)
-                .setProcessNodeId(10).setStatus(ProcessTaskStatus.DeadlineExceeded));
-        var payload = new ProcessWorker.DoWorkWorkerPayload(42L, 5L, 10, "overdue", 11, null);
-
-        fixture.worker.doWorkOnNextNode(payload);
-        assertTrue(fixture.saved.isEmpty());
-        verify(fixture.definition, never()).init(any());
-
-        fixture.worker.workOnNodeLocked(payload);
-        assertEquals(1, fixture.saved.size());
-        assertEquals("overdue", fixture.saved.getFirst().getPreviousProcessNodePortKey());
-        verify(fixture.definition).init(any());
-    }
-
-    @Test
-    void rolledBackCompletionCannotStartTheNextNode() throws Exception {
-        var fixture = new Fixture();
-        fixture.existing.put(5L, new ProcessInstanceTaskEntity().setId(5L).setProcessInstanceId(42L)
-                .setProcessNodeId(10).setStatus(ProcessTaskStatus.AwaitingStaff));
-        fixture.worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, 5L, 10, "next", 11, null));
-        assertTrue(fixture.saved.isEmpty());
-        verify(fixture.definition, never()).init(any());
     }
 
     @Test
@@ -128,24 +96,6 @@ class ProcessWorkerRestartTest {
         assertEquals(99L, task.getRestartForTaskId());
         assertTrue(fixture.saved.isEmpty());
         verify(fixture.definition).resume(any());
-    }
-
-    @Test
-    void deserializesQueuedPayloadFromBeforeTheRestartFieldWasAdded() throws Exception {
-        // Serialized with the original five-component DoWorkWorkerPayload record.
-        var bytes = Base64.getDecoder().decode(
-                "rO0ABXNyAEpkZS5haXZvdC5wcm9zdW5hLmJhY2tlbmQucHJvY2Vzcy53b3JrZXJzLlByb2Nlc3NXb3JrZXIkRG9Xb3JrV29ya2VyUGF5bG9hZAAAAAAAAAAAAgAFTAAKbmV4dE5vZGVJZHQAE0xqYXZhL2xhbmcvSW50ZWdlcjtMAA5wcmV2aW91c05vZGVJZHEAfgABTAATcHJldmlvdXNOb2RlUG9ydEtleXQAEkxqYXZhL2xhbmcvU3RyaW5nO0wADnByZXZpb3VzVGFza0lkdAAQTGphdmEvbGFuZy9Mb25nO0wAEXByb2Nlc3NJbnN0YW5jZUlkcQB+AAN4cHNyABFqYXZhLmxhbmcuSW50ZWdlchLioKT3gYc4AgABSQAFdmFsdWV4cgAQamF2YS5sYW5nLk51bWJlcoaslR0LlOCLAgAAeHAAAAALc3EAfgAFAAAACnQACGFwcHJvdmVkc3IADmphdmEubGFuZy5Mb25nO4vkkMyPI98CAAFKAAV2YWx1ZXhxAH4ABgAAAAAAAAAHc3EAfgAKAAAAAAAAACo=");
-        try (var input = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
-            assertEquals(new ProcessWorker.DoWorkWorkerPayload(42L, 7L, 10, "approved", 11, null), input.readObject());
-        }
-        var payload = new ProcessWorker.DoWorkWorkerPayload(42L, 7L, 10, "approved", 11, 100L);
-        var outputBytes = new ByteArrayOutputStream();
-        try (var output = new ObjectOutputStream(outputBytes)) {
-            output.writeObject(payload);
-        }
-        try (var input = new ObjectInputStream(new ByteArrayInputStream(outputBytes.toByteArray()))) {
-            assertEquals(payload, input.readObject());
-        }
     }
 
     private static class Fixture {

@@ -45,7 +45,6 @@ import java.util.UUID;
 
 @Service
 public class ProcessWorker {
-    public static final String DO_WORK_ON_INSTANCE_QUEUE = "do-work-on-instance-queue";
     public static final String RESUME_WORK_ON_INSTANCE_QUEUE = "resume-work-on-instance-queue";
 
     private final ProcessInstanceRepository processInstanceRepository;
@@ -79,27 +78,8 @@ public class ProcessWorker {
     }
 
     @Bean
-    public Queue doWorkOnInstanceQueue() {
-        return new Queue(DO_WORK_ON_INSTANCE_QUEUE, true);
-    }
-
-    @Bean
     public Queue resumeWorkOnInstanceQueue() {
         return new Queue(RESUME_WORK_ON_INSTANCE_QUEUE, true);
-    }
-
-    @RabbitListener(queues = DO_WORK_ON_INSTANCE_QUEUE)
-    public void doWorkOnNextNode(DoWorkWorkerPayload payload) {
-        try {
-            execution.inInstance(payload.processInstanceId(), () -> {
-                doWorkOnNextNodeLocked(payload, ProcessTaskStatus.Completed);
-                return null;
-            });
-        } catch (ResponseException exception) {
-            processNodeExecutionLoggerFactory.create(payload.processInstanceId(), null, null, null).logException(exception);
-        } catch (UnexpectedRollbackException exception) {
-            recordFailedExecution(payload.processInstanceId(), null, exception);
-        }
     }
 
     /**
@@ -131,17 +111,6 @@ public class ProcessWorker {
         } catch (ResponseException ignored) {
             // The instance no longer exists, so no failure state remains to be recorded.
         }
-    }
-
-    private void doWorkOnNextNodeLocked(@Nonnull DoWorkWorkerPayload payload, @Nonnull ProcessTaskStatus predecessorStatus) {
-        if (payload.previousTaskId() != null && payload.restartForTaskId() == null) {
-            var predecessor = processInstanceTaskRepository.findById(payload.previousTaskId());
-            // A queued normal transition may outlive a rolled-back request or a deadline transition.
-            if (predecessor.isEmpty() || predecessor.get().getStatus() != predecessorStatus
-                    || !payload.processInstanceId().equals(predecessor.get().getProcessInstanceId())
-                    || !java.util.Objects.equals(payload.previousNodeId(), predecessor.get().getProcessNodeId())) return;
-        }
-        workOnNodeLocked(payload);
     }
 
     /**
@@ -356,7 +325,7 @@ public class ProcessWorker {
             var previousAttempt = processInstanceTaskRepository.findById(restartForTaskId)
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionUnknown(
                             "Die Aufgabe mit der ID „%d“ wurde nicht gefunden.", restartForTaskId));
-            // The restart command may still be saving the old task's status when queued work begins.
+            // The status of the previous attempt is checked by the caller; only its reference must match here.
             if (!processInstance.getId().equals(previousAttempt.getProcessInstanceId())
                     || !currentNode.getId().equals(previousAttempt.getProcessNodeId())) {
                 throw new ProcessNodeExecutionExceptionUnknown(
@@ -597,7 +566,7 @@ public class ProcessWorker {
             @Nullable String previousNodePortKey,
             @Nonnull Integer nextNodeId,
             @Nullable Long restartForTaskId
-    ) implements Serializable {
+    ) {
 
     }
 

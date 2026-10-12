@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 
 class ProcessWorkerTest {
     @Test
-    void doWork_RecordsFailedInstance_WhenSharedTransactionWasMarkedRollbackOnly() throws Exception {
+    void recordsFailedInstanceInANewTransaction() throws Exception {
         var instance = runningInstance();
         var instanceRepository = mock(ProcessInstanceRepository.class);
         when(instanceRepository.findById(42L)).thenReturn(Optional.of(instance));
@@ -61,11 +61,10 @@ class ProcessWorkerTest {
         var rollback = new UnexpectedRollbackException("Transaction silently rolled back");
         var execution = mock(ProcessTaskExecutionService.class);
         when(execution.inInstance(eq(42L), any()))
-                .thenThrow(rollback)
                 .thenAnswer(invocation -> ((ProcessTaskExecutionService.Operation<?>) invocation.getArgument(1)).run());
         var worker = createWorker(instanceRepository, mock(ProcessInstanceTaskRepository.class), loggerFactory, execution);
 
-        assertDoesNotThrow(() -> worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, 99L, 10, "output", 11, null)));
+        assertDoesNotThrow(() -> worker.recordFailedExecution(42L, null, rollback));
 
         assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
         verify(instanceRepository).save(instance);
@@ -180,7 +179,7 @@ class ProcessWorkerTest {
                 passthrough()
         );
 
-        worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
+        worker.workOnNodeLocked(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
         worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
 
         verifyNoInteractions(nodeRepository, taskRepository, definitionService, resultHandler);
@@ -294,7 +293,7 @@ class ProcessWorkerTest {
                 passthrough()
         );
 
-        worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
+        worker.workOnNodeLocked(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
 
         assertEquals(ProcessInstanceStatus.Failed, processInstance.getStatus());
         assertEquals(1, savedProcessInstances.size());
@@ -510,7 +509,7 @@ class ProcessWorkerTest {
             worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
             verify(definition).resume(argThat(context -> context.getConfigurationOfExecutingNode() == effectiveConfiguration));
         } else {
-            worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
+            worker.workOnNodeLocked(new ProcessWorker.DoWorkWorkerPayload(42L, null, null, null, 11, null));
             verify(definition).init(argThat(context -> context.getConfigurationOfExecutingNode() == effectiveConfiguration));
         }
 

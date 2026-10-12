@@ -6,16 +6,15 @@ import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.controllers.ProcessInstanceTaskController;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceRestartService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceTaskService;
-import de.aivot.prosuna.backend.process.workers.ProcessWorker;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 
@@ -25,11 +24,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -39,7 +38,7 @@ class ProcessInstanceTaskControllerTest {
     @Mock
     private ProcessInstanceTaskService processInstanceTaskService;
     @Mock
-    private RabbitTemplate rabbitTemplate;
+    private ProcessInstanceRestartService restartService;
     @Mock
     private PermissionService permissionService;
 
@@ -56,7 +55,7 @@ class ProcessInstanceTaskControllerTest {
         controller = new ProcessInstanceTaskController(
                 userService,
                 processInstanceTaskService,
-                rabbitTemplate,
+                restartService,
                 permissionService, mock(de.aivot.prosuna.backend.process.services.ProcessAssignmentService.class),
                 listService,
                 passthrough()
@@ -89,33 +88,38 @@ class ProcessInstanceTaskControllerTest {
     }
 
     @Test
-    void rerunFailedTask_ShouldMarkTaskAsRestartedAndQueueWork() throws Exception {
+    void rerunFailedTask_ShouldAuthorizeAndDelegateToTheRestartService() throws Exception {
         var task = createTask(ProcessTaskStatus.Failed);
+        var restarted = createTask(ProcessTaskStatus.Restarted);
         var user = mock(UserEntity.class);
+        when(user.getId()).thenReturn("user-1");
 
         when(processInstanceTaskService.retrieve(task.getId())).thenReturn(Optional.of(task));
-        when(processInstanceTaskService.update(task.getId(), task)).thenReturn(task);
         when(userService.fromJWT(jwt)).thenReturn(Optional.of(user));
+        when(restartService.rerunFailedTask(task.getProcessInstanceId(), task.getId())).thenReturn(restarted);
 
         var result = controller.rerunFailedTask(jwt, task.getId());
 
-        assertEquals(ProcessTaskStatus.Restarted, result.getStatus());
-        assertNotNull(result.getUpdated());
+        assertSame(restarted, result);
+        var order = inOrder(permissionService, restartService);
+        order.verify(permissionService).requireProcessInstancePermission("user-1", task.getProcessInstanceId(),
+                ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK);
+        order.verify(restartService).rerunFailedTask(task.getProcessInstanceId(), task.getId());
+    }
 
-        var payloadCaptor = ArgumentCaptor.forClass(ProcessWorker.DoWorkWorkerPayload.class);
-        verify(processInstanceTaskService).update(task.getId(), task);
-        verify(rabbitTemplate).convertAndSend(
-                org.mockito.ArgumentMatchers.eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE),
-                payloadCaptor.capture()
-        );
+    @Test
+    void rerunFailedTask_ShouldNotRerunWithoutPermission() throws Exception {
+        var task = createTask(ProcessTaskStatus.Failed);
+        var user = mock(UserEntity.class);
+        when(user.getId()).thenReturn("user-1");
+        when(processInstanceTaskService.retrieve(task.getId())).thenReturn(Optional.of(task));
+        when(userService.fromJWT(jwt)).thenReturn(Optional.of(user));
+        doThrow(ResponseException.forbidden()).when(permissionService).requireProcessInstancePermission("user-1",
+                task.getProcessInstanceId(), ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK);
 
-        var payload = payloadCaptor.getValue();
-        assertEquals(task.getProcessInstanceId(), payload.processInstanceId());
-        assertEquals(task.getPreviousProcessInstanceTaskId(), payload.previousTaskId());
-        assertEquals(task.getPreviousProcessNodeId(), payload.previousNodeId());
-        assertEquals(task.getPreviousProcessNodePortKey(), payload.previousNodePortKey());
-        assertEquals(task.getProcessNodeId(), payload.nextNodeId());
-        assertEquals(task.getId(), payload.restartForTaskId());
+        assertThrows(ResponseException.class, () -> controller.rerunFailedTask(jwt, task.getId()));
+
+        verifyNoInteractions(restartService);
     }
 
     @Test
@@ -127,8 +131,7 @@ class ProcessInstanceTaskControllerTest {
         var exception = assertThrows(ResponseException.class, () -> controller.rerunFailedTask(jwt, task.getId()));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        verify(processInstanceTaskService, never()).update(task.getId(), task);
-        verifyNoInteractions(rabbitTemplate);
+        verifyNoInteractions(restartService);
     }
 
     private ProcessInstanceTaskEntity createTask(ProcessTaskStatus status) {
