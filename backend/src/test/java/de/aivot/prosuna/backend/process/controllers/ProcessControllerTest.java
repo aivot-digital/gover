@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAccessControlPresetEntity;
@@ -41,6 +42,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -153,8 +155,9 @@ class ProcessControllerTest {
                 .thenReturn(new PageImpl<>(List.of(departmentPreset, teamPreset)));
         when(processInstanceAccessControlPresetService.create(any(ProcessInstanceAccessControlPresetEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        // Connections are copied as stored; obsolete ports are corrected in the draft before publication.
         when(processDefinitionEdgeService.findAllByProcessIdAndProcessVersion(42, 2))
-                .thenReturn(List.of());
+                .thenReturn(List.of(new ProcessEdgeEntity(9, 42, 2, 5, 5, "obsolete_port")));
 
         var result = controller.newVersionFromExisting(null, 42, 2);
 
@@ -170,6 +173,13 @@ class ProcessControllerTest {
         assertEquals(3, nodeCaptor.getValue().getProcessVersion());
         verify(permissionService)
                 .requireProcessPermission("user-1", 42, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE);
+        var edgeCaptor = ArgumentCaptor.forClass(ProcessEdgeEntity.class);
+        verify(processDefinitionEdgeService).copy(edgeCaptor.capture());
+        verify(processDefinitionEdgeService, never()).create(any(ProcessEdgeEntity.class));
+        assertEquals(3, edgeCaptor.getValue().getProcessVersion());
+        assertEquals(6, edgeCaptor.getValue().getFromNodeId());
+        assertEquals(6, edgeCaptor.getValue().getToNodeId());
+        assertEquals("obsolete_port", edgeCaptor.getValue().getViaPort());
 
         var filterCaptor = ArgumentCaptor.forClass(ProcessInstanceAccessControlPresetFilter.class);
         verify(processInstanceAccessControlPresetService)

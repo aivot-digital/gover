@@ -38,6 +38,16 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
         return processDefinitionEdgeRepository.save(entity);
     }
 
+    /**
+     * Copies a stored connection into a new draft, e.g. for a new version or an import. Obsolete connections stay
+     * visible for correction and block publication there, instead of aborting the non-transactional copy midway.
+     */
+    @Nonnull
+    public ProcessEdgeEntity copy(@Nonnull ProcessEdgeEntity entity) {
+        entity.setId(null);
+        return processDefinitionEdgeRepository.save(entity);
+    }
+
     @Nullable
     @Override
     public Page<ProcessEdgeEntity> performList(@Nonnull Pageable pageable,

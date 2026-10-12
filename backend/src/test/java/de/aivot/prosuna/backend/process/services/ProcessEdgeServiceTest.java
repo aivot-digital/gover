@@ -82,6 +82,21 @@ class ProcessEdgeServiceTest {
     }
 
     @Test
+    void copiesStoredConnectionsWithoutRequiringCurrentlyAvailablePorts() {
+        var repository = mock(ProcessEdgeRepository.class);
+        var nodes = mock(ProcessNodeService.class);
+        var service = new ProcessEdgeService(repository, nodes);
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var edge = new ProcessEdgeEntity(4, 10, 3, 1, 2, "removed");
+
+        assertSame(edge, service.copy(edge));
+
+        assertNull(edge.getId());
+        verify(repository).save(edge);
+        verifyNoInteractions(nodes);
+    }
+
+    @Test
     void refusesUnresolvedAndAlreadyConnectedPorts() throws Exception {
         var repository = mock(ProcessEdgeRepository.class);
         var nodes = mock(ProcessNodeService.class);

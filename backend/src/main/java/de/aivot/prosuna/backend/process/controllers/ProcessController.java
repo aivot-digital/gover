@@ -288,7 +288,7 @@ public class ProcessController {
             var translatedToNodeId = savedNodeIdMap.get(edge.getToNodeId());
 
             var createdEdge = processDefinitionEdgeService
-                    .create(edge
+                    .copy(edge
                             .setProcessId(newProcess.getId())
                             .setProcessVersion(newVersion.getProcessVersion())
                             .setFromNodeId(translatedFromNodeId)
@@ -718,7 +718,7 @@ public class ProcessController {
                 .findAllByProcessIdAndProcessVersion(process.getId(), originalProcessVersion.getProcessVersion());
         for (var originalEdge : originalEdges) {
             processDefinitionEdgeService
-                    .create(new ProcessEdgeEntity(
+                    .copy(new ProcessEdgeEntity(
                             null,
                             process.getId(),
                             createdProcessVersion.getProcessVersion(),
