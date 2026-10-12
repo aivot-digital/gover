@@ -676,6 +676,7 @@ public class ProcessController {
                         .setCaseNumberType(originalProcessVersion.getCaseNumberType())
                         .setRetentionTimeValue(originalProcessVersion.getRetentionTimeValue())
                         .setRetentionTimeUnit(originalProcessVersion.getRetentionTimeUnit())
+                        .setInstanceDeadlineDays(originalProcessVersion.getInstanceDeadlineDays())
                         .setThemeId(originalProcessVersion.getThemeId())
                         .setLegalSupportDepartmentId(originalProcessVersion.getLegalSupportDepartmentId())
                         .setTechnicalSupportDepartmentId(originalProcessVersion.getTechnicalSupportDepartmentId())

@@ -114,7 +114,8 @@ class ProcessControllerTest {
                 null
         ).setThemeId(77)
                 .setRetentionTimeValue(6)
-                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Months);
+                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Months)
+                .setInstanceDeadlineDays(21);
 
         var departmentPreset = new ProcessInstanceAccessControlPresetEntity()
                 .setId(1)
@@ -161,6 +162,7 @@ class ProcessControllerTest {
         assertEquals(77, result.getThemeId());
         assertEquals(6, result.getRetentionTimeValue());
         assertEquals(ProcessRetentionTimeUnit.Months, result.getRetentionTimeUnit());
+        assertEquals(21, result.getInstanceDeadlineDays());
         var nodeCaptor = ArgumentCaptor.forClass(ProcessNodeEntity.class);
         verify(processDefinitionNodeService).create(nodeCaptor.capture());
         assertEquals(true, nodeCaptor.getValue().getDeadlines().get("processing").strict());

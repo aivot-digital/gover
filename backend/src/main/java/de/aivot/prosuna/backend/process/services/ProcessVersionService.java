@@ -51,6 +51,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     public ProcessVersionEntity create(@Nonnull ProcessVersionEntity entity) throws ResponseException {
         caseNumberGeneratorService.validateConfiguration(entity.getCaseNumberType(), entity.getCaseNumberTemplate());
         validateRetentionConfiguration(entity);
+        validateInstanceDeadlineConfiguration(entity);
 
         // Fetch the latest version number for the given process definition
         Integer latestVersionNumber = processDefinitionVersionRepository
@@ -106,6 +107,12 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
                         || existingEntity.getRetentionTimeUnit() != entity.getRetentionTimeUnit())) {
             throw ResponseException.conflict("Die Aufbewahrungsfrist einer veröffentlichten Prozessversion kann nicht geändert werden. Erstellen Sie dafür eine neue Version.");
         }
+        validateInstanceDeadlineConfiguration(entity);
+        // New instances derive their deadline from this value, so it must stay stable once instances can be created.
+        if (existingEntity.getStatus() != ProcessVersionStatus.Drafted
+                && !Objects.equals(existingEntity.getInstanceDeadlineDays(), entity.getInstanceDeadlineDays())) {
+            throw ResponseException.conflict("Die Bearbeitungsfrist einer veröffentlichten Prozessversion kann nicht geändert werden. Erstellen Sie dafür eine neue Version.");
+        }
         existingEntity.setStatus(entity.getStatus());
         existingEntity.setPublicTitle(entity.getPublicTitle());
         existingEntity.setCaseNumberTemplate(entity.getCaseNumberTemplate());
@@ -121,6 +128,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         existingEntity.setProcessSpecificAccessibilityStatement(entity.getProcessSpecificAccessibilityStatement());
         existingEntity.setRetentionTimeValue(entity.getRetentionTimeValue());
         existingEntity.setRetentionTimeUnit(entity.getRetentionTimeUnit());
+        existingEntity.setInstanceDeadlineDays(entity.getInstanceDeadlineDays());
         return processDefinitionVersionRepository.save(existingEntity);
     }
 
@@ -196,6 +204,13 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
             ProcessRetentionTime.calculate(Instant.now(), value, unit);
         } catch (DateTimeException | ArithmeticException e) {
             throw ResponseException.badRequest("Die angegebene Aufbewahrungsfrist ist zu groß.");
+        }
+    }
+
+    private void validateInstanceDeadlineConfiguration(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+        var days = entity.getInstanceDeadlineDays();
+        if (days != null && (days < 1 || days > ProcessVersionEntity.MAX_INSTANCE_DEADLINE_DAYS)) {
+            throw ResponseException.badRequest("Die Bearbeitungsdauer muss zwischen 1 und 3.652 Tagen liegen.");
         }
     }
 
