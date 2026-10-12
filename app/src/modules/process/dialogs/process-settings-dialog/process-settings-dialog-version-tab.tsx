@@ -101,7 +101,6 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
     const [draft, setDraft] = useState<ProcessVersionEntity>(version);
     const [isSaving, setIsSaving] = useState(false);
     const [numberInputRevision, setNumberInputRevision] = useState(0);
-    const [hasEditedRetentionTime, setHasEditedRetentionTime] = useState(false);
 
     const isEditable = version.status === ProcessStatus.Drafted;
     const caseNumberType = draft.caseNumberType;
@@ -127,7 +126,6 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         if (open) {
             setDraft(version);
             setNumberInputRevision((revision) => revision + 1);
-            setHasEditedRetentionTime(false);
         }
     }, [open, version]);
 
@@ -165,11 +163,15 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         return undefined;
     }, [draft.notes]);
 
+    // Drafts may be saved without a retention period; publication requires one (enforced by the backend).
+    // Once either part is entered, both are needed.
+    const hasRetentionInput = draft.retentionTimeValue != null || draft.retentionTimeUnit != null;
+
     const retentionTimeValueError = useMemo(() => {
-        if (!isEditable) {
+        const value = draft.retentionTimeValue;
+        if (!isEditable || (value == null && draft.retentionTimeUnit == null)) {
             return undefined;
         }
-        const value = draft.retentionTimeValue;
         if (value == null) {
             return 'Geben Sie eine Aufbewahrungsdauer an.';
         }
@@ -183,7 +185,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         return undefined;
     }, [draft.retentionTimeValue, draft.retentionTimeUnit, isEditable]);
 
-    const retentionTimeUnitError = isEditable && draft.retentionTimeUnit == null
+    const retentionTimeUnitError = isEditable && draft.retentionTimeUnit == null && draft.retentionTimeValue != null
         ? 'Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.'
         : undefined;
 
@@ -345,7 +347,6 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             .then((updatedVersion) => {
                 onVersionChange(updatedVersion);
                 setDraft(updatedVersion);
-                setHasEditedRetentionTime(false);
                 dispatch(showSuccessSnackbar('Die versionsspezifischen Einstellungen wurden gespeichert.'));
             })
             .catch((error) => {
@@ -373,7 +374,6 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
 
     const handleReset = useCallback(() => {
         setDraft(version);
-        setHasEditedRetentionTime(false);
         // NumberFieldComponent buffers its displayed text independently of the draft value.
         setNumberInputRevision((revision) => revision + 1);
     }, [version]);
@@ -477,6 +477,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 Nach Abschluss eines Vorgangs bleibt dieser für die angegebene Dauer gespeichert.
                 Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anhänge gelöscht.
                 In Abschluss-Elementen kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
+                Vor der Veröffentlichung muss eine Aufbewahrungsfrist festgelegt sein.
             </ElementEditorSectionHeader>
 
             <Grid container spacing={2} sx={{maxWidth: 680}}>
@@ -486,15 +487,14 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         label="Aufbewahrungsdauer"
                         value={draft.retentionTimeValue}
                         onChange={(value) => {
-                            setHasEditedRetentionTime(true);
                             setDraft({...draft, retentionTimeValue: value});
                         }}
                         decimalPlaces={0}
                         minValue={1}
                         maxValue={draft.retentionTimeUnit == null ? undefined : MAX_RETENTION_TIME_VALUES[draft.retentionTimeUnit]}
-                        required={isEditable}
+                        required={isEditable && hasRetentionInput}
                         showOptionalIndicator={false}
-                        error={hasEditedRetentionTime ? retentionTimeValueError : undefined}
+                        error={retentionTimeValueError}
                         disabled={!isEditable || isSaving}
                     />
                 </Grid>
@@ -503,13 +503,12 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         label="Zeiteinheit"
                         value={draft.retentionTimeUnit}
                         onChange={(unit) => {
-                            setHasEditedRetentionTime(true);
                             setDraft({...draft, retentionTimeUnit: unit});
                         }}
                         options={retentionTimeUnitOptions}
-                        required={isEditable}
+                        required={isEditable && hasRetentionInput}
                         showOptionalIndicator={false}
-                        error={hasEditedRetentionTime ? retentionTimeUnitError : undefined}
+                        error={retentionTimeUnitError}
                         disabled={!isEditable || isSaving}
                     />
                 </Grid>

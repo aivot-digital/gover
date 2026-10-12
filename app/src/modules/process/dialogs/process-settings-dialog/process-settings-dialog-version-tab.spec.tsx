@@ -173,7 +173,7 @@ describe('ProcessSettingsDialogVersionTab', () => {
         ));
     });
 
-    it('requires both retention fields before saving other version changes', async () => {
+    it('saves a draft without a retention period but requires both retention fields once one is entered', async () => {
         const user = userEvent.setup();
         const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
         const version = {
@@ -203,29 +203,34 @@ describe('ProcessSettingsDialogVersionTab', () => {
 
         const duration = screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'});
         const unit = screen.getByRole('combobox', {name: 'Zeiteinheit'});
-        expect(duration).toHaveAttribute('aria-required', 'true');
-        expect(unit).toHaveAttribute('aria-required', 'true');
-        expect(duration).not.toHaveAttribute('aria-invalid', 'true');
-        expect(unit).not.toHaveAttribute('aria-invalid', 'true');
-        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
-        expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
+        expect(duration).not.toHaveAttribute('aria-required', 'true');
+        expect(unit).not.toHaveAttribute('aria-required', 'true');
+        expect(screen.getByText(/Vor der Veröffentlichung muss eine Aufbewahrungsfrist festgelegt sein\./)).toBeInTheDocument();
 
         await user.type(screen.getByRole('textbox', {name: /Öffentliche Bezeichnung/}), ' neu');
-        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(true));
-        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
-        expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(false));
         act(() => ref.current?.save());
-        expect(update).not.toHaveBeenCalled();
+        await waitFor(() => expect(update).toHaveBeenLastCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+                publicTitle: 'Bauantrag neu',
+                retentionTimeValue: null,
+                retentionTimeUnit: null,
+            }),
+        ));
+        update.mockClear();
 
         await user.type(duration, '3');
         expect(screen.getByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).toBeInTheDocument();
+        expect(unit).toHaveAttribute('aria-required', 'true');
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(true));
         act(() => ref.current?.save());
         expect(update).not.toHaveBeenCalled();
 
         act(() => ref.current?.reset());
         expect(screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'})).toHaveValue('');
-        expect(screen.queryByText('Geben Sie eine Aufbewahrungsdauer an.')).not.toBeInTheDocument();
         expect(screen.queryByText('Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.')).not.toBeInTheDocument();
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(false));
 
         await user.type(screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'}), '3');
         await user.click(unit);
@@ -235,7 +240,6 @@ describe('ProcessSettingsDialogVersionTab', () => {
         await waitFor(() => expect(update).toHaveBeenCalledWith(
             expect.anything(),
             expect.objectContaining({
-                publicTitle: 'Bauantrag',
                 retentionTimeValue: 3,
                 retentionTimeUnit: RetentionTimeUnit.Days,
             }),
@@ -380,15 +384,15 @@ describe('ProcessSettingsDialogVersionTab', () => {
     it('saves an optional processing deadline in calendar days and allows removing it', async () => {
         const user = userEvent.setup();
         const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        // A draft without a retention period must not block saving the processing deadline.
         const version = {
             ...ProcessDefinitionVersionApiService.initialize(),
             processId: 42,
             processVersion: 7,
             publicTitle: 'Bauantrag',
-            retentionTimeValue: 30,
-            retentionTimeUnit: RetentionTimeUnit.Days,
         };
         const onUnsavedChangesChange = vi.fn();
+        const onValidationErrorChange = vi.fn();
         const update = vi
             .spyOn(ProcessDefinitionVersionApiService.prototype, 'update')
             .mockImplementation(async (_id, updated) => updated);
@@ -402,6 +406,7 @@ describe('ProcessSettingsDialogVersionTab', () => {
                     themes={[]}
                     onVersionChange={vi.fn()}
                     onUnsavedChangesChange={onUnsavedChangesChange}
+                    onValidationErrorChange={onValidationErrorChange}
                 />
             </Provider>
         );
@@ -412,6 +417,7 @@ describe('ProcessSettingsDialogVersionTab', () => {
         expect(deadline).toHaveAccessibleDescription(/Ohne Angabe gilt für Vorgänge dieser Prozessversion keine Bearbeitungsfrist/);
         await user.type(deadline, '30');
         await waitFor(() => expect(onUnsavedChangesChange).toHaveBeenLastCalledWith(true));
+        expect(onValidationErrorChange).toHaveBeenLastCalledWith(false);
         act(() => ref.current?.save());
         await waitFor(() => expect(update).toHaveBeenLastCalledWith(
             {processDefinitionId: 42, processDefinitionVersion: 7},
