@@ -19,7 +19,6 @@ import de.aivot.prosuna.backend.storage.services.StorageProviderConfigurationSer
 import de.aivot.prosuna.backend.storage.services.StorageProviderDefinitionService;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
-import de.aivot.prosuna.backend.storage.services.StorageSyncWorker;
 import de.aivot.prosuna.backend.storage.utils.StoragePathUtils;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -31,7 +30,6 @@ import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -56,7 +54,6 @@ public class StorageProviderController {
     private final UserService userService;
     private final StorageProviderService storageProviderService;
     private final PermissionService permissionService;
-    private final RabbitTemplate rabbitTemplate;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final StorageService storageService;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
@@ -67,7 +64,6 @@ public class StorageProviderController {
                                      UserService userService,
                                      StorageProviderService storageProviderService,
                                      PermissionService permissionService,
-                                     RabbitTemplate rabbitTemplate,
                                      StorageIndexItemRepository storageIndexItemRepository,
                                      StorageService storageService,
                                      StorageProviderDefinitionService storageProviderDefinitionService,
@@ -76,7 +72,6 @@ public class StorageProviderController {
         this.userService = userService;
         this.storageProviderService = storageProviderService;
         this.permissionService = permissionService;
-        this.rabbitTemplate = rabbitTemplate;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.storageService = storageService;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
@@ -230,12 +225,9 @@ public class StorageProviderController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
+        // Updating the status to pending stores the resynchronization request and publishes it.
         var updated = storageProviderService
                 .update(id, storageProvider.setStatus(StorageProviderStatus.SyncPending));
-
-        // Queue the storage sync worker to do the resync
-        rabbitTemplate
-                .convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, id);
 
         auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, StorageProviderEntity.class, updated.getId(), "id", Map.of(
                         "id", updated.getId(),

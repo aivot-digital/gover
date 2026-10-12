@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
@@ -37,9 +36,6 @@ class StorageProviderControllerTest {
 
     @Mock
     private PermissionService permissionService;
-
-    @Mock
-    private RabbitTemplate rabbitTemplate;
 
     @Mock
     private StorageIndexItemRepository storageIndexItemRepository;
@@ -68,7 +64,6 @@ class StorageProviderControllerTest {
                 userService,
                 storageProviderService,
                 permissionService,
-                rabbitTemplate,
                 storageIndexItemRepository,
                 storageService,
                 storageProviderDefinitionService,

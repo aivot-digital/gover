@@ -56,32 +56,21 @@ public class StorageSyncService {
         this.assetRepository = assetRepository;
     }
 
-    public void syncStorageProvider(int id) {
-        var storageProviderOpt = storageProviderRepository
-                .findById(id);
+    /**
+     * Runs a requested synchronization. The provider stays locked until the synchronization commits, so duplicate
+     * messages and other application instances wait and then find it synchronized. An interrupted synchronization
+     * rolls back to the requested status, so it is published again.
+     */
+    public void syncRequestedStorageProvider(int id) {
+        var storageProvider = storageProviderRepository
+                .findByIdForUpdate(id)
+                .orElse(null);
 
-        if (storageProviderOpt.isEmpty()) {
-            logger
-                    .atError()
-                    .setMessage("Storage provider with ID {} not found for syncing")
-                    .addArgument(id)
-                    .log();
+        if (storageProvider == null || storageProvider.getStatus() != StorageProviderStatus.SyncPending) {
             return;
         }
 
-        var storageProvider = storageProviderOpt.get();
-
-        try {
-            syncStorageProvider(storageProvider);
-        } catch (Exception e) {
-            logger
-                    .atError()
-                    .setMessage("Error syncing storage provider with ID {}: {}")
-                    .addArgument(id)
-                    .addArgument(e::getMessage)
-                    .setCause(e)
-                    .log();
-        }
+        syncStorageProvider(storageProvider);
     }
 
     public void syncStorageProvider(@Nonnull StorageProviderEntity storageProvider) {

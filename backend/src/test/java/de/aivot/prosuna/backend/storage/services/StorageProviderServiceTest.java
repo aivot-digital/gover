@@ -7,22 +7,25 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.enums.StorageProviderStatus;
 import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
+import de.aivot.prosuna.backend.storage.models.StorageProviderDefinition;
 import de.aivot.prosuna.backend.storage.models.StorageProviderMetadataAttribute;
 import de.aivot.prosuna.backend.storage.repositories.StorageProviderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.util.unit.DataSize;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -38,7 +41,7 @@ class StorageProviderServiceTest {
     private StorageProviderConfigurationService storageProviderConfigurationService;
 
     @Mock
-    private RabbitTemplate rabbitTemplate;
+    private StorageSyncWorker storageSyncWorker;
 
     @Mock
     private SystemConfigService systemConfigService;
@@ -53,7 +56,7 @@ class StorageProviderServiceTest {
                 storageProviderRepository,
                 storageProviderDefinitionService,
                 storageProviderConfigurationService,
-                rabbitTemplate,
+                storageSyncWorker,
                 DataSize.ofMegabytes(10),
                 systemConfigService
         );
@@ -101,8 +104,26 @@ class StorageProviderServiceTest {
         assertEquals(List.of(attribute("existing-key", "Existing label")), result.getMetadataAttributes());
 
         verify(storageProviderRepository).save(existingEntity);
-        verify(rabbitTemplate).convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, existingEntity.getId());
+        verify(storageSyncWorker).publish(existingEntity.getId());
         verifyNoInteractions(storageProviderDefinitionService, storageProviderConfigurationService);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void performUpdate_RequestedResyncIsStoredAndPublished() throws ResponseException {
+        var existingEntity = createProvider().setId(7).setStatus(StorageProviderStatus.Synced);
+        var updatedEntity = createProvider().setId(7).setStatus(StorageProviderStatus.SyncPending);
+        var definition = (StorageProviderDefinition<Object>) mock(StorageProviderDefinition.class);
+        when(storageProviderDefinitionService.retrieveProviderDefinition("local-disk", 1)).thenReturn(Optional.of(definition));
+        when(storageProviderRepository.save(any(StorageProviderEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = storageProviderService.performUpdate(existingEntity.getId(), updatedEntity, existingEntity);
+
+        assertEquals(StorageProviderStatus.SyncPending, result.getStatus());
+        var order = inOrder(storageProviderRepository, storageSyncWorker);
+        order.verify(storageProviderRepository).save(existingEntity);
+        order.verify(storageSyncWorker).publish(7);
     }
 
     @Test
@@ -123,7 +144,7 @@ class StorageProviderServiceTest {
         );
 
         assertEquals("Dieser Speicheranbieter kann nicht bearbeitet werden", exception.getMessage());
-        verifyNoInteractions(storageProviderRepository, rabbitTemplate, storageProviderDefinitionService, storageProviderConfigurationService);
+        verifyNoInteractions(storageProviderRepository, storageSyncWorker, storageProviderDefinitionService, storageProviderConfigurationService);
     }
 
     @Test
@@ -148,7 +169,7 @@ class StorageProviderServiceTest {
                 "Die maximale Dateigröße des Speicheranbieters darf die systemweite Grenze für Uploads nicht überschreiten. Systemweit gelten 10 Megabyte.",
                 details.getElementStates().get("maxFileSizeInBytes").getError()
         );
-        verifyNoInteractions(storageProviderRepository, rabbitTemplate, storageProviderDefinitionService, storageProviderConfigurationService);
+        verifyNoInteractions(storageProviderRepository, storageSyncWorker, storageProviderDefinitionService, storageProviderConfigurationService);
     }
 
     private static StorageProviderEntity createProvider() {

@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.storage.entities.StorageIndexItemEntity;
 import de.aivot.prosuna.backend.storage.entities.StorageIndexItemEntityId;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
+import de.aivot.prosuna.backend.storage.enums.StorageProviderStatus;
 import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
 import de.aivot.prosuna.backend.storage.models.StorageDocument;
 import de.aivot.prosuna.backend.storage.models.StorageFolder;
@@ -13,6 +14,8 @@ import de.aivot.prosuna.backend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.prosuna.backend.storage.repositories.StorageProviderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -24,7 +27,10 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class StorageSyncServiceTest {
@@ -62,6 +68,40 @@ class StorageSyncServiceTest {
                 storageIndexItemRepository,
                 assetRepository
         );
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = StorageProviderStatus.class, names = {"Syncing", "Synced", "SyncFailed"})
+    void requestedSyncIsSkippedWhenTheProviderIsNoLongerPending(StorageProviderStatus status) {
+        var provider = new StorageProviderEntity().setId(7).setStatus(status);
+        when(storageProviderRepository.findByIdForUpdate(7)).thenReturn(Optional.of(provider));
+
+        storageSyncService.syncRequestedStorageProvider(7);
+
+        verify(storageProviderRepository, never()).save(any());
+        verifyNoInteractions(storageProviderDefinitionService);
+    }
+
+    @Test
+    void requestedSyncOfADeletedProviderDoesNothing() {
+        when(storageProviderRepository.findByIdForUpdate(7)).thenReturn(Optional.empty());
+
+        storageSyncService.syncRequestedStorageProvider(7);
+
+        verify(storageProviderRepository, never()).save(any());
+    }
+
+    @Test
+    void requestedSyncRunsForAPendingProvider() {
+        var provider = new StorageProviderEntity().setId(7).setName("Ablage").setStatus(StorageProviderStatus.SyncPending)
+                .setStorageProviderDefinitionKey("missing").setStorageProviderDefinitionVersion(1);
+        when(storageProviderRepository.findByIdForUpdate(7)).thenReturn(Optional.of(provider));
+
+        storageSyncService.syncRequestedStorageProvider(7);
+
+        // The missing definition fails the synchronization, which shows that it ran.
+        assertEquals(StorageProviderStatus.SyncFailed, provider.getStatus());
+        verify(storageProviderRepository, atLeastOnce()).save(provider);
     }
 
     @Test

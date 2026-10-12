@@ -16,7 +16,6 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -34,7 +33,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
     private final StorageProviderConfigurationService storageProviderConfigurationService;
-    private final RabbitTemplate rabbitTemplate;
+    private final StorageSyncWorker storageSyncWorker;
     private final DataSize maxFileSize;
     private final SystemConfigService systemConfigService;
 
@@ -42,13 +41,13 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     public StorageProviderService(StorageProviderRepository storageProviderRepository,
                                   StorageProviderDefinitionService storageProviderDefinitionService,
                                   StorageProviderConfigurationService storageProviderConfigurationService,
-                                  RabbitTemplate rabbitTemplate,
+                                  StorageSyncWorker storageSyncWorker,
                                   @Value("${spring.servlet.multipart.max-file-size}") DataSize maxFileSize,
                                   SystemConfigService systemConfigService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageProviderConfigurationService = storageProviderConfigurationService;
-        this.rabbitTemplate = rabbitTemplate;
+        this.storageSyncWorker = storageSyncWorker;
         this.maxFileSize = maxFileSize;
         this.systemConfigService = systemConfigService;
     }
@@ -77,7 +76,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         var res = storageProviderRepository.save(entity);
 
         // Trigger synchronization
-        rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, res.getId());
+        storageSyncWorker.publish(res.getId());
 
         return res;
     }
@@ -141,7 +140,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                         existingEntity
                                 .setStatus(StorageProviderStatus.SyncPending)
                 );
-                rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, res.getId());
+                storageSyncWorker.publish(res.getId());
 
                 return res;
             } else {
@@ -169,7 +168,9 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         existingEntity.setTestProvider(entity.getTestProvider());
         existingEntity.setMetadataAttributes(entity.getMetadataAttributes());
 
-        var shouldResync = shouldResync(def, existingEntity, entity);
+        // A requested resynchronization is stored like a changed configuration, so it is published again if lost.
+        var shouldResync = shouldResync(def, existingEntity, entity)
+                || entity.getStatus() == StorageProviderStatus.SyncPending;
 
         if (shouldResync) {
             existingEntity.setStatus(StorageProviderStatus.SyncPending);
@@ -189,7 +190,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         }
 
         if (shouldResync) {
-            rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, res.getId());
+            storageSyncWorker.publish(res.getId());
         }
 
         return res;
