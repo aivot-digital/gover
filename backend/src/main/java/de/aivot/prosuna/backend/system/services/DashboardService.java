@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 @Service
 public class DashboardService {
     private static final int TASK_PREVIEW_SIZE = 4;
+    private static final int INSTANCE_PREVIEW_SIZE = 4;
     private static final int RECENT_PROCESS_SIZE = 3;
 
     private final PermissionService permissionService;
@@ -67,6 +68,7 @@ public class DashboardService {
     public DashboardOverviewDTO getOverview(@Nonnull UserEntity user) {
         return new DashboardOverviewDTO(
                 getTaskSummary(user),
+                getInstanceSummary(user),
                 getRecentProcesses(user)
         );
     }
@@ -185,6 +187,49 @@ public class DashboardService {
         }).toList();
 
         return new DashboardOverviewDTO.TaskSummary(counts.getTotalCount(), counts.getOverdueCount(), items);
+    }
+
+    @Nonnull
+    private DashboardOverviewDTO.InstanceSummary getInstanceSummary(@Nonnull UserEntity user) {
+        var permission = ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ;
+        var hasSystemAccess = permissionService.hasSystemPermission(user.getId(), permission);
+        // Matches the "Laufende Vorgänge" list view, which the panel links to.
+        var statuses = ProcessListService.ACTIVE_INSTANCE_STATUSES.stream().map(ProcessInstanceStatus::ordinal).toList();
+        var instances = instanceRepository.findDashboardInstances(
+                user.getId(),
+                statuses,
+                hasSystemAccess,
+                permission,
+                PageRequest.of(0, INSTANCE_PREVIEW_SIZE)
+        );
+        var counts = instanceRepository.getDashboardInstanceCounts(
+                user.getId(),
+                statuses,
+                hasSystemAccess,
+                permission,
+                Instant.now()
+        );
+
+        var processes = processRepository
+                .findAllById(instances.stream().map(ProcessInstanceEntity::getProcessId).collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(ProcessEntity::getId, Function.identity()));
+
+        var items = instances.stream().map(instance -> {
+            var process = processes.get(instance.getProcessId());
+
+            return new DashboardOverviewDTO.Instance(
+                    instance.getId(),
+                    instance.getProcessId(),
+                    instance.getInitialProcessVersion(),
+                    process != null ? process.getInternalTitle() : "Prozess #" + instance.getProcessId(),
+                    instance.getCaseNumber(),
+                    instance.getStarted(),
+                    instance.getDeadline()
+            );
+        }).toList();
+
+        return new DashboardOverviewDTO.InstanceSummary(counts.getTotalCount(), counts.getOverdueCount(), items);
     }
 
     @Nonnull

@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.repositories;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.projections.DashboardActivityBucketProjection;
+import de.aivot.prosuna.backend.process.projections.DashboardInstanceCountsProjection;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -157,6 +158,53 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
                                        @Param("hasSystemAccess") boolean hasSystemAccess,
                                        @Param("permission") String permission,
                                        @Param("activeStatuses") Collection<Integer> activeStatuses);
+
+    @Query(value = """
+            SELECT instance.*
+            FROM process_instances instance
+            WHERE instance.assigned_user_id = :userId
+              AND instance.status IN (:statuses)
+              AND (
+                    :hasSystemAccess = true
+                    OR EXISTS (
+                        SELECT 1
+                        FROM v_user_process_instance_access_permissions access
+                        WHERE access.user_id = :userId
+                          AND access.target_process_instance_id = instance.id
+                          AND access.permissions::text[] @> ARRAY[:permission]
+                    )
+              )
+            -- Deadlines take precedence; otherwise instances waiting the longest are shown first.
+            ORDER BY instance.deadline ASC NULLS LAST, instance.started ASC, instance.id ASC
+            """, nativeQuery = true)
+    List<ProcessInstanceEntity> findDashboardInstances(@Param("userId") String userId,
+                                                       @Param("statuses") Collection<Integer> statuses,
+                                                       @Param("hasSystemAccess") boolean hasSystemAccess,
+                                                       @Param("permission") String permission,
+                                                       Pageable pageable);
+
+    @Query(value = """
+            SELECT COUNT(*) AS "totalCount",
+                   COUNT(*) FILTER (WHERE instance.deadline IS NOT NULL AND instance.deadline < :now) AS "overdueCount"
+            FROM process_instances instance
+            WHERE instance.assigned_user_id = :userId
+              AND instance.status IN (:statuses)
+              AND (
+                    :hasSystemAccess = true
+                    OR EXISTS (
+                        SELECT 1
+                        FROM v_user_process_instance_access_permissions access
+                        WHERE access.user_id = :userId
+                          AND access.target_process_instance_id = instance.id
+                          AND access.permissions::text[] @> ARRAY[:permission]
+                    )
+              )
+            """, nativeQuery = true)
+    DashboardInstanceCountsProjection getDashboardInstanceCounts(@Param("userId") String userId,
+                                                                 @Param("statuses") Collection<Integer> statuses,
+                                                                 @Param("hasSystemAccess") boolean hasSystemAccess,
+                                                                 @Param("permission") String permission,
+                                                                 @Param("now") Instant now);
 
     /**
      * Reads the highest increment used for the already rendered static parts of a case number template.
