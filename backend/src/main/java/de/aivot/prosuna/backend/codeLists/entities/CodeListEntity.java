@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.codeLists.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListSourceType;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListStatus;
 import jakarta.annotation.Nonnull;
@@ -45,6 +46,10 @@ public class CodeListEntity {
     private CodeListStatus status;
     @Nullable
     private String statusMessage;
+    // The option of the requested synchronization, so a request that is published again keeps it.
+    @Nonnull
+    @JsonIgnore
+    private Boolean syncKeepOutdated;
     @Nullable
     private Instant lastSync;
     @Nonnull
@@ -75,6 +80,9 @@ public class CodeListEntity {
         if (status == null) {
             status = CodeListStatus.SyncPending;
         }
+        if (syncKeepOutdated == null) {
+            syncKeepOutdated = false;
+        }
         var now = Instant.now();
         created = now;
         updated = now;
@@ -92,13 +100,13 @@ public class CodeListEntity {
         return Objects.equals(key, that.key) && Objects.equals(id, that.id) && sourceType == that.sourceType && Objects.equals(sourceRef, that.sourceRef) &&
                 Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(columns, that.columns) &&
                 Objects.equals(valueColumnIndex, that.valueColumnIndex) && Objects.equals(labelColumnIndex, that.labelColumnIndex) && status == that.status &&
-                Objects.equals(statusMessage, that.statusMessage) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) &&
+                Objects.equals(statusMessage, that.statusMessage) && Objects.equals(syncKeepOutdated, that.syncKeepOutdated) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) &&
                 Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, id, sourceType, sourceRef, name, description, columns, valueColumnIndex, labelColumnIndex, status, statusMessage, lastSync, created, updated);
+        return Objects.hash(key, id, sourceType, sourceRef, name, description, columns, valueColumnIndex, labelColumnIndex, status, statusMessage, syncKeepOutdated, lastSync, created, updated);
     }
 
     @Nonnull
@@ -208,6 +216,16 @@ public class CodeListEntity {
 
     public CodeListEntity setStatusMessage(@Nullable String statusMessage) {
         this.statusMessage = statusMessage;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getSyncKeepOutdated() {
+        return syncKeepOutdated;
+    }
+
+    public CodeListEntity setSyncKeepOutdated(@Nonnull Boolean syncKeepOutdated) {
+        this.syncKeepOutdated = syncKeepOutdated;
         return this;
     }
 

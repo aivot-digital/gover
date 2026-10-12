@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -32,10 +33,12 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class CodeListServiceTest {
@@ -265,7 +268,8 @@ class CodeListServiceTest {
                 row(value("code", "002"), value("name", "Hamburg"))
         ));
 
-        service.syncCodeList("test", false);
+        when(codeListRepository.claimSync(eq("test"), any())).thenReturn(1);
+        service.syncCodeList("test");
 
         verify(codeListItemRepository).deleteAllByCodeListId(7);
 
@@ -276,7 +280,7 @@ class CodeListServiceTest {
                 .stream(itemsCaptor.getValue().spliterator(), false)
                 .toList();
 
-        assertEquals(CodeListStatus.Synced, codeList.getStatus());
+        verify(codeListRepository).completeSync(eq("test"), any());
         assertEquals(List.of("code", "name"), codeList.getColumns());
         assertEquals(List.of("001", "Berlin"), savedItems.getFirst().getColumns());
         assertEquals(List.of("002", "Hamburg"), savedItems.get(1).getColumns());
@@ -299,11 +303,12 @@ class CodeListServiceTest {
                 row(value("code", "001"), value("name", "Berlin duplicate"))
         ));
 
-        service.syncCodeList("test", false);
+        when(codeListRepository.claimSync(eq("test"), any())).thenReturn(1);
+        service.syncCodeList("test");
 
         verify(codeListItemRepository, never()).saveAll(any());
-        assertEquals(CodeListStatus.SyncFailed, codeList.getStatus());
-        assertTrue(codeList.getStatusMessage().contains("mehrfach"));
+        verify(codeListRepository).failSync(eq("test"), argThat(message -> message.contains("mehrfach")), any());
+        verify(codeListRepository, never()).completeSync(any(), any());
     }
 
     @Test
@@ -332,7 +337,8 @@ class CodeListServiceTest {
                         002,Hamburg
                         """.getBytes(StandardCharsets.UTF_8)));
 
-        service.syncCodeList("test", false);
+        when(codeListRepository.claimSync(eq("test"), any())).thenReturn(1);
+        service.syncCodeList("test");
 
         verify(codeListItemRepository).deleteAllByCodeListId(7);
 
@@ -343,7 +349,7 @@ class CodeListServiceTest {
                 .stream(itemsCaptor.getValue().spliterator(), false)
                 .toList();
 
-        assertEquals(CodeListStatus.Synced, codeList.getStatus());
+        verify(codeListRepository).completeSync(eq("test"), any());
         assertEquals(List.of("code", "name"), codeList.getColumns());
         assertEquals(List.of("001", "Berlin"), savedItems.getFirst().getColumns());
         assertEquals(List.of("002", "Hamburg"), savedItems.get(1).getColumns());
@@ -374,10 +380,74 @@ class CodeListServiceTest {
                         001,x,Berlin
                         """.getBytes(StandardCharsets.UTF_8)));
 
-        service.syncCodeList("test", false);
+        when(codeListRepository.claimSync(eq("test"), any())).thenReturn(1);
+        service.syncCodeList("test");
 
-        assertEquals(CodeListStatus.Synced, codeList.getStatus());
+        verify(codeListRepository).completeSync(eq("test"), any());
         assertEquals(List.of("code", "COL1", "name"), codeList.getColumns());
+    }
+
+    @Test
+    void syncKeepsOutdatedItemsWhenRequested() throws Exception {
+        var codeListRepository = mock(CodeListRepository.class);
+        var codeListItemRepository = mock(CodeListItemRepository.class);
+        var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
+        var service = new CodeListService(codeListRepository, codeListItemRepository, mock(VCodeListItemRepository.class),
+                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class));
+        var codeList = createCodeList().setSyncKeepOutdated(true);
+
+        when(codeListRepository.claimSync(eq("test"), any())).thenReturn(1);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
+        when(xRepositoryCodeListService.getCodeList("urn:test")).thenReturn(createXRepositoryCodeList(
+                row(value("code", "001"), value("name", "Berlin"))
+        ));
+
+        service.syncCodeList("test");
+
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+        verify(codeListRepository).completeSync(eq("test"), any());
+    }
+
+    @Test
+    void syncThatIsNotPendingDoesNothing() throws Exception {
+        var codeListRepository = mock(CodeListRepository.class);
+        var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
+        var service = new CodeListService(codeListRepository, mock(CodeListItemRepository.class), mock(VCodeListItemRepository.class),
+                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class));
+
+        service.syncCodeList("test");
+
+        verify(codeListRepository, never()).findById(any());
+        verify(codeListRepository, never()).completeSync(any(), any());
+        verifyNoInteractions(xRepositoryCodeListService);
+    }
+
+    @Test
+    void requestSyncStoresTheRequestWithTheCodeList() {
+        var codeListRepository = mock(CodeListRepository.class);
+        var service = new CodeListService(codeListRepository, mock(CodeListItemRepository.class), mock(VCodeListItemRepository.class),
+                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class));
+        when(codeListRepository.requestSync(eq("test"), eq(true), any())).thenReturn(1);
+
+        assertTrue(service.requestSync("test", true));
+        assertFalse(service.requestSync("manual", false));
+    }
+
+    @Test
+    void dueSyncRequestsReleaseInterruptedSyncsAndOnlyReturnClaimedRequests() {
+        var codeListRepository = mock(CodeListRepository.class);
+        var service = new CodeListService(codeListRepository, mock(CodeListItemRepository.class), mock(VCodeListItemRepository.class),
+                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class));
+        var requestedBefore = Instant.parse("2030-05-01T11:55:00Z");
+        var startedBefore = Instant.parse("2030-05-01T11:00:00Z");
+        when(codeListRepository.findPendingSyncKeys(requestedBefore)).thenReturn(List.of("a", "b"));
+        when(codeListRepository.claimSyncRedispatch(eq("a"), eq(requestedBefore), any())).thenReturn(1);
+
+        assertEquals(List.of("a"), service.claimDueSyncRequests(requestedBefore, startedBefore));
+
+        var order = inOrder(codeListRepository);
+        order.verify(codeListRepository).releaseStaleSyncs(startedBefore);
+        order.verify(codeListRepository).findPendingSyncKeys(requestedBefore);
     }
 
     @Test
@@ -530,7 +600,8 @@ class CodeListServiceTest {
                 .setColumns(List.of())
                 .setValueColumnIndex(0)
                 .setLabelColumnIndex(0)
-                .setStatus(CodeListStatus.SyncPending);
+                .setStatus(CodeListStatus.Syncing)
+                .setSyncKeepOutdated(false);
     }
 
     private static CodeListEntity createAssetCodeList(UUID assetKey) {
@@ -544,7 +615,8 @@ class CodeListServiceTest {
                 .setColumns(List.of())
                 .setValueColumnIndex(0)
                 .setLabelColumnIndex(0)
-                .setStatus(CodeListStatus.SyncPending);
+                .setStatus(CodeListStatus.Syncing)
+                .setSyncKeepOutdated(false);
     }
 
     private static XRepositoryCodeList createXRepositoryCodeList(XRepositoryCodeListSimpleCodeListRow... rows) {

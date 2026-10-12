@@ -131,7 +131,22 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         return codeListRepository.exists(specification);
     }
 
-    public void syncCodeList(String codeListKey, boolean keepOutdated) {
+    /**
+     * Requests a synchronization of a list with a synchronized source. The request is stored with the list, so it
+     * survives a lost broker message. Returns whether a request was recorded.
+     */
+    public boolean requestSync(@Nonnull String codeListKey, boolean keepOutdated) {
+        return codeListRepository.requestSync(codeListKey, keepOutdated, Instant.now()) == 1;
+    }
+
+    /**
+     * Runs a requested synchronization. Only one caller can start a request, so duplicate messages do nothing.
+     */
+    public void syncCodeList(@Nonnull String codeListKey) {
+        if (codeListRepository.claimSync(codeListKey, Instant.now()) != 1) {
+            return;
+        }
+
         var codeList = codeListRepository
                 .findById(codeListKey)
                 .orElse(null);
@@ -140,24 +155,38 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             return;
         }
 
-        if (!isSyncable(codeList)) {
-            return;
-        }
-
-        markSyncing(codeList);
-
         try {
             switch (codeList.getSourceType()) {
-                case XRepository -> syncXRepository(codeList, keepOutdated);
-                case Asset -> syncAsset(codeList, keepOutdated);
+                case XRepository -> syncXRepository(codeList, codeList.getSyncKeepOutdated());
+                case Asset -> syncAsset(codeList, codeList.getSyncKeepOutdated());
                 case Manual, Plugin -> {
-                    return;
                 }
             }
-            markSynced(codeList);
+            codeListRepository.completeSync(codeListKey, Instant.now());
         } catch (Exception e) {
-            markSyncFailed(codeList, e.getMessage());
+            var message = e.getMessage();
+            codeListRepository.failSync(
+                    codeListKey,
+                    message == null || message.isBlank() ? "Die Synchronisierung ist fehlgeschlagen." : message,
+                    Instant.now()
+            );
         }
+    }
+
+    /**
+     * Returns the keys of requested synchronizations whose messages may have been lost, so they are published again.
+     * Synchronizations that are still running after the stale threshold were interrupted by a restart and are
+     * requested again.
+     */
+    @Nonnull
+    public List<String> claimDueSyncRequests(@Nonnull Instant requestedBefore, @Nonnull Instant startedBefore) {
+        var now = Instant.now();
+        codeListRepository.releaseStaleSyncs(startedBefore);
+        return codeListRepository
+                .findPendingSyncKeys(requestedBefore)
+                .stream()
+                .filter(key -> codeListRepository.claimSyncRedispatch(key, requestedBefore, now) == 1)
+                .toList();
     }
 
     @Nonnull
@@ -659,28 +688,6 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     private boolean isSyncable(@Nonnull CodeListEntity codeListEntity) {
         return codeListEntity.getSourceType() == CodeListSourceType.XRepository ||
                 codeListEntity.getSourceType() == CodeListSourceType.Asset;
-    }
-
-    private void markSyncing(@Nonnull CodeListEntity codeListEntity) {
-        codeListEntity
-                .setStatus(CodeListStatus.Syncing)
-                .setStatusMessage(null);
-        codeListRepository.save(codeListEntity);
-    }
-
-    private void markSynced(@Nonnull CodeListEntity codeListEntity) {
-        codeListEntity
-                .setStatus(CodeListStatus.Synced)
-                .setStatusMessage(null)
-                .setLastSync(Instant.now());
-        codeListRepository.save(codeListEntity);
-    }
-
-    private void markSyncFailed(@Nonnull CodeListEntity codeListEntity, @Nullable String message) {
-        codeListEntity
-                .setStatus(CodeListStatus.SyncFailed)
-                .setStatusMessage(message == null || message.isBlank() ? "Die Synchronisierung ist fehlgeschlagen." : message);
-        codeListRepository.save(codeListEntity);
     }
 
     @Nonnull

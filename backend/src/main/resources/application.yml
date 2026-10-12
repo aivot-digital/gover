@@ -196,6 +196,12 @@ prosuna:
     redispatch-interval: "${PROSUNA_PROCESS_WORK_REDISPATCH_INTERVAL:PT5M}"
     batch-size: "${PROSUNA_PROCESS_WORK_BATCH_SIZE:100}"
     concurrency: "${PROSUNA_PROCESS_WORK_CONCURRENCY:1}"
+  # Synchronization requests of code lists and storage providers are stored in the database.
+  # Requests still pending after the sweep interval are published again; synchronizations still
+  # running after the stale threshold were interrupted by a restart and are requested again.
+  background-sync:
+    sweep-interval: "${PROSUNA_BACKGROUND_SYNC_SWEEP_INTERVAL:PT5M}"
+    stale-threshold: "${PROSUNA_BACKGROUND_SYNC_STALE_THRESHOLD:PT1H}"
   prosunaHostname: "${PROSUNA_HOSTNAME}"
   timezone: "${PROSUNA_TIMEZONE:Europe/Berlin}"
   fromMail: "${PROSUNA_FROM_MAIL}"

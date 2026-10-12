@@ -41,9 +41,9 @@ public class ServerConfiguration implements WebMvcConfigurer {
     @Bean
     public SimpleMessageConverter converter() {
         SimpleMessageConverter converter = new SimpleMessageConverter();
-        converter.setAllowedListPatterns(List.of(
-                "de.aivot.prosuna.backend.codeLists.services.*"
-        ));
+        // Messages only carry IDs and keys of records stored in the database, which are always deserializable.
+        // Java deserialization of any other class is rejected.
+        converter.setAllowedListPatterns(List.of());
         return converter;
     }
 
