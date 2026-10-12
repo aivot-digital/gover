@@ -32,6 +32,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
@@ -45,6 +46,7 @@ import de.aivot.prosuna.backend.process.services.ProcessInstanceTaskService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.prosuna.backend.process.workers.ProcessNodeExecutionResultHandler;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -64,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -72,7 +75,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -425,6 +430,37 @@ class StaffProcessInstanceTaskViewControllerTest {
                 any(), same(fixture.instance()), same(fixture.task()), isNull(), same(result));
     }
 
+    @Test
+    void update_RecordsHandlerFailureAfterTheExecutionTransactionRolledBack() throws Exception {
+        var provider = new InlineStaffTaskProcessNodeDefinition(null, new ProcessNodeExecutionResultInstanceCompleted());
+        var handler = mock(ProcessNodeExecutionResultHandler.class);
+        var failure = new ProcessNodeExecutionExceptionUnknown("Das Ergebnis konnte nicht verarbeitet werden.");
+        doThrow(failure).when(handler).handleResult(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        var logger = mock(ProcessNodeExecutionLogger.class);
+        var loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
+        when(loggerFactory.create(any(), any(), any(), any())).thenReturn(logger);
+        var loggedInsideTransaction = new AtomicBoolean();
+        var execution = mock(ProcessTaskExecutionService.class, invocation -> {
+            ((ProcessTaskExecutionService.Authorization) invocation.getArgument(2)).run();
+            try {
+                return ((ProcessTaskExecutionService.Operation<?>) invocation.getArgument(3)).run();
+            } catch (ResponseException exception) {
+                // Events written inside the execution transaction are discarded by its rollback.
+                loggedInsideTransaction.set(mockingDetails(logger).getInvocations().stream()
+                        .anyMatch(call -> call.getMethod().getName().equals("logException")));
+                throw exception;
+            }
+        });
+        var fixture = createFixture(provider, new TestElementDerivationService(), handler, execution, loggerFactory);
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().update(fixture.jwt(),
+                fixture.instance().getId(), fixture.task().getId(), "{}", null, null, "inline-complete", null));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertFalse(loggedInsideTransaction.get());
+        verify(logger).logException(failure);
+    }
+
     private static StaffTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
                                                             TestElementDerivationService elementDerivationService) {
         return createFixture(provider, elementDerivationService, new ApplyingProcessNodeExecutionResultHandler());
@@ -433,6 +469,15 @@ class StaffProcessInstanceTaskViewControllerTest {
     private static StaffTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
                                                             TestElementDerivationService elementDerivationService,
                                                             ProcessNodeExecutionResultHandler resultHandler) {
+        return createFixture(provider, elementDerivationService, resultHandler, passthrough(),
+                new TestProcessNodeExecutionLoggerFactory());
+    }
+
+    private static StaffTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                            TestElementDerivationService elementDerivationService,
+                                                            ProcessNodeExecutionResultHandler resultHandler,
+                                                            ProcessTaskExecutionService execution,
+                                                            ProcessNodeExecutionLoggerFactory loggerFactory) {
         var user = new UserEntity()
                 .setId("user-1")
                 .setFirstName("Ada")
@@ -538,11 +583,11 @@ class StaffProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeService(node),
                 resultHandler,
                 new TestUserService(user),
-                new TestProcessNodeExecutionLoggerFactory(),
+                loggerFactory,
                 elementDerivationService,
                 new PassthroughTaskViewMultipartInputService(),
                 new TestProcessDataService(),
-                passthrough()
+                execution
         );
 
         return new StaffTaskControllerFixture(jwt, instance, task, controller);

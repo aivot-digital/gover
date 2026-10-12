@@ -76,6 +76,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
 @RequestMapping("/api/public/processes/{procAccess}/tasks/{taskAccess}/")
@@ -482,29 +483,37 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException {
-        return executeMutation(procAccess, taskAccess, () -> {
-            var data = fetchTaskViewData(procAccess, taskAccess);
-            var context = createCustomerContext(data, identitySessionId, queryParameters);
-            customerTaskIdentityService.requireAuthenticatedIdentity(data.instance(), data.node(),
-                    resolveCustomerTaskView(data, context), identitySessionId);
-        }, () -> updateLocked(procAccess, taskAccess, rawInputs, files, fileUris, rawEvent, queryParameters, identitySessionId, response));
+        // The instance lock is held from the authorization through the update, so the derived data stays valid.
+        var authorizedData = new AtomicReference<TaskViewData<NodeConfig>>();
+        var failureLog = new AtomicReference<Runnable>();
+        try {
+            return executeMutation(procAccess, taskAccess, () -> {
+                TaskViewData<NodeConfig> data = fetchTaskViewData(procAccess, taskAccess);
+                var context = createCustomerContext(data, identitySessionId, queryParameters);
+                customerTaskIdentityService.requireAuthenticatedIdentity(data.instance(), data.node(),
+                        resolveCustomerTaskView(data, context), identitySessionId);
+                authorizedData.set(data);
+            }, () -> updateLocked(authorizedData.get(), rawInputs, files, fileUris, rawEvent, queryParameters,
+                    identitySessionId, response, failureLog));
+        } catch (ResponseException exception) {
+            // The failed execution transaction is rolled back; record the failure afterwards so it stays in the history.
+            var log = failureLog.get();
+            if (log != null) log.run();
+            throw exception;
+        }
     }
 
     private <NodeConfig> TaskViewResponse updateLocked(
-            @Nonnull String procAccess,
-            @Nonnull String taskAccess,
+            @Nonnull TaskViewData<NodeConfig> taskViewData,
             @Nonnull String rawInputs,
             @Nullable MultipartFile[] files,
             @Nullable List<String> fileUris,
             @Nullable String rawEvent,
             @Nullable Map<String, List<String>> queryParameters,
             @Nullable String identitySessionId,
-            @Nonnull HttpServletResponse response
+            @Nonnull HttpServletResponse response,
+            @Nonnull AtomicReference<Runnable> failureLog
     ) throws ResponseException {
-        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
-                procAccess,
-                taskAccess
-        );
         requireActiveCustomerTask(taskViewData.task());
 
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
@@ -588,7 +597,7 @@ public class CustomerProcessInstanceTaskViewController {
                         );
             }
         } catch (Exception e) {
-            logger.logException(e);
+            failureLog.set(() -> logger.logException(e));
             throw ResponseException.internalServerError(e);
         }
 
@@ -635,7 +644,7 @@ public class CustomerProcessInstanceTaskViewController {
                 );
             }
         } catch (ProcessNodeExecutionException e) {
-            logger.logException(e);
+            failureLog.set(() -> logger.logException(e));
             throw ResponseException.internalServerError(e);
         }
 

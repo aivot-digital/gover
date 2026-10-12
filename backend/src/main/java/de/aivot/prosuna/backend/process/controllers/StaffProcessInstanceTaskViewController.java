@@ -44,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK;
 
@@ -166,15 +167,24 @@ public class StaffProcessInstanceTaskViewController {
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
         var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
-        return execution.execute(procId, taskId,
-                () -> processInstanceTaskService.authorizeStaffMutation(user.getId(), procId, taskId),
-                () -> updateLocked(jwt, procId, taskId, rawInputs, files, fileUris, rawEvent, identitySessionId));
+        var failureLog = new AtomicReference<Runnable>();
+        try {
+            return execution.execute(procId, taskId,
+                    () -> processInstanceTaskService.authorizeStaffMutation(user.getId(), procId, taskId),
+                    () -> updateLocked(jwt, procId, taskId, rawInputs, files, fileUris, rawEvent, identitySessionId, failureLog));
+        } catch (ResponseException exception) {
+            // The failed execution transaction is rolled back; record the failure afterwards so it stays in the history.
+            var log = failureLog.get();
+            if (log != null) log.run();
+            throw exception;
+        }
     }
 
     @Nonnull
     private <NodeConfig> TaskViewResponse updateLocked(@Nonnull Jwt jwt, @Nonnull Long procId, @Nonnull Long taskId, @Nonnull String rawInputs,
                                                        @Nullable MultipartFile[] files, @Nullable List<String> fileUris, @Nullable String rawEvent,
-                                                       @Nullable String identitySessionId) throws ResponseException {
+                                                       @Nullable String identitySessionId,
+                                                       @Nonnull AtomicReference<Runnable> failureLog) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
@@ -272,7 +282,7 @@ public class StaffProcessInstanceTaskViewController {
         } catch (ResponseException e) {
             throw e;
         } catch (Exception e) {
-            logger.logException(e);
+            failureLog.set(() -> logger.logException(e));
             throw ResponseException.internalServerError(e);
         }
 
@@ -291,7 +301,7 @@ public class StaffProcessInstanceTaskViewController {
                                 res.get()
                         );
             } catch (ProcessNodeExecutionException e) {
-                logger.logException(e);
+                failureLog.set(() -> logger.logException(e));
                 throw ResponseException.internalServerError(e);
             }
         }
