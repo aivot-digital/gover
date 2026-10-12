@@ -219,6 +219,23 @@ class IdentityServiceTest {
     }
 
     @Test
+    void resolveOrigin_AcceptsPagesOfThisInstallation() throws ResponseException {
+        when(prosunaConfig.getProsunaHostname()).thenReturn(VALID_HOSTNAME);
+
+        assertEquals(URI.create(VALID_ORIGIN), identityService.resolveOrigin(VALID_ORIGIN));
+    }
+
+    @Test
+    void resolveOrigin_RejectsPagesOutsideThisInstallation() {
+        when(prosunaConfig.getProsunaHostname()).thenReturn(VALID_HOSTNAME);
+
+        for (var origin : List.of("https://attacker.example/origin", "http://example.com/origin",
+                "https://example.com:8443/origin", "//attacker.example/origin", "invalid-origin")) {
+            assertThrows(ResponseException.class, () -> identityService.resolveOrigin(origin), origin);
+        }
+    }
+
+    @Test
     void createRedirectURL_ShouldCombineScopesCorrectly() throws ResponseException {
         UUID providerKey = UUID.randomUUID();
         List<String> additionalScopes = List.of("scope2", "scope3");

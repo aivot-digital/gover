@@ -17,6 +17,8 @@ import java.util.Map;
 /** Serializes execution with expiry before providers, uploads or communications can have side effects. */
 @Service
 public class ProcessTaskExecutionService {
+    public static final String TASK_DEADLINE_EXCEEDED_REASON = "task_deadline_exceeded";
+
     private final ProcessInstanceRepository instances;
     private final ProcessInstanceTaskRepository tasks;
     private final ProcessTaskDeadlineService deadlines;
@@ -79,7 +81,7 @@ public class ProcessTaskExecutionService {
             if (task.getStatus() == ProcessTaskStatus.DeadlineExceeded) {
                 return new Outcome<>(null, ResponseException.conflictWithDetails(
                         "Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.",
-                        Map.of("reason", "task_deadline_exceeded")));
+                        Map.of("reason", TASK_DEADLINE_EXCEEDED_REASON)));
             }
             if (instance.getStatus() != ProcessInstanceStatus.Running || task.getStatus().isTerminal()
                     || task.getStatus() == ProcessTaskStatus.Paused) {
@@ -87,6 +89,12 @@ public class ProcessTaskExecutionService {
             }
             return new Outcome<>(operation.run(), null);
         });
+    }
+
+    /** Whether a request was rejected because a hard deadline has ended the task. */
+    public static boolean isTaskDeadlineExceeded(@Nonnull ResponseException exception) {
+        return exception.getDetails() instanceof Map<?, ?> details
+                && TASK_DEADLINE_EXCEEDED_REASON.equals(details.get("reason"));
     }
 
     @FunctionalInterface

@@ -65,6 +65,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -80,12 +81,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -377,6 +380,65 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         assertEquals(302, response.getStatus());
         assertEquals(providerLogin.toString(), response.getRedirectedUrl());
+    }
+
+    @Test
+    void startRequiredIdentityAuthentication_ReturnsToTaskPageAfterDeadlineExpiry() throws Exception {
+        var origin = "https://prosuna.example.test/process/instance/tasks/task";
+        var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), rejectingExecution(deadlineExceeded()));
+        when(fixture.customerTaskIdentityService().resolveReturnOrigin(origin)).thenReturn(URI.create(origin));
+        var response = new MockHttpServletResponse();
+
+        fixture.controller().startRequiredIdentityAuthentication(
+                fixture.procAccess(), fixture.taskAccess(), origin, Map.of(), "identity-session", response);
+
+        assertEquals(302, response.getStatus());
+        assertEquals(origin, response.getRedirectedUrl());
+        verify(fixture.customerTaskIdentityService(), never()).createAuthenticationRedirect(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void startNewIdentityProviderAuthentication_KeepsDeadlineRejectionForForeignOrigin() throws Exception {
+        var origin = "https://attacker.example.test/";
+        var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), rejectingExecution(deadlineExceeded()));
+        when(fixture.customerTaskIdentityService().resolveReturnOrigin(origin))
+                .thenThrow(ResponseException.badRequest("Der Referer-Header ist ungültig oder nicht erlaubt."));
+        var response = new MockHttpServletResponse();
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().startNewIdentityProviderAuthentication(
+                fixture.procAccess(), fixture.taskAccess(), "representative", UUID.randomUUID(), origin, Map.of(),
+                "identity-session", response));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertTrue(ProcessTaskExecutionService.isTaskDeadlineExceeded(exception));
+        assertNull(response.getRedirectedUrl());
+    }
+
+    @Test
+    void startRequiredIdentityAuthentication_KeepsOtherRejections() throws Exception {
+        var origin = "https://prosuna.example.test/process/instance/tasks/task";
+        var rejection = ResponseException.conflict("Diese Aufgabe kann derzeit nicht bearbeitet werden.");
+        var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), rejectingExecution(rejection));
+        var response = new MockHttpServletResponse();
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().startRequiredIdentityAuthentication(
+                fixture.procAccess(), fixture.taskAccess(), origin, Map.of(), "identity-session", response));
+
+        assertSame(rejection, exception);
+        assertNull(response.getRedirectedUrl());
+        verify(fixture.customerTaskIdentityService(), never()).resolveReturnOrigin(any());
+    }
+
+    private static ResponseException deadlineExceeded() {
+        return ResponseException.conflictWithDetails(
+                "Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.",
+                Map.of("reason", ProcessTaskExecutionService.TASK_DEADLINE_EXCEEDED_REASON));
+    }
+
+    private static ProcessTaskExecutionService rejectingExecution(ResponseException rejection) throws ResponseException {
+        var execution = mock(ProcessTaskExecutionService.class);
+        when(execution.execute(any(), any(), any(), any())).thenThrow(rejection);
+        return execution;
     }
 
     @Test
@@ -894,6 +956,20 @@ class CustomerProcessInstanceTaskViewControllerTest {
                                                                AuthoredElementValues normalizedInputs,
                                                                EffectiveElementValues effectiveValues,
                                                                ProcessNodeExecutionResultHandler resultHandler) {
+        return createFixture(provider, normalizedInputs, effectiveValues, resultHandler, passthrough());
+    }
+
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                               ProcessTaskExecutionService execution) {
+        return createFixture(provider, new AuthoredElementValues(), new EffectiveElementValues(),
+                new ApplyingProcessNodeExecutionResultHandler(), execution);
+    }
+
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                               AuthoredElementValues normalizedInputs,
+                                                               EffectiveElementValues effectiveValues,
+                                                               ProcessNodeExecutionResultHandler resultHandler,
+                                                               ProcessTaskExecutionService execution) {
         var procAccess = UUID.randomUUID().toString();
         var taskAccess = UUID.randomUUID().toString();
         var now = Instant.now();
@@ -978,7 +1054,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ThemeService.class),
                 customerTaskIdentityService,
                 identitySlotService,
-                passthrough()
+                execution
         );
 
         return new CustomerTaskControllerFixture(

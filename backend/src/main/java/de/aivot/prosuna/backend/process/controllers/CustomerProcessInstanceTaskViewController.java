@@ -66,6 +66,7 @@ import org.thymeleaf.exceptions.TemplateProcessingException;
 import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
@@ -178,7 +179,7 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var redirectUri = executeMutation(procAccess, taskAccess, () -> {
+        var redirectUri = executeIdentityAuthenticationStart(procAccess, taskAccess, origin, () -> {
             TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(procAccess, taskAccess);
             var context = createCustomerContext(
                     taskViewData,
@@ -214,7 +215,7 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var redirectUri = executeMutation(procAccess, taskAccess, () -> {
+        var redirectUri = executeIdentityAuthenticationStart(procAccess, taskAccess, origin, () -> {
             var taskViewData = fetchTaskViewData(procAccess, taskAccess);
             var context = createCustomerContext(
                     taskViewData,
@@ -924,6 +925,30 @@ public class CustomerProcessInstanceTaskViewController {
                 processExecutionData,
                 cfgRes.configuration()
         );
+    }
+
+    /**
+     * Browsers open the identity start endpoints by navigation and would show a rejected request as raw JSON. Once a
+     * hard deadline has ended the task, return to the task page instead, which shows the expiry notice.
+     */
+    @Nonnull
+    private URI executeIdentityAuthenticationStart(@Nonnull String procAccess, @Nonnull String taskAccess,
+                                                   @Nonnull String origin,
+                                                   @Nonnull ProcessTaskExecutionService.Operation<URI> operation)
+            throws ResponseException {
+        try {
+            return Objects.requireNonNull(executeMutation(procAccess, taskAccess, operation));
+        } catch (ResponseException exception) {
+            if (!ProcessTaskExecutionService.isTaskDeadlineExceeded(exception)) {
+                throw exception;
+            }
+            try {
+                return customerTaskIdentityService.resolveReturnOrigin(origin);
+            } catch (ResponseException invalidOrigin) {
+                // Never redirect to a page outside this installation; keep the original rejection instead.
+                throw exception;
+            }
+        }
     }
 
     @Nullable

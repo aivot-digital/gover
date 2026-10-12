@@ -145,6 +145,12 @@ public class CustomerTaskIdentityService {
         );
     }
 
+    /** Validates a customer-supplied return URL; only pages of this Prosuna installation are accepted. */
+    @Nonnull
+    public URI resolveReturnOrigin(@Nonnull String origin) throws ResponseException {
+        return identityService.resolveOrigin(origin);
+    }
+
     @Nonnull
     public IdentityConfigElementSlot requireNewIdentitySlot(@Nonnull ProcessInstanceEntity processInstance,
                                                             @Nonnull ProcessNodeCustomerView processNodeCustomerView,
