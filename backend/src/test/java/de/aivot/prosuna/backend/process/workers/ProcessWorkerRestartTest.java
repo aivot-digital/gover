@@ -92,7 +92,7 @@ class ProcessWorkerRestartTest {
     }
 
     @Test
-    void normalQueueCannotContinueAnExpiredTaskButDeadlineContinuationCan() throws Exception {
+    void normalQueueCannotContinueAnExpiredTaskButItsWorkRequestCan() throws Exception {
         var fixture = new Fixture();
         fixture.existing.put(5L, new ProcessInstanceTaskEntity().setId(5L).setProcessInstanceId(42L)
                 .setProcessNodeId(10).setStatus(ProcessTaskStatus.DeadlineExceeded));
@@ -102,7 +102,7 @@ class ProcessWorkerRestartTest {
         assertTrue(fixture.saved.isEmpty());
         verify(fixture.definition, never()).init(any());
 
-        fixture.worker.doWorkAfterDeadline(payload);
+        fixture.worker.workOnNodeLocked(payload);
         assertEquals(1, fixture.saved.size());
         assertEquals("overdue", fixture.saved.getFirst().getPreviousProcessNodePortKey());
         verify(fixture.definition).init(any());

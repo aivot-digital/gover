@@ -10,10 +10,12 @@ import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.workers.ProcessTaskDeadlineResultHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.time.Clock;
@@ -37,7 +39,8 @@ class ProcessTaskExecutionServiceTest {
     private final AtomicReference<Instant> now = new AtomicReference<>(DEADLINE);
     private final ProcessInstanceRepository instances = mock(ProcessInstanceRepository.class);
     private final ProcessInstanceTaskRepository tasks = mock(ProcessInstanceTaskRepository.class);
-    private final ProcessTaskDeadlineContinuationRepository continuations = mock(ProcessTaskDeadlineContinuationRepository.class);
+    private final ProcessWorkRequestRepository workRequests = mock(ProcessWorkRequestRepository.class);
+    private final RabbitTemplate rabbit = mock(RabbitTemplate.class);
     private final ProcessNodeExecutionLogger logger = mock(ProcessNodeExecutionLogger.class);
     private JdbcTemplate jdbc;
     private ProcessTaskExecutionService execution;
@@ -48,7 +51,7 @@ class ProcessTaskExecutionServiceTest {
         jdbc = new JdbcTemplate(source);
         jdbc.execute("create table instances (id bigint primary key)");
         jdbc.execute("create table tasks (id bigint primary key, status varchar(40))");
-        jdbc.execute("create table continuations (task_id bigint unique)");
+        jdbc.execute("create table work_requests (id bigint auto_increment primary key, task_id bigint unique)");
         jdbc.update("insert into instances values (1)");
         jdbc.update("insert into tasks values (2, 'AwaitingCustomer')");
         when(instances.lockAccessById(1L)).thenAnswer(call -> Optional.ofNullable(
@@ -62,10 +65,11 @@ class ProcessTaskExecutionServiceTest {
             jdbc.update("update tasks set status = ? where id = 2", task.getStatus().name());
             return task;
         });
-        when(continuations.save(any())).thenAnswer(call -> {
-            ProcessTaskDeadlineContinuationEntity continuation = call.getArgument(0);
-            jdbc.update("insert into continuations values (?)", continuation.getTaskId());
-            return continuation;
+        when(workRequests.save(any())).thenAnswer(call -> {
+            ProcessWorkRequestEntity request = call.getArgument(0);
+            jdbc.update("insert into work_requests (task_id) values (?)", request.getTaskId());
+            ReflectionTestUtils.setField(request, "id", jdbc.queryForObject("select max(id) from work_requests", Long.class));
+            return request;
         });
         var nodes = mock(ProcessNodeRepository.class);
         var nodeService = mock(ProcessNodeService.class);
@@ -83,7 +87,7 @@ class ProcessTaskExecutionServiceTest {
         when(edges.findByFromNodeIdAndViaPort(3, "overdue")).thenReturn(Optional.of(new ProcessEdgeEntity().setToNodeId(4).setViaPort("overdue")));
         when(loggers.create(1L, 2L, null, null)).thenReturn(logger);
         var deadlines = new ProcessTaskDeadlineService(nodes, nodeService, edges, instances, tasks, loggers,
-                new ProcessTaskDeadlineResultHandler(tasks, continuations), time);
+                new ProcessTaskDeadlineResultHandler(tasks, new ProcessWorkRequestService(workRequests, rabbit, time)), time);
         execution = new ProcessTaskExecutionService(instances, tasks, deadlines, new DataSourceTransactionManager(source), mock(jakarta.persistence.EntityManager.class));
     }
 
@@ -95,16 +99,17 @@ class ProcessTaskExecutionServiceTest {
         assertEquals(Map.of("reason", "task_deadline_exceeded"), exception.getDetails());
         assertEquals(0, calls.get());
         assertEquals("DeadlineExceeded", jdbc.queryForObject("select status from tasks where id = 2", String.class));
-        assertEquals(1, jdbc.queryForObject("select count(*) from continuations", Integer.class));
+        assertEquals(1, jdbc.queryForObject("select count(*) from work_requests", Integer.class));
+        verify(rabbit).convertAndSend(ProcessWorkRequestService.QUEUE, 1L);
     }
 
     @Test
     void failedContinuationWriteRollsBackTaskExpiry() {
-        doThrow(new IllegalStateException("database failure")).when(continuations).save(any());
+        doThrow(new IllegalStateException("database failure")).when(workRequests).save(any());
         assertThrows(IllegalStateException.class, () -> execution.execute(1L, 2L, () -> {}, () -> null));
         assertEquals("AwaitingCustomer", jdbc.queryForObject("select status from tasks where id = 2", String.class));
-        assertEquals(0, jdbc.queryForObject("select count(*) from continuations", Integer.class));
-        verifyNoInteractions(logger);
+        assertEquals(0, jdbc.queryForObject("select count(*) from work_requests", Integer.class));
+        verifyNoInteractions(logger, rabbit);
     }
 
     @Test
@@ -113,7 +118,7 @@ class ProcessTaskExecutionServiceTest {
                 () -> { throw ResponseException.forbidden(); }, () -> null));
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
         assertEquals("AwaitingCustomer", jdbc.queryForObject("select status from tasks where id = 2", String.class));
-        verifyNoInteractions(continuations, logger);
+        verifyNoInteractions(workRequests, rabbit, logger);
     }
 
     @Test
@@ -135,8 +140,9 @@ class ProcessTaskExecutionServiceTest {
             scanner.get(10, TimeUnit.SECONDS);
         }
         assertEquals(0, calls.get());
-        assertEquals(1, jdbc.queryForObject("select count(*) from continuations", Integer.class));
-        verify(continuations).save(any());
+        assertEquals(1, jdbc.queryForObject("select count(*) from work_requests", Integer.class));
+        verify(workRequests).save(any());
+        verify(rabbit).convertAndSend(ProcessWorkRequestService.QUEUE, 1L);
     }
 
     @Test
@@ -168,6 +174,6 @@ class ProcessTaskExecutionServiceTest {
             finish.countDown();
         }
         assertEquals("Completed", jdbc.queryForObject("select status from tasks where id = 2", String.class));
-        verifyNoInteractions(continuations, logger);
+        verifyNoInteractions(workRequests, rabbit, logger);
     }
 }

@@ -45,7 +45,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 
 import java.time.Instant;
 import java.util.List;
@@ -85,7 +85,7 @@ class ProcessTaskDeadlineResultHandlerTest {
             .setProcessInstanceId(1L).setStatus(ProcessTaskStatus.Running).setDeadline(PREVIOUS_DEADLINE).setDeadlineKey("preparation");
     private final UserEntity assignee = new UserEntity().setId("staff").setFullName("Anna Beispiel");
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
-            assignments, mock(RabbitTemplate.class), communication, mock(ProcessInstanceRepository.class), versions, tasks,
+            assignments, mock(ProcessWorkRequestService.class), communication, mock(ProcessInstanceRepository.class), versions, tasks,
             edges, users, mail, mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class),
             processes, departments, null, nodes, new BusinessTime(ZoneId.of("Europe/Berlin"), clock));
 
