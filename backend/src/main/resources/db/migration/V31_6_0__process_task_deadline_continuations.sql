@@ -21,6 +21,7 @@ create table process_task_deadline_continuations
 comment on column process_instance_tasks.status is
     '0 Running, 1 Paused, 2 Completed, 3 Aborted, 4 Failed, 5 Restarted, 6 AwaitingPayment, 7 AwaitingCustomer, 8 InProgress, 9 AwaitingStaff, 10 DeadlineExceeded';
 
+-- Only hard deadlines are scanned; tasks past a soft deadline never become due for the worker.
 create index process_instance_tasks_due_deadline_idx
     on process_instance_tasks (deadline, id)
-    where status in (0, 6, 7, 8, 9) and deadline is not null and deadline_key is not null;
+    where status in (0, 6, 7, 8, 9) and deadline_strict;

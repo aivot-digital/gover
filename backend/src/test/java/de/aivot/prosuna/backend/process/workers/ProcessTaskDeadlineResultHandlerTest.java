@@ -157,11 +157,13 @@ class ProcessTaskDeadlineResultHandlerTest {
 
     @Test
     void unconfiguredPhaseClearsThePreviousDeadlineAndLogsItsKey() throws Exception {
+        task.setDeadlineStrict(true);
         node.setDeadlines(Map.of());
         handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer"));
         handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer"));
         assertNull(task.getDeadline());
         assertNull(task.getDeadlineKey());
+        assertFalse(task.getDeadlineStrict());
         verify(tasks).save(task);
         var captor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
         verify(events).save(captor.capture());
@@ -213,10 +215,13 @@ class ProcessTaskDeadlineResultHandlerTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void bothSoftAndHardPhasesReceiveADueDate(boolean strict) throws Exception {
+        task.setDeadlineStrict(!strict);
         node.setDeadlines(Map.of("customer", new ProcessNodeDeadlineConfiguration(2, strict)));
         handle(new ProcessNodeExecutionResultNoop().setNewDeadlineKey("customer"));
         assertEquals(NEW_DEADLINE, task.getDeadline());
         assertEquals("customer", task.getDeadlineKey());
+        // Only hard phases are picked up by the deadline worker.
+        assertEquals(strict, task.getDeadlineStrict());
     }
 
     @Test

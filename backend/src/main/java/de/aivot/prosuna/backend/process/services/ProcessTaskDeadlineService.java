@@ -45,7 +45,8 @@ public class ProcessTaskDeadlineService {
     public void expireIfDue(@Nonnull ProcessInstanceEntity instance, @Nonnull ProcessInstanceTaskEntity task) {
         var now = time.now();
         if (instance.getStatus() != ProcessInstanceStatus.Running || !EXPIRABLE_STATUSES.contains(task.getStatus())
-                || task.getDeadline() == null || task.getDeadlineKey() == null || now.isBefore(task.getDeadline())) {
+                || task.getDeadline() == null || task.getDeadlineKey() == null || !task.getDeadlineStrict()
+                || now.isBefore(task.getDeadline())) {
             return;
         }
         var logger = loggers.create(instance.getId(), task.getId(), null, null);
@@ -54,6 +55,9 @@ public class ProcessTaskDeadlineService {
                     new ProcessNodeExecutionExceptionBrokenImplementation("Das Prozesselement der fälligen Aufgabe wurde nicht gefunden."));
             var setting = node.getDeadlines().get(task.getDeadlineKey());
             if (setting == null || setting.days() == null || !setting.strict()) {
+                // The element no longer has a hard deadline for this phase. Treat the deadline as soft from now on,
+                // so the deadline worker stops selecting the task on every scan.
+                tasks.save(task.setDeadlineStrict(false));
                 return;
             }
             var resolution = nodeService.resolvePorts(node);

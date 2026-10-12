@@ -22,7 +22,7 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
     @Query("""
             select task.id from ProcessInstanceTaskEntity task
             join ProcessInstanceEntity instance on instance.id = task.processInstanceId
-            where task.id > :afterId and task.deadline <= :now and task.deadlineKey is not null
+            where task.id > :afterId and task.deadline <= :now and task.deadlineStrict = true
               and task.status in :statuses and instance.status = de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus.Running
             order by task.id
             """)

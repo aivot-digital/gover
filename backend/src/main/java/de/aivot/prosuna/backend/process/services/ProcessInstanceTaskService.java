@@ -121,6 +121,7 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
 
         existingEntity.setDeadline(entity.getDeadline());
         existingEntity.setDeadlineKey(entity.getDeadlineKey());
+        existingEntity.setDeadlineStrict(entity.getDeadlineStrict());
 
         existingEntity.setPostponedUntil(entity.getPostponedUntil());
 

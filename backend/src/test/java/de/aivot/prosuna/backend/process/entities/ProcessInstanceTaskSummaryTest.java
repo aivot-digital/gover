@@ -49,6 +49,7 @@ class ProcessInstanceTaskSummaryTest {
                     finished timestamp with time zone, runtime interval second, runtime_data text, node_data text,
                     process_data text, process_data_diff text, assigned_user_id varchar(36),
                     assigned_customer_identity_id varchar(36), deadline timestamp with time zone, deadline_key varchar(32),
+                    deadline_strict boolean not null default false,
                     postponed_until timestamp with time zone, retry_count int, next_retry_at timestamp with time zone
                 )
                 """);

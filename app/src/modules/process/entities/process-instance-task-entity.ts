@@ -28,4 +28,6 @@ export interface ProcessInstanceTaskEntity {
     assignedCustomerIdentityId: string | null;
     deadline: string | null; // ISO date string
     deadlineKey: string | null;
+    // Only hard deadlines expire the task into the deadline port; fixed together with the date.
+    deadlineStrict: boolean;
 }

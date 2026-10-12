@@ -138,7 +138,11 @@ create table process_instance_tasks
     -- The active phase deadline and its definition key, if configured
     deadline                          timestamptz null,
     deadline_key                      varchar(32) null,
+    -- Whether the active deadline is hard, so the deadline worker expires the task into its deadline port.
+    -- Fixed together with the date when the phase starts.
+    deadline_strict                   boolean      not null default false,
     check ((deadline is null) = (deadline_key is null)),
+    check (deadline_key is not null or not deadline_strict),
 
     -- The postponed until timestamp for this task, if any
     postponed_until                   timestamptz null,

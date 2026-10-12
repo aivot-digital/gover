@@ -68,7 +68,7 @@ public class ProcessTaskDeadlineWorker {
                     logger.error("Could not process deadline of task {}", id, exception);
                 }
             }
-            // Keyset pagination also advances past soft deadlines and isolated failures.
+            // Keyset pagination also advances past tasks that turned out not to be due and isolated failures.
             afterId = ids.getLast();
         }
     }

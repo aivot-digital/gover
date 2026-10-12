@@ -307,7 +307,10 @@ public class ProcessNodeExecutionResultHandler {
         if (newDeadline == null && previousDeadline == null && previousDeadlineKey == null) {
             return;
         }
-        context.processInstanceTask.setDeadline(newDeadline).setDeadlineKey(newDeadlineKey);
+        context.processInstanceTask
+                .setDeadline(newDeadline)
+                .setDeadlineKey(newDeadlineKey)
+                .setDeadlineStrict(newDeadline != null && setting.strict());
         processInstanceTaskRepository.save(context.processInstanceTask);
 
         var details = new LinkedHashMap<String, Object>();

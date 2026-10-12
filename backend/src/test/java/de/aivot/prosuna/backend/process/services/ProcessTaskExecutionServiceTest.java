@@ -55,7 +55,7 @@ class ProcessTaskExecutionServiceTest {
                 jdbc.queryForObject("select id from instances where id = 1 for update", Long.class)));
         when(instances.findById(1L)).thenAnswer(call -> Optional.of(new ProcessInstanceEntity().setId(1L).setStatus(ProcessInstanceStatus.Running)));
         when(tasks.findById(2L)).thenAnswer(call -> Optional.of(new ProcessInstanceTaskEntity().setId(2L).setProcessInstanceId(1L)
-                .setProcessNodeId(3).setDeadline(DEADLINE).setDeadlineKey("customer").setNodeData(Map.of())
+                .setProcessNodeId(3).setDeadline(DEADLINE).setDeadlineKey("customer").setDeadlineStrict(true).setNodeData(Map.of())
                 .setStatus(ProcessTaskStatus.valueOf(jdbc.queryForObject("select status from tasks where id = 2", String.class)))));
         when(tasks.save(any())).thenAnswer(call -> {
             ProcessInstanceTaskEntity task = call.getArgument(0);

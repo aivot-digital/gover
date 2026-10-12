@@ -39,7 +39,7 @@ class ProcessTaskDeadlineServiceTest {
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(1L).setStatus(ProcessInstanceStatus.Running);
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(2L).setProcessInstanceId(1L)
             .setProcessNodeId(3).setStatus(ProcessTaskStatus.AwaitingCustomer).setDeadline(DEADLINE).setDeadlineKey("customer")
-            .setNodeData(Map.of("existing", "value")).setProcessData(Map.of("keep", true))
+            .setDeadlineStrict(true).setNodeData(Map.of("existing", "value")).setProcessData(Map.of("keep", true))
             .setRuntimeData(Map.of("phase", "customer")).setAssignedUserId("staff").setAssignedCustomerIdentityId("customer-id");
     private final ProcessNodeEntity node = new ProcessNodeEntity().setId(3)
             .setDeadlines(Map.of("customer", new ProcessNodeDeadlineConfiguration(2, true)));
@@ -108,9 +108,25 @@ class ProcessTaskDeadlineServiceTest {
 
     @Test
     void softDeadlineHasNoConsequences() {
-        node.setDeadlines(Map.of("customer", new ProcessNodeDeadlineConfiguration(2, false)));
+        task.setDeadlineStrict(false);
         service.expireIfDue(instance, task);
         assertEquals(ProcessTaskStatus.AwaitingCustomer, task.getStatus());
+        verifyNoInteractions(nodes, nodeService, tasks, continuations, events);
+    }
+
+    @Test
+    void deadlineNoLongerHardOnTheElementBecomesSoftWithoutConsequences() {
+        node.setDeadlines(Map.of("customer", new ProcessNodeDeadlineConfiguration(2, false)));
+
+        service.expireIfDue(instance, task);
+        service.expireIfDue(instance, task);
+
+        assertEquals(ProcessTaskStatus.AwaitingCustomer, task.getStatus());
+        assertFalse(task.getDeadlineStrict());
+        assertEquals(DEADLINE, task.getDeadline());
+        assertEquals("customer", task.getDeadlineKey());
+        verify(tasks).save(task);
+        verify(nodes).findById(3);
         verifyNoInteractions(nodeService, continuations, events);
     }
 
