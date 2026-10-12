@@ -11,12 +11,11 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
-import de.aivot.prosuna.backend.process.workers.ProcessWorker;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
@@ -24,31 +23,37 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FormPaymentTransactionChangeListenerTest {
     private final ProcessInstanceTaskRepository repository = mock(ProcessInstanceTaskRepository.class);
-    private final RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
+    private final ProcessWorkRequestService workRequests = mock(ProcessWorkRequestService.class);
     private final ProcessInstanceHistoryEventRepository events = mock(ProcessInstanceHistoryEventRepository.class);
     private final ProcessNodeExecutionLoggerFactory loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
     private final FormPaymentTransactionChangeListener listener =
-            new FormPaymentTransactionChangeListener(repository, rabbitTemplate, loggerFactory);
+            new FormPaymentTransactionChangeListener(repository, workRequests, loggerFactory);
 
     @Test
-    void onChange_QueuesResumeWorkForMatchingTasks() throws Exception {
+    void onChange_RequestsResumingMatchingTasks() throws Exception {
         whenTasksAre(task(ProcessTaskStatus.AwaitingPayment));
 
         listener.onChange(transaction(XBezahldienstStatus.PAYED));
 
-        verify(rabbitTemplate).convertAndSend(
-                eq(ProcessWorker.RESUME_WORK_ON_INSTANCE_QUEUE),
-                eq(new ProcessWorker.ResumeWorkWorkerPayload(99L, 456L, 123))
-        );
+        verify(workRequests).enqueueResume(99L, 456L);
         verifyNoInteractions(events);
+    }
+
+    @Test
+    void onChange_RequestsResumingATaskEndedByItsDeadlineToRecordTheLateNotification() throws Exception {
+        whenTasksAre(task(ProcessTaskStatus.DeadlineExceeded));
+
+        listener.onChange(transaction(XBezahldienstStatus.CANCELED));
+
+        verify(workRequests).enqueueResume(99L, 456L);
     }
 
     @ParameterizedTest
@@ -67,7 +72,7 @@ class FormPaymentTransactionChangeListenerTest {
         assertEquals("staff", event.getValue().getConcernedUserId());
         assertTrue(event.getValue().getMessage().contains("„tx-1“"));
         assertEquals(status.name(), event.getValue().getDetails().get("taskStatus"));
-        verify(rabbitTemplate).convertAndSend(eq(ProcessWorker.RESUME_WORK_ON_INSTANCE_QUEUE), any(Object.class));
+        verifyNoInteractions(workRequests);
     }
 
     @Test
@@ -80,12 +85,13 @@ class FormPaymentTransactionChangeListenerTest {
     }
 
     @Test
-    void onDelete_OnlyQueuesResumeWork() throws Exception {
-        whenTasksAre(task(ProcessTaskStatus.Restarted));
+    void onDelete_OnlyRequestsResumingWaitingTasks() throws Exception {
+        whenTasksAre(task(ProcessTaskStatus.AwaitingPayment), task(ProcessTaskStatus.Restarted).setId(457L));
 
         listener.onDelete(transaction(XBezahldienstStatus.PAYED));
 
-        verify(rabbitTemplate).convertAndSend(eq(ProcessWorker.RESUME_WORK_ON_INSTANCE_QUEUE), any(Object.class));
+        verify(workRequests).enqueueResume(99L, 456L);
+        verify(workRequests, never()).enqueueResume(99L, 457L);
         verifyNoInteractions(loggerFactory, events);
     }
 

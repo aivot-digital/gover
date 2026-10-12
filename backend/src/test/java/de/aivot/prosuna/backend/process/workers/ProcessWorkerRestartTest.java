@@ -92,7 +92,7 @@ class ProcessWorkerRestartTest {
         var task = new ProcessInstanceTaskEntity().setId(100L).setProcessInstanceId(42L)
                 .setProcessNodeId(11).setRestartForTaskId(99L);
         fixture.existing.put(100L, task);
-        fixture.worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
+        fixture.worker.resumeLocked(42L, 100L);
         assertEquals(99L, task.getRestartForTaskId());
         assertTrue(fixture.saved.isEmpty());
         verify(fixture.definition).resume(any());

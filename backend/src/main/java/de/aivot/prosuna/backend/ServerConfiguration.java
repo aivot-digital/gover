@@ -42,7 +42,6 @@ public class ServerConfiguration implements WebMvcConfigurer {
     public SimpleMessageConverter converter() {
         SimpleMessageConverter converter = new SimpleMessageConverter();
         converter.setAllowedListPatterns(List.of(
-                "de.aivot.prosuna.backend.process.workers.*",
                 "de.aivot.prosuna.backend.codeLists.services.*"
         ));
         return converter;

@@ -28,14 +28,9 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.utils.Tuple3;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.UnexpectedRollbackException;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -45,8 +40,6 @@ import java.util.UUID;
 
 @Service
 public class ProcessWorker {
-    public static final String RESUME_WORK_ON_INSTANCE_QUEUE = "resume-work-on-instance-queue";
-
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessNodeRepository processDefinitionNodeRepository;
     private final ProcessNodeDefinitionService processNodeProviderService;
@@ -75,11 +68,6 @@ public class ProcessWorker {
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.processNodeService = processNodeService;
         this.execution = execution;
-    }
-
-    @Bean
-    public Queue resumeWorkOnInstanceQueue() {
-        return new Queue(RESUME_WORK_ON_INSTANCE_QUEUE, true);
     }
 
     /**
@@ -151,22 +139,6 @@ public class ProcessWorker {
             logger.logException(exception);
             currentProcessInstance.setStatus(ProcessInstanceStatus.Failed);
             processInstanceRepository.save(currentProcessInstance);
-        }
-    }
-
-    @RabbitListener(queues = RESUME_WORK_ON_INSTANCE_QUEUE)
-    public void resumeWorkOnCurrentNode(ResumeWorkWorkerPayload payload) {
-        try {
-            var resumed = execution.executeBackground(payload.currentProcessInstanceId(), payload.currentTaskId(), () -> {
-                resumeWorkOnCurrentNodeLocked(payload);
-                return null;
-            });
-            if (!resumed) recordResumeAfterDeadline(payload.currentProcessInstanceId(), payload.currentTaskId());
-        } catch (ResponseException exception) {
-            processNodeExecutionLoggerFactory.create(payload.currentProcessInstanceId(), payload.currentTaskId(), null, null)
-                    .logException(exception);
-        } catch (UnexpectedRollbackException exception) {
-            recordFailedExecution(payload.currentProcessInstanceId(), payload.currentTaskId(), exception);
         }
     }
 
@@ -574,7 +546,7 @@ public class ProcessWorker {
             @Nonnull Long currentProcessInstanceId,
             @Nonnull Long currentTaskId,
             @Nonnull Integer currentNodeId
-    ) implements Serializable {
+    ) {
 
     }
 }
