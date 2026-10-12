@@ -229,7 +229,7 @@ describe('ProcessSettingsDialogVersionTab', () => {
 
         await user.type(screen.getByRole('textbox', {name: 'Aufbewahrungsdauer'}), '3');
         await user.click(unit);
-        await user.click(await screen.findByText('Tage'));
+        await user.click(await screen.findByRole('option', {name: 'Tage'}));
         await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(false));
         act(() => ref.current?.save());
         await waitFor(() => expect(update).toHaveBeenCalledWith(
@@ -375,6 +375,126 @@ describe('ProcessSettingsDialogVersionTab', () => {
         expect(screen.queryByText('Die Aufbewahrungsdauer darf maximal 100 Jahre betragen.'))
             .not.toBeInTheDocument();
         await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(false));
+    });
+
+    it('saves an optional processing deadline in calendar days and allows removing it', async () => {
+        const user = userEvent.setup();
+        const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+            retentionTimeValue: 30,
+            retentionTimeUnit: RetentionTimeUnit.Days,
+        };
+        const onUnsavedChangesChange = vi.fn();
+        const update = vi
+            .spyOn(ProcessDefinitionVersionApiService.prototype, 'update')
+            .mockImplementation(async (_id, updated) => updated);
+        const renderTab = (current: typeof version) => (
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    ref={ref}
+                    open
+                    version={current}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                    onUnsavedChangesChange={onUnsavedChangesChange}
+                />
+            </Provider>
+        );
+        const {rerender} = render(renderTab(version));
+
+        const deadline = screen.getByRole('textbox', {name: /Bearbeitungsdauer/});
+        expect(deadline).toHaveValue('');
+        expect(deadline).toHaveAccessibleDescription(/Ohne Angabe gilt für Vorgänge dieser Prozessversion keine Bearbeitungsfrist/);
+        await user.type(deadline, '30');
+        await waitFor(() => expect(onUnsavedChangesChange).toHaveBeenLastCalledWith(true));
+        act(() => ref.current?.save());
+        await waitFor(() => expect(update).toHaveBeenLastCalledWith(
+            {processDefinitionId: 42, processDefinitionVersion: 7},
+            expect.objectContaining({instanceDeadlineDays: 30}),
+        ));
+
+        // The dialog passes the saved version back in.
+        rerender(renderTab({...version, instanceDeadlineDays: 30}));
+        await user.clear(screen.getByRole('textbox', {name: /Bearbeitungsdauer/}));
+        act(() => ref.current?.save());
+        await waitFor(() => expect(update).toHaveBeenLastCalledWith(
+            expect.anything(),
+            expect.objectContaining({instanceDeadlineDays: null}),
+        ));
+    });
+
+    it.each(['0', '3653'])('blocks the processing deadline %s outside the task deadline bounds', async (value) => {
+        const user = userEvent.setup();
+        const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+            retentionTimeValue: 30,
+            retentionTimeUnit: RetentionTimeUnit.Days,
+            instanceDeadlineDays: 14,
+        };
+        const onValidationErrorChange = vi.fn();
+        const update = vi.spyOn(ProcessDefinitionVersionApiService.prototype, 'update');
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    ref={ref}
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                    onValidationErrorChange={onValidationErrorChange}
+                />
+            </Provider>,
+        );
+
+        const deadline = screen.getByRole('textbox', {name: /Bearbeitungsdauer/});
+        await user.clear(deadline);
+        await user.type(deadline, value);
+        expect(screen.getByText('Die Bearbeitungsdauer muss zwischen 1 und 3.652 Tagen liegen.')).toBeInTheDocument();
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(true));
+        act(() => ref.current?.save());
+        expect(update).not.toHaveBeenCalled();
+
+        act(() => ref.current?.reset());
+        expect(screen.getByRole('textbox', {name: /Bearbeitungsdauer/})).toHaveValue('14');
+        await waitFor(() => expect(onValidationErrorChange).toHaveBeenLastCalledWith(false));
+    });
+
+    it('shows the processing deadline of a published version without allowing changes', () => {
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+            status: ProcessStatus.Published,
+            instanceDeadlineDays: 21,
+        };
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    open
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                />
+            </Provider>,
+        );
+
+        const deadline = screen.getByRole('textbox', {name: /Bearbeitungsdauer/});
+        expect(deadline).toHaveValue('21');
+        expect(deadline).toBeDisabled();
     });
 
     it('shows the configured retention time without allowing changes to a published version', () => {
