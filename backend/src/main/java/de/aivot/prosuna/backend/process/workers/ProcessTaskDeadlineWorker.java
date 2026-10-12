@@ -21,10 +21,17 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.UnexpectedRollbackException;
 
+import java.time.Duration;
+import java.util.List;
+
 @Service
 public class ProcessTaskDeadlineWorker {
     public static final String CONTINUATION_QUEUE = "process-task-deadline-continuation-queue";
     private static final Logger logger = LoggerFactory.getLogger(ProcessTaskDeadlineWorker.class);
+    // Paused and failed instances only hold their continuations, so they are published once the instance runs again.
+    // Completed and aborted instances are still published, so the consumer discards their entries.
+    static final List<ProcessInstanceStatus> DISPATCHABLE_INSTANCE_STATUSES = List.of(ProcessInstanceStatus.Running,
+            ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted);
     private final ProcessInstanceTaskRepository tasks;
     private final ProcessInstanceRepository instances;
     private final ProcessTaskDeadlineContinuationRepository continuations;
@@ -33,12 +40,14 @@ public class ProcessTaskDeadlineWorker {
     private final RabbitTemplate rabbit;
     private final BusinessTime time;
     private final int batchSize;
+    private final Duration redispatchInterval;
 
     public ProcessTaskDeadlineWorker(@Nonnull ProcessInstanceTaskRepository tasks, @Nonnull ProcessInstanceRepository instances,
                                       @Nonnull ProcessTaskDeadlineContinuationRepository continuations,
                                       @Nonnull ProcessTaskExecutionService execution, @Nonnull ProcessWorker worker,
                                       @Nonnull RabbitTemplate rabbit, @Nonnull BusinessTime time,
-                                      @Value("${prosuna.process-task-deadlines.batch-size:100}") int batchSize) {
+                                      @Value("${prosuna.process-task-deadlines.batch-size:100}") int batchSize,
+                                      @Value("${prosuna.process-task-deadlines.redispatch-interval:PT5M}") Duration redispatchInterval) {
         this.tasks = tasks;
         this.instances = instances;
         this.continuations = continuations;
@@ -47,6 +56,7 @@ public class ProcessTaskDeadlineWorker {
         this.rabbit = rabbit;
         this.time = time;
         this.batchSize = Math.max(1, batchSize);
+        this.redispatchInterval = redispatchInterval;
     }
 
     @Bean
@@ -75,13 +85,19 @@ public class ProcessTaskDeadlineWorker {
 
     @Scheduled(fixedDelayString = "${prosuna.process-task-deadlines.check-interval:PT30S}")
     public void dispatchContinuations() {
+        var now = time.now();
+        // A published ID stays queued until it is consumed. Publishing it again is only a fallback for entries that
+        // remain pending, e.g. after a lost message or a held continuation, and must not pile up duplicates.
+        var dispatchedBefore = now.minus(redispatchInterval);
         long afterId = 0;
         while (true) {
-            var pending = continuations.findByIdGreaterThanOrderByIdAsc(afterId, PageRequest.of(0, batchSize));
+            var pending = continuations.findDispatchable(afterId, dispatchedBefore, DISPATCHABLE_INSTANCE_STATUSES,
+                    PageRequest.of(0, batchSize));
             if (pending.isEmpty()) return;
             for (var continuation : pending) {
                 try {
                     rabbit.convertAndSend(CONTINUATION_QUEUE, continuation.getId());
+                    continuations.markDispatched(continuation.getId(), now);
                 } catch (Exception exception) {
                     logger.warn("Could not dispatch deadline continuation {}", continuation.getId(), exception);
                 }

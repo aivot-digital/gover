@@ -18,6 +18,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.Clock;
 import java.time.ZoneOffset;
@@ -39,7 +40,8 @@ class ProcessTaskDeadlineWorkerTest {
     private final Instant now = Instant.parse("2030-05-01T12:00:00Z");
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(1L).setStatus(ProcessInstanceStatus.Running);
     private final ProcessTaskDeadlineContinuationEntity continuation = new ProcessTaskDeadlineContinuationEntity(1L, 2L, 3, 4, "overdue", now);
-    private final ProcessTaskDeadlineWorker worker = new ProcessTaskDeadlineWorker(tasks, instances, pending, execution, nextWorker, rabbit, time, 2);
+    private final ProcessTaskDeadlineWorker worker = new ProcessTaskDeadlineWorker(tasks, instances, pending, execution, nextWorker, rabbit, time, 2,
+            Duration.ofMinutes(5));
 
     @BeforeEach
     void setup() {
@@ -110,13 +112,36 @@ class ProcessTaskDeadlineWorkerTest {
 
     @Test
     void retriesPublishingWithoutRemovingDurableRecord() {
-        when(pending.findByIdGreaterThanOrderByIdAsc(0L, PageRequest.of(0, 2))).thenReturn(List.of(continuation));
+        when(pending.findDispatchable(0L, now.minus(Duration.ofMinutes(5)),
+                ProcessTaskDeadlineWorker.DISPATCHABLE_INSTANCE_STATUSES, PageRequest.of(0, 2))).thenReturn(List.of(continuation));
         doThrow(new IllegalStateException("broker unavailable")).doNothing().when(rabbit)
                 .convertAndSend(ProcessTaskDeadlineWorker.CONTINUATION_QUEUE, 10L);
         worker.dispatchContinuations();
+        verify(pending, never()).markDispatched(anyLong(), any());
         worker.dispatchContinuations();
         verify(rabbit, times(2)).convertAndSend(ProcessTaskDeadlineWorker.CONTINUATION_QUEUE, 10L);
+        verify(pending).markDispatched(10L, now);
         verify(pending, never()).delete(any());
+    }
+
+    @Test
+    void publishesOnlyContinuationsOfActionableInstancesThatWereNotPublishedRecently() {
+        var second = new ProcessTaskDeadlineContinuationEntity(1L, 5L, 3, 4, "overdue", now);
+        ReflectionTestUtils.setField(second, "id", 11L);
+        var dispatchedBefore = now.minus(Duration.ofMinutes(5));
+        when(pending.findDispatchable(0L, dispatchedBefore, ProcessTaskDeadlineWorker.DISPATCHABLE_INSTANCE_STATUSES,
+                PageRequest.of(0, 2))).thenReturn(List.of(continuation, second));
+        when(pending.findDispatchable(11L, dispatchedBefore, ProcessTaskDeadlineWorker.DISPATCHABLE_INSTANCE_STATUSES,
+                PageRequest.of(0, 2))).thenReturn(List.of());
+
+        worker.dispatchContinuations();
+
+        assertEquals(List.of(ProcessInstanceStatus.Running, ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted),
+                ProcessTaskDeadlineWorker.DISPATCHABLE_INSTANCE_STATUSES);
+        verify(rabbit).convertAndSend(ProcessTaskDeadlineWorker.CONTINUATION_QUEUE, 10L);
+        verify(rabbit).convertAndSend(ProcessTaskDeadlineWorker.CONTINUATION_QUEUE, 11L);
+        verify(pending).markDispatched(10L, now);
+        verify(pending).markDispatched(11L, now);
     }
 
     @Test

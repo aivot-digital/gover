@@ -189,6 +189,7 @@ prosuna:
   process-task-deadlines:
     check-interval: "${PROSUNA_PROCESS_TASK_DEADLINES_CHECK_INTERVAL:PT30S}"
     batch-size: "${PROSUNA_PROCESS_TASK_DEADLINES_BATCH_SIZE:100}"
+    redispatch-interval: "${PROSUNA_PROCESS_TASK_DEADLINES_REDISPATCH_INTERVAL:PT5M}"
   prosunaHostname: "${PROSUNA_HOSTNAME}"
   timezone: "${PROSUNA_TIMEZONE:Europe/Berlin}"
   fromMail: "${PROSUNA_FROM_MAIL}"

@@ -1,7 +1,9 @@
 -- Durable outbox for process continuations after a hard task deadline expires.
 -- A pending row is committed together with the task's DeadlineExceeded status and
 -- history event, so a broker outage or application restart cannot lose the next step.
--- Rows remain pending while a worker repeatedly publishes their IDs to RabbitMQ.
+-- A worker publishes the IDs of pending rows to RabbitMQ and records when it did so.
+-- It publishes a row again only after the redispatch interval, and not while the
+-- owning process instance is paused or failed, because the consumer only holds it then.
 -- The consumer locks the owning process instance and rechecks the pending row and
 -- existing child task before creating the next task and deleting the row in one
 -- transaction. This makes duplicate deliveries safe. Pending rows are also discarded
@@ -14,7 +16,9 @@ create table process_task_deadline_continuations
     from_node_id        int not null,
     to_node_id          int not null,
     via_port            varchar(96) not null,
-    created             timestamptz not null
+    created             timestamptz not null,
+    -- The last successful publication to RabbitMQ; null until the row is first published.
+    last_dispatched     timestamptz null
 );
 
 -- 10 = DeadlineExceeded. Existing status values retain their meaning.

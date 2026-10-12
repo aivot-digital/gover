@@ -10,8 +10,9 @@ import java.time.Instant;
  * Durable outbox entry for continuing a process after a hard task deadline expires.
  *
  * <p>The entry is committed together with the task's {@code DeadlineExceeded} status and history event.
- * It keeps the next step recoverable across RabbitMQ outages and application restarts. A worker repeatedly
- * publishes the entry's ID while it remains pending.
+ * It keeps the next step recoverable across RabbitMQ outages and application restarts. A worker publishes the
+ * entry's ID and publishes it again only if the entry is still pending after the redispatch interval. Entries
+ * of paused or failed instances are not published until the instance runs again.
  *
  * <p>The consumer locks the owning process instance, rechecks this entry and any existing child task,
  * and creates the next task and deletes this entry in the same transaction. These checks make duplicate
@@ -39,6 +40,8 @@ public class ProcessTaskDeadlineContinuationEntity {
     private String viaPort;
     @Nonnull
     private Instant created;
+    @Nullable
+    private Instant lastDispatched;
 
     protected ProcessTaskDeadlineContinuationEntity() {
     }
@@ -61,4 +64,5 @@ public class ProcessTaskDeadlineContinuationEntity {
     @Nonnull public Integer getToNodeId() { return toNodeId; }
     @Nonnull public String getViaPort() { return viaPort; }
     @Nonnull public Instant getCreated() { return created; }
+    @Nullable public Instant getLastDispatched() { return lastDispatched; }
 }
