@@ -27,11 +27,14 @@ import de.aivot.prosuna.backend.process.services.ProcessDataService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.transaction.UnexpectedRollbackException;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
@@ -39,6 +42,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -46,6 +50,70 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ProcessWorkerTest {
+    @Test
+    void doWork_RecordsFailedInstance_WhenSharedTransactionWasMarkedRollbackOnly() throws Exception {
+        var instance = runningInstance();
+        var instanceRepository = mock(ProcessInstanceRepository.class);
+        when(instanceRepository.findById(42L)).thenReturn(Optional.of(instance));
+        var logger = mock(ProcessNodeExecutionLogger.class);
+        var loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
+        when(loggerFactory.create(42L, null, null, null)).thenReturn(logger);
+        var rollback = new UnexpectedRollbackException("Transaction silently rolled back");
+        var execution = mock(ProcessTaskExecutionService.class);
+        when(execution.inInstance(eq(42L), any()))
+                .thenThrow(rollback)
+                .thenAnswer(invocation -> ((ProcessTaskExecutionService.Operation<?>) invocation.getArgument(1)).run());
+        var worker = createWorker(instanceRepository, mock(ProcessInstanceTaskRepository.class), loggerFactory, execution);
+
+        assertDoesNotThrow(() -> worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, 99L, 10, "output", 11, null)));
+
+        assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
+        verify(instanceRepository).save(instance);
+        verify(logger).logException(rollback);
+    }
+
+    @Test
+    void resume_RecordsFailedTaskAndInstance_WhenSharedTransactionWasMarkedRollbackOnly() throws Exception {
+        var instance = runningInstance();
+        var instanceRepository = mock(ProcessInstanceRepository.class);
+        when(instanceRepository.findById(42L)).thenReturn(Optional.of(instance));
+        var task = new ProcessInstanceTaskEntity().setStatus(ProcessTaskStatus.AwaitingPayment);
+        var taskRepository = mock(ProcessInstanceTaskRepository.class);
+        when(taskRepository.findById(100L)).thenReturn(Optional.of(task));
+        var logger = mock(ProcessNodeExecutionLogger.class);
+        var loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
+        when(loggerFactory.create(42L, 100L, null, null)).thenReturn(logger);
+        var rollback = new UnexpectedRollbackException("Transaction silently rolled back");
+        var execution = mock(ProcessTaskExecutionService.class);
+        doThrow(rollback).when(execution).executeBackground(eq(42L), eq(100L), any());
+        when(execution.inInstance(eq(42L), any()))
+                .thenAnswer(invocation -> ((ProcessTaskExecutionService.Operation<?>) invocation.getArgument(1)).run());
+        var worker = createWorker(instanceRepository, taskRepository, loggerFactory, execution);
+
+        assertDoesNotThrow(() -> worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11)));
+
+        assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertNotNull(task.getFinished());
+        verify(taskRepository).save(task);
+        assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
+        verify(logger).logException(rollback);
+    }
+
+    private static ProcessInstanceEntity runningInstance() {
+        return new ProcessInstanceEntity(42L, null, UUID.randomUUID().toString(), 7, 1, ProcessInstanceStatus.Running,
+                null, null, List.of(), new IdentityDataMap(), Instant.now(), Instant.now(), null, null, Map.of(), 11,
+                null, null);
+    }
+
+    private static ProcessWorker createWorker(ProcessInstanceRepository instanceRepository,
+                                              ProcessInstanceTaskRepository taskRepository,
+                                              ProcessNodeExecutionLoggerFactory loggerFactory,
+                                              ProcessTaskExecutionService execution) {
+        return new ProcessWorker(instanceRepository, mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class),
+                taskRepository, mock(ProcessNodeExecutionResultHandler.class), mock(ProcessDataService.class),
+                loggerFactory, mock(ProcessNodeService.class), execution);
+    }
+
     @ParameterizedTest
     @EnumSource(value = ProcessInstanceStatus.class, names = {"Completed", "Aborted"})
     void queuedWork_DoesNotExecuteForTerminalInstance(ProcessInstanceStatus status) {

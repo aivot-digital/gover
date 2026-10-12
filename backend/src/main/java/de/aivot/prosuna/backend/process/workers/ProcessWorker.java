@@ -32,6 +32,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.UnexpectedRollbackException;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -94,6 +95,39 @@ public class ProcessWorker {
             });
         } catch (ResponseException exception) {
             processNodeExecutionLoggerFactory.create(payload.processInstanceId(), null, null, null).logException(exception);
+        } catch (UnexpectedRollbackException exception) {
+            recordRolledBackExecution(payload.processInstanceId(), null, exception);
+        }
+    }
+
+    /**
+     * A participating transactional service can mark the shared execution transaction rollback-only after the
+     * worker has already recorded its failure, so the commit discards that failure state. Redelivering the message
+     * would repeat the same work and its side effects; record the failure in a new transaction instead. Other
+     * runtime failures still propagate, so transient infrastructure errors are retried by the broker.
+     */
+    public void recordRolledBackExecution(@Nonnull Long instanceId, @Nullable Long taskId,
+                                          @Nonnull UnexpectedRollbackException exception) {
+        try {
+            execution.inInstance(instanceId, () -> {
+                if (taskId != null) {
+                    processInstanceTaskRepository.findById(taskId)
+                            .filter(task -> !task.getStatus().isTerminal())
+                            .ifPresent(task -> processInstanceTaskRepository.save(task
+                                    .setStatus(ProcessTaskStatus.Failed)
+                                    .setFinished(Instant.now())));
+                }
+                var instance = processInstanceRepository.findById(instanceId).orElse(null);
+                if (instance != null
+                        && instance.getStatus() != ProcessInstanceStatus.Completed
+                        && instance.getStatus() != ProcessInstanceStatus.Aborted) {
+                    processInstanceRepository.save(instance.setStatus(ProcessInstanceStatus.Failed));
+                }
+                processNodeExecutionLoggerFactory.create(instanceId, taskId, null, null).logException(exception);
+                return null;
+            });
+        } catch (ResponseException ignored) {
+            // The instance no longer exists, so no failure state remains to be recorded.
         }
     }
 
@@ -158,6 +192,8 @@ public class ProcessWorker {
         } catch (ResponseException exception) {
             processNodeExecutionLoggerFactory.create(payload.currentProcessInstanceId(), payload.currentTaskId(), null, null)
                     .logException(exception);
+        } catch (UnexpectedRollbackException exception) {
+            recordRolledBackExecution(payload.currentProcessInstanceId(), payload.currentTaskId(), exception);
         }
     }
 

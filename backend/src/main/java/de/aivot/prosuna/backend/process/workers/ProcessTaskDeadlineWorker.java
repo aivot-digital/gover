@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.workers;
 
 import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.UnexpectedRollbackException;
 
 @Service
 public class ProcessTaskDeadlineWorker {
@@ -92,7 +94,17 @@ public class ProcessTaskDeadlineWorker {
     public void continueAfterDeadline(@Nonnull Long continuationId) throws Exception {
         var pending = continuations.findById(continuationId);
         if (pending.isEmpty()) return;
-        execution.inInstance(pending.get().getProcessInstanceId(), () -> {
+        var instanceId = pending.get().getProcessInstanceId();
+        try {
+            continueAfterDeadlineLocked(instanceId, continuationId);
+        } catch (UnexpectedRollbackException exception) {
+            // The continuation stays pending; the failed instance stops repeating the same rolled-back work.
+            worker.recordRolledBackExecution(instanceId, null, exception);
+        }
+    }
+
+    private void continueAfterDeadlineLocked(@Nonnull Long instanceId, @Nonnull Long continuationId) throws ResponseException {
+        execution.inInstance(instanceId, () -> {
             // A concurrent consumer may have consumed this message while this consumer waited for the lock.
             var current = continuations.findById(continuationId);
             if (current.isEmpty()) return null;
