@@ -840,7 +840,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var resolvedPorts = derivedConfiguration == null
                 ? ProcessNodePortResolver.failed()
                 : portResolver.resolve(node, provider, derivedConfiguration.configuration());
-        problems.addAll(resolvedPorts.problems());
+        // A failed derivation has already reported its cause; the generic port message would only repeat it.
+        if (derivedConfiguration != null) {
+            problems.addAll(resolvedPorts.problems());
+        }
         if (checkPorts) {
             for (var ports : resolvedPorts.ports()) {
                 var edgeExists = processEdgeRepository
