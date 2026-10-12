@@ -2,12 +2,13 @@ import userEvent from '@testing-library/user-event';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 import {render, screen, waitFor, within} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessInstanceEventApiService} from '../../services/process-instance-event-api-service';
 import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
+import {ProcessInstanceStatus} from '../../enums/process-instance-status';
 import {ProcessInstanceDetailsPageIndex} from './process-instance-details-page-index';
 
 vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
@@ -264,6 +265,51 @@ describe('Process instance information', () => {
         expect(screen.queryByRole('row', {name: /Zuletzt aktualisiert/})).not.toBeInTheDocument();
         expect(screen.queryByText(/unabhängig von der Bearbeitung einzelner Aufgaben/)).not.toBeInTheDocument();
         await screen.findByText('Noch kein Ereignis vorhanden');
+    });
+
+    describe('processing deadline', () => {
+        beforeEach(() => {
+            // Only the clock is faked, so pending requests still resolve. The instance started 2026-09-22.
+            vi.useFakeTimers({toFake: ['Date']});
+            vi.setSystemTime(new Date('2026-09-24T12:00:00Z'));
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it.each([
+            {deadline: null, text: 'Keine Bearbeitungsfrist festgelegt', state: null},
+            {deadline: '2026-10-20T08:00:00Z', text: '20.10.2026 um 10:00 Uhr', state: null},
+            {deadline: '2026-09-26T08:00:00Z', text: '26.09.2026 um 10:00 Uhr', state: 'Bald fällig'},
+            {deadline: '2026-09-23T08:00:00Z', text: '23.09.2026 um 10:00 Uhr', state: 'Frist überschritten'},
+        ])('shows the deadline $deadline of the instance with its state', async ({deadline, text, state}) => {
+            const item = createItem();
+            item.instance.deadline = deadline;
+            renderItem(item);
+
+            const status = within(screen.getByRole('region', {name: 'Stand des Vorgangs'}));
+            const row = status.getByRole('row', {name: /^Bearbeitungsfrist /});
+            expect(row).toHaveTextContent(text);
+            for (const label of ['Bald fällig', 'Frist überschritten']) {
+                if (label === state) expect(row).toHaveTextContent(label);
+                else expect(row).not.toHaveTextContent(label);
+            }
+            await screen.findByText('Noch kein Ereignis vorhanden');
+        });
+
+        it('no longer highlights an exceeded deadline once the instance has ended', async () => {
+            const item = createItem();
+            item.instance.deadline = '2026-09-23T08:00:00Z';
+            item.instance.status = ProcessInstanceStatus.Completed;
+            item.instance.finished = '2026-09-24T08:00:00Z';
+            renderItem(item);
+
+            const row = screen.getByRole('row', {name: /^Bearbeitungsfrist /});
+            expect(row).toHaveTextContent('23.09.2026 um 10:00 Uhr');
+            expect(row).not.toHaveTextContent('Frist überschritten');
+            await screen.findByText('Noch kein Ereignis vorhanden');
+        });
     });
 
     it('distinguishes event loading failures from an empty history', async () => {

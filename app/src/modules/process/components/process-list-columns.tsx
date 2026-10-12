@@ -15,6 +15,11 @@ import {
 } from '../../../utils/temporal-utils';
 import {ProcessEmptyValue, ProcessNodeLabel} from './process-detail-values';
 import {ProcessListActions} from './process-list-actions';
+import {
+    getProcessInstanceDeadlineState,
+    ProcessInstanceDeadlineStateColors,
+    ProcessInstanceDeadlineStateLabels,
+} from '../utils/process-instance-deadline';
 
 type Entry = ProcessInstanceListEntry | ProcessTaskListEntry;
 
@@ -30,21 +35,30 @@ function ListText({value}: {value: string}) {
     );
 }
 
-function ListDate({value, overdue = false}: {value: string | null; overdue?: boolean}) {
+interface ListDateProps {
+    value: string | null;
+    tone?: 'warning' | 'error';
+    // Names the highlighted state, so it is not conveyed by color alone.
+    statusLabel?: string;
+}
+
+function ListDate({value, tone, statusLabel}: ListDateProps) {
     if (!value) return <ProcessEmptyValue>—</ProcessEmptyValue>;
     const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy – HH:mm');
     if (formatted == null) return <ProcessEmptyValue>—</ProcessEmptyValue>;
     const label = `${formatted} Uhr`;
     const relative = formatRelativeInstantInApplicationTimeZone(value);
+    const title = relative ? `${label} (${relative})` : label;
     return (
         <Tooltip
             arrow
-            title={relative ? `${label} (${relative})` : label}
+            title={statusLabel ? `${title} · ${statusLabel}` : title}
         >
             <Box
                 component="span"
                 sx={{
-                    color: overdue ? 'error.main' : undefined,
+                    // The darker warning shade keeps text readable on light backgrounds.
+                    color: tone === 'error' ? 'error.main' : tone === 'warning' ? 'warning.dark' : undefined,
                     display: 'block',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -52,6 +66,7 @@ function ListDate({value, overdue = false}: {value: string | null; overdue?: boo
                 }}
             >
                 {label}
+                {statusLabel && <span className="visually-hidden"> ({statusLabel})</span>}
             </Box>
         </Tooltip>
     );
@@ -190,21 +205,39 @@ export function processListColumns<T extends Entry>(tasks: boolean, onChanged: (
             width: 170,
             renderCell: ({row}) => {
                 const task = row as ProcessTaskListEntry;
+                const overdue =
+                    task.deadline != null &&
+                    Date.parse(task.deadline) < Date.now() &&
+                    [
+                        ProcessTaskStatus.Running,
+                        ProcessTaskStatus.InProgress,
+                        ProcessTaskStatus.AwaitingStaff,
+                        ProcessTaskStatus.Paused,
+                        ProcessTaskStatus.AwaitingCustomer,
+                        ProcessTaskStatus.AwaitingPayment,
+                    ].includes(task.status);
                 return (
                     <ListDate
                         value={task.deadline}
-                        overdue={
-                            task.deadline != null &&
-                            Date.parse(task.deadline) < Date.now() &&
-                            [
-                                ProcessTaskStatus.Running,
-                                ProcessTaskStatus.InProgress,
-                                ProcessTaskStatus.AwaitingStaff,
-                                ProcessTaskStatus.Paused,
-                                ProcessTaskStatus.AwaitingCustomer,
-                                ProcessTaskStatus.AwaitingPayment,
-                            ].includes(task.status)
-                        }
+                        tone={overdue ? 'error' : undefined}
+                    />
+                );
+            },
+        });
+    else
+        columns.push({
+            field: 'deadline',
+            headerName: 'Bearbeitungsfrist',
+            width: 170,
+            renderCell: ({row}) => {
+                const instance = row as ProcessInstanceListEntry;
+                const state = getProcessInstanceDeadlineState(instance);
+                const highlighted = state === 'warning' || state === 'exceeded';
+                return (
+                    <ListDate
+                        value={instance.deadline}
+                        tone={highlighted ? ProcessInstanceDeadlineStateColors[state] : undefined}
+                        statusLabel={highlighted ? ProcessInstanceDeadlineStateLabels[state] : undefined}
                     />
                 );
             },

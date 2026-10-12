@@ -19,5 +19,6 @@ export interface ProcessInstanceEntity {
     initialPayload: Record<string, any>;
     initialNodeId: number;
     keepUntil: string | null; // ISO date string
+    deadline: string | null; // ISO date string, fixed when the instance is created
     createdForTestClaimId: number | null;
 }
