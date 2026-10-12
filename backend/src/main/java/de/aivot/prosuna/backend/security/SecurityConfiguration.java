@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -49,7 +50,12 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                         requests -> requests
                                 .requestMatchers("/api/public/**").permitAll()
-                                .requestMatchers("/api/actuator/health").permitAll()
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/actuator/health",
+                                        "/api/actuator/health/liveness",
+                                        "/api/actuator/health/readiness"
+                                ).permitAll()
                                 .requestMatchers("/api/auth/login").permitAll()
                                 .requestMatchers("/api/auth/refresh").permitAll()
                                 .requestMatchers("/api/auth/logout").permitAll()
