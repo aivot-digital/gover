@@ -15,7 +15,11 @@ public final class ProcessTaskExecutionTestSupport {
                 if (argument instanceof ProcessTaskExecutionService.Authorization authorization) authorization.run();
             }
             for (var argument : arguments) {
-                if (argument instanceof ProcessTaskExecutionService.Operation<?> operation) return operation.run();
+                if (argument instanceof ProcessTaskExecutionService.Operation<?> operation) {
+                    var result = operation.run();
+                    // executeBackground reports whether the operation ran.
+                    return invocation.getMethod().getReturnType() == boolean.class ? Boolean.TRUE : result;
+                }
             }
             return null;
         });

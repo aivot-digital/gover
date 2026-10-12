@@ -99,6 +99,49 @@ class ProcessWorkerTest {
         verify(logger).logException(rollback);
     }
 
+    @Test
+    void resume_RecordsLateNotification_WhenTheDeadlineHasAlreadyEndedTheTask() throws Exception {
+        var task = new ProcessInstanceTaskEntity().setStatus(ProcessTaskStatus.DeadlineExceeded)
+                .setDeadline(Instant.parse("2030-05-01T10:00:00Z")).setDeadlineKey("payment").setAssignedUserId("staff");
+        var taskRepository = mock(ProcessInstanceTaskRepository.class);
+        when(taskRepository.findById(100L)).thenReturn(Optional.of(task));
+        var events = mock(ProcessInstanceHistoryEventRepository.class);
+        var loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
+        when(loggerFactory.create(42L, 100L, null, null)).thenReturn(new ProcessNodeExecutionLogger(42L, 100L, null, null, events));
+        var execution = mock(ProcessTaskExecutionService.class);
+        when(execution.executeBackground(eq(42L), eq(100L), any())).thenReturn(false);
+        var worker = createWorker(mock(ProcessInstanceRepository.class), taskRepository, loggerFactory, execution);
+
+        worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
+
+        var event = org.mockito.ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(events).save(event.capture());
+        assertEquals("Rückmeldung nach Fristablauf", event.getValue().getTitle());
+        assertEquals(ProcessNodeExecutionLogLevel.Warn, event.getValue().getLevel());
+        assertTrue(event.getValue().getHistoryRelevant());
+        assertEquals("staff", event.getValue().getConcernedUserId());
+        assertTrue(event.getValue().getMessage().contains("nicht mehr verarbeitet"));
+        assertEquals("payment", event.getValue().getDetails().get("deadlineKey"));
+        assertEquals(ProcessTaskStatus.DeadlineExceeded, task.getStatus());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessTaskStatus.class, names = {"Completed", "Paused"})
+    void resume_StaysSilent_WhenTheTaskIsNotProcessedForAnotherReason(ProcessTaskStatus status) throws Exception {
+        var taskRepository = mock(ProcessInstanceTaskRepository.class);
+        when(taskRepository.findById(100L)).thenReturn(Optional.of(new ProcessInstanceTaskEntity().setStatus(status)));
+        var events = mock(ProcessInstanceHistoryEventRepository.class);
+        var loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
+        when(loggerFactory.create(any(), any(), any(), any())).thenReturn(new ProcessNodeExecutionLogger(42L, 100L, null, null, events));
+        var execution = mock(ProcessTaskExecutionService.class);
+        when(execution.executeBackground(eq(42L), eq(100L), any())).thenReturn(false);
+        var worker = createWorker(mock(ProcessInstanceRepository.class), taskRepository, loggerFactory, execution);
+
+        worker.resumeWorkOnCurrentNode(new ProcessWorker.ResumeWorkWorkerPayload(42L, 100L, 11));
+
+        verifyNoInteractions(events);
+    }
+
     private static ProcessInstanceEntity runningInstance() {
         return new ProcessInstanceEntity(42L, null, UUID.randomUUID().toString(), 7, 1, ProcessInstanceStatus.Running,
                 null, null, List.of(), new IdentityDataMap(), Instant.now(), Instant.now(), null, null, Map.of(), 11,

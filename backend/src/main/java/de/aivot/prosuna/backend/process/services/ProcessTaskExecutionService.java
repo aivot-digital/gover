@@ -58,9 +58,10 @@ public class ProcessTaskExecutionService {
         return outcome.value;
     }
 
-    public void executeBackground(@Nonnull Long instanceId, @Nonnull Long taskId,
-                                   @Nonnull Operation<Void> operation) throws ResponseException {
-        inspectAndExecute(instanceId, taskId, () -> {}, operation);
+    /** Returns whether the operation ran; it is skipped when the task has expired or cannot be processed now. */
+    public boolean executeBackground(@Nonnull Long instanceId, @Nonnull Long taskId,
+                                     @Nonnull Operation<Void> operation) throws ResponseException {
+        return inspectAndExecute(instanceId, taskId, () -> {}, operation).failure == null;
     }
 
     @Nonnull

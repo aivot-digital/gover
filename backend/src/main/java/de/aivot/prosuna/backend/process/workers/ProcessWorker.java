@@ -22,6 +22,7 @@ import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.utils.Tuple3;
@@ -37,6 +38,7 @@ import org.springframework.transaction.UnexpectedRollbackException;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -185,16 +187,46 @@ public class ProcessWorker {
     @RabbitListener(queues = RESUME_WORK_ON_INSTANCE_QUEUE)
     public void resumeWorkOnCurrentNode(ResumeWorkWorkerPayload payload) {
         try {
-            execution.executeBackground(payload.currentProcessInstanceId(), payload.currentTaskId(), () -> {
+            var resumed = execution.executeBackground(payload.currentProcessInstanceId(), payload.currentTaskId(), () -> {
                 resumeWorkOnCurrentNodeLocked(payload);
                 return null;
             });
+            if (!resumed) recordResumeAfterDeadline(payload);
         } catch (ResponseException exception) {
             processNodeExecutionLoggerFactory.create(payload.currentProcessInstanceId(), payload.currentTaskId(), null, null)
                     .logException(exception);
         } catch (UnexpectedRollbackException exception) {
             recordRolledBackExecution(payload.currentProcessInstanceId(), payload.currentTaskId(), exception);
         }
+    }
+
+    /**
+     * An update for a task that its hard deadline has already ended is not processed. Record it in the history, so
+     * staff can see that a late notification, such as a payment, has arrived and decide on further steps.
+     */
+    private void recordResumeAfterDeadline(@Nonnull ResumeWorkWorkerPayload payload) {
+        var task = processInstanceTaskRepository.findById(payload.currentTaskId()).orElse(null);
+        if (task == null || task.getStatus() != ProcessTaskStatus.DeadlineExceeded) {
+            return;
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("deadline", task.getDeadline());
+        details.put("deadlineKey", task.getDeadlineKey());
+        processNodeExecutionLoggerFactory.create(payload.currentProcessInstanceId(), payload.currentTaskId(), null, null).logf(
+                ProcessNodeExecutionLogLevel.Warn,
+                false,
+                true,
+                true,
+                task.getAssignedUserId(),
+                task.getAssignedCustomerIdentityId(),
+                null,
+                "Rückmeldung nach Fristablauf",
+                details,
+                "Nach Ablauf der Frist (%s) ist eine Rückmeldung zu dieser Aufgabe eingegangen, beispielsweise zu einer Zahlung. " +
+                        "Sie wurde nicht mehr verarbeitet, weil die Aufgabe bereits wegen Fristüberschreitung beendet war. " +
+                        "Prüfen Sie, ob weitere Schritte erforderlich sind.",
+                ExecutionSummaryMarkdown.timestamp(task.getDeadline())
+        );
     }
 
     private void resumeWorkOnCurrentNodeLocked(ResumeWorkWorkerPayload payload) {
