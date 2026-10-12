@@ -64,11 +64,7 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.de
 
 @Component
 public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV1.EMailActionNodeConfig> {
-    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = new ProcessNodeDeadlineDefinition(
-            "messageDispatch", "Versand der Nachricht",
-            "Zeit für die Vorbereitung und den Versand der Nachricht.",
-            new ProcessNodePort("message_dispatch_overdue", "Fristüberschreitung: Nachrichtenversand",
-                    "Fortsetzung nach Überschreitung der harten Frist für den Nachrichtenversand."));
+    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
 
     public static final String NODE_KEY = "mail";
 

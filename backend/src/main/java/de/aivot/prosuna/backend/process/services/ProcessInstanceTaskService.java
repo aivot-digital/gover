@@ -56,15 +56,25 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
     }
 
     public void authorizeStaffMutation(@Nonnull String userId, @Nonnull Long instanceId, @Nonnull Long taskId) throws ResponseException {
-        var task = retrieve(taskId).orElseThrow(ResponseException::notFound);
-        if (!instanceId.equals(task.getProcessInstanceId())) throw ResponseException.notFound();
-        permissions.requireProcessInstancePermission(userId, instanceId, PROCESS_INSTANCE_EDIT_TASK);
+        requireEditableTaskOfInstance(userId, instanceId, taskId);
     }
 
     @Nonnull
     public ProcessInstanceTaskEntity retrieveForStaffView(@Nonnull String userId,
                                                          @Nonnull Long instanceId,
                                                          @Nonnull Long taskId) throws ResponseException {
+        var task = requireEditableTaskOfInstance(userId, instanceId, taskId);
+        if (task.getStatus() != ProcessTaskStatus.Running && task.getStatus() != ProcessTaskStatus.InProgress &&
+                task.getStatus() != ProcessTaskStatus.AwaitingStaff) {
+            throw ResponseException.forbidden();
+        }
+        return task;
+    }
+
+    @Nonnull
+    private ProcessInstanceTaskEntity requireEditableTaskOfInstance(@Nonnull String userId,
+                                                                    @Nonnull Long instanceId,
+                                                                    @Nonnull Long taskId) throws ResponseException {
         var task = retrieve(taskId).orElseThrow(ResponseException::notFound);
         // Both IDs come from the request. A mismatched pair must never combine another
         // instance's data or permissions with this task's execution context.
@@ -72,10 +82,6 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
             throw ResponseException.notFound();
         }
         permissions.requireProcessInstancePermission(userId, task.getProcessInstanceId(), PROCESS_INSTANCE_EDIT_TASK);
-        if (task.getStatus() != ProcessTaskStatus.Running && task.getStatus() != ProcessTaskStatus.InProgress &&
-                task.getStatus() != ProcessTaskStatus.AwaitingStaff) {
-            throw ResponseException.forbidden();
-        }
         return task;
     }
 

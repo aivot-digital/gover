@@ -66,11 +66,7 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.de
  */
 @Component
 public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<CommunicationMessageActionNodeV1.Configuration> {
-    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = new ProcessNodeDeadlineDefinition(
-            "messageDispatch", "Versand der Nachricht",
-            "Zeit für die Vorbereitung und den Versand der Nachricht.",
-            new ProcessNodePort("message_dispatch_overdue", "Fristüberschreitung: Nachrichtenversand",
-                    "Fortsetzung nach Überschreitung der harten Frist für den Nachrichtenversand."));
+    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
 
     public static final String NODE_KEY = "communication_message";
     private static final String PORT_OUTPUT = "output";

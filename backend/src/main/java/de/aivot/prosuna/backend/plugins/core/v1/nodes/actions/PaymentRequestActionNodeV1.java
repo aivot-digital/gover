@@ -81,11 +81,7 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.ma
 
 @Component
 public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig> {
-    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = new ProcessNodeDeadlineDefinition(
-            "messageDispatch", "Versand der Nachricht",
-            "Zeit für die Vorbereitung und den Versand der Nachricht.",
-            new ProcessNodePort("message_dispatch_overdue", "Fristüberschreitung: Nachrichtenversand",
-                    "Fortsetzung nach Überschreitung der harten Frist für den Nachrichtenversand."));
+    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
     private static final ProcessNodeDeadlineDefinition PAYMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
             "payment", "Zahlung",
             "Zeit für die Kund:in zur Zahlung ab Versand der Zahlungsaufforderung.",
