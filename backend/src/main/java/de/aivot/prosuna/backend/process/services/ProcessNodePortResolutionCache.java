@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -28,6 +29,7 @@ public class ProcessNodePortResolutionCache {
     private final JsonMapper jsonMapper;
     private final Map<String, ProcessNodePortResolution> entries;
 
+    @Autowired
     public ProcessNodePortResolutionCache(@Nonnull JsonMapper jsonMapper) {
         this(jsonMapper, DEFAULT_MAX_ENTRIES);
     }
