@@ -192,7 +192,7 @@ class ProcessTaskDeadlineResultHandlerTest {
     void unknownDeadlineIsRejectedBeforeCommunicationOrAssignment() {
         var result = ProcessNodeExecutionResultTaskAssigned.of("staff").setNewDeadlineKey("unknown")
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest("customer",
-                        CommunicationMessage.of("Betreff", "Nachricht", "Nachricht", List.of(), List.of())));
+                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").htmlBody("Nachricht").build()));
         assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
         verifyNoInteractions(tasks, events, communication, assignments, mail);
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
@@ -205,7 +205,7 @@ class ProcessTaskDeadlineResultHandlerTest {
         when(communication.sendMessage(any(), any())).thenThrow(new CommunicationException("Delivery failed"));
         var result = ProcessNodeExecutionResultTaskAssignedCustomer.of("customer").setNewDeadlineKey("customer")
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest("customer",
-                        CommunicationMessage.of("Betreff", "Nachricht", "Nachricht", List.of(), List.of())));
+                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").htmlBody("Nachricht").build()));
         assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
         assertEquals("preparation", task.getDeadlineKey());

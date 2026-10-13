@@ -24,6 +24,7 @@ import de.aivot.prosuna.backend.identity.dtos.IdentityCommunicationDerivationReq
 import de.aivot.prosuna.backend.identity.dtos.IdentityCommunicationSelectionRequestDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
+import de.aivot.prosuna.backend.identity.models.IdentityAuthenticationRedirect;
 import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -179,7 +180,7 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var redirectUri = executeIdentityAuthenticationStart(procAccess, taskAccess, origin, () -> {
+        executeIdentityAuthenticationStart(procAccess, taskAccess, origin, response, () -> {
             TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(procAccess, taskAccess);
             var context = createCustomerContext(
                     taskViewData,
@@ -197,7 +198,6 @@ public class CustomerProcessInstanceTaskViewController {
 
             return target;
         });
-        response.sendRedirect(redirectUri.toString());
     }
 
     @GetMapping("identities/{identityId}/providers/{providerKey}/start/")
@@ -215,7 +215,7 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var redirectUri = executeIdentityAuthenticationStart(procAccess, taskAccess, origin, () -> {
+        executeIdentityAuthenticationStart(procAccess, taskAccess, origin, response, () -> {
             var taskViewData = fetchTaskViewData(procAccess, taskAccess);
             var context = createCustomerContext(
                     taskViewData,
@@ -238,7 +238,6 @@ public class CustomerProcessInstanceTaskViewController {
             );
             return target;
         });
-        response.sendRedirect(redirectUri.toString());
     }
 
     @PutMapping("identities/{identityId}/email/")
@@ -931,24 +930,30 @@ public class CustomerProcessInstanceTaskViewController {
      * Browsers open the identity start endpoints by navigation and would show a rejected request as raw JSON. Once a
      * hard deadline has ended the task, return to the task page instead, which shows the expiry notice.
      */
-    @Nonnull
-    private URI executeIdentityAuthenticationStart(@Nonnull String procAccess, @Nonnull String taskAccess,
-                                                   @Nonnull String origin,
-                                                   @Nonnull ProcessTaskExecutionService.Operation<URI> operation)
-            throws ResponseException {
+    private void executeIdentityAuthenticationStart(@Nonnull String procAccess, @Nonnull String taskAccess,
+                                                    @Nonnull String origin, @Nonnull HttpServletResponse response,
+                                                    @Nonnull ProcessTaskExecutionService.Operation<IdentityAuthenticationRedirect> operation)
+            throws ResponseException, IOException {
+        IdentityAuthenticationRedirect redirect;
         try {
-            return Objects.requireNonNull(executeMutation(procAccess, taskAccess, operation));
+            redirect = Objects.requireNonNull(executeMutation(procAccess, taskAccess, operation));
         } catch (ResponseException exception) {
             if (!ProcessTaskExecutionService.isTaskDeadlineExceeded(exception)) {
                 throw exception;
             }
+            URI taskPage;
             try {
-                return customerTaskIdentityService.resolveReturnOrigin(origin);
+                taskPage = customerTaskIdentityService.resolveReturnOrigin(origin);
             } catch (ResponseException invalidOrigin) {
                 // Never redirect to a page outside this installation; keep the original rejection instead.
                 throw exception;
             }
+            response.sendRedirect(taskPage.toString());
+            return;
         }
+        // Bind the browser to the authentication only after the locked operation has completed.
+        response.addCookie(IdentityCookieUtils.createFlowBindingCookie(redirect));
+        response.sendRedirect(redirect.redirectUri().toString());
     }
 
     @Nullable

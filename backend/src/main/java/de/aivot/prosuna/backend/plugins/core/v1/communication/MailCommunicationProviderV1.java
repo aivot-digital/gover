@@ -326,11 +326,11 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 Map.of(CUSTOMER_EMAIL_FIELD_ID, recipient)
         );
 
-        var testMessage = CommunicationMessage.of(
-                "Testnachricht",
-                "Dies ist eine Testnachricht.",
-                "<p>Dies ist eine Testnachricht.</p>"
-        );
+        var testMessage = new CommunicationMessage.Builder()
+                .subject("Testnachricht")
+                .body("Dies ist eine Testnachricht.")
+                .htmlBody("<p>Dies ist eine Testnachricht.</p>")
+                .build();
 
         var result = sendMessage(testContext, testIdentity, testMessage);
 

@@ -19,6 +19,7 @@ interface ProcessNodeEditorContextType {
     problems: ProcessNodeProblems | null;
 
     incomingMetadata: ProcessNodeDefinitionMetadata | null;
+    incomingMetadataLoadFailed: boolean;
 }
 
 const ProcessNodeEditorContext = createContext<ProcessNodeEditorContextType | null>(null);
