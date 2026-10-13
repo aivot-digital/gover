@@ -50,11 +50,11 @@ export interface ProcessNodeProvider {
     description: string;
     documentationUrl: string | null;
     parentPluginKey: string;
-    ports: ProcessNodePort[];
     outputs: ProcessNodeOutput[];
 }
 
 export interface ProcessNodePort {
+    deadlineKey: string | null;
     key: string;
     label: string;
     description: string;
@@ -75,4 +75,17 @@ export class ProcessNodeProviderApiService extends BaseApiService {
     public getNodeProvider(key: string, version: number): Promise<ProcessNodeProvider> {
         return this.get(`/api/process-node-definitions/${key}/versions/${version}/`);
     }
+}
+
+export interface ProcessNodeDeadlineDefinition {
+    key: string;
+    label: string;
+    description: string;
+    port: ProcessNodePort;
+}
+
+export interface ProcessNodePortResolution {
+    ports: ProcessNodePort[];
+    problems: string[];
+    deadlineDefinitions: ProcessNodeDeadlineDefinition[];
 }

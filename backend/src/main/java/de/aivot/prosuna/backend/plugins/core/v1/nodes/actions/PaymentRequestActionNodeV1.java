@@ -35,6 +35,7 @@ import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.prosuna.backend.payment.services.PaymentTaskAttemptService;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -81,6 +82,13 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.ma
 
 @Component
 public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig> {
+    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
+    private static final ProcessNodeDeadlineDefinition PAYMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "payment", "Zahlung",
+            "Zeit für die Kund:in zur Zahlung ab Versand der Zahlungsaufforderung.",
+            new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Zahlung."));
+
     public static final String NODE_KEY = "payment_request";
 
     private static final String PORT_PAID = "paid";
@@ -120,6 +128,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private final JsonMapper jsonMapper;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
     private final VDepartmentShadowedService vDepartmentShadowedService;
+    private final PaymentTaskAttemptService paymentTaskAttemptService;
 
     public PaymentRequestActionNodeV1(PaymentPayloadCreationService paymentPayloadCreationService,
                                       PaymentTransactionService paymentTransactionService,
@@ -129,7 +138,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                                       ProsunaConfig prosunaConfig,
                                       JsonMapper jsonMapper,
                                       AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService,
-                                      VDepartmentShadowedService vDepartmentShadowedService) {
+                                      VDepartmentShadowedService vDepartmentShadowedService,
+                                      PaymentTaskAttemptService paymentTaskAttemptService) {
         this.paymentPayloadCreationService = paymentPayloadCreationService;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderRepository = paymentProviderRepository;
@@ -139,6 +149,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         this.jsonMapper = jsonMapper;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
         this.vDepartmentShadowedService = vDepartmentShadowedService;
+        this.paymentTaskAttemptService = paymentTaskAttemptService;
     }
 
     @Nonnull
@@ -270,7 +281,14 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull PaymentRequestActionNodeConfig configuration) {
+        return SemiAutomaticMessageConfig.isManual(configuration.messageConfig)
+                ? List.of(MESSAGE_DISPATCH_DEADLINE, PAYMENT_DEADLINE) : List.of(PAYMENT_DEADLINE);
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull PaymentRequestActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_PAID,
@@ -343,6 +361,11 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<PaymentRequestActionNodeConfig> context) throws ProcessNodeExecutionException {
+        var paidAttempt = paymentTaskAttemptService.findPaidEarlierAttempt(context.getThisTask());
+        if (paidAttempt.isPresent()) {
+            return completeWithEarlierPayment(context, paidAttempt.get());
+        }
+
         var configuration = context.getConfigurationOfExecutingNode();
 
         if (SemiAutomaticMessageConfig.isAutomatic(configuration.messageConfig)) {
@@ -361,6 +384,25 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
                 StringUtils.quote(executionType)
         );
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResult completeWithEarlierPayment(
+            @Nonnull ProcessNodeExecutionInitContext<PaymentRequestActionNodeConfig> context,
+            @Nonnull PaymentTaskAttemptService.PaidAttempt paidAttempt
+    ) {
+        var transaction = paidAttempt.transaction();
+        // Keep the earlier request data, so outputs, the customer view and the payment confirmation stay available.
+        var nodeData = new LinkedHashMap<>(paidAttempt.attempt().getNodeData());
+        nodeData.put(OUTPUT_PAYMENT_STATUS, resolveStatus(transaction).getKey());
+        nodeData.put(OUTPUT_PAYMENT_DETAILS, transaction.getPaymentInformation());
+        paymentTaskAttemptService.logReuse(context.getLogger(), paidAttempt);
+
+        return ProcessNodeExecutionResultTaskCompleted
+                .of(PORT_PAID)
+                .setRuntimeData(new LinkedHashMap<>(paidAttempt.attempt().getRuntimeData()))
+                .setNodeData(nodeData)
+                .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }
 
     @Nonnull
@@ -426,6 +468,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(MESSAGE_DISPATCH_DEADLINE.key())
                 .setRuntimeData(runtimeData)
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }
@@ -816,6 +859,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 transaction.getKey(),
                 resolvedConfiguration.paymentProvider().getName()
         )
+                .setNewDeadlineKey(PAYMENT_DEADLINE.key())
                 .setRuntimeData(runtimeData)
                 .setNodeData(createNodeData(
                         resolvedConfiguration.recipientIdentityId(),
@@ -827,16 +871,16 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .setProcessData(processExecutionData.getProcessData())
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                         resolvedConfiguration.recipientIdentityId(),
-                        CommunicationMessage.of(
-                                subject,
-                                content,
-                                content,
-                                List.of(new CommunicationMessageCallToAction(
+                        new CommunicationMessage.Builder()
+                                .subject(subject)
+                                .body(content)
+                                .htmlBody(content)
+                                .callToActions(List.of(new CommunicationMessageCallToAction(
                                         "Zahlung durchführen",
                                         paymentUrl
-                                )),
-                                List.of()
-                        ).withSignatureDepartment(resolvedConfiguration.signatureDepartment()),
+                                )))
+                                .signatureDepartment(resolvedConfiguration.signatureDepartment())
+                                .build(),
                         null
                 ));
     }

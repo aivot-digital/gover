@@ -377,9 +377,7 @@ public class ProcessVersionController {
             throw ResponseException.conflict("Es kann nur eine Prozessdefinition im Entwurfs- oder zurückgezogenen Status veröffentlicht werden.");
         }
 
-        version.setStatus(ProcessVersionStatus.Published);
-
-        return processDefinitionVersionService.update(versionId, version);
+        return processDefinitionVersionService.updateStatus(version, ProcessVersionStatus.Published);
     }
 
     @PutMapping("{processDefinitionId}/{processDefinitionVersion}/revoke/")
@@ -411,8 +409,6 @@ public class ProcessVersionController {
             throw ResponseException.conflict("Es kann nur eine veröffentlichte Prozessdefinition zurückgezogen werden.");
         }
 
-        version.setStatus(ProcessVersionStatus.Revoked);
-
-        return processDefinitionVersionService.update(versionId, version);
+        return processDefinitionVersionService.updateStatus(version, ProcessVersionStatus.Revoked);
     }
 }

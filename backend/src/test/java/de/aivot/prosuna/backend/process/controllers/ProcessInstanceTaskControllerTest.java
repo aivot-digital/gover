@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import static de.aivot.prosuna.backend.process.ProcessTaskExecutionTestSupport.passthrough;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.controllers.ProcessInstanceTaskController;
@@ -57,7 +58,8 @@ class ProcessInstanceTaskControllerTest {
                 processInstanceTaskService,
                 rabbitTemplate,
                 permissionService, mock(de.aivot.prosuna.backend.process.services.ProcessAssignmentService.class),
-                listService
+                listService,
+                passthrough()
         );
 
         jwt = new Jwt(

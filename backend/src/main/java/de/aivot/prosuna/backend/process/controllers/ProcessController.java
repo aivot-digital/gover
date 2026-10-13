@@ -288,7 +288,7 @@ public class ProcessController {
             var translatedToNodeId = savedNodeIdMap.get(edge.getToNodeId());
 
             var createdEdge = processDefinitionEdgeService
-                    .create(edge
+                    .copy(edge
                             .setProcessId(newProcess.getId())
                             .setProcessVersion(newVersion.getProcessVersion())
                             .setFromNodeId(translatedFromNodeId)
@@ -676,6 +676,7 @@ public class ProcessController {
                         .setCaseNumberType(originalProcessVersion.getCaseNumberType())
                         .setRetentionTimeValue(originalProcessVersion.getRetentionTimeValue())
                         .setRetentionTimeUnit(originalProcessVersion.getRetentionTimeUnit())
+                        .setInstanceDeadlineDays(originalProcessVersion.getInstanceDeadlineDays())
                         .setThemeId(originalProcessVersion.getThemeId())
                         .setLegalSupportDepartmentId(originalProcessVersion.getLegalSupportDepartmentId())
                         .setTechnicalSupportDepartmentId(originalProcessVersion.getTechnicalSupportDepartmentId())
@@ -705,7 +706,7 @@ public class ProcessController {
                             originalNode.getProcessNodeDefinitionVersion(),
                             originalNode.getConfiguration().clone(),
                             new HashMap<>(originalNode.getOutputMappings()),
-                            originalNode.getTimeLimitDays(),
+                            originalNode.getDeadlines(),
                             originalNode.getRequirements(),
                             originalNode.getNotes(),
                             originalNode.getSavedWithErrors()
@@ -717,7 +718,7 @@ public class ProcessController {
                 .findAllByProcessIdAndProcessVersion(process.getId(), originalProcessVersion.getProcessVersion());
         for (var originalEdge : originalEdges) {
             processDefinitionEdgeService
-                    .create(new ProcessEdgeEntity(
+                    .copy(new ProcessEdgeEntity(
                             null,
                             process.getId(),
                             createdProcessVersion.getProcessVersion(),

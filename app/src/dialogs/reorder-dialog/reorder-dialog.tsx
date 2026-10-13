@@ -1,5 +1,4 @@
-import {DndProvider, useDrag, useDrop, XYCoord} from 'react-dnd';
-import {HTML5Backend} from 'react-dnd-html5-backend';
+import {useDrag, useDrop, XYCoord} from 'react-dnd';
 import {DialogProps} from '@mui/material/Dialog';
 import {Button, Dialog, DialogActions, DialogContent, List, ListItem, ListItemIcon, ListItemText} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
@@ -29,16 +28,20 @@ export function ReorderDialog<T>(props: ReorderDialogProps<T> & DialogProps) {
         getLabel,
         onReorder,
         onClose,
+        open,
         ...dialogProps
     } = props;
 
     const [buffer, setBuffer] = useState<ReorderItem<T>[]>([]);
+    // The dialog stays mounted while closed, so reopening it must discard an order that was not saved.
     useEffect(() => {
-        setBuffer(items.map((item, index) => ({
-            index: index,
-            value: item,
-        })));
-    }, [items]);
+        if (open) {
+            setBuffer(items.map((item, index) => ({
+                index: index,
+                value: item,
+            })));
+        }
+    }, [items, open]);
 
     const handleMoveItem = (draggedIndex: number, targetIndex: number) => {
         setBuffer((prevBuffer) => {
@@ -55,33 +58,36 @@ export function ReorderDialog<T>(props: ReorderDialogProps<T> & DialogProps) {
     };
 
     return (
-        <Dialog {...dialogProps} onClose={onClose}>
+        <Dialog
+            {...dialogProps}
+            open={open}
+            onClose={onClose}
+        >
             <DialogTitleWithClose onClose={onClose}>
                 {title}
             </DialogTitleWithClose>
             <DialogContent>
-                <DndProvider backend={HTML5Backend}>
-                    <List>
-                        {
-                            buffer.map((item) => {
-                                const {
-                                    primary,
-                                    secondary,
-                                } = getLabel(item.value);
+                <List>
+                    {
+                        buffer.map((item, position) => {
+                            const {
+                                primary,
+                                secondary,
+                            } = getLabel(item.value);
 
-                                return (
-                                    <SortableListItem
-                                        key={item.index}
-                                        index={item.index}
-                                        primary={primary}
-                                        secondary={secondary}
-                                        onMoveItem={handleMoveItem}
-                                    />
-                                );
-                            })
-                        }
-                    </List>
-                </DndProvider>
+                            // The original index identifies the item, while moves address its current position.
+                            return (
+                                <SortableListItem
+                                    key={item.index}
+                                    index={position}
+                                    primary={primary}
+                                    secondary={secondary}
+                                    onMoveItem={handleMoveItem}
+                                />
+                            );
+                        })
+                    }
+                </List>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Abbrechen</Button>
@@ -165,11 +171,8 @@ function SortableListItem(props: SortableListItemProps) {
             // Time to actually perform the action
             onMoveItem(dragIndex, hoverIndex);
 
-            // Note: we're mutating the monitor item here!
-            // Generally it's better to avoid mutations,
-            // but it's good here for the sake of performance
-            // to avoid expensive index searches.
-            //item.id = hoverIndex
+            // Further hovers during the same drag must start from the item's new position.
+            item.index = hoverIndex;
         },
     });
 
@@ -185,7 +188,7 @@ function SortableListItem(props: SortableListItemProps) {
         item: () => ({
             index,
         }),
-    }));
+    }), [index]);
 
     drag(drop(ref));
 

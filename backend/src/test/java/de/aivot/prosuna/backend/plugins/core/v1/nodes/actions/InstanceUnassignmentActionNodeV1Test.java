@@ -36,8 +36,8 @@ class InstanceUnassignmentActionNodeV1Test {
                 null, new ProcessEntity().setId(42), new ProcessVersionEntity().setProcessVersion(3),
                 new ProcessNodeEntity().setId(12))).getChildren().isEmpty());
         assertTrue(node.getOutputs().isEmpty());
-        assertEquals(1, node.getPorts().size());
-        assertEquals("success", node.getPorts().getFirst().key());
+        assertEquals(1, node.getPorts(new InstanceUnassignmentActionNodeV1.Config()).size());
+        assertEquals("success", node.getPorts(new InstanceUnassignmentActionNodeV1.Config()).getFirst().key());
     }
 
     @Test

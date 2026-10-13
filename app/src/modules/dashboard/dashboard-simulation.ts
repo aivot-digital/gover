@@ -3,6 +3,7 @@ import {getApplicationTimeZone} from '../../utils/temporal-utils';
 import {DashboardActivityPeriod, type DashboardActivity, type DashboardOverview} from './models/dashboard-overview';
 
 export const SIMULATED_DASHBOARD_TASK_COUNT = 17;
+export const SIMULATED_DASHBOARD_INSTANCE_COUNT = 9;
 
 interface SimulatedDashboardData {
     overview: DashboardOverview;
@@ -21,6 +22,13 @@ export function createSimulatedDashboardData(
         {processTitle: 'Sondernutzungserlaubnis beantragen', taskName: 'Stellungnahme zur Flächennutzung abgeben', prefix: 'SNE', daysAgo: 3, dueIn: 3},
         {processTitle: 'Fördermittel beantragen', taskName: 'Finanzierungsplan fachlich prüfen', prefix: 'FÖM', daysAgo: 2, dueIn: 5},
     ];
+    // One example per deadline state: exceeded, at least half elapsed, recently started, and without deadline.
+    const instanceExamples = [
+        {processTitle: 'Gewerbe anmelden', prefix: 'GEW', daysAgo: 32, deadlineDays: 30},
+        {processTitle: 'Baumfällung beantragen', prefix: 'BFG', daysAgo: 10, deadlineDays: 14},
+        {processTitle: 'Wohngeld beantragen', prefix: 'WOG', daysAgo: 3, deadlineDays: 30},
+        {processTitle: 'Fundsache melden', prefix: 'FUN', daysAgo: 1, deadlineDays: null},
+    ];
     const overview: DashboardOverview = {
         tasks: {
             total: SIMULATED_DASHBOARD_TASK_COUNT,
@@ -35,6 +43,19 @@ export function createSimulatedDashboardData(
                 caseNumber: `${task.prefix}-${today.year}-${String(142 + index * 37).padStart(5, '0')}`,
                 started: instant(task.daysAgo),
                 deadline: instant(-task.dueIn),
+            })),
+        },
+        instances: {
+            total: SIMULATED_DASHBOARD_INSTANCE_COUNT,
+            overdue: 2,
+            items: instanceExamples.map((instance, index) => ({
+                id: -(index + 1),
+                processId: -(index + 10),
+                processVersion: 1,
+                processTitle: instance.processTitle,
+                caseNumber: `${instance.prefix}-${today.year}-${String(87 + index * 53).padStart(5, '0')}`,
+                started: instant(instance.daysAgo),
+                deadline: instance.deadlineDays == null ? null : instant(instance.daysAgo - instance.deadlineDays),
             })),
         },
         recentProcesses: ['Mitarbeitende onboarden', 'Dienstreisen genehmigen', 'Beschaffungen freigeben']

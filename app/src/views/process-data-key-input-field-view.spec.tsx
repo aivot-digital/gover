@@ -147,7 +147,91 @@ describe('ProcessDataKeyInputComponent', () => {
 
         expect(onChange).toHaveBeenCalledWith(null);
     });
+
+    it('lets a scoped path be chosen from the suggestions but not typed', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(
+            <ProcessDataKeyInputComponent
+                label="Vorgangsdatenvariable"
+                value={null}
+                onChange={onChange}
+                scopeProcessDataKey="people"
+                suggestions={[{id: 'name', label: 'Name'}]}
+            />,
+        );
+
+        expect(screen.getByRole('textbox', {name: /Vorgangsdatenvariable/})).toHaveAttribute('readonly');
+        await user.click(screen.getByLabelText('Vorgangsdatenpfad auswählen'));
+        const search = screen.getByRole('textbox', {name: /Vorgangsdatenpfade durchsuchen/});
+        expect(search).not.toHaveAccessibleName(/eigenen Pfad/);
+        await user.type(search, 'custom');
+        expect(screen.queryByRole('radio', {name: /Eigenen Pfad verwenden/})).not.toBeInTheDocument();
+        expect(screen.queryByText(/eigenen Pfad verwenden/)).not.toBeInTheDocument();
+
+        await user.clear(search);
+        await user.click(screen.getByRole('radio', {name: /\$\.people\[\*\]\.name/}));
+        await user.click(screen.getByRole('button', {name: 'Pfad übernehmen'}));
+
+        expect(onChange).toHaveBeenCalledWith('name');
+    });
+
+    it('keeps a scoped path clearable', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(scopedPath(onChange, 'people', 'name'));
+
+        await user.click(screen.getByLabelText('Vorgangsdatenpfad leeren'));
+
+        expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('keeps a saved scoped path that is missing from the suggestions', () => {
+        const onChange = vi.fn();
+        render(
+            <ProcessDataKeyInputComponent
+                label="Vorgangsdatenvariable"
+                value="first-name"
+                onChange={onChange}
+                scopeProcessDataKey="people"
+                suggestions={[{id: 'name', label: 'Name'}]}
+            />,
+        );
+
+        expect(screen.getByRole('textbox', {name: /Vorgangsdatenvariable/})).toHaveValue('first-name');
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('clears a scoped path that the changed scope does not suggest', () => {
+        const onChange = vi.fn();
+        const {rerender} = render(scopedPath(onChange, 'people', 'name'));
+
+        rerender(scopedPath(onChange, 'persons', 'other'));
+
+        expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('keeps a scoped path that the changed scope also suggests', () => {
+        const onChange = vi.fn();
+        const {rerender} = render(scopedPath(onChange, 'people', 'name'));
+
+        rerender(scopedPath(onChange, 'persons', 'name'));
+
+        expect(onChange).not.toHaveBeenCalled();
+    });
 });
+
+function scopedPath(onChange: (value: string | null) => void, scopeProcessDataKey: string, suggestionId: string) {
+    return (
+        <ProcessDataKeyInputComponent
+            label="Vorgangsdatenvariable"
+            value="name"
+            onChange={onChange}
+            scopeProcessDataKey={scopeProcessDataKey}
+            suggestions={[{id: suggestionId, label: 'Name'}]}
+        />
+    );
+}
 
 function hint(
     processDataKey: string,

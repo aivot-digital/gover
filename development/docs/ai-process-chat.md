@@ -30,10 +30,13 @@ process context in its tool arguments. System permission overrides use the exist
 ## Authoring workflow
 
 1. Read `hole-prozessstruktur`. Search `liste-knotendefinitionen`, then fetch one
-   definition with `hole-knotendefinition` for its declared ports and outputs.
+   definition with `hole-knotendefinition` for its outputs and the ports of a
+   new node with the initial configuration.
 2. Create nodes with `erstelle-prozessknoten`. Definitions supply their normal
-   initial configuration. Connect node IDs using `speichere-prozessverbindung`.
-   An occupied source port requires an explicit update of the existing edge ID.
+   initial configuration. Ports depend on the configuration, so `hole-prozessknoten`
+   returns the current ports of a saved node. Connect node IDs using
+   `speichere-prozessverbindung`. An occupied source port requires an explicit
+   update of the existing edge ID.
 3. Read `liste-knotenkonfigurationsfelder`, then `hole-knotenkonfigurationsfeld`
    for the needed fields. The backend derives their authoring layout for the
    actual node and requesting user, including visibility and overrides.

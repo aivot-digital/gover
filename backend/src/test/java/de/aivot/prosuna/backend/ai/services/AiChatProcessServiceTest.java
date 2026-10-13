@@ -15,6 +15,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.repositories.*;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.*;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
@@ -46,7 +47,7 @@ class AiChatProcessServiceTest {
     private final ProcessNodeRepository nodes = mock(ProcessNodeRepository.class);
     private final ProcessEdgeRepository edges = mock(ProcessEdgeRepository.class);
     private final ProcessNodeService nodeService = mock(ProcessNodeService.class);
-    private final ProcessEdgeService edgeService = new ProcessEdgeService(edges);
+    private final ProcessEdgeService edgeService = new ProcessEdgeService(edges, nodeService, mock(ProcessVersionDraftGuard.class));
     private final ProcessVersionService versionService = mock(ProcessVersionService.class);
     private final ProcessNodeDefinitionService definitions = mock(ProcessNodeDefinitionService.class);
     private final ProcessNodeDefinition<?> definition = mock(ProcessNodeDefinition.class);
@@ -176,7 +177,10 @@ class AiChatProcessServiceTest {
 
     @Test
     void validatesPortsOccupiedConnectionsAndScopeButAllowsLoops() throws Exception {
-        when(definition.getPorts()).thenReturn(List.of(new ProcessNodePort("next", "Weiter", "")));
+        var ports = new ProcessNodePortResolution(List.of(new ProcessNodePort("next", "Weiter", "")), List.of());
+        when(nodeService.retrieve(10)).thenReturn(Optional.of(node));
+        when(nodeService.resolvePorts(node)).thenReturn(ports);
+        when(nodeService.resolvePorts(eq(node), any())).thenReturn(ports);
         assertThatThrownBy(() -> service.saveEdge(scope, null, 10, 10, "invented")).isInstanceOf(ResponseException.class);
         var existing = new ProcessEdgeEntity().setId(99).setProcessId(7).setProcessVersion(2).setFromNodeId(10).setToNodeId(10).setViaPort("next");
         when(edges.findByFromNodeIdAndViaPort(10, "next")).thenReturn(Optional.of(existing));
@@ -188,6 +192,31 @@ class AiChatProcessServiceTest {
         verify(auditLogs, times(1)).create(any());
         node.setProcessVersion(3);
         assertThatThrownBy(() -> service.saveEdge(scope, 99, 10, 10, "next")).isInstanceOf(ResponseException.class);
+    }
+
+    @Test
+    void reportsInitialPortsForDefinitionsAndConfiguredPortsForSavedNodes() throws Exception {
+        doReturn(Optional.of(definition)).when(definitions).getProcessNodeDefinition("decision", 1);
+        when(definition.getKey()).thenReturn("decision");
+        when(definition.getMajorVersion()).thenReturn(1);
+        when(definition.getName()).thenReturn("Entscheidung");
+        when(definition.getType()).thenReturn(ProcessNodeType.Action);
+        when(definition.getDescription()).thenReturn("Verzweigt den Ablauf.");
+        when(nodeService.resolveCandidatePorts(eq(actor), any(), eq(false), eq(true)))
+                .thenReturn(new ProcessNodePortResolution(List.of(new ProcessNodePort("next", "Weiter", "")), List.of()));
+        when(nodeService.resolvePorts(node))
+                .thenReturn(new ProcessNodePortResolution(List.of(new ProcessNodePort("approved", "Genehmigt", "")), List.of()));
+        var mapper = JsonMapperTestUtils.createMapper();
+
+        var definitionResult = mapper.valueToTree(service.definition(scope, "decision", 1, 0));
+        var nodeResult = mapper.valueToTree(service.getNode(scope, 10));
+
+        assertThat(definitionResult.path("ports").get(0).path("key").asString()).isEqualTo("next");
+        assertThat(nodeResult.path("ports").get(0).path("key").asString()).isEqualTo("approved");
+        verify(nodeService).resolveCandidatePorts(eq(actor), argThat(candidate -> candidate.getProcessId() == 7
+                && candidate.getProcessVersion() == 2
+                && "decision".equals(candidate.getProcessNodeDefinitionKey())
+                && candidate.getProcessNodeDefinitionVersion() == 1), eq(false), eq(true));
     }
 
     @Test

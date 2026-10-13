@@ -77,6 +77,25 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         access.user = undefined;
     });
 
+    it.each([null, 'Unterlagen angefordert'])('names the assigned identity in the task status (%s)', statusOverride => {
+        const item = createItem();
+        item.task.status = ProcessTaskStatus.AwaitingCustomer;
+        item.task.statusOverride = statusOverride;
+        item.task.assignedCustomerIdentityId = 'applicant';
+        item.instance!.identities = {
+            applicant: {
+                identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+                emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
+                uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
+            },
+        };
+        renderItem(item);
+
+        expect(screen.getByRole('row', {name: /^Aufgabenstatus /})).toHaveTextContent(statusOverride
+            ? 'Unterlagen angefordert (Systemstatus: Wartet auf Antragstellende)'
+            : 'Wartet auf Antragstellende');
+    });
+
     it.each([
         ['Prüfung', 'Prüfung'],
         [' Prüfung ', 'Prüfung'],
@@ -124,6 +143,19 @@ describe('ProcessTaskViewPageIndex metadata', () => {
             screen.getByRole('region', {name: 'Stand der Aufgabe'}).compareDocumentPosition(edit) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
+    });
+
+    it('shows the instance deadline with its state separately from the task deadline', () => {
+        const item = createItem();
+        const hour = 60 * 60 * 1000;
+        item.instance!.started = new Date(Date.now() - 240 * hour).toISOString();
+        item.instance!.deadline = new Date(Date.now() - hour).toISOString();
+        renderItem(item);
+
+        const instance = within(screen.getByRole('region', {name: 'Angaben zum Vorgang'}));
+        const status = within(screen.getByRole('region', {name: 'Stand der Aufgabe'}));
+        expect(instance.getByRole('row', {name: /^Bearbeitungsfrist des Vorgangs /})).toHaveTextContent('Frist überschritten');
+        expect(status.getByRole('row', {name: /Fälligkeit/})).toHaveTextContent('Nicht festgelegt');
     });
 
     it('shows the task status independently of the instance and omits absent optional metadata', () => {

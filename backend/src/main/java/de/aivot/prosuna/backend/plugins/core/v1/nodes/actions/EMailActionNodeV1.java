@@ -64,6 +64,8 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.de
 
 @Component
 public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV1.EMailActionNodeConfig> {
+    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
+
     public static final String NODE_KEY = "mail";
 
     private static final String PORT_NAME = "output";
@@ -193,7 +195,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull EMailActionNodeConfig configuration) {
+        return SemiAutomaticMessageConfig.isManual(configuration.messageConfig)
+                ? List.of(MESSAGE_DISPATCH_DEADLINE) : List.of();
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull EMailActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
@@ -296,6 +305,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(MESSAGE_DISPATCH_DEADLINE.key())
                 .setRuntimeData(new LinkedHashMap<>(context.getThisTask().getRuntimeData()))
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }

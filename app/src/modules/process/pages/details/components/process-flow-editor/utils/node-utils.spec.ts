@@ -36,7 +36,6 @@ function createProvider(): ProcessNodeProvider {
         description: 'Ausführliche Beschreibung.',
         documentationUrl: null,
         parentPluginKey: 'de.aivot.test',
-        ports: [],
         outputs: [],
     };
 }

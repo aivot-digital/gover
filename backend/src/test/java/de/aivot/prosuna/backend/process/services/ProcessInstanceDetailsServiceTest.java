@@ -84,6 +84,7 @@ class ProcessInstanceDetailsServiceTest {
         when(tasks.findAllByProcessInstanceId(17L)).thenReturn(Arrays.stream(ProcessTaskStatus.values())
                 .map(status -> new ProcessInstanceTaskEntity().setId((long) status.ordinal() + 1)
                         .setProcessNodeId(4).setStatus(status).setStatusOverride("Unterlagen angefordert")
+                        .setAssignedCustomerIdentityId(status == ProcessTaskStatus.AwaitingCustomer ? "applicant" : null)
                         .setAssignedUserId("task-assignee").setDeadline(java.time.Instant.parse("2026-10-01T08:00:00Z"))).toList());
 
         var result = service.retrieve("user", 17L);
@@ -92,6 +93,13 @@ class ProcessInstanceDetailsServiceTest {
         assertEquals("Fachbereich", result.departmentName());
         assertEquals("Eingang", result.triggerName());
         assertEquals(6, result.activeTasks().size());
+        var customerTask = result.activeTasks().stream()
+                .filter(task -> task.status() == ProcessTaskStatus.AwaitingCustomer).findFirst().orElseThrow();
+        assertEquals("applicant", customerTask.assignedCustomerIdentityId());
+        assertTrue(result.activeTasks().stream().filter(task -> task.status() != ProcessTaskStatus.AwaitingCustomer)
+                .allMatch(task -> task.assignedCustomerIdentityId() == null));
+        var json = de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper().valueToTree(customerTask);
+        assertEquals("applicant", json.get("assignedCustomerIdentityId").asString());
         assertTrue(result.activeTasks().stream().anyMatch(task -> task.status() == ProcessTaskStatus.InProgress));
         assertTrue(result.activeTasks().stream().anyMatch(task -> task.status() == ProcessTaskStatus.AwaitingStaff));
         assertTrue(result.activeTasks().stream().allMatch(task -> java.time.Instant.parse("2026-10-01T08:00:00Z").equals(task.deadline())));

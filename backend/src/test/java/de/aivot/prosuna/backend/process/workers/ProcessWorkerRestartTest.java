@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import static de.aivot.prosuna.backend.process.ProcessTaskExecutionTestSupport.passthrough;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -65,6 +66,10 @@ class ProcessWorkerRestartTest {
         var fixture = new Fixture();
         Long previousTask = kind.equals("initial") ? null : 5L;
         Integer previousNode = kind.equals("initial") ? null : kind.equals("loop") ? 11 : 10;
+        if (previousTask != null) {
+            fixture.existing.put(previousTask, new ProcessInstanceTaskEntity().setId(previousTask)
+                    .setProcessInstanceId(42L).setProcessNodeId(previousNode).setStatus(ProcessTaskStatus.Completed));
+        }
         fixture.worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, previousTask, previousNode, "next", 11, null));
         assertEquals(1, fixture.saved.size());
         assertNull(fixture.saved.getFirst().getRestartForTaskId());
@@ -84,6 +89,33 @@ class ProcessWorkerRestartTest {
         assertTrue(fixture.saved.isEmpty());
         verify(fixture.definition, never()).init(any());
         assertEquals(ProcessInstanceStatus.Failed, fixture.instance.getStatus());
+    }
+
+    @Test
+    void normalQueueCannotContinueAnExpiredTaskButDeadlineContinuationCan() throws Exception {
+        var fixture = new Fixture();
+        fixture.existing.put(5L, new ProcessInstanceTaskEntity().setId(5L).setProcessInstanceId(42L)
+                .setProcessNodeId(10).setStatus(ProcessTaskStatus.DeadlineExceeded));
+        var payload = new ProcessWorker.DoWorkWorkerPayload(42L, 5L, 10, "overdue", 11, null);
+
+        fixture.worker.doWorkOnNextNode(payload);
+        assertTrue(fixture.saved.isEmpty());
+        verify(fixture.definition, never()).init(any());
+
+        fixture.worker.doWorkAfterDeadline(payload);
+        assertEquals(1, fixture.saved.size());
+        assertEquals("overdue", fixture.saved.getFirst().getPreviousProcessNodePortKey());
+        verify(fixture.definition).init(any());
+    }
+
+    @Test
+    void rolledBackCompletionCannotStartTheNextNode() throws Exception {
+        var fixture = new Fixture();
+        fixture.existing.put(5L, new ProcessInstanceTaskEntity().setId(5L).setProcessInstanceId(42L)
+                .setProcessNodeId(10).setStatus(ProcessTaskStatus.AwaitingStaff));
+        fixture.worker.doWorkOnNextNode(new ProcessWorker.DoWorkWorkerPayload(42L, 5L, 10, "next", 11, null));
+        assertTrue(fixture.saved.isEmpty());
+        verify(fixture.definition, never()).init(any());
     }
 
     @Test
@@ -155,7 +187,7 @@ class ProcessWorkerRestartTest {
             var loggers = mock(ProcessNodeExecutionLoggerFactory.class);
             when(loggers.create(any(), any(), any(), any())).thenReturn(logger);
             worker = new ProcessWorker(instances, nodes, definitions, tasks, mock(ProcessNodeExecutionResultHandler.class),
-                    dataService, loggers, nodeService);
+                    dataService, loggers, nodeService, passthrough());
         }
     }
 }

@@ -1,3 +1,4 @@
+import {type ProcessNodePort} from '../services/process-node-provider-api-service';
 import React, {type ReactNode, useEffect, useState} from 'react';
 import {
     Alert,
@@ -46,6 +47,7 @@ type PluginDetailsLoadState =
     | {status: 'error'};
 
 interface ProcessNodeProviderDetailsDialogProps {
+    ports?: ProcessNodePort[];
     open: boolean;
     provider: ProcessNodeProvider | null;
     onClose: () => void;
@@ -57,6 +59,7 @@ interface ProcessNodeProviderDetailsHeaderProps {
 }
 
 interface ProcessNodeProviderDetailsContentProps {
+    ports?: ProcessNodePort[];
     provider: ProcessNodeProvider;
     showDescription?: boolean;
     sx?: SxProps<Theme>;
@@ -85,6 +88,7 @@ export function getProcessNodeProviderIcon(provider: ProcessNodeProvider): SvgIc
 export function ProcessNodeProviderDetailsDialog(props: ProcessNodeProviderDetailsDialogProps): ReactNode {
     const {
         open,
+        ports,
         provider,
         onClose,
     } = props;
@@ -114,6 +118,7 @@ export function ProcessNodeProviderDetailsDialog(props: ProcessNodeProviderDetai
 
                     <ProcessNodeProviderDetailsContent
                         provider={renderProvider}
+                        ports={ports}
                         showDescription
                     />
                 </DialogContent>
@@ -213,6 +218,7 @@ export function ProcessNodeProviderDetailsHeader(props: ProcessNodeProviderDetai
 export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDetailsContentProps): ReactNode {
     const {
         provider,
+        ports,
         showDescription = false,
         sx,
     } = props;
@@ -329,8 +335,11 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
 
             <ProcessNodeProviderDetailsSection title="Ausgänge">
                 {
-                    provider.ports.length > 0 ?
-                        provider.ports.map((port) => (
+                    ports == null ?
+                        <Typography variant="body2" color="text.secondary">
+                            Die Ausgänge hängen von der Konfiguration des Prozesselements ab.
+                        </Typography> : ports.length > 0 ?
+                        ports.map((port) => (
                             <ProcessNodeProviderDetailsListRow
                                 key={port.key}
                                 primary={port.label}

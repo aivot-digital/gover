@@ -34,6 +34,7 @@ import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeStaffView;
 import de.aivot.prosuna.backend.process.models.TaskViewEvent;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -63,6 +64,12 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.us
 
 @Component
 public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<InstanceAssignmentActionNodeV1.Config> {
+    private static final ProcessNodeDeadlineDefinition ASSIGNMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "assignment", "Vorgangszuweisung",
+            "Zeit für die manuelle Zuweisung des Vorgangs.",
+            new ProcessNodePort("assignment_overdue", "Fristüberschreitung: Vorgangszuweisung",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Vorgangszuweisung."));
+
     public static final String NODE_KEY = "assign_instance";
 
     private static final String PORT_SUCCESS = "success";
@@ -186,7 +193,11 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         layout
                 .findChild(Config.AUTOMATIC_CONTEXT_FIELD_ID, AssignmentContextInputElement.class)
                 .ifPresent(field -> {
-                    field.setAllowedTypes(List.of(AssignmentContextInputElement.ALLOWED_TYPE_USER));
+                    field.setAllowedTypes(List.of(
+                            AssignmentContextInputElement.ALLOWED_TYPE_ORG_UNIT,
+                            AssignmentContextInputElement.ALLOWED_TYPE_TEAM,
+                            AssignmentContextInputElement.ALLOWED_TYPE_USER
+                    ));
                     field.setDisableProcessInstanceAssigneeOption(true);
                     field.setDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions(true);
 
@@ -262,7 +273,14 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull Config configuration) {
+        return MODE_MANUAL.equals(normalizeMode(configuration.mode))
+                ? List.of(ASSIGNMENT_DEADLINE) : List.of();
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull Config configuration) {
         return List.of(new ProcessNodePort(
                 PORT_SUCCESS,
                 "Zuweisung erfolgt",
@@ -319,6 +337,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
 
         if (MODE_MANUAL.equals(mode)) {
             return ProcessNodeExecutionResultTaskAssigned.of(selectedUserId)
+                    .setNewDeadlineKey(ASSIGNMENT_DEADLINE.key())
                     .setProcessData(context.getCurrentProcessExecutionData().getProcessData())
                     .setRuntimeData(Map.of());
         }

@@ -78,6 +78,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         node,
         provider,
         outgoingEdges,
+        displayPorts,
     } = graphNode;
 
     const associatedTask = useMemo(() => {
@@ -101,9 +102,10 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         );
     }, [associatedTask, runtimeData]);
 
-    const associatedProblem = useMemo(() => {
-        return nodeProblems.find((problem) => problem.node.id === node.id) || null;
-    }, [node.id, nodeProblems]);
+    const problemMessages = useMemo(() => Array.from(new Set([
+        ...(nodeProblems.find((problem) => problem.node.id === node.id)?.problems ?? []),
+        ...node.portResolutionProblems,
+    ])), [node.id, node.portResolutionProblems, nodeProblems]);
 
     const performedPortKeys = useMemo(() => {
         if (runtimeData == null) {
@@ -148,7 +150,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             return null;
         }
 
-        if (associatedTask.statusOverride != null) {
+        if (associatedTask.statusOverride?.trim()) {
             return theme.palette.primary.main;
         }
 
@@ -170,6 +172,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 return theme.palette.warning.main;
             case ProcessTaskStatus.Aborted:
             case ProcessTaskStatus.Failed:
+            case ProcessTaskStatus.DeadlineExceeded:
                 return theme.palette.error.main;
             default:
                 return null;
@@ -227,22 +230,22 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         },
     }), [theme.palette.primary.main]);
     const handleLayoutSignature = useMemo(() => (
-        provider.ports.map((port) => (
-            `${port.key}:${outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key) ? '1' : '0'}`
+        displayPorts.map((port) => (
+            `${port.key}:${outgoingEdges.some((outgoingEdge) => outgoingEdge.edge.viaPort === port.key) ? '1' : '0'}`
         )).join('|')
-    ), [outgoingEdges, provider.ports]);
+    ), [outgoingEdges, displayPorts]);
     const availableOutputPorts = useMemo(() => (
-        provider.ports.filter((port) => (
-            !outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)
+        node.ports.filter((port) => (
+            !outgoingEdges.some((outgoingEdge) => outgoingEdge.edge.viaPort === port.key)
         ))
-    ), [outgoingEdges, provider.ports]);
+    ), [outgoingEdges, node.ports]);
     const menuItems = useMemo<ProcessActionMenuItem[]>(() => {
         // Provider details are read-only and must stay available even when structural editing is disabled.
         const informationItem: ProcessActionMenuItem = {
             label: 'Elementinformationen',
             icon: <Info/>,
             onClick: () => {
-                onShowNodeProviderDetails(provider);
+                onShowNodeProviderDetails(provider, node);
             },
         };
         const actionItems: ProcessActionMenuItem[] = editable ? [
@@ -387,7 +390,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             data-node-id={node.id}
             sx={{
                 position: 'relative',
-                width: `${getFlowNodeWidth(provider)}px`,
+                width: `${getFlowNodeWidth(graphNode)}px`,
                 minWidth: '280px',
             }}
         >
@@ -499,8 +502,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             </Typography>
 
                             {
-                                showNodeProblemsForNodes[node.id] &&
-                                associatedProblem != null &&
+                                (showNodeProblemsForNodes[node.id] || node.portResolutionProblems.length > 0) &&
+                                problemMessages.length > 0 &&
                                 <Tooltip
                                     arrow
                                     title={
@@ -524,7 +527,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                                 }}
                                             >
                                                 {
-                                                    associatedProblem.problems.map((problem, index) => (
+                                                    problemMessages.map((problem, index) => (
                                                         <li key={index}>
                                                             {problem}
                                                         </li>
@@ -558,6 +561,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                 <ProcessInstanceTaskStatusIcon
                                     status={associatedTask.status}
                                     statusOverride={associatedTask.statusOverride}
+                                    assignedCustomerIdentityId={associatedTask.assignedCustomerIdentityId}
+                                    identities={runtimeData?.instance.identities}
                                 />
                             }
 
@@ -740,27 +745,27 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             }
 
             {
-                provider.type !== ProcessNodeType.Termination &&
+                displayPorts.length > 0 &&
                 <Box
                     sx={{
                         position: 'relative',
                         display: 'grid',
-                        gridTemplateColumns: `repeat(${Math.max(provider.ports.length, 1)}, minmax(0, 1fr))`,
+                        gridTemplateColumns: `repeat(${Math.max(displayPorts.length, 1)}, minmax(0, 1fr))`,
                         justifyItems: 'center',
                         alignItems: 'stretch',
                         width: '100%',
                     }}
                 >
                     {
-                        provider
-                            .ports
+                        displayPorts
                             .map((port) => (
                                 <ProcessFlowEditorNodeHandle
                                     key={port.key}
                                     editable={editable}
                                     wasPerformed={performedPortKeys.has(port.key)}
-                                    isConnected={outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)}
+                                    isConnected={outgoingEdges.some((outgoingEdge) => outgoingEdge.edge.viaPort === port.key)}
                                     port={port}
+                                    unavailable={port.unavailable}
                                     onClick={() => {
                                         onAddFollowUpNode(node.id, port.key);
                                     }}
@@ -768,7 +773,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                         onConnectNodeToExisting(node, port.key);
                                     }}
                                     onDeleteEdge={(port) => {
-                                        const edge = outgoingEdges.find((outgoingEdge) => outgoingEdge.port?.key === port.key);
+                                        const edge = outgoingEdges.find((outgoingEdge) => outgoingEdge.edge.viaPort === port.key);
 
                                         if (edge != null) {
                                             onDeleteEdge(edge.edge.id);

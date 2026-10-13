@@ -22,7 +22,7 @@ export interface ProcessFlowEditorContextType {
     onConnectNodeToExisting: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
     onStartReplaceNode: (node: ProcessNodeEntity) => void;
     onStartCloneNode: (node: ProcessNodeEntity) => void;
-    onShowNodeProviderDetails: (provider: ProcessNodeProvider) => void;
+    onShowNodeProviderDetails: (provider: ProcessNodeProvider, node: ProcessNodeEntity) => void;
     onShowTaskEvents: (taskId: number) => void;
 
     onReloadRuntimeData: () => void;

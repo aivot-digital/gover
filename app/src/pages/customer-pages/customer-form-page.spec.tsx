@@ -537,6 +537,90 @@ describe('CustomerFormPage', () => {
         expect(window.location.hash).toBe('');
     });
 
+    it('keeps a persisted email identity unchanged while starting a provider login', async () => {
+        vi.mocked(BaseApiService.prototype.get).mockResolvedValue(createRetrieveResponse(
+            createFormLayout(),
+            [
+                createIdentitySlot({availableIdentityProviders: []}),
+                createIdentitySlot({
+                    id: 'representative',
+                    title: 'Vertretung',
+                    allowsEmail: false,
+                    availableIdentityProviders: [createIdentityProvider()],
+                }),
+            ],
+        ));
+        vi.spyOn(FormTriggerApiService.prototype, 'createIdentityProviderStartLink')
+            .mockImplementation((_processSlug, _formSlug, identityId) => `#login-${identityId}`);
+        const setEmail = vi.spyOn(FormTriggerApiService.prototype, 'setEmailIdentity')
+            .mockResolvedValue(createIdentitySlot({
+                availableIdentityProviders: [],
+                identityType: 'Email',
+                emailAddress: 'customer@example.test',
+                isReady: true,
+            }));
+        const user = userEvent.setup();
+
+        render(<CustomerFormPage/>);
+
+        const emailField = await screen.findByRole('textbox', {name: /E-Mail-Adresse/});
+        await user.type(emailField, 'customer@example.test');
+        await user.click(screen.getByRole('link', {name: /Mit „BundID“ anmelden/}));
+
+        await waitFor(() => expect(window.location.hash).toBe('#login-representative'));
+        await waitFor(() => expect(emailField).toBeEnabled());
+        expect(setEmail).toHaveBeenCalledWith(
+            'test-process',
+            'test-form',
+            'applicant',
+            'customer@example.test',
+            undefined,
+        );
+        expect(screen.queryByText('Nachrichten werden an customer@example.test gesendet.')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
+    });
+
+    it('shows persisted identities when another draft blocks a provider login', async () => {
+        vi.mocked(BaseApiService.prototype.get).mockResolvedValue(createRetrieveResponse(
+            createFormLayout(),
+            [
+                createIdentitySlot({availableIdentityProviders: []}),
+                createIdentitySlot({
+                    id: 'contact',
+                    title: 'Kontaktperson',
+                    availableIdentityProviders: [],
+                }),
+                createIdentitySlot({
+                    id: 'representative',
+                    title: 'Vertretung',
+                    allowsEmail: false,
+                    availableIdentityProviders: [createIdentityProvider()],
+                }),
+            ],
+        ));
+        vi.spyOn(FormTriggerApiService.prototype, 'createIdentityProviderStartLink')
+            .mockImplementation((_processSlug, _formSlug, identityId) => `#login-${identityId}`);
+        vi.spyOn(FormTriggerApiService.prototype, 'setEmailIdentity')
+            .mockResolvedValue(createIdentitySlot({
+                availableIdentityProviders: [],
+                identityType: 'Email',
+                emailAddress: 'first@example.test',
+                isReady: true,
+            }));
+        const user = userEvent.setup();
+
+        render(<CustomerFormPage/>);
+
+        const emailFields = await screen.findAllByRole('textbox', {name: /E-Mail-Adresse/});
+        await user.type(emailFields[0], 'first@example.test');
+        await user.type(emailFields[1], 'invalid');
+        await user.click(screen.getByRole('link', {name: /Mit „BundID“ anmelden/}));
+
+        expect(await screen.findByText('Nachrichten werden an first@example.test gesendet.')).toBeVisible();
+        expect(screen.getByText('Geben Sie eine gültige E-Mail-Adresse ein.')).toBeVisible();
+        expect(window.location.hash).toBe('');
+    });
+
     it('stays on the identity step when a saved communication path is incomplete', async () => {
         const initialCommunication = createCommunicationState();
         const incompleteCommunication = {
@@ -679,6 +763,99 @@ describe('CustomerFormPage', () => {
             undefined,
         );
         expect(await screen.findByRole('button', {name: 'Formular absenden'})).toBeVisible();
+    });
+
+    it('keeps saved identity confirmations hidden while continuing', async () => {
+        vi.mocked(BaseApiService.prototype.get).mockResolvedValue(createRetrieveResponse(
+            createFormLayout(),
+            [
+                createIdentitySlot(),
+                createIdentitySlot({
+                    id: 'representative',
+                    title: 'Vertretung',
+                }),
+            ],
+        ));
+        let resolveSecondIdentity!: () => void;
+        const setEmail = vi.spyOn(FormTriggerApiService.prototype, 'setEmailIdentity')
+            .mockImplementation(async (_processSlug, _formSlug, identityId, emailAddress) => {
+                const savedSlot = createIdentitySlot({
+                    id: identityId,
+                    title: identityId === 'applicant' ? 'Antragsteller:in' : 'Vertretung',
+                    identityType: 'Email',
+                    emailAddress,
+                    isReady: true,
+                });
+                if (identityId === 'representative') {
+                    return await new Promise<IdentitySlot>((resolve) => {
+                        resolveSecondIdentity = () => resolve(savedSlot);
+                    });
+                }
+                return savedSlot;
+            });
+        const user = userEvent.setup();
+
+        render(<CustomerFormPage/>);
+
+        const emailFields = await screen.findAllByRole('textbox', {name: /E-Mail-Adresse/});
+        const continueButton = screen.getByRole('button', {name: 'Mit Formular fortfahren'});
+        await user.type(emailFields[0], 'first@example.test');
+        await user.type(emailFields[1], 'second@example.test');
+        await waitFor(() => expect(continueButton).toBeEnabled());
+        await user.click(continueButton);
+
+        await waitFor(() => expect(setEmail).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(emailFields[1]).toBeDisabled());
+        expect(screen.queryByText('Nachrichten werden an first@example.test gesendet.')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
+
+        resolveSecondIdentity();
+        expect(await screen.findByRole('button', {name: 'Formular absenden'})).toBeVisible();
+    });
+
+    it('shows saved identities when a later identity cannot be saved', async () => {
+        vi.mocked(BaseApiService.prototype.get).mockResolvedValue(createRetrieveResponse(
+            createFormLayout(),
+            [
+                createIdentitySlot(),
+                createIdentitySlot({
+                    id: 'representative',
+                    title: 'Vertretung',
+                }),
+            ],
+        ));
+        vi.spyOn(FormTriggerApiService.prototype, 'setEmailIdentity')
+            .mockImplementation(async (_processSlug, _formSlug, identityId, emailAddress) => {
+                if (identityId === 'representative') {
+                    throw {
+                        status: 500,
+                        message: 'Internal Server Error',
+                        details: null,
+                        displayableToUser: false,
+                    };
+                }
+                return createIdentitySlot({
+                    identityType: 'Email',
+                    emailAddress,
+                    isReady: true,
+                });
+            });
+        const user = userEvent.setup();
+
+        render(<CustomerFormPage/>);
+
+        const emailFields = await screen.findAllByRole('textbox', {name: /E-Mail-Adresse/});
+        const continueButton = screen.getByRole('button', {name: 'Mit Formular fortfahren'});
+        await user.type(emailFields[0], 'first@example.test');
+        await user.type(emailFields[1], 'second@example.test');
+        await waitFor(() => expect(continueButton).toBeEnabled());
+        await user.click(continueButton);
+
+        expect(await screen.findByText('Nachrichten werden an first@example.test gesendet.')).toBeVisible();
+        expectSnackbar('Die E-Mail-Adresse konnte nicht gespeichert werden.');
+        expect(screen.getByText('Identität auswählen')).toBeVisible();
+        expect(screen.queryByRole('button', {name: 'Formular absenden'})).not.toBeInTheDocument();
+        await waitFor(() => expect(continueButton).toBeEnabled());
     });
 
     it('continues without saving when every optional identity is untouched', async () => {

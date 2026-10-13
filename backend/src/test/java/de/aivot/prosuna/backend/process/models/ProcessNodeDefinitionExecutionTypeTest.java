@@ -71,6 +71,7 @@ class ProcessNodeDefinitionExecutionTypeTest {
         assertEquals("Detailed **process-node** description.", serializedDefinition.get("description"));
         assertEquals("https://docs.example.com/process-nodes/test", serializedDefinition.get("documentationUrl"));
         assertFalse(serializedDefinition.containsKey("abstract"));
+        assertFalse(serializedDefinition.containsKey("ports"));
     }
 
     private static Stream<ExecutionTypeExpectation> executionTypeExpectations() {
@@ -193,7 +194,7 @@ class ProcessNodeDefinitionExecutionTypeTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 

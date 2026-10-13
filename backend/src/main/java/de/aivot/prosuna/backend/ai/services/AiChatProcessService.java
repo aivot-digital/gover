@@ -133,7 +133,14 @@ public class AiChatProcessService {
         var definition = definitions.getProcessNodeDefinition(key, version).orElseThrow(ResponseException::notFound);
         var result = new LinkedHashMap<>(definitionSummary(definition));
         result.put("description", AiToolResults.value(mapper, definition.getDescription(), descriptionOffset, 3000));
-        result.put("ports", definition.getPorts());
+        // Ports depend on the node configuration. A new node starts with the initial configuration of its definition.
+        var candidate = new ProcessNodeEntity()
+                .setProcessId(context.processId())
+                .setProcessVersion(context.processVersion())
+                .setProcessNodeDefinitionKey(definition.getKey())
+                .setProcessNodeDefinitionVersion(definition.getMajorVersion())
+                .setConfiguration(new AuthoredElementValues());
+        result.put("ports", nodeService.resolveCandidatePorts(user(context), candidate, false, true).ports());
         result.put("outputs", definition.getOutputs());
         result.put("executionTypes", definition.getExecutionTypes());
         return result;
@@ -174,6 +181,7 @@ public class AiChatProcessService {
         var result = new LinkedHashMap<>(nodeSummary(node));
         var tree = mapper.valueToTree(node);
         for (var key : EDITABLE) result.put(key, AiToolResults.value(mapper, tree.get(key), 0, 500));
+        result.put("ports", nodeService.resolvePorts(node).ports());
         result.put("configurationFields", node.getConfiguration().keySet());
         return result;
     }
@@ -313,7 +321,8 @@ public class AiChatProcessService {
         var source = node(context, fromNodeId, true);
         node(context, toNodeId, true);
         var provider = definitions.getProcessNodeDefinition(source).orElseThrow(ResponseException::badRequest);
-        if (provider.getPorts().stream().noneMatch(p -> p.key().equals(port))) throw ResponseException.badRequest("Der Ausgang ist für diesen Knoten nicht definiert.");
+        var resolution = nodeService.resolvePorts(source, provider);
+        if (!resolution.problems().isEmpty() || resolution.ports().stream().noneMatch(p -> p.key().equals(port))) throw ResponseException.badRequest("Der Ausgang ist für diesen Knoten nicht definiert.");
         if (edges.findByFromNodeIdAndViaPort(fromNodeId, port).filter(e -> !Objects.equals(e.getId(), id)).isPresent()) throw ResponseException.badRequest("Der Ausgang ist bereits verbunden. Ändern oder löschen Sie die vorhandene Verbindung über ihre ID.");
         var existing = id == null ? null : edge(context, id, true);
         var before = existing == null ? null : snapshot(existing);

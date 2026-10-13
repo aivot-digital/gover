@@ -6,6 +6,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
@@ -46,7 +48,8 @@ class ProcessInstanceTaskSummaryTest {
                     status_override varchar(96), started timestamp with time zone, updated timestamp with time zone,
                     finished timestamp with time zone, runtime interval second, runtime_data text, node_data text,
                     process_data text, process_data_diff text, assigned_user_id varchar(36),
-                    assigned_customer_identity_id varchar(36), deadline timestamp with time zone,
+                    assigned_customer_identity_id varchar(36), deadline timestamp with time zone, deadline_key varchar(32),
+                    deadline_strict boolean not null default false,
                     postponed_until timestamp with time zone, retry_count int, next_retry_at timestamp with time zone
                 )
                 """);
@@ -65,12 +68,13 @@ class ProcessInstanceTaskSummaryTest {
                 "select count(*) from process_instance_tasks where id = 9999").getSingleResult()).longValue());
     }
 
-    @Test
-    void persistsAndSerializesLongMarkdownVerbatimWithoutExposingItToCustomers() {
+    @ParameterizedTest
+    @EnumSource(value = ProcessTaskStatus.class, names = {"Completed", "DeadlineExceeded"})
+    void persistsAndSerializesLongMarkdownVerbatimWithoutExposingItToCustomers(ProcessTaskStatus status) {
         var summary = "    eingerückter Code\n\n**Ergebnis:** Prüfung abgeschlossen.  \n".repeat(100);
         var now = Instant.now();
         var task = new ProcessInstanceTaskEntity().setAccessKey("task-key").setProcessInstanceId(17L)
-                .setProcessId(1).setProcessVersion(1).setProcessNodeId(2).setStatus(ProcessTaskStatus.Completed)
+                .setProcessId(1).setProcessVersion(1).setProcessNodeId(2).setStatus(status)
                 .setStarted(now).setUpdated(now).setFinished(now).setRuntimeData(Map.of()).setNodeData(Map.of())
                 .setProcessData(Map.of()).setProcessDataDiff(Map.of()).setExecutionSummaryMarkdown(summary);
         entityManager.persist(task);
@@ -78,6 +82,7 @@ class ProcessInstanceTaskSummaryTest {
         entityManager.clear();
 
         var loaded = entityManager.find(ProcessInstanceTaskEntity.class, task.getId());
+        assertEquals(status, loaded.getStatus());
         assertEquals(summary, loaded.getExecutionSummaryMarkdown());
         var internalJson = jsonMapper.valueToTree(loaded);
         assertEquals(summary, internalJson.path("executionSummaryMarkdown").asString());

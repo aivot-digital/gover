@@ -33,7 +33,7 @@ public class AiChatProcessTools {
     }
 
     @Nonnull
-    @Tool(name = "hole-knotendefinition", description = "Definition mit Ausgängen, Ausgaben und Beschreibung abrufen. Schlüssel und Version aus der Definitionsliste übernehmen.")
+    @Tool(name = "hole-knotendefinition", description = "Definition mit Ausgängen, Ausgaben und Beschreibung abrufen. Die Ausgänge gelten für einen neuen Knoten mit Standardkonfiguration. Schlüssel und Version aus der Definitionsliste übernehmen.")
     public Object definition(
             @ToolParam(description = "Definitionsschlüssel", required = true) @Nonnull String key,
             @ToolParam(description = "Definitionsversion", required = true) int version,
@@ -58,7 +58,7 @@ public class AiChatProcessTools {
     }
 
     @Nonnull
-    @Tool(name = "hole-prozessknoten", description = "Eigenschaften und Konfigurationsübersicht eines gespeicherten Knotens ohne große Konfigurationswerte abrufen.")
+    @Tool(name = "hole-prozessknoten", description = "Eigenschaften, Ausgänge und Konfigurationsübersicht eines gespeicherten Knotens ohne große Konfigurationswerte abrufen.")
     public Object getNode(
             @ToolParam(description = "Knoten-ID aus der Prozessstruktur", required = true) int nodeId,
             @ToolParam(description = "Optional eine allgemeine Eigenschaft vollständig in Abschnitten lesen", required = false) @Nullable String property,
@@ -188,7 +188,7 @@ public class AiChatProcessTools {
             @ToolParam(description = "Vorhandene Verbindungs-ID zum Ändern", required = false) @Nullable Integer edgeId,
             @ToolParam(description = "Quellknoten-ID", required = true) int fromNodeId,
             @ToolParam(description = "Zielknoten-ID", required = true) int toNodeId,
-            @ToolParam(description = "Exakter Ausgangsschlüssel aus hole-knotendefinition", required = true) @Nonnull String port,
+            @ToolParam(description = "Exakter Ausgangsschlüssel des Quellknotens aus hole-prozessknoten", required = true) @Nonnull String port,
             @Nonnull ToolContext context) {
         return execute(() -> {
             var scope = AiProcessChatContext.from(context);

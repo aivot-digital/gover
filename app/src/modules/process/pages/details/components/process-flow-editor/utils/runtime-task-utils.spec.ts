@@ -34,6 +34,8 @@ function createTask(
         assignedUserId: null,
         assignedCustomerIdentityId: null,
         deadline: null,
+        deadlineKey: null,
+        deadlineStrict: false,
         ...overrides,
     };
 }

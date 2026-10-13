@@ -156,7 +156,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull WebhookTriggerConfigV1 configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,

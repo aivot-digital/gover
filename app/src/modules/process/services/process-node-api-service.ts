@@ -1,5 +1,7 @@
+import {type RequestOptions} from '../../../services/base-api-service';
+import {type ProcessNodePortResolution} from './process-node-provider-api-service';
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
-import {type ProcessNodeEntity} from '../entities/process-node-entity';
+import {type ProcessNodeEntity, type ProcessNodeWrite} from '../entities/process-node-entity';
 import {type ProcessNodeExport} from '../entities/process-node-export';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {generateProcessNodeDataKey} from '../utils/process-node-data-key';
@@ -8,6 +10,7 @@ import {ProcessNodeProblems} from '../entities/process-node-problems';
 import {type ProcessNodeDefinitionMetadata} from '../entities/process-node-definition-metadata';
 import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../../../models/element-data';
 import {type ElementDerivationOptions} from '../../elements/elements-api-service';
+import {type AnyElement} from '../../../models/elements/any-element';
 
 interface ProcessDefinitionNodeFilter {
     id: number;
@@ -19,10 +22,10 @@ interface ProcessDefinitionNodeFilter {
 }
 
 export class ProcessNodeApiService extends BaseCrudApiService<
+    ProcessNodeWrite,
     ProcessNodeEntity,
     ProcessNodeEntity,
-    ProcessNodeEntity,
-    ProcessNodeEntity,
+    ProcessNodeWrite,
     number,
     ProcessDefinitionNodeFilter
 > {
@@ -36,10 +39,13 @@ export class ProcessNodeApiService extends BaseCrudApiService<
 
     public static initialize(): ProcessNodeEntity {
         return {
+            ports: [],
+            portResolutionProblems: [],
             notes: null,
             outputMappings: {},
             requirements: null,
-            timeLimitDays: null,
+            deadlines: {},
+            deadlineDefinitions: [],
             id: 0,
             processId: 0,
             processVersion: 0,
@@ -55,7 +61,7 @@ export class ProcessNodeApiService extends BaseCrudApiService<
         };
     }
 
-    public async createWithGeneratedDataKey(node: ProcessNodeEntity): Promise<ProcessNodeEntity> {
+    public async createWithGeneratedDataKey(node: ProcessNodeWrite): Promise<ProcessNodeEntity> {
         for (let attempt = 0; ; attempt++) {
             try {
                 return await this.create({
@@ -74,6 +80,22 @@ export class ProcessNodeApiService extends BaseCrudApiService<
         }
     }
 
+    public override create(node: ProcessNodeWrite): Promise<ProcessNodeEntity> {
+        return super.create(toProcessNodeWrite(node));
+    }
+
+    public override update(id: number, node: ProcessNodeWrite, options?: RequestOptions): Promise<ProcessNodeEntity> {
+        return super.update(id, toProcessNodeWrite(node), options);
+    }
+
+    public resolvePorts(node: ProcessNodeWrite, options: {forImport?: boolean; useInitialConfiguration?: boolean} = {}): Promise<ProcessNodePortResolution> {
+        return this.post(`${this.path}resolve-ports/`, {
+            node: toProcessNodeWrite(node),
+            forImport: options.forImport ?? false,
+            useInitialConfiguration: options.useInitialConfiguration ?? false,
+        });
+    }
+
     public getConfigurationLayout(id: number): Promise<GroupLayout> {
         return this.get(`${this.path}${id}/configuration/`);
     }
@@ -90,6 +112,29 @@ export class ProcessNodeApiService extends BaseCrudApiService<
         return this.post(`${this.path}${id}/derive-configuration/`, {
             authoredElementValues,
             derivationOptions,
+        });
+    }
+
+    /**
+     * Derives values entered into a UI definition configured in a UI definition field of the node.
+     * An unsaved UI definition requires the permission to update the node's process; without it,
+     * pass null to derive the stored UI definition.
+     */
+    public deriveUiDefinition(
+        id: number,
+        fieldId: string,
+        unsavedUiDefinition: AnyElement | null,
+        authoredElementValues: AuthoredElementValues,
+        derivationOptions: ElementDerivationOptions,
+        abort?: AbortSignal,
+    ): Promise<DerivedRuntimeElementData> {
+        return this.post(`${this.path}${id}/derive-ui-definition/`, {
+            fieldId,
+            uiDefinition: unsavedUiDefinition,
+            authoredElementValues,
+            derivationOptions,
+        }, {
+            abort,
         });
     }
 
@@ -119,4 +164,9 @@ export class ProcessNodeApiService extends BaseCrudApiService<
             return null;
         }
     }
+}
+
+export function toProcessNodeWrite(node: ProcessNodeWrite): ProcessNodeWrite {
+    const {ports: _ports, portResolutionProblems: _problems, deadlineDefinitions: _deadlines, ...authored} = node as ProcessNodeEntity;
+    return authored;
 }

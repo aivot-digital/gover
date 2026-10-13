@@ -207,7 +207,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull IfFlowControlNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME_TRUE,

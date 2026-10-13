@@ -124,8 +124,8 @@ class AiCompletionActionNodeV1Test {
         assertEquals(CENTRAL_CHAT_TIMEOUT, options.getTimeout());
 
         assertEquals("KI-Anfrage", node.getName());
-        assertEquals(1, node.getPorts().size());
-        assertEquals("success", node.getPorts().getFirst().key());
+        assertEquals(1, node.getPorts(new AiCompletionActionNodeV1.AiCompletionActionNodeConfig()).size());
+        assertEquals("success", node.getPorts(new AiCompletionActionNodeV1.AiCompletionActionNodeConfig()).getFirst().key());
     }
 
     @Test

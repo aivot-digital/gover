@@ -157,7 +157,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull CounterActionNodeV1Configuration configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,

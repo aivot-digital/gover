@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Stack, Typography} from '@mui/material';
+import {Alert, Box, Stack, Typography} from '@mui/material';
 import {Blocker, useBeforeUnload, useBlocker, useNavigate} from 'react-router-dom';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
@@ -18,7 +18,7 @@ import {
 } from '../../../../models/element-data';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../../slices/shell-slice';
-import {showApiErrorSnackbar, showErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showWarningSnackbar} from '../../../../slices/snackbar-slice';
 import {withDelay} from '../../../../utils/with-delay';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
 import {
@@ -29,6 +29,7 @@ import {
 } from './process-task-view-page';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
+import {getPreviewableAttachmentMediaType} from '../../utils/process-attachment-preview';
 import {isApiError, isApiUnreachableError, isOfflineApiError} from '../../../../models/api-error';
 import {
     ProcessTaskInputSaveState,
@@ -44,6 +45,7 @@ import {ProcessInstanceAttachmentSetApiService} from '../../services/process-ins
 import {ProcessTaskViewAttachmentProvider} from './process-task-view-attachment-context';
 import {BaseApiService} from '../../../../services/base-api-service';
 import {TaskViewEventButtons} from '../../components/task-view-event-buttons';
+import {isTaskDeadlineExceededError} from '../../utils/task-deadline-error';
 
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
 const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
@@ -64,6 +66,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const isResolvingBlockedNavigationRef = useRef(false);
     const ignoreAuthoredValuesChangeRef = useRef(false);
     const skipChangeBlockerRef = useRef(false);
+    const deadlineExceededRef = useRef(false);
+    const [deadlineExceeded, setDeadlineExceeded] = useState(false);
 
     const [taskView, setTaskView] = useState<TaskView>();
     const [taskInputData, setTaskInputData] = useState<AuthoredElementValues>({});
@@ -104,9 +108,25 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         ),
     );
 
+    const handleDeadlineExceeded = useCallback((error: unknown): boolean => {
+        if (!isTaskDeadlineExceededError(error)) return false;
+        deadlineExceededRef.current = true;
+        setDeadlineExceeded(true);
+        pendingOfflineRetryRef.current = false;
+        skipChangeBlockerRef.current = true;
+        setPendingBlockedNavigation(null);
+        if (pushUpdateTimeoutRef.current != null) {
+            window.clearTimeout(pushUpdateTimeoutRef.current);
+            pushUpdateTimeoutRef.current = null;
+        }
+        dispatchProcessAssignedTaskCountRefreshEvent();
+        refresh();
+        return true;
+    }, [refresh]);
+
     const saveTaskInputData = useCallback(
         async (payload: AuthoredElementValues): Promise<boolean> => {
-            if (item == null) {
+            if (item == null || deadlineExceededRef.current) {
                 return false;
             }
 
@@ -123,6 +143,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             if (inFlightSavePromiseRef.current != null) {
                 await inFlightSavePromiseRef.current;
+
+                if (deadlineExceededRef.current) return false;
 
                 if (deepEquals(payload, lastPersistedTaskInputDataRef.current)) {
                     return true;
@@ -160,10 +182,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     setTaskInputDataSaveState(
                         hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved,
                     );
-                    if (item.task.status === ProcessTaskStatus.Running ||
-                        item.task.status === ProcessTaskStatus.AwaitingStaff) {
-                        refresh();
-                    }
+                    refresh();
 
                     return true;
                 })
@@ -171,6 +190,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     if (currentTaskSession !== taskSessionRef.current) {
                         return false;
                     }
+
+                    if (handleDeadlineExceeded(err)) return false;
 
                     if (isOfflineApiError(err)) {
                         pendingOfflineRetryRef.current = true;
@@ -196,7 +217,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             return await savePromise;
         },
-        [dispatch, item, refresh],
+        [dispatch, handleDeadlineExceeded, item, refresh],
     );
 
     const flushCurrentTaskInputData = useCallback(async (): Promise<boolean> => {
@@ -238,6 +259,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         let cancelled = false;
         const currentTaskSession = ++taskSessionRef.current;
 
+        deadlineExceededRef.current = false;
+        setDeadlineExceeded(false);
+
         pendingOfflineRetryRef.current = false;
         inFlightSavePromiseRef.current = null;
         isResolvingBlockedNavigationRef.current = false;
@@ -248,6 +272,12 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         if (pushUpdateTimeoutRef.current != null) {
             window.clearTimeout(pushUpdateTimeoutRef.current);
             pushUpdateTimeoutRef.current = null;
+        }
+
+        if (item?.task.status === ProcessTaskStatus.DeadlineExceeded) {
+            deadlineExceededRef.current = true;
+            skipChangeBlockerRef.current = true;
+            return () => { cancelled = true; };
         }
 
         if (item == null) {
@@ -304,7 +334,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, item?.task.id, item?.task.processInstanceId]);
+    }, [dispatch, item?.task.id, item?.task.processInstanceId, item?.task.status === ProcessTaskStatus.DeadlineExceeded]);
 
     useEffect(() => {
         const handleOnline = () => {
@@ -441,7 +471,19 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 const blob = await new BaseApiService().getBlob(
                     `/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=false`,
                 );
-                const objectUrl = URL.createObjectURL(blob);
+
+                // A blob URL belongs to the application origin. Opening active content such as HTML or SVG
+                // there would execute its scripts with the session of the staff user, so only inert media
+                // types are previewed. All other attachments are downloaded instead.
+                const previewMediaType = getPreviewableAttachmentMediaType(blob.type);
+                if (previewMediaType == null) {
+                    previewWindow.close();
+                    dispatch(showWarningSnackbar('Dieser Dateityp kann nicht in der Vorschau angezeigt werden. Der Anhang wird stattdessen heruntergeladen.'));
+                    await handleDownloadAttachment(attachment);
+                    return;
+                }
+
+                const objectUrl = URL.createObjectURL(new Blob([blob], {type: previewMediaType}));
                 previewWindow.location.replace(objectUrl);
 
                 window.setTimeout(() => {
@@ -452,7 +494,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht angezeigt werden.'));
             }
         },
-        [dispatch],
+        [dispatch, handleDownloadAttachment],
     );
 
     const taskViewAttachmentContextValue = useMemo(
@@ -467,7 +509,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     );
 
     const handleTaskViewEvent = async (evt: TaskViewEvent, eventPayload: AuthoredElementValues) => {
-        if (item == null || taskView == null) {
+        if (item == null || taskView == null || deadlineExceededRef.current) {
             return;
         }
 
@@ -482,6 +524,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         if (inFlightSavePromiseRef.current != null) {
             await inFlightSavePromiseRef.current;
         }
+
+        if (deadlineExceededRef.current) return;
 
         dispatch(
             setLoadingMessage({
@@ -530,6 +574,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }, 1);
             })
             .catch((err) => {
+                if (handleDeadlineExceeded(err)) {
+                    return;
+                }
                 if (isApiError(err) && isDerivedRuntimeElementData(err.details)) {
                     dispatch(showErrorSnackbar(err.message));
                     setDerivedErrors(err.details);
@@ -539,7 +586,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             })
             .finally(() => {
                 ignoreAuthoredValuesChangeRef.current = false;
-                if (!shouldNavigateAway) {
+                if (!shouldNavigateAway && !deadlineExceededRef.current) {
                     skipChangeBlockerRef.current = false;
                 }
                 dispatch(clearLoadingMessage());
@@ -564,7 +611,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             return;
         }
 
-        if (ignoreAuthoredValuesChangeRef.current) {
+        if (ignoreAuthoredValuesChangeRef.current || deadlineExceededRef.current) {
             return;
         }
 
@@ -643,7 +690,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             dispatch(clearLoadingMessage());
             isResolvingBlockedNavigationRef.current = false;
 
-            if (shouldProceed && deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current)) {
+            // After a deadline expiry only the expiry notice is rendered, so the confirmation dialog could never resolve it.
+            if (deadlineExceededRef.current || (shouldProceed && deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current))) {
                 blockedNavigation.proceed?.();
                 return;
             }
@@ -692,6 +740,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return <GenericDetailsSkeleton />;
     }
 
+    if (deadlineExceeded || item.task.status === ProcessTaskStatus.DeadlineExceeded) {
+        return <Alert severity="error">Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
+    }
+
     return (
         <Box
             sx={{
@@ -725,7 +777,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                             onEvent={handleInlineEvent}
                             taskViewMode="staff"
                             showErrorSummary
-                            onDeriveOverride={(aev, skipErrorsForElements) => {
+                            onDerive={(aev, derivationOptions) => {
                                 if (item == null || item.instance == null || item.task == null) {
                                     return Promise.resolve({
                                         effectiveValues: {},
@@ -737,7 +789,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                     item.instance.id,
                                     item.task.id,
                                     aev,
-                                    skipErrorsForElements,
+                                    derivationOptions.skipErrorsForElementIds,
                                 );
                             }}
                         />

@@ -61,9 +61,18 @@ class InstanceAssignmentActionNodeV1Test {
     }
 
     @Test
+    void offersTheManualPhaseDeadline() {
+        var config = new InstanceAssignmentActionNodeV1.Config();
+        assertTrue(node.getDeadlines(config).isEmpty());
+        config.mode = "manual";
+        assertEquals(List.of("assignment"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+    }
+
+    @Test
     void automaticModeAssignsEligiblePersonAndExposesOutput() throws Exception {
         var result = assertInstanceOf(ProcessNodeExecutionResultInstanceAssigned.class,
                 node.init(initContext(config("automatic"))));
+        assertNull(result.getNewDeadlineKey());
 
         assertEquals("recipient", result.getAssignedUserId());
         assertEquals("success", result.getViaPort());
@@ -83,6 +92,7 @@ class InstanceAssignmentActionNodeV1Test {
 
         var result = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class,
                 node.init(initContext(config("manual"))));
+        assertEquals("assignment", result.getNewDeadlineKey());
 
         assertEquals("dispatcher", result.getAssignedUserId());
         assertEquals(Map.of("case", "data"), result.getProcessData());

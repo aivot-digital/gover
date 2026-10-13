@@ -31,6 +31,8 @@ import {formatDateTimeWithRelative} from "../../components/process-detail-values
 import {humanizeMillisecondsDuration} from "../../../../utils/duration-utils";
 import {ProcessDefinitionEdgeApiService} from '../../services/process-definition-edge-api-service';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
+import {getProcessTaskStatusDisplay} from '../../utils/process-task-status-label';
+import {type IdentityDataMap} from '../../../identity/models/identity-data';
 import {isProcessInstanceFinished} from '../../enums/process-instance-status';
 import {
     buildProcessFlowGraph,
@@ -213,6 +215,7 @@ function InstanceHistory(props: InstanceHistoryProps) {
                                 key={task.id}
                                 index={index}
                                 task={task}
+                                identities={processInstance.identities}
                                 node={task.node}
                                 nodeDefinition={task.nodeDefinition}
                                 expanded={expandedTaskIds.has(task.id)}
@@ -377,7 +380,7 @@ function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEnt
         let current = nodesById.get(task.processNodeId);
 
         while (current != null) {
-            if (current.provider.ports.length > 1 || current.outgoingEdges.length > 1) {
+            if (current.node.ports.length > 1 || current.outgoingEdges.length > 1) {
                 hasOpenBranch = true;
                 break;
             }
@@ -385,14 +388,14 @@ function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEnt
             if (
                 current.provider.type === ProcessNodeType.FlowControl ||
                 current.provider.type === ProcessNodeType.Termination ||
-                current.provider.ports.length !== 1 ||
+                current.node.ports.length !== 1 ||
                 current.outgoingEdges.length !== 1
             ) {
                 break;
             }
 
             const {edge} = current.outgoingEdges[0];
-            if (edge.viaPort !== current.provider.ports[0].key) {
+            if (edge.viaPort !== current.node.ports[0].key) {
                 break;
             }
 
@@ -414,6 +417,9 @@ function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEnt
 }
 
 function getTaskDeadlineChipProps(task?: ProcessInstanceTaskEntity): Pick<ChipProps, 'color' | 'label'> | null {
+    if (task?.status === ProcessTaskStatus.DeadlineExceeded) {
+        return {color: 'error', label: 'Frist überschritten'};
+    }
     if (task?.deadline == null) {
         return null;
     }
@@ -476,16 +482,21 @@ const activeTaskNotices: Partial<Record<ProcessTaskStatus, string>> = {
 
 interface TimelineItemProps extends TimelineLabelProps {
     task: TaskWithNodeAndEvents;
+    identities: IdentityDataMap;
     expanded: boolean;
     onExpandedChange: (expanded: boolean) => void;
 }
 
-function TimelineItem({index, node, nodeDefinition, task, expanded, onExpandedChange}: TimelineItemProps) {
+function TimelineItem({index, node, nodeDefinition, task, identities, expanded, onExpandedChange}: TimelineItemProps) {
     const id = useId();
     const deadlineChipProps = getTaskDeadlineChipProps(task);
     const hasSummary = Boolean(task.executionSummaryMarkdown?.trim());
+    const status = getProcessTaskStatusDisplay(task, identities);
+    const activeNotice = status.identityLabel
+        ? `Dieses Prozesselement wartet auf eine Rückmeldung der Identität „${status.identityLabel}“.`
+        : activeTaskNotices[task.status];
     const notice = !hasSummary
-        ? activeTaskNotices[task.status] ?? (task.taskEvents.length === 0
+        ? activeNotice ?? (task.taskEvents.length === 0
             ? 'Für dieses Prozesselement liegen keine weiteren Details vor.' : undefined)
         : undefined;
 
@@ -511,7 +522,11 @@ function TimelineItem({index, node, nodeDefinition, task, expanded, onExpandedCh
                     '& .MuiSvgIcon-root, & .MuiAccordionSummary-expandIconWrapper': {flexShrink: 0},
                 }}
             >
-                <ProcessInstanceTaskStatusIcon status={task.status}/>
+                <ProcessInstanceTaskStatusIcon
+                    status={task.status}
+                    statusOverride={task.statusOverride}
+                    assignedCustomerIdentityLabel={status.identityLabel}
+                />
                 <TimelineLabel index={index} node={node} nodeDefinition={nodeDefinition}/>
                 {deadlineChipProps != null && (
                     <Chip {...deadlineChipProps} size="small" sx={{mx: 1, flexShrink: 0}}/>

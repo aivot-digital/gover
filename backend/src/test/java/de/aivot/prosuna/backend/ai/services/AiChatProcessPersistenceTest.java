@@ -69,6 +69,7 @@ class AiChatProcessPersistenceTest {
     @MockitoBean UserService users;
     @MockitoBean ProcessNodeService nodeService;
     @MockitoBean ProcessVersionService versionService;
+    @MockitoBean ProcessVersionDraftGuard draftGuard;
     @MockitoBean ProcessNodeDefinitionService definitions;
     @MockitoBean AiProcessConfigurationService configuration;
     @MockitoBean AiProcessOptionsService options;

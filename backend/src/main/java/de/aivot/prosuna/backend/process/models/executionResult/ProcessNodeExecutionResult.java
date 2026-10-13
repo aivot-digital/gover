@@ -13,6 +13,9 @@ public abstract class ProcessNodeExecutionResult {
     private @Nullable Boolean clearTaskStatusOverride;
     private @Nullable ProcessNodeExecutionResultCommunicationRequest communicationRequest;
 
+    /** Select a declared phase deadline. Null preserves the active deadline; an unconfigured phase clears it. */
+    private @Nullable String newDeadlineKey;
+
     /**
      * Clear the current task's staff assignment when true, including for no-op results.
      * Null and false preserve the assignment. Cannot be combined with a new staff task assignment.
@@ -93,6 +96,16 @@ public abstract class ProcessNodeExecutionResult {
 
     public ProcessNodeExecutionResult setClearCurrentlyAssignedUser(@Nullable Boolean clearCurrentlyAssignedUser) {
         this.clearCurrentlyAssignedUser = clearCurrentlyAssignedUser;
+        return this;
+    }
+
+    @Nullable
+    public String getNewDeadlineKey() {
+        return newDeadlineKey;
+    }
+
+    public ProcessNodeExecutionResult setNewDeadlineKey(@Nullable String newDeadlineKey) {
+        this.newDeadlineKey = newDeadlineKey;
         return this;
     }
 }

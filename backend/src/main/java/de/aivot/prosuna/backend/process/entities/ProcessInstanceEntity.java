@@ -117,6 +117,14 @@ public class ProcessInstanceEntity {
     @Column(columnDefinition = "timestamp with time zone")
     private Instant keepUntil;
 
+    /**
+     * Soft processing deadline, fixed on creation from the initial process version. Exceeding it has no effect
+     * on the process flow and is independent of task deadlines.
+     */
+    @Nullable
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant deadline;
+
     @Nullable
     private Integer createdForTestClaimId;
 
@@ -178,12 +186,12 @@ public class ProcessInstanceEntity {
                 Objects.equals(started, that.started) && Objects.equals(updated, that.updated) && Objects.equals(finished, that.finished) &&
                 Objects.equals(runtime, that.runtime) && Objects.equals(initialPayload, that.initialPayload) &&
                 Objects.equals(initialNodeId, that.initialNodeId) && Objects.equals(inboundReference, that.inboundReference) && Objects.equals(keepUntil, that.keepUntil) &&
-                Objects.equals(createdForTestClaimId, that.createdForTestClaimId);
+                Objects.equals(deadline, that.deadline) && Objects.equals(createdForTestClaimId, that.createdForTestClaimId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, caseNumber, accessKey, processId, initialProcessVersion, status, statusOverride, assignedUserId, assignedFileNumbers, identities, started, updated, finished, runtime, initialPayload, initialNodeId, inboundReference, keepUntil, createdForTestClaimId);
+        return Objects.hash(id, caseNumber, accessKey, processId, initialProcessVersion, status, statusOverride, assignedUserId, assignedFileNumbers, identities, started, updated, finished, runtime, initialPayload, initialNodeId, inboundReference, keepUntil, deadline, createdForTestClaimId);
     }
 
 
@@ -368,6 +376,16 @@ public class ProcessInstanceEntity {
 
     public ProcessInstanceEntity setKeepUntil(@Nullable Instant keepUntil) {
         this.keepUntil = keepUntil;
+        return this;
+    }
+
+    @Nullable
+    public Instant getDeadline() {
+        return deadline;
+    }
+
+    public ProcessInstanceEntity setDeadline(@Nullable Instant deadline) {
+        this.deadline = deadline;
         return this;
     }
 

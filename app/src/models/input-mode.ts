@@ -1,5 +1,5 @@
 import {type NoCodeOperand} from './functions/no-code-expression';
-import {type ProcessNodeEntity} from '../modules/process/entities/process-node-entity';
+import {type ProcessNodeWrite} from '../modules/process/entities/process-node-entity';
 
 // These string values are part of the backend JSON contract, not display labels.
 export enum InputMode {
@@ -35,7 +35,7 @@ export interface InputVariableReference {
 export interface InputVariableSuggestion extends InputVariableReference {
     label: string;
     description?: string | null;
-    origin?: ProcessNodeEntity | null;
+    origin?: ProcessNodeWrite | null;
 }
 
 export type AuthoredInputValue<T> =

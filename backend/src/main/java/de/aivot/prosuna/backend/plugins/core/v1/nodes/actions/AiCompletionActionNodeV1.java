@@ -156,7 +156,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull AiCompletionActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         SUCCESS_PORT,

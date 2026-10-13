@@ -14,17 +14,18 @@ class ProcessTaskStatusConverterTest {
 
     @Test
     void convertsStatusesUsingStableDatabaseValues() {
-        var expectedValues = Map.of(
-                ProcessTaskStatus.Running, 0,
-                ProcessTaskStatus.Paused, 1,
-                ProcessTaskStatus.AwaitingPayment, 6,
-                ProcessTaskStatus.AwaitingCustomer, 7,
-                ProcessTaskStatus.Completed, 2,
-                ProcessTaskStatus.Aborted, 3,
-                ProcessTaskStatus.Failed, 4,
-                ProcessTaskStatus.Restarted, 5,
-                ProcessTaskStatus.InProgress, 8,
-                ProcessTaskStatus.AwaitingStaff, 9
+        var expectedValues = Map.ofEntries(
+                Map.entry(ProcessTaskStatus.Running, 0),
+                Map.entry(ProcessTaskStatus.Paused, 1),
+                Map.entry(ProcessTaskStatus.AwaitingPayment, 6),
+                Map.entry(ProcessTaskStatus.AwaitingCustomer, 7),
+                Map.entry(ProcessTaskStatus.Completed, 2),
+                Map.entry(ProcessTaskStatus.Aborted, 3),
+                Map.entry(ProcessTaskStatus.Failed, 4),
+                Map.entry(ProcessTaskStatus.Restarted, 5),
+                Map.entry(ProcessTaskStatus.InProgress, 8),
+                Map.entry(ProcessTaskStatus.AwaitingStaff, 9),
+                Map.entry(ProcessTaskStatus.DeadlineExceeded, 10)
         );
 
         assertEquals(ProcessTaskStatus.values().length, expectedValues.size());

@@ -33,6 +33,16 @@ describe('ProcessNodeProviderDetails', () => {
         mocks.useHasSystemPermission.mockReturnValue(false);
     });
 
+    it('shows configuration-dependent guidance without a node and concrete ports for a saved node', () => {
+        const {rerender} = render(<ProcessNodeProviderDetailsContent provider={createProvider()}/>);
+        expect(screen.getByText('Die Ausgänge hängen von der Konfiguration des Prozesselements ab.')).toBeInTheDocument();
+        rerender(<ProcessNodeProviderDetailsContent provider={createProvider()} ports={[
+            {key: 'phase_overdue', deadlineKey: 'phase', label: 'Fristüberschreitung', description: 'Fristablauf'},
+        ]}/>);
+        expect(screen.getByText('Fristüberschreitung')).toBeInTheDocument();
+        expect(screen.queryByText('Die Ausgänge hängen von der Konfiguration des Prozesselements ab.')).not.toBeInTheDocument();
+    });
+
     it('renders the detailed description, type and documentation link', () => {
         render(<>
             <ProcessNodeProviderDetailsHeader provider={createProvider()}/>
@@ -213,7 +223,6 @@ function createProvider(overrides: Partial<ProcessNodeProvider> = {}): ProcessNo
         description: 'Ausführlicher **Markdowninhalt** für Details.',
         documentationUrl: 'https://docs.example.com/process-nodes/test',
         parentPluginKey: 'de.aivot.test',
-        ports: [],
         outputs: [],
         ...overrides,
     };
