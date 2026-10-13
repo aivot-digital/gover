@@ -99,9 +99,11 @@ export function ProcessIdentityIdInputFieldView(props: BaseViewProps<ProcessIden
             disabled={isDisabled}
             readOnly={isBusy}
             options={options}
-            emptyStatePlaceholder={incomingMetadata == null && processNodeEditorContext != null
-                ? 'Prozessidentitäten werden geladen'
-                : 'Keine Prozessidentitäten verfügbar'}
+            emptyStatePlaceholder={processNodeEditorContext?.incomingMetadataLoadFailed
+                ? 'Prozessidentitäten konnten nicht geladen werden'
+                : incomingMetadata == null && processNodeEditorContext != null
+                    ? 'Prozessidentitäten werden geladen'
+                    : 'Keine Prozessidentitäten verfügbar'}
         />
     );
 }

@@ -62,12 +62,18 @@ public record ProcessNodeDefinitionMetadata(
 
     public static ProcessNodeDefinitionMetadata reuse(ProcessNodeDefinitionMetadata previous) {
         return new ProcessNodeDefinitionMetadata(
-                new LinkedList<>(previous.reusableUiDefinitions()),
-                new LinkedList<>(previous.forwardedAttachmentSets()),
-                new LinkedList<>(previous.forwardedProcessDataKeys()),
-                new LinkedList<>(previous.forwardedIdentities()),
-                new LinkedList<>(previous.inputVariables())
+                copyList(previous.reusableUiDefinitions()),
+                copyList(previous.forwardedAttachmentSets()),
+                copyList(previous.forwardedProcessDataKeys()),
+                copyList(previous.forwardedIdentities()),
+                copyList(previous.inputVariables())
         );
+    }
+
+    // Plugin providers may leave lists unset or immutable. Copies are always complete and mutable.
+    @Nonnull
+    private static <T> LinkedList<T> copyList(@Nullable List<T> source) {
+        return source == null ? new LinkedList<>() : new LinkedList<>(source);
     }
 
 
