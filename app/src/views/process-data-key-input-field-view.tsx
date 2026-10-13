@@ -194,8 +194,10 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
         }
     }, [hasProcessDataKeyMetadata, hasScopeProcessDataKey, onChange, scopeProcessDataKey, suggestions, value]);
 
+    // Scoped fields only accept the child keys suggested for their scope. Typing is blocked, but choosing from the
+    // picker and clearing the field must stay possible.
     const readOnly = hasScopeProcessDataKey && hasProcessDataKeyMetadata;
-    const interactionDisabled = Boolean(disabled || busy || readOnly);
+    const interactionDisabled = Boolean(disabled || busy);
     const endActions = interactionDisabled ? undefined : [
         ...(isStringNullOrEmpty(value) ? [] : [{
             icon: <Close/>,
@@ -236,6 +238,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
             value={value}
             displayPrefix={effectivePrefix}
             disableWildCards={disableWildCards}
+            allowCustomPath={!readOnly}
             onClose={() => setPickerOpen(false)}
             onApply={(path) => {
                 onChange(path);
