@@ -80,6 +80,7 @@ public class HtmlTemplateInputElementResolver {
             return value.getAssetKey();
         }
     }
+
     /**
      * Renders the full asset template and its slot templates. The result is final HTML and must not be interpolated again.
      */

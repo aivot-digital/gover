@@ -40,8 +40,9 @@ import {
     renderProcessLabel,
 } from '../../components/process-detail-values';
 
-import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../enums/process-task-status';
+import {ProcessTaskStatus} from '../../enums/process-task-status';
 import {ProcessInstanceDeadlineValue} from '../../components/process-instance-deadline-value';
+import {getProcessTaskStatusDisplay} from '../../utils/process-task-status-label';
 import {type IdentityDataMap} from '../../../identity/models/identity-data';
 import {useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
@@ -166,14 +167,15 @@ export function ProcessTaskViewPageIndex(): ReactNode {
 
     const taskStatusItems = useMemo<StatusTablePropsItem[]>(() => {
         if (item == null) return [];
+        const status = getProcessTaskStatusDisplay(item.task, item.instance?.identities);
         const entries: StatusTablePropsItem[] = [
             {
                 label: 'Aufgabenstatus',
                 icon: <Flag />,
                 children: (
                     <ProcessStatusValue
-                        systemLabel={ProcessTaskStatusLabels[item.task.status]}
-                        statusOverride={item.task.statusOverride}
+                        systemLabel={status.systemLabel}
+                        statusOverride={status.label !== status.systemLabel ? status.label : null}
                     />
                 ),
             },
