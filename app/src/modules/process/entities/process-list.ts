@@ -23,6 +23,7 @@ export interface ProcessTaskListEntry extends ProcessListEntry {
     taskName: string;
     taskType: string | null;
     description: string | null;
+    assignedCustomerIdentityLabel: string | null;
     status: ProcessTaskStatus;
     deadline: string | null;
 }

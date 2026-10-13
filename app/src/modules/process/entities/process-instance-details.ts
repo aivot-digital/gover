@@ -14,6 +14,7 @@ export interface ProcessInstanceDetails {
         status: ProcessTaskStatus;
         statusOverride?: string | null;
         assignedUserId: string | null;
+        assignedCustomerIdentityId: string | null;
         deadline?: string | null;
     }[];
 }

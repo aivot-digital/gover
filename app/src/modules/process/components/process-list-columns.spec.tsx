@@ -30,6 +30,7 @@ const task: ProcessTaskListEntry = {
     taskName: 'Angaben zur Veranstaltung prüfen',
     taskType: 'Sachbearbeitung',
     description: 'Bitte prüfen Sie die eingereichten Unterlagen.',
+    assignedCustomerIdentityLabel: null,
     deadline: '2026-09-24T12:30:00Z',
 };
 
@@ -101,6 +102,56 @@ describe('Process list columns', () => {
         renderCell({...task, taskName: ' Sachbearbeitung '}, 'taskName');
 
         expect(screen.getByRole('link', {name: 'Sachbearbeitung'})).toHaveAttribute('title', 'Sachbearbeitung');
+    });
+
+    describe('awaiting customer identity', () => {
+        const awaitingTask: ProcessTaskListEntry = {
+            ...task,
+            status: ProcessTaskStatus.AwaitingCustomer,
+            assignedCustomerIdentityLabel: ' Antragstellende ',
+        };
+
+        it.each([null, '', '   ', 'Wartet auf Antragstellende'])('shows the identity for status override %s', async statusOverride => {
+            renderCell({...awaitingTask, statusOverride}, 'status');
+
+            await hover(screen.getByText('Wartet auf Antragstellende'));
+
+            expect(screen.getByRole('tooltip')).toHaveTextContent(/^Wartet auf Antragstellende$/);
+        });
+
+        it.each([null, '', '   '])('uses the generic status when the identity label is %s', assignedCustomerIdentityLabel => {
+            renderCell({...awaitingTask, assignedCustomerIdentityLabel}, 'status');
+
+            expect(screen.getByText('Wartet auf Nutzer:in')).toBeInTheDocument();
+        });
+
+        it('shows a custom status and explains the identity in the system status tooltip', async () => {
+            renderCell({...awaitingTask, statusOverride: ' Unterlagen nachreichen '}, 'status');
+
+            await hover(screen.getByText('Unterlagen nachreichen'));
+
+            expect(screen.getByRole('tooltip')).toHaveTextContent(
+                'Unterlagen nachreichen (Systemstatus: Wartet auf Antragstellende)',
+            );
+        });
+
+        it('exposes the full status for a long identity label', async () => {
+            const assignedCustomerIdentityLabel = 'Bevollmächtigte für die Durchführung der Veranstaltung';
+            renderCell({...awaitingTask, assignedCustomerIdentityLabel}, 'status');
+
+            await hover(screen.getByText(`Wartet auf ${assignedCustomerIdentityLabel}`));
+
+            expect(screen.getByRole('tooltip')).toHaveTextContent(`Wartet auf ${assignedCustomerIdentityLabel}`);
+        });
+
+        it('does not replace another task status with the assigned identity', async () => {
+            renderCell({...awaitingTask, status: ProcessTaskStatus.Completed}, 'status');
+
+            await hover(screen.getByText('Abgeschlossen'));
+
+            expect(screen.queryByText(/Wartet auf/)).not.toBeInTheDocument();
+            expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        });
     });
 
     describe.each([

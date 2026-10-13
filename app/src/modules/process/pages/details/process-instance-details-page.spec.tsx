@@ -72,6 +72,7 @@ describe('Instance header active task action', () => {
                 name: 'Prüfung',
                 status: ProcessTaskStatus.Running,
                 assignedUserId: null,
+                assignedCustomerIdentityId: null,
             },
         ];
         renderPage();
@@ -85,12 +86,14 @@ describe('Instance header active task action', () => {
                 name: 'Prüfung',
                 status: ProcessTaskStatus.Running,
                 assignedUserId: null,
+                assignedCustomerIdentityId: null,
             },
             {
                 id: 9,
                 name: 'Freigabe',
                 status: ProcessTaskStatus.Paused,
                 assignedUserId: null,
+                assignedCustomerIdentityId: null,
             },
         ];
         const user = userEvent.setup();

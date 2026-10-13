@@ -142,6 +142,14 @@ async function renderHistory(
 }
 
 describe('Process instance history preview', () => {
+    const identities: ProcessInstanceDetails['instance']['identities'] = {
+        applicant: {
+            identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+            emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
+            uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
+        },
+    };
+
     beforeEach(() => {
         mocks.permissions = new Set([Permission.PROCESS_INSTANCE_READ, Permission.PROCESS_DEFINITION_READ]);
         vi.spyOn(ProcessDefinitionApiService.prototype, 'retrieve').mockResolvedValue(ProcessDefinitionApiService.initialize());
@@ -152,6 +160,38 @@ describe('Process instance history preview', () => {
             provider(ProcessNodeType.Termination, []),
             provider(ProcessNodeType.Action, ['next', 'rejected'], 'approval'),
         ]);
+    });
+
+    it.each([
+        {identityData: identities, identityLabel: 'Antragstellende', statusOverride: null},
+        {identityData: {}, identityLabel: 'applicant', statusOverride: null},
+        {identityData: identities, identityLabel: 'Antragstellende', statusOverride: 'Unterlagen angefordert'},
+    ])('names $identityLabel in the waiting explanation and status tooltip ($statusOverride)', async ({identityData, identityLabel, statusOverride}) => {
+        const user = userEvent.setup();
+        const waitingTask = {
+            ...task(1, 1, ProcessTaskStatus.AwaitingCustomer), assignedCustomerIdentityId: 'applicant', statusOverride,
+        };
+        await renderHistory([node(1, 'Prüfung')], [], [waitingTask], {instance: {identities: identityData}});
+        const systemLabel = `Wartet auf ${identityLabel}`;
+        const tooltip = statusOverride ? `${statusOverride} (Systemstatus: ${systemLabel})` : systemLabel;
+        await user.hover(screen.getByLabelText(tooltip));
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip);
+        await user.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
+        const details = within(screen.getByRole('region', {name: /^1\. Prüfung:/}));
+        expect(details.getByRole('alert')).toHaveTextContent(
+            `Dieses Prozesselement wartet auf eine Rückmeldung der Identität „${identityLabel}“.`,
+        );
+    });
+
+    it('preserves authored execution summaries instead of adding a waiting explanation', async () => {
+        const waitingTask = {
+            ...task(1, 1, ProcessTaskStatus.AwaitingCustomer), assignedCustomerIdentityId: 'applicant',
+            executionSummaryMarkdown: 'Bitte reichen Sie die Unterlagen nach.',
+        };
+        await renderHistory([node(1, 'Prüfung')], [], [waitingTask], {instance: {identities}});
+        await userEvent.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
+        expect(screen.getByText('Bitte reichen Sie die Unterlagen nach.')).toBeVisible();
+        expect(screen.queryByText(/Dieses Prozesselement wartet/)).not.toBeInTheDocument();
     });
 
     describe('restarted tasks', () => {
