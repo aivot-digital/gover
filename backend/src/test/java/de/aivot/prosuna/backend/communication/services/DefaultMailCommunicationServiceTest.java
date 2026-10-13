@@ -19,7 +19,6 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -60,16 +59,12 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessageCallToAction("Show status", "https://example.test/status")
         );
 
-        service.sendMessage(" customer@example.test ", new CommunicationMessage(
-                "Status update",
-                "Hello customer",
-                "Hello **customer**",
-                callToActions,
-                Instant.now(),
-                List.of(),
-                null,
-                null
-        ));
+        service.sendMessage(" customer@example.test ", new CommunicationMessage.Builder()
+                .subject("Status update")
+                .body("Hello customer")
+                .htmlBody("Hello **customer**")
+                .callToActions(callToActions)
+                .build());
 
         verify(mailService).sendMail(
                 same(defaultTheme),
@@ -148,9 +143,13 @@ class DefaultMailCommunicationServiceTest {
 
         service.sendMessage(
                 "customer@example.test",
-                message()
-                        .withSendingContext(null, department)
-                        .withSignatureDepartment(signatureDepartment),
+                new CommunicationMessage.Builder()
+                        .subject("Subject")
+                        .body("Body")
+                        .htmlBody("Body")
+                        .sendingDepartment(department)
+                        .signatureDepartment(signatureDepartment)
+                        .build(),
                 MailCommunicationSendOptions.customSender(
                         "Configured Sender",
                         "configured@example.test",
@@ -187,7 +186,12 @@ class DefaultMailCommunicationServiceTest {
 
         service.sendMessage(
                 "customer@example.test",
-                message().withSendingContext(user, null)
+                new CommunicationMessage.Builder()
+                        .subject("Subject")
+                        .body("Body")
+                        .htmlBody("Body")
+                        .sendingUser(user)
+                        .build()
         );
 
         verify(mailService).sendMail(
@@ -212,13 +216,12 @@ class DefaultMailCommunicationServiceTest {
     void convertsCommunicationAttachmentsForTheCentralMailService() throws Exception {
         configureSending();
         var bytes = "attachment".getBytes(StandardCharsets.UTF_8);
-        var message = CommunicationMessage.of(
-                "Subject",
-                "Body",
-                "Body",
-                List.of(),
-                List.of(new ByteArrayCommunicationMessageAttachment("note.txt", "text/plain", bytes))
-        );
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .attachments(List.of(new ByteArrayCommunicationMessageAttachment("note.txt", "text/plain", bytes)))
+                .build();
 
         service.sendMessage("customer@example.test", message);
 
@@ -283,27 +286,29 @@ class DefaultMailCommunicationServiceTest {
         ));
         assertThrows(CommunicationException.class, () -> service.sendMessage(
                 "customer@example.test",
-                CommunicationMessage.of(" ", "Body", "Body")
+                new CommunicationMessage.Builder()
+                        .subject(" ")
+                        .body("Body")
+                        .htmlBody("Body")
+                        .build()
         ));
         assertThrows(CommunicationException.class, () -> service.sendMessage(
                 "customer@example.test",
-                CommunicationMessage.of(
-                        "Subject",
-                        "Body",
-                        "Body",
-                        List.of(new CommunicationMessageCallToAction(" ", "https://example.test")),
-                        List.of()
-                )
+                new CommunicationMessage.Builder()
+                        .subject("Subject")
+                        .body("Body")
+                        .htmlBody("Body")
+                        .callToActions(List.of(new CommunicationMessageCallToAction(" ", "https://example.test")))
+                        .build()
         ));
         assertThrows(CommunicationException.class, () -> service.sendMessage(
                 "customer@example.test",
-                CommunicationMessage.of(
-                        "Subject",
-                        "Body",
-                        "Body",
-                        List.of(new CommunicationMessageCallToAction("Open", null)),
-                        List.of()
-                )
+                new CommunicationMessage.Builder()
+                        .subject("Subject")
+                        .body("Body")
+                        .htmlBody("Body")
+                        .callToActions(List.of(new CommunicationMessageCallToAction("Open", null)))
+                        .build()
         ));
 
         verify(mailService, never()).isSendingConfigured();
@@ -330,6 +335,10 @@ class DefaultMailCommunicationServiceTest {
     }
 
     private static CommunicationMessage message() {
-        return CommunicationMessage.of("Subject", "Body", "Body");
+        return new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .build();
     }
 }

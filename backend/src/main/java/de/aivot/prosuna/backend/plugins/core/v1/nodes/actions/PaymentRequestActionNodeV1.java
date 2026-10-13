@@ -772,16 +772,16 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .setProcessData(processExecutionData.getProcessData())
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                         resolvedConfiguration.recipientIdentityId(),
-                        CommunicationMessage.of(
-                                subject,
-                                content,
-                                content,
-                                List.of(new CommunicationMessageCallToAction(
+                        new CommunicationMessage.Builder()
+                                .subject(subject)
+                                .body(content)
+                                .htmlBody(content)
+                                .callToActions(List.of(new CommunicationMessageCallToAction(
                                         "Zahlung durchführen",
                                         paymentUrl
-                                )),
-                                List.of()
-                        ).withSignatureDepartment(resolvedConfiguration.signatureDepartment()),
+                                )))
+                                .signatureDepartment(resolvedConfiguration.signatureDepartment())
+                                .build(),
                         null
                 ));
     }

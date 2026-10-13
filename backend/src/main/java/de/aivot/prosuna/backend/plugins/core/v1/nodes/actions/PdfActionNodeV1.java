@@ -301,27 +301,16 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
             );
         }
 
+        // Resolve the whole template before splitting so shared blocks remain available across sections.
+        // Never interpolate the rendered sections again: they contain untrusted process and slot values.
         var pdfHtmlSections = splitHtmlSections(contentHtml);
-        var interpolatedContentHtml = templateRenderService
-                .interpolate(context.getCurrentProcessExecutionData(), pdfHtmlSections.contentHtml);
-
-        if (StringUtils.isNullOrEmpty(interpolatedContentHtml)) {
-            throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der HTML-Inhalt für das PDF konnte nicht interpoliert werden."
-            );
-        }
-
-        var interpolatedHeaderHtml = templateRenderService
-                .interpolate(context.getCurrentProcessExecutionData(), pdfHtmlSections.headerHtml);
-        var interpolatedFooterHtml = templateRenderService
-                .interpolate(context.getCurrentProcessExecutionData(), pdfHtmlSections.footerHtml);
 
         byte[] pdfBytes;
         try {
             pdfBytes = pdfService.generatePdfFromHtml(
-                    interpolatedContentHtml,
-                    interpolatedHeaderHtml,
-                    interpolatedFooterHtml
+                    pdfHtmlSections.contentHtml,
+                    pdfHtmlSections.headerHtml,
+                    pdfHtmlSections.footerHtml
             );
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -412,13 +401,10 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 );
             }
 
-            var resolvedTemplate = htmlTemplateInputElementResolver.resolve(
+            return htmlTemplateInputElementResolver.resolve(
                     configuration.contentHtmlTemplate,
                     context.getCurrentProcessExecutionData()
             );
-            // Render the full asset template before splitting the individual HTML documents so shared
-            // blocks defined outside a specific <html> section remain available to all use sites.
-            return templateRenderService.interpolate(context.getCurrentProcessExecutionData(), resolvedTemplate);
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
