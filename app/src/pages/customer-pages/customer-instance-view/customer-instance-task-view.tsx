@@ -361,7 +361,7 @@ export function CustomerInstanceTaskView() {
                 authoredElementValues={authoredValues}
                 onAuthoredElementValuesChange={handleAuthoredValuesChange}
                 computedErrors={derivedErrors?.elementStates}
-                onDeriveOverride={handleDerive}
+                onDerive={(values, derivationOptions) => handleDerive(values, derivationOptions.skipErrorsForElementIds)}
                 onEvent={taskIsActive ? handleInlineEvent : undefined}
                 taskViewMode="customer"
                 showErrorSummary

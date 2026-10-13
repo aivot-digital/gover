@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
 /** Maps authored provider and binding values through the normal element derivation pipeline. */
@@ -82,6 +83,19 @@ public class CommunicationProviderConfigurationService {
     public DerivedRuntimeElementData deriveCustomerData(@Nonnull BaseElement layout,
                                                         @Nonnull AuthoredElementValues values,
                                                         @Nonnull ElementDerivationOptions options) {
+        return elementDerivationService.derive(new ElementDerivationRequest(layout, values, options));
+    }
+
+    /**
+     * Derives values entered into a backend-defined layout of a communication provider definition.
+     */
+    @Nonnull
+    public DerivedRuntimeElementData deriveLayout(@Nullable BaseElement layout,
+                                                  @Nonnull AuthoredElementValues values,
+                                                  @Nonnull ElementDerivationOptions options) {
+        if (layout == null) {
+            return DerivedRuntimeElementData.empty();
+        }
         return elementDerivationService.derive(new ElementDerivationRequest(layout, values, options));
     }
 

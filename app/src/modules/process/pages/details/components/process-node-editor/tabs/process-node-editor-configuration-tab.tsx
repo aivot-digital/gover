@@ -91,13 +91,8 @@ export function ProcessNodeEditorConfigurationTab() {
                 disabled={!isEditable}
                 inputModesEnabled
                 inputModeVariables={incomingMetadata?.inputVariables ?? []}
-                onDeriveOverride={(authoredElementValues, skipErrorsForElementIds) => new ProcessNodeApiService()
-                    .deriveConfiguration(localNode.id, authoredElementValues, {
-                        skipErrorsForElementIds,
-                        skipVisibilitiesForElementIds: [],
-                        skipOverridesForElementIds: [],
-                        skipValuesForElementIds: [],
-                    })}
+                onDerive={(authoredElementValues, derivationOptions) => new ProcessNodeApiService()
+                    .deriveConfiguration(localNode.id, authoredElementValues, derivationOptions)}
             />
         </Box>
     );

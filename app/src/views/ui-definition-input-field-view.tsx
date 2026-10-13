@@ -13,6 +13,9 @@ import {
     useProcessNodeEditorContext,
 } from '../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
 import {useNavigate} from 'react-router-dom';
+import {ProcessNodeApiService} from '../modules/process/services/process-node-api-service';
+import {useHasProcessPermission} from '../modules/permissions/hooks/use-permissions';
+import {Permission} from '../data/permissions/permission';
 
 export function UiDefinitionInputFieldView(
     props: BaseViewProps<UiDefinitionInputFieldElement, UiDefinitionInputFieldElementItem>
@@ -38,7 +41,9 @@ export function UiDefinitionInputFieldView(
 
     const {
         node,
+        isEditable,
     } = useProcessNodeEditorContext();
+    const canUpdateProcess = useHasProcessPermission(node.processId, Permission.PROCESS_DEFINITION_UPDATE);
 
     const openOverride = useCallback(() => {
         navigate(`/form-triggers/${node.id}`);
@@ -57,6 +62,17 @@ export function UiDefinitionInputFieldView(
             onChange={setValue}
             displayContext={element.displayContext ?? ElementDisplayContext.CustomerFacing}
             openOverride={element.openExternalEditor ? openOverride : undefined}
+            onDerive={(uiDefinition, authoredElementValues, derivationOptions, abort) => new ProcessNodeApiService()
+                .deriveUiDefinition(
+                    node.id,
+                    element.id,
+                    // The backend only derives an unsaved UI definition for users who may update the node.
+                    // Everyone else previews the stored UI definition.
+                    isEditable && canUpdateProcess ? uiDefinition : null,
+                    authoredElementValues,
+                    derivationOptions,
+                    abort,
+                )}
         />
     );
 }

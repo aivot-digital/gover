@@ -66,7 +66,12 @@ vi.mock('../../../modules/elements/components/element-derivation-context', () =>
                 </button>
                 <button
                     type="button"
-                    onClick={() => void props.onDeriveOverride({field: 'derived'}, [])}
+                    onClick={() => void props.onDerive({field: 'derived'}, {
+                        skipErrorsForElementIds: [],
+                        skipVisibilitiesForElementIds: [],
+                        skipOverridesForElementIds: [],
+                        skipValuesForElementIds: [],
+                    })}
                 >
                     Ableiten
                 </button>

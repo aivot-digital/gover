@@ -335,6 +335,14 @@ export function CommunicationProviderDetailsPageIndex() {
                     disabled={isBusy || !isEditable}
                     onDerivationStarted={() => setDerivedConfigurationData(null)}
                     onDerivationFinished={setDerivedConfigurationData}
+                    onDerive={(authoredElementValues, derivationOptions, abort) => new CommunicationProvidersApiService()
+                        .deriveProviderConfiguration(
+                            provider.communicationProviderDefinitionKey,
+                            provider.communicationProviderDefinitionVersion,
+                            authoredElementValues,
+                            derivationOptions,
+                            abort,
+                        )}
                     computedErrors={clientSideValidationErrors}
                     suppressErrors={hasNotChanged}
                 />
