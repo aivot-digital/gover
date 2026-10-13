@@ -1207,6 +1207,7 @@ const EmptyProcess: ProcessExport = {
         notes: null,
         retentionTimeValue: null,
         retentionTimeUnit: null,
+        instanceDeadlineDays: null,
         themeId: null,
         legalSupportDepartmentId: null,
         technicalSupportDepartmentId: null,

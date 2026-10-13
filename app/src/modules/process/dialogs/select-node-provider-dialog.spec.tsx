@@ -200,7 +200,6 @@ function createProvider(overrides: Partial<ProcessNodeProvider> = {}): ProcessNo
         description: 'Ausführlicher **Markdowninhalt** für Details.',
         documentationUrl: null,
         parentPluginKey: 'de.aivot.test',
-        ports: [],
         outputs: [],
         ...overrides,
     };

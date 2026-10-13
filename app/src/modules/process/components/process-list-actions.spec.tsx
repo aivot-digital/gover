@@ -28,6 +28,7 @@ const instance: ProcessInstanceListEntry = {
     status: ProcessInstanceStatus.Failed,
     statusOverride: null,
     started: '',
+    deadline: null,
     finished: null,
     test: false,
 };

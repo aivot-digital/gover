@@ -21,6 +21,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -143,6 +144,12 @@ public class CustomerTaskIdentityService {
                 List.of(),
                 processNode.getId()
         );
+    }
+
+    /** Validates a customer-supplied return URL; only pages of this Prosuna installation are accepted. */
+    @Nonnull
+    public URI resolveReturnOrigin(@Nonnull String origin) throws ResponseException {
+        return identityService.resolveOrigin(origin);
     }
 
     @Nonnull

@@ -95,8 +95,8 @@ export class ProcessFlowLayoutError extends Error {
     }
 }
 
-export function getFlowNodeWidth(provider: ProcessNodeProvider): number {
-    return MIN_NODE_WIDTH + (Math.max(provider.ports.length - INCLUDED_PORTS_IN_MIN_WIDTH, 0) * ADDITIONAL_PORT_WIDTH);
+export function getFlowNodeWidth(node: ProcessFlowGraphNode): number {
+    return MIN_NODE_WIDTH + (Math.max(node.displayPorts.length - INCLUDED_PORTS_IN_MIN_WIDTH, 0) * ADDITIONAL_PORT_WIDTH);
 }
 
 export function createNodeMeasurementMap(flowNodes: FlowNode[]): NodeMeasurementMap {
@@ -120,7 +120,6 @@ export async function layoutElements(
 }> {
     validateProcessFlowInput(nodes, edges, providers);
     const graph = buildProcessFlowGraph(nodes, edges, providers);
-    validateProcessFlowGraph(graph);
     const layoutMetaByNodeId = createLayoutMeta(graph, nodeMeasurements);
     const elkGraph = createElkGraph(graph, layoutMetaByNodeId);
     const elk = await getElk();
@@ -183,27 +182,6 @@ function validateProcessFlowInput(
             );
             return;
         }
-
-        if (sourceNode == null) {
-            return;
-        }
-
-        const sourceProvider = providerByKey.get(getProcessNodeProviderKey(
-            sourceNode.processNodeDefinitionKey,
-            sourceNode.processNodeDefinitionVersion,
-        ));
-        if (sourceProvider == null) {
-            return;
-        }
-
-        const sourcePort = sourceProvider.ports.find((port) => port.key === edge.viaPort);
-        if (sourcePort != null) {
-            return;
-        }
-
-        validationMessages.push(
-            `Verbindung ${edge.id}: ${formatProcessNodeName(sourceNode)} -> ${formatProcessNodeReference(targetNode, edge.toNodeId)}: Der Ausgang "${edge.viaPort}" existiert nicht mehr. Verfügbare Ausgänge: ${formatProviderPorts(sourceProvider)}.`,
-        );
     });
 
     if (validationMessages.length === 0) {
@@ -237,62 +215,12 @@ function appendDuplicateIdValidationMessages(
     });
 }
 
-function validateProcessFlowGraph(graph: ProcessFlowGraph): void {
-    const graphNodeById = new Map(graph.nodes.map((graphNode) => [graphNode.node.id, graphNode]));
-    const edgesWithMissingSourcePort = graph.edges.filter((graphEdge) => graphEdge.port == null);
-
-    if (edgesWithMissingSourcePort.length === 0) {
-        return;
-    }
-
-    throw new ProcessFlowLayoutError(
-        edgesWithMissingSourcePort.length === 1
-            ? 'Eine Verbindung verweist auf einen Ausgang, den das Quell-Prozesselement nicht mehr anbietet.'
-            : `${edgesWithMissingSourcePort.length} Verbindungen verweisen auf Ausgänge, die ihre Quell-Prozesselemente nicht mehr anbieten.`,
-        edgesWithMissingSourcePort.map((graphEdge) => {
-            const sourceNode = graphNodeById.get(graphEdge.edge.fromNodeId);
-            const targetNode = graphNodeById.get(graphEdge.edge.toNodeId);
-
-            return [
-                `Verbindung ${graphEdge.edge.id}`,
-                `${formatGraphNodeName(sourceNode, graphEdge.edge.fromNodeId)} -> ${formatGraphNodeName(targetNode, graphEdge.edge.toNodeId)}`,
-                `Ausgang "${graphEdge.edge.viaPort}"`,
-                `verfügbare Ausgänge: ${formatAvailablePorts(sourceNode)}`,
-            ].join(': ');
-        }),
-    );
-}
-
 function formatProcessNodeReference(node: ProcessNodeEntity | undefined, fallbackNodeId: number): string {
     return node == null ? `Prozesselement ${fallbackNodeId}` : formatProcessNodeName(node);
 }
 
 function formatProcessNodeName(node: ProcessNodeEntity): string {
     return node.name != null && node.name.trim().length > 0 ? node.name : `Prozesselement ${node.id}`;
-}
-
-function formatGraphNodeName(graphNode: ProcessFlowGraphNode | undefined, fallbackNodeId: number): string {
-    if (graphNode == null) {
-        return `Prozesselement ${fallbackNodeId}`;
-    }
-
-    return graphNode.node.name ?? graphNode.provider.name ?? `Prozesselement ${fallbackNodeId}`;
-}
-
-function formatAvailablePorts(graphNode: ProcessFlowGraphNode | undefined): string {
-    if (graphNode == null) {
-        return 'unbekannt';
-    }
-
-    return formatProviderPorts(graphNode.provider);
-}
-
-function formatProviderPorts(provider: ProcessNodeProvider): string {
-    if (provider.ports.length === 0) {
-        return 'keine';
-    }
-
-    return provider.ports.map((port) => `"${port.label}" (${port.key})`).join(', ');
 }
 
 function createLayoutMeta(
@@ -308,7 +236,7 @@ function createLayoutMeta(
             graphNode.node.id,
             {
                 graphNode,
-                width: measuredWidth != null && measuredWidth > 0 ? measuredWidth : getFlowNodeWidth(graphNode.provider),
+                width: measuredWidth != null && measuredWidth > 0 ? measuredWidth : getFlowNodeWidth(graphNode),
                 height: measuredHeight != null && measuredHeight > 0 ? measuredHeight : NODE_HEIGHT,
             },
         ];
@@ -342,9 +270,9 @@ function createElkGraph(
 }
 
 function createElkNode(graphNode: ProcessFlowGraphNode, layoutNode: LayoutNodeMeta): ElkNode {
-    const sourcePorts = graphNode.provider.ports.map<ElkPort>((port, index) => ({
+    const sourcePorts = graphNode.displayPorts.map<ElkPort>((port, index) => ({
         id: createSourcePortId(graphNode.node.id, port.key),
-        x: getSourcePortX(layoutNode.width, graphNode.provider.ports.length, index),
+        x: getSourcePortX(layoutNode.width, graphNode.displayPorts.length, index),
         y: layoutNode.height,
         width: 0,
         height: 0,
@@ -495,7 +423,7 @@ function createOpenPortClearanceZones(
     adjustedY: number;
 }> {
     return graph.nodes.flatMap((graphNode) => {
-        const hasOpenPort = graphNode.provider.ports.some((port) => (
+        const hasOpenPort = graphNode.node.ports.some((port) => (
             !graphNode.outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)
         ));
         const resolvedLayoutNode = resolvedLayoutNodes.get(graphNode.node.id);

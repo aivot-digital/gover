@@ -33,7 +33,7 @@ const provider: ProcessNodeProvider = {
     key: 'test.node', componentKey: 'node', componentType: 'process-node', componentVersion: '1.0.0',
     deprecationNotice: null, majorVersion: 1, type: ProcessNodeType.Action, executionTypes: [],
     name: 'Testelement', abstractDescription: '', description: '', documentationUrl: null,
-    parentPluginKey: 'test', ports: [], outputs: [],
+    parentPluginKey: 'test', outputs: [],
 };
 
 function createNode(id: number): ProcessNodeEntity {

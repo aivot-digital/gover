@@ -482,6 +482,24 @@ describe('CustomerInstanceTaskView', () => {
         expect(mocks.refreshInstanceStatus).not.toHaveBeenCalled();
     });
 
+    it('shows expiry and refreshes the task and instance after a late action', async () => {
+        vi.mocked(ProcessInstanceTaskApiService.prototype.putCustomerTaskView).mockRejectedValue({
+            status: 409,
+            message: 'Frist überschritten',
+            displayableToUser: true,
+            details: {reason: 'task_deadline_exceeded'},
+        });
+        const user = userEvent.setup();
+        render(<CustomerInstanceTaskView/>);
+        await user.click(await screen.findByRole('button', {name: 'Daten einreichen'}));
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen.');
+        expect(screen.queryByRole('button', {name: 'Daten einreichen'})).not.toBeInTheDocument();
+        expect(mocks.refreshInstanceStatus).toHaveBeenCalledOnce();
+        expect(CustomerTaskViewApiService.prototype.getTaskView).toHaveBeenCalledTimes(2);
+        expect(mocks.navigate).not.toHaveBeenCalled();
+    });
+
     it('shows other event errors in a snackbar without replacing the page', async () => {
         vi.mocked(ProcessInstanceTaskApiService.prototype.putCustomerTaskView).mockRejectedValue(new Error('network'));
         const user = userEvent.setup();

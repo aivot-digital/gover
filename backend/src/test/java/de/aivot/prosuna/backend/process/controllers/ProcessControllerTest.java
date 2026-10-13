@@ -1,10 +1,14 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAccessControlPresetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
@@ -31,12 +35,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -110,7 +116,8 @@ class ProcessControllerTest {
                 null
         ).setThemeId(77)
                 .setRetentionTimeValue(6)
-                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Months);
+                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Months)
+                .setInstanceDeadlineDays(21);
 
         var departmentPreset = new ProcessInstanceAccessControlPresetEntity()
                 .setId(1)
@@ -135,16 +142,22 @@ class ProcessControllerTest {
                 .thenReturn(Optional.of(originalProcessVersion));
         when(processDefinitionVersionRepository.maxVersionForProcessDefinition(42))
                 .thenReturn(Optional.of(2));
+        var originalNode = new ProcessNodeEntity().setId(5).setProcessId(42).setProcessVersion(2)
+                .setConfiguration(new AuthoredElementValues()).setOutputMappings(Map.of())
+                .setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, true)));
         when(processDefinitionNodeService.findAllByProcessIdAndProcessVersion(42, 2))
-                .thenReturn(List.of());
+                .thenReturn(List.of(originalNode));
+        when(processDefinitionNodeService.create(any(ProcessNodeEntity.class)))
+                .thenAnswer(invocation -> ((ProcessNodeEntity) invocation.getArgument(0)).setId(6));
         when(processDefinitionVersionService.create(any(ProcessVersionEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(processInstanceAccessControlPresetService.performList(any(Pageable.class), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(departmentPreset, teamPreset)));
         when(processInstanceAccessControlPresetService.create(any(ProcessInstanceAccessControlPresetEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        // Connections are copied as stored; obsolete ports are corrected in the draft before publication.
         when(processDefinitionEdgeService.findAllByProcessIdAndProcessVersion(42, 2))
-                .thenReturn(List.of());
+                .thenReturn(List.of(new ProcessEdgeEntity(9, 42, 2, 5, 5, "obsolete_port")));
 
         var result = controller.newVersionFromExisting(null, 42, 2);
 
@@ -152,8 +165,21 @@ class ProcessControllerTest {
         assertEquals(77, result.getThemeId());
         assertEquals(6, result.getRetentionTimeValue());
         assertEquals(ProcessRetentionTimeUnit.Months, result.getRetentionTimeUnit());
+        assertEquals(21, result.getInstanceDeadlineDays());
+        var nodeCaptor = ArgumentCaptor.forClass(ProcessNodeEntity.class);
+        verify(processDefinitionNodeService).create(nodeCaptor.capture());
+        assertEquals(true, nodeCaptor.getValue().getDeadlines().get("processing").strict());
+        assertEquals(3, nodeCaptor.getValue().getDeadlines().get("processing").days());
+        assertEquals(3, nodeCaptor.getValue().getProcessVersion());
         verify(permissionService)
                 .requireProcessPermission("user-1", 42, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE);
+        var edgeCaptor = ArgumentCaptor.forClass(ProcessEdgeEntity.class);
+        verify(processDefinitionEdgeService).copy(edgeCaptor.capture());
+        verify(processDefinitionEdgeService, never()).create(any(ProcessEdgeEntity.class));
+        assertEquals(3, edgeCaptor.getValue().getProcessVersion());
+        assertEquals(6, edgeCaptor.getValue().getFromNodeId());
+        assertEquals(6, edgeCaptor.getValue().getToNodeId());
+        assertEquals("obsolete_port", edgeCaptor.getValue().getViaPort());
 
         var filterCaptor = ArgumentCaptor.forClass(ProcessInstanceAccessControlPresetFilter.class);
         verify(processInstanceAccessControlPresetService)

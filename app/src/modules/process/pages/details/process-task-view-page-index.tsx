@@ -41,6 +41,7 @@ import {
 } from '../../components/process-detail-values';
 
 import {ProcessTaskStatus} from '../../enums/process-task-status';
+import {ProcessInstanceDeadlineValue} from '../../components/process-instance-deadline-value';
 import {getProcessTaskStatusDisplay} from '../../utils/process-task-status-label';
 import {type IdentityDataMap} from '../../../identity/models/identity-data';
 import {useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
@@ -105,6 +106,14 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                 children: renderLinkedValue(processLabel, processPath),
             },
         ];
+        // The soft deadline of the whole instance is independent of the task deadline shown with the task status.
+        if (item.instance?.deadline != null) {
+            entries.push({
+                label: 'Bearbeitungsfrist des Vorgangs',
+                icon: <Acute />,
+                children: <ProcessInstanceDeadlineValue instance={item.instance} />,
+            });
+        }
         return entries;
     }, [item, canReadProcess]);
 

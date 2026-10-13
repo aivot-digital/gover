@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.enums.AlertType;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
@@ -21,6 +24,7 @@ import de.aivot.prosuna.backend.identity.dtos.IdentityCommunicationDerivationReq
 import de.aivot.prosuna.backend.identity.dtos.IdentityCommunicationSelectionRequestDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
+import de.aivot.prosuna.backend.identity.models.IdentityAuthenticationRedirect;
 import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -63,6 +67,7 @@ import org.thymeleaf.exceptions.TemplateProcessingException;
 import tools.jackson.core.JacksonException;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
@@ -73,6 +78,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
 @RequestMapping("/api/public/processes/{procAccess}/tasks/{taskAccess}/")
@@ -81,6 +87,7 @@ import java.util.UUID;
         description = "Operations for managing process instance tasks."
 )
 public class CustomerProcessInstanceTaskViewController {
+    private final ProcessTaskExecutionService execution;
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final ProcessNodeDefinitionService processNodeProviderService;
@@ -115,7 +122,9 @@ public class CustomerProcessInstanceTaskViewController {
                                                      ProsunaConfig prosunaConfig,
                                                      ThemeService themeService,
                                                      CustomerTaskIdentityService customerTaskIdentityService,
-                                                     IdentitySlotService identitySlotService) {
+                                                     IdentitySlotService identitySlotService,
+                                                     ProcessTaskExecutionService execution) {
+        this.execution = execution;
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -171,23 +180,24 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(procAccess, taskAccess);
-        var context = createCustomerContext(
-                taskViewData,
-                identitySessionId,
-                withoutIdentityOrigin(queryParameters)
-        );
-        var customerView = resolveCustomerTaskView(taskViewData, context);
-        var redirect = customerTaskIdentityService.createAuthenticationRedirect(
-                taskViewData.instance(),
-                taskViewData.node(),
-                customerView,
-                identitySessionId,
-                origin
-        );
+        executeIdentityAuthenticationStart(procAccess, taskAccess, origin, response, () -> {
+            TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(procAccess, taskAccess);
+            var context = createCustomerContext(
+                    taskViewData,
+                    identitySessionId,
+                    withoutIdentityOrigin(queryParameters)
+            );
+            var customerView = resolveCustomerTaskView(taskViewData, context);
+            var target = customerTaskIdentityService.createAuthenticationRedirect(
+                    taskViewData.instance(),
+                    taskViewData.node(),
+                    customerView,
+                    identitySessionId,
+                    origin
+            );
 
-        response.addCookie(IdentityCookieUtils.createFlowBindingCookie(redirect));
-        response.sendRedirect(redirect.redirectUri().toString());
+            return target;
+        });
     }
 
     @GetMapping("identities/{identityId}/providers/{providerKey}/start/")
@@ -205,28 +215,29 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var taskViewData = fetchTaskViewData(procAccess, taskAccess);
-        var context = createCustomerContext(
-                taskViewData,
-                identitySessionId,
-                withoutIdentityOrigin(queryParameters)
-        );
-        var customerView = resolveCustomerTaskView(taskViewData, context);
-        var slot = customerTaskIdentityService.requireNewIdentitySlot(
-                taskViewData.instance(),
-                customerView,
-                identityId
-        );
-        var redirect = identitySlotService.createAuthenticationRedirect(
-                slot,
-                identityId,
-                providerKey,
-                identitySessionId,
-                origin,
-                taskViewData.node().getId()
-        );
-        response.addCookie(IdentityCookieUtils.createFlowBindingCookie(redirect));
-        response.sendRedirect(redirect.redirectUri().toString());
+        executeIdentityAuthenticationStart(procAccess, taskAccess, origin, response, () -> {
+            var taskViewData = fetchTaskViewData(procAccess, taskAccess);
+            var context = createCustomerContext(
+                    taskViewData,
+                    identitySessionId,
+                    withoutIdentityOrigin(queryParameters)
+            );
+            var customerView = resolveCustomerTaskView(taskViewData, context);
+            var slot = customerTaskIdentityService.requireNewIdentitySlot(
+                    taskViewData.instance(),
+                    customerView,
+                    identityId
+            );
+            var target = identitySlotService.createAuthenticationRedirect(
+                    slot,
+                    identityId,
+                    providerKey,
+                    identitySessionId,
+                    origin,
+                    taskViewData.node().getId()
+            );
+            return target;
+        });
     }
 
     @PutMapping("identities/{identityId}/email/")
@@ -238,6 +249,18 @@ public class CustomerProcessInstanceTaskViewController {
             @RequestParam(required = false) Map<String, List<String>> queryParameters,
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
             @Nonnull @Valid @RequestBody EmailIdentityRequestDTO request,
+            @Nonnull HttpServletResponse response
+    ) throws ResponseException {
+        return executeMutation(procAccess, taskAccess, () -> setNewIdentityEmailLocked(procAccess, taskAccess, identityId, queryParameters, identitySessionId, request, response));
+    }
+
+    private <NodeConfig> IdentitySlotResponseDTO setNewIdentityEmailLocked(
+            @Nonnull String procAccess,
+            @Nonnull String taskAccess,
+            @Nonnull String identityId,
+            Map<String, List<String>> queryParameters,
+            @Nullable String identitySessionId,
+            @Nonnull EmailIdentityRequestDTO request,
             @Nonnull HttpServletResponse response
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
@@ -267,6 +290,20 @@ public class CustomerProcessInstanceTaskViewController {
             @Nonnull @PathVariable String identityId,
             @RequestParam(required = false) Map<String, List<String>> queryParameters,
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nonnull HttpServletResponse response
+    ) throws ResponseException {
+        executeMutation(procAccess, taskAccess, () -> {
+            clearNewIdentityLocked(procAccess, taskAccess, identityId, queryParameters, identitySessionId, response);
+            return null;
+        });
+    }
+
+    private <NodeConfig> void clearNewIdentityLocked(
+            @Nonnull String procAccess,
+            @Nonnull String taskAccess,
+            @Nonnull String identityId,
+            Map<String, List<String>> queryParameters,
+            @Nullable String identitySessionId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
@@ -299,6 +336,17 @@ public class CustomerProcessInstanceTaskViewController {
             @Nonnull @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME) String identitySessionId,
             @Nonnull @Valid @RequestBody IdentityCommunicationSelectionRequestDTO request
     ) throws ResponseException {
+        return executeMutation(procAccess, taskAccess, () -> selectNewIdentityCommunicationLocked(procAccess, taskAccess, identityId, queryParameters, identitySessionId, request));
+    }
+
+    private <NodeConfig> IdentityCommunicationService.SelectionState selectNewIdentityCommunicationLocked(
+            @Nonnull String procAccess,
+            @Nonnull String taskAccess,
+            @Nonnull String identityId,
+            Map<String, List<String>> queryParameters,
+            @Nonnull String identitySessionId,
+            @Nonnull IdentityCommunicationSelectionRequestDTO request
+    ) throws ResponseException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
         var customerView = resolveCustomerTaskView(taskViewData, context);
@@ -326,6 +374,17 @@ public class CustomerProcessInstanceTaskViewController {
             @RequestParam(required = false) Map<String, List<String>> queryParameters,
             @Nonnull @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME) String identitySessionId,
             @Nonnull @Valid @RequestBody IdentityCommunicationDerivationRequestDTO request
+    ) throws ResponseException {
+        return executeMutation(procAccess, taskAccess, () -> deriveNewIdentityCommunicationLocked(procAccess, taskAccess, identityId, queryParameters, identitySessionId, request));
+    }
+
+    private <NodeConfig> IdentityCommunicationService.SelectionState deriveNewIdentityCommunicationLocked(
+            @Nonnull String procAccess,
+            @Nonnull String taskAccess,
+            @Nonnull String identityId,
+            Map<String, List<String>> queryParameters,
+            @Nonnull String identitySessionId,
+            @Nonnull IdentityCommunicationDerivationRequestDTO request
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(procAccess, taskAccess);
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
@@ -424,10 +483,37 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException {
-        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
-                procAccess,
-                taskAccess
-        );
+        // The instance lock is held from the authorization through the update, so the derived data stays valid.
+        var authorizedData = new AtomicReference<TaskViewData<NodeConfig>>();
+        var failureLog = new AtomicReference<Runnable>();
+        try {
+            return executeMutation(procAccess, taskAccess, () -> {
+                TaskViewData<NodeConfig> data = fetchTaskViewData(procAccess, taskAccess);
+                var context = createCustomerContext(data, identitySessionId, queryParameters);
+                customerTaskIdentityService.requireAuthenticatedIdentity(data.instance(), data.node(),
+                        resolveCustomerTaskView(data, context), identitySessionId);
+                authorizedData.set(data);
+            }, () -> updateLocked(authorizedData.get(), rawInputs, files, fileUris, rawEvent, queryParameters,
+                    identitySessionId, response, failureLog));
+        } catch (ResponseException exception) {
+            // The failed execution transaction is rolled back; record the failure afterwards so it stays in the history.
+            var log = failureLog.get();
+            if (log != null) log.run();
+            throw exception;
+        }
+    }
+
+    private <NodeConfig> TaskViewResponse updateLocked(
+            @Nonnull TaskViewData<NodeConfig> taskViewData,
+            @Nonnull String rawInputs,
+            @Nullable MultipartFile[] files,
+            @Nullable List<String> fileUris,
+            @Nullable String rawEvent,
+            @Nullable Map<String, List<String>> queryParameters,
+            @Nullable String identitySessionId,
+            @Nonnull HttpServletResponse response,
+            @Nonnull AtomicReference<Runnable> failureLog
+    ) throws ResponseException {
         requireActiveCustomerTask(taskViewData.task());
 
         var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
@@ -511,7 +597,7 @@ public class CustomerProcessInstanceTaskViewController {
                         );
             }
         } catch (Exception e) {
-            logger.logException(e);
+            failureLog.set(() -> logger.logException(e));
             throw ResponseException.internalServerError(e);
         }
 
@@ -558,7 +644,7 @@ public class CustomerProcessInstanceTaskViewController {
                 );
             }
         } catch (ProcessNodeExecutionException e) {
-            logger.logException(e);
+            failureLog.set(() -> logger.logException(e));
             throw ResponseException.internalServerError(e);
         }
 
@@ -755,6 +841,17 @@ public class CustomerProcessInstanceTaskViewController {
             @Nonnull TaskViewData<NodeConfig> taskViewData,
             @Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context
     ) throws ResponseException {
+        if (taskViewData.task().getStatus() == ProcessTaskStatus.DeadlineExceeded) {
+            var alert = new AlertContentElement()
+                    .setTitle("Frist überschritten")
+                    .setText("Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.")
+                    .setAlertType(AlertType.Error);
+            alert.setId("deadline-exceeded");
+            var layout = new GroupLayoutElement();
+            layout.setId("deadline-exceeded-view");
+            layout.addChild(alert);
+            return new ProcessNodeCustomerView(layout, List.of(), new AuthoredElementValues(), null);
+        }
         if (taskViewData.task().getStatus() == ProcessTaskStatus.Completed) {
             return resolveCompletedCustomerTaskView(taskViewData.provider(), context);
         }
@@ -808,6 +905,9 @@ public class CustomerProcessInstanceTaskViewController {
         var processExecutionData = processDataService.foldProcessInstanceData(
                 instance, task.getPreviousProcessNodeId(), task
         );
+        if (task.getStatus() == ProcessTaskStatus.DeadlineExceeded) {
+            return new TaskViewData<>(instance, task, node, provider, processExecutionData, null);
+        }
         // Task views require the same resolved configuration and validation as node execution.
         var cfgRes = processDefinitionNodeService.deriveRuntimeConfiguration(
                 node, provider, null, false, processExecutionData
@@ -824,6 +924,56 @@ public class CustomerProcessInstanceTaskViewController {
                 processExecutionData,
                 cfgRes.configuration()
         );
+    }
+
+    /**
+     * Browsers open the identity start endpoints by navigation and would show a rejected request as raw JSON. Once a
+     * hard deadline has ended the task, return to the task page instead, which shows the expiry notice.
+     */
+    private void executeIdentityAuthenticationStart(@Nonnull String procAccess, @Nonnull String taskAccess,
+                                                    @Nonnull String origin, @Nonnull HttpServletResponse response,
+                                                    @Nonnull ProcessTaskExecutionService.Operation<IdentityAuthenticationRedirect> operation)
+            throws ResponseException, IOException {
+        IdentityAuthenticationRedirect redirect;
+        try {
+            redirect = Objects.requireNonNull(executeMutation(procAccess, taskAccess, operation));
+        } catch (ResponseException exception) {
+            if (!ProcessTaskExecutionService.isTaskDeadlineExceeded(exception)) {
+                throw exception;
+            }
+            URI taskPage;
+            try {
+                taskPage = customerTaskIdentityService.resolveReturnOrigin(origin);
+            } catch (ResponseException invalidOrigin) {
+                // Never redirect to a page outside this installation; keep the original rejection instead.
+                throw exception;
+            }
+            response.sendRedirect(taskPage.toString());
+            return;
+        }
+        // Bind the browser to the authentication only after the locked operation has completed.
+        response.addCookie(IdentityCookieUtils.createFlowBindingCookie(redirect));
+        response.sendRedirect(redirect.redirectUri().toString());
+    }
+
+    @Nullable
+    private <T> T executeMutation(@Nonnull String procAccess, @Nonnull String taskAccess,
+                                  @Nonnull ProcessTaskExecutionService.Operation<T> operation)
+            throws ResponseException {
+        return executeMutation(procAccess, taskAccess, () -> {}, operation);
+    }
+
+    @Nullable
+    private <T> T executeMutation(@Nonnull String procAccess, @Nonnull String taskAccess,
+                                  @Nonnull ProcessTaskExecutionService.Authorization authorization,
+                                  @Nonnull ProcessTaskExecutionService.Operation<T> operation)
+            throws ResponseException {
+        var instance = processInstanceService.retrieve(ProcessInstanceFilter.create().setAccessKey(procAccess).build())
+                .orElseThrow(ResponseException::notFound);
+        var task = processInstanceTaskService.retrieve(ProcessInstanceTaskFilter.create()
+                .setProcessInstanceId(instance.getId()).setAccessKey(taskAccess).build())
+                .orElseThrow(ResponseException::notFound);
+        return execution.execute(instance.getId(), task.getId(), authorization, operation);
     }
 
     private void requireActiveCustomerTask(@Nonnull ProcessInstanceTaskEntity task) throws ResponseException {

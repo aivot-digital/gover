@@ -17,11 +17,13 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
+import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,17 +65,19 @@ class ProcessNodeExecutionSummaryTest {
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(2L)
             .setProcessInstanceId(1L).setStatus(ProcessTaskStatus.Running);
     private final UserEntity actor = new UserEntity().setId("actor").setFullName("Ada Beispiel");
+    private final ProcessNodeService nodeService = mock(ProcessNodeService.class);
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
             mock(ProcessAssignmentService.class), rabbit, null, instances, versions, tasks, edges, users,
             mock(ProcessTaskMailService.class), mock(ProcessNodeRepository.class),
-            mock(ProcessNodeDefinitionService.class), null, null, mock(ProcessInstanceMailService.class));
+            mock(ProcessNodeDefinitionService.class), null, null, mock(ProcessInstanceMailService.class), nodeService, null);
 
     @BeforeEach
     void setup() throws Exception {
         when(versions.findById(ProcessVersionEntityId.of(1, 1)))
                 .thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(1).setProcessVersion(1)));
         when(definition.getOutputs()).thenReturn(List.of(new ProcessNodeOutput("value", "Wert", "Ergebnis", "number")));
-        when(definition.getPorts()).thenReturn(List.of(new ProcessNodePort("next", "Weiter", "Fortsetzen")));
+        when(nodeService.resolvePorts(eq(node), eq(definition), any())).thenReturn(new ProcessNodePortResolution(
+                List.of(new ProcessNodePort("next", "Weiter", "Fortsetzen")), List.of()));
         when(edges.findByFromNodeIdAndViaPort(3, "next"))
                 .thenReturn(Optional.of(new ProcessEdgeEntity(1, 1, 1, 3, 4, "next")));
         when(users.retrieve("actor")).thenReturn(Optional.of(actor));

@@ -26,7 +26,7 @@ it.each([null, 'Unterlagen angefordert'])('shows the runtime identity in the dia
         key: 'test', componentKey: 'test', componentType: 'ProcessNodeDefinition', componentVersion: '1.0.0',
         deprecationNotice: null, majorVersion: 1, type: ProcessNodeType.Action, executionTypes: [],
         name: 'Prüfung', abstractDescription: '', description: '', documentationUrl: null,
-        parentPluginKey: 'test', ports: [], outputs: [],
+        parentPluginKey: 'test', outputs: [],
     };
     const instance = new ProcessInstanceApiService().initialize();
     instance.identities = {
@@ -54,7 +54,7 @@ it.each([null, 'Unterlagen angefordert'])('shows the runtime identity in the dia
         id: '1', type: 'process', dragging: false, zIndex: 0, selectable: true,
         deletable: false, selected: false, draggable: false, isConnectable: false,
         positionAbsoluteX: 0, positionAbsoluteY: 0,
-        data: {graphNode: {node, provider, outgoingEdges: [], incomingEdges: []}},
+        data: {graphNode: {node, provider, displayPorts: [], outgoingEdges: [], incomingEdges: []}},
     };
     render(
         <MemoryRouter>

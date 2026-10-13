@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.process.models.ProcessTaskDeadlineExceededData;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
@@ -38,12 +39,14 @@ import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeProblems;
+import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.InputVariableSuggestion;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
+import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
@@ -81,6 +84,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private final ProsunaConfig prosunaConfig;
     private final IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
     private final PermissionService permissionService;
+    private final ProcessNodePortResolver portResolver;
+    private final ProcessNodePortResolutionCache portResolutionCache;
     private final ProcessVersionDraftGuard processVersionDraftGuard;
 
     @Autowired
@@ -94,6 +99,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                               ProsunaConfig prosunaConfig,
                               IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService,
                               PermissionService permissionService,
+                              ProcessNodePortResolver portResolver,
+                              ProcessNodePortResolutionCache portResolutionCache,
                               ProcessVersionDraftGuard processVersionDraftGuard) {
         this.processNodeRepository = processNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
@@ -105,7 +112,64 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         this.prosunaConfig = prosunaConfig;
         this.identityCommunicationAvailabilityService = identityCommunicationAvailabilityService;
         this.permissionService = permissionService;
+        this.portResolver = portResolver;
+        this.portResolutionCache = portResolutionCache;
         this.processVersionDraftGuard = processVersionDraftGuard;
+    }
+
+    @Nonnull
+    public ProcessNodePortResolution resolvePorts(@Nonnull ProcessNodeEntity node) {
+        return processNodeProviderService.getProcessNodeDefinition(node)
+                .map(provider -> resolvePorts(node, provider))
+                .orElseGet(() -> ProcessNodePortResolver.failed());
+    }
+
+    @Nonnull
+    public <C> ProcessNodePortResolution resolvePorts(@Nonnull ProcessNodeEntity node,
+                                                       @Nonnull ProcessNodeDefinition<C> provider) {
+        return portResolutionCache.resolve(node, () -> {
+            try {
+                var derived = deriveConfiguration(node, provider, null, false);
+                return portResolver.resolve(node, provider, derived.configuration());
+            } catch (ResponseException exception) {
+                return ProcessNodePortResolver.failed();
+            }
+        });
+    }
+
+    /**
+     * Resolves ports from an already derived configuration, e.g. the runtime configuration of an executing node.
+     * Ports only depend on literal values, so this matches the authoring resolution without deriving it again.
+     */
+    @Nonnull
+    public <C> ProcessNodePortResolution resolvePorts(@Nonnull ProcessNodeEntity node,
+                                                       @Nonnull ProcessNodeDefinition<C> provider,
+                                                       @Nonnull C configuration) {
+        return portResolver.resolve(node, provider, configuration);
+    }
+
+    @Nonnull
+    public ProcessNodePortResolution resolveCandidatePorts(@Nonnull UserEntity user,
+                                                            @Nonnull ProcessNodeEntity node,
+                                                            boolean forImport,
+                                                            boolean useInitialConfiguration) throws ResponseException {
+        permissionService.requireProcessPermission(user.getId(), node.getProcessId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ);
+        if (!processDefinitionVersionRepository.existsById(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion()))) {
+            throw ResponseException.notFound();
+        }
+        var provider = processNodeProviderService.getProcessNodeDefinition(node).orElseThrow(ResponseException::badRequest);
+        var configuration = node.getConfiguration().clone();
+        if (forImport) {
+            configuration = provider.prefillConfigurationOnImport(configuration);
+        }
+        if (useInitialConfiguration || forImport) {
+            var defaults = new AuthoredElementValues();
+            defaults.putAll(provider.getInitialConfiguration());
+            defaults.putAll(configuration);
+            configuration = defaults;
+        }
+        node.setConfiguration(configuration);
+        return resolvePorts(node, provider);
     }
 
     @Nonnull
@@ -210,7 +274,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         existingEntity.setProcessNodeDefinitionKey(entity.getProcessNodeDefinitionKey());
         existingEntity.setProcessNodeDefinitionVersion(entity.getProcessNodeDefinitionVersion());
         existingEntity.setOutputMappings(entity.getOutputMappings());
-        existingEntity.setTimeLimitDays(entity.getTimeLimitDays());
+        existingEntity.setDeadlines(entity.getDeadlines());
         existingEntity.setNotes(entity.getNotes());
         existingEntity.setRequirements(entity.getRequirements());
         existingEntity.setConfiguration(entity.getConfiguration());
@@ -407,6 +471,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         // Validate concrete results only after successful derivation. Each provider explicitly guards any checks
         // that belong exclusively to authoring, such as uniqueness within the process definition.
         if (inputModeContext == InputModeEvaluationContext.Runtime && !skipErrors && !derivedData.hasAnyError()) {
+            var deadlineResolution = portResolver.resolve(entity, provider, config);
+            if (!deadlineResolution.problems().isEmpty()) {
+                throw ResponseException.badRequest(String.join(" ", deadlineResolution.problems()));
+            }
             var validationErrors = provider.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                     entity,
                     config,
@@ -739,6 +807,17 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             );
         }
 
+        if (!provider.getDeadlines(configuration.configuration()).isEmpty()) {
+            var prefix = ProcessTaskDeadlineExceededData.NODE_DATA_KEY;
+            for (var field : List.of(Map.entry("deadlineKey", "Schlüssel der überschrittenen Frist"),
+                    Map.entry("label", "Bezeichnung der überschrittenen Frist"),
+                    Map.entry("deadline", "Zeitpunkt der überschrittenen Frist"),
+                    Map.entry("processedAt", "Zeitpunkt der Fristverarbeitung"))) {
+                currentMetadata.addInputVariable(new InputVariableSuggestion(InputVariableSource.ElementData,
+                        prefix + "." + field.getKey(), node.getDataKey(), field.getValue(),
+                        "Steht nach einer harten Fristüberschreitung zur Verfügung.", node));
+            }
+        }
         addElementMetadataSuggestions(currentMetadata, node);
 
         return currentMetadata;
@@ -918,8 +997,15 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             applyProviderValidationErrors(layout, derivedConfiguration.derivedRuntimeElementData, validationErrors, problems);
         }
 
+        var resolvedPorts = derivedConfiguration == null
+                ? ProcessNodePortResolver.failed()
+                : portResolver.resolve(node, provider, derivedConfiguration.configuration());
+        // A failed derivation has already reported its cause; the generic port message would only repeat it.
+        if (derivedConfiguration != null) {
+            problems.addAll(resolvedPorts.problems());
+        }
         if (checkPorts) {
-            for (var ports : provider.getPorts()) {
+            for (var ports : resolvedPorts.ports()) {
                 var edgeExists = processEdgeRepository
                         .existsByFromNodeIdAndViaPort(node.getId(), ports.key());
 
@@ -929,6 +1015,15 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                                     StringUtils.quote(ports.label()) +
                                     ". Alle Ausgänge müssen mit einer Verbindung zu einem anderen Knoten verbunden sein."
                     );
+                }
+            }
+        }
+
+        if (checkPorts && resolvedPorts.problems().isEmpty()) {
+            var portKeys = resolvedPorts.ports().stream().map(port -> port.key()).collect(Collectors.toSet());
+            for (var edge : processEdgeRepository.findAllByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())) {
+                if (Objects.equals(edge.getFromNodeId(), node.getId()) && !portKeys.contains(edge.getViaPort())) {
+                    problems.add("Die Verbindung über den Ausgang „%s“ verweist auf einen nicht mehr verfügbaren Ausgang.".formatted(edge.getViaPort()));
                 }
             }
         }

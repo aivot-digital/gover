@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -53,13 +54,16 @@ public class ProcessInstanceTaskController {
     private final PermissionService permissionService;
     private final ProcessAssignmentService assignmentService;
     private final ProcessListService listService;
+    private final ProcessTaskExecutionService execution;
 
     @Autowired
     public ProcessInstanceTaskController(UserService userService,
                                          ProcessInstanceTaskService processInstanceTaskService,
                                          RabbitTemplate rabbitTemplate,
                                          PermissionService permissionService, ProcessAssignmentService assignmentService,
-                                         ProcessListService listService) {
+                                         ProcessListService listService,
+                                         ProcessTaskExecutionService execution) {
+        this.execution = execution;
         this.userService = userService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.rabbitTemplate = rabbitTemplate;
@@ -167,7 +171,10 @@ public class ProcessInstanceTaskController {
             @Nonnull @RequestBody @Valid ProcessInstanceReassignRequestDTO request
     ) throws ResponseException {
         var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
-        return assignmentService.reassignTask(user, id, request.assignedUserId());
+        var task = processInstanceTaskService.retrieve(id).orElseThrow(ResponseException::notFound);
+        return execution.execute(task.getProcessInstanceId(), id,
+                () -> processInstanceTaskService.authorizeStaffMutation(user.getId(), task.getProcessInstanceId(), id),
+                () -> assignmentService.reassignTask(user, id, request.assignedUserId()));
     }
 
     @PutMapping("{id}/rerun-failed/")

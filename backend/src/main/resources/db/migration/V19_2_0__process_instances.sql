@@ -135,8 +135,14 @@ create table process_instance_tasks
     -- The customer identity assigned to this task, if any
     assigned_customer_identity_id     varchar(36) null,
 
-    -- The deadline for this task, if any, determined by the time limit of the node
+    -- The active phase deadline and its definition key, if configured
     deadline                          timestamptz null,
+    deadline_key                      varchar(32) null,
+    -- Whether the active deadline is hard, so the deadline worker expires the task into its deadline port.
+    -- Fixed together with the date when the phase starts.
+    deadline_strict                   boolean      not null default false,
+    check ((deadline is null) = (deadline_key is null)),
+    check (deadline_key is not null or not deadline_strict),
 
     -- The postponed until timestamp for this task, if any
     postponed_until                   timestamptz null,

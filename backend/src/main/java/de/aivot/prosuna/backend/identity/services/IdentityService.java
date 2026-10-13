@@ -540,7 +540,8 @@ public class IdentityService {
      * @return A {@link URI} representing the validated referer.
      * @throws ResponseException If the referer is missing, invalid, or does not match the application's hostname.
      */
-    private URI resolveOrigin(@Nullable String referer) throws ResponseException {
+    @Nonnull
+    public URI resolveOrigin(@Nullable String referer) throws ResponseException {
         // Check if the request has a referer header
         if (referer == null) {
             throw ResponseException

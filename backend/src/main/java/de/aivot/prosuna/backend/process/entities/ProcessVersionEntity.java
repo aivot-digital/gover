@@ -6,6 +6,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -17,6 +19,8 @@ import java.time.Instant;
 @Table(name = "process_versions")
 @IdClass(ProcessVersionEntityId.class)
 public class ProcessVersionEntity {
+    public static final int MAX_INSTANCE_DEADLINE_DAYS = 3652;
+
     @Id
     @Nonnull
     @NotNull(message = "Die ID der Prozessdefinition darf nicht null sein.")
@@ -52,6 +56,15 @@ public class ProcessVersionEntity {
     @Nullable
     @Enumerated(EnumType.STRING)
     private ProcessRetentionTimeUnit retentionTimeUnit;
+
+    /**
+     * Soft processing deadline in calendar days from instance creation. Exceeding it has no effect on the
+     * process flow and is independent of task deadlines; an empty value leaves instances without a deadline.
+     */
+    @Nullable
+    @Min(value = 1, message = "Die Bearbeitungsdauer muss mindestens 1 Tag betragen.")
+    @Max(value = MAX_INSTANCE_DEADLINE_DAYS, message = "Die Bearbeitungsdauer darf maximal 3.652 Tage betragen.")
+    private Integer instanceDeadlineDays;
 
     @Nullable
     @Size(max = 2048, message = "Die Notizen dürfen maximal 2048 Zeichen lang sein.")
@@ -283,6 +296,16 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setRetentionTimeUnit(@Nullable ProcessRetentionTimeUnit retentionTimeUnit) {
         this.retentionTimeUnit = retentionTimeUnit;
+        return this;
+    }
+
+    @Nullable
+    public Integer getInstanceDeadlineDays() {
+        return instanceDeadlineDays;
+    }
+
+    public ProcessVersionEntity setInstanceDeadlineDays(@Nullable Integer instanceDeadlineDays) {
+        this.instanceDeadlineDays = instanceDeadlineDays;
         return this;
     }
 

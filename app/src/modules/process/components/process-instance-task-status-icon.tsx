@@ -12,6 +12,7 @@ import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/Payme
 import ContractEdit from '@aivot/mui-material-symbols-400-n25-outlined/ContractEdit';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
+import TimerOff from '@aivot/mui-material-symbols-400-n25-outlined/TimerOff';
 import {type IdentityDataMap} from '../../identity/models/identity-data';
 import {getProcessTaskStatusDisplay, type ProcessTaskStatusLabelSource} from '../utils/process-task-status-label';
 
@@ -26,6 +27,9 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
         icon = <AppBadging color="primary"/>;
     } else {
         switch (props.status) {
+            case ProcessTaskStatus.DeadlineExceeded:
+                icon = <TimerOff color="error"/>;
+                break;
             case ProcessTaskStatus.Running:
                 icon = <PlayCircle color="info"/>;
                 break;

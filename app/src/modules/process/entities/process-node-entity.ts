@@ -1,6 +1,10 @@
+import {type ProcessNodeDeadlineDefinition, type ProcessNodePort} from '../services/process-node-provider-api-service';
 import {AuthoredElementValues} from '../../../models/element-data';
 
 export interface ProcessNodeEntity {
+    readonly ports: ProcessNodePort[];
+    readonly portResolutionProblems: string[];
+    readonly deadlineDefinitions: ProcessNodeDeadlineDefinition[];
     id: number;
     processId: number;
     processVersion: number;
@@ -11,10 +15,17 @@ export interface ProcessNodeEntity {
     dataKey: string;
     configuration: AuthoredElementValues;
     outputMappings: Record<string, any>;
-    timeLimitDays: number | null;
+    deadlines: Record<string, ProcessNodeDeadlineConfiguration>;
     requirements: string | null;
     notes: string | null;
     savedWithErrors: boolean;
     created: string;
     updated: string;
+}
+
+export type ProcessNodeWrite = Omit<ProcessNodeEntity, 'ports' | 'portResolutionProblems' | 'deadlineDefinitions'>;
+
+export interface ProcessNodeDeadlineConfiguration {
+    days: number | null;
+    strict: boolean;
 }

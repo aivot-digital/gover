@@ -66,6 +66,8 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.de
  */
 @Component
 public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<CommunicationMessageActionNodeV1.Configuration> {
+    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
+
     public static final String NODE_KEY = "communication_message";
     private static final String PORT_OUTPUT = "output";
     private static final String OUTPUT_IDENTITY_ID = "identityId";
@@ -201,7 +203,14 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull Configuration configuration) {
+        return SemiAutomaticMessageConfig.isManual(configuration.messageConfig)
+                ? List.of(MESSAGE_DISPATCH_DEADLINE) : List.of();
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull Configuration configuration) {
         return List.of(new ProcessNodePort(
                 PORT_OUTPUT,
                 "Nachricht versendet",
@@ -292,6 +301,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(MESSAGE_DISPATCH_DEADLINE.key())
                 .setRuntimeData(new LinkedHashMap<>(context.getThisTask().getRuntimeData()))
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }

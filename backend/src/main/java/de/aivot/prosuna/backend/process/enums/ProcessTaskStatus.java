@@ -17,6 +17,7 @@ public enum ProcessTaskStatus {
     Restarted(5),
     InProgress(8),
     AwaitingStaff(9),
+    DeadlineExceeded(10),
     ;
 
     private final short databaseValue;
@@ -30,5 +31,9 @@ public enum ProcessTaskStatus {
 
     public short getDatabaseValue() {
         return databaseValue;
+    }
+
+    public boolean isTerminal() {
+        return this == Completed || this == Aborted || this == Failed || this == Restarted || this == DeadlineExceeded;
     }
 }

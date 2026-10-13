@@ -45,6 +45,7 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
             notes: null,
             retentionTimeValue: null,
             retentionTimeUnit: null,
+            instanceDeadlineDays: null,
             themeId: null,
             legalSupportDepartmentId: null,
             technicalSupportDepartmentId: null,

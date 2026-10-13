@@ -145,6 +145,19 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         ).toBeTruthy();
     });
 
+    it('shows the instance deadline with its state separately from the task deadline', () => {
+        const item = createItem();
+        const hour = 60 * 60 * 1000;
+        item.instance!.started = new Date(Date.now() - 240 * hour).toISOString();
+        item.instance!.deadline = new Date(Date.now() - hour).toISOString();
+        renderItem(item);
+
+        const instance = within(screen.getByRole('region', {name: 'Angaben zum Vorgang'}));
+        const status = within(screen.getByRole('region', {name: 'Stand der Aufgabe'}));
+        expect(instance.getByRole('row', {name: /^Bearbeitungsfrist des Vorgangs /})).toHaveTextContent('Frist überschritten');
+        expect(status.getByRole('row', {name: /Fälligkeit/})).toHaveTextContent('Nicht festgelegt');
+    });
+
     it('shows the task status independently of the instance and omits absent optional metadata', () => {
         const retrieve = vi.spyOn(UsersApiService.prototype, 'retrieve');
         renderItem(createItem());

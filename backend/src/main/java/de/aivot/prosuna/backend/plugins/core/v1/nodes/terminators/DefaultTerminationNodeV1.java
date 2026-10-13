@@ -143,7 +143,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull DefaultTerminationNodeV1Config configuration) {
         return List.of();
     }
 

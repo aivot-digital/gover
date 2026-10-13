@@ -19,6 +19,7 @@ const instance: ProcessInstanceListEntry = {
     status: ProcessInstanceStatus.Running,
     statusOverride: null,
     started: '2026-09-24T12:30:00Z',
+    deadline: '2026-09-24T12:30:00Z',
     finished: '2026-09-24T12:30:00Z',
     test: false,
 };
@@ -70,6 +71,7 @@ describe('Process list columns', () => {
         {row: task, field: 'started'},
         {row: task, field: 'finished'},
         {row: task, field: 'deadline'},
+        {row: instance, field: 'deadline'},
     ])('includes Uhr and the relative time in the tooltip for $field (row $row.id)', async ({row, field}) => {
         renderCell(row, field);
 
@@ -96,6 +98,44 @@ describe('Process list columns', () => {
         renderCell(task, field);
 
         expect(screen.getByTitle(title)).toHaveTextContent(title);
+    });
+
+    describe('instance deadline', () => {
+        // Now is 2026-09-24T13:30:00Z; the instance started ten days before its deadline.
+        const tracked = {...instance, started: '2026-09-20T13:30:00Z'};
+
+        it.each([
+            {deadline: '2026-09-24T12:30:00Z', status: 'Frist überschritten'},
+            {deadline: '2026-09-26T13:30:00Z', status: 'Bald fällig'},
+        ])('names the $status state in the tooltip and for screen readers', async ({deadline, status}) => {
+            renderCell({...tracked, deadline}, 'deadline');
+            const date = screen.getByText(/Uhr/);
+
+            expect(date).toHaveTextContent(`(${status})`);
+            await hover(date);
+            expect(screen.getByRole('tooltip')).toHaveTextContent(` · ${status}`);
+        });
+
+        it('does not highlight a deadline before half of the period has passed', async () => {
+            renderCell({...tracked, deadline: '2026-09-30T13:30:00Z'}, 'deadline');
+            const date = screen.getByText('30.09.2026 – 15:30 Uhr');
+
+            expect(date).toHaveTextContent(/^30\.09\.2026 – 15:30 Uhr$/);
+            await hover(date);
+            expect(screen.getByRole('tooltip')).not.toHaveTextContent('·');
+        });
+
+        it('does not highlight an exceeded deadline of a completed instance', () => {
+            renderCell({...tracked, status: ProcessInstanceStatus.Completed}, 'deadline');
+
+            expect(screen.getByText('24.09.2026 – 14:30 Uhr')).not.toHaveTextContent('Frist überschritten');
+        });
+
+        it('keeps the empty placeholder without a deadline', () => {
+            renderCell({...tracked, deadline: null}, 'deadline');
+
+            expect(screen.getByText('—')).toBeInTheDocument();
+        });
     });
 
     it('does not repeat identical task names and types in the link title', () => {

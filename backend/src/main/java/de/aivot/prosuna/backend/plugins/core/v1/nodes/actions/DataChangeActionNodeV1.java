@@ -60,6 +60,12 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.se
 
 @Component
 public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeActionNodeV1.DataChangeActionNodeConfig> {
+    private static final ProcessNodeDeadlineDefinition DATA_ENTRY_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "dataEntry", "Dateneingabe",
+            "Zeit für die Eingabe oder Änderung der Daten.",
+            new ProcessNodePort("data_entry_overdue", "Fristüberschreitung: Dateneingabe",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Dateneingabe."));
+
     public static final String NODE_KEY = "data_change";
 
     private static final String PORT_OUTPUT = "output";
@@ -198,7 +204,13 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull DataChangeActionNodeConfig configuration) {
+        return List.of(DATA_ENTRY_DEADLINE);
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull DataChangeActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_OUTPUT,
@@ -279,6 +291,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(DATA_ENTRY_DEADLINE.key())
                 .setProcessData(workingProcessData)
                 .setRuntimeData(Map.of());
     }

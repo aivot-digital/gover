@@ -4,6 +4,7 @@ import FolderShared from '@aivot/mui-material-symbols-400-n25-outlined/FolderSha
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
 import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
+import TimerOff from '@aivot/mui-material-symbols-400-n25-outlined/TimerOff';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {Chip} from '../../../../components/chip/chip';
@@ -91,6 +92,10 @@ function getProcessTaskStatusIcon(item?: ProcessTaskDetailsPageItem | null): Rea
 
     if (status === ProcessTaskStatus.Restarted) {
         return <Replay fontSize="small" />;
+    }
+
+    if (status === ProcessTaskStatus.DeadlineExceeded) {
+        return <TimerOff fontSize="small" />;
     }
 
     return undefined;

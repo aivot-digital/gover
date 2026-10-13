@@ -29,6 +29,7 @@ import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.services.PaymentTaskAttemptService;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
@@ -65,6 +66,9 @@ import de.aivot.prosuna.backend.services.PdfService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -85,6 +89,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -100,7 +105,9 @@ class FormTriggerNodeV1Test {
     private PdfService pdfService;
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
     private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
+    private PaymentPayloadCreationService paymentPayloadCreationService;
     private PaymentTransactionService paymentTransactionService;
+    private PaymentTaskAttemptService paymentTaskAttemptService;
     private PaymentProviderRepository paymentProviderRepository;
     private PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private ProcessService processService;
@@ -114,11 +121,24 @@ class FormTriggerNodeV1Test {
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
         processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
         paymentTransactionService = mock(PaymentTransactionService.class);
+        paymentTaskAttemptService = mock(PaymentTaskAttemptService.class);
+        paymentPayloadCreationService = mock(PaymentPayloadCreationService.class);
         paymentProviderRepository = mock(PaymentProviderRepository.class);
         paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
         processService = mock(ProcessService.class);
         templateRenderService = new TemplateRenderService(new JavascriptEngineFactoryService(List.of()));
         node = createNode(mock(PublicUrlService.class));
+    }
+
+    @Test
+    void offersPaymentDeadlineOnlyWhenPaymentIsConfigured() {
+        var configuration = new FormTriggerConfigV1();
+        assertTrue(node.getDeadlines(configuration).isEmpty());
+        configuration.payment = new PaymentConfigElementValue(null, null, null, null, null, null, null, null);
+        assertTrue(node.getDeadlines(configuration).isEmpty());
+        configuration.payment = new PaymentConfigElementValue(UUID.randomUUID(), null, null, null, null, null, null, null);
+        assertEquals(List.of("payment"), node.getDeadlines(configuration).stream().map(definition -> definition.key()).toList());
+        assertEquals("payment_overdue", node.getDeadlines(configuration).getFirst().port().key());
     }
 
     @Test
@@ -466,6 +486,70 @@ class FormTriggerNodeV1Test {
         assertTrue(files.getFirst().getUri().startsWith(FileUploadMultipartInputService.PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX));
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void activatesPaymentDeadlineOnlyForAnActualPaymentRequest(boolean requestsPayment) throws Exception {
+        var configuration = configuration("antrag-online", validFormLayout());
+        var providerKey = UUID.randomUUID();
+        configuration.payment = new PaymentConfigElementValue(providerKey, null, null, null, null, null, null, null);
+        when(pdfService.generateCustomerSummary(any(), any(), any(), any(), any(), any())).thenReturn(new byte[]{1, 2, 3});
+        when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentSetEntity.class).setId(321));
+        when(processInstanceAttachmentService.create(any(ProcessInstanceAttachmentEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentEntity.class)
+                        .setKey(UUID.randomUUID()).setStorageProviderId(7).setStoragePathFromRoot("summary.pdf"));
+        when(paymentProviderRepository.findById(providerKey)).thenReturn(Optional.of(paymentProvider(providerKey)));
+        when(paymentPayloadCreationService.createRequest(any(), any(), any()))
+                .thenReturn(requestsPayment ? Optional.of(new PaymentPayload()) : Optional.empty());
+        when(paymentTransactionService.create(any(), any(), any()))
+                .thenReturn(paymentTransaction(providerKey, XBezahldienstStatus.INITIAL));
+
+        var result = node.init(context(configuration, Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of())));
+
+        if (requestsPayment) {
+            assertInstanceOf(ProcessNodeExecutionResultPaymentRequested.class, result);
+            assertEquals("payment", result.getNewDeadlineKey());
+        } else {
+            assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
+            assertEquals(null, result.getNewDeadlineKey());
+            verifyNoInteractions(paymentTransactionService);
+        }
+    }
+
+    @Test
+    void init_CompletesWithThePaymentOfAnEarlierAttemptInsteadOfRequestingAgain() throws Exception {
+        var configuration = configuration("antrag-online", validFormLayout());
+        var providerKey = UUID.randomUUID();
+        configuration.payment = new PaymentConfigElementValue(providerKey, null, null, null, null, null, null, null);
+        when(pdfService.generateCustomerSummary(any(), any(), any(), any(), any(), any())).thenReturn(new byte[]{1, 2, 3});
+        when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentSetEntity.class).setId(321));
+        when(processInstanceAttachmentService.create(any(ProcessInstanceAttachmentEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentEntity.class)
+                        .setKey(UUID.randomUUID()).setStorageProviderId(7).setStoragePathFromRoot("summary.pdf"));
+        var transaction = paymentTransaction(providerKey, XBezahldienstStatus.PAYED);
+        Map<String, Object> earlierRuntimeData = Map.of(
+                FormTriggerNodeV1.DATA_KEY_PAYMENT_PAYLOAD, new PaymentPayload(),
+                FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, "tx-1"
+        );
+        var paidAttempt = new PaymentTaskAttemptService.PaidAttempt(
+                task().setId(41L).setRuntimeData(earlierRuntimeData), transaction);
+        when(paymentTaskAttemptService.findPaidEarlierAttempt(any())).thenReturn(Optional.of(paidAttempt));
+        when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(transaction));
+
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(context(configuration, Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of())))
+        );
+
+        assertNull(result.getNewDeadlineKey());
+        assertEquals(earlierRuntimeData, result.getRuntimeData());
+        assertEquals(transaction.getPaymentInformation(), result.getNodeData().get(FormTriggerNodeV1.DATA_KEY_PAYMENT_DETAILS));
+        verify(paymentTaskAttemptService).logReuse(any(), same(paidAttempt));
+        verify(paymentTransactionService, never()).create(any(), any(), any());
+        verifyNoInteractions(paymentPayloadCreationService, paymentProviderRepository);
+    }
+
     @Test
     void cleanConfigurationForExport_ShouldRemoveSystemLocalIdentityAndPaymentConfiguration() {
         var configuration = new AuthoredElementValues();
@@ -741,7 +825,7 @@ class FormTriggerNodeV1Test {
         return new FormTriggerNodeV1(
                 publicUrlService,
                 processNodeRepository,
-                mock(PaymentPayloadCreationService.class),
+                paymentPayloadCreationService,
                 templateRenderService,
                 paymentTransactionService,
                 paymentProviderRepository,
@@ -752,7 +836,8 @@ class FormTriggerNodeV1Test {
                 processInstanceAttachmentService,
                 processInstanceAttachmentSetService,
                 JsonMapperTestUtils.createMapper(),
-                new AuthoredInputValueService(JsonMapperTestUtils.createMapper())
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
+                paymentTaskAttemptService
         );
     }
 

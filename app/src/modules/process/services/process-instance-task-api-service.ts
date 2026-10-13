@@ -111,6 +111,8 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
             processData: {},
             processDataDiff: {},
             deadline: null,
+            deadlineKey: null,
+            deadlineStrict: false,
         };
     }
 

@@ -50,6 +50,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     public ProcessVersionEntity create(@Nonnull ProcessVersionEntity entity) throws ResponseException {
         caseNumberGeneratorService.validateConfiguration(entity.getCaseNumberType(), entity.getCaseNumberTemplate());
         validateRetentionConfiguration(entity);
+        validateInstanceDeadlineConfiguration(entity);
 
         // Fetch the latest version number for the given process definition
         Integer latestVersionNumber = processDefinitionVersionRepository
@@ -102,6 +103,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         ProcessVersionDraftGuard.requireDrafted(existingEntity);
         caseNumberGeneratorService.validateConfiguration(entity.getCaseNumberType(), entity.getCaseNumberTemplate());
         validateRetentionConfiguration(entity);
+        validateInstanceDeadlineConfiguration(entity);
         existingEntity.setPublicTitle(entity.getPublicTitle());
         existingEntity.setCaseNumberTemplate(entity.getCaseNumberTemplate());
         existingEntity.setCaseNumberType(entity.getCaseNumberType());
@@ -116,6 +118,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         existingEntity.setProcessSpecificAccessibilityStatement(entity.getProcessSpecificAccessibilityStatement());
         existingEntity.setRetentionTimeValue(entity.getRetentionTimeValue());
         existingEntity.setRetentionTimeUnit(entity.getRetentionTimeUnit());
+        existingEntity.setInstanceDeadlineDays(entity.getInstanceDeadlineDays());
         return processDefinitionVersionRepository.save(existingEntity);
     }
 
@@ -207,6 +210,13 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
             ProcessRetentionTime.calculate(Instant.now(), value, unit);
         } catch (DateTimeException | ArithmeticException e) {
             throw ResponseException.badRequest("Die angegebene Aufbewahrungsfrist ist zu groß.");
+        }
+    }
+
+    private void validateInstanceDeadlineConfiguration(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+        var days = entity.getInstanceDeadlineDays();
+        if (days != null && (days < 1 || days > ProcessVersionEntity.MAX_INSTANCE_DEADLINE_DAYS)) {
+            throw ResponseException.badRequest("Die Bearbeitungsdauer muss zwischen 1 und 3.652 Tagen liegen.");
         }
     }
 

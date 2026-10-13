@@ -8,6 +8,7 @@ import java.util.List;
 
 public record DashboardOverviewDTO(
         @Nonnull TaskSummary tasks,
+        @Nonnull InstanceSummary instances,
         @Nonnull List<RecentProcess> recentProcesses
 ) {
     public record TaskSummary(
@@ -23,6 +24,24 @@ public record DashboardOverviewDTO(
             int processId,
             int processVersion,
             @Nonnull String taskName,
+            @Nonnull String processTitle,
+            @Nonnull String caseNumber,
+            @Nonnull Instant started,
+            @Nullable Instant deadline
+    ) {
+    }
+
+    public record InstanceSummary(
+            long total,
+            long overdue,
+            @Nonnull List<Instance> items
+    ) {
+    }
+
+    public record Instance(
+            long id,
+            int processId,
+            int processVersion,
             @Nonnull String processTitle,
             @Nonnull String caseNumber,
             @Nonnull Instant started,

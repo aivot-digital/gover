@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.workers;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
+import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
@@ -22,6 +23,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
+import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -55,6 +57,8 @@ public class ProcessNodeExecutionResultHandler {
     private final ProcessNodeRepository processNodeRepository;
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final ProcessService processService;
+    private final ProcessNodeService processNodeService;
+    private final BusinessTime businessTime;
     private final DepartmentService departmentService;
     private final ProcessInstanceMailService processInstanceMailService;
 
@@ -71,7 +75,9 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessNodeRepository processNodeRepository,
                                              ProcessNodeDefinitionService processNodeDefinitionService,
                                              ProcessService processService,
-                                             DepartmentService departmentService, ProcessInstanceMailService processInstanceMailService) {
+                                             DepartmentService departmentService, ProcessInstanceMailService processInstanceMailService,
+                                             ProcessNodeService processNodeService,
+                                             BusinessTime businessTime) {
         this.assignmentService = assignmentService;
         this.rabbitTemplate = rabbitTemplate;
         this.communicationService = communicationService;
@@ -84,6 +90,8 @@ public class ProcessNodeExecutionResultHandler {
         this.processNodeRepository = processNodeRepository;
         this.processNodeDefinitionService = processNodeDefinitionService;
         this.processService = processService;
+        this.processNodeService = processNodeService;
+        this.businessTime = businessTime;
         this.departmentService = departmentService;
         this.processInstanceMailService = processInstanceMailService;
     }
@@ -151,7 +159,7 @@ public class ProcessNodeExecutionResultHandler {
     ) throws ProcessNodeExecutionException {
         if (processInstance.getStatus() == ProcessInstanceStatus.Completed
                 || processInstance.getStatus() == ProcessInstanceStatus.Aborted
-                || processInstanceTask.getStatus() == ProcessTaskStatus.Completed) {
+                || processInstanceTask.getStatus().isTerminal()) {
             // A delayed result must not change a finished process or task, including its stored summary.
             return;
         }
@@ -190,6 +198,7 @@ public class ProcessNodeExecutionResultHandler {
                 additionalIdentities
         );
 
+        var selectedDeadline = resolveSelectedDeadline(currentNode, provider, configurationOfExecutingNode, executionResult);
         var context = new HandlerContext<>(
                 logger,
                 triggeringUser,
@@ -200,7 +209,8 @@ public class ProcessNodeExecutionResultHandler {
                 processInstanceTask,
                 previousTask,
                 executionResult,
-                additionalIdentities
+                additionalIdentities,
+                selectedDeadline
         );
 
         handleCommunicationRequest(context);
@@ -234,6 +244,7 @@ public class ProcessNodeExecutionResultHandler {
         }
 
         clearCurrentlyAssignedUser(context);
+        updateTaskDeadline(context);
 
         if (!(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
             ensureInstanceRunning(processInstance);
@@ -245,6 +256,74 @@ public class ProcessNodeExecutionResultHandler {
             instance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(instance);
         }
+    }
+
+    @Nullable
+    private <C> ProcessNodeDeadlineDefinition resolveSelectedDeadline(@Nonnull ProcessNodeEntity node,
+                                                                      @Nonnull ProcessNodeDefinition<C> provider,
+                                                                      @Nonnull C configuration,
+                                                                      @Nonnull ProcessNodeExecutionResult result)
+            throws ProcessNodeExecutionExceptionBrokenImplementation {
+        if (result.getNewDeadlineKey() == null) {
+            return null;
+        }
+        var resolution = processNodeService.resolvePorts(node, provider, configuration);
+        if (!resolution.problems().isEmpty()) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(String.join(" ", resolution.problems()));
+        }
+        return resolution.deadlineDefinitions().stream()
+                .filter(definition -> definition.key().equals(result.getNewDeadlineKey()))
+                .findFirst()
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Die Frist mit dem Schlüssel „%s“ wird für dieses Prozesselement nicht angeboten.", result.getNewDeadlineKey()));
+    }
+
+    private void updateTaskDeadline(@Nonnull HandlerContext<?, ?> context) {
+        var definition = context.selectedDeadline;
+        if (definition == null || definition.key().equals(context.processInstanceTask.getDeadlineKey())) {
+            // Repeated results in the same phase must not extend its deadline.
+            return;
+        }
+        var setting = context.currentNode.getDeadlines().get(definition.key());
+        var newDeadline = setting == null || setting.days() == null ? null
+                : businessTime.zonedNow().plusDays(setting.days()).toInstant();
+        var newDeadlineKey = newDeadline == null ? null : definition.key();
+        var previousDeadline = context.processInstanceTask.getDeadline();
+        var previousDeadlineKey = context.processInstanceTask.getDeadlineKey();
+        if (newDeadline == null && previousDeadline == null && previousDeadlineKey == null) {
+            return;
+        }
+        context.processInstanceTask
+                .setDeadline(newDeadline)
+                .setDeadlineKey(newDeadlineKey)
+                .setDeadlineStrict(newDeadline != null && setting.strict());
+        processInstanceTaskRepository.save(context.processInstanceTask);
+
+        var details = new LinkedHashMap<String, Object>();
+        details.put("previousDeadline", previousDeadline);
+        details.put("previousDeadlineKey", previousDeadlineKey);
+        details.put("newDeadline", newDeadline);
+        details.put("newDeadlineKey", newDeadlineKey);
+        var message = newDeadline == null
+                ? "Die Frist der Aufgabe wurde aufgehoben. Für die Phase „%s“ ist keine Frist festgelegt.".formatted(definition.label())
+                : previousDeadline == null
+                ? "Für die Phase „%s“ wurde eine Frist bis %s gesetzt."
+                        .formatted(definition.label(), ExecutionSummaryMarkdown.timestamp(newDeadline))
+                : "Die Frist der Aufgabe wurde von %s auf %s geändert (Phase „%s“)."
+                        .formatted(ExecutionSummaryMarkdown.timestamp(previousDeadline), ExecutionSummaryMarkdown.timestamp(newDeadline), definition.label());
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                true,
+                null,
+                null,
+                null,
+                "Frist der Aufgabe geändert",
+                details,
+                "%s",
+                message
+        );
     }
 
     private void clearCurrentlyAssignedUser(@Nonnull HandlerContext<?, ?> context) throws ProcessNodeExecutionExceptionInvalidAssignment {
@@ -642,6 +721,9 @@ public class ProcessNodeExecutionResultHandler {
                     "Die ausgewählte Person hat nicht die erforderlichen Berechtigungen für diese Aufgabe. Bitte wählen Sie eine andere berechtigte Person aus.");
         }
 
+        // Assignment notifications must already contain the new deadline.
+        updateTaskDeadline(context);
+
         boolean unchanged = Objects.equals(previousAssignedUserId, assignedUser.getId());
         UserEntity previousAssignedUser = null;
         if (previousAssignedUserId != null && !unchanged) {
@@ -764,7 +846,7 @@ public class ProcessNodeExecutionResultHandler {
     private void handleAssignedInstance(HandlerContext<?, ProcessNodeExecutionResultInstanceAssigned> context) throws ProcessNodeExecutionException {
         var viaPort = context.result.getViaPort();
         if (viaPort != null) {
-            requireCompletionPath(context.provider, context.currentNode, viaPort);
+            requireCompletionPath(context, viaPort);
             var processData = context.result.getProcessData() != null
                     ? context.result.getProcessData()
                     : context.previousTask != null
@@ -1069,7 +1151,7 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleTaskComplete(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskCompleted> context) throws ProcessNodeExecutionException {
-        var completionPath = requireCompletionPath(context.provider, context.currentNode, context.result.getViaPort());
+        var completionPath = requireCompletionPath(context, context.result.getViaPort());
         var port = completionPath.port();
         var outEdge = completionPath.edge();
 
@@ -1141,10 +1223,16 @@ public class ProcessNodeExecutionResultHandler {
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
     }
 
-    private CompletionPath requireCompletionPath(@Nonnull ProcessNodeDefinition<?> provider,
-                                                 @Nonnull ProcessNodeEntity currentNode,
-                                                 @Nonnull String viaPort) throws ProcessNodeExecutionExceptionBrokenImplementation {
-        var port = provider.getPorts().stream()
+    private <C> CompletionPath requireCompletionPath(@Nonnull HandlerContext<C, ?> context,
+                                                    @Nonnull String viaPort) throws ProcessNodeExecutionExceptionBrokenImplementation {
+        var provider = context.provider;
+        var currentNode = context.currentNode;
+        var task = context.processInstanceTask;
+        var resolution = processNodeService.resolvePorts(currentNode, provider, context.configurationOfExecutingNode);
+        if (!resolution.problems().isEmpty()) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(String.join(" ", resolution.problems()));
+        }
+        var port = resolution.ports().stream()
                 .filter(candidate -> candidate.key().equals(viaPort))
                 .findFirst()
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
@@ -1154,6 +1242,11 @@ public class ProcessNodeExecutionResultHandler {
                         StringUtils.quote(viaPort)
                 ));
 
+        if (port.deadlineKey() != null
+                && (task.getDeadline() == null || !port.deadlineKey().equals(task.getDeadlineKey()))) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    "Der Ausgang „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
+        }
         var edge = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(currentNode.getId(), viaPort)
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
                         "Für das Prozesselement %s wurde kein ausgehender Pfad für den Port %s definiert. Bitte prüfen Sie den Aufbau Ihres Prozessmodells.",
@@ -1341,7 +1434,8 @@ public class ProcessNodeExecutionResultHandler {
             @Nonnull ProcessInstanceTaskEntity processInstanceTask,
             @Nullable ProcessInstanceTaskEntity previousTask,
             @Nonnull T result,
-            @Nonnull Map<String, IdentityData> additionalIdentities
+            @Nonnull Map<String, IdentityData> additionalIdentities,
+            @Nullable ProcessNodeDeadlineDefinition selectedDeadline
     ) {
         public <S extends ProcessNodeExecutionResult> HandlerContext<NodeConfig, S> withResult(@Nonnull S newResult) {
             return new HandlerContext<>(
@@ -1354,7 +1448,8 @@ public class ProcessNodeExecutionResultHandler {
                     processInstanceTask,
                     previousTask,
                     newResult,
-                    additionalIdentities
+                    additionalIdentities,
+                    selectedDeadline
             );
         }
     }

@@ -59,6 +59,12 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.se
 
 @Component
 public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActionNodeV1.ApprovalConfiguration> {
+    private static final ProcessNodeDeadlineDefinition APPROVAL_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "approval", "Freigabe",
+            "Zeit für die Prüfung und Freigabe.",
+            new ProcessNodePort("approval_overdue", "Fristüberschreitung: Freigabe",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Freigabe."));
+
     public static final String NODE_KEY = "approval";
 
     private static final String CRITERIA_FIELD_ID = "criteria";
@@ -222,7 +228,13 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull ApprovalConfiguration configuration) {
+        return List.of(APPROVAL_DEADLINE);
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull ApprovalConfiguration configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_APPROVED,
@@ -311,6 +323,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(APPROVAL_DEADLINE.key())
                 .setProcessData(workingProcessData)
                 .setRuntimeData(Map.of());
     }

@@ -22,6 +22,7 @@ import {type ProcessInstanceDetails} from '../../entities/process-instance-detai
 import {ProcessInstanceStatusLabels} from '../../enums/process-instance-status';
 import {getProcessTaskStatusDisplay} from '../../utils/process-task-status-label';
 import {ProcessAssignee} from '../../components/process-assignee';
+import {ProcessInstanceDeadlineValue} from '../../components/process-instance-deadline-value';
 import {ProcessInstanceEventApiService} from '../../services/process-instance-event-api-service';
 import {type ProcessInstanceEventEntity} from '../../entities/process-instance-event-entity';
 import {createStaffPath} from '../../../../utils/url-path-utils';
@@ -146,6 +147,11 @@ export function ProcessInstanceDetailsPageIndex() {
             label: 'Vorgang zugewiesen an',
             icon: <AssignmentInd />,
             children: <ProcessAssignee userId={instance.assignedUserId} />,
+        },
+        {
+            label: 'Bearbeitungsfrist',
+            icon: <Acute />,
+            children: <ProcessInstanceDeadlineValue instance={instance} />,
         },
         {
             label: 'Letztes Ereignis',

@@ -246,7 +246,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull HttpActionNodeV1Config configuration) {
         return List.of(
                 new ProcessNodePort(
                         SUCCESS_PORT,

@@ -77,6 +77,13 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.se
 
 @Component
 public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormRequestActionNodeV1.NodeConfig> {
+    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
+    private static final ProcessNodeDeadlineDefinition FORM_SUBMISSION_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "formSubmission", "Einreichung des Formulars",
+            "Zeit für die Kund:in zum Ausfüllen und Einreichen des Formulars ab Versand der Nachricht.",
+            new ProcessNodePort("form_submission_overdue", "Fristüberschreitung: Formulareinreichung",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Formulareinreichung."));
+
     public static final String NODE_KEY = "form_request";
     private static final String RECIPIENT_MODE_EXISTING = "existing";
     private static final String RECIPIENT_MODE_NEW = "new";
@@ -254,7 +261,14 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull NodeConfig configuration) {
+        return SemiAutomaticMessageConfig.isManual(configuration.messageConfig)
+                ? List.of(MESSAGE_DISPATCH_DEADLINE, FORM_SUBMISSION_DEADLINE) : List.of(FORM_SUBMISSION_DEADLINE);
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull NodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_SUBMITTED,
@@ -445,6 +459,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(MESSAGE_DISPATCH_DEADLINE.key())
                 .setRuntimeData(runtimeData)
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }
@@ -622,7 +637,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var assignmentResult = newRecipient
                 ? ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                 : ProcessNodeExecutionResultTaskAssignedCustomer.of(recipientId);
-        return assignmentResult.setCommunicationRequest(communicationRequest);
+        return assignmentResult.setCommunicationRequest(communicationRequest)
+                .setNewDeadlineKey(FORM_SUBMISSION_DEADLINE.key());
     }
 
     @Nonnull
