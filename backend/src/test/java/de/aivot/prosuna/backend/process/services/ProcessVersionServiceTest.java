@@ -14,16 +14,19 @@ import de.aivot.prosuna.backend.process.services.ProcessVersionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,10 +43,12 @@ class ProcessVersionServiceTest {
         }
         var retainedVersion = new ProcessVersionEntity()
                 .setRetentionTimeValue(6)
-                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Months);
+                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Months)
+                .setInstanceDeadlineDays(30);
         var restored = mapper.readValue(mapper.writeValueAsString(retainedVersion), ProcessVersionEntity.class);
         assertEquals(6, restored.getRetentionTimeValue());
         assertEquals(ProcessRetentionTimeUnit.Months, restored.getRetentionTimeUnit());
+        assertEquals(30, restored.getInstanceDeadlineDays());
     }
 
     @Test
@@ -111,6 +116,7 @@ class ProcessVersionServiceTest {
                 .setCaseNumberTemplate("AZ-%YYY-%M-%I(4)")
                 .setRetentionTimeValue(6)
                 .setRetentionTimeUnit(ProcessRetentionTimeUnit.Months)
+                .setInstanceDeadlineDays(30)
                 .setNotes("Neue Notizen")
                 .setThemeId(16)
                 .setLegalSupportDepartmentId(11)
@@ -125,7 +131,7 @@ class ProcessVersionServiceTest {
 
         verify(caseNumberGeneratorService).validateConfiguration(de.aivot.prosuna.backend.process.enums.CaseNumberType.TEMPLATE, "AZ-%YYY-%M-%I(4)");
         verify(repository).save(existingEntity);
-        assertEquals(ProcessVersionStatus.Published, result.getStatus());
+        assertEquals(ProcessVersionStatus.Drafted, result.getStatus());
         assertEquals("Neu", result.getPublicTitle());
         assertEquals("AZ-%YYY-%M-%I(4)", result.getCaseNumberTemplate());
         assertEquals("Neue Notizen", result.getNotes());
@@ -139,6 +145,7 @@ class ProcessVersionServiceTest {
         assertEquals("Neue Barrierefreiheit", result.getProcessSpecificAccessibilityStatement());
         assertEquals(6, result.getRetentionTimeValue());
         assertEquals(ProcessRetentionTimeUnit.Months, result.getRetentionTimeUnit());
+        assertEquals(30, result.getInstanceDeadlineDays());
     }
 
     @Test
@@ -248,28 +255,136 @@ class ProcessVersionServiceTest {
     }
 
     @Test
-    void update_RequiresRetentionForPublicationAndFreezesItAfterward() throws ResponseException {
+    void updateStatus_RequiresRetentionForPublication() throws ResponseException {
+        var repository = mock(ProcessVersionRepository.class);
+        when(repository.save(any(ProcessVersionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var service = createService(repository);
+        var draft = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
+                .setStatus(ProcessVersionStatus.Drafted);
+
+        assertThrows(ResponseException.class, () -> service.updateStatus(draft, ProcessVersionStatus.Published));
+        verify(repository, never()).save(any(ProcessVersionEntity.class));
+
+        draft.setStatus(ProcessVersionStatus.Drafted)
+                .setRetentionTimeValue(30)
+                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Days);
+        var result = service.updateStatus(draft, ProcessVersionStatus.Published);
+
+        assertEquals(ProcessVersionStatus.Published, result.getStatus());
+        verify(repository).save(draft);
+    }
+
+    @Test
+    void updateStatus_ChangesStatusOfVersionsThatAreNoLongerDrafts() throws ResponseException {
+        var repository = mock(ProcessVersionRepository.class);
+        when(repository.save(any(ProcessVersionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var service = createService(repository);
+        var version = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
+                .setStatus(ProcessVersionStatus.Published)
+                .setRetentionTimeValue(30)
+                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Days);
+
+        assertEquals(ProcessVersionStatus.Revoked, service.updateStatus(version, ProcessVersionStatus.Revoked).getStatus());
+        assertEquals(ProcessVersionStatus.Published, service.updateStatus(version, ProcessVersionStatus.Published).getStatus());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessVersionStatus.class, names = {"Published", "Revoked"})
+    void update_RejectsVersionsThatAreNoLongerDrafts(ProcessVersionStatus status) {
+        var repository = mock(ProcessVersionRepository.class);
+        var service = createService(repository);
+        var existing = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
+                .setStatus(status)
+                .setPublicTitle("Freigegeben")
+                .setRetentionTimeValue(30)
+                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Days);
+        var changed = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
+                .setStatus(status)
+                .setPublicTitle("Geändert")
+                .setRetentionTimeValue(2)
+                .setRetentionTimeUnit(ProcessRetentionTimeUnit.Weeks);
+
+        var exception = assertThrows(ResponseException.class,
+                () -> service.performUpdate(ProcessVersionEntityId.of(12, 5), changed, existing));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("Freigegeben", existing.getPublicTitle());
+        assertEquals(30, existing.getRetentionTimeValue());
+        verify(repository, never()).save(any(ProcessVersionEntity.class));
+    }
+
+    @Test
+    void delete_RejectsPublishedVersion() {
+        var repository = mock(ProcessVersionRepository.class);
+        var service = createService(repository);
+        var published = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
+                .setStatus(ProcessVersionStatus.Published);
+
+        var exception = assertThrows(ResponseException.class, () -> service.performDelete(published));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        verify(repository, never()).delete(any(ProcessVersionEntity.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessVersionStatus.class, names = {"Drafted", "Revoked"})
+    void delete_AllowsVersionsThatAreNotPublished(ProcessVersionStatus status) throws ResponseException {
+        var repository = mock(ProcessVersionRepository.class);
+        var service = createService(repository);
+        var version = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5).setStatus(status);
+
+        service.performDelete(version);
+
+        verify(repository).delete(version);
+    }
+
+    private static ProcessVersionService createService(ProcessVersionRepository repository) {
+        return new ProcessVersionService(repository, mock(ProcessNodeService.class),
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+    }
+
+    @Test
+    void createAndUpdate_AcceptInstanceDeadlinesWithinTheTaskDeadlineBounds() throws ResponseException {
+        var repository = mock(ProcessVersionRepository.class);
+        when(repository.save(any(ProcessVersionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var service = new ProcessVersionService(repository, mock(ProcessNodeService.class),
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+        var version = new ProcessVersionEntity().setProcessId(12).setStatus(ProcessVersionStatus.Drafted);
+
+        assertEquals(1, service.create(version.setInstanceDeadlineDays(1)).getInstanceDeadlineDays());
+        assertEquals(3652, service.create(version.setInstanceDeadlineDays(3652)).getInstanceDeadlineDays());
+        assertThrows(ResponseException.class, () -> service.create(version.setInstanceDeadlineDays(0)));
+        assertThrows(ResponseException.class, () -> service.create(version.setInstanceDeadlineDays(3653)));
+
+        var id = ProcessVersionEntityId.of(12, 5);
+        var existing = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
+                .setStatus(ProcessVersionStatus.Drafted).setInstanceDeadlineDays(14);
+        assertThrows(ResponseException.class,
+                () -> service.performUpdate(id, version.setInstanceDeadlineDays(-1), existing));
+        assertEquals(14, existing.getInstanceDeadlineDays());
+        service.performUpdate(id, version.setInstanceDeadlineDays(null), existing);
+        assertNull(existing.getInstanceDeadlineDays());
+    }
+
+    @Test
+    void update_FreezesTheInstanceDeadlineAfterPublication() throws ResponseException {
         var repository = mock(ProcessVersionRepository.class);
         when(repository.save(any(ProcessVersionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         var service = new ProcessVersionService(repository, mock(ProcessNodeService.class),
                 mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
         var id = ProcessVersionEntityId.of(12, 5);
-        var draft = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
-                .setStatus(ProcessVersionStatus.Drafted);
         var published = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
-                .setStatus(ProcessVersionStatus.Published);
+                .setStatus(ProcessVersionStatus.Published)
+                .setRetentionTimeValue(30).setRetentionTimeUnit(ProcessRetentionTimeUnit.Days)
+                .setInstanceDeadlineDays(30);
 
-        assertThrows(ResponseException.class, () -> service.performUpdate(id, published, draft));
-        published.setRetentionTimeValue(30).setRetentionTimeUnit(ProcessRetentionTimeUnit.Days);
-        service.performUpdate(id, published, draft);
-        assertEquals(30, draft.getRetentionTimeValue());
-
-        var changed = new ProcessVersionEntity().setStatus(ProcessVersionStatus.Published)
-                .setRetentionTimeValue(2).setRetentionTimeUnit(ProcessRetentionTimeUnit.Weeks);
-        assertThrows(ResponseException.class, () -> service.performUpdate(id, changed, draft));
-        assertEquals(30, draft.getRetentionTimeValue());
-        draft.setStatus(ProcessVersionStatus.Revoked);
-        changed.setStatus(ProcessVersionStatus.Revoked);
-        assertThrows(ResponseException.class, () -> service.performUpdate(id, changed, draft));
+        for (var days : new Integer[]{14, null}) {
+            var changed = new ProcessVersionEntity().setStatus(ProcessVersionStatus.Revoked)
+                    .setRetentionTimeValue(30).setRetentionTimeUnit(ProcessRetentionTimeUnit.Days)
+                    .setInstanceDeadlineDays(days);
+            var failure = assertThrows(ResponseException.class, () -> service.performUpdate(id, changed, published));
+            assertEquals(HttpStatus.CONFLICT, failure.getStatus());
+            assertEquals(30, published.getInstanceDeadlineDays());
+        }
     }
 }

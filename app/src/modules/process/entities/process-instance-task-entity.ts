@@ -8,10 +8,12 @@ export interface ProcessInstanceTaskEntity {
     processVersion: number;
     processNodeId: number;
     previousProcessInstanceTaskId: number | null;
+    restartForTaskId: number | null;
     previousProcessNodeId: number | null;
     previousProcessNodePortKey: string | null;
     status: ProcessTaskStatus;
     statusOverride: string | null;
+    executionSummaryMarkdown: string | null;
     started: string; // ISO date string
     updated: string; // ISO date string
     finished: string | null; // ISO date string
@@ -25,4 +27,7 @@ export interface ProcessInstanceTaskEntity {
     assignedUserId: string | null;
     assignedCustomerIdentityId: string | null;
     deadline: string | null; // ISO date string
+    deadlineKey: string | null;
+    // Only hard deadlines expire the task into the deadline port; fixed together with the date.
+    deadlineStrict: boolean;
 }

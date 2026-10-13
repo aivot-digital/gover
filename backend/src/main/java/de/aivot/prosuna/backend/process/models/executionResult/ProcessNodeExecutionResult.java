@@ -13,6 +13,16 @@ public abstract class ProcessNodeExecutionResult {
     private @Nullable Boolean clearTaskStatusOverride;
     private @Nullable ProcessNodeExecutionResultCommunicationRequest communicationRequest;
 
+    /** Select a declared phase deadline. Null preserves the active deadline; an unconfigured phase clears it. */
+    private @Nullable String newDeadlineKey;
+
+    /**
+     * Clear the current task's staff assignment when true, including for no-op results.
+     * Null and false preserve the assignment. Cannot be combined with a new staff task assignment.
+     * Clearing the assignment does not change the instance assignment or participation history.
+     */
+    private @Nullable Boolean clearCurrentlyAssignedUser;
+
     @Nullable
     public Map<String, Object> getRuntimeData() {
         return runtimeData;
@@ -77,5 +87,25 @@ public abstract class ProcessNodeExecutionResult {
 
     public Optional<ProcessNodeExecutionResult> asOptional() {
         return Optional.of(this);
+    }
+
+    @Nullable
+    public Boolean getClearCurrentlyAssignedUser() {
+        return clearCurrentlyAssignedUser;
+    }
+
+    public ProcessNodeExecutionResult setClearCurrentlyAssignedUser(@Nullable Boolean clearCurrentlyAssignedUser) {
+        this.clearCurrentlyAssignedUser = clearCurrentlyAssignedUser;
+        return this;
+    }
+
+    @Nullable
+    public String getNewDeadlineKey() {
+        return newDeadlineKey;
+    }
+
+    public ProcessNodeExecutionResult setNewDeadlineKey(@Nullable String newDeadlineKey) {
+        this.newDeadlineKey = newDeadlineKey;
+        return this;
     }
 }

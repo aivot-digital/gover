@@ -72,6 +72,8 @@ public class ServerReadyEventListener implements ApplicationListener<Application
             Sentry.init(options -> {
                 options.setDsn(prosunaConfig.getSentryServer());
                 options.setEnvironment(prosunaConfig.getEnvironment());
+                options.setServerName(prosunaConfig.getProsunaHostname());
+                options.setRelease(buildProperties.getBuildVersion() + "." + buildProperties.getBuildNumber());
                 options.setTracesSampleRate(0.1);
             });
         } else {

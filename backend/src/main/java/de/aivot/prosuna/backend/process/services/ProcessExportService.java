@@ -85,7 +85,7 @@ public class ProcessExportService {
                             node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
                             cleanedConfiguration, // configuration
                             node.getOutputMappings(), // outputMappings
-                            node.getTimeLimitDays(), // timeLimitDays
+                            node.getDeadlines(),
                             node.getRequirements(), // requirements
                             null, // notes
                             false // savedWithErrors

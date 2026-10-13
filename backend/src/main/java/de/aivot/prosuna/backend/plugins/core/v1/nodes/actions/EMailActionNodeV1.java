@@ -29,6 +29,8 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
@@ -58,8 +60,12 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.*;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+
 @Component
 public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV1.EMailActionNodeConfig> {
+    private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
+
     public static final String NODE_KEY = "mail";
 
     private static final String PORT_NAME = "output";
@@ -98,6 +104,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         this.vDepartmentShadowedService = vDepartmentShadowedService;
         this.themeService = themeService;
         this.systemService = systemService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<EMailActionNodeV1.EMailActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Die E-Mail-Nachricht wurde" + summary.completedAt() + " erfolgreich versendet."
+                + detail("Betreff", summary.data(OUTPUT_NAME_SUBJECT));
     }
 
     @Nonnull
@@ -181,7 +195,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull EMailActionNodeConfig configuration) {
+        return SemiAutomaticMessageConfig.isManual(configuration.messageConfig)
+                ? List.of(MESSAGE_DISPATCH_DEADLINE) : List.of();
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull EMailActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
@@ -284,6 +305,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(MESSAGE_DISPATCH_DEADLINE.key())
                 .setRuntimeData(new LinkedHashMap<>(context.getThisTask().getRuntimeData()))
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData());
     }

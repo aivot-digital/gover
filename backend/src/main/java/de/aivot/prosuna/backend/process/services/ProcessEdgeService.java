@@ -15,20 +15,40 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 
 @Service
 public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Integer> {
 
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
 
+    private final ProcessNodeService processNodeService;
+    private final ProcessVersionDraftGuard processVersionDraftGuard;
+
     @Autowired
-    public ProcessEdgeService(ProcessEdgeRepository processDefinitionEdgeRepository) {
+    public ProcessEdgeService(ProcessEdgeRepository processDefinitionEdgeRepository,
+                              ProcessNodeService processNodeService,
+                              ProcessVersionDraftGuard processVersionDraftGuard) {
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
+        this.processNodeService = processNodeService;
+        this.processVersionDraftGuard = processVersionDraftGuard;
     }
 
     @Nonnull
     @Override
     public ProcessEdgeEntity create(@Nonnull ProcessEdgeEntity entity) throws ResponseException {
+        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
+        entity.setId(null);
+        validateEndpoints(entity);
+        return processDefinitionEdgeRepository.save(entity);
+    }
+
+    /**
+     * Copies a stored connection into a new draft, e.g. for a new version or an import. Obsolete connections stay
+     * visible for correction and block publication there, instead of aborting the non-transactional copy midway.
+     */
+    @Nonnull
+    public ProcessEdgeEntity copy(@Nonnull ProcessEdgeEntity entity) {
         entity.setId(null);
         return processDefinitionEdgeRepository.save(entity);
     }
@@ -68,6 +88,9 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
     public ProcessEdgeEntity performUpdate(@Nonnull Integer id,
                                            @Nonnull ProcessEdgeEntity entity,
                                            @Nonnull ProcessEdgeEntity existingEntity) throws ResponseException {
+        processVersionDraftGuard.requireDrafted(existingEntity.getProcessId(), existingEntity.getProcessVersion());
+        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
+        validateEndpoints(entity);
         existingEntity.setProcessId(entity.getProcessId());
         existingEntity.setProcessVersion(entity.getProcessVersion());
         existingEntity.setFromNodeId(entity.getFromNodeId());
@@ -78,7 +101,29 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
 
     @Override
     public void performDelete(@Nonnull ProcessEdgeEntity entity) throws ResponseException {
+        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
         processDefinitionEdgeRepository.delete(entity);
+    }
+
+    private void validateEndpoints(@Nonnull ProcessEdgeEntity edge) throws ResponseException {
+        var source = processNodeService.retrieve(edge.getFromNodeId()).orElseThrow(ResponseException::badRequest);
+        var target = processNodeService.retrieve(edge.getToNodeId()).orElseThrow(ResponseException::badRequest);
+        // The workflow engine follows an edge by its start node and port, regardless of the edge's process version.
+        // An edge must therefore connect nodes of its own version, otherwise a draft edge could change the flow of a
+        // published version.
+        for (var node : List.of(source, target)) {
+            if (!Objects.equals(node.getProcessId(), edge.getProcessId()) || !Objects.equals(node.getProcessVersion(), edge.getProcessVersion())) {
+                throw ResponseException.badRequest("Quelle und Ziel der Verbindung müssen zur angegebenen Prozessversion gehören.");
+            }
+        }
+        var resolution = processNodeService.resolvePorts(source);
+        if (!resolution.problems().isEmpty() || resolution.ports().stream().noneMatch(port -> port.key().equals(edge.getViaPort()))) {
+            throw ResponseException.badRequest("Der ausgewählte Ausgang ist für dieses Prozesselement nicht verfügbar. Prüfen Sie die Konfiguration.");
+        }
+        var existing = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(edge.getFromNodeId(), edge.getViaPort());
+        if (existing.isPresent() && !Objects.equals(existing.get().getId(), edge.getId())) {
+            throw ResponseException.badRequest("Dieser Ausgang ist bereits verbunden.");
+        }
     }
 
     public List<ProcessEdgeEntity> findAllByProcessIdAndProcessVersion(Integer id, Integer processVersion) {

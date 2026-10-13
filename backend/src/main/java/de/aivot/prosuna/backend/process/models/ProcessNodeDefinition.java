@@ -64,12 +64,26 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     ProcessNodeExecutionType[] getExecutionTypes();
 
     /**
-     * Get the ports of the process node. The ports are outgoing connections that can be used to connect this node to other nodes in the process definition.
+     * Get the outgoing ports for the authored configuration. Return a deterministic, ordered list with unique,
+     * stable keys; keys must not depend on labels, row positions or runtime values. Fields determining ports
+     * must use literal-only inputs. Other deferred inputs and incomplete authoring values can be null.
+     * The platform adds configured hard-deadline ports outside this method.
      *
+     * @param configuration The configuration derived in authoring mode, including defaults.
      * @return The ports of the process node.
      */
     @Nonnull
-    List<ProcessNodePort> getPorts();
+    List<ProcessNodePort> getPorts(@Nonnull NodeConfig configuration) throws ResponseException;
+
+    /**
+     * Offer phase deadlines for the authored configuration, including incomplete values.
+     * Keys must be stable and unique; fields determining this list must use literal-only inputs.
+     * Return regular ports and deadline ports without a deadlineKey; the platform adds that metadata.
+     */
+    @Nonnull
+    default List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull NodeConfig configuration) {
+        return List.of();
+    }
 
     /**
      * Get the outputs of the process node. The outputs are data produced by this node that can be mapped in the node configuration. This list must be equivalent to the data stored
@@ -222,26 +236,28 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException;
 
     /**
-     * Resume a task by this node provider during process instance execution.
-     * @param context
-     * @return
-     * @throws ProcessNodeExecutionException
+     * Generates the Markdown summary stored with a successfully completed task for the internal process history.
+     * The context contains the configuration used for execution and the completed task data after output mappings.
+     * Implementations must only produce text and must not mutate the context or perform execution side effects.
+     * The stored text is not regenerated when the history is read or this definition changes.
+     *
+     * @param context The completed execution, including any identities added at completion.
+     * @return Markdown to persist verbatim, or {@code null} or blank text to omit the summary.
+     * @throws ResponseException If the summary cannot be generated. Summary failures are logged without failing completion.
      */
     @Nullable
-    default ProcessNodeExecutionResult resume(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException {
+    default String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<NodeConfig> context) throws ResponseException {
         return null;
     }
 
     /**
-     * Get the task status layout for nodes of this provider type. This layout is used to display the status of the task in task lists and overviews. It is optional and can be
-     * null.
-     *
-     * @param context The context to build the layout for.
-     * @return The task status layout, or null if not provided.
-     * @throws ResponseException If an error occurs while generating the layout.
+     * Resume a task by this node provider during process instance execution.
+     * @param context The context to resume the task for.
+     * @return The result of the node execution, or null if not applicable.
+     * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     @Nullable
-    default LayoutElement<?> getTaskStatusLayout(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
+    default ProcessNodeExecutionResult resume(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException {
         return null;
     }
 

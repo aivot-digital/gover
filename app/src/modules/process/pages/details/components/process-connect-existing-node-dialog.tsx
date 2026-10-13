@@ -82,7 +82,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                 .map((edge) => edge.viaPort),
         );
 
-        return sourceProvider.ports.filter((port) => !usedPortKeys.has(port.key));
+        return renderSourceNode.ports.filter((port) => !usedPortKeys.has(port.key));
     }, [processFlow.edges, renderSourceNode, sourceProvider]);
 
     const targetOptions = useMemo<ConnectTargetOption[]>(() => (

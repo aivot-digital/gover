@@ -36,27 +36,11 @@ import tools.jackson.databind.json.JsonMapper;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class FitConnectTriggerSubmissionImportServiceV1Test {
     private static final UUID DESTINATION_ID = UUID.fromString("d12caea8-f372-4eb1-b102-b0a228253a11");
@@ -296,7 +280,7 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         when(cases.logOf(any(SubmissionForPickup.class))).thenReturn(new TransferLog(List.of(
                 CaseEvent.builder()
                         .event(Event.SUBMIT_SUBMISSION)
-                        .issueTime(Date.from(Instant.parse("2026-09-02T11:59:00Z")))
+                        .issueTime(Instant.parse("2026-09-02T11:59:00Z"))
                         .problems(List.of())
                         .build()
         )));

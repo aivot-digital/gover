@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityAuthenticationRedirect;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
@@ -125,7 +126,7 @@ public class CustomerTaskIdentityService {
     }
 
     @Nonnull
-    public URI createAuthenticationRedirect(@Nonnull ProcessInstanceEntity processInstance,
+    public IdentityAuthenticationRedirect createAuthenticationRedirect(@Nonnull ProcessInstanceEntity processInstance,
                                             @Nonnull ProcessNodeEntity processNode,
                                             @Nonnull ProcessNodeCustomerView processNodeCustomerView,
                                             @Nullable String identitySessionId,
@@ -143,6 +144,12 @@ public class CustomerTaskIdentityService {
                 List.of(),
                 processNode.getId()
         );
+    }
+
+    /** Validates a customer-supplied return URL; only pages of this Prosuna installation are accepted. */
+    @Nonnull
+    public URI resolveReturnOrigin(@Nonnull String origin) throws ResponseException {
+        return identityService.resolveOrigin(origin);
     }
 
     @Nonnull
@@ -164,7 +171,10 @@ public class CustomerTaskIdentityService {
         if (!isCompletingResult(executionResult) || state.newIdentity() == null) {
             return Map.of();
         }
-        return Map.of(state.newIdentity().identityId(), state.newIdentity());
+        var identity = state.newIdentity().withTitle(
+                state.newIdentitySlot() == null ? null : state.newIdentitySlot().title()
+        );
+        return Map.of(identity.identityId(), identity);
     }
 
     public boolean isCompletingResult(@Nonnull ProcessNodeExecutionResult executionResult) {

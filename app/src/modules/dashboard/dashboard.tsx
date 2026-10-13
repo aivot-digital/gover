@@ -4,6 +4,7 @@ import React, {lazy, Suspense, useEffect, useMemo, useState} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {DashboardGreeting} from './components/dashboard-greeting';
 import {DashboardTasksPanel} from './components/dashboard-tasks-panel';
+import {DashboardInstancesPanel} from './components/dashboard-instances-panel';
 import {DashboardLinksPanel} from './components/dashboard-links-panel';
 import {DashboardActivityPanel} from './components/dashboard-activity-panel';
 import {DashboardRecentProcessesPanel} from './components/dashboard-recent-processes-panel';
@@ -66,10 +67,13 @@ export function Dashboard() {
     const displayedOverviewError = !shouldSimulate && overviewError;
     const displayedActivityError = !shouldSimulate && activityError;
     const recentProcesses = displayedOverview?.recentProcesses ?? [];
+    const instanceSummary = displayedOverview?.instances;
     // These public display configs are known before the activity request and keep the initial layout stable.
     const activityExpected = activityEnabledConfig !== 'false';
     const showActivity = displayedActivity?.available === true || (displayedActivity == null && activityExpected) || (displayedActivityError && activityExpected);
     const showRecentProcesses = recentProcesses.length > 0;
+    // Like recent processes, the panel only appears when there is something to show.
+    const showInstances = instanceSummary != null && instanceSummary.total > 0;
 
     return (
         <PageWrapper
@@ -91,6 +95,11 @@ export function Dashboard() {
                 {showRecentProcesses && (
                     <Grid size={{xs: 12, lg: 4}} sx={{display: 'flex'}}>
                         <DashboardRecentProcessesPanel processes={recentProcesses} previewOnly={shouldSimulate}/>
+                    </Grid>
+                )}
+                {showInstances && (
+                    <Grid size={12} sx={{display: 'flex'}}>
+                        <DashboardInstancesPanel summary={instanceSummary} previewOnly={shouldSimulate}/>
                     </Grid>
                 )}
                 {showActivity && (

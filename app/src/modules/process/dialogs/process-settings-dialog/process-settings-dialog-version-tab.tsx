@@ -66,6 +66,8 @@ const caseNumberTypeOptions = [
 ];
 
 const PROCESS_VERSION_NOTES_MAX_LENGTH = 2048;
+// Matches the backend bounds, which equal those of task deadlines.
+const MAX_INSTANCE_DEADLINE_DAYS = 3652;
 const MAX_RETENTION_TIME_VALUES: Record<RetentionTimeUnit, number> = {
     [RetentionTimeUnit.Days]: 36_524,
     [RetentionTimeUnit.Weeks]: 5_217,
@@ -98,8 +100,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
 
     const [draft, setDraft] = useState<ProcessVersionEntity>(version);
     const [isSaving, setIsSaving] = useState(false);
-    const [retentionInputRevision, setRetentionInputRevision] = useState(0);
-    const [hasEditedRetentionTime, setHasEditedRetentionTime] = useState(false);
+    const [numberInputRevision, setNumberInputRevision] = useState(0);
 
     const isEditable = version.status === ProcessStatus.Drafted;
     const caseNumberType = draft.caseNumberType;
@@ -124,8 +125,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
     useEffect(() => {
         if (open) {
             setDraft(version);
-            setRetentionInputRevision((revision) => revision + 1);
-            setHasEditedRetentionTime(false);
+            setNumberInputRevision((revision) => revision + 1);
         }
     }, [open, version]);
 
@@ -163,11 +163,15 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         return undefined;
     }, [draft.notes]);
 
+    // Drafts may be saved without a retention period; publication requires one (enforced by the backend).
+    // Once either part is entered, both are needed.
+    const hasRetentionInput = draft.retentionTimeValue != null || draft.retentionTimeUnit != null;
+
     const retentionTimeValueError = useMemo(() => {
-        if (!isEditable) {
+        const value = draft.retentionTimeValue;
+        if (!isEditable || (value == null && draft.retentionTimeUnit == null)) {
             return undefined;
         }
-        const value = draft.retentionTimeValue;
         if (value == null) {
             return 'Geben Sie eine Aufbewahrungsdauer an.';
         }
@@ -181,12 +185,23 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         return undefined;
     }, [draft.retentionTimeValue, draft.retentionTimeUnit, isEditable]);
 
-    const retentionTimeUnitError = isEditable && draft.retentionTimeUnit == null
+    const retentionTimeUnitError = isEditable && draft.retentionTimeUnit == null && draft.retentionTimeValue != null
         ? 'Wählen Sie eine Zeiteinheit für die Aufbewahrungsfrist aus.'
         : undefined;
 
+    const instanceDeadlineDaysError = useMemo(() => {
+        const value = draft.instanceDeadlineDays;
+        if (!isEditable || value == null) {
+            return undefined;
+        }
+        if (!Number.isInteger(value) || value < 1 || value > MAX_INSTANCE_DEADLINE_DAYS) {
+            return `Die Bearbeitungsdauer muss zwischen 1 und ${formatNumToGermanNum(MAX_INSTANCE_DEADLINE_DAYS)} Tagen liegen.`;
+        }
+        return undefined;
+    }, [draft.instanceDeadlineDays, isEditable]);
+
     const hasValidationError = publicTitleError != null || caseNumberTemplateError != null || notesError != null
-        || retentionTimeValueError != null || retentionTimeUnitError != null;
+        || retentionTimeValueError != null || retentionTimeUnitError != null || instanceDeadlineDaysError != null;
 
     const hasUnsavedChanges = useMemo(() => {
         return !deepEquals(
@@ -197,6 +212,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 notes: version.notes,
                 retentionTimeValue: version.retentionTimeValue,
                 retentionTimeUnit: version.retentionTimeUnit,
+                instanceDeadlineDays: version.instanceDeadlineDays,
                 themeId: version.themeId,
                 legalSupportDepartmentId: version.legalSupportDepartmentId,
                 technicalSupportDepartmentId: version.technicalSupportDepartmentId,
@@ -213,6 +229,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 notes: draft.notes,
                 retentionTimeValue: draft.retentionTimeValue,
                 retentionTimeUnit: draft.retentionTimeUnit,
+                instanceDeadlineDays: draft.instanceDeadlineDays,
                 themeId: draft.themeId,
                 legalSupportDepartmentId: draft.legalSupportDepartmentId,
                 technicalSupportDepartmentId: draft.technicalSupportDepartmentId,
@@ -228,6 +245,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         draft.caseNumberType,
         draft.caseNumberTemplate,
         draft.imprintDepartmentId,
+        draft.instanceDeadlineDays,
         draft.legalSupportDepartmentId,
         draft.notes,
         draft.retentionTimeValue,
@@ -242,6 +260,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
         version.caseNumberType,
         version.caseNumberTemplate,
         version.imprintDepartmentId,
+        version.instanceDeadlineDays,
         version.legalSupportDepartmentId,
         version.notes,
         version.retentionTimeValue,
@@ -298,6 +317,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             notes: draft.notes?.trim() === '' ? null : (draft.notes?.trim() ?? null),
             retentionTimeValue: draft.retentionTimeValue,
             retentionTimeUnit: draft.retentionTimeUnit,
+            instanceDeadlineDays: draft.instanceDeadlineDays ?? null,
             themeId: draft.themeId,
             legalSupportDepartmentId: draft.legalSupportDepartmentId,
             technicalSupportDepartmentId: draft.technicalSupportDepartmentId,
@@ -327,7 +347,6 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             .then((updatedVersion) => {
                 onVersionChange(updatedVersion);
                 setDraft(updatedVersion);
-                setHasEditedRetentionTime(false);
                 dispatch(showSuccessSnackbar('Die versionsspezifischen Einstellungen wurden gespeichert.'));
             })
             .catch((error) => {
@@ -355,9 +374,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
 
     const handleReset = useCallback(() => {
         setDraft(version);
-        setHasEditedRetentionTime(false);
         // NumberFieldComponent buffers its displayed text independently of the draft value.
-        setRetentionInputRevision((revision) => revision + 1);
+        setNumberInputRevision((revision) => revision + 1);
     }, [version]);
 
     useImperativeHandle(
@@ -419,6 +437,37 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             />
 
             <ElementEditorSectionHeader
+                title="Bearbeitungsfrist"
+                variant="h6"
+                disableMarginTop
+                disableMarginBottom
+                maxWidth={680}
+            >
+                Die Frist beginnt mit dem Eingang eines Vorgangs und wird in Kalendertagen gezählt. Ab der Hälfte der
+                Frist wird der Vorgang als bald fällig hervorgehoben, nach Fristablauf als überschritten. Eine
+                Überschreitung hat keine Auswirkungen auf den Prozessablauf. Fristen einzelner Aufgaben gelten
+                unabhängig davon.
+            </ElementEditorSectionHeader>
+
+            <Box sx={{maxWidth: 680}}>
+                <NumberFieldComponent
+                    key={`instance-deadline-${numberInputRevision}`}
+                    label="Bearbeitungsdauer"
+                    hint="Ohne Angabe gilt für Vorgänge dieser Prozessversion keine Bearbeitungsfrist."
+                    suffix="Tage"
+                    value={draft.instanceDeadlineDays}
+                    onChange={(value) => {
+                        setDraft({...draft, instanceDeadlineDays: value ?? null});
+                    }}
+                    decimalPlaces={0}
+                    minValue={1}
+                    maxValue={MAX_INSTANCE_DEADLINE_DAYS}
+                    error={instanceDeadlineDaysError}
+                    disabled={!isEditable || isSaving}
+                />
+            </Box>
+
+            <ElementEditorSectionHeader
                 title="Aufbewahrungsfrist"
                 variant="h6"
                 disableMarginTop
@@ -428,24 +477,24 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 Nach Abschluss eines Vorgangs bleibt dieser für die angegebene Dauer gespeichert.
                 Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anhänge gelöscht.
                 In Abschluss-Elementen kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
+                Vor der Veröffentlichung muss eine Aufbewahrungsfrist festgelegt sein.
             </ElementEditorSectionHeader>
 
             <Grid container spacing={2} sx={{maxWidth: 680}}>
                 <Grid size={{xs: 12, md: 6}}>
                     <NumberFieldComponent
-                        key={retentionInputRevision}
+                        key={numberInputRevision}
                         label="Aufbewahrungsdauer"
                         value={draft.retentionTimeValue}
                         onChange={(value) => {
-                            setHasEditedRetentionTime(true);
                             setDraft({...draft, retentionTimeValue: value});
                         }}
                         decimalPlaces={0}
                         minValue={1}
                         maxValue={draft.retentionTimeUnit == null ? undefined : MAX_RETENTION_TIME_VALUES[draft.retentionTimeUnit]}
-                        required={isEditable}
+                        required={isEditable && hasRetentionInput}
                         showOptionalIndicator={false}
-                        error={hasEditedRetentionTime ? retentionTimeValueError : undefined}
+                        error={retentionTimeValueError}
                         disabled={!isEditable || isSaving}
                     />
                 </Grid>
@@ -454,13 +503,12 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         label="Zeiteinheit"
                         value={draft.retentionTimeUnit}
                         onChange={(unit) => {
-                            setHasEditedRetentionTime(true);
                             setDraft({...draft, retentionTimeUnit: unit});
                         }}
                         options={retentionTimeUnitOptions}
-                        required={isEditable}
+                        required={isEditable && hasRetentionInput}
                         showOptionalIndicator={false}
-                        error={hasEditedRetentionTime ? retentionTimeUnitError : undefined}
+                        error={retentionTimeUnitError}
                         disabled={!isEditable || isSaving}
                     />
                 </Grid>

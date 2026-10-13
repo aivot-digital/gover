@@ -4,13 +4,15 @@ import FolderShared from '@aivot/mui-material-symbols-400-n25-outlined/FolderSha
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
 import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
+import TimerOff from '@aivot/mui-material-symbols-400-n25-outlined/TimerOff';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {Chip} from '../../../../components/chip/chip';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {type ProcessTaskDetails} from '../../entities/process-task-details';
-import {ProcessTaskStatus, ProcessTaskStatusLabels, ProcessTaskStatusColors} from '../../enums/process-task-status';
+import {ProcessTaskStatus, ProcessTaskStatusColors} from '../../enums/process-task-status';
+import {getProcessTaskStatusDisplay} from '../../utils/process-task-status-label';
 import {createStaffPath} from '../../../../utils/url-path-utils';
 import {KnownProviderIcons} from '../../data/known-provider-icons';
 import {type SvgIconComponent} from '../../../../types/svg-icon-component';
@@ -69,7 +71,9 @@ export function getProcessTaskDescription(item?: ProcessTaskDetailsPageItem | nu
 }
 
 export function getProcessTaskStatusLabel(item?: ProcessTaskDetailsPageItem | null): string {
-    return item?.task.statusOverride?.trim() || ProcessTaskStatusLabels[item?.task.status ?? ProcessTaskStatus.Running];
+    return getProcessTaskStatusDisplay(
+        item?.task ?? {status: ProcessTaskStatus.Running}, item?.instance?.identities,
+    ).label;
 }
 
 export function getProcessTaskStatusColor(
@@ -90,6 +94,10 @@ function getProcessTaskStatusIcon(item?: ProcessTaskDetailsPageItem | null): Rea
         return <Replay fontSize="small" />;
     }
 
+    if (status === ProcessTaskStatus.DeadlineExceeded) {
+        return <TimerOff fontSize="small" />;
+    }
+
     return undefined;
 }
 
@@ -107,16 +115,12 @@ function buildProcessTaskHeaderBadges(item?: ProcessTaskDetailsPageItem): ReactN
         return undefined;
     }
 
+    const status = getProcessTaskStatusDisplay(item.task, item.instance?.identities);
     const badges: ReactNode[] = [
         <Chip
             key="task-status"
-            label={getProcessTaskStatusLabel(item)}
-            title={
-                item.task.statusOverride?.trim() &&
-                item.task.statusOverride.trim() !== ProcessTaskStatusLabels[item.task.status]
-                    ? `Systemstatus: ${ProcessTaskStatusLabels[item.task.status]}`
-                    : undefined
-            }
+            label={status.label}
+            title={status.tooltip}
             color={getProcessTaskStatusColor(item)}
             icon={getProcessTaskStatusIcon(item)}
             mode="soft"

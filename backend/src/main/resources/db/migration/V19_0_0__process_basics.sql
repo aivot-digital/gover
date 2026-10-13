@@ -114,8 +114,8 @@ create table process_nodes
     -- The output mappings for this node.
     output_mappings                 jsonb        not null default '{}',
 
-    -- The timelimit in days for this node.
-    time_limit_days                 integer      null,
+    -- Optional phase deadlines, keyed by the node definition's deadline keys.
+    deadlines                       jsonb        not null default '{}',
 
     -- The requirements for this node.
     requirements                    text         null,

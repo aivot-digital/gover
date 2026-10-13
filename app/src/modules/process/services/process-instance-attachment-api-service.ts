@@ -19,6 +19,10 @@ export class ProcessInstanceAttachmentApiService extends BaseReadApiService<
         super('/api/process-instance-attachments/');
     }
 
+    preview(key: string): Promise<Blob> {
+        return this.getBlob(`${this.path}${encodeURIComponent(key)}/file/?download=false`);
+    }
+
     initialize(): ProcessInstanceAttachmentEntity {
         return {
             key: '',

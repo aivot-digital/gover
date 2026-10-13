@@ -12,6 +12,7 @@ export interface ProcessInstanceEventEntity {
     level: ProcessNodeExecutionLogLevel;
     isTechnical: boolean;
     isAudit: boolean;
+    historyRelevant: boolean;
     technical?: boolean;
     audit?: boolean;
     title: string;
@@ -19,4 +20,7 @@ export interface ProcessInstanceEventEntity {
     details: Record<string, any>;
     timestamp: string; // ISO date string
     triggeringUserId?: string | null;
+    concernedUserId?: string | null;
+    concernedIdentityId?: string | null;
+    concernedIdentityTitle?: string | null;
 }

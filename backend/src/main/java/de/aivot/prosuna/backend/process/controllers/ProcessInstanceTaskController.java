@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -53,13 +54,16 @@ public class ProcessInstanceTaskController {
     private final PermissionService permissionService;
     private final ProcessAssignmentService assignmentService;
     private final ProcessListService listService;
+    private final ProcessTaskExecutionService execution;
 
     @Autowired
     public ProcessInstanceTaskController(UserService userService,
                                          ProcessInstanceTaskService processInstanceTaskService,
                                          RabbitTemplate rabbitTemplate,
                                          PermissionService permissionService, ProcessAssignmentService assignmentService,
-                                         ProcessListService listService) {
+                                         ProcessListService listService,
+                                         ProcessTaskExecutionService execution) {
+        this.execution = execution;
         this.userService = userService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.rabbitTemplate = rabbitTemplate;
@@ -71,7 +75,7 @@ public class ProcessInstanceTaskController {
     @GetMapping("")
     @Operation(
             summary = "List Process Instance Tasks",
-            description = "List all process instance tasks with optional filtering and pagination."
+            description = "List all process instance tasks with optional filtering and pagination, including stored Markdown execution summaries when available."
     )
     public Page<ProcessInstanceTaskEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -128,7 +132,7 @@ public class ProcessInstanceTaskController {
     @GetMapping("{id}/")
     @Operation(
             summary = "Retrieve Process Instance Task",
-            description = "Retrieve a process instance task by its ID."
+            description = "Retrieve a process instance task by its ID, including its stored Markdown execution summary when available."
     )
     public ProcessInstanceTaskEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -167,7 +171,10 @@ public class ProcessInstanceTaskController {
             @Nonnull @RequestBody @Valid ProcessInstanceReassignRequestDTO request
     ) throws ResponseException {
         var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
-        return assignmentService.reassignTask(user, id, request.assignedUserId());
+        var task = processInstanceTaskService.retrieve(id).orElseThrow(ResponseException::notFound);
+        return execution.execute(task.getProcessInstanceId(), id,
+                () -> processInstanceTaskService.authorizeStaffMutation(user.getId(), task.getProcessInstanceId(), id),
+                () -> assignmentService.reassignTask(user, id, request.assignedUserId()));
     }
 
     @PutMapping("{id}/rerun-failed/")
@@ -211,7 +218,8 @@ public class ProcessInstanceTaskController {
                 taskEntity.getPreviousProcessInstanceTaskId(),
                 taskEntity.getPreviousProcessNodeId(),
                 taskEntity.getPreviousProcessNodePortKey(),
-                taskEntity.getProcessNodeId()
+                taskEntity.getProcessNodeId(),
+                taskEntity.getId()
         );
 
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, payload);

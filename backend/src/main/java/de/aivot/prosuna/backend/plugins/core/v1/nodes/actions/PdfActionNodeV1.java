@@ -26,6 +26,8 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
@@ -48,6 +50,10 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.document;
 
 @Component
 public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.PdfActionNodeConfig> {
@@ -87,6 +93,18 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.htmlTemplateInputElementResolver = htmlTemplateInputElementResolver;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<PdfActionNodeV1.PdfActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var configuration = context.configurationOfExecutingNode();
+        var template = PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY.equals(configuration.contentHtmlSource)
+                ? htmlTemplateInputElementResolver.getTemplateName(configuration.contentHtmlTemplate) : "Direkt hinterlegter HTML-Inhalt";
+        return "Das Dokument „" + summary.value(OUTPUT_NAME_FILE_NAME) + "“ wurde" + summary.completedAt() + " erfolgreich erstellt."
+                + detail("Vorlage", template)
+                + section("Dokument", document(summary.data(OUTPUT_NAME_ATTACHMENT_KEY), summary.data(OUTPUT_NAME_FILE_NAME)));
     }
 
     @Nonnull
@@ -201,7 +219,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodePort> getPorts(@Nonnull PdfActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
@@ -301,27 +319,16 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
             );
         }
 
+        // Resolve the whole template before splitting so shared blocks remain available across sections.
+        // Never interpolate the rendered sections again: they contain untrusted process and slot values.
         var pdfHtmlSections = splitHtmlSections(contentHtml);
-        var interpolatedContentHtml = templateRenderService
-                .interpolate(context.getCurrentProcessExecutionData(), pdfHtmlSections.contentHtml);
-
-        if (StringUtils.isNullOrEmpty(interpolatedContentHtml)) {
-            throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der HTML-Inhalt für das PDF konnte nicht interpoliert werden."
-            );
-        }
-
-        var interpolatedHeaderHtml = templateRenderService
-                .interpolate(context.getCurrentProcessExecutionData(), pdfHtmlSections.headerHtml);
-        var interpolatedFooterHtml = templateRenderService
-                .interpolate(context.getCurrentProcessExecutionData(), pdfHtmlSections.footerHtml);
 
         byte[] pdfBytes;
         try {
             pdfBytes = pdfService.generatePdfFromHtml(
-                    interpolatedContentHtml,
-                    interpolatedHeaderHtml,
-                    interpolatedFooterHtml
+                    pdfHtmlSections.contentHtml,
+                    pdfHtmlSections.headerHtml,
+                    pdfHtmlSections.footerHtml
             );
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -412,13 +419,10 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 );
             }
 
-            var resolvedTemplate = htmlTemplateInputElementResolver.resolve(
+            return htmlTemplateInputElementResolver.resolve(
                     configuration.contentHtmlTemplate,
                     context.getCurrentProcessExecutionData()
             );
-            // Render the full asset template before splitting the individual HTML documents so shared
-            // blocks defined outside a specific <html> section remain available to all use sites.
-            return templateRenderService.interpolate(context.getCurrentProcessExecutionData(), resolvedTemplate);
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(

@@ -76,7 +76,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public List<ProcessNodePort> getPorts() {
+            public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
                 return List.of();
             }
 
@@ -167,7 +167,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public List<ProcessNodePort> getPorts() {
+            public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
                 return List.of();
             }
 
@@ -255,7 +255,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public List<ProcessNodePort> getPorts() {
+            public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
                 return List.of();
             }
 
@@ -339,7 +339,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public List<ProcessNodePort> getPorts() {
+            public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
                 return List.of();
             }
 
@@ -454,7 +454,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public List<ProcessNodePort> getPorts() {
+            public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
                 return List.of();
             }
 
@@ -542,7 +542,7 @@ class ProcessNodeDefinitionTest {
 
             @Nonnull
             @Override
-            public List<ProcessNodePort> getPorts() {
+            public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
                 return List.of();
             }
 

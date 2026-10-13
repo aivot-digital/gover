@@ -66,7 +66,8 @@ public class ProcessStarter {
                         null,
                         null,
                         null,
-                        initialNode.getId()
+                        initialNode.getId(),
+                        null
                 );
 
                 processInstance.setStatus(ProcessInstanceStatus.Running);

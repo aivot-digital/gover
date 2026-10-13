@@ -27,6 +27,7 @@ vi.mock('../process/utils/process-assigned-task-count-events', () => ({
 
 const liveOverview: DashboardOverview = {
     tasks: {total: 0, overdue: 0, items: []},
+    instances: {total: 0, overdue: 0, items: []},
     recentProcesses: [{id: 42, title: 'Echter Prozess', draftedVersion: 2, publishedVersion: 1, updated: '2026-09-01T10:00:00Z'}],
 };
 const liveActivity: DashboardActivity = {
@@ -63,6 +64,11 @@ describe('Dashboard simulation', () => {
         expect(screen.queryByRole('link', {name: /Hundehaltung/})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: /Mitarbeitende onboarden/})).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: 'Alle Aufgaben ansehen'})).toHaveAttribute('href', '/tasks');
+        expect(screen.getByRole('heading', {name: 'Meine Vorgänge'})).toBeVisible();
+        expect(screen.getByText('9 laufend')).toBeVisible();
+        expect(screen.getByText(/^Überschritten · /)).toBeVisible();
+        expect(screen.getByText(/^Bald fällig · /)).toBeVisible();
+        expect(screen.queryByRole('link', {name: /Gewerbe anmelden/})).not.toBeInTheDocument();
         expect(DashboardApiService.prototype.fetchOverview).not.toHaveBeenCalled();
         expect(DashboardApiService.prototype.fetchActivity).not.toHaveBeenCalled();
         expect(dispatchProcessAssignedTaskCountRefreshEvent).not.toHaveBeenCalled();
@@ -78,6 +84,7 @@ describe('Dashboard simulation', () => {
         renderDashboard(url);
         expect(await screen.findByRole('link', {name: /Echter Prozess/})).toHaveAttribute('href', '/processes/42/versions/2');
         expect(screen.getByText('Alles erledigt')).toBeVisible();
+        expect(screen.queryByRole('heading', {name: 'Meine Vorgänge'})).not.toBeInTheDocument();
         expect(screen.queryByRole('region', {name: 'Vorgangsaktivität'})).not.toBeInTheDocument();
         expect(DashboardApiService.prototype.fetchOverview).toHaveBeenCalledTimes(1);
         expect(DashboardApiService.prototype.fetchActivity).toHaveBeenCalledTimes(1);

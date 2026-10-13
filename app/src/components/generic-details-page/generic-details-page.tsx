@@ -5,11 +5,12 @@ import {
     type TabConfig,
 } from './generic-details-page-props';
 import {Box, Button, Container, Paper, Stack, Tab, Tabs, Typography} from '@mui/material';
-import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Api, useApi} from '../../hooks/use-api';
 import {GenericPageHeader} from '../generic-page-header/generic-page-header';
 import {generatePath, Link, matchPath, Outlet, useLocation, useNavigate, useParams} from 'react-router-dom';
 import {GenericDetailsPageContext} from './generic-details-page-context';
+import {createGenericDetailsPageEventChannel} from './generic-details-page-events';
 import {ApiError, isApiError} from '../../models/api-error';
 import NotFoundIllustration from './resource-not-found-illustration.svg?react';
 import ArrowBackOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowBack';
@@ -43,7 +44,7 @@ type ResolvedTabState = {
     tooltip?: ReactNode;
 };
 
-async function fetchData<ItemType, ID, AdditionalData>(api: Api, id: ID, props: GenericDetailsPageProps<ItemType, ID, AdditionalData>): Promise<DataFetchResult<ItemType, AdditionalData>> {
+async function fetchData<ItemType, ID, AdditionalData, Events extends object>(api: Api, id: ID, props: GenericDetailsPageProps<ItemType, ID, AdditionalData, Events>): Promise<DataFetchResult<ItemType, AdditionalData>> {
     let item: ItemType;
     if (id === NEW_ID_INDICATOR) {
         item = props.initializeItem(api);
@@ -149,7 +150,7 @@ function checkConfiguredEditability<ItemType>(
         : hasScopedPermission(permissionSet, item, permissionConfig.scope, permission);
 }
 
-export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericDetailsPageProps<ItemType, ID, AdditionalData>) {
+export function GenericDetailsPage<ItemType, ID, AdditionalData, Events extends object = {}>(props: GenericDetailsPageProps<ItemType, ID, AdditionalData, Events>) {
     const {
         entityType,
         isEditable,
@@ -174,7 +175,18 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     const [item, setItem] = useState<ItemType>();
     const [additionalData, setAdditionalData] = useState<AdditionalData>();
     const [refreshCounter, setRefreshCounter] = useState(0);
+    const [eventChannel] = useState(() => createGenericDetailsPageEventChannel<Events>());
+    const loadScopeRef = useRef({api, id, refreshCounter});
+    const [completedRefresh, setCompletedRefresh] = useState<typeof loadScopeRef.current>();
+    const notifiedRefreshRef = useRef(0);
     const propsRef = useRef(props);
+
+    useLayoutEffect(() => {
+        if (loadScopeRef.current.api !== api || loadScopeRef.current.id !== id) {
+            // A resource/authentication change consumes old refresh requests instead of replaying them.
+            loadScopeRef.current = {api, id, refreshCounter};
+        }
+    }, [api, id, refreshCounter]);
 
     useEffect(() => {
         propsRef.current = props;
@@ -189,10 +201,18 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
             return;
         }
 
-        props.controlRef.current = {
+        const control = {
             refresh: refresh,
+            emitEvent: eventChannel.emitEvent,
         };
-    }, [props.controlRef, refresh]);
+        props.controlRef.current = control;
+
+        return () => {
+            if (props.controlRef?.current === control) {
+                props.controlRef.current = null;
+            }
+        };
+    }, [props.controlRef, refresh, eventChannel]);
 
     const resolvedPathParams = useMemo(() => ({
         ...params,
@@ -245,7 +265,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
         let isActive = true;
         setIsBusy(true);
         setLoadError(undefined);
-        fetchData<ItemType, ID, AdditionalData>(api, id, currentProps)
+        fetchData<ItemType, ID, AdditionalData, Events>(api, id, currentProps)
             .then(({item, additionalData}) => {
                 if (!isActive) {
                     return;
@@ -265,6 +285,9 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                 }
                 if (currentProps.onAdditionalDataChange != null) {
                     currentProps.onAdditionalDataChange(additionalData ?? null);
+                }
+                if (refreshCounter > loadScopeRef.current.refreshCounter) {
+                    setCompletedRefresh({api, id, refreshCounter});
                 }
             })
             .catch((error: unknown) => {
@@ -300,6 +323,23 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
             isActive = false;
         };
     }, [api, id, refreshCounter]);
+
+    useEffect(() => {
+        if (
+            completedRefresh == null ||
+            completedRefresh.api !== api ||
+            completedRefresh.id !== id ||
+            completedRefresh.refreshCounter !== refreshCounter ||
+            completedRefresh.refreshCounter <= loadScopeRef.current.refreshCounter ||
+            completedRefresh.refreshCounter <= notifiedRefreshRef.current
+        ) {
+            return;
+        }
+
+        // Tab callbacks must observe the committed item and additional data, not the old context.
+        notifiedRefreshRef.current = completedRefresh.refreshCounter;
+        eventChannel.emitEvent('refresh');
+    }, [completedRefresh, api, id, refreshCounter, eventChannel]);
 
     const headerTitle = useMemo(() => {
         if (props.getHeaderTitle) {
@@ -472,6 +512,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                         isBusy: isBusy,
                                         setIsBusy: setIsBusy,
                                         refresh: refresh,
+                                        subscribeEvent: eventChannel.subscribeEvent,
                                         isEditable: resolvedIsEditable,
                                     }}
                                 >

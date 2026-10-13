@@ -180,8 +180,8 @@ class AiHubCompletionActionNodeV1Test {
         assertEquals("Bearer secret-token", headers.get("Authorization"));
 
         assertEquals("KI-Anfrage", node.getName());
-        assertEquals(1, node.getPorts().size());
-        assertEquals("success", node.getPorts().getFirst().key());
+        assertEquals(1, node.getPorts(new de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiCompletionActionNodeV1.AiCompletionActionNodeConfig()).size());
+        assertEquals("success", node.getPorts(new de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiCompletionActionNodeV1.AiCompletionActionNodeConfig()).getFirst().key());
     }
 
     @Test

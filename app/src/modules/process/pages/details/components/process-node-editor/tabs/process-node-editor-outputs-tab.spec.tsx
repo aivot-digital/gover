@@ -189,6 +189,8 @@ function renderOutputsTab({
         id: 1,
         processId: 2,
         processVersion: 1,
+        ports: [],
+        portResolutionProblems: [],
         processNodeDefinitionKey: 'test-node',
         processNodeDefinitionVersion: 1,
         name: null,
@@ -196,7 +198,8 @@ function renderOutputsTab({
         dataKey,
         configuration: {},
         outputMappings,
-        timeLimitDays: null,
+        deadlines: {},
+        deadlineDefinitions: [],
         requirements: null,
         notes: null,
         savedWithErrors: false,
@@ -217,7 +220,6 @@ function renderOutputsTab({
         description: '',
         documentationUrl: null,
         parentPluginKey: 'test-plugin',
-        ports: [],
         outputs,
     };
     const setNode = vi.fn();
@@ -237,6 +239,7 @@ function renderOutputsTab({
                 },
                 isEditable,
                 problems: null,
+                incomingMetadataLoadFailed: false,
                 incomingMetadata: null,
             }}>
                 <ProcessNodeEditorOutputsTab/>

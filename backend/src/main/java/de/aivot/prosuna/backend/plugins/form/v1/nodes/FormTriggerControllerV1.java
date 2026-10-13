@@ -243,7 +243,7 @@ public class FormTriggerControllerV1 {
         var formProvider = getProvider(node);
         var config = getConfigurationDetails(node, formProvider, execUser);
         var slot = getConfiguredIdentitySlot(config, identityId);
-        var redirectUrl = identitySlotService.createAuthenticationRedirect(
+        var redirect = identitySlotService.createAuthenticationRedirect(
                 slot,
                 identityId,
                 providerKey,
@@ -251,7 +251,8 @@ public class FormTriggerControllerV1 {
                 origin,
                 node.getId()
         );
-        response.sendRedirect(redirectUrl.toString());
+        response.addCookie(IdentityCookieUtils.createFlowBindingCookie(redirect));
+        response.sendRedirect(redirect.redirectUri().toString());
     }
 
     @PutMapping("identities/{identityId}/email/")
@@ -596,6 +597,11 @@ public class FormTriggerControllerV1 {
                 : null;
 
         testCaptchaReplayProtection(config.configuration().formLayout, effectiveValues);
+
+        // Capture the configured title once; existing process identities are never enriched on read.
+        for (var slot : identitySlots) {
+            identities.computeIfPresent(slot.id(), (id, identity) -> identity.withTitle(slot.title()));
+        }
 
         var processInstance = startProcess(
                 testClaim,

@@ -21,7 +21,8 @@ import de.aivot.prosuna.backend.process.services.ProcessDataService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
-import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.utils.RandomUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.utils.Tuple3;
@@ -32,11 +33,12 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.UnexpectedRollbackException;
 
 import java.io.Serializable;
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,6 +56,7 @@ public class ProcessWorker {
     private final ProcessDataService processDataService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final ProcessNodeService processNodeService;
+    private final ProcessTaskExecutionService execution;
 
     @Autowired
     public ProcessWorker(ProcessInstanceRepository processInstanceRepository,
@@ -63,7 +66,7 @@ public class ProcessWorker {
                          ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                          ProcessDataService processDataService,
                          ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
-                         ProcessNodeService processNodeService) {
+                         ProcessNodeService processNodeService, ProcessTaskExecutionService execution) {
         this.processInstanceRepository = processInstanceRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
@@ -72,6 +75,7 @@ public class ProcessWorker {
         this.processDataService = processDataService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.processNodeService = processNodeService;
+        this.execution = execution;
     }
 
     @Bean
@@ -86,6 +90,64 @@ public class ProcessWorker {
 
     @RabbitListener(queues = DO_WORK_ON_INSTANCE_QUEUE)
     public void doWorkOnNextNode(DoWorkWorkerPayload payload) {
+        try {
+            execution.inInstance(payload.processInstanceId(), () -> {
+                doWorkOnNextNodeLocked(payload, ProcessTaskStatus.Completed);
+                return null;
+            });
+        } catch (ResponseException exception) {
+            processNodeExecutionLoggerFactory.create(payload.processInstanceId(), null, null, null).logException(exception);
+        } catch (UnexpectedRollbackException exception) {
+            recordRolledBackExecution(payload.processInstanceId(), null, exception);
+        }
+    }
+
+    /**
+     * A participating transactional service can mark the shared execution transaction rollback-only after the
+     * worker has already recorded its failure, so the commit discards that failure state. Redelivering the message
+     * would repeat the same work and its side effects; record the failure in a new transaction instead. Other
+     * runtime failures still propagate, so transient infrastructure errors are retried by the broker.
+     */
+    public void recordRolledBackExecution(@Nonnull Long instanceId, @Nullable Long taskId,
+                                          @Nonnull UnexpectedRollbackException exception) {
+        try {
+            execution.inInstance(instanceId, () -> {
+                if (taskId != null) {
+                    processInstanceTaskRepository.findById(taskId)
+                            .filter(task -> !task.getStatus().isTerminal())
+                            .ifPresent(task -> processInstanceTaskRepository.save(task
+                                    .setStatus(ProcessTaskStatus.Failed)
+                                    .setFinished(Instant.now())));
+                }
+                var instance = processInstanceRepository.findById(instanceId).orElse(null);
+                if (instance != null
+                        && instance.getStatus() != ProcessInstanceStatus.Completed
+                        && instance.getStatus() != ProcessInstanceStatus.Aborted) {
+                    processInstanceRepository.save(instance.setStatus(ProcessInstanceStatus.Failed));
+                }
+                processNodeExecutionLoggerFactory.create(instanceId, taskId, null, null).logException(exception);
+                return null;
+            });
+        } catch (ResponseException ignored) {
+            // The instance no longer exists, so no failure state remains to be recorded.
+        }
+    }
+
+    public void doWorkAfterDeadline(@Nonnull DoWorkWorkerPayload payload) throws ResponseException {
+        execution.inInstance(payload.processInstanceId(), () -> {
+            doWorkOnNextNodeLocked(payload, ProcessTaskStatus.DeadlineExceeded);
+            return null;
+        });
+    }
+
+    private void doWorkOnNextNodeLocked(@Nonnull DoWorkWorkerPayload payload, @Nonnull ProcessTaskStatus predecessorStatus) {
+        if (payload.previousTaskId() != null && payload.restartForTaskId() == null) {
+            var predecessor = processInstanceTaskRepository.findById(payload.previousTaskId());
+            // A queued normal transition may outlive a rolled-back request or a deadline transition.
+            if (predecessor.isEmpty() || predecessor.get().getStatus() != predecessorStatus
+                    || !payload.processInstanceId().equals(predecessor.get().getProcessInstanceId())
+                    || !java.util.Objects.equals(payload.previousNodeId(), predecessor.get().getProcessNodeId())) return;
+        }
         ProcessNodeExecutionLogger logger = processNodeExecutionLoggerFactory
                 .create(payload.processInstanceId(), null, null, null);
 
@@ -112,7 +174,8 @@ public class ProcessWorker {
                     currentProcessInstance,
                     payload.previousTaskId,
                     payload.previousNodeId,
-                    payload.previousNodePortKey
+                    payload.previousNodePortKey,
+                    payload.restartForTaskId
             );
         } catch (Exception exception) {
             logger.logException(exception);
@@ -123,6 +186,50 @@ public class ProcessWorker {
 
     @RabbitListener(queues = RESUME_WORK_ON_INSTANCE_QUEUE)
     public void resumeWorkOnCurrentNode(ResumeWorkWorkerPayload payload) {
+        try {
+            var resumed = execution.executeBackground(payload.currentProcessInstanceId(), payload.currentTaskId(), () -> {
+                resumeWorkOnCurrentNodeLocked(payload);
+                return null;
+            });
+            if (!resumed) recordResumeAfterDeadline(payload);
+        } catch (ResponseException exception) {
+            processNodeExecutionLoggerFactory.create(payload.currentProcessInstanceId(), payload.currentTaskId(), null, null)
+                    .logException(exception);
+        } catch (UnexpectedRollbackException exception) {
+            recordRolledBackExecution(payload.currentProcessInstanceId(), payload.currentTaskId(), exception);
+        }
+    }
+
+    /**
+     * An update for a task that its hard deadline has already ended is not processed. Record it in the history, so
+     * staff can see that a late notification, such as a payment, has arrived and decide on further steps.
+     */
+    private void recordResumeAfterDeadline(@Nonnull ResumeWorkWorkerPayload payload) {
+        var task = processInstanceTaskRepository.findById(payload.currentTaskId()).orElse(null);
+        if (task == null || task.getStatus() != ProcessTaskStatus.DeadlineExceeded) {
+            return;
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("deadline", task.getDeadline());
+        details.put("deadlineKey", task.getDeadlineKey());
+        processNodeExecutionLoggerFactory.create(payload.currentProcessInstanceId(), payload.currentTaskId(), null, null).logf(
+                ProcessNodeExecutionLogLevel.Warn,
+                false,
+                true,
+                true,
+                task.getAssignedUserId(),
+                task.getAssignedCustomerIdentityId(),
+                null,
+                "Rückmeldung nach Fristablauf",
+                details,
+                "Nach Ablauf der Frist (%s) ist eine Rückmeldung zu dieser Aufgabe eingegangen, beispielsweise zu einer Zahlung. " +
+                        "Sie wurde nicht mehr verarbeitet, weil die Aufgabe bereits wegen Fristüberschreitung beendet war. " +
+                        "Prüfen Sie, ob weitere Schritte erforderlich sind.",
+                ExecutionSummaryMarkdown.timestamp(task.getDeadline())
+        );
+    }
+
+    private void resumeWorkOnCurrentNodeLocked(ResumeWorkWorkerPayload payload) {
         var logger = processNodeExecutionLoggerFactory
                 .create(payload.currentProcessInstanceId(), payload.currentTaskId, null, null);
 
@@ -184,7 +291,8 @@ public class ProcessWorker {
                 ));
 
         if (instance.getStatus() == ProcessInstanceStatus.Completed
-                || instance.getStatus() == ProcessInstanceStatus.Aborted) {
+                || instance.getStatus() == ProcessInstanceStatus.Aborted
+                || instance.getStatus() == ProcessInstanceStatus.Paused) {
             // Ignore queued work that arrived after the process reached a terminal state.
             return Optional.empty();
         }
@@ -232,11 +340,20 @@ public class ProcessWorker {
                                                     @Nonnull ProcessInstanceEntity processInstance,
                                                     @Nullable Long previousTaskId,
                                                     @Nullable Integer previousNodeId,
-                                                    @Nullable String previousNodePortKey) throws ProcessNodeExecutionException {
-        var deadline = currentNode.getTimeLimitDays() != null ?
-                // Preserve the local same-wall-clock-time behavior when task deadlines cross DST changes.
-                ZonedDateTime.now(ApplicationTimeZone.getZoneId()).plusDays(currentNode.getTimeLimitDays()).toInstant() :
-                null;
+                                                    @Nullable String previousNodePortKey,
+                                                    @Nullable Long restartForTaskId) throws ProcessNodeExecutionException {
+        if (restartForTaskId != null) {
+            var previousAttempt = processInstanceTaskRepository.findById(restartForTaskId)
+                    .orElseThrow(() -> new ProcessNodeExecutionExceptionUnknown(
+                            "Die Aufgabe mit der ID „%d“ wurde nicht gefunden.", restartForTaskId));
+            // The restart command may still be saving the old task's status when queued work begins.
+            if (!processInstance.getId().equals(previousAttempt.getProcessInstanceId())
+                    || !currentNode.getId().equals(previousAttempt.getProcessNodeId())) {
+                throw new ProcessNodeExecutionExceptionUnknown(
+                        "Die Aufgabe mit der ID „%d“ gehört nicht zu diesem Vorgang und Prozesselement.", restartForTaskId);
+            }
+        }
+
         var startedAt = Instant.now();
 
         var taskEntity = processInstanceTaskRepository.save(
@@ -262,11 +379,11 @@ public class ProcessWorker {
                         new HashMap<>(),
                         null,
                         null,
-                        deadline,
+                        null,
                         null,
                         null,
                         null
-                )
+                ).setRestartForTaskId(restartForTaskId)
         );
 
         logger = logger
@@ -283,8 +400,9 @@ public class ProcessWorker {
         );
 
         ProcessNodeExecutionResult initResult;
+        ProcessNodeExecutionInitContext<NodeConfig> context;
         try {
-            var context = getRuntimeContext(logger, processInstance, taskEntity, currentNode, currentNodeProvider);
+            context = getRuntimeContext(logger, processInstance, taskEntity, currentNode, currentNodeProvider);
             initResult = currentNodeProvider.init(context);
         } catch (ProcessNodeExecutionException e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
@@ -306,7 +424,7 @@ public class ProcessWorker {
             throw ex;
         }
 
-        handleResult(currentNode, currentNodeProvider, logger, processInstance, previousTaskId, previousNodeId, initResult, taskEntity);
+        handleResult(currentNode, currentNodeProvider, context.getConfigurationOfExecutingNode(), logger, processInstance, previousTaskId, previousNodeId, initResult, taskEntity);
     }
 
     private <NodeConfig> void resumeWorkOnCurrentProcessTask(
@@ -327,8 +445,9 @@ public class ProcessWorker {
         );
 
         ProcessNodeExecutionResult resumeResult;
+        ProcessNodeExecutionInitContext<NodeConfig> context;
         try {
-            var context = getRuntimeContext(logger, processInstance, taskEntity, currentNode, currentNodeProvider);
+            context = getRuntimeContext(logger, processInstance, taskEntity, currentNode, currentNodeProvider);
             resumeResult = currentNodeProvider.resume(context);
         } catch (ProcessNodeExecutionException e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
@@ -350,7 +469,7 @@ public class ProcessWorker {
             throw ex;
         }
 
-        handleResult(currentNode, currentNodeProvider, logger, processInstance, taskEntity.getPreviousProcessInstanceTaskId(), taskEntity.getPreviousProcessNodeId(), resumeResult, taskEntity);
+        handleResult(currentNode, currentNodeProvider, context.getConfigurationOfExecutingNode(), logger, processInstance, taskEntity.getPreviousProcessInstanceTaskId(), taskEntity.getPreviousProcessNodeId(), resumeResult, taskEntity);
     }
 
     @Nonnull
@@ -403,6 +522,7 @@ public class ProcessWorker {
 
     private <NodeConfig> void handleResult(@Nonnull ProcessNodeEntity currentNode,
                                            @Nonnull ProcessNodeDefinition<NodeConfig> currentNodeProvider,
+                                           @Nonnull NodeConfig configurationOfExecutingNode,
                                            @Nonnull ProcessNodeExecutionLogger logger,
                                            @Nonnull ProcessInstanceEntity processInstance,
                                            @Nullable Long previousTaskId,
@@ -444,6 +564,7 @@ public class ProcessWorker {
                             logger,
                             null,
                             currentNodeProvider,
+                            configurationOfExecutingNode,
                             currentNode,
                             processInstance,
                             taskEntity,
@@ -464,7 +585,8 @@ public class ProcessWorker {
             @Nullable Long previousTaskId,
             @Nullable Integer previousNodeId,
             @Nullable String previousNodePortKey,
-            @Nonnull Integer nextNodeId
+            @Nonnull Integer nextNodeId,
+            @Nullable Long restartForTaskId
     ) implements Serializable {
 
     }

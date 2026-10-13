@@ -77,6 +77,12 @@ class ApprovalActionNodeV1Test {
     }
 
     @Test
+    void offersTheManualPhaseDeadline() {
+        var config = new ApprovalActionNodeV1.ApprovalConfiguration();
+        assertEquals(List.of("approval"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+    }
+
+    @Test
     void init_AssignsResolvedUser() throws Exception {
         assigneeResolverService.result = Optional.of("user-1");
 
@@ -93,6 +99,7 @@ class ApprovalActionNodeV1Test {
                 processData,
                 nodeConfiguration(dataModeConfiguration())
         ));
+        assertEquals("approval", result.getNewDeadlineKey());
 
         var taskAssigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result);
         assertEquals("user-1", taskAssigned.getAssignedUserId());

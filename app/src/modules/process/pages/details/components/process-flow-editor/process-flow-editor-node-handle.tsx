@@ -38,6 +38,7 @@ const ACTIVE_RUNTIME_DASH_ANIMATION = 'active-edge-dash-scroll 2s linear infinit
 
 interface ProcessFlowEditorNodeHandleProps {
     editable: boolean;
+    unavailable?: boolean;
     isConnected: boolean;
     port: ProcessNodePort;
     onClick: () => void;
@@ -83,6 +84,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
 
     const {
         editable,
+        unavailable = false,
         isConnected,
         port,
         onClick,
@@ -102,7 +104,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
             alpha(theme.palette.text.primary, 0.18) :
             alpha(theme.palette.text.primary, 0.34);
     const portBorderStyle = isConnected || wasPerformed ? 'solid' : 'dashed';
-    const portTextColor = wasPerformed ?
+    const portTextColor = unavailable ? theme.palette.error.main : wasPerformed ?
         theme.palette.primary.dark :
         theme.palette.text.secondary;
     const portTitle = port.description ?
@@ -350,6 +352,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
 
             <Handle
                 type="source"
+                isConnectable={editable && !unavailable && !isConnected}
                 id={port.key}
                 position={isConnected ? Position.Top : Position.Bottom}
                 style={{

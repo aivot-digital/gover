@@ -13,7 +13,10 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefini
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderBindingRepository;
 import de.aivot.prosuna.backend.communication.repositories.CommunicationProviderRepository;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
@@ -362,6 +365,35 @@ class CommunicationProviderManagementServiceTest {
         assertEquals(AlertType.Error, alert.getAlertType());
         assertEquals("Test fehlgeschlagen", alert.getTitle());
         assertEquals(expectedMessage, alert.getText());
+    }
+
+    @Test
+    void derivesTestingInputsAgainstTheTestingLayoutOfTheStoredProviderDefinition() throws Exception {
+        var testingLayout = new GroupLayoutElement();
+        when(definition.getTestingLayout()).thenReturn(testingLayout);
+        var values = new AuthoredElementValues();
+        var options = new ElementDerivationOptions();
+        var derivedData = DerivedRuntimeElementData.empty();
+        when(configurationService.deriveLayout(testingLayout, values, options)).thenReturn(derivedData);
+
+        var result = service.deriveProviderTestingInputs(provider.getId(), values, options);
+
+        assertSame(derivedData, result);
+    }
+
+    @Test
+    void derivesBindingConfigurationAgainstTheIdentityProviderSpecificLayout() throws Exception {
+        var bindingLayout = new ConfigLayoutElement();
+        when(identityProviderRepository.findById(identityProvider.getKey())).thenReturn(Optional.of(identityProvider));
+        when(definition.getIdentityProviderBindingConfigLayout(identityProvider)).thenReturn(bindingLayout);
+        var values = new AuthoredElementValues();
+        var options = new ElementDerivationOptions();
+        var derivedData = DerivedRuntimeElementData.empty();
+        when(configurationService.deriveLayout(bindingLayout, values, options)).thenReturn(derivedData);
+
+        var result = service.deriveBindingConfiguration(provider.getId(), identityProvider.getKey(), values, options);
+
+        assertSame(derivedData, result);
     }
 
     private CommunicationProviderBindingEntity binding(String name) {

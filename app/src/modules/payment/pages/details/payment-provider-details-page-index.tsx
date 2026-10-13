@@ -474,6 +474,14 @@ export function PaymentProviderDetailsPageIndex() {
                     onAuthoredElementValuesChange={handleInputChange('config')}
                     disabled={isBusy || !isEditable}
                     onDerivationFinished={setDerivedRuntimeConfigData}
+                    onDerive={(authoredElementValues, derivationOptions, abort) => new PaymentProvidersApiService()
+                        .deriveDefinitionConfiguration(
+                            selectedPaymentProviderDefinition.key,
+                            selectedPaymentProviderDefinition.version,
+                            authoredElementValues,
+                            derivationOptions,
+                            abort,
+                        )}
                     computedErrors={clientSideValidationErrors}
                     suppressErrors={hasNotChanged}
                 />

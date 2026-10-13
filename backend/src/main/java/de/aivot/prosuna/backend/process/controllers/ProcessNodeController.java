@@ -6,16 +6,22 @@ import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.identity.controllers.IdentityController;
+import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.dtos.ProcessNodeResponseDTO;
+import de.aivot.prosuna.backend.process.dtos.ProcessNodePortRequestDTO;
+import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeConfigurationDerivationRequest;
+import de.aivot.prosuna.backend.process.models.ProcessNodeUiDefinitionDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
@@ -66,6 +72,7 @@ public class ProcessNodeController {
     private final ProcessTestClaimRepository processTestClaimRepository;
     private final JsonMapper objectMapper;
     private final ProcessNodeRepository processNodeRepository;
+    private final IdentityService identityService;
 
     @Nonnull
     private static String createAvailableDataKey(@Nonnull String requestedDataKey,
@@ -103,7 +110,8 @@ public class ProcessNodeController {
                                  ProcessNodeExportService processNodeExportService,
                                  ProcessVersionService processDefinitionVersionService,
                                  ProcessTestClaimRepository processTestClaimRepository,
-                                 JsonMapper objectMapper, ProcessNodeRepository processNodeRepository) {
+                                 JsonMapper objectMapper, ProcessNodeRepository processNodeRepository,
+                                 IdentityService identityService) {
         this.auditService = auditService.createScopedAuditService(ProcessNodeController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionNodeService = processDefinitionNodeService;
@@ -115,6 +123,7 @@ public class ProcessNodeController {
         this.processTestClaimRepository = processTestClaimRepository;
         this.objectMapper = objectMapper;
         this.processNodeRepository = processNodeRepository;
+        this.identityService = identityService;
     }
 
     @GetMapping("")
@@ -122,7 +131,7 @@ public class ProcessNodeController {
             summary = "List Process Definition Nodes",
             description = "List all process definition nodes with optional filtering and pagination."
     )
-    public Page<ProcessNodeEntity> list(
+    public Page<ProcessNodeResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessNodeFilter filter
@@ -158,7 +167,7 @@ public class ProcessNodeController {
         }
 
         return processDefinitionNodeService
-                .list(pageable, filter);
+                .list(pageable, filter).map(this::toResponse);
     }
 
     @PostMapping("")
@@ -168,7 +177,7 @@ public class ProcessNodeController {
                     ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
                     "` for the affected process or at system level."
     )
-    public ProcessNodeEntity create(
+    public ProcessNodeResponseDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestBody @Valid ProcessNodeEntity newNode
     ) throws ResponseException {
@@ -198,7 +207,7 @@ public class ProcessNodeController {
                         StringUtils.quote(execUser.getFullName())
                 ).log();
 
-        return result;
+        return toResponse(result);
     }
 
     @GetMapping("{id}/")
@@ -206,7 +215,7 @@ public class ProcessNodeController {
             summary = "Retrieve Process Definition Node",
             description = "Retrieve a process definition node by its ID."
     )
-    public ProcessNodeEntity retrieve(
+    public ProcessNodeResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -224,7 +233,7 @@ public class ProcessNodeController {
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
 
-        return node;
+        return toResponse(node);
     }
 
     @PutMapping("{id}/")
@@ -234,7 +243,7 @@ public class ProcessNodeController {
                     ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
                     "` for the affected process or at system level."
     )
-    public ProcessNodeEntity update(
+    public ProcessNodeResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
             @Nonnull @RequestBody @Valid ProcessNodeEntity updateDTO,
@@ -320,7 +329,7 @@ public class ProcessNodeController {
                         StringUtils.quote(execUser.getFullName())
                 ).log();
 
-        return result;
+        return toResponse(result);
     }
 
     @DeleteMapping("{id}/")
@@ -416,7 +425,7 @@ public class ProcessNodeController {
                     "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
                     "` for the target process or at system level."
     )
-    public ProcessNodeEntity importNode(
+    public ProcessNodeResponseDTO importNode(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer processId,
             @Nonnull @PathVariable Integer processVersion,
@@ -460,7 +469,7 @@ public class ProcessNodeController {
                 .setProcessNodeDefinitionVersion(sourceNode.getProcessNodeDefinitionVersion())
                 .setConfiguration(provider.prefillConfigurationOnImport(sourceNode.getConfiguration()))
                 .setOutputMappings(sourceNode.getOutputMappings())
-                .setTimeLimitDays(sourceNode.getTimeLimitDays())
+                .setDeadlines(sourceNode.getDeadlines())
                 .setRequirements(sourceNode.getRequirements())
                 .setNotes(sourceNode.getNotes());
 
@@ -485,9 +494,24 @@ public class ProcessNodeController {
                         StringUtils.quote(String.valueOf(processVersion))
                 ).log();
 
-        return importedNode;
+        return toResponse(importedNode);
     }
 
+
+    @Nonnull
+    private ProcessNodeResponseDTO toResponse(@Nonnull ProcessNodeEntity node) {
+        return ProcessNodeResponseDTO.of(node, processDefinitionNodeService.resolvePorts(node));
+    }
+
+    @PostMapping("resolve-ports/")
+    @Operation(summary = "Resolve prospective process node ports", description = "Compute authoring ports and available phase deadlines without saving a node. Requires read permission for the target process.")
+    public ProcessNodePortResolution resolvePorts(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestBody @Valid ProcessNodePortRequestDTO request
+    ) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return processDefinitionNodeService.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration());
+    }
 
     @GetMapping("{id}/configuration/")
     @Operation(
@@ -568,6 +592,58 @@ public class ProcessNodeController {
                 user,
                 request.authoredElementValues(),
                 request.derivationOptions()
+        );
+    }
+
+    @PostMapping("{id}/derive-ui-definition/")
+    @Operation(
+            summary = "Derive Process Definition Node UI Definition",
+            description = "Derives values entered into a UI definition that is configured in a UI definition field of the node. " +
+                    "Without a UI definition in the request, the stored UI definition is derived, which requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_READ + "` for the node's process. " +
+                    "Deriving an unsaved UI definition requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE + "` for the node's process."
+    )
+    public DerivedRuntimeElementData deriveUiDefinition(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id,
+            @Nonnull @RequestBody @Valid ProcessNodeUiDefinitionDerivationRequest request,
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+        var node = processDefinitionNodeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        // Deriving executes the element functions of the UI definition on the server. An unsaved UI definition is
+        // therefore only accepted from users who could also store it in the node.
+        var requiredPermission = request.uiDefinition() != null
+                ? ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+                : ProcessPermissionProvider.PROCESS_DEFINITION_READ;
+        permissionService.requireProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                requiredPermission
+        );
+
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(node)
+                .orElseThrow(ResponseException::badRequest);
+
+        var identities = identityService
+                .getIdentityDataMap(identitySessionId, node.getId());
+
+        return processDefinitionNodeService.deriveUiDefinitionForAuthoring(
+                node,
+                provider,
+                user,
+                request.fieldId(),
+                request.uiDefinition(),
+                request.authoredElementValues(),
+                request.derivationOptions(),
+                identities
         );
     }
 

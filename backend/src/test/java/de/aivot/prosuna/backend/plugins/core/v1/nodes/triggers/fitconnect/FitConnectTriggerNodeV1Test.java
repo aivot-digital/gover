@@ -115,7 +115,7 @@ class FitConnectTriggerNodeV1Test {
                 List.of("payload", "submission", "metadata", "attachments", "files", "started"),
                 node.getOutputs().stream().map(output -> output.key()).toList()
         );
-        assertEquals("output", node.getPorts().getFirst().key());
+        assertEquals("output", node.getPorts(new de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect.FitConnectTriggerConfigV1()).getFirst().key());
     }
 
     @Test

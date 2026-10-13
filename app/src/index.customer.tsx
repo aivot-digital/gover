@@ -7,6 +7,7 @@ import {createRoutesFromChildren, matchRoutes, useLocation, useNavigationType} f
 import {createRoot} from 'react-dom/client';
 import {isStringNotNullOrEmpty} from './utils/string-utils';
 import {CustomerShellRouter} from './shells/customer/customer-shell-router';
+import {AppInfo} from "./app-info";
 
 
 const rootElement = document.getElementById('root')!;
@@ -41,6 +42,9 @@ if (isStringNotNullOrEmpty(AppConfig.sentryDsn)) {
         // plus for 100% of sessions with an error
         replaysSessionSampleRate: 0.1,
         replaysOnErrorSampleRate: 1.0,
+
+        // Set the release version for Sentry
+        release: `${AppInfo.version}.${AppInfo.number}`,
     });
 }
 

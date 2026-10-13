@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -43,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK;
 
@@ -54,6 +56,7 @@ import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermis
         description = "Operations for managing process instance tasks."
 )
 public class StaffProcessInstanceTaskViewController {
+    private final ProcessTaskExecutionService execution;
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final ProcessNodeDefinitionService processNodeProviderService;
@@ -73,7 +76,9 @@ public class StaffProcessInstanceTaskViewController {
                                                   UserService userService,
                                                   ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                                   ElementDerivationService elementDerivationService,
-                                                  FileUploadMultipartInputService fileUploadMultipartInputService, ProcessDataService processDataService) {
+                                                  FileUploadMultipartInputService fileUploadMultipartInputService, ProcessDataService processDataService,
+                                                  ProcessTaskExecutionService execution) {
+        this.execution = execution;
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -161,6 +166,25 @@ public class StaffProcessInstanceTaskViewController {
             @Nullable @RequestParam(value = "event", required = false) String rawEvent,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        var failureLog = new AtomicReference<Runnable>();
+        try {
+            return execution.execute(procId, taskId,
+                    () -> processInstanceTaskService.authorizeStaffMutation(user.getId(), procId, taskId),
+                    () -> updateLocked(jwt, procId, taskId, rawInputs, files, fileUris, rawEvent, identitySessionId, failureLog));
+        } catch (ResponseException exception) {
+            // The failed execution transaction is rolled back; record the failure afterwards so it stays in the history.
+            var log = failureLog.get();
+            if (log != null) log.run();
+            throw exception;
+        }
+    }
+
+    @Nonnull
+    private <NodeConfig> TaskViewResponse updateLocked(@Nonnull Jwt jwt, @Nonnull Long procId, @Nonnull Long taskId, @Nonnull String rawInputs,
+                                                       @Nullable MultipartFile[] files, @Nullable List<String> fileUris, @Nullable String rawEvent,
+                                                       @Nullable String identitySessionId,
+                                                       @Nonnull AtomicReference<Runnable> failureLog) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
@@ -258,7 +282,7 @@ public class StaffProcessInstanceTaskViewController {
         } catch (ResponseException e) {
             throw e;
         } catch (Exception e) {
-            logger.logException(e);
+            failureLog.set(() -> logger.logException(e));
             throw ResponseException.internalServerError(e);
         }
 
@@ -269,6 +293,7 @@ public class StaffProcessInstanceTaskViewController {
                                 logger,
                                 user,
                                 taskViewData.provider,
+                                context.getConfigurationOfExecutingNode(),
                                 taskViewData.node,
                                 taskViewData.instance,
                                 taskViewData.task,
@@ -276,7 +301,7 @@ public class StaffProcessInstanceTaskViewController {
                                 res.get()
                         );
             } catch (ProcessNodeExecutionException e) {
-                logger.logException(e);
+                failureLog.set(() -> logger.logException(e));
                 throw ResponseException.internalServerError(e);
             }
         }

@@ -19,6 +19,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 import java.util.Map;
@@ -104,8 +105,23 @@ class CommunicationServiceTest {
     }
 
     @Test
+    void deliveryChannelUsesSelectedBindingAndToleratesUnavailableMetadata() {
+        assertEquals("E-Mail", communicationService.describeDeliveryChannel(null));
+        binding.setName("Servicekonto");
+        assertEquals("Servicekonto", communicationService.describeDeliveryChannel(identity));
+        when(bindingRepository.findById(12)).thenReturn(Optional.empty());
+        assertNull(communicationService.describeDeliveryChannel(identity));
+        when(bindingRepository.findById(12)).thenThrow(new IllegalStateException("Unavailable"));
+        assertNull(communicationService.describeDeliveryChannel(identity));
+    }
+
+    @Test
     void sendMessageResolvesSelectedBindingAndInvokesDefinition() throws Exception {
-        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .build();
 
         communicationService.sendMessage(identity, message);
 
@@ -122,7 +138,11 @@ class CommunicationServiceTest {
     @Test
     void sendMessageAllowsTestAndProductionProviderMismatch() throws Exception {
         provider.setTestProvider(true);
-        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .build();
 
         communicationService.sendMessage(identity, message);
 
@@ -138,7 +158,11 @@ class CommunicationServiceTest {
 
         assertThrows(CommunicationException.class, () -> communicationService.sendMessage(
                 identityWithoutSelection,
-                CommunicationMessage.of("Subject", "Body", "Body")
+                new CommunicationMessage.Builder()
+                        .subject("Subject")
+                        .body("Body")
+                        .htmlBody("Body")
+                        .build()
         ));
 
         verify(definition, never()).sendMessage(any(), any(), any());
@@ -180,7 +204,11 @@ class CommunicationServiceTest {
                 "session", "applicant", IdentityType.Email, null, null, null, "customer@example.test",
                 Map.of(), null, Map.of()
         );
-        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .build();
 
         communicationService.sendMessage(emailIdentity, message);
 

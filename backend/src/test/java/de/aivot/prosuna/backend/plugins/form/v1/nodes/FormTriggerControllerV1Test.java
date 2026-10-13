@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -22,6 +23,7 @@ import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -54,6 +56,9 @@ import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -76,6 +81,49 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class FormTriggerControllerV1Test {
+    @ParameterizedTest
+    @EnumSource(IdentityType.class)
+    void submitCapturesConfiguredIdentityTitleWhenStartingProcess(IdentityType type) throws Exception {
+        var fixture = createFixture(baseFormLayout());
+        var identity = type == IdentityType.Email
+                ? new IdentityData("session", "applicant", type, null, null, null,
+                        "person@example.org", Map.of(), null, Map.of())
+                : new IdentityData("session", "applicant", type, UUID.randomUUID(), "metadata", "user-123",
+                        null, Map.of("name", "Erika Muster"), null, Map.of());
+        var identities = new IdentityDataMap();
+        identities.put(identity.identityId(), identity);
+        when(fixture.identityService().getIdentityDataMap("session", 500)).thenReturn(identities);
+        when(fixture.identitySlotService().resolveSlots(isNull(), eq("session"), eq(500)))
+                .thenReturn(List.of(new IdentitySlotResponseDTO(
+                        "applicant", "Antragstellende Person", null, false, true, type,
+                        identity.emailAddress(), true, List.of(), null
+                )));
+        when(fixture.elementDerivationService().derive(
+                any(ElementDerivationRequest.class), any(IdentityDataMap.class), any(ElementDerivationLogger.class)
+        )).thenReturn(new DerivedRuntimeElementData());
+        when(fixture.processInstanceService().create(any(ProcessInstanceEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceEntity.class)
+                        .setId(17L).setAccessKey("instance-access-key"));
+        when(fixture.processInstanceService().update(eq(17L), any(ProcessInstanceEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(1));
+        when(fixture.fileUploadMultipartInputService().normalizeInputs(
+                any(), any(), isNull(), isNull(), eq(17L), isNull(), isNull()
+        )).thenReturn(new FileUploadMultipartInputService.NormalizationResult(new AuthoredElementValues(), List.of()));
+
+        var previousMapper = JsonMapperTestUtils.installMapper();
+        try {
+            fixture.controller().submit(null, fixture.processSlug(), fixture.formSlug(), null,
+                    "session", "{}", null, null, new MockHttpServletResponse());
+        } finally {
+            JsonMapperTestUtils.restoreMapper(previousMapper);
+        }
+
+        var captor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).create(captor.capture());
+        assertEquals(identity.withTitle("Antragstellende Person"), captor.getValue().getIdentities().get("applicant"));
+        assertNull(identity.title());
+    }
+
     @Test
     void retrieveShouldObfuscateStepChildrenWhileRequiredIdentityIsMissing() throws Exception {
         var fixture = createFixture(formLayoutWithGenericStep());
@@ -831,6 +879,9 @@ class FormTriggerControllerV1Test {
         var paymentProviderRepository = mock(PaymentProviderRepository.class);
         var paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
         var identitySlotService = mock(IdentitySlotService.class);
+        var identityService = mock(IdentityService.class);
+        var processInstanceService = mock(ProcessInstanceService.class);
+        var fileUploadMultipartInputService = mock(FileUploadMultipartInputService.class);
 
         var controller = new FormTriggerControllerV1(
                 prosunaConfig,
@@ -847,16 +898,16 @@ class FormTriggerControllerV1Test {
                 mock(SystemConfigService.class),
                 mock(StorageProviderService.class),
                 mock(CaptchaReplayGuard.class),
-                mock(ProcessInstanceService.class),
+                processInstanceService,
                 mock(ProcessInstanceTaskService.class),
                 mock(ProcessInstanceAttachmentSetService.class),
                 mock(ProcessInstanceAttachmentService.class),
                 mock(StorageService.class),
-                mock(FileUploadMultipartInputService.class),
+                fileUploadMultipartInputService,
                 elementDataTransformService,
                 mock(ProcessNodeExecutionLoggerFactory.class),
                 provider,
-                mock(IdentityService.class),
+                identityService,
                 paymentRequestCreationService,
                 mock(PaymentTransactionService.class),
                 paymentProviderRepository,
@@ -881,7 +932,10 @@ class FormTriggerControllerV1Test {
                 paymentRequestCreationService,
                 paymentProviderRepository,
                 paymentProviderDefinitionsService,
-                identitySlotService
+                identitySlotService,
+                identityService,
+                processInstanceService,
+                fileUploadMultipartInputService
         );
     }
 
@@ -969,7 +1023,10 @@ class FormTriggerControllerV1Test {
             PaymentPayloadCreationService paymentRequestCreationService,
             PaymentProviderRepository paymentProviderRepository,
             PaymentProviderDefinitionsService paymentProviderDefinitionsService,
-            IdentitySlotService identitySlotService
+            IdentitySlotService identitySlotService,
+            IdentityService identityService,
+            ProcessInstanceService processInstanceService,
+            FileUploadMultipartInputService fileUploadMultipartInputService
     ) {
     }
 

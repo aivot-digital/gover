@@ -28,6 +28,7 @@ export interface ProcessDataKeyPickerOption {
 }
 
 interface ProcessDataKeyPickerDialogProps {
+    allowCustomPath?: boolean;
     disableWildCards: boolean;
     displayPrefix: string;
     onApply: (value: string) => void;
@@ -66,6 +67,7 @@ function isValidPath(path: string, disableWildCards: boolean): boolean {
 }
 
 export function ProcessDataKeyPickerDialog(props: ProcessDataKeyPickerDialogProps) {
+    const allowCustomPath = props.allowCustomPath ?? true;
     const [search, setSearch] = useState('');
     const [draftPath, setDraftPath] = useState<string | null>(props.value ?? null);
 
@@ -104,7 +106,8 @@ export function ProcessDataKeyPickerDialog(props: ProcessDataKeyPickerDialogProp
         ].filter((part): part is string => part != null)
             .some((part) => part.toLocaleLowerCase('de').includes(comparableSearch)));
     }, [availableOptions, comparableSearch, props.displayPrefix]);
-    const canUseCustomPath = isValidPath(normalizedSearch, props.disableWildCards) &&
+    const canUseCustomPath = allowCustomPath &&
+        isValidPath(normalizedSearch, props.disableWildCards) &&
         // Search is case-insensitive, but process-data keys are not.
         !availableOptions.some((option) => option.id === normalizedSearch);
 
@@ -124,12 +127,14 @@ export function ProcessDataKeyPickerDialog(props: ProcessDataKeyPickerDialogProp
                 <Box sx={{p: 2, px: 2.8}}>
                     <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
                         Die Vorschläge basieren auf Vorgangsdaten, die vorherige Prozesselemente bereitstellen können.
-                        Abhängig vom ausgeführten Prozesspfad müssen sie zur Laufzeit nicht vorhanden sein. Sie können
-                        auch einen eigenen Pfad verwenden.
+                        Abhängig vom ausgeführten Prozesspfad müssen sie zur Laufzeit nicht vorhanden sein.
+                        {allowCustomPath && ' Sie können auch einen eigenen Pfad verwenden.'}
                     </Typography>
                     <TextFieldComponent
-                        label="Vorgangsdatenpfade durchsuchen oder eigenen Pfad eingeben"
-                        placeholder="Zum Beispiel zaehler.aktuellerStand"
+                        label={allowCustomPath
+                            ? 'Vorgangsdatenpfade durchsuchen oder eigenen Pfad eingeben'
+                            : 'Vorgangsdatenpfade durchsuchen'}
+                        placeholder={allowCustomPath ? 'Zum Beispiel zaehler.aktuellerStand' : undefined}
                         value={search}
                         onChange={(nextSearch) => {
                             setSearch(nextSearch ?? '');

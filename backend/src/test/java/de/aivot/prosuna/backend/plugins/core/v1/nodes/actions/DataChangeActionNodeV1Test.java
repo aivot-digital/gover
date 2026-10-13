@@ -84,6 +84,12 @@ class DataChangeActionNodeV1Test {
     }
 
     @Test
+    void offersTheManualPhaseDeadline() {
+        var config = new DataChangeActionNodeV1.DataChangeActionNodeConfig();
+        assertEquals(List.of("dataEntry"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+    }
+
+    @Test
     void init_AssignsResolvedUserAndCopiesWorkingProcessData() throws Exception {
         assigneeResolverService.result = Optional.of("user-1");
 
@@ -102,6 +108,7 @@ class DataChangeActionNodeV1Test {
                 processData,
                 nodeConfiguration(configuration())
         ));
+        assertEquals("dataEntry", result.getNewDeadlineKey());
 
         var taskAssigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result);
         assertEquals("user-1", taskAssigned.getAssignedUserId());

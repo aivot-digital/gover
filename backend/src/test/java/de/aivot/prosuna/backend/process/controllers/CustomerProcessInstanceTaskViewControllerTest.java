@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import static de.aivot.prosuna.backend.process.ProcessTaskExecutionTestSupport.passthrough;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.*;
@@ -16,9 +17,11 @@ import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityAuthenticationRedirect;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
+import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -64,6 +67,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -79,12 +83,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -115,6 +121,21 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals(AlertType.Success, alert.getAlertType());
         assertEquals(List.of(), response.events());
         assertEquals(Map.of(), response.data());
+        assertNull(response.existingIdentitySlot());
+        assertNull(response.newIdentitySlot());
+    }
+
+    @Test
+    void retrieveShowsExpiredTaskWithoutCompletionMessageOrActions() throws ResponseException {
+        var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), new AuthoredElementValues());
+        fixture.task().setStatus(ProcessTaskStatus.DeadlineExceeded);
+
+        var response = fixture.controller().retrieve(fixture.procAccess(), fixture.taskAccess(), null, null);
+
+        var alert = response.layout().findChild("deadline-exceeded", AlertContentElement.class).orElseThrow();
+        assertEquals("Frist überschritten", alert.getTitle());
+        assertEquals(AlertType.Error, alert.getAlertType());
+        assertEquals(List.of(), response.events());
         assertNull(response.existingIdentitySlot());
         assertNull(response.newIdentitySlot());
     }
@@ -224,6 +245,23 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void completionForwardsTheConfigurationUsedByTheCustomerEvent() throws Exception {
+        var result = new ProcessNodeExecutionResultInstanceCompleted();
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null, result);
+        var handler = mock(ProcessNodeExecutionResultHandler.class);
+        var fixture = createFixture(provider, new AuthoredElementValues(), handler);
+        when(fixture.customerTaskIdentityService().getAdditionalIdentitiesForCompletion(any(), same(result)))
+                .thenReturn(Map.of());
+
+        fixture.controller().update(fixture.procAccess(), fixture.taskAccess(), "{}", null, null,
+                "inline-submit", Map.of(), null, new MockHttpServletResponse());
+
+        org.junit.jupiter.api.Assertions.assertNotNull(provider.configurationUsedForEvent);
+        verify(handler).handleResult(any(), isNull(), same(provider), same(provider.configurationUsedForEvent),
+                same(fixture.node()), any(), same(fixture.task()), isNull(), same(result));
+    }
+
+    @Test
     void update_PassesNewIdentityToCompletionHandlerAndClearsTaskIdentitySession() throws Exception {
         var completionResult = new ProcessNodeExecutionResultInstanceCompleted();
         var provider = new InlineCustomerTaskProcessNodeDefinition(null, completionResult);
@@ -273,6 +311,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 any(),
                 eq(null),
                 same(provider),
+                same(provider.configurationUsedForEvent),
                 same(fixture.node()),
                 any(ProcessInstanceEntity.class),
                 same(fixture.task()),
@@ -329,7 +368,11 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 any(),
                 eq("identity-session"),
                 eq("https://prosuna.example.test/process/instance/tasks/task")
-        )).thenReturn(providerLogin);
+        )).thenReturn(new IdentityAuthenticationRedirect(
+                providerLogin,
+                "flow-binding-secret",
+                "/api/public/identity/provider/callback/entity/"
+        ));
         var response = new MockHttpServletResponse();
 
         fixture.controller().startRequiredIdentityAuthentication(
@@ -343,6 +386,72 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         assertEquals(302, response.getStatus());
         assertEquals(providerLogin.toString(), response.getRedirectedUrl());
+        var flowBindingCookie = response.getCookie(IdentityCookieUtils.IDENTITY_FLOW_COOKIE_NAME);
+        assertNotNull(flowBindingCookie);
+        assertEquals("flow-binding-secret", flowBindingCookie.getValue());
+        assertEquals("/api/public/identity/provider/callback/entity/", flowBindingCookie.getPath());
+        assertTrue(flowBindingCookie.isHttpOnly());
+        assertTrue(flowBindingCookie.getSecure());
+        assertEquals("Lax", flowBindingCookie.getAttribute("SameSite"));
+    }
+
+    @Test
+    void startRequiredIdentityAuthentication_ReturnsToTaskPageAfterDeadlineExpiry() throws Exception {
+        var origin = "https://prosuna.example.test/process/instance/tasks/task";
+        var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), rejectingExecution(deadlineExceeded()));
+        when(fixture.customerTaskIdentityService().resolveReturnOrigin(origin)).thenReturn(URI.create(origin));
+        var response = new MockHttpServletResponse();
+
+        fixture.controller().startRequiredIdentityAuthentication(
+                fixture.procAccess(), fixture.taskAccess(), origin, Map.of(), "identity-session", response);
+
+        assertEquals(302, response.getStatus());
+        assertEquals(origin, response.getRedirectedUrl());
+        verify(fixture.customerTaskIdentityService(), never()).createAuthenticationRedirect(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void startNewIdentityProviderAuthentication_KeepsDeadlineRejectionForForeignOrigin() throws Exception {
+        var origin = "https://attacker.example.test/";
+        var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), rejectingExecution(deadlineExceeded()));
+        when(fixture.customerTaskIdentityService().resolveReturnOrigin(origin))
+                .thenThrow(ResponseException.badRequest("Der Referer-Header ist ungültig oder nicht erlaubt."));
+        var response = new MockHttpServletResponse();
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().startNewIdentityProviderAuthentication(
+                fixture.procAccess(), fixture.taskAccess(), "representative", UUID.randomUUID(), origin, Map.of(),
+                "identity-session", response));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertTrue(ProcessTaskExecutionService.isTaskDeadlineExceeded(exception));
+        assertNull(response.getRedirectedUrl());
+    }
+
+    @Test
+    void startRequiredIdentityAuthentication_KeepsOtherRejections() throws Exception {
+        var origin = "https://prosuna.example.test/process/instance/tasks/task";
+        var rejection = ResponseException.conflict("Diese Aufgabe kann derzeit nicht bearbeitet werden.");
+        var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), rejectingExecution(rejection));
+        var response = new MockHttpServletResponse();
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().startRequiredIdentityAuthentication(
+                fixture.procAccess(), fixture.taskAccess(), origin, Map.of(), "identity-session", response));
+
+        assertSame(rejection, exception);
+        assertNull(response.getRedirectedUrl());
+        verify(fixture.customerTaskIdentityService(), never()).resolveReturnOrigin(any());
+    }
+
+    private static ResponseException deadlineExceeded() {
+        return ResponseException.conflictWithDetails(
+                "Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.",
+                Map.of("reason", ProcessTaskExecutionService.TASK_DEADLINE_EXCEEDED_REASON));
+    }
+
+    private static ProcessTaskExecutionService rejectingExecution(ResponseException rejection) throws ResponseException {
+        var execution = mock(ProcessTaskExecutionService.class);
+        when(execution.execute(any(), any(), any(), any())).thenThrow(rejection);
+        return execution;
     }
 
     @Test
@@ -490,7 +599,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
                 customerTaskIdentityService,
-                mock(IdentitySlotService.class)
+                mock(IdentitySlotService.class),
+                passthrough()
         );
 
         var response = controller.update(
@@ -510,7 +620,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals("saved", response.data().getLiteral("extra"));
         assertEquals(List.of(new TaskViewEvent("Submit", "submit")), response.events());
         assertEquals("value", task.getRuntimeData().get("keep"));
-        assertEquals(2, provider.taskViewInvocationCount);
+        assertEquals(3, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -600,7 +710,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
                 mockCustomerTaskIdentityService(),
-                mock(IdentitySlotService.class)
+                mock(IdentitySlotService.class),
+                passthrough()
         );
 
         var response = controller.update(
@@ -619,7 +730,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals(normalizedInputs, response.data());
         assertEquals("customer-root", response.layout().getId());
         assertEquals(List.of(new TaskViewEvent("Submit", "submit")), response.events());
-        assertEquals(1, provider.taskViewInvocationCount);
+        assertEquals(2, provider.taskViewInvocationCount);
     }
 
     @Test
@@ -858,6 +969,20 @@ class CustomerProcessInstanceTaskViewControllerTest {
                                                                AuthoredElementValues normalizedInputs,
                                                                EffectiveElementValues effectiveValues,
                                                                ProcessNodeExecutionResultHandler resultHandler) {
+        return createFixture(provider, normalizedInputs, effectiveValues, resultHandler, passthrough());
+    }
+
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                               ProcessTaskExecutionService execution) {
+        return createFixture(provider, new AuthoredElementValues(), new EffectiveElementValues(),
+                new ApplyingProcessNodeExecutionResultHandler(), execution);
+    }
+
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                               AuthoredElementValues normalizedInputs,
+                                                               EffectiveElementValues effectiveValues,
+                                                               ProcessNodeExecutionResultHandler resultHandler,
+                                                               ProcessTaskExecutionService execution) {
         var procAccess = UUID.randomUUID().toString();
         var taskAccess = UUID.randomUUID().toString();
         var now = Instant.now();
@@ -941,7 +1066,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ProsunaConfig.class),
                 mock(ThemeService.class),
                 customerTaskIdentityService,
-                identitySlotService
+                identitySlotService,
+                execution
         );
 
         return new CustomerTaskControllerFixture(
@@ -1047,7 +1173,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 prosunaConfig,
                 themeService,
                 customerTaskIdentityService,
-                mock(IdentitySlotService.class)
+                mock(IdentitySlotService.class),
+                passthrough()
         );
 
         return new PaymentConfirmationControllerFixture(
@@ -1172,7 +1299,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final ProcessNodeEntity node;
 
         private TestProcessNodeService(ProcessNodeEntity node) {
-            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null);
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null, null, null);
             this.node = node;
         }
 
@@ -1287,13 +1414,14 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class FailingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private FailingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
-        public void handleResult(ProcessNodeExecutionLogger logger,
+        public <NodeConfig> void handleResult(ProcessNodeExecutionLogger logger,
                                  UserEntity triggeringUser,
-                                 ProcessNodeDefinition provider,
+                                 ProcessNodeDefinition<NodeConfig> provider,
+                                 NodeConfig configurationOfExecutingNode,
                                  ProcessNodeEntity currentNode,
                                  ProcessInstanceEntity processInstance,
                                  ProcessInstanceTaskEntity processInstanceTask,
@@ -1305,13 +1433,14 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
-        public void handleResult(ProcessNodeExecutionLogger logger,
+        public <NodeConfig> void handleResult(ProcessNodeExecutionLogger logger,
                                  UserEntity triggeringUser,
-                                 ProcessNodeDefinition provider,
+                                 ProcessNodeDefinition<NodeConfig> provider,
+                                 NodeConfig configurationOfExecutingNode,
                                  ProcessNodeEntity currentNode,
                                  ProcessInstanceEntity processInstance,
                                  ProcessInstanceTaskEntity processInstanceTask,
@@ -1380,7 +1509,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 
@@ -1417,6 +1546,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final String href;
         private final ProcessNodeExecutionResult eventResult;
         private String eventInvokedWith;
+        private AuthoredElementValues configurationUsedForEvent;
 
         private InlineCustomerTaskProcessNodeDefinition(String href) {
             this(href, null);
@@ -1472,7 +1602,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 
@@ -1505,6 +1635,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                                                                                 @Nonnull DerivedRuntimeElementData derivedData,
                                                                                 @Nonnull String event) {
             eventInvokedWith = event;
+            configurationUsedForEvent = context.getConfigurationOfExecutingNode();
             if (eventResult != null) {
                 return eventResult.asOptional();
             }
@@ -1572,7 +1703,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull AuthoredElementValues configuration) {
             return List.of();
         }
 

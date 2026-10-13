@@ -23,6 +23,7 @@ import {IdentitySlotCard} from '../../../modules/identity/components/identity-sl
 import type {IdentitySelectionApi} from '../../../modules/identity/models/identity-selection-api';
 import type {IdentitySlot} from '../../../modules/identity/models/identity-slot';
 import {TaskViewEventButtons} from '../../../modules/process/components/task-view-event-buttons';
+import {isTaskDeadlineExceededError} from '../../../modules/process/utils/task-deadline-error';
 import {
     hasCustomerTaskIdentityRequirements,
     hasCustomerTaskViewContent,
@@ -64,6 +65,7 @@ export function CustomerInstanceTaskView() {
 
     const [taskView, setTaskView] = useState<TaskViewResponse | null | 'failed'>(null);
     const [identityStepDismissed, setIdentityStepDismissed] = useState(false);
+    const [deadlineExceeded, setDeadlineExceeded] = useState(false);
     const [editedAuthoredValues, setEditedAuthoredValues] = useState<AuthoredElementValues | null>(null);
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
     const latestAuthoredValuesRef = useRef<AuthoredElementValues>({});
@@ -123,6 +125,7 @@ export function CustomerInstanceTaskView() {
         }));
 
         setTaskView(null);
+        setDeadlineExceeded(false);
         setIdentityStepDismissed(false);
         setEditedAuthoredValues(null);
         setDerivedErrors(null);
@@ -174,9 +177,28 @@ export function CustomerInstanceTaskView() {
         return true;
     }, [retrieveTaskView]);
 
-    const identitySelectionApi = useMemo(() => (
-        taskApi.createIdentitySelectionApi(instanceAccessKey, taskAccessKey)
-    ), [instanceAccessKey, taskAccessKey, taskApi]);
+    const handleDeadlineExceeded = useCallback((error: unknown): boolean => {
+        if (!isTaskDeadlineExceededError(error)) return false;
+        setDeadlineExceeded(true);
+        void retrieveTaskView();
+        void refreshInstanceStatus().catch(() => invalidateInstanceTasks());
+        return true;
+    }, [invalidateInstanceTasks, refreshInstanceStatus, retrieveTaskView]);
+
+    const identitySelectionApi = useMemo((): IdentitySelectionApi => {
+        const api = taskApi.createIdentitySelectionApi(instanceAccessKey, taskAccessKey);
+        const onError = (error: unknown): never => {
+            handleDeadlineExceeded(error);
+            throw error;
+        };
+        return {
+            ...api,
+            setEmailIdentity: (...args) => api.setEmailIdentity(...args).catch(onError),
+            clearIdentity: (...args) => api.clearIdentity(...args).catch(onError),
+            selectCommunication: (...args) => api.selectCommunication(...args).catch(onError),
+            deriveCommunication: (...args) => api.deriveCommunication(...args).catch(onError),
+        };
+    }, [handleDeadlineExceeded, instanceAccessKey, taskAccessKey, taskApi]);
 
     const handleIdentitySlotChange = useCallback((nextSlot: IdentitySlot): void => {
         setTaskView((currentView) => {
@@ -205,12 +227,12 @@ export function CustomerInstanceTaskView() {
         return taskApi
             .deriveTaskView(instanceAccessKey, taskAccessKey, values, skipErrorsForElements)
             .catch((error) => {
-                if (handleRequiredIdentityAuthentication(error)) {
+                if (handleDeadlineExceeded(error) || handleRequiredIdentityAuthentication(error)) {
                     return createDerivedRuntimeElementData();
                 }
                 throw error;
             });
-    }, [handleRequiredIdentityAuthentication, instanceAccessKey, taskAccessKey, taskApi]);
+    }, [handleDeadlineExceeded, handleRequiredIdentityAuthentication, instanceAccessKey, taskAccessKey, taskApi]);
 
     const handleTaskViewEvent = useCallback(async (event: TaskViewEvent, values: AuthoredElementValues): Promise<void> => {
         dispatch(setLoadingMessage({
@@ -250,7 +272,7 @@ export function CustomerInstanceTaskView() {
                 navigate(buildCustomerInstancePath(instanceAccessKey), {replace: true});
             }
         } catch (error) {
-            if (handleRequiredIdentityAuthentication(error)) {
+            if (handleDeadlineExceeded(error) || handleRequiredIdentityAuthentication(error)) {
                 return;
             }
             if (isApiError(error) && isDerivedRuntimeElementData(error.details)) {
@@ -264,6 +286,7 @@ export function CustomerInstanceTaskView() {
         }
     }, [
         dispatch,
+        handleDeadlineExceeded,
         handleRequiredIdentityAuthentication,
         instanceAccessKey,
         invalidateInstanceTasks,
@@ -291,6 +314,10 @@ export function CustomerInstanceTaskView() {
         latestAuthoredValuesRef.current = values;
         setEditedAuthoredValues(values);
     }, []);
+
+    if (deadlineExceeded) {
+        return <Alert severity="error">Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
+    }
 
     if (taskView == null) {
         return <LoadingPlaceholder/>;
@@ -334,7 +361,7 @@ export function CustomerInstanceTaskView() {
                 authoredElementValues={authoredValues}
                 onAuthoredElementValuesChange={handleAuthoredValuesChange}
                 computedErrors={derivedErrors?.elementStates}
-                onDeriveOverride={handleDerive}
+                onDerive={(values, derivationOptions) => handleDerive(values, derivationOptions.skipErrorsForElementIds)}
                 onEvent={taskIsActive ? handleInlineEvent : undefined}
                 taskViewMode="customer"
                 showErrorSummary
@@ -375,6 +402,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
     const [isContinuing, setIsContinuing] = useState(false);
     const [isStartingIdentityProvider, setIsStartingIdentityProvider] = useState(false);
     const identityProviderStartPendingRef = useRef(false);
+    const heldIdentitySlotChangesRef = useRef<IdentitySlot[] | null>(null);
     const handleControlStatusChange = useCallback((
         _slotId: string,
         status: FormIdentitySelectionControlsStatus | null,
@@ -417,16 +445,57 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
 
         identityProviderStartPendingRef.current = true;
         setIsStartingIdentityProvider(true);
+        // On success the browser leaves for the identity provider and the slots are loaded again on return. Applying
+        // the persisted slots would briefly show their saved-state confirmation and removal action before the redirect.
+        const heldChanges: IdentitySlot[] = [];
+        heldIdentitySlotChangesRef.current = heldChanges;
+        let persisted = false;
         try {
             const controls = newIdentitySlot != null && controlsRef.current != null
                 ? [[newIdentitySlot.id, controlsRef.current] as const]
                 : [];
-            return await persistPendingIdentitySelections(controls, targetIdentityId);
+            persisted = await persistPendingIdentitySelections(controls, targetIdentityId);
+            return persisted;
         } finally {
+            heldIdentitySlotChangesRef.current = null;
+            if (!persisted) {
+                heldChanges.forEach(onIdentitySlotChange);
+            }
             identityProviderStartPendingRef.current = false;
             setIsStartingIdentityProvider(false);
         }
-    }, [identityControlBusy, newIdentitySlot]);
+    }, [identityControlBusy, newIdentitySlot, onIdentitySlotChange]);
+
+    const handleIdentitySlotChange = (slot: IdentitySlot) => {
+        const heldChanges = heldIdentitySlotChangesRef.current;
+        if (heldChanges == null) {
+            onIdentitySlotChange(slot);
+        } else {
+            heldChanges.push(slot);
+        }
+    };
+
+    const commitNewIdentity = async (): Promise<boolean> => {
+        const controls = controlsRef.current;
+        if (controls == null) {
+            return false;
+        }
+
+        // A successful commit reloads the task view, which supersedes the saved slot. Applying it right away would
+        // briefly show the saved-state confirmation and removal action while the task is still loading.
+        const heldChanges: IdentitySlot[] = [];
+        heldIdentitySlotChangesRef.current = heldChanges;
+        let committed = false;
+        try {
+            committed = await controls.commitPendingSelection();
+            return committed;
+        } finally {
+            heldIdentitySlotChangesRef.current = null;
+            if (!committed) {
+                heldChanges.forEach(onIdentitySlotChange);
+            }
+        }
+    };
 
     const handleContinue = async () => {
         if (continueDisabled) {
@@ -435,11 +504,8 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
 
         setIsContinuing(true);
         try {
-            if (newIdentitySlot != null && newIdentitySelected) {
-                const controls = controlsRef.current;
-                if (controls == null || !await controls.commitPendingSelection()) {
-                    return;
-                }
+            if (newIdentitySlot != null && newIdentitySelected && !await commitNewIdentity()) {
+                return;
             }
 
             await onContinue();
@@ -553,7 +619,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                             saveMode="deferred"
                             beforeIdentityProviderStart={handleIdentityProviderStart}
                             identityProviderAuthenticationDisabled={identityProviderAuthenticationDisabled}
-                            onChange={onIdentitySlotChange}
+                            onChange={handleIdentitySlotChange}
                             onStatusChange={handleControlStatusChange}
                         />
                     </Grid>

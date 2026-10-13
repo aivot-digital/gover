@@ -706,6 +706,14 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     disabled={inputsDisabled}
                     computedErrors={clientSideValidationErrors}
                     suppressErrors={hasNotChanged}
+                    onDerive={(authoredElementValues, derivationOptions, abort) => new StorageProvidersApiService()
+                        .deriveDefinitionConfiguration(
+                            definition.key,
+                            definition.version,
+                            authoredElementValues,
+                            derivationOptions,
+                            abort,
+                        )}
                     onDerivationFinished={(derivedElementData) => {
                         setInitialDerivationDone(true);
                         setDerivedElementData(derivedElementData);

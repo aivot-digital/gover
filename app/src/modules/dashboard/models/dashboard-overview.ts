@@ -1,5 +1,6 @@
 export interface DashboardOverview {
     tasks: DashboardTaskSummary;
+    instances: DashboardInstanceSummary;
     recentProcesses: DashboardRecentProcess[];
 }
 
@@ -15,6 +16,23 @@ export interface DashboardTask {
     processId: number;
     processVersion: number;
     taskName: string;
+    processTitle: string;
+    caseNumber: string;
+    started: string;
+    deadline: string | null;
+}
+
+// Running process instances personally assigned to the current user.
+export interface DashboardInstanceSummary {
+    total: number;
+    overdue: number;
+    items: DashboardInstance[];
+}
+
+export interface DashboardInstance {
+    id: number;
+    processId: number;
+    processVersion: number;
     processTitle: string;
     caseNumber: string;
     started: string;
