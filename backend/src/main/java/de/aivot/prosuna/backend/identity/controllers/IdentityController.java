@@ -40,45 +40,52 @@ public class IdentityController {
         this.identityCommunicationService = identityCommunicationService;
     }
 
-    @GetMapping("{providerKey}/callback/{identitySessionId}/{identityCacheEntityId}/")
+    @GetMapping("{providerKey}/callback/{identityCacheEntityId}/")
     @Operation(
             summary = "Handle Identity Provider Callback",
-            description = "Processes the callback from the identity provider after authentication."
+            description = "Processes the callback from the identity provider after authentication. " +
+                    "The callback is only accepted from the browser that started the authentication."
     )
     public void callback(
             @Nonnull @PathVariable UUID providerKey,
-            @Nonnull @PathVariable String identitySessionId,
             @Nonnull @PathVariable String identityCacheEntityId,
             @Nonnull @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_STATE) String state,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, required = false) String error,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, required = false) String errorDescription,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_AUTHORIZATION_CODE, required = false) String authorizationCode,
+            @Nullable @CookieValue(name = IdentityCookieUtils.IDENTITY_FLOW_COOKIE_NAME, required = false) String flowBindingSecret,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         if (error != null) {
             var redirectUrl = identityService
                     .createErrorRedirectURL(
                             identityCacheEntityId,
-                            identitySessionId,
+                            flowBindingSecret,
                             state,
                             error,
                             errorDescription
                     );
+            response.addCookie(IdentityCookieUtils.createExpiredFlowBindingCookie(
+                    identityService.getCallbackPath(providerKey, identityCacheEntityId)
+            ));
             response.sendRedirect(redirectUrl);
             return;
         }
 
-        var redirectUrl = identityService
+        var result = identityService
                 .handleCallback(
                         providerKey,
                         identityCacheEntityId,
-                        identitySessionId,
+                        flowBindingSecret,
                         authorizationCode,
                         state
                 );
 
-        response.addCookie(IdentityCookieUtils.createIdentityCookie(identitySessionId));
-        response.sendRedirect(redirectUrl);
+        response.addCookie(IdentityCookieUtils.createExpiredFlowBindingCookie(
+                identityService.getCallbackPath(providerKey, identityCacheEntityId)
+        ));
+        response.addCookie(IdentityCookieUtils.createIdentityCookie(result.identitySessionId()));
+        response.sendRedirect(result.redirectUrl());
     }
 
     @GetMapping("get/")

@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.workers;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.services.CommunicationService;
+import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
@@ -11,31 +12,15 @@ import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.services.ProcessInstanceMailService;
 import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
-import de.aivot.prosuna.backend.process.entities.ProcessEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.prosuna.backend.process.entities.*;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.*;
-import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
-import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.prosuna.backend.process.models.ProcessNodePort;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
-import de.aivot.prosuna.backend.core.services.BusinessTime;
-import de.aivot.prosuna.backend.process.models.ProcessRetentionTime;
+import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
-import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
+import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
@@ -459,10 +444,19 @@ public class ProcessNodeExecutionResultHandler {
             }
         }
 
-        var message = communicationRequest.message().withSendingContext(
-                context.triggeringUser,
-                resolveSendingDepartment(context)
-        );
+        var originalMessage = communicationRequest.message();
+        var message = new CommunicationMessage.Builder()
+                .subject(originalMessage.subject())
+                .body(originalMessage.body())
+                .htmlBody(originalMessage.htmlBody())
+                .callToActions(originalMessage.callToActions())
+                .timestamp(originalMessage.timestamp())
+                .attachments(originalMessage.attachments())
+                .sendingUser(context.triggeringUser)
+                .sendingDepartment(resolveSendingDepartment(context, originalMessage.signatureDepartment()))
+                .signatureDepartment(originalMessage.signatureDepartment())
+                .referenceId(context.processInstance.getCaseNumber())
+                .build();
 
         final Map<String, Object> sendResult;
         try {
@@ -521,6 +515,7 @@ public class ProcessNodeExecutionResultHandler {
         messageDetails.put("subject", message.subject());
         messageDetails.put("body", message.body());
         messageDetails.put("htmlBody", message.htmlBody());
+        messageDetails.put("referenceId", message.referenceId());
         messageDetails.put("sendingUser", createSendingUserDetails(message.sendingUser()));
         messageDetails.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));
         messageDetails.put("signatureDepartment", createSignatureDepartmentDetails(message.signatureDepartment()));
@@ -568,8 +563,23 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     @Nonnull
-    private DepartmentEntity resolveSendingDepartment(@Nonnull HandlerContext<?, ?> context)
+    private DepartmentEntity resolveSendingDepartment(@Nonnull HandlerContext<?, ?> context,
+                                                       @Nullable VDepartmentShadowedEntity signatureDepartment)
             throws ProcessNodeExecutionException {
+        if (signatureDepartment != null) {
+            var departmentId = signatureDepartment.getId();
+            var department = departmentId == null
+                    ? Optional.<DepartmentEntity>empty()
+                    : departmentService.retrieve(departmentId);
+            if (department.isEmpty()) {
+                markTaskFailed(context.processInstanceTask);
+                throw new ProcessNodeExecutionExceptionMissingValue(
+                        "Die ausgewählte Organisationseinheit für die E-Mail-Signatur ist nicht vorhanden."
+                );
+            }
+            return department.get();
+        }
+
         final Optional<ProcessEntity> process;
         try {
             process = processService.retrieve(context.processInstance.getProcessId());
@@ -1108,6 +1118,7 @@ public class ProcessNodeExecutionResultHandler {
         } else {
             context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
         }
+        context.processInstanceTask.setUpdated(Instant.now());
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
         if (context.triggeringUser != null && context.processInstance.getStatus() != ProcessInstanceStatus.Running) {

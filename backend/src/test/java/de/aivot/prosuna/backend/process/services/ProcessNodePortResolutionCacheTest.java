@@ -8,12 +8,15 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -23,6 +26,17 @@ class ProcessNodePortResolutionCacheTest {
 
     private final ProcessNodePortResolutionCache cache = new ProcessNodePortResolutionCache(JsonMapperTestUtils.createMapper());
     private final AtomicInteger resolutions = new AtomicInteger();
+
+    @Test
+    void createsTheCacheThroughSpringWithOnlyAJsonMapperBean() {
+        new ApplicationContextRunner()
+                .withUserConfiguration(ProcessNodePortResolutionCache.class)
+                .withBean(JsonMapper.class, JsonMapperTestUtils::createMapper)
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context).hasSingleBean(ProcessNodePortResolutionCache.class);
+                });
+    }
 
     @Test
     void reusesTheResolutionForUnchangedInputs() {

@@ -103,6 +103,7 @@ function renderWithEditorMetadata(children: React.ReactElement, metadata: Proces
                 setNode: vi.fn(),
                 isEditable: true,
                 problems: null,
+                incomingMetadataLoadFailed: false,
                 incomingMetadata: metadata,
             }}
         >

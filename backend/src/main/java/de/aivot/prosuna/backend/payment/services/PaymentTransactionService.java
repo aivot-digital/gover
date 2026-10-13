@@ -162,7 +162,11 @@ public class PaymentTransactionService implements
                     .setMetadata(metadata).log();
             throw e;
         }
-        transactionEntity.setPaymentInformation(xBezahldienstePaymentTransaction.getPaymentInformation());
+        var paymentInformation = xBezahldienstePaymentTransaction.getPaymentInformation();
+        paymentInformation.setTransactionTimestamp(
+                paymentProviderDefinition.fixTransactionTimestamp(paymentInformation.getTransactionTimestamp())
+        );
+        transactionEntity.setPaymentInformation(paymentInformation);
 
         return paymentTransactionRepository.save(transactionEntity);
     }
@@ -301,7 +305,11 @@ public class PaymentTransactionService implements
 
         // If the payment status has changed, update the transaction and notify all listeners
         if (paymentStatusChanged) {
-            transaction.setPaymentInformation(xBezahldiensteTransactionUpdated.getPaymentInformation());
+            var paymentInformation = xBezahldiensteTransactionUpdated.getPaymentInformation();
+            paymentInformation.setTransactionTimestamp(
+                    providerDefinition.fixTransactionTimestamp(paymentInformation.getTransactionTimestamp())
+            );
+            transaction.setPaymentInformation(paymentInformation);
 
             // Listeners request follow-up work, such as resuming the task waiting for this payment. The new status and
             // that work commit together: if a listener fails, the status remains unchanged, so the next poll or

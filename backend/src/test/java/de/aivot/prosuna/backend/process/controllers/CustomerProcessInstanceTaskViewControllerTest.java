@@ -17,9 +17,11 @@ import de.aivot.prosuna.backend.identity.dtos.IdentityProviderOptionResponseDTO;
 import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityAuthenticationRedirect;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
+import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -366,7 +368,11 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 any(),
                 eq("identity-session"),
                 eq("https://prosuna.example.test/process/instance/tasks/task")
-        )).thenReturn(providerLogin);
+        )).thenReturn(new IdentityAuthenticationRedirect(
+                providerLogin,
+                "flow-binding-secret",
+                "/api/public/identity/provider/callback/entity/"
+        ));
         var response = new MockHttpServletResponse();
 
         fixture.controller().startRequiredIdentityAuthentication(
@@ -380,6 +386,13 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         assertEquals(302, response.getStatus());
         assertEquals(providerLogin.toString(), response.getRedirectedUrl());
+        var flowBindingCookie = response.getCookie(IdentityCookieUtils.IDENTITY_FLOW_COOKIE_NAME);
+        assertNotNull(flowBindingCookie);
+        assertEquals("flow-binding-secret", flowBindingCookie.getValue());
+        assertEquals("/api/public/identity/provider/callback/entity/", flowBindingCookie.getPath());
+        assertTrue(flowBindingCookie.isHttpOnly());
+        assertTrue(flowBindingCookie.getSecure());
+        assertEquals("Lax", flowBindingCookie.getAttribute("SameSite"));
     }
 
     @Test
@@ -1286,7 +1299,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final ProcessNodeEntity node;
 
         private TestProcessNodeService(ProcessNodeEntity node) {
-            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null, null);
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null, null, null);
             this.node = node;
         }
 

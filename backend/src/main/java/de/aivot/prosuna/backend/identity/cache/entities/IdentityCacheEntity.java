@@ -12,8 +12,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-@RedisHash(value = "CacheIdentity", timeToLive = 60 * 60 * 4) // Expire after 4 hours
+@RedisHash(value = "CacheIdentity", timeToLive = IdentityCacheEntity.TIME_TO_LIVE_SECONDS)
 public class IdentityCacheEntity implements Serializable {
+    /**
+     * Cached identities and pending authentications expire after 4 hours.
+     */
+    public static final int TIME_TO_LIVE_SECONDS = 60 * 60 * 4;
+
     @Id
     @Nonnull
     private String id;
@@ -41,6 +46,11 @@ public class IdentityCacheEntity implements Serializable {
     private String origin = "";
     @Nonnull
     private String stateNonce = "";
+    /**
+     * Hash of the secret that binds a pending authentication to the browser that started it.
+     */
+    @Nullable
+    private String flowBindingHash;
     @Nullable
     private Map<String, String> identityData;
     @Nullable
@@ -90,12 +100,12 @@ public class IdentityCacheEntity implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         IdentityCacheEntity that = (IdentityCacheEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(sessionId, that.sessionId) && Objects.equals(relatedProcessNodeId, that.relatedProcessNodeId) && Objects.equals(codeVerifier, that.codeVerifier) && type == that.type && Objects.equals(providerKey, that.providerKey) && Objects.equals(identityId, that.identityId) && Objects.equals(metadataIdentifier, that.metadataIdentifier) && Objects.equals(uniqueIdFromIdentityProvider, that.uniqueIdFromIdentityProvider) && Objects.equals(emailAddress, that.emailAddress) && Objects.equals(origin, that.origin) && Objects.equals(stateNonce, that.stateNonce) && Objects.equals(identityData, that.identityData) && Objects.equals(communicationProviderBindingId, that.communicationProviderBindingId) && Objects.equals(communicationProviderData, that.communicationProviderData);
+        return Objects.equals(id, that.id) && Objects.equals(sessionId, that.sessionId) && Objects.equals(relatedProcessNodeId, that.relatedProcessNodeId) && Objects.equals(codeVerifier, that.codeVerifier) && type == that.type && Objects.equals(providerKey, that.providerKey) && Objects.equals(identityId, that.identityId) && Objects.equals(metadataIdentifier, that.metadataIdentifier) && Objects.equals(uniqueIdFromIdentityProvider, that.uniqueIdFromIdentityProvider) && Objects.equals(emailAddress, that.emailAddress) && Objects.equals(origin, that.origin) && Objects.equals(stateNonce, that.stateNonce) && Objects.equals(flowBindingHash, that.flowBindingHash) && Objects.equals(identityData, that.identityData) && Objects.equals(communicationProviderBindingId, that.communicationProviderBindingId) && Objects.equals(communicationProviderData, that.communicationProviderData);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, sessionId, relatedProcessNodeId, codeVerifier, type, providerKey, identityId, metadataIdentifier, uniqueIdFromIdentityProvider, emailAddress, origin, stateNonce, identityData, communicationProviderBindingId, communicationProviderData);
+        return Objects.hash(id, sessionId, relatedProcessNodeId, codeVerifier, type, providerKey, identityId, metadataIdentifier, uniqueIdFromIdentityProvider, emailAddress, origin, stateNonce, flowBindingHash, identityData, communicationProviderBindingId, communicationProviderData);
     }
 
     // endregion
@@ -219,6 +229,16 @@ public class IdentityCacheEntity implements Serializable {
 
     public IdentityCacheEntity setStateNonce(@Nonnull String stateNonce) {
         this.stateNonce = stateNonce;
+        return this;
+    }
+
+    @Nullable
+    public String getFlowBindingHash() {
+        return flowBindingHash;
+    }
+
+    public IdentityCacheEntity setFlowBindingHash(@Nullable String flowBindingHash) {
+        this.flowBindingHash = flowBindingHash;
         return this;
     }
 

@@ -136,6 +136,7 @@ function renderMoreTab(overrides: Partial<ProcessNodeEntity> = {}, isEditable = 
             },
             isEditable,
             problems: null,
+            incomingMetadataLoadFailed: false,
             incomingMetadata: null,
         }}>
             <ProcessNodeEditorMoreTab/>

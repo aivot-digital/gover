@@ -66,7 +66,12 @@ vi.mock('../../../modules/elements/components/element-derivation-context', () =>
                 </button>
                 <button
                     type="button"
-                    onClick={() => void props.onDeriveOverride({field: 'derived'}, [])}
+                    onClick={() => void props.onDerive({field: 'derived'}, {
+                        skipErrorsForElementIds: [],
+                        skipVisibilitiesForElementIds: [],
+                        skipOverridesForElementIds: [],
+                        skipValuesForElementIds: [],
+                    })}
                 >
                     Ableiten
                 </button>
@@ -183,6 +188,39 @@ describe('CustomerInstanceTaskView', () => {
             'applicant',
             'customer@example.test',
         ));
+        expect(await screen.findByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
+    });
+
+    it('keeps the saved email confirmation hidden while the task opens', async () => {
+        const savedSlot = createIdentitySlot({
+            identityType: 'Email',
+            emailAddress: 'customer@example.test',
+            isReady: true,
+        });
+        let resolveTaskView!: () => void;
+        const getTaskView = vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValueOnce(createBlockedTaskView({newIdentitySlot: createIdentitySlot()}))
+            .mockReturnValueOnce(new Promise<TaskViewResponse>((resolve) => {
+                resolveTaskView = () => resolve(createTaskView({newIdentitySlot: savedSlot}));
+            }));
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'setNewIdentityEmail')
+            .mockResolvedValue(savedSlot);
+        const user = userEvent.setup();
+
+        render(<CustomerInstanceTaskView/>);
+
+        const emailField = await screen.findByRole('textbox', {name: /E-Mail-Adresse/});
+        const continueButton = screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'});
+        await user.type(emailField, 'customer@example.test');
+        await waitFor(() => expect(continueButton).toBeEnabled());
+        await user.click(continueButton);
+
+        await waitFor(() => expect(getTaskView).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(emailField).toBeEnabled());
+        expect(screen.queryByText('Nachrichten werden an customer@example.test gesendet.')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
+
+        resolveTaskView();
         expect(await screen.findByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
     });
 
@@ -323,6 +361,41 @@ describe('CustomerInstanceTaskView', () => {
 
         resolveSelection(previewCommunication);
         await waitFor(() => expect(window.location.hash).toBe('#required-login'));
+    });
+
+    it('keeps a persisted new email identity unchanged while reauthenticating the existing identity', async () => {
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValue(createBlockedTaskView({
+                existingIdentitySlot: createExistingIdentitySlot({id: 'recipient'}),
+                newIdentitySlot: createIdentitySlot({availableIdentityProviders: []}),
+            }));
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'createRequiredIdentityAuthenticationStartLink')
+            .mockReturnValue('#required-login');
+        const setEmail = vi.spyOn(CustomerTaskViewApiService.prototype, 'setNewIdentityEmail')
+            .mockResolvedValue(createIdentitySlot({
+                availableIdentityProviders: [],
+                identityType: 'Email',
+                emailAddress: 'customer@example.test',
+                isReady: true,
+            }));
+        const user = userEvent.setup();
+
+        render(<CustomerInstanceTaskView/>);
+
+        const emailField = await screen.findByRole('textbox', {name: /E-Mail-Adresse/});
+        await user.type(emailField, 'customer@example.test');
+        await user.click(screen.getByRole('link', {name: /Mit „BundID“ anmelden/}));
+
+        await waitFor(() => expect(window.location.hash).toBe('#required-login'));
+        await waitFor(() => expect(emailField).toBeEnabled());
+        expect(setEmail).toHaveBeenCalledWith(
+            'instance-key',
+            'task-key',
+            'applicant',
+            'customer@example.test',
+        );
+        expect(screen.queryByText('Nachrichten werden an customer@example.test gesendet.')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
     });
 
     it('shows existing and new identity requirements together', async () => {

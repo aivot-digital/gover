@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.utils.CrockfordCaseNumber;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -74,6 +75,7 @@ public class ProcessListService {
                     row.get("caseNumber", String.class), fileNumbers(row), row.get("processId", Integer.class),
                     row.get("processVersion", Integer.class), row.get("processName", String.class), name, type, description,
                     row.get("assignedUserId", String.class), row.get("assignedUserId") == null ? null : names.get(row.get("assignedUserId")),
+                    assignedCustomerIdentityLabel(row),
                     row.get("status", ProcessTaskStatus.class), row.get("statusOverride", String.class),
                     row.get("started", Instant.class), row.get("deadline", Instant.class), row.get("finished", Instant.class),
                     row.get("testClaim") != null);
@@ -160,6 +162,8 @@ public class ProcessListService {
         for (var field : List.of("assignedUserId", "status", "statusOverride", "started", "deadline", "finished")) columns.add(owner.get(field).alias(field));
         columns.add(r.instance.get("createdForTestClaimId").alias("testClaim"));
         if (tasks) {
+            columns.add(owner.get("assignedCustomerIdentityId").alias("assignedCustomerIdentityId"));
+            columns.add(r.instance.get("identities").alias("identities"));
             columns.add(r.node.get("name").alias("taskName"));
             columns.add(r.node.get("description").alias("description"));
             columns.add(r.node.get("processNodeDefinitionKey").alias("definitionKey"));
@@ -268,6 +272,15 @@ public class ProcessListService {
     @Nonnull
     private List<String> fileNumbers(@Nonnull Tuple row) {
         return (List<String>) row.get("fileNumbers");
+    }
+
+    @Nullable
+    private String assignedCustomerIdentityLabel(@Nonnull Tuple row) {
+        var identityId = row.get("assignedCustomerIdentityId", String.class);
+        if (identityId == null || identityId.isBlank()) return null;
+        var identities = row.get("identities", IdentityDataMap.class);
+        var identity = identities == null ? null : identities.get(identityId);
+        return nonBlank(identity == null ? null : identity.title(), identityId.trim());
     }
 
     @Nonnull

@@ -67,6 +67,27 @@ describe('Process instance information', () => {
         vi.spyOn(ProcessInstanceEventApiService.prototype, 'list').mockResolvedValue({content: []} as never);
     });
 
+    it.each([null, 'Unterlagen angefordert'])('resolves the active task identity from instance data (%s)', async statusOverride => {
+        const item = createItem();
+        item.instance.identities = {
+            applicant: {
+                identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+                emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
+                uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
+            },
+        };
+        item.activeTasks = [{
+            id: 8, name: 'Unterlagen prüfen', status: ProcessTaskStatus.AwaitingCustomer,
+            statusOverride, assignedUserId: null, assignedCustomerIdentityId: 'applicant',
+        }];
+        renderItem(item);
+
+        expect(screen.getByRole('row', {name: /^Aufgabenstatus /})).toHaveTextContent(statusOverride
+            ? 'Unterlagen angefordert (Systemstatus: Wartet auf Antragstellende)'
+            : 'Wartet auf Antragstellende');
+        await screen.findByText('Noch kein Ereignis vorhanden');
+    });
+
     it('shows instance metadata without requiring access to the process model', async () => {
         renderItem(createItem());
         expect(screen.getByText('V-2026-17')).toBeInTheDocument();
@@ -140,12 +161,14 @@ describe('Process instance information', () => {
                 name: 'Prüfung',
                 status: ProcessTaskStatus.Running,
                 assignedUserId: 'Kim',
+                assignedCustomerIdentityId: null,
             },
             {
                 id: 2,
                 name: 'Zahlung',
                 status: ProcessTaskStatus.AwaitingPayment,
                 assignedUserId: 'Alex',
+                assignedCustomerIdentityId: null,
             },
         ];
         renderItem(item);
@@ -200,6 +223,7 @@ describe('Process instance information', () => {
                 status: ProcessTaskStatus.AwaitingCustomer,
                 statusOverride: 'Unterlagen angefordert',
                 assignedUserId: 'Aufgabenbearbeitung',
+                assignedCustomerIdentityId: null,
             },
         ];
         renderItem(item);
@@ -233,6 +257,7 @@ describe('Process instance information', () => {
                 name: 'Später',
                 status: ProcessTaskStatus.Running,
                 assignedUserId: null,
+                assignedCustomerIdentityId: null,
                 deadline: '2026-10-02T10:00:00Z',
             },
             {
@@ -240,6 +265,7 @@ describe('Process instance information', () => {
                 name: 'Überfällig',
                 status: ProcessTaskStatus.Paused,
                 assignedUserId: null,
+                assignedCustomerIdentityId: null,
                 deadline: '2026-09-01T10:00:00Z',
             },
             {
@@ -247,6 +273,7 @@ describe('Process instance information', () => {
                 name: 'Ohne Frist',
                 status: ProcessTaskStatus.Running,
                 assignedUserId: null,
+                assignedCustomerIdentityId: null,
             },
         ];
         renderItem(item);

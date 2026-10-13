@@ -2,9 +2,9 @@ import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
-import {Box, Button, IconButton, Tab, Tabs, useTheme} from '@mui/material';
+import {Alert, Box, Button, IconButton, Tab, Tabs, useTheme} from '@mui/material';
 import {alpha, keyframes} from '@mui/material/styles';
-import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {Link, Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useProcessDetailsPageContext} from '../../process-details-page-context';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 import {
@@ -12,7 +12,6 @@ import {
     ProcessNodeProviderApiService,
 } from '../../../../services/process-node-provider-api-service';
 import {ProcessNodeEditorProvider} from './process-node-editor-context';
-import {useLocation} from 'react-router';
 import Typography from '@mui/material/Typography';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
@@ -40,6 +39,11 @@ import {
     ProcessNodeProviderDetailsDialog,
 } from '../../../../components/process-node-provider-details';
 import {ProcessNodeProviderBadges} from '../../../../components/process-node-provider-badges';
+
+type IncomingMetadataState =
+    | {status: 'loading'}
+    | {status: 'loaded'; metadata: ProcessNodeDefinitionMetadata}
+    | {status: 'failed'};
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
@@ -70,7 +74,8 @@ export function ProcessNodeEditor(): ReactNode {
     const theme = useTheme();
 
     const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
-    const [incomingMetadata, setIncomingMetadata] = useState<ProcessNodeDefinitionMetadata | null>(null);
+    // Replaced together with the node so the suggestions always belong to the configuration on screen.
+    const [incomingMetadataState, setIncomingMetadataState] = useState<IncomingMetadataState>({status: 'loading'});
 
     const {
         editable,
@@ -131,17 +136,24 @@ export function ProcessNodeEditor(): ReactNode {
             setEditedNode(null);
             setLayout(null);
             setProvider(null);
+            setIncomingMetadataState({status: 'loading'});
         }
 
         setIsNodeLoading(true);
         setShowNodeLoadedFeedback(false);
 
         (async () => {
-            const [node, configurationLayout, problems, incomingMetadata] = await Promise.all([
+            const [node, configurationLayout, problems, incomingMetadataState] = await Promise.all([
                 new ProcessNodeApiService().retrieve(nodeId),
                 new ProcessNodeApiService().getConfigurationLayout(nodeId),
                 new ProcessNodeApiService().validate(nodeId),
-                new ProcessNodeApiService().getIncomingMetadata(nodeId),
+                // Suggestions are optional, so their failure must not keep the configuration from opening.
+                new ProcessNodeApiService().getIncomingMetadata(nodeId)
+                    .then((metadata): IncomingMetadataState => ({status: 'loaded', metadata}))
+                    .catch((error): IncomingMetadataState => {
+                        console.error(error);
+                        return {status: 'failed'};
+                    }),
             ]);
             const nodeProvider = await new ProcessNodeProviderApiService()
                 .getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion);
@@ -151,10 +163,10 @@ export function ProcessNodeEditor(): ReactNode {
                 configurationLayout,
                 nodeProvider,
                 problems,
-                incomingMetadata,
+                incomingMetadataState,
             };
         })()
-            .then(({node, configurationLayout, nodeProvider, problems, incomingMetadata}) => {
+            .then(({node, configurationLayout, nodeProvider, problems, incomingMetadataState}) => {
                 if (isCancelled) {
                     return;
                 }
@@ -163,7 +175,7 @@ export function ProcessNodeEditor(): ReactNode {
                 setLayout(configurationLayout);
                 setProvider(nodeProvider);
                 setProblems(problems);
-                setIncomingMetadata(incomingMetadata);
+                setIncomingMetadataState(incomingMetadataState);
                 if (hasEditorContent) {
                     setShowNodeLoadedFeedback(true);
                 }
@@ -259,6 +271,7 @@ export function ProcessNodeEditor(): ReactNode {
         }
         return 'configuration';
     }, [location]);
+    const tabUsesIncomingMetadata = currentTab === 'configuration' || currentTab === 'outputs';
 
     const editorTabContentContainerRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
@@ -534,6 +547,12 @@ export function ProcessNodeEditor(): ReactNode {
                             overflowY: 'auto',
                         }}
                     >
+                        {incomingMetadataState.status === 'failed' && tabUsesIncomingMetadata && (
+                            <Alert severity="warning" sx={{mb: 2}}>
+                                Auswahlvorschläge und wiederverwendbare Inhalte konnten nicht geladen werden.
+                                {editable && ' Sie können die Konfiguration weiterhin bearbeiten.'}
+                            </Alert>
+                        )}
                         <ProcessNodeEditorProvider
                             key={nodeId}
                             value={{
@@ -549,7 +568,10 @@ export function ProcessNodeEditor(): ReactNode {
                                 },
                                 isEditable: editable,
                                 problems: problems,
-                                incomingMetadata,
+                                incomingMetadata: incomingMetadataState.status === 'loaded'
+                                    ? incomingMetadataState.metadata
+                                    : null,
+                                incomingMetadataLoadFailed: incomingMetadataState.status === 'failed',
                             }}
                         >
                             <Outlet/>

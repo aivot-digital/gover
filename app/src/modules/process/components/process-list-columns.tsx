@@ -8,7 +8,8 @@ import {
     ProcessInstanceStatusColor,
     ProcessInstanceStatusLabels,
 } from '../enums/process-instance-status';
-import {ProcessTaskStatus, ProcessTaskStatusLabels, ProcessTaskStatusColors} from '../enums/process-task-status';
+import {ProcessTaskStatus, ProcessTaskStatusColors} from '../enums/process-task-status';
+import {getProcessTaskStatusDisplay} from '../utils/process-task-status-label';
 import {
     formatInstantInApplicationTimeZone,
     formatRelativeInstantInApplicationTimeZone,
@@ -166,16 +167,21 @@ export function processListColumns<T extends Entry>(tasks: boolean, onChanged: (
             headerName: tasks ? 'Aufgabenstatus' : 'Vorgangsstatus',
             width: 165,
             renderCell: ({row}) => {
-                const label = tasks
-                    ? ProcessTaskStatusLabels[row.status as ProcessTaskStatus]
-                    : ProcessInstanceStatusLabels[row.status as ProcessInstanceStatus];
+                const taskStatus = tasks
+                    ? getProcessTaskStatusDisplay(row as ProcessTaskListEntry)
+                    : undefined;
+                const systemLabel = taskStatus?.systemLabel ?? ProcessInstanceStatusLabels[row.status as ProcessInstanceStatus];
                 const customLabel = row.statusOverride?.trim();
+                const label = taskStatus?.label ?? (customLabel || systemLabel);
+                const tooltip = tasks
+                    ? taskStatus?.tooltip
+                    : customLabel && customLabel !== systemLabel
+                        ? `${customLabel} (Systemstatus: ${systemLabel})`
+                        : undefined;
                 return (
                     <Tooltip
                         arrow
-                        title={
-                            customLabel && customLabel !== label ? `${customLabel} (Systemstatus: ${label})` : ''
-                        }
+                        title={tooltip ?? ''}
                     >
                         <Box
                             component="span"
@@ -185,7 +191,7 @@ export function processListColumns<T extends Entry>(tasks: boolean, onChanged: (
                                 sx={{maxWidth: '100%'}}
                                 size="small"
                                 mode="soft"
-                                label={customLabel || label}
+                                label={label}
                                 color={
                                     tasks
                                         ? ProcessTaskStatusColors[row.status as ProcessTaskStatus]

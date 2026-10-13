@@ -23,16 +23,21 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
 
     private final ProcessNodeService processNodeService;
+    private final ProcessVersionDraftGuard processVersionDraftGuard;
 
     @Autowired
-    public ProcessEdgeService(ProcessEdgeRepository processDefinitionEdgeRepository, ProcessNodeService processNodeService) {
+    public ProcessEdgeService(ProcessEdgeRepository processDefinitionEdgeRepository,
+                              ProcessNodeService processNodeService,
+                              ProcessVersionDraftGuard processVersionDraftGuard) {
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
         this.processNodeService = processNodeService;
+        this.processVersionDraftGuard = processVersionDraftGuard;
     }
 
     @Nonnull
     @Override
     public ProcessEdgeEntity create(@Nonnull ProcessEdgeEntity entity) throws ResponseException {
+        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
         entity.setId(null);
         validateEndpoints(entity);
         return processDefinitionEdgeRepository.save(entity);
@@ -83,6 +88,8 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
     public ProcessEdgeEntity performUpdate(@Nonnull Integer id,
                                            @Nonnull ProcessEdgeEntity entity,
                                            @Nonnull ProcessEdgeEntity existingEntity) throws ResponseException {
+        processVersionDraftGuard.requireDrafted(existingEntity.getProcessId(), existingEntity.getProcessVersion());
+        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
         validateEndpoints(entity);
         existingEntity.setProcessId(entity.getProcessId());
         existingEntity.setProcessVersion(entity.getProcessVersion());
@@ -94,12 +101,16 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
 
     @Override
     public void performDelete(@Nonnull ProcessEdgeEntity entity) throws ResponseException {
+        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
         processDefinitionEdgeRepository.delete(entity);
     }
 
     private void validateEndpoints(@Nonnull ProcessEdgeEntity edge) throws ResponseException {
         var source = processNodeService.retrieve(edge.getFromNodeId()).orElseThrow(ResponseException::badRequest);
         var target = processNodeService.retrieve(edge.getToNodeId()).orElseThrow(ResponseException::badRequest);
+        // The workflow engine follows an edge by its start node and port, regardless of the edge's process version.
+        // An edge must therefore connect nodes of its own version, otherwise a draft edge could change the flow of a
+        // published version.
         for (var node : List.of(source, target)) {
             if (!Objects.equals(node.getProcessId(), edge.getProcessId()) || !Objects.equals(node.getProcessVersion(), edge.getProcessVersion())) {
                 throw ResponseException.badRequest("Quelle und Ziel der Verbindung müssen zur angegebenen Prozessversion gehören.");

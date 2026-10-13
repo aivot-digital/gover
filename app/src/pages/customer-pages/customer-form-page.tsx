@@ -513,7 +513,7 @@ export function CustomerFormPage() {
                             }}
                             onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
                             onEvent={handleSubmitEvent}
-                            onDeriveOverride={handleDerive}
+                            onDerive={(values, derivationOptions) => handleDerive(values, derivationOptions.skipErrorsForElementIds)}
                         />
                     }
                     {
@@ -598,6 +598,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
     const [isContinuing, setIsContinuing] = useState(false);
     const [isStartingIdentityProvider, setIsStartingIdentityProvider] = useState(false);
     const identityProviderStartPendingRef = useRef(false);
+    const heldIdentitySlotChangesRef = useRef<IdentitySlot[] | null>(null);
     const identitySelectionApi = useMemo(() => (
         new FormTriggerApiService().createIdentitySelectionApi(
             processSlug,
@@ -658,16 +659,35 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
 
         identityProviderStartPendingRef.current = true;
         setIsStartingIdentityProvider(true);
+        // On success the browser leaves for the identity provider and the slots are loaded again on return. Applying
+        // the persisted slots would briefly show their saved-state confirmation and removal action before the redirect.
+        const heldChanges: IdentitySlot[] = [];
+        heldIdentitySlotChangesRef.current = heldChanges;
+        let persisted = false;
         try {
-            return await persistPendingIdentitySelections(
+            persisted = await persistPendingIdentitySelections(
                 controlsBySlotId.current.entries(),
                 targetIdentityId,
             );
+            return persisted;
         } finally {
+            heldIdentitySlotChangesRef.current = null;
+            if (!persisted) {
+                heldChanges.forEach(onIdentitySlotChange);
+            }
             identityProviderStartPendingRef.current = false;
             setIsStartingIdentityProvider(false);
         }
-    }, [someIdentityControlBusy]);
+    }, [onIdentitySlotChange, someIdentityControlBusy]);
+
+    const handleIdentitySlotChange = (slot: IdentitySlot) => {
+        const heldChanges = heldIdentitySlotChangesRef.current;
+        if (heldChanges == null) {
+            onIdentitySlotChange(slot);
+        } else {
+            heldChanges.push(slot);
+        }
+    };
 
     const handleContinue = async () => {
         if (continueDisabled) {
@@ -675,6 +695,10 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
         }
 
         setIsContinuing(true);
+        // Saved slots are applied together with the outcome. Applying them per commit would briefly show the
+        // saved-state confirmation and removal action while later commits are still pending.
+        const heldChanges: IdentitySlot[] = [];
+        heldIdentitySlotChangesRef.current = heldChanges;
         try {
             const selectedSlots = identitySlots.filter(isIdentitySelected);
             let allCommitted = true;
@@ -690,6 +714,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                 onDismiss();
             }
         } finally {
+            heldIdentitySlotChangesRef.current = null;
+            heldChanges.forEach(onIdentitySlotChange);
             setIsContinuing(false);
         }
     };
@@ -779,7 +805,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                     saveMode="deferred"
                                     beforeIdentityProviderStart={handleIdentityProviderStart}
                                     identityProviderAuthenticationDisabled={identityProviderAuthenticationDisabled}
-                                    onChange={onIdentitySlotChange}
+                                    onChange={handleIdentitySlotChange}
                                     onStatusChange={handleControlStatusChange}
                                 />
                             </Grid>

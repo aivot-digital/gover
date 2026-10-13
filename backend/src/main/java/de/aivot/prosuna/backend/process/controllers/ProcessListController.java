@@ -45,7 +45,7 @@ public class ProcessListController {
     }
 
     @GetMapping("tasks/")
-    @Operation(summary = "List task summaries", description = "Returns paged metadata for tasks in readable instances, including tasks assigned to others. Tasks belonging to test instances can be excluded with includeTests=false.")
+    @Operation(summary = "List task summaries", description = "Returns paged metadata for tasks in readable instances, including tasks assigned to others. assignedCustomerIdentityLabel contains the stored title of the assigned customer identity, falling back to its ID, or null when no identity is assigned. Tasks belonging to test instances can be excluded with includeTests=false.")
     @Nonnull
     public Page<ProcessListDTO.Task> tasks(@Nullable @AuthenticationPrincipal Jwt jwt,
                                            @Nonnull @ParameterObject @PageableDefault(size = 12) Pageable page,

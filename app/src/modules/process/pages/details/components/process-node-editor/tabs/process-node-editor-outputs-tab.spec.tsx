@@ -239,6 +239,7 @@ function renderOutputsTab({
                 },
                 isEditable,
                 problems: null,
+                incomingMetadataLoadFailed: false,
                 incomingMetadata: null,
             }}>
                 <ProcessNodeEditorOutputsTab/>

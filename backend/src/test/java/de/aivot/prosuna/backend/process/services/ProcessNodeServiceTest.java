@@ -7,13 +7,21 @@ import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.core.enums.ModuleFlags;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -50,8 +58,16 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.mockito.ArgumentCaptor;
+import org.springframework.http.HttpStatus;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,11 +76,15 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -136,7 +156,8 @@ class ProcessNodeServiceTest {
                 identityCommunicationAvailabilityService,
                 permissionService,
                 new ProcessNodePortResolver(jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator()),
-                new ProcessNodePortResolutionCache(de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper())
+                new ProcessNodePortResolutionCache(de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper()),
+                new ProcessVersionDraftGuard(processVersionRepository)
         );
     }
 
@@ -346,6 +367,202 @@ class ProcessNodeServiceTest {
                 variable.source() == InputVariableSource.ProtectedProcessData &&
                         variable.path().equals("caseNumber")
         ));
+    }
+
+    // Blank output mappings never reach the key filter, so only non-blank invalid keys exercise it here.
+    @ParameterizedTest
+    @ValueSource(strings = {"person-name", "people..name", "people[", "people[2147483648]", "[0].name"})
+    void incomingMetadata_ShouldSkipInvalidOutputMappings(String invalidKey) throws Exception {
+        var source = createNode(1, "source");
+        source.getOutputMappings().put("result", invalidKey);
+        var validSource = createNode(2, "other");
+        validSource.getOutputMappings().put("result", "people[0].name");
+        var target = createNode(3, "target");
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(source, validSource, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2), createEdge(2, 2, 3)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of("source", "other", "people[0].name"), result.forwardedProcessDataKeys().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList());
+        assertEquals(List.of("source", "other", "people[0].name"), result.inputVariables().stream()
+                .filter(variable -> variable.source() == InputVariableSource.ProcessData)
+                .map(variable -> variable.path()).toList());
+        assertEquals(List.of("source-identity", "other-identity"), result.forwardedIdentities().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedIdentity::identityId).toList());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void incomingMetadata_ShouldFilterProviderHintsAndPreserveOtherMetadata(boolean trigger) throws Exception {
+        var source = createNode(1, "source");
+        var target = createNode(2, "target");
+        var layout = new GroupLayoutElement();
+        layout.setId("form");
+        var hints = Arrays.asList(null, "", " ", "person-name", "people..name", "people[",
+                "people[2147483648]", "[0].name", "person.name", "people[0].name", "people[*].name", "person.name")
+                .stream().map(key -> new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(key, "Name", "Hint", source))
+                .toList();
+        // Providers may supply immutable lists; finalization must not remove entries from them.
+        var metadata = new ProcessNodeDefinitionMetadata(new ArrayList<>(), new ArrayList<>(), hints, new ArrayList<>())
+                .addReusableUiDefinition("Form", null, layout, source)
+                .addForwardedAttachmentSet("files", "Files", null, true, source)
+                .addForwardedIdentity("citizen", "Citizen", null, List.of(IDENTITY_PROVIDER_KEY), source);
+        useMetadataProvider(metadata, trigger ? ProcessNodeType.Trigger : ProcessNodeType.Action);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(trigger ? List.of() : List.of(createEdge(1, 1, 2)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(trigger ? source : target);
+
+        assertEquals(hints.subList(8, 12), result.forwardedProcessDataKeys());
+        assertEquals(List.of("person.name", "people[0].name"), result.inputVariables().stream()
+                .filter(variable -> variable.source() == InputVariableSource.ProcessData)
+                .map(variable -> variable.path()).toList());
+        assertEquals(metadata.reusableUiDefinitions(), result.reusableUiDefinitions());
+        assertEquals(metadata.forwardedAttachmentSets(), result.forwardedAttachmentSets());
+        assertEquals(metadata.forwardedIdentities(), result.forwardedIdentities());
+        assertTrue(result.inputVariables().stream().anyMatch(variable -> variable.source() == InputVariableSource.ElementData));
+        assertTrue(result.inputVariables().stream().anyMatch(variable -> variable.source() == InputVariableSource.ElementMetadata));
+        assertTrue(result.inputVariables().stream().anyMatch(variable -> variable.source() == InputVariableSource.ProtectedProcessData));
+        assertEquals(hints, metadata.forwardedProcessDataKeys());
+        assertTrue(metadata.inputVariables().stream().noneMatch(variable -> variable.source() == InputVariableSource.ProcessData));
+    }
+
+    @Test
+    void incomingMetadata_ShouldForwardCanonicalDataKeys() throws Exception {
+        var source = createNode(1, "source");
+        var target = createNode(2, "target");
+        var metadata = ProcessNodeDefinitionMetadata.empty()
+                .addForwardedProcessDataKey(" person . name", "Name", null, source)
+                .addForwardedProcessDataKey("people [*]. name", "Names", null, source)
+                .addForwardedProcessDataKey("people[ 0 ].name ", "First name", null, source);
+        useMetadataProvider(metadata, ProcessNodeType.Action);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of("person.name", "people[*].name", "people[0].name"), result.forwardedProcessDataKeys().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList());
+        assertEquals(List.of("person.name", "people[0].name"), result.inputVariables().stream()
+                .filter(variable -> variable.source() == InputVariableSource.ProcessData)
+                .map(variable -> variable.path()).toList());
+    }
+
+    @Test
+    void incomingMetadata_ShouldAddHintsToACopyOfIncompleteImmutableProviderMetadata() throws Exception {
+        var source = createNode(1, "source");
+        source.getOutputMappings().put("result", "mapped.result");
+        var target = createNode(2, "target");
+        var hint = new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("person.name", "Name", null, source);
+        // Plugin providers may return immutable lists or leave lists unset despite the non-null contract.
+        var metadata = new ProcessNodeDefinitionMetadata(null, null, List.of(hint), null, List.of());
+        useMetadataProvider(metadata, ProcessNodeType.Action);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of("person.name", "mapped.result"), result.forwardedProcessDataKeys().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList());
+        assertTrue(result.inputVariables().stream().anyMatch(variable -> variable.source() == InputVariableSource.ElementData));
+        assertEquals(List.of(), result.reusableUiDefinitions());
+        assertEquals(List.of(), result.forwardedAttachmentSets());
+        assertEquals(List.of(), result.forwardedIdentities());
+        assertEquals(List.of(hint), metadata.forwardedProcessDataKeys());
+        assertEquals(List.of(), metadata.inputVariables());
+    }
+
+    @Test
+    void incomingMetadata_ShouldKeepValidFormPathsIncludingWildcards() throws Exception {
+        var source = createNode(1, "source");
+        var target = createNode(2, "target");
+        var invalidField = new TextInputElement();
+        invalidField.setId("invalid");
+        invalidField.setDestinationKey("person-name");
+        var validField = new TextInputElement();
+        validField.setId("valid");
+        validField.setDestinationKey("person.name");
+        var rowField = new TextInputElement();
+        rowField.setId("row");
+        rowField.setDestinationKey("name");
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setDestinationKey("people");
+        rows.setChildren(List.of(rowField));
+        var layout = new GroupLayoutElement();
+        layout.setId("form");
+        layout.setChildren(List.of(invalidField, validField, rows));
+        var metadata = ProcessNodeDefinitionMetadata.empty().withLayout(layout, source);
+        useMetadataProvider(metadata, ProcessNodeType.Action);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of("person.name", "people", "people[*].name"), result.forwardedProcessDataKeys().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList());
+        assertEquals(List.of("person.name", "people"), result.inputVariables().stream()
+                .filter(variable -> variable.source() == InputVariableSource.ProcessData)
+                .map(variable -> variable.path()).toList());
+        assertEquals(metadata.reusableUiDefinitions(), result.reusableUiDefinitions());
+    }
+
+    @Test
+    void incomingMetadata_ShouldSkipUpstreamNodesWhoseMetadataCannotBeCalculated() throws Exception {
+        useBrokenMetadataProvider();
+        var broken = createNode(1, "broken").setProcessNodeDefinitionKey("test.process.broken-node");
+        var unavailable = createNode(2, "unavailable").setProcessNodeDefinitionKey("test.process.missing");
+        var source = createNode(3, "source");
+        var target = createNode(4, "target");
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(broken, unavailable, source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2), createEdge(2, 2, 3), createEdge(3, 3, 4)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of("source"), result.forwardedProcessDataKeys().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList());
+        assertEquals(List.of("source-identity"), result.forwardedIdentities().stream()
+                .map(ProcessNodeDefinitionMetadata.ForwardedIdentity::identityId).toList());
+        assertEquals(List.of("source"), result.inputVariables().stream()
+                .filter(variable -> variable.source() == InputVariableSource.ProcessData)
+                .map(variable -> variable.path()).toList());
+    }
+
+    private void useBrokenMetadataProvider() {
+        var brokenProvider = new HintingTestNodeDefinition("broken-node", ProcessNodeType.Action) {
+            @Override
+            public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity node,
+                                                             @Nonnull TestNodeConfig configuration,
+                                                             @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+                throw new NullPointerException("Incomplete draft configuration.");
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(new HintingTestNodeDefinition(), brokenProvider)), prosunaConfig);
+    }
+
+    private void useMetadataProvider(ProcessNodeDefinitionMetadata metadata, ProcessNodeType type) {
+        var provider = new HintingTestNodeDefinition("hint-node", type) {
+            @Override
+            public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity node,
+                                                             @Nonnull TestNodeConfig configuration,
+                                                             @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+                return metadata;
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(provider)), prosunaConfig);
     }
 
     @Test
@@ -564,6 +781,47 @@ class ProcessNodeServiceTest {
         assertEquals(unrelated, assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> service.create(node)));
     }
 
+    @ParameterizedTest
+    @EnumSource(value = ProcessVersionStatus.class, names = {"Published", "Revoked"})
+    void writes_ShouldRejectNodesOfVersionsThatAreNoLongerDrafts(ProcessVersionStatus status) {
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION)))
+                .thenReturn(Optional.of(createProcessVersion().setStatus(status)));
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.create(createNode(3, "new")));
+        assertConflict(() -> service.performUpdate(2, createNode(2, "changed"), existingNode));
+        assertConflict(() -> service.performDelete(existingNode));
+
+        assertEquals("existing", existingNode.getDataKey());
+        verify(processNodeRepository, never()).saveAndFlush(any(ProcessNodeEntity.class));
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+        verify(processNodeRepository, never()).delete(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performUpdate_ShouldRejectMovingNodeIntoPublishedVersion() {
+        var publishedVersion = PROCESS_VERSION - 1;
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, publishedVersion)))
+                .thenReturn(Optional.of(createProcessVersion()
+                        .setProcessVersion(publishedVersion)
+                        .setStatus(ProcessVersionStatus.Published)));
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing").setProcessVersion(publishedVersion), existingNode));
+
+        assertEquals(PROCESS_VERSION, existingNode.getProcessVersion());
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performDelete_ShouldDeleteNodesOfDrafts() throws Exception {
+        var node = createNode(2, "existing");
+
+        service.performDelete(node);
+
+        verify(processNodeRepository).delete(node);
+    }
+
     @Test
     void create_ShouldAllowNegativeNodeTypeLimit() throws Exception {
         prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, -1));
@@ -653,6 +911,107 @@ class ProcessNodeServiceTest {
         assertEquals("forbidden", exception.getMessage());
     }
 
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldDeriveStoredUiDefinitionWithoutDraft() throws Exception {
+        var storedUiDefinition = new GroupLayoutElement();
+        storedUiDefinition.setId("stored");
+        var node = createNode(1, "a");
+        node.getConfiguration().putLiteral(UiDefinitionTestNodeDefinition.FIELD_ID, storedUiDefinition);
+        var identities = new IdentityDataMap();
+
+        service.deriveUiDefinitionForAuthoring(
+                node,
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                null,
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                identities
+        );
+
+        var request = ArgumentCaptor.forClass(ElementDerivationRequest.class);
+        verify(elementDerivationService).derive(request.capture(), eq(identities), any(ElementDerivationLogger.class));
+        assertEquals("stored", request.getValue().element().getId());
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldDeriveDraftInsteadOfStoredUiDefinition() throws Exception {
+        var storedUiDefinition = new GroupLayoutElement();
+        storedUiDefinition.setId("stored");
+        var node = createNode(1, "a");
+        node.getConfiguration().putLiteral(UiDefinitionTestNodeDefinition.FIELD_ID, storedUiDefinition);
+        var draftUiDefinition = new GroupLayoutElement();
+        draftUiDefinition.setId("draft");
+        var identities = new IdentityDataMap();
+
+        service.deriveUiDefinitionForAuthoring(
+                node,
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                draftUiDefinition,
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                identities
+        );
+
+        var request = ArgumentCaptor.forClass(ElementDerivationRequest.class);
+        verify(elementDerivationService).derive(request.capture(), eq(identities), any(ElementDerivationLogger.class));
+        assertSame(draftUiDefinition, request.getValue().element());
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldRejectFieldsThatAreNoUiDefinitionFields() {
+        var exception = assertThrows(ResponseException.class, () -> service.deriveUiDefinitionForAuthoring(
+                createNode(1, "a"),
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.OTHER_FIELD_ID,
+                new GroupLayoutElement(),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new IdentityDataMap()
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(elementDerivationService, never()).derive(any(), any(IdentityDataMap.class), any(ElementDerivationLogger.class));
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldRejectDraftsOfAnotherElementType() {
+        var exception = assertThrows(ResponseException.class, () -> service.deriveUiDefinitionForAuthoring(
+                createNode(1, "a"),
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                new ConfigLayoutElement(),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new IdentityDataMap()
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(elementDerivationService, never()).derive(any(), any(IdentityDataMap.class), any(ElementDerivationLogger.class));
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldReturnEmptyDataWithoutStoredUiDefinition() throws Exception {
+        var result = service.deriveUiDefinitionForAuthoring(
+                createNode(1, "a"),
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                null,
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new IdentityDataMap()
+        );
+
+        assertTrue(result.getEffectiveValues().isEmpty());
+        verify(elementDerivationService, never()).derive(any(), any(IdentityDataMap.class), any(ElementDerivationLogger.class));
+    }
+
     private ProcessEntity createProcess() {
         return new ProcessEntity()
                 .setId(PROCESS_ID)
@@ -672,6 +1031,11 @@ class ProcessNodeServiceTest {
                 .setPublicTitle("Draft")
                 .setCreated(Instant.now())
                 .setUpdated(Instant.now());
+    }
+
+    private static void assertConflict(Executable executable) {
+        var exception = assertThrows(ResponseException.class, executable);
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
     }
 
     private ProcessNodeEntity createNode(int id, String dataKey) {
@@ -970,6 +1334,56 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void validate_ShouldReportUnresolvableProcessIdentitiesWhenUpstreamMetadataFails() throws Exception {
+        useBrokenMetadataProvider();
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var brokenNode = createNode(1, "broken").setProcessNodeDefinitionKey("test.process.broken-node");
+        var targetNode = createNode(2, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "broken-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(brokenNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, brokenNode.getId(), targetNode.getId())));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var problems = service.validate(targetNode, provider, false).orElseThrow();
+
+        assertEquals(
+                List.of("Identity: Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden."),
+                problems.problems()
+        );
+    }
+
+    @Test
+    void validate_ShouldAcceptAvailableProcessIdentityWhenAnotherUpstreamNodeIsSkipped() throws Exception {
+        useBrokenMetadataProvider();
+        var provider = new IdentityIdValidationTestNodeDefinition();
+        var brokenNode = createNode(1, "broken").setProcessNodeDefinitionKey("test.process.broken-node");
+        var sourceNode = createNode(2, "source");
+        var targetNode = createNode(3, "target");
+        var derivedRuntimeElementData = DerivedRuntimeElementData.empty();
+        derivedRuntimeElementData
+                .getEffectiveValues()
+                .put(IdentityIdValidationTestNodeDefinition.FIELD_ID, "source-identity");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(brokenNode, sourceNode, targetNode));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2), createEdge(2, 2, 3)));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class)))
+                .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
+
+        var result = service.validate(targetNode, provider, false);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
     void validate_ShouldMergeUnavailableProcessIdentityAndProviderErrors() throws Exception {
         var provider = new IdentityIdValidationTestNodeDefinition(true);
         var sourceNode = createNode(1, "source");
@@ -1122,6 +1536,37 @@ class ProcessNodeServiceTest {
             return new AuthoredElementValues()
                     .putLiteral("defaultOnly", "default")
                     .putLiteral("overridden", "default");
+        }
+    }
+
+    private static final class UiDefinitionTestNodeDefinition extends HintingTestNodeDefinition {
+        private static final String FIELD_ID = "uiDefinition";
+        private static final String OTHER_FIELD_ID = "other";
+
+        private UiDefinitionTestNodeDefinition() {
+            super("ui-definition-node", ProcessNodeType.Action);
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(
+                @Nonnull ProcessNodeDefinitionConfigurationLayoutContext context
+        ) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+
+            var uiDefinitionField = new UiDefinitionInputElement()
+                    .setElementType(ElementType.GroupLayout);
+            uiDefinitionField.setId(FIELD_ID);
+            uiDefinitionField.setLabel("UI definition");
+            layout.addChild(uiDefinitionField);
+
+            var otherField = new TextInputElement();
+            otherField.setId(OTHER_FIELD_ID);
+            otherField.setLabel("Other");
+            layout.addChild(otherField);
+
+            return layout;
         }
     }
 

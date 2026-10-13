@@ -77,6 +77,25 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         access.user = undefined;
     });
 
+    it.each([null, 'Unterlagen angefordert'])('names the assigned identity in the task status (%s)', statusOverride => {
+        const item = createItem();
+        item.task.status = ProcessTaskStatus.AwaitingCustomer;
+        item.task.statusOverride = statusOverride;
+        item.task.assignedCustomerIdentityId = 'applicant';
+        item.instance!.identities = {
+            applicant: {
+                identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+                emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
+                uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
+            },
+        };
+        renderItem(item);
+
+        expect(screen.getByRole('row', {name: /^Aufgabenstatus /})).toHaveTextContent(statusOverride
+            ? 'Unterlagen angefordert (Systemstatus: Wartet auf Antragstellende)'
+            : 'Wartet auf Antragstellende');
+    });
+
     it.each([
         ['Prüfung', 'Prüfung'],
         [' Prüfung ', 'Prüfung'],
