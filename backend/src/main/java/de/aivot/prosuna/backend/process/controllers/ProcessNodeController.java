@@ -6,6 +6,8 @@ import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.identity.controllers.IdentityController;
+import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -16,6 +18,7 @@ import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeConfigurationDerivationRequest;
+import de.aivot.prosuna.backend.process.models.ProcessNodeUiDefinitionDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
@@ -66,6 +69,7 @@ public class ProcessNodeController {
     private final ProcessTestClaimRepository processTestClaimRepository;
     private final JsonMapper objectMapper;
     private final ProcessNodeRepository processNodeRepository;
+    private final IdentityService identityService;
 
     @Nonnull
     private static String createAvailableDataKey(@Nonnull String requestedDataKey,
@@ -103,7 +107,8 @@ public class ProcessNodeController {
                                  ProcessNodeExportService processNodeExportService,
                                  ProcessVersionService processDefinitionVersionService,
                                  ProcessTestClaimRepository processTestClaimRepository,
-                                 JsonMapper objectMapper, ProcessNodeRepository processNodeRepository) {
+                                 JsonMapper objectMapper, ProcessNodeRepository processNodeRepository,
+                                 IdentityService identityService) {
         this.auditService = auditService.createScopedAuditService(ProcessNodeController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionNodeService = processDefinitionNodeService;
@@ -115,6 +120,7 @@ public class ProcessNodeController {
         this.processTestClaimRepository = processTestClaimRepository;
         this.objectMapper = objectMapper;
         this.processNodeRepository = processNodeRepository;
+        this.identityService = identityService;
     }
 
     @GetMapping("")
@@ -568,6 +574,58 @@ public class ProcessNodeController {
                 user,
                 request.authoredElementValues(),
                 request.derivationOptions()
+        );
+    }
+
+    @PostMapping("{id}/derive-ui-definition/")
+    @Operation(
+            summary = "Derive Process Definition Node UI Definition",
+            description = "Derives values entered into a UI definition that is configured in a UI definition field of the node. " +
+                    "Without a UI definition in the request, the stored UI definition is derived, which requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_READ + "` for the node's process. " +
+                    "Deriving an unsaved UI definition requires the permission `" +
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE + "` for the node's process."
+    )
+    public DerivedRuntimeElementData deriveUiDefinition(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id,
+            @Nonnull @RequestBody @Valid ProcessNodeUiDefinitionDerivationRequest request,
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+        var node = processDefinitionNodeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        // Deriving executes the element functions of the UI definition on the server. An unsaved UI definition is
+        // therefore only accepted from users who could also store it in the node.
+        var requiredPermission = request.uiDefinition() != null
+                ? ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+                : ProcessPermissionProvider.PROCESS_DEFINITION_READ;
+        permissionService.requireProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                requiredPermission
+        );
+
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(node)
+                .orElseThrow(ResponseException::badRequest);
+
+        var identities = identityService
+                .getIdentityDataMap(identitySessionId, node.getId());
+
+        return processDefinitionNodeService.deriveUiDefinitionForAuthoring(
+                node,
+                provider,
+                user,
+                request.fieldId(),
+                request.uiDefinition(),
+                request.authoredElementValues(),
+                request.derivationOptions(),
+                identities
         );
     }
 

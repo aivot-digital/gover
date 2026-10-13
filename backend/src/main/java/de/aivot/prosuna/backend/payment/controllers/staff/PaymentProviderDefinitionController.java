@@ -1,5 +1,9 @@
 package de.aivot.prosuna.backend.payment.controllers.staff;
 
+import de.aivot.prosuna.backend.elements.dtos.ElementValuesDerivationRequestDTO;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.payment.permissions.PaymentProviderPermissionProvider;
 import de.aivot.prosuna.backend.payment.dtos.PaymentProviderDefinitionResponseDTO;
@@ -15,11 +19,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
 import java.util.Comparator;
 import java.util.List;
 
@@ -33,12 +40,15 @@ import java.util.List;
 public class PaymentProviderDefinitionController {
     private final List<PaymentProviderDefinition> paymentProviderDefinitions;
     private final PermissionService permissionService;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public PaymentProviderDefinitionController(List<PaymentProviderDefinition> paymentProviderDefinitions,
-                                               PermissionService permissionService) {
+                                               PermissionService permissionService,
+                                               ElementDerivationService elementDerivationService) {
         this.paymentProviderDefinitions = paymentProviderDefinitions;
         this.permissionService = permissionService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @GetMapping("")
@@ -113,6 +123,40 @@ public class PaymentProviderDefinitionController {
 
         return PaymentProviderDefinitionResponseDTO
                 .from(definition);
+    }
+
+    @PostMapping("{key}/{version}/derive/")
+    @Operation(
+            summary = "Derive Payment Provider Configuration",
+            description = "Derives configuration values against the backend-defined configuration layout of a payment provider definition. " +
+                    "Requires at least one of the system-level permissions `" +
+                    PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "` or `" +
+                    PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "`."
+    )
+    public DerivedRuntimeElementData derive(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String key,
+            @Nonnull @PathVariable Integer version,
+            @Nonnull @Valid @RequestBody ElementValuesDerivationRequestDTO request
+    ) throws ResponseException {
+        requireDefinitionAccess(jwt);
+
+        var definition = paymentProviderDefinitions
+                .stream()
+                .filter(def -> def.getKey().equals(key) && def.getMajorVersion().equals(version))
+                .findFirst()
+                .orElseThrow(ResponseException::notFound);
+
+        var layout = definition.getPaymentConfigLayout();
+        if (layout == null) {
+            return DerivedRuntimeElementData.empty();
+        }
+
+        return elementDerivationService.derive(new ElementDerivationRequest(
+                layout,
+                request.authoredElementValues(),
+                request.derivationOptions()
+        ));
     }
 
     private void requireDefinitionAccess(@Nullable Jwt jwt) throws ResponseException {

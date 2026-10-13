@@ -711,6 +711,8 @@ export function ApplicationSettings() {
                             onAuthoredElementValuesChange={(updated) => {
                                 dispatch(setSystemConfigsFromMap(toLiteralElementValues(updated) as SystemConfigMap));
                             }}
+                            onDerive={(authoredElementValues, derivationOptions) => new SystemConfigsApiService(api)
+                                .deriveDefinitionCategory(currentGroup.id, authoredElementValues, derivationOptions)}
                         />
                     }
 
