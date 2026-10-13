@@ -638,7 +638,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessNodeEntity node;
 
         private TestProcessNodeService(ProcessNodeEntity node) {
-            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null, null);
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null, null, null);
             this.node = node;
         }
 

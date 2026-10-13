@@ -24,7 +24,6 @@ import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -100,20 +99,11 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     public ProcessVersionEntity performUpdate(@Nonnull ProcessVersionEntityId id,
                                               @Nonnull ProcessVersionEntity entity,
                                               @Nonnull ProcessVersionEntity existingEntity) throws ResponseException {
+        // The status is not changed here. Publishing and revoking require their own permission and use updateStatus.
+        ProcessVersionDraftGuard.requireDrafted(existingEntity);
         caseNumberGeneratorService.validateConfiguration(entity.getCaseNumberType(), entity.getCaseNumberTemplate());
         validateRetentionConfiguration(entity);
-        if (existingEntity.getStatus() != ProcessVersionStatus.Drafted && (
-                !Objects.equals(existingEntity.getRetentionTimeValue(), entity.getRetentionTimeValue())
-                        || existingEntity.getRetentionTimeUnit() != entity.getRetentionTimeUnit())) {
-            throw ResponseException.conflict("Die Aufbewahrungsfrist einer veröffentlichten Prozessversion kann nicht geändert werden. Erstellen Sie dafür eine neue Version.");
-        }
         validateInstanceDeadlineConfiguration(entity);
-        // New instances derive their deadline from this value, so it must stay stable once instances can be created.
-        if (existingEntity.getStatus() != ProcessVersionStatus.Drafted
-                && !Objects.equals(existingEntity.getInstanceDeadlineDays(), entity.getInstanceDeadlineDays())) {
-            throw ResponseException.conflict("Die Bearbeitungsfrist einer veröffentlichten Prozessversion kann nicht geändert werden. Erstellen Sie dafür eine neue Version.");
-        }
-        existingEntity.setStatus(entity.getStatus());
         existingEntity.setPublicTitle(entity.getPublicTitle());
         existingEntity.setCaseNumberTemplate(entity.getCaseNumberTemplate());
         existingEntity.setCaseNumberType(entity.getCaseNumberType());
@@ -132,8 +122,24 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         return processDefinitionVersionRepository.save(existingEntity);
     }
 
+    /**
+     * Changes the status of a process version without changing its definition. This is the only change permitted after
+     * a version stopped being a draft. Callers must check the publish permission and the permitted status transition.
+     */
+    @Nonnull
+    public ProcessVersionEntity updateStatus(@Nonnull ProcessVersionEntity version,
+                                             @Nonnull ProcessVersionStatus status) throws ResponseException {
+        version.setStatus(status);
+        validateRetentionConfiguration(version);
+        return processDefinitionVersionRepository.save(version);
+    }
+
     @Override
     public void performDelete(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+        // Deleting the published version would take the process offline, which requires revoking it first.
+        if (entity.getStatus() == ProcessVersionStatus.Published) {
+            throw ResponseException.conflict("Die veröffentlichte Prozessversion kann nicht gelöscht werden.");
+        }
         processDefinitionVersionRepository.delete(entity);
     }
 

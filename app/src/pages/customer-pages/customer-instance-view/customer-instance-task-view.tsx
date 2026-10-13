@@ -402,6 +402,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
     const [isContinuing, setIsContinuing] = useState(false);
     const [isStartingIdentityProvider, setIsStartingIdentityProvider] = useState(false);
     const identityProviderStartPendingRef = useRef(false);
+    const heldIdentitySlotChangesRef = useRef<IdentitySlot[] | null>(null);
     const handleControlStatusChange = useCallback((
         _slotId: string,
         status: FormIdentitySelectionControlsStatus | null,
@@ -444,16 +445,57 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
 
         identityProviderStartPendingRef.current = true;
         setIsStartingIdentityProvider(true);
+        // On success the browser leaves for the identity provider and the slots are loaded again on return. Applying
+        // the persisted slots would briefly show their saved-state confirmation and removal action before the redirect.
+        const heldChanges: IdentitySlot[] = [];
+        heldIdentitySlotChangesRef.current = heldChanges;
+        let persisted = false;
         try {
             const controls = newIdentitySlot != null && controlsRef.current != null
                 ? [[newIdentitySlot.id, controlsRef.current] as const]
                 : [];
-            return await persistPendingIdentitySelections(controls, targetIdentityId);
+            persisted = await persistPendingIdentitySelections(controls, targetIdentityId);
+            return persisted;
         } finally {
+            heldIdentitySlotChangesRef.current = null;
+            if (!persisted) {
+                heldChanges.forEach(onIdentitySlotChange);
+            }
             identityProviderStartPendingRef.current = false;
             setIsStartingIdentityProvider(false);
         }
-    }, [identityControlBusy, newIdentitySlot]);
+    }, [identityControlBusy, newIdentitySlot, onIdentitySlotChange]);
+
+    const handleIdentitySlotChange = (slot: IdentitySlot) => {
+        const heldChanges = heldIdentitySlotChangesRef.current;
+        if (heldChanges == null) {
+            onIdentitySlotChange(slot);
+        } else {
+            heldChanges.push(slot);
+        }
+    };
+
+    const commitNewIdentity = async (): Promise<boolean> => {
+        const controls = controlsRef.current;
+        if (controls == null) {
+            return false;
+        }
+
+        // A successful commit reloads the task view, which supersedes the saved slot. Applying it right away would
+        // briefly show the saved-state confirmation and removal action while the task is still loading.
+        const heldChanges: IdentitySlot[] = [];
+        heldIdentitySlotChangesRef.current = heldChanges;
+        let committed = false;
+        try {
+            committed = await controls.commitPendingSelection();
+            return committed;
+        } finally {
+            heldIdentitySlotChangesRef.current = null;
+            if (!committed) {
+                heldChanges.forEach(onIdentitySlotChange);
+            }
+        }
+    };
 
     const handleContinue = async () => {
         if (continueDisabled) {
@@ -462,11 +504,8 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
 
         setIsContinuing(true);
         try {
-            if (newIdentitySlot != null && newIdentitySelected) {
-                const controls = controlsRef.current;
-                if (controls == null || !await controls.commitPendingSelection()) {
-                    return;
-                }
+            if (newIdentitySlot != null && newIdentitySelected && !await commitNewIdentity()) {
+                return;
             }
 
             await onContinue();
@@ -580,7 +619,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                             saveMode="deferred"
                             beforeIdentityProviderStart={handleIdentityProviderStart}
                             identityProviderAuthenticationDisabled={identityProviderAuthenticationDisabled}
-                            onChange={onIdentitySlotChange}
+                            onChange={handleIdentitySlotChange}
                             onStatusChange={handleControlStatusChange}
                         />
                     </Grid>

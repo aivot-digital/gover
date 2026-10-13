@@ -634,7 +634,7 @@ class ProcessWorkerTest {
         private final boolean invalidRuntimeConfiguration;
 
         private TestProcessNodeService(boolean invalidRuntimeConfiguration) {
-            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null, null);
+            super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null, null, null);
             this.invalidRuntimeConfiguration = invalidRuntimeConfiguration;
         }
 
