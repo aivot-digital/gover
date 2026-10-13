@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.identity.dtos.IdentitySlotResponseDTO;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityAuthenticationRedirect;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityProviderService;
@@ -193,7 +194,11 @@ class CustomerTaskIdentityServiceTest {
         var identities = new IdentityDataMap();
         identities.put(REQUIRED_IDENTITY_ID, requiredIdentity);
         configureProvider(providerKey);
-        var expectedRedirect = URI.create("https://identity.example.test/login");
+        var expectedRedirect = new IdentityAuthenticationRedirect(
+                URI.create("https://identity.example.test/login"),
+                "flow-binding-secret",
+                "/api/public/identity/callback/"
+        );
         when(identityService.createRedirectURL(
                 "current-session",
                 providerKey,
