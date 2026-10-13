@@ -82,6 +82,24 @@ class TemplateLoaderServiceTest {
     }
 
     @Test
+    void processTemplateContent_RendersContentWithTemplateDataAndBundledFragments() {
+        var html = new TemplateLoaderService().processTemplateContent(
+                """
+                        <style th:insert="./form-parts/style.html"></style>
+                        <h1 th:text="${title}">Titel</h1>
+                        """,
+                Map.of(
+                        "title", "Antrag auf Beispielleistung",
+                        "base", createBaseContext(FormPdfScope.Blank)
+                ),
+                TemplateMode.HTML
+        );
+
+        assertTrue(html.contains("<h1>Antrag auf Beispielleistung</h1>"));
+        assertFalse(html.contains("<style></style>"));
+    }
+
+    @Test
     void checkboxTemplate_RendersHintOnlyOnceInBlankPrint() {
         var element = new CheckboxInputElement()
                 .setLabel("Bestätigung")

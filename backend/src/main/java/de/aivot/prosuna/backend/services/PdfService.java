@@ -40,6 +40,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
 import de.aivot.prosuna.backend.services.pdf.PdfLogoService;
+import de.aivot.prosuna.backend.services.pdf.PdfTemplateAssetService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
@@ -69,6 +70,7 @@ public class PdfService {
     private final GotenbergConfig gotenbergConfig;
     private final SystemConfigService systemConfigService;
     private final PdfLogoService pdfLogoService;
+    private final PdfTemplateAssetService pdfTemplateAssetService;
     private final ProsunaConfig prosunaConfig;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final IdentityProviderRepository identityProviderRepository;
@@ -88,6 +90,7 @@ public class PdfService {
                       ProcessRepository processRepository,
                       ProcessVersionRepository processVersionRepository,
                       PdfLogoService pdfLogoService,
+                      PdfTemplateAssetService pdfTemplateAssetService,
                       ProsunaConfig prosunaConfig,
                       PaymentTransactionRepository paymentTransactionRepository,
                       IdentityProviderRepository identityProviderRepository,
@@ -98,6 +101,7 @@ public class PdfService {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.pdfLogoService = pdfLogoService;
+        this.pdfTemplateAssetService = pdfTemplateAssetService;
         this.prosunaConfig = prosunaConfig;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.identityProviderRepository = identityProviderRepository;
@@ -154,7 +158,7 @@ public class PdfService {
         dto.put("managingDepartment", managingDepartment);
         dto.put("theme", theme);
 
-        return generateGotenbergPdf(dto);
+        return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
     }
 
     public byte[] generateCustomerSummary(FormLayoutElement formLayoutElement,
@@ -344,7 +348,7 @@ public class PdfService {
         dto.put("managingDepartment", findDepartment(form.getManagingDepartmentId()));
         dto.put("theme", formTheme);
 
-        return generateGotenbergPdf(dto);
+        return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
     }
 
     @Nonnull
@@ -387,8 +391,8 @@ public class PdfService {
                 .orElse(null);
     }
 
-    private byte[] generateGotenbergPdf(Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
-        String template = loadTemplate("form.html", dto);
+    private byte[] generateGotenbergPdf(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
+        String template = loadContentTemplate(pdfTemplateKey, dto);
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
 
@@ -467,6 +471,31 @@ public class PdfService {
         }
 
         return response.body();
+    }
+
+    /**
+     * Renders the custom PDF template selected for the form. Falls back to the bundled form template if no template is
+     * selected or the selected template cannot be loaded or rendered, so the PDF of a submission is always generated.
+     */
+    private String loadContentTemplate(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) {
+        var customTemplate = pdfTemplateAssetService.loadTemplateContent(pdfTemplateKey);
+        if (customTemplate.isPresent()) {
+            try {
+                var result = new TemplateLoaderService()
+                        .processTemplateContent(
+                                customTemplate.get(),
+                                dto,
+                                TemplateMode.HTML
+                        );
+                if (StringUtils.isNotNullOrEmpty(result)) {
+                    return result;
+                }
+            } catch (Exception e) {
+                logger.warn("Could not render custom PDF template {}: {}", pdfTemplateKey, e.getMessage());
+                logger.debug("Custom PDF template rendering failure", e);
+            }
+        }
+        return loadTemplate("form.html", dto);
     }
 
     private String loadTemplate(String templateName, Map<String, Object> data) {
