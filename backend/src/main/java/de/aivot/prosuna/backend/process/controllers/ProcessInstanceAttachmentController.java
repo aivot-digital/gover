@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -43,6 +44,19 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessInstanceAttachmentController {
+    /**
+     * Media types that browsers display without executing active content. All other attachments are served as
+     * downloads with a generic media type.
+     */
+    private static final Set<MediaType> INLINE_MEDIA_TYPES = Set.of(
+            MediaType.APPLICATION_PDF,
+            MediaType.IMAGE_PNG,
+            MediaType.IMAGE_JPEG,
+            MediaType.IMAGE_GIF,
+            new MediaType("image", "webp"),
+            MediaType.TEXT_PLAIN
+    );
+
     // Attachments are created only through validated form and task execution flows and share the lifecycle of their
     // process instance. They cannot be moved, replaced, or deleted independently through this controller.
     private final UserService userService;
@@ -134,7 +148,10 @@ public class ProcessInstanceAttachmentController {
     @GetMapping("{key}/file/")
     @Operation(
             summary = "Download Process Instance Attachment",
-            description = "Streams the file of a process instance attachment by its key."
+            description = "Streams the file of a process instance attachment by its key. " +
+                    "Only PDF documents, PNG, JPEG, GIF and WebP images and plain text can be displayed inline. " +
+                    "All other files are always served as downloads with the media type `application/octet-stream`. " +
+                    "Requires `" + ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ + "` for the attachment's process instance."
     )
     public ResponseEntity<InputStreamResource> download(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -166,8 +183,15 @@ public class ProcessInstanceAttachmentController {
             mediaType = MediaType.APPLICATION_OCTET_STREAM;
         }
 
+        // Attachments can originate from external senders, for example through webhooks or FIT-Connect. Browsers
+        // must therefore never interpret active content such as HTML, SVG or XML on the application origin.
+        var inlineAllowed = isInlineMediaType(mediaType);
+        if (!inlineAllowed) {
+            mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        }
+
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
-        var contentDispositionType = download ? "attachment" : "inline";
+        var contentDispositionType = download || !inlineAllowed ? "attachment" : "inline";
         var contentDisposition = ContentDisposition
                 .builder(contentDispositionType)
                 .filename(attachment.getFileName(), StandardCharsets.UTF_8)
@@ -175,6 +199,10 @@ public class ProcessInstanceAttachmentController {
         responseBuilder.header("Content-Disposition", contentDisposition.toString());
 
         return responseBuilder.body(new InputStreamResource(inputStream));
+    }
+
+    private static boolean isInlineMediaType(@Nonnull MediaType mediaType) {
+        return INLINE_MEDIA_TYPES.contains(new MediaType(mediaType.getType(), mediaType.getSubtype()));
     }
 
 }

@@ -222,7 +222,11 @@ class ProcessTaskUnassignmentResultHandlerTest {
         var result = ProcessNodeExecutionResultTaskAssigned.of("new-owner")
                 .setClearCurrentlyAssignedUser(true)
                 .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
-                        "person@example.test", CommunicationMessage.of("Test", "Testnachricht", "<p>Testnachricht</p>")));
+                        "person@example.test", new CommunicationMessage.Builder()
+                                .subject("Test")
+                                .body("Testnachricht")
+                                .htmlBody("<p>Testnachricht</p>")
+                                .build()));
         assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handle(result, actor));
         assertEquals("task-owner", task.getAssignedUserId());
         verifyNoInteractions(tasks, instances, events, assignments, communication, taskMail, instanceMail, users, rabbit);
@@ -268,7 +272,11 @@ class ProcessTaskUnassignmentResultHandlerTest {
         return ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
                 .setClearCurrentlyAssignedUser(true)
                 .setCommunicationRequest(ProcessNodeExecutionResultCommunicationRequest.toEmail(
-                        "person@example.test", CommunicationMessage.of("Test", "Testnachricht", "<p>Testnachricht</p>")));
+                        "person@example.test", new CommunicationMessage.Builder()
+                                .subject("Test")
+                                .body("Testnachricht")
+                                .htmlBody("<p>Testnachricht</p>")
+                                .build()));
     }
 
     private void handle(ProcessNodeExecutionResult result, @Nullable UserEntity user) throws ProcessNodeExecutionException {

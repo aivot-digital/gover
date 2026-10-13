@@ -63,6 +63,7 @@ function ElementTreeDropSlot(props: ElementTreeDropSlotProps) {
     return (
         <Box
             ref={drop as any}
+            data-testid={`element-tree-drop-slot-${[...parentPath, targetIndex].join('.')}`}
             sx={{
                 height: `${height}px`,
                 borderTop: '3px solid',
