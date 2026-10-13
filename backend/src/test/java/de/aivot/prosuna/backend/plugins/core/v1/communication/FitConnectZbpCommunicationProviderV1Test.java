@@ -69,19 +69,18 @@ class FitConnectZbpCommunicationProviderV1Test {
 
     @Test
     void rendersCallToActionsAsEscapedHtmlLinks() throws Exception {
-        var message = CommunicationMessage.of(
-                "Subject",
-                "Body",
-                "<p>Body</p>",
-                List.of(
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("<p>Body</p>")
+                .callToActions(List.of(
                         new CommunicationMessageCallToAction(
                                 "Open <portal>",
                                 "https://example.test/action?x=1&y=2"
                         ),
                         new CommunicationMessageCallToAction("Show status", "https://example.test/status")
-                ),
-                List.of()
-        );
+                ))
+                .build();
 
         var html = FitConnectZbpCommunicationProviderV1.renderMessageHtml(message);
 
@@ -96,15 +95,15 @@ class FitConnectZbpCommunicationProviderV1Test {
 
     @Test
     void appendsEscapedDepartmentSignatureAfterCallToActions() throws Exception {
-        var message = CommunicationMessage.of(
-                "Subject",
-                "Body",
-                "<p>Body</p>",
-                List.of(new CommunicationMessageCallToAction("Open", "https://example.test")),
-                List.of()
-        ).withSignatureDepartment(new VDepartmentShadowedEntity()
-                .setId(17)
-                .setDefaultMailSignature("Viele <Grüße>\nBürgerbüro"));
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("<p>Body</p>")
+                .callToActions(List.of(new CommunicationMessageCallToAction("Open", "https://example.test")))
+                .signatureDepartment(new VDepartmentShadowedEntity()
+                        .setId(17)
+                        .setDefaultMailSignature("Viele <Grüße>\nBürgerbüro"))
+                .build();
 
         var html = FitConnectZbpCommunicationProviderV1.renderMessageHtml(message);
 
@@ -119,13 +118,12 @@ class FitConnectZbpCommunicationProviderV1Test {
 
     @Test
     void rejectsIncompleteCallToActions() {
-        var message = CommunicationMessage.of(
-                "Subject",
-                "Body",
-                "<p>Body</p>",
-                List.of(new CommunicationMessageCallToAction("Open", " ")),
-                List.of()
-        );
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("<p>Body</p>")
+                .callToActions(List.of(new CommunicationMessageCallToAction("Open", " ")))
+                .build();
 
         assertThrows(
                 CommunicationException.class,
@@ -134,13 +132,16 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
-    void createsZbpMessageWithDepartmentAsSenderAndProsunaAsService() throws Exception {
+    void createsZbpMessageWithDepartmentAsSenderAndService() throws Exception {
         var department = new DepartmentEntity()
                 .setId(17)
                 .setName(" Fachbereich Leistungen ");
-        var message = CommunicationMessage
-                .of("Subject", "Body", "<p>Body</p>")
-                .withSendingContext(null, department);
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("<p>Body</p>")
+                .sendingDepartment(department)
+                .build();
         var mailboxId = UUID.randomUUID();
 
         var zbpMessage = FitConnectZbpCommunicationProviderV1.createZbpMessage(
@@ -151,7 +152,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         );
 
         assertEquals("Fachbereich Leistungen", zbpMessage.sender());
-        assertEquals("Prosuna", zbpMessage.service());
+        assertEquals(" Fachbereich Leistungen ", zbpMessage.service());
         assertEquals("<p>Body</p>", zbpMessage.content());
         assertEquals("Subject", zbpMessage.title());
         assertEquals(mailboxId, zbpMessage.mailboxUuid());
@@ -159,11 +160,14 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
-    void createsZbpMessageWithProsunaSenderWhenOnlySendingUserIsSet() throws Exception {
+    void createsZbpMessageWithProsunaSenderAndNoServiceWhenOnlySendingUserIsSet() throws Exception {
         var user = new UserEntity().setId("user-1").setFullName("Sender User");
-        var message = CommunicationMessage
-                .of("Subject", "Body", "<p>Body</p>")
-                .withSendingContext(user, null);
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("<p>Body</p>")
+                .sendingUser(user)
+                .build();
 
         var zbpMessage = FitConnectZbpCommunicationProviderV1.createZbpMessage(
                 message,
@@ -173,7 +177,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         );
 
         assertEquals("Prosuna", zbpMessage.sender());
-        assertEquals("Prosuna", zbpMessage.service());
+        assertNull(zbpMessage.service());
         assertEquals("<p>Body</p>", zbpMessage.content());
     }
 

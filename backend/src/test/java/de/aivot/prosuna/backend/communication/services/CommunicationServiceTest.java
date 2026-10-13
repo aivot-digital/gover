@@ -105,7 +105,11 @@ class CommunicationServiceTest {
 
     @Test
     void sendMessageResolvesSelectedBindingAndInvokesDefinition() throws Exception {
-        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .build();
 
         communicationService.sendMessage(identity, message);
 
@@ -122,7 +126,11 @@ class CommunicationServiceTest {
     @Test
     void sendMessageAllowsTestAndProductionProviderMismatch() throws Exception {
         provider.setTestProvider(true);
-        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .build();
 
         communicationService.sendMessage(identity, message);
 
@@ -138,7 +146,11 @@ class CommunicationServiceTest {
 
         assertThrows(CommunicationException.class, () -> communicationService.sendMessage(
                 identityWithoutSelection,
-                CommunicationMessage.of("Subject", "Body", "Body")
+                new CommunicationMessage.Builder()
+                        .subject("Subject")
+                        .body("Body")
+                        .htmlBody("Body")
+                        .build()
         ));
 
         verify(definition, never()).sendMessage(any(), any(), any());
@@ -180,7 +192,11 @@ class CommunicationServiceTest {
                 "session", "applicant", IdentityType.Email, null, null, null, "customer@example.test",
                 Map.of(), null, Map.of()
         );
-        var message = CommunicationMessage.of("Subject", "Body", "Body");
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .htmlBody("Body")
+                .build();
 
         communicationService.sendMessage(emailIdentity, message);
 

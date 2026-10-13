@@ -384,19 +384,17 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 .setNodeData(nodeData)
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
                         identityId,
-                        new CommunicationMessage(
-                                subject,
-                                content,
-                                content,
-                                List.of(),
-                                sentAt,
-                                attachments,
-                                null,
-                                null
-                        ).withSignatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
-                                configuration.messageConfig,
-                                vDepartmentShadowedService
-                        )),
+                        new CommunicationMessage.Builder()
+                                .subject(subject)
+                                .body(content)
+                                .htmlBody(content)
+                                .timestamp(sentAt)
+                                .attachments(attachments)
+                                .signatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
+                                        configuration.messageConfig,
+                                        vDepartmentShadowedService
+                                ))
+                                .build(),
                         OUTPUT_SEND_RESULT
                 ));
     }
