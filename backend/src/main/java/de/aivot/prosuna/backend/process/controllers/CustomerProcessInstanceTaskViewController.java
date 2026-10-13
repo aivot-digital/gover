@@ -178,7 +178,7 @@ public class CustomerProcessInstanceTaskViewController {
                 withoutIdentityOrigin(queryParameters)
         );
         var customerView = resolveCustomerTaskView(taskViewData, context);
-        var redirectUri = customerTaskIdentityService.createAuthenticationRedirect(
+        var redirect = customerTaskIdentityService.createAuthenticationRedirect(
                 taskViewData.instance(),
                 taskViewData.node(),
                 customerView,
@@ -186,7 +186,8 @@ public class CustomerProcessInstanceTaskViewController {
                 origin
         );
 
-        response.sendRedirect(redirectUri.toString());
+        response.addCookie(IdentityCookieUtils.createFlowBindingCookie(redirect));
+        response.sendRedirect(redirect.redirectUri().toString());
     }
 
     @GetMapping("identities/{identityId}/providers/{providerKey}/start/")
@@ -216,7 +217,7 @@ public class CustomerProcessInstanceTaskViewController {
                 customerView,
                 identityId
         );
-        var redirectUri = identitySlotService.createAuthenticationRedirect(
+        var redirect = identitySlotService.createAuthenticationRedirect(
                 slot,
                 identityId,
                 providerKey,
@@ -224,7 +225,8 @@ public class CustomerProcessInstanceTaskViewController {
                 origin,
                 taskViewData.node().getId()
         );
-        response.sendRedirect(redirectUri.toString());
+        response.addCookie(IdentityCookieUtils.createFlowBindingCookie(redirect));
+        response.sendRedirect(redirect.redirectUri().toString());
     }
 
     @PutMapping("identities/{identityId}/email/")

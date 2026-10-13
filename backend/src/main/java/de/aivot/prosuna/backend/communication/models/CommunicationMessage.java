@@ -27,83 +27,89 @@ public record CommunicationMessage(
         @Nullable
         DepartmentEntity sendingDepartment,
         @Nullable
-        VDepartmentShadowedEntity signatureDepartment
+        VDepartmentShadowedEntity signatureDepartment,
+        @Nullable
+        String referenceId
 ) {
-    public CommunicationMessage {
-        callToActions = callToActions == null ? List.of() : callToActions;
-        attachments = attachments == null ? List.of() : attachments;
-    }
+    public static class Builder {
+        private String subject;
+        private String body;
+        private String htmlBody;
+        private List<CommunicationMessageCallToAction> callToActions = List.of();
+        private Instant timestamp = Instant.now();
+        private List<CommunicationMessageAttachment> attachments = List.of();
+        private UserEntity sendingUser;
+        private DepartmentEntity sendingDepartment;
+        private VDepartmentShadowedEntity signatureDepartment;
+        private String referenceId;
 
-    public CommunicationMessage(
-            @Nonnull String subject,
-            @Nonnull String body,
-            @Nonnull String htmlBody,
-            @Nonnull List<CommunicationMessageCallToAction> callToActions,
-            @Nonnull Instant timestamp,
-            @Nonnull List<CommunicationMessageAttachment> attachments,
-            @Nullable UserEntity sendingUser,
-            @Nullable DepartmentEntity sendingDepartment
-    ) {
-        this(subject, body, htmlBody, callToActions, timestamp, attachments, sendingUser, sendingDepartment, null);
-    }
+        public Builder subject(String subject) {
+            this.subject = subject;
+            return this;
+        }
 
-    public static CommunicationMessage of(
-            @Nonnull String subject,
-            @Nonnull String body,
-            @Nonnull String htmlBody
-    ) {
-        return of(subject, body, htmlBody, List.of());
-    }
+        public Builder body(String body) {
+            this.body = body;
+            return this;
+        }
 
-    public static CommunicationMessage of(
-            @Nonnull String subject,
-            @Nonnull String body,
-            @Nonnull String htmlBody,
-            @Nonnull List<CommunicationMessageAttachment> attachments
-    ) {
-        return new CommunicationMessage(subject, body, htmlBody, List.of(), Instant.now(), attachments, null, null, null);
-    }
+        public Builder htmlBody(String htmlBody) {
+            this.htmlBody = htmlBody;
+            return this;
+        }
 
-    public static CommunicationMessage of(
-            @Nonnull String subject,
-            @Nonnull String body,
-            @Nonnull String htmlBody,
-            @Nonnull List<CommunicationMessageCallToAction> callToActions,
-            @Nonnull List<CommunicationMessageAttachment> attachments
-    ) {
-        return new CommunicationMessage(subject, body, htmlBody, callToActions, Instant.now(), attachments, null, null, null);
-    }
+        public Builder callToActions(List<CommunicationMessageCallToAction> callToActions) {
+            this.callToActions = callToActions;
+            return this;
+        }
 
-    @Nonnull
-    public CommunicationMessage withSendingContext(
-            @Nullable UserEntity sendingUser,
-            @Nullable DepartmentEntity sendingDepartment
-    ) {
-        return new CommunicationMessage(
-                subject,
-                body,
-                htmlBody,
-                callToActions,
-                timestamp,
-                attachments,
-                sendingUser,
-                sendingDepartment,
-                signatureDepartment
-        );
-    }
+        public Builder timestamp(Instant timestamp) {
+            this.timestamp = timestamp;
+            return this;
+        }
 
-    @Nonnull
-    public CommunicationMessage withSignatureDepartment(@Nullable VDepartmentShadowedEntity signatureDepartment) {
-        return new CommunicationMessage(
-                subject,
-                body,
-                htmlBody,
-                callToActions,
-                timestamp,
-                attachments,
-                sendingUser,
-                sendingDepartment,
-                signatureDepartment
-        );
+        public Builder attachments(List<CommunicationMessageAttachment> attachments) {
+            this.attachments = attachments;
+            return this;
+        }
+
+        public Builder sendingUser(UserEntity sendingUser) {
+            this.sendingUser = sendingUser;
+            return this;
+        }
+
+        public Builder sendingDepartment(DepartmentEntity sendingDepartment) {
+            this.sendingDepartment = sendingDepartment;
+            return this;
+        }
+
+        public Builder signatureDepartment(VDepartmentShadowedEntity signatureDepartment) {
+            this.signatureDepartment = signatureDepartment;
+            return this;
+        }
+
+        public Builder referenceId(String referenceId) {
+            this.referenceId = referenceId;
+            return this;
+        }
+
+        public CommunicationMessage build() {
+            assert subject != null : "Subject must not be null";
+            assert body != null : "Body must not be null";
+            assert htmlBody != null : "HTML Body must not be null";
+
+            return new CommunicationMessage(
+                    subject,
+                    body,
+                    htmlBody,
+                    callToActions != null ? callToActions : List.of(),
+                    timestamp,
+                    attachments != null ? attachments : List.of(),
+                    sendingUser,
+                    sendingDepartment,
+                    signatureDepartment,
+                    referenceId
+            );
+        }
     }
 }

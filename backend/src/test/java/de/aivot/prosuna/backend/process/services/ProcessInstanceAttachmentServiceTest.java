@@ -66,12 +66,13 @@ class ProcessInstanceAttachmentServiceTest {
                 .thenReturn(Optional.of(new SystemConfigEntity().setValue("5")));
         when(processInstanceRepository.findById(42L))
                 .thenReturn(Optional.of(new ProcessInstanceEntity()
+                        .setId(42L)
                         .setProcessId(7)
                         .setAccessKey(processAccessKey.toString())));
         when(storageService.createFolder(eq(5), anyString()))
-                .thenReturn(new StorageFolder("/proc-7/%s/attachments/".formatted(processAccessKey), "attachments", List.of(), List.of(), false));
+                .thenReturn(new StorageFolder("/proc-7/42/attachments/", "attachments", List.of(), List.of(), false));
         when(storageService.storeDocument(eq(5), anyString(), any(byte[].class), any(StorageItemMetadata.class)))
-                .thenReturn(new StorageDocument("/proc-7/%s/attachments/file.pdf".formatted(processAccessKey), "file.pdf", 4L, StorageItemMetadata.empty()));
+                .thenReturn(new StorageDocument("/proc-7/42/attachments/file.pdf", "file.pdf", 4L, StorageItemMetadata.empty()));
         when(attachmentRepository.save(any(ProcessInstanceAttachmentEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(eventRepository.save(any(ProcessInstanceEventEntity.class)))
@@ -95,6 +96,13 @@ class ProcessInstanceAttachmentServiceTest {
         var eventCaptor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
         verify(eventRepository).save(eventCaptor.capture());
         var event = eventCaptor.getValue();
+
+        // The access key grants customers access to the instance and must not appear in storage paths.
+        verify(storageService).createFolder(5, "/proc-7/42/attachments");
+        var storedPathCaptor = ArgumentCaptor.forClass(String.class);
+        verify(storageService).storeDocument(eq(5), storedPathCaptor.capture(), any(byte[].class), any(StorageItemMetadata.class));
+        assertFalse(storedPathCaptor.getValue().contains(processAccessKey.toString()));
+        assertEquals("/proc-7/42/attachments/file.pdf", savedAttachment.getStoragePathFromRoot());
 
         assertNotNull(savedAttachment.getKey());
         assertEquals(42L, event.getProcessInstanceId());

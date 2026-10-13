@@ -3,6 +3,7 @@ import {CssBaseline, type PaletteMode, Theme, ThemeProvider, useMediaQuery} from
 import {SnackbarProvider} from './snackbar-provider';
 import {PromptProvider} from './prompt-provider';
 import {ConfirmProvider} from './confirm-provider';
+import {DragAndDropProvider} from './drag-and-drop-provider';
 import {Provider as TextBalanceProvider} from 'react-wrap-balancer';
 import {BaseTheme} from '../theming/base-theme';
 import {createAppTheme, createDefaultAppTheme} from '../theming/themes';
@@ -41,19 +42,21 @@ export function AppProvider({children, theme: __theme}: PropsWithChildren<{ them
     );
 
     return (
-        <ColorModeContext.Provider value={colorModeContext}>
-            <ThemeProvider theme={theme}>
-                <CssBaseline enableColorScheme/>
-                <TextBalanceProvider>
-                    <SnackbarProvider>
-                        <PromptProvider>
-                            <ConfirmProvider>
-                                {children}
-                            </ConfirmProvider>
-                        </PromptProvider>
-                    </SnackbarProvider>
-                </TextBalanceProvider>
-            </ThemeProvider>
-        </ColorModeContext.Provider>
+        <DragAndDropProvider>
+            <ColorModeContext.Provider value={colorModeContext}>
+                <ThemeProvider theme={theme}>
+                    <CssBaseline enableColorScheme/>
+                    <TextBalanceProvider>
+                        <SnackbarProvider>
+                            <PromptProvider>
+                                <ConfirmProvider>
+                                    {children}
+                                </ConfirmProvider>
+                            </PromptProvider>
+                        </SnackbarProvider>
+                    </TextBalanceProvider>
+                </ThemeProvider>
+            </ColorModeContext.Provider>
+        </DragAndDropProvider>
     );
 }

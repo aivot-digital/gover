@@ -52,6 +52,8 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -66,6 +68,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class ProcessNodeService implements EntityService<ProcessNodeEntity, Integer> {
+    private static final Logger logger = LoggerFactory.getLogger(ProcessNodeService.class);
+    private static final String UNRESOLVABLE_PROCESS_IDENTITIES_MESSAGE = "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden.";
 
     private final ProcessNodeRepository processNodeRepository;
     private final ProcessNodeDefinitionService processNodeProviderService;
@@ -542,6 +546,11 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Nonnull
     public ProcessNodeDefinitionMetadata getIncomingProcessNodeDefinitionMetadata(@Nonnull ProcessNodeEntity node) throws ResponseException {
+        return calculateIncomingProcessNodeDefinitionMetadata(node).metadata();
+    }
+
+    @Nonnull
+    private IncomingProcessNodeDefinitionMetadata calculateIncomingProcessNodeDefinitionMetadata(@Nonnull ProcessNodeEntity node) throws ResponseException {
         var processNodesById = new LinkedHashMap<Integer, ProcessNodeEntity>();
 
         processNodeRepository
@@ -574,15 +583,30 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     .getProcessNodeDefinition(node)
                     .orElseThrow(ResponseException::badRequest);
             if (provider.getType() == ProcessNodeType.Trigger) {
-                return finalizeInputVariableSuggestions(calculateProcessDataKeyHintsForNode(node, provider, previousMetadata));
+                return new IncomingProcessNodeDefinitionMetadata(
+                        finalizeInputVariableSuggestions(calculateProcessDataKeyHintsForNode(node, provider, previousMetadata)),
+                        true
+                );
             }
         }
 
+        var complete = true;
         for (var previousNode : previousNodes) {
-            previousMetadata = calculateProcessDataKeyHintsForNode(previousNode, previousMetadata);
+            try {
+                previousMetadata = calculateProcessDataKeyHintsForNode(previousNode, previousMetadata);
+            } catch (ResponseException | RuntimeException exception) {
+                // Draft nodes may be incomplete or use an unavailable provider. Skipping only the broken node keeps
+                // the metadata of all other upstream nodes available to the editor and to validation.
+                logger.warn(
+                        "Skipping the metadata of process node {} because it could not be calculated.",
+                        previousNode.getId(),
+                        exception
+                );
+                complete = false;
+            }
         }
 
-        return finalizeInputVariableSuggestions(previousMetadata);
+        return new IncomingProcessNodeDefinitionMetadata(finalizeInputVariableSuggestions(previousMetadata), complete);
     }
 
     @Nonnull
@@ -674,11 +698,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                                                                                            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
                                                                                            @Nonnull ProcessNodeDefinitionMetadata previousMetadata) throws ResponseException {
         var configuration = deriveConfiguration(node, provider, null, true);
-        var currentMetadata = provider.getMetadata(
+        // The returned metadata belongs to the provider. Add the service hints to a copy that is always mutable.
+        var currentMetadata = ProcessNodeDefinitionMetadata.reuse(provider.getMetadata(
                 node,
                 configuration.configuration(),
                 previousMetadata
-        );
+        ));
 
         for (var output : provider.getOutputs()) {
             currentMetadata.addInputVariable(new InputVariableSuggestion(
@@ -710,15 +735,33 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Nonnull
     private ProcessNodeDefinitionMetadata finalizeInputVariableSuggestions(@Nonnull ProcessNodeDefinitionMetadata metadata) {
-        for (var forwardedKey : metadata.forwardedProcessDataKeys()) {
+        // Draft configurations may contain invalid paths. Forward only valid keys, in the canonical form that the
+        // editor compares with saved paths. The metadata is the service's own copy, so it can be changed in place.
+        var forwardedKeys = new ArrayList<>(metadata.forwardedProcessDataKeys());
+        metadata.forwardedProcessDataKeys().clear();
+
+        for (var forwardedKey : forwardedKeys) {
+            var segments = parseForwardedProcessDataKey(forwardedKey.processDataKey());
+            if (segments == null) {
+                continue;
+            }
+
+            var processDataKey = ProcessDataValueUtils.formatDestinationKeySegments(segments);
+            metadata.addForwardedProcessDataKey(new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
+                    processDataKey,
+                    forwardedKey.label(),
+                    forwardedKey.subLabel(),
+                    forwardedKey.origin()
+            ));
+
             // Wildcard paths need a concrete row binding or an explicit collection result. Neither is part of the
             // scalar Variable mode in V1, so exposing them as selectable suggestions would create invalid mappings.
-            if (ProcessDataValueUtils.hasWildcardSegment(forwardedKey.processDataKey())) {
+            if (segments.contains("*")) {
                 continue;
             }
             metadata.addInputVariable(new InputVariableSuggestion(
                     InputVariableSource.ProcessData,
-                    forwardedKey.processDataKey(),
+                    processDataKey,
                     null,
                     forwardedKey.label(),
                     forwardedKey.subLabel(),
@@ -739,6 +782,16 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         addProtectedProcessDataSuggestion(metadata, "attachmentSets", "Anlagensätze");
         addProtectedProcessDataSuggestion(metadata, "currentTaskId", "Aktuelle Aufgaben-ID");
         return metadata;
+    }
+
+    @Nullable
+    private static List<String> parseForwardedProcessDataKey(@Nullable String processDataKey) {
+        try {
+            var segments = ProcessDataValueUtils.parseDestinationKeySegments(processDataKey, false);
+            return segments.isEmpty() ? null : segments;
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
     private void addProtectedProcessDataSuggestion(@Nonnull ProcessNodeDefinitionMetadata metadata,
@@ -899,21 +952,23 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             return;
         }
 
-        ProcessNodeDefinitionMetadata incomingMetadata;
+        IncomingProcessNodeDefinitionMetadata incomingMetadata;
         try {
-            incomingMetadata = getIncomingProcessNodeDefinitionMetadata(node);
-        } catch (ResponseException ignored) {
+            incomingMetadata = calculateIncomingProcessNodeDefinitionMetadata(node);
+        } catch (ResponseException | RuntimeException exception) {
+            logger.warn("Could not determine the incoming metadata of process node {}.", node.getId(), exception);
             for (var processIdentityIdInputElement : selectionsByElement.keySet()) {
                 putProcessIdentityValidationError(
                         derivedRuntimeElementData,
                         processIdentityIdInputElement,
-                        "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden."
+                        UNRESOLVABLE_PROCESS_IDENTITIES_MESSAGE
                 );
             }
             return;
         }
 
         var forwardedIdentitiesById = incomingMetadata
+                .metadata()
                 .forwardedIdentities()
                 .stream()
                 .filter(identity -> StringUtils.isNotNullOrEmpty(identity.identityId()))
@@ -926,10 +981,13 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         for (var selection : selectionsByElement.entrySet()) {
             var forwardedIdentities = forwardedIdentitiesById.get(selection.getValue());
             if (forwardedIdentities == null) {
+                // A skipped upstream node may be the source of the selected identity, so its absence proves nothing.
                 putProcessIdentityValidationError(
                         derivedRuntimeElementData,
                         selection.getKey(),
-                        "Die ausgewählte Prozessidentität " + StringUtils.quote(selection.getValue()) + " ist nicht mehr verfügbar."
+                        incomingMetadata.complete()
+                                ? "Die ausgewählte Prozessidentität " + StringUtils.quote(selection.getValue()) + " ist nicht mehr verfügbar."
+                                : UNRESOLVABLE_PROCESS_IDENTITIES_MESSAGE
                 );
                 continue;
             }
@@ -1157,6 +1215,16 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public record ProcessConfigurationDetails<NodeConfig>(
             @Nonnull NodeConfig configuration,
             @Nonnull DerivedRuntimeElementData derivedRuntimeElementData
+    ) {
+    }
+
+    /**
+     * @param complete Whether every upstream node contributed its metadata. Skipped nodes make missing entries
+     *                 inconclusive.
+     */
+    private record IncomingProcessNodeDefinitionMetadata(
+            @Nonnull ProcessNodeDefinitionMetadata metadata,
+            boolean complete
     ) {
     }
 }
