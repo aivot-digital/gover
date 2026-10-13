@@ -77,11 +77,48 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ProcessNodeExecutionResultHandlerTest {
+    @ParameterizedTest
+    @EnumSource(value = ProcessTaskStatus.class, names = {"Running", "AwaitingStaff", "InProgress"})
+    void staffUpdatesPersistTheTimestampOfEachSave(ProcessTaskStatus initialStatus) throws Exception {
+        var savedTasks = spy(new ArrayList<ProcessInstanceTaskEntity>());
+        var savedTimestamps = new ArrayList<Instant>();
+        doAnswer(invocation -> {
+            ProcessInstanceTaskEntity savedTask = invocation.getArgument(0);
+            savedTimestamps.add(savedTask.getUpdated());
+            return invocation.callRealMethod();
+        }).when(savedTasks).add(any(ProcessInstanceTaskEntity.class));
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService());
+        var instance = processInstance();
+        var task = processInstanceTask("staff")
+                .setStatus(initialStatus)
+                .setUpdated(Instant.parse("2026-10-07T06:20:00Z"));
+        var node = processNode("Prüfung");
+        var provider = new TestProcessNodeDefinition("Prüfung");
+        var result = new ProcessNodeExecutionResultTaskUpdated();
+        var logger = new RecordingProcessNodeExecutionLogger();
+        var staff = user("staff", "Staff User");
+        var beforeFirstSave = Instant.now();
+        handler.handleResult(logger, staff, provider, node, instance, task, null, result);
+        var afterFirstSave = Instant.now();
+        assertEquals(ProcessTaskStatus.InProgress, task.getStatus());
+
+        var beforeSecondSave = Instant.now();
+        handler.handleResult(logger, staff, provider, node, instance, task, null, result);
+        var afterSecondSave = Instant.now();
+
+        assertEquals(2, savedTimestamps.size());
+        assertFalse(savedTimestamps.get(0).isBefore(beforeFirstSave));
+        assertFalse(savedTimestamps.get(0).isAfter(afterFirstSave));
+        assertFalse(savedTimestamps.get(1).isBefore(beforeSecondSave));
+        assertFalse(savedTimestamps.get(1).isAfter(afterSecondSave));
+    }
+
     @Test
     void automaticUpdateKeepsAwaitingStaffUntilSuccessfulStaffUpdate() throws Exception {
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();

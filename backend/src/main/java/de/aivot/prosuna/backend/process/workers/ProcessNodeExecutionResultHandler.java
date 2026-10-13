@@ -938,6 +938,7 @@ public class ProcessNodeExecutionResultHandler {
         } else {
             context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
         }
+        context.processInstanceTask.setUpdated(Instant.now());
         assignAndSaveDataLayersAndStatusOverride(context, true);
 
         if (context.triggeringUser != null && context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
