@@ -77,6 +77,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private final ProsunaConfig prosunaConfig;
     private final IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
     private final PermissionService permissionService;
+    private final ProcessVersionDraftGuard processVersionDraftGuard;
 
     @Autowired
     public ProcessNodeService(ProcessNodeRepository processNodeRepository,
@@ -88,7 +89,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                               ProcessEdgeRepository processEdgeRepository,
                               ProsunaConfig prosunaConfig,
                               IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService,
-                              PermissionService permissionService) {
+                              PermissionService permissionService,
+                              ProcessVersionDraftGuard processVersionDraftGuard) {
         this.processNodeRepository = processNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.elementDerivationService = elementDerivationService;
@@ -99,6 +101,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         this.prosunaConfig = prosunaConfig;
         this.identityCommunicationAvailabilityService = identityCommunicationAvailabilityService;
         this.permissionService = permissionService;
+        this.processVersionDraftGuard = processVersionDraftGuard;
     }
 
     @Nonnull
@@ -108,6 +111,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         // The initial create of a process node can be done without configuration checking.
         // This allows us to create nodes without needing to provide a default, fully valid configuration.
         // The validity of the configuration will be checked at least before the publishing of the process version.
+
+        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
 
         // Set the ID to null, to force the database to assign a new, valid ID.
         entity.setId(null);
@@ -187,6 +192,11 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public ProcessNodeEntity performUpdate(@Nonnull Integer id,
                                            @Nonnull ProcessNodeEntity entity,
                                            @Nonnull ProcessNodeEntity existingEntity) throws ResponseException {
+        // Both the current and the requested process version must be drafts, so a node can neither be changed in nor
+        // moved into a version that is executed by the workflow engine.
+        processVersionDraftGuard.requireDrafted(existingEntity.getProcessId(), existingEntity.getProcessVersion());
+        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
+
         // Update fields
         existingEntity.setProcessId(entity.getProcessId());
         existingEntity.setProcessVersion(entity.getProcessVersion());
@@ -227,6 +237,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Override
     public void performDelete(@Nonnull ProcessNodeEntity entity) throws ResponseException {
+        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
         processNodeRepository.delete(entity);
     }
 

@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.models.ProcessVersionProblems;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.process.services.ProcessVersionService;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -108,6 +111,63 @@ class ProcessVersionControllerTest {
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
         verify(processVersionService).update(versionId, submittedVersion);
+    }
+
+    @Test
+    void publishChangesOnlyTheStatusWithPublishPermission() throws ResponseException {
+        var jwt = mock(Jwt.class);
+        var user = user("user-1");
+        var userService = mock(UserService.class);
+        when(userService.fromJWT(jwt)).thenReturn(Optional.of(user));
+
+        var version = new ProcessVersionEntity()
+                .setProcessId(12)
+                .setProcessVersion(5)
+                .setStatus(ProcessVersionStatus.Revoked);
+        var processVersionService = mock(ProcessVersionService.class);
+        when(processVersionService.retrieve(ProcessVersionEntityId.of(12, 5))).thenReturn(Optional.of(version));
+        when(processVersionService.validate(version)).thenReturn(new ProcessVersionProblems(List.of(), List.of()));
+        when(processVersionService.updateStatus(version, ProcessVersionStatus.Published)).thenReturn(version);
+        var permissionService = mock(PermissionService.class);
+        var controller = controller(userService, processVersionService, mock(ProcessService.class), permissionService);
+
+        controller.publish(jwt, 12, 5);
+
+        verify(permissionService).requireProcessPermission(
+                "user-1",
+                12,
+                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
+        );
+        verify(processVersionService).updateStatus(version, ProcessVersionStatus.Published);
+        verify(processVersionService, never()).update(any(ProcessVersionEntityId.class), any(ProcessVersionEntity.class));
+    }
+
+    @Test
+    void revokeChangesOnlyTheStatusWithPublishPermission() throws ResponseException {
+        var jwt = mock(Jwt.class);
+        var user = user("user-1");
+        var userService = mock(UserService.class);
+        when(userService.fromJWT(jwt)).thenReturn(Optional.of(user));
+
+        var version = new ProcessVersionEntity()
+                .setProcessId(12)
+                .setProcessVersion(5)
+                .setStatus(ProcessVersionStatus.Published);
+        var processVersionService = mock(ProcessVersionService.class);
+        when(processVersionService.retrieve(ProcessVersionEntityId.of(12, 5))).thenReturn(Optional.of(version));
+        when(processVersionService.updateStatus(version, ProcessVersionStatus.Revoked)).thenReturn(version);
+        var permissionService = mock(PermissionService.class);
+        var controller = controller(userService, processVersionService, mock(ProcessService.class), permissionService);
+
+        controller.revoke(jwt, 12, 5);
+
+        verify(permissionService).requireProcessPermission(
+                "user-1",
+                12,
+                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
+        );
+        verify(processVersionService).updateStatus(version, ProcessVersionStatus.Revoked);
+        verify(processVersionService, never()).update(any(ProcessVersionEntityId.class), any(ProcessVersionEntity.class));
     }
 
     private static ProcessVersionController controller(UserService userService,
