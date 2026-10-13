@@ -106,10 +106,12 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                 .extractExtensionFromFileName(entity.getFileName())
                 .orElse("dat");
 
+        // Storage paths are visible to everyone who may browse the storage provider. They must therefore never contain
+        // secrets such as the access key of the process instance, which grants customers access to the instance.
         var folderPath = String.format(
-                "/proc-%d/%s/attachments",
+                "/proc-%d/%d/attachments",
                 processInstance.getProcessId(),
-                processInstance.getAccessKey()
+                processInstance.getId()
         );
 
         var folder = storageService
