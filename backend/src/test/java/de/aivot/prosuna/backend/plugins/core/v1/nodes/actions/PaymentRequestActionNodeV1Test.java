@@ -243,6 +243,7 @@ class PaymentRequestActionNodeV1Test {
                 node.init(context(configuration, processData, processInstance(identity), task()))
         );
 
+        assertNull(result.getClearCurrentlyAssignedUser());
         assertEquals("tx-1", result.getTransactionKey());
         assertEquals("Stadtkasse", result.getPaymentProviderName());
         assertEquals("tx-1", result.getRuntimeData().get(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY));
@@ -433,6 +434,7 @@ class PaymentRequestActionNodeV1Test {
                 ).orElseThrow()
         );
 
+        assertEquals(Boolean.TRUE, result.getClearCurrentlyAssignedUser());
         var communicationRequest = result.getCommunicationRequest();
         assertNotNull(communicationRequest);
         assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());

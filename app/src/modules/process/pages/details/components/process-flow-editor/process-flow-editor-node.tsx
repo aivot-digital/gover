@@ -148,7 +148,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             return null;
         }
 
-        if (associatedTask.statusOverride != null) {
+        if (associatedTask.statusOverride?.trim()) {
             return theme.palette.primary.main;
         }
 
@@ -558,6 +558,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                 <ProcessInstanceTaskStatusIcon
                                     status={associatedTask.status}
                                     statusOverride={associatedTask.statusOverride}
+                                    assignedCustomerIdentityId={associatedTask.assignedCustomerIdentityId}
+                                    identities={runtimeData?.instance.identities}
                                 />
                             }
 

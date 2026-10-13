@@ -32,6 +32,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -69,6 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -406,8 +408,29 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertNull(elementDerivationService.lastRequest);
     }
 
+    @Test
+    void completionForwardsTheConfigurationUsedByTheStaffEvent() throws Exception {
+        var result = new ProcessNodeExecutionResultInstanceCompleted();
+        var provider = new InlineStaffTaskProcessNodeDefinition(null, result);
+        var handler = mock(ProcessNodeExecutionResultHandler.class);
+        var fixture = createFixture(provider, new TestElementDerivationService(), handler);
+
+        fixture.controller().update(fixture.jwt(), fixture.instance().getId(), fixture.task().getId(),
+                "{}", null, null, "inline-complete", null);
+
+        org.junit.jupiter.api.Assertions.assertNotNull(provider.configurationUsedForEvent);
+        verify(handler).handleResult(any(), any(), same(provider), same(provider.configurationUsedForEvent),
+                any(), same(fixture.instance()), same(fixture.task()), isNull(), same(result));
+    }
+
     private static StaffTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
                                                             TestElementDerivationService elementDerivationService) {
+        return createFixture(provider, elementDerivationService, new ApplyingProcessNodeExecutionResultHandler());
+    }
+
+    private static StaffTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                            TestElementDerivationService elementDerivationService,
+                                                            ProcessNodeExecutionResultHandler resultHandler) {
         var user = new UserEntity()
                 .setId("user-1")
                 .setFirstName("Ada")
@@ -511,7 +534,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 new TestProcessInstanceTaskService(task),
                 new ProcessNodeDefinitionService(List.of(provider)),
                 new TestProcessNodeService(node),
-                new ApplyingProcessNodeExecutionResultHandler(),
+                resultHandler,
                 new TestUserService(user),
                 new TestProcessNodeExecutionLoggerFactory(),
                 elementDerivationService,
@@ -599,9 +622,10 @@ class StaffProcessInstanceTaskViewControllerTest {
         }
 
         @Override
-        public void handleResult(ProcessNodeExecutionLogger logger,
+        public <NodeConfig> void handleResult(ProcessNodeExecutionLogger logger,
                                  UserEntity triggeringUser,
-                                 ProcessNodeDefinition provider,
+                                 ProcessNodeDefinition<NodeConfig> provider,
+                                 NodeConfig configurationOfExecutingNode,
                                  ProcessNodeEntity currentNode,
                                  ProcessInstanceEntity processInstance,
                                  ProcessInstanceTaskEntity processInstanceTask,
@@ -831,10 +855,17 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class InlineStaffTaskProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         private final String href;
+        private final ProcessNodeExecutionResult eventResult;
         private String eventInvokedWith;
+        private AuthoredElementValues configurationUsedForEvent;
 
         private InlineStaffTaskProcessNodeDefinition(String href) {
+            this(href, null);
+        }
+
+        private InlineStaffTaskProcessNodeDefinition(String href, ProcessNodeExecutionResult eventResult) {
             this.href = href;
+            this.eventResult = eventResult;
         }
 
         @Override
@@ -911,6 +942,10 @@ class StaffProcessInstanceTaskViewControllerTest {
                                                                              @Nonnull AuthoredElementValues update,
                                                                              @Nonnull String event) {
             eventInvokedWith = event;
+            configurationUsedForEvent = context.getConfigurationOfExecutingNode();
+            if (eventResult != null) {
+                return eventResult.asOptional();
+            }
             return new ProcessNodeExecutionResultTaskUpdated()
                     .setRuntimeData(Map.of("event", event))
                     .setNodeData(Map.of())

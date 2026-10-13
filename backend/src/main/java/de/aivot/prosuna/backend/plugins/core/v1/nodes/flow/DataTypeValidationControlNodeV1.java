@@ -26,6 +26,8 @@ import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
@@ -44,6 +46,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.list;
 
 @Component
 public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<DataTypeValidationControlNodeV1.DataTypeValidationControlNodeConfig> {
@@ -71,6 +78,21 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
     private static final String OUTPUT_NAME_ERRORS = "errors";
     private static final String OUTPUT_ERRORS_TYPE_DEFINITION =
             "Array<{ rowIndex: number; path: string; resolvedPath?: string; error: string; }>";
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<DataTypeValidationControlNodeV1.DataTypeValidationControlNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var valid = Boolean.TRUE.equals(summary.data(OUTPUT_NAME_IS_VALID));
+        var markdown = new StringBuilder(valid ? "Die Vorgangsdaten wurden erfolgreich validiert." : "Bei der Validierung der Vorgangsdaten wurden Fehler festgestellt.");
+        markdown.append(detail("Geprüfte Regeln", summary.data(OUTPUT_NAME_VALIDATED_RULE_COUNT)))
+                .append(detail("Geprüfte Werte", summary.data(OUTPUT_NAME_VALIDATED_VALUE_COUNT)));
+        for (var entry : list(summary.data(OUTPUT_NAME_ERRORS))) {
+            var error = map(entry);
+            markdown.append("\n\n- ").append(text(error.get("path"))).append(": ").append(text(error.get("error")));
+        }
+        return markdown.toString();
+    }
 
     @Nonnull
     @Override

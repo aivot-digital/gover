@@ -3,6 +3,7 @@ import {type Api} from '../../hooks/use-api';
 import {type GenericPageHeaderProps} from '../generic-page-header/generic-page-header-props';
 import {type ReactNode, type RefObject} from 'react';
 import {type ServerEntityType} from '../../shells/staff/data/server-entity-type';
+import {type GenericDetailsPageEmitEvent} from './generic-details-page-events';
 import {
     type PermissionLike,
     type PermissionRequirement,
@@ -34,11 +35,14 @@ export type GenericDetailsPageHeaderConfig<ItemType> =
     Omit<GenericPageHeaderProps, 'isBusy'>
     | ((item: ItemType | undefined, isNewItem: boolean, notFound: boolean) => Omit<GenericPageHeaderProps, 'isBusy'>);
 
-export type GenericDetailsPageControlRef = {
+export type GenericDetailsPageControlRef<Events extends object = {}> = {
+    /** Reloads page data and emits refresh after the successful context update. */
     refresh: () => void;
+    /** Delivers an event to current subscribers without reloading page data. */
+    emitEvent: GenericDetailsPageEmitEvent<Events>;
 };
 
-export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
+export interface GenericDetailsPageProps<ItemType, ID, AdditionalData, Events extends object = {}> {
     getTabTitle: (item: ItemType) => string;
     header: GenericDetailsPageHeaderConfig<ItemType>;
     initializeItem: (api: Api) => ItemType;
@@ -56,7 +60,7 @@ export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
     onItemChange?: (item: ItemType | null) => void;
     additionalDataRef?: RefObject<AdditionalData | null>;
     onAdditionalDataChange?: (item: AdditionalData | null) => void;
-    controlRef?: RefObject<GenericDetailsPageControlRef | null>;
+    controlRef?: RefObject<GenericDetailsPageControlRef<Events> | null>;
     entityType?: ServerEntityType;
     getSearchItemId?: (item: ItemType, id: ID) => string | undefined;
     permissionCheck?: GenericDetailsPagePermissionConfig<ItemType>;

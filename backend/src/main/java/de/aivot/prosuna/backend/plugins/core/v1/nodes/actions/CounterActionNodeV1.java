@@ -18,6 +18,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -34,12 +36,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+
 /**
  * This node is used to increment (or decrement) a counter when working with loops in a process. A user should be able to specify a process data key where the counter is stored as
  * well as an increment step value. If no process data key is defined, the value is stored in the node data of the node and fetched from the previous iteration of this node.
  */
 @Component
 public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionNodeV1.CounterActionNodeV1Configuration> {
+
     // The unique node key.
     public static final String NODE_KEY = "counter";
 
@@ -63,6 +69,20 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
 
     public CounterActionNodeV1(ProcessInstanceTaskRepository processInstanceTaskRepository) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<CounterActionNodeV1.CounterActionNodeV1Configuration> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var increment = summary.data(OUTPUT_INCREMENT);
+        var amount = increment instanceof Number number ? number.doubleValue() : 0;
+        var variable = summary.data(OUTPUT_STORAGE_TARGET) != null ? summary.data(OUTPUT_STORAGE_TARGET) : context.thisNode().getDataKey();
+        var change = amount > 0 ? " um " + text(increment) + " erhöht"
+                : amount < 0 ? " um " + text(new java.math.BigDecimal(increment.toString()).abs().stripTrailingZeros().toPlainString()) + " verringert"
+                : " nicht verändert";
+        return "Der Zähler „" + text(variable) + "“ wurde" + change + "."
+                + detail("Vorheriger Wert", summary.data(OUTPUT_PREVIOUS_VALUE)) + detail("Neuer Wert", summary.data(OUTPUT_VALUE));
     }
 
     @Nonnull
@@ -177,7 +197,6 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
     public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
                                                      @Nonnull CounterActionNodeV1.CounterActionNodeV1Configuration configuration,
                                                      @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
-
 
         // Check if a process data key for the variable is set.
         // If not, return all previously calculated process data key hints.

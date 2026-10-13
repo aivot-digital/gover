@@ -4,6 +4,8 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.projections.DashboardTaskCountsProjection;
 import de.aivot.prosuna.backend.process.projections.ProcessTaskAssignmentProjection;
+import de.aivot.prosuna.backend.process.projections.ProcessTaskRestartProjection;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -30,6 +32,16 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
     Optional<Long> findInstanceIdById(@Param("id") Long id);
 
     List<ProcessInstanceTaskEntity> findAllByProcessInstanceId(Long processInstanceId);
+
+    @Nonnull
+    @Query("""
+            select new de.aivot.prosuna.backend.process.projections.ProcessTaskRestartProjection(
+                task.id, task.restartForTaskId)
+            from ProcessInstanceTaskEntity task
+            where task.processInstanceId = :instanceId and task.processNodeId = :nodeId
+            """)
+    List<ProcessTaskRestartProjection> findRestartLinks(@Nonnull @Param("instanceId") Long instanceId,
+                                                       @Nonnull @Param("nodeId") Integer nodeId);
 
     @Query("""
             select new de.aivot.prosuna.backend.process.projections.ProcessTaskAssignmentProjection(

@@ -153,7 +153,7 @@ describe('Task timestamps after autosave', () => {
         await showGeneralInformation();
 
         expect(putView).toHaveBeenCalledTimes(2);
-        expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 – 08:27 Uhr');
+        expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 um 08:27 Uhr');
         expect(screen.getByRole('row', {name: /Aufgabenstatus/})).toHaveTextContent('In Bearbeitung');
     });
 
@@ -164,7 +164,7 @@ describe('Task timestamps after autosave', () => {
         await showGeneralInformation();
 
         expect(putView).toHaveBeenLastCalledWith(10, 20, {subject: literalAuthoredValue('Second draft')});
-        expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 – 08:27 Uhr');
+        expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 um 08:27 Uhr');
     });
 
     it('preserves newer inputs while task details are being refreshed', async () => {
@@ -187,6 +187,6 @@ describe('Task timestamps after autosave', () => {
         });
         expect(putView).toHaveBeenLastCalledWith(10, 20, {subject: literalAuthoredValue('Second draft')});
         await showGeneralInformation();
-        expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 – 08:27 Uhr');
+        expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 um 08:27 Uhr');
     });
 });

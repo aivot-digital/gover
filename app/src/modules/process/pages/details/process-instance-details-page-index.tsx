@@ -20,7 +20,7 @@ import {type StatusTablePropsItem} from '../../../../components/status-table/sta
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
 import {ProcessInstanceStatusLabels} from '../../enums/process-instance-status';
-import {ProcessTaskStatusLabels} from '../../enums/process-task-status';
+import {getProcessTaskStatusDisplay} from '../../utils/process-task-status-label';
 import {ProcessAssignee} from '../../components/process-assignee';
 import {ProcessInstanceEventApiService} from '../../services/process-instance-event-api-service';
 import {type ProcessInstanceEventEntity} from '../../entities/process-instance-event-entity';
@@ -241,48 +241,51 @@ export function ProcessInstanceDetailsPageIndex() {
                         <ProcessEmptyValue>Keine aktive Aufgabe</ProcessEmptyValue>
                     </Box>
                 ) : (
-                    item.activeTasks.map((task) => (
-                        <Box
-                            key={task.id}
-                            role="group"
-                            aria-label={`Aufgabe ${task.name}`}
-                        >
-                            <StatusTable
-                                sx={{mt: 2}}
-                                cardVariant="outlined"
-                                items={[
-                                    {
-                                        label: 'Aufgabe',
-                                        icon: <Assignment />,
-                                        children: renderLinkedValue(
-                                            task.name,
-                                            createStaffPath(`/tasks/${instance.id}/${task.id}`),
-                                        ),
-                                    },
-                                    {
-                                        label: 'Aufgabenstatus',
-                                        icon: <Flag />,
-                                        children: (
-                                            <ProcessStatusValue
-                                                systemLabel={ProcessTaskStatusLabels[task.status]}
-                                                statusOverride={task.statusOverride}
-                                            />
-                                        ),
-                                    },
-                                    {
-                                        label: 'Aufgabe zugewiesen an',
-                                        icon: <AssignmentInd />,
-                                        children: <ProcessAssignee userId={task.assignedUserId} />,
-                                    },
-                                    {
-                                        label: 'Fälligkeit (spätestens)',
-                                        icon: <Acute />,
-                                        children: formatDateTimeWithRelative(task.deadline, 'Nicht festgelegt'),
-                                    },
-                                ]}
-                            />
-                        </Box>
-                    ))
+                    item.activeTasks.map((task) => {
+                        const status = getProcessTaskStatusDisplay(task, instance.identities);
+                        return (
+                            <Box
+                                key={task.id}
+                                role="group"
+                                aria-label={`Aufgabe ${task.name}`}
+                            >
+                                <StatusTable
+                                    sx={{mt: 2}}
+                                    cardVariant="outlined"
+                                    items={[
+                                        {
+                                            label: 'Aufgabe',
+                                            icon: <Assignment />,
+                                            children: renderLinkedValue(
+                                                task.name,
+                                                createStaffPath(`/tasks/${instance.id}/${task.id}`),
+                                            ),
+                                        },
+                                        {
+                                            label: 'Aufgabenstatus',
+                                            icon: <Flag />,
+                                            children: (
+                                                <ProcessStatusValue
+                                                    systemLabel={status.systemLabel}
+                                                    statusOverride={status.label !== status.systemLabel ? status.label : null}
+                                                />
+                                            ),
+                                        },
+                                        {
+                                            label: 'Aufgabe zugewiesen an',
+                                            icon: <AssignmentInd />,
+                                            children: <ProcessAssignee userId={task.assignedUserId} />,
+                                        },
+                                        {
+                                            label: 'Fälligkeit (spätestens)',
+                                            icon: <Acute />,
+                                            children: formatDateTimeWithRelative(task.deadline, 'Nicht festgelegt'),
+                                        },
+                                    ]}
+                                />
+                            </Box>
+                        );
+                    })
                 )}
             </Box>
             <Box

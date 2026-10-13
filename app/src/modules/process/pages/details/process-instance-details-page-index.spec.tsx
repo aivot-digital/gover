@@ -49,6 +49,7 @@ function renderItem(item: ProcessInstanceDetails) {
                     isBusy: false,
                     setIsBusy: vi.fn(),
                     refresh: vi.fn(),
+                    subscribeEvent: vi.fn(() => vi.fn()),
                     isEditable: false,
                 }}
             >
@@ -63,6 +64,27 @@ describe('Process instance information', () => {
         vi.restoreAllMocks();
         access.canReadProcess = false;
         vi.spyOn(ProcessInstanceEventApiService.prototype, 'list').mockResolvedValue({content: []} as never);
+    });
+
+    it.each([null, 'Unterlagen angefordert'])('resolves the active task identity from instance data (%s)', async statusOverride => {
+        const item = createItem();
+        item.instance.identities = {
+            applicant: {
+                identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+                emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
+                uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
+            },
+        };
+        item.activeTasks = [{
+            id: 8, name: 'Unterlagen prüfen', status: ProcessTaskStatus.AwaitingCustomer,
+            statusOverride, assignedUserId: null, assignedCustomerIdentityId: 'applicant',
+        }];
+        renderItem(item);
+
+        expect(screen.getByRole('row', {name: /^Aufgabenstatus /})).toHaveTextContent(statusOverride
+            ? 'Unterlagen angefordert (Systemstatus: Wartet auf Antragstellende)'
+            : 'Wartet auf Antragstellende');
+        await screen.findByText('Noch kein Ereignis vorhanden');
     });
 
     it('shows instance metadata without requiring access to the process model', async () => {
@@ -138,12 +160,14 @@ describe('Process instance information', () => {
                 name: 'Prüfung',
                 status: ProcessTaskStatus.Running,
                 assignedUserId: 'Kim',
+                assignedCustomerIdentityId: null,
             },
             {
                 id: 2,
                 name: 'Zahlung',
                 status: ProcessTaskStatus.AwaitingPayment,
                 assignedUserId: 'Alex',
+                assignedCustomerIdentityId: null,
             },
         ];
         renderItem(item);
@@ -173,13 +197,12 @@ describe('Process instance information', () => {
         await screen.findByText('Noch kein Ereignis vorhanden');
     });
 
-    it('copies identifiers individually and shows relative dates like the task view', async () => {
-        vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-23T08:00:00Z'));
+    it('copies identifiers individually and shows the start date and time in the application time zone', async () => {
         const user = userEvent.setup();
         const item = createItem();
         item.instance.assignedFileNumbers = ['AZ-42', 'AZ-43'];
         renderItem(item);
-        expect(screen.getByRole('row', {name: /Gestartet am/})).toHaveTextContent(/\(vor .*\)/);
+        expect(screen.getByRole('row', {name: /Gestartet am/})).toHaveTextContent('22.09.2026 um 10:00 Uhr');
         expect(screen.queryByText('Test-Vorgang')).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'Vorgangskennung kopieren'}));
         expect(copyToClipboardText).toHaveBeenLastCalledWith('V-2026-17');
@@ -199,6 +222,7 @@ describe('Process instance information', () => {
                 status: ProcessTaskStatus.AwaitingCustomer,
                 statusOverride: 'Unterlagen angefordert',
                 assignedUserId: 'Aufgabenbearbeitung',
+                assignedCustomerIdentityId: null,
             },
         ];
         renderItem(item);
@@ -232,6 +256,7 @@ describe('Process instance information', () => {
                 name: 'Später',
                 status: ProcessTaskStatus.Running,
                 assignedUserId: null,
+                assignedCustomerIdentityId: null,
                 deadline: '2026-10-02T10:00:00Z',
             },
             {
@@ -239,6 +264,7 @@ describe('Process instance information', () => {
                 name: 'Überfällig',
                 status: ProcessTaskStatus.Paused,
                 assignedUserId: null,
+                assignedCustomerIdentityId: null,
                 deadline: '2026-09-01T10:00:00Z',
             },
             {
@@ -246,6 +272,7 @@ describe('Process instance information', () => {
                 name: 'Ohne Frist',
                 status: ProcessTaskStatus.Running,
                 assignedUserId: null,
+                assignedCustomerIdentityId: null,
             },
         ];
         renderItem(item);

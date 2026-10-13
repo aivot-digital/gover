@@ -29,7 +29,7 @@ public class ProcessInstanceDetailsController {
 
     @Nonnull
     @GetMapping("{id}/details/")
-    @Operation(summary = "Retrieve process instance details", description = "Returns instance metadata and active task labels. Requires process_instance.read on this instance.")
+    @Operation(summary = "Retrieve process instance details", description = "Returns instance metadata and active task labels. Each active task includes its assignedCustomerIdentityId, or null when no customer identity is assigned. Requires process_instance.read on this instance.")
     public ProcessInstanceDetailsDTO retrieve(@Nullable @AuthenticationPrincipal Jwt jwt,
                                               @Nonnull @PathVariable Long id) throws ResponseException {
         var user = users.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);

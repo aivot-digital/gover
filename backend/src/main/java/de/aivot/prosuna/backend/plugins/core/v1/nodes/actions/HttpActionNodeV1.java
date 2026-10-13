@@ -20,6 +20,8 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.*;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -49,6 +51,10 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.safeUrl;
 
 @Component
 public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1Config> {
@@ -130,6 +136,26 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.storageService = storageService;
         this.secretService = secretService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<HttpActionNodeV1Config> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var configuration = context.configurationOfExecutingNode();
+        var endpoint = summary.metadata("endpoint");
+        var url = endpoint == null ? safeUrl(configuration.url) : endpoint.toString();
+        var code = summary.data(OUTPUT_NAME_STATUS_CODE);
+        var category = code instanceof Number number ? switch (number.intValue() / 100) {
+            case 2 -> "Erfolgreich";
+            case 3 -> "Weiterleitung";
+            case 4 -> "Clientfehler";
+            case 5 -> "Serverfehler";
+            default -> "Information";
+        } : "";
+        return "Die externe HTTP-Schnittstelle" + (url.isEmpty() ? "" : " (Endpunkt: " + url + ")")
+                + " wurde" + summary.completedAt() + " aufgerufen."
+                + section("Response-Code", text(code) + (category.isEmpty() ? "" : " (" + category + ")"));
     }
 
     @Nonnull
@@ -298,7 +324,10 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             );
         }
 
-        return handleResponse(context, responseType, allowedStatusCodes, uri, response);
+        var result = handleResponse(context, responseType, allowedStatusCodes, uri, response);
+        result.setRuntimeData(ExecutionSummaryMarkdown.withMetadata(result.getRuntimeData(),
+                Map.of("endpoint", safeUrl(uri))));
+        return result;
     }
 
     @Nonnull

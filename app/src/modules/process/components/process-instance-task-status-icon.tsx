@@ -6,104 +6,60 @@ import PlayCircle from '@aivot/mui-material-symbols-400-n25-outlined/PlayCircle'
 import PauseCircle from '@aivot/mui-material-symbols-400-n25-outlined/PauseCircle';
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import Cancel from '@aivot/mui-material-symbols-400-n25-outlined/Cancel';
+import StopCircle from '@aivot/mui-material-symbols-400-n25-outlined/StopCircle';
 import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/PaymentArrowDown';
 import ContractEdit from '@aivot/mui-material-symbols-400-n25-outlined/ContractEdit';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
+import {type IdentityDataMap} from '../../identity/models/identity-data';
+import {getProcessTaskStatusDisplay, type ProcessTaskStatusLabelSource} from '../utils/process-task-status-label';
 
-interface ProcessInstanceTaskStatusIconProps {
-    status: ProcessTaskStatus;
-    statusOverride?: string | null;
+interface ProcessInstanceTaskStatusIconProps extends ProcessTaskStatusLabelSource {
+    identities?: IdentityDataMap | null;
 }
 
 export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIconProps): ReactNode {
-    const {
-        status,
-        statusOverride,
-    } = props;
-
-
-    if (statusOverride != null) {
-        return (
-            <Tooltip
-                title={statusOverride}
-            >
-                <AppBadging color="primary"/>
-            </Tooltip>
-        );
+    const display = getProcessTaskStatusDisplay(props, props.identities);
+    let icon;
+    if (props.statusOverride?.trim()) {
+        icon = <AppBadging color="primary"/>;
+    } else {
+        switch (props.status) {
+            case ProcessTaskStatus.Running:
+                icon = <PlayCircle color="info"/>;
+                break;
+            case ProcessTaskStatus.InProgress:
+                icon = <Edit color="primary"/>;
+                break;
+            case ProcessTaskStatus.AwaitingStaff:
+                icon = <AccountCircle color="warning"/>;
+                break;
+            case ProcessTaskStatus.AwaitingPayment:
+                icon = <PaymentArrowDown color="info"/>;
+                break;
+            case ProcessTaskStatus.AwaitingCustomer:
+                icon = <ContractEdit color="info"/>;
+                break;
+            case ProcessTaskStatus.Paused:
+                icon = <PauseCircle color="primary"/>;
+                break;
+            case ProcessTaskStatus.Completed:
+                icon = <CheckCircle color="success"/>;
+                break;
+            case ProcessTaskStatus.Aborted:
+                icon = <StopCircle color="error"/>;
+                break;
+            case ProcessTaskStatus.Failed:
+                icon = <Cancel color="error"/>;
+                break;
+            case ProcessTaskStatus.Restarted:
+                icon = <Replay color="warning"/>;
+                break;
+            default:
+                return null;
+        }
     }
 
-    switch (status) {
-        case ProcessTaskStatus.Running:
-            return (
-                <Tooltip
-                    title="Gestartet"
-                >
-                    <PlayCircle color="info"/>
-                </Tooltip>
-            );
-        case ProcessTaskStatus.InProgress:
-            return (
-                <Tooltip title="In Bearbeitung">
-                    <Edit color="primary"/>
-                </Tooltip>
-            );
-        case ProcessTaskStatus.AwaitingStaff:
-            return (
-                <Tooltip title="Wartet auf Bearbeitung">
-                    <AccountCircle color="warning"/>
-                </Tooltip>
-            );
-        case ProcessTaskStatus.AwaitingPayment:
-            return (
-                <Tooltip
-                    title="Wartet auf Zahlungsbestätigung"
-                >
-                    <PaymentArrowDown color="info"/>
-                </Tooltip>
-            );
-        case ProcessTaskStatus.AwaitingCustomer:
-            return (
-                <Tooltip
-                    title="Wartet auf Nutzer:in"
-                >
-                    <ContractEdit color="info"/>
-                </Tooltip>
-            );
-        case ProcessTaskStatus.Paused:
-            return (
-                <Tooltip
-                    title="Pausiert"
-                >
-                    <PauseCircle color="primary"/>
-                </Tooltip>
-            );
-        case ProcessTaskStatus.Completed:
-            return (
-                <Tooltip
-                    title="Abgeschlossen"
-                >
-                    <CheckCircle color="success"/>
-                </Tooltip>
-            );
-        case ProcessTaskStatus.Failed:
-            return (
-                <Tooltip
-                    title="Fehlgeschlagen"
-                >
-                    <Cancel color="error"/>
-                </Tooltip>
-            );
-        case ProcessTaskStatus.Restarted:
-            return (
-                <Tooltip
-                    title="Neu gestartet"
-                >
-                    <Replay color="warning"/>
-                </Tooltip>
-            );
-        default:
-            return null;
-    }
+    return <Tooltip title={display.tooltip ?? display.label}>{icon}</Tooltip>;
 }
