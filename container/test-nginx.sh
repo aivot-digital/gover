@@ -109,4 +109,25 @@ for route_path in / /form/example /staff /staff/processes /sbom/manifest.json; d
     if grep -q 'immutable' /tmp/headers; then exit 1; fi
 done
 
-printf 'Nginx compression, cache and missing-asset checks passed.\n'
+# Match a complete header line; responses end header lines with CRLF.
+has_header() {
+    tr -d '\r' < /tmp/headers | grep -qxF "$1"
+}
+
+# Only the bundled fonts are shared with browser applications on other origins.
+fetch http://127.0.0.1:8080/assets/fonts/public-sans.woff2
+grep -q 'HTTP/1.1 200' /tmp/headers
+has_header 'Cache-Control: no-cache'
+has_header 'Access-Control-Allow-Origin: *'
+for route_path in /assets/runtime.js /assets/index-Ab12_-34.js / /staff; do
+    fetch "http://127.0.0.1:8080$route_path"
+    grep -q 'HTTP/1.1 200' /tmp/headers
+    if grep -qi 'Access-Control-Allow-Origin' /tmp/headers; then exit 1; fi
+done
+
+# Redirects must stay relative so clients never see the internal scheme and port.
+curl --silent --show-error --max-time 10 --dump-header /tmp/headers --output /tmp/body http://127.0.0.1:8080/security.txt
+grep -q 'HTTP/1.1 301' /tmp/headers
+has_header 'Location: /.well-known/security.txt'
+
+printf 'Nginx compression, cache, CORS, redirect and missing-asset checks passed.\n'
