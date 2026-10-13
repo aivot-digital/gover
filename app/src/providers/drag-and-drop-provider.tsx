@@ -4,7 +4,7 @@ import {HTML5Backend} from 'react-dnd-html5-backend';
 
 /**
  * Provides the single HTML5 drag-and-drop backend for a shell.
- * Mount it once at the shell root instead of around individual editors or dialogs.
+ * AppProvider mounts it once for each shell instead of around individual editors or dialogs.
  */
 export function DragAndDropProvider({children}: PropsWithChildren) {
     // An explicit window context keeps React DnD from reference counting its default

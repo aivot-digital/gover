@@ -7,7 +7,6 @@ import {MemoryRouter} from 'react-router-dom';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {AppProvider} from '../../providers/app-provider';
 import {useColorMode} from '../../providers/color-mode-context';
-import {DragAndDropProvider} from '../../providers/drag-and-drop-provider';
 import {authReducer} from '../../slices/auth-slice';
 import {identityReducer} from '../../slices/identity-slice';
 import {adminSettingsReducer} from '../../slices/admin-settings-slice';
@@ -61,11 +60,9 @@ describe.each([false, true])('shared HTML5 backend (StrictMode: %s)', (strictMod
 
         function Wrapper({children}: PropsWithChildren) {
             return <StoreProvider store={store}>
-                <DragAndDropProvider>
-                    <AppProvider>
-                        <MemoryRouter>{children}</MemoryRouter>
-                    </AppProvider>
-                </DragAndDropProvider>
+                <AppProvider>
+                    <MemoryRouter>{children}</MemoryRouter>
+                </AppProvider>
             </StoreProvider>;
         }
 
