@@ -50,6 +50,7 @@ import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.process.utils.ProcessSubmissionCookieUtils;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
@@ -119,6 +120,7 @@ public class FormTriggerControllerV1 {
     private final PdfService pdfService;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final IdentitySlotService identitySlotService;
+    private final ProcessSubmissionBindingService processSubmissionBindingService;
 
     @Autowired
     public FormTriggerControllerV1(ProsunaConfig prosunaConfig,
@@ -150,7 +152,8 @@ public class FormTriggerControllerV1 {
                                    PaymentProviderRepository paymentProviderRepository,
                                    PdfService pdfService,
                                    PaymentProviderDefinitionsService paymentProviderDefinitionsService,
-                                   IdentitySlotService identitySlotService) {
+                                   IdentitySlotService identitySlotService,
+                                   ProcessSubmissionBindingService processSubmissionBindingService) {
         this.prosunaConfig = prosunaConfig;
         this.elementDerivationService = elementDerivationService;
         this.assetService = assetService;
@@ -181,6 +184,7 @@ public class FormTriggerControllerV1 {
         this.pdfService = pdfService;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.identitySlotService = identitySlotService;
+        this.processSubmissionBindingService = processSubmissionBindingService;
     }
 
     @GetMapping("")
@@ -614,6 +618,10 @@ public class FormTriggerControllerV1 {
         );
 
         response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
+        response.addCookie(ProcessSubmissionCookieUtils.createSubmissionCookie(
+                processInstance.getAccessKey(),
+                processSubmissionBindingService.bind(processInstance.getId())
+        ));
         return new FormTriggerSubmissionStatusResponseV1(processInstance.getAccessKey());
     }
 

@@ -152,6 +152,18 @@ describe('CustomerInstanceView', () => {
         expect(mocks.navigate).not.toHaveBeenCalled();
     });
 
+    it('requests only the status of the task in the route', async () => {
+        mocks.params.taskAccessKey = 'form-task';
+        const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([
+            createTask('form-task', ProcessTaskStatus.AwaitingCustomer),
+        ]));
+
+        render(<CustomerInstanceView/>);
+
+        await screen.findByText('Aufgabenansicht');
+        expect(getInstanceStatus).toHaveBeenCalledWith('instance-key', 'form-task');
+    });
+
     it('keeps a completed customer task route available as history', async () => {
         mocks.params.taskAccessKey = 'completed-task';
         vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([

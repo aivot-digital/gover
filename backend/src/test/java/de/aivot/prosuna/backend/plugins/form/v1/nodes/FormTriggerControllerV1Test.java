@@ -722,7 +722,8 @@ class FormTriggerControllerV1Test {
                 mock(PaymentProviderRepository.class),
                 pdfService,
                 mock(PaymentProviderDefinitionsService.class),
-                mock(IdentitySlotService.class)
+                mock(IdentitySlotService.class),
+                mock(ProcessSubmissionBindingService.class)
         );
 
         return new PrintFixture(
@@ -913,7 +914,8 @@ class FormTriggerControllerV1Test {
                 paymentProviderRepository,
                 mock(PdfService.class),
                 paymentProviderDefinitionsService,
-                identitySlotService
+                identitySlotService,
+                mock(ProcessSubmissionBindingService.class)
         );
 
         return new TestFixture(

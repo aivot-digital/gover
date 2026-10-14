@@ -65,7 +65,7 @@ export function CustomerInstanceView() {
         const requestGeneration = ++statusRequestGenerationRef.current;
         try {
             const status = await new CustomerTaskViewApiService()
-                .getInstanceStatus(instanceAccessKey);
+                .getInstanceStatus(instanceAccessKey, taskAccessKey);
 
             if (requestGeneration === statusRequestGenerationRef.current) {
                 setInstanceStatus(status);
@@ -77,7 +77,7 @@ export function CustomerInstanceView() {
 
             // A newer status request or an explicit invalidation already superseded this request.
         }
-    }, [instanceAccessKey]);
+    }, [instanceAccessKey, taskAccessKey]);
 
     const fetchInstanceStatus = useCallback(() => {
         void refreshInstanceStatus()
