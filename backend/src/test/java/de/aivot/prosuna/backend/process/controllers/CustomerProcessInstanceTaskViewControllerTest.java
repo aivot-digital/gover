@@ -70,6 +70,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import java.net.URI;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -477,6 +478,43 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 any(ProcessNodeCustomerView.class),
                 eq("identity-session")
         );
+    }
+
+    @Test
+    void derive_TakesNonEditableInputValuesFromTheTaskViewData() throws ResponseException {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues()
+        );
+
+        fixture.controller().derive(
+                null,
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                new AuthoredElementValues().putLiteral("field", "forged"),
+                List.of(),
+                Map.of(),
+                null
+        );
+
+        var options = fixture.elementDerivationService().requests.getFirst().derivationOptions();
+        assertTrue(options.isIgnoreAuthoredValuesOfNonEditableInputs());
+        assertEquals("persisted", options.getTrustedAuthoredValues().getLiteral("field"));
+    }
+
+    @Test
+    void update_TakesNonEditableInputValuesFromTheTaskViewData() throws ResponseException {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues().putLiteral("field", "forged")
+        );
+
+        fixture.controller().update(fixture.procAccess(), fixture.taskAccess(), "{}", null, null,
+                null, Map.of(), null, new MockHttpServletResponse());
+
+        var options = fixture.elementDerivationService().requests.getFirst().derivationOptions();
+        assertTrue(options.isIgnoreAuthoredValuesOfNonEditableInputs());
+        assertEquals("persisted", options.getTrustedAuthoredValues().getLiteral("field"));
     }
 
     @Test
@@ -1049,6 +1087,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         var customerTaskIdentityService = mockCustomerTaskIdentityService();
         var identitySlotService = mock(IdentitySlotService.class);
+        var elementDerivationService = new TestElementDerivationService(effectiveValues);
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -1056,7 +1095,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeService(node),
                 resultHandler,
                 new TestProcessNodeExecutionLoggerFactory(),
-                new TestElementDerivationService(effectiveValues),
+                elementDerivationService,
                 new TestTaskViewMultipartInputService(normalizedInputs),
                 mock(ProcessDataService.class),
                 mock(ProcessService.class),
@@ -1077,7 +1116,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 node,
                 controller,
                 customerTaskIdentityService,
-                identitySlotService
+                identitySlotService,
+                elementDerivationService
         );
     }
 
@@ -1250,7 +1290,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
             ProcessNodeEntity node,
             CustomerProcessInstanceTaskViewController controller,
             CustomerTaskIdentityService customerTaskIdentityService,
-            IdentitySlotService identitySlotService
+            IdentitySlotService identitySlotService,
+            TestElementDerivationService elementDerivationService
     ) {
     }
 
@@ -1348,6 +1389,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class TestElementDerivationService extends ElementDerivationService {
         private final EffectiveElementValues effectiveValues;
+        private final List<ElementDerivationRequest> requests = new LinkedList<>();
 
         private TestElementDerivationService(EffectiveElementValues effectiveValues) {
             super(null, null, null, null, null, null);
@@ -1356,6 +1398,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Override
         public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
+            requests.add(request);
             return new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates());
         }
     }

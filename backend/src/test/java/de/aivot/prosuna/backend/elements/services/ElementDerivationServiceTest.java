@@ -64,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ElementDerivationServiceTest {
@@ -834,6 +835,94 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldTakeValuesOfNonEditableFieldsFromTrustedValues() {
+        var technicalField = new TextInputElement();
+        technicalField.setId("route");
+        technicalField.setTechnical(true);
+        var disabledField = new TextInputElement();
+        disabledField.setId("amount");
+        disabledField.setDisabled(true);
+        var untrustedField = new TextInputElement();
+        untrustedField.setId("fee");
+        untrustedField.setTechnical(true);
+        var editableField = new TextInputElement();
+        editableField.setId("name");
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("route", "forged");
+        authoredValues.putLiteral("amount", "1");
+        authoredValues.putLiteral("fee", "0");
+        authoredValues.putLiteral("name", "Erika");
+        var trustedValues = new AuthoredElementValues();
+        trustedValues.putLiteral("route", "internal");
+        trustedValues.putLiteral("amount", "100");
+        trustedValues.putLiteral("name", "Ada");
+
+        var result = derive(
+                createRoot(List.of(technicalField, disabledField, untrustedField, editableField)),
+                authoredValues,
+                new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                        .setTrustedAuthoredValues(trustedValues)
+        );
+
+        assertEquals("internal", result.getEffectiveValues().get("route"));
+        assertEquals("100", result.getEffectiveValues().get("amount"));
+        assertNull(result.getEffectiveValues().get("fee"));
+        assertEquals("Erika", result.getEffectiveValues().get("name"));
+    }
+
+    @Test
+    void shouldMatchTrustedValuesOfNonEditableFieldsInRowsByRowId() {
+        var amount = new TextInputElement();
+        amount.setId("amount");
+        amount.setDisabled(true);
+        var note = new TextInputElement();
+        note.setId("note");
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(List.of(amount, note));
+        var trustedValues = new AuthoredElementValues();
+        trustedValues.putLiteral("rows", List.of(
+                rowValue("row-1", "amount", "100"),
+                rowValue("row-2", "amount", "5")
+        ));
+        // The customer removed the first row, changed the amount of the second one and added a row.
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("rows", List.of(
+                rowValue("row-2", "amount", "999", "note", "B"),
+                rowValue("row-new", "amount", "7", "note", "C")
+        ));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                        .setTrustedAuthoredValues(trustedValues)
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var keptRow = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, effectiveRows.get(0));
+        assertEquals("row-2", keptRow.getId());
+        assertEquals("5", keptRow.getValues().get("amount"));
+        assertEquals("B", keptRow.getValues().get("note"));
+        var addedRow = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, effectiveRows.get(1));
+        assertNull(addedRow.getValues().get("amount"));
+        assertEquals("C", addedRow.getValues().get("note"));
+    }
+
+    @Test
+    void shouldNotReadCustomerInputProtectionFromJson() throws Exception {
+        var options = JsonMapperTestUtils.createMapper().readValue(
+                "{\"ignoreAuthoredValuesOfNonEditableInputs\":true,\"trustedAuthoredValues\":{}}",
+                ElementDerivationOptions.class
+        );
+
+        assertFalse(options.isIgnoreAuthoredValuesOfNonEditableInputs());
+        assertNull(options.getTrustedAuthoredValues());
+    }
+
+    @Test
     void shouldKeepAuthoredValuesForTechnicalFieldsWithoutCustomerInputProtection() {
         var technicalField = new TextInputElement();
         technicalField.setId("route");
@@ -852,9 +941,15 @@ class ElementDerivationServiceTest {
 
     @Test
     void shouldPassCustomerInputProtectionToChildElements() {
-        var options = new ElementDerivationOptions().setIgnoreAuthoredValuesOfNonEditableInputs(true);
+        var trustedValues = new AuthoredElementValues();
+        var options = new ElementDerivationOptions()
+                .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                .setTrustedAuthoredValues(trustedValues);
 
-        assertTrue(options.copyForUseInChild("container").isIgnoreAuthoredValuesOfNonEditableInputs());
+        var childOptions = options.copyForUseInChild("container");
+
+        assertTrue(childOptions.isIgnoreAuthoredValuesOfNonEditableInputs());
+        assertSame(trustedValues, childOptions.getTrustedAuthoredValues());
     }
 
     @Test
@@ -1332,5 +1427,13 @@ class ElementDerivationServiceTest {
         root.setId("root");
         root.setChildren(new LinkedList<BaseStepElement>(List.of(step)));
         return root;
+    }
+
+    private static ReplicatingContainerLayoutElementValue rowValue(String id, String... keysAndValues) {
+        var values = new AuthoredElementValues();
+        for (var index = 0; index < keysAndValues.length; index += 2) {
+            values.putLiteral(keysAndValues[index], keysAndValues[index + 1]);
+        }
+        return new ReplicatingContainerLayoutElementValue().setId(id).setValues(values);
     }
 }

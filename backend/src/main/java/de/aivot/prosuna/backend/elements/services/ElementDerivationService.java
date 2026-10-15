@@ -281,14 +281,18 @@ public class ElementDerivationService {
             var childRowValuesAlreadyResolved = valuesAlreadyResolved;
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
                 // Customers cannot fill disabled or technical inputs. When their input is derived, values sent for such
-                // inputs anyway are ignored, so the computed value or no value is used, as if the input was untouched.
+                // inputs anyway are ignored. The input takes its value from trusted server data, such as the process data
+                // a task is prefilled with, or else the computed value or no value, as if the input was untouched.
                 // Rows a container computed on the server are no customer input, so their values are kept.
-                var ignoreAuthoredValue = options.isIgnoreAuthoredValuesOfNonEditableInputs()
+                var protectedInput = options.isIgnoreAuthoredValuesOfNonEditableInputs()
                         && !valuesAlreadyResolved
                         && isNonEditableInput(inputElement);
-                var hasAuthoredValue = !ignoreAuthoredValue && authoredElementValues
+                var valueSource = protectedInput
+                        ? options.getTrustedAuthoredValues()
+                        : authoredElementValues;
+                var hasAuthoredValue = valueSource != null && valueSource
                         .containsKey(currentElement.getId());
-                var authoredValue = ignoreAuthoredValue ? null : authoredElementValues
+                var authoredValue = valueSource == null ? null : valueSource
                         .getOrDefault(currentElement.getId(), null);
 
                 var resolvedValue = deriveEffectiveValue(
@@ -385,6 +389,16 @@ public class ElementDerivationService {
                             // Row-local effective values must be rebuilt from visible descendants only.
                             var childEffectiveElementValues = new EffectiveElementValues();
 
+                            var rowOptions = childOptions;
+                            if (childOptions.getTrustedAuthoredValues() != null) {
+                                rowOptions = childOptions
+                                        .copyForUseInChild(replicatingContainer.getId())
+                                        .setTrustedAuthoredValues(findTrustedRowValues(
+                                                childOptions.getTrustedAuthoredValues().getLiteral(replicatingContainer.getId()),
+                                                effectiveChildDataSet.getId()
+                                        ));
+                            }
+
                             for (var currentChildElement : replicatingContainer.getChildren()) {
                                 derive(
                                         javascriptEngine,
@@ -396,7 +410,7 @@ public class ElementDerivationService {
                                         childAuthoredElementValues,
                                         childEffectiveElementValues,
                                         childItemElementStates,
-                                        childOptions,
+                                        rowOptions,
                                         isVisible,
                                         identities,
                                         logger,
@@ -696,6 +710,26 @@ public class ElementDerivationService {
         }
 
         return true;
+    }
+
+    /**
+     * Finds the trusted values of a replicating container row by its ID, so they stay with their row when the customer
+     * removes or reorders rows. A row without a trusted counterpart, for example one the customer added, gets none.
+     */
+    @Nonnull
+    private static AuthoredElementValues findTrustedRowValues(@Nullable Object trustedRows,
+                                                              @Nullable String rowId) {
+        if (rowId != null && trustedRows instanceof List<?> rows) {
+            for (var row : rows) {
+                if (row instanceof ReplicatingContainerLayoutElementValue trustedRow
+                        && rowId.equals(trustedRow.getId())
+                        && trustedRow.getValues() != null) {
+                    return trustedRow.getValues();
+                }
+            }
+        }
+
+        return new AuthoredElementValues();
     }
 
     private static boolean isNonEditableInput(@Nonnull InputElement<?> inputElement) {
