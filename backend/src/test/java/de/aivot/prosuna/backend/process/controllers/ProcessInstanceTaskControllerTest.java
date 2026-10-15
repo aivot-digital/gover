@@ -96,7 +96,7 @@ class ProcessInstanceTaskControllerTest {
 
         when(processInstanceTaskService.retrieve(task.getId())).thenReturn(Optional.of(task));
         when(userService.fromJWT(jwt)).thenReturn(Optional.of(user));
-        when(restartService.rerunFailedTask(task.getProcessInstanceId(), task.getId())).thenReturn(restarted);
+        when(restartService.rerunFailedTask(task.getProcessInstanceId(), task.getId(), user)).thenReturn(restarted);
 
         var result = controller.rerunFailedTask(jwt, task.getId());
 
@@ -104,7 +104,7 @@ class ProcessInstanceTaskControllerTest {
         var order = inOrder(permissionService, restartService);
         order.verify(permissionService).requireProcessInstancePermission("user-1", task.getProcessInstanceId(),
                 ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK);
-        order.verify(restartService).rerunFailedTask(task.getProcessInstanceId(), task.getId());
+        order.verify(restartService).rerunFailedTask(task.getProcessInstanceId(), task.getId(), user);
     }
 
     @Test

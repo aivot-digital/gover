@@ -177,8 +177,9 @@ public class ProcessInstanceTaskController {
 
     @PutMapping("{id}/rerun-failed/")
     @Operation(
-            summary = "Update Process Instance Task",
-            description = "Rerun a failed process instance task. Requires the permission `" +
+            summary = "Rerun Failed Process Instance Task",
+            description = "Rerun a failed process instance task. A failed process instance is set back to running. " +
+                    "Tasks of completed or aborted process instances cannot be rerun (409). Requires the permission `" +
                     ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK +
                     "` for the affected process instance or at system level."
     )
@@ -204,6 +205,6 @@ public class ProcessInstanceTaskController {
                 ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK
         );
 
-        return restartService.rerunFailedTask(taskEntity.getProcessInstanceId(), taskEntity.getId());
+        return restartService.rerunFailedTask(taskEntity.getProcessInstanceId(), taskEntity.getId(), user);
     }
 }

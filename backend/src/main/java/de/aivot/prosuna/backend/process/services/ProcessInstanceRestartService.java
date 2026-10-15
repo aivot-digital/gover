@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.audit.enums.AuditAction;
+import de.aivot.prosuna.backend.audit.services.AuditService;
+import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -9,11 +12,15 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessWorkRequestRepository;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -30,6 +37,7 @@ public class ProcessInstanceRestartService {
     private final ProcessTaskExecutionService execution;
     private final ProcessNodeExecutionLoggerFactory loggers;
     private final EntityManager entityManager;
+    private final ScopedAuditService audit;
 
     public ProcessInstanceRestartService(@Nonnull ProcessInstanceRepository instances,
                                          @Nonnull ProcessInstanceTaskRepository tasks,
@@ -37,7 +45,8 @@ public class ProcessInstanceRestartService {
                                          @Nonnull ProcessWorkRequestService workRequests,
                                          @Nonnull ProcessTaskExecutionService execution,
                                          @Nonnull ProcessNodeExecutionLoggerFactory loggers,
-                                         @Nonnull EntityManager entityManager) {
+                                         @Nonnull EntityManager entityManager,
+                                         @Nonnull AuditService auditService) {
         this.instances = instances;
         this.tasks = tasks;
         this.requests = requests;
@@ -45,6 +54,7 @@ public class ProcessInstanceRestartService {
         this.execution = execution;
         this.loggers = loggers;
         this.entityManager = entityManager;
+        this.audit = auditService.createScopedAuditService(ProcessInstanceRestartService.class, "Vorgänge");
     }
 
     /**
@@ -96,9 +106,13 @@ public class ProcessInstanceRestartService {
         }));
     }
 
-    /** Runs a failed task again. A failed instance runs again as well. */
+    /**
+     * Runs a failed task again. A failed instance runs again as well. The audit entry and the history entry commit
+     * together with the status changes.
+     */
     @Nonnull
-    public ProcessInstanceTaskEntity rerunFailedTask(@Nonnull Long instanceId, @Nonnull Long taskId) throws ResponseException {
+    public ProcessInstanceTaskEntity rerunFailedTask(@Nonnull Long instanceId, @Nonnull Long taskId,
+                                                     @Nonnull UserEntity actor) throws ResponseException {
         return Objects.requireNonNull(execution.inInstance(instanceId, () -> {
             var task = tasks.findById(taskId).orElseThrow(ResponseException::notFound);
             var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
@@ -118,13 +132,40 @@ public class ProcessInstanceRestartService {
                 throw ResponseException.conflict("Die Aufgabe kann derzeit nicht erneut ausgeführt werden.");
             }
             var now = Instant.now();
-            if (instance.getStatus() == ProcessInstanceStatus.Failed) {
+            var oldState = new HashMap<String, Object>();
+            var newState = new HashMap<String, Object>();
+            var instanceFailed = instance.getStatus() == ProcessInstanceStatus.Failed;
+            if (instanceFailed) {
                 // Requests of a failed instance are held until it runs again.
                 workRequests.redispatchAfterCommit(requests.findIdsByProcessInstanceId(instanceId));
                 instances.save(instance.setStatus(ProcessInstanceStatus.Running).setUpdated(now));
+                oldState.put("processInstanceStatus", ProcessInstanceStatus.Failed);
+                newState.put("processInstanceStatus", ProcessInstanceStatus.Running);
             }
             var restarted = tasks.save(task.setStatus(ProcessTaskStatus.Restarted).setUpdated(now));
             workRequests.enqueueRestart(instanceId, taskId);
+            oldState.put("status", ProcessTaskStatus.Failed);
+            newState.put("status", ProcessTaskStatus.Restarted);
+
+            loggers.create(instanceId, taskId, actor.getId(), null).logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Aufgabe neu gestartet",
+                    instanceFailed
+                            ? "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet. Der fehlgeschlagene Vorgang wird fortgesetzt."
+                            : "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet."
+            );
+            audit.create().withUser(actor).withAuditAction(AuditAction.Update, ProcessInstanceTaskEntity.class, taskId,
+                            "id", Map.of("id", taskId, "processInstanceId", instanceId))
+                    .withDiff(oldState, newState)
+                    .withMessage(
+                            "Die fehlgeschlagene Aufgabe mit der ID %s im Vorgang mit der ID %s wurde von der Mitarbeiter:in %s neu gestartet.",
+                            StringUtils.quote(String.valueOf(taskId)),
+                            StringUtils.quote(String.valueOf(instanceId)),
+                            StringUtils.quote(actor.getFullName())
+                    )
+                    .logRequired();
             return restarted;
         }));
     }
