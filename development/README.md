@@ -307,7 +307,11 @@ You can access the RabbitMQ management web interface at [http://localhost:15672]
 You can find these credentials in the `./development/compose.yml` file under `services.message-broker.environment`.
 
 RabbitMQ holds no state that Prosuna depends on. Pending background work is stored in the database, and Prosuna publishes it again when the broker starts empty, so the `rabbitmq_data` volume can be removed at any time.
-Queues that are no longer used, such as `do-work-on-instance-queue`, `resume-work-on-instance-queue`, or `process-task-deadline-continuation-queue`, can be deleted in the management web interface.
+
+Earlier builds of the 5.0 development line kept pending work only in the queues `do-work-on-instance-queue`, `resume-work-on-instance-queue`, and `process-task-deadline-continuation-queue`, and code list requests only as messages in `do-work-on-code-list-queue`.
+These messages are not converted.
+Before switching an environment that ran such a build to this version, stop starting new work and wait until these queues are empty, or recreate the environment.
+Afterwards, the three process queues are no longer used and can be deleted in the management web interface.
 
 ## 4 Development
 
