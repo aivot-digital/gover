@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -134,18 +135,9 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     ) throws ResponseException {
         validateMaxFileSize(entity);
 
+        // A resynchronization is requested through requestSync, not by sending the pending status.
         if (existingEntity.getSystemProvider()) {
-            if (entity.getStatus() == StorageProviderStatus.SyncPending) {
-                var res = storageProviderRepository.save(
-                        existingEntity
-                                .setStatus(StorageProviderStatus.SyncPending)
-                );
-                storageSyncWorker.publish(res.getId());
-
-                return res;
-            } else {
-                throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
-            }
+            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
         }
 
         var def = storageProviderDefinitionService
@@ -168,12 +160,12 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         existingEntity.setTestProvider(entity.getTestProvider());
         existingEntity.setMetadataAttributes(entity.getMetadataAttributes());
 
-        // A requested resynchronization is stored like a changed configuration, so it is published again if lost.
-        var shouldResync = shouldResync(def, existingEntity, entity)
-                || entity.getStatus() == StorageProviderStatus.SyncPending;
+        var shouldResync = shouldResync(def, existingEntity, entity);
 
         if (shouldResync) {
-            existingEntity.setStatus(StorageProviderStatus.SyncPending);
+            existingEntity
+                    .setStatus(StorageProviderStatus.SyncPending)
+                    .setStatusMessage(null);
         }
 
         // Assign this here to prevent resync check failing due to overwritten data
@@ -185,15 +177,28 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         var res = storageProviderRepository
                 .save(existingEntity);
 
-        if (entity.getStatus() == StorageProviderStatus.SyncPending) {
-            existingEntity.setStatusMessage(null); // Reset the status message
-        }
-
         if (shouldResync) {
             storageSyncWorker.publish(res.getId());
         }
 
         return res;
+    }
+
+    /**
+     * Requests a resynchronization of a provider, including a system provider. The request is stored as the pending
+     * status, so it is published again if the message is lost.
+     */
+    @Nonnull
+    public StorageProviderEntity requestSync(@Nonnull Integer id) throws ResponseException {
+        if (storageProviderRepository.requestSync(id, Instant.now()) != 1) {
+            throw ResponseException.notFound();
+        }
+
+        storageSyncWorker.publish(id);
+
+        return storageProviderRepository
+                .findById(id)
+                .orElseThrow(ResponseException::notFound);
     }
 
     private <T> boolean shouldResync(@Nonnull StorageProviderDefinition<T> def,

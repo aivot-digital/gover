@@ -9,7 +9,6 @@ import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.storage.entities.StorageIndexItemEntity;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
-import de.aivot.prosuna.backend.storage.enums.StorageProviderStatus;
 import de.aivot.prosuna.backend.storage.exceptions.StorageException;
 import de.aivot.prosuna.backend.storage.filters.StorageProviderFilter;
 import de.aivot.prosuna.backend.storage.models.StorageProviderDefinition;
@@ -221,13 +220,7 @@ public class StorageProviderController {
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
-        var storageProvider = storageProviderService
-                .retrieve(id)
-                .orElseThrow(ResponseException::notFound);
-
-        // Updating the status to pending stores the resynchronization request and publishes it.
-        var updated = storageProviderService
-                .update(id, storageProvider.setStatus(StorageProviderStatus.SyncPending));
+        var updated = storageProviderService.requestSync(id);
 
         auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, StorageProviderEntity.class, updated.getId(), "id", Map.of(
                         "id", updated.getId(),
