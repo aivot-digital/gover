@@ -514,16 +514,20 @@ public class WebhookTriggerControllerV1 {
             return;
         }
 
-        if (config.authConfig == null) {
-            return;
-        }
-
-        if (config.authConfig.authMethod == null) {
+        // Publishing validates the authentication settings, but drafts run through a test claim are not validated.
+        // Incomplete settings must therefore reject calls instead of skipping the check or matching empty credentials.
+        if (config.authConfig == null || StringUtils.isNullOrEmpty(config.authConfig.authMethod)) {
+            if (Boolean.TRUE.equals(config.authRequired)) {
+                throw incompleteAuthenticationException();
+            }
             return;
         }
 
         switch (config.authConfig.authMethod) {
             case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC:
+                if (StringUtils.isNullOrEmpty(config.authConfig.authUsername) || StringUtils.isNullOrEmpty(config.authConfig.authPassword)) {
+                    throw incompleteAuthenticationException();
+                }
                 if (authHeader == null || !authHeader.startsWith("Basic ")) {
                     throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Trigger-Knoten.");
                 }
@@ -547,6 +551,9 @@ public class WebhookTriggerControllerV1 {
                 break;
              */
             case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM:
+                if (StringUtils.isNullOrEmpty(config.authConfig.authToken)) {
+                    throw incompleteAuthenticationException();
+                }
                 if (tokenQueryParam == null || !tokenQueryParam.equals(config.authConfig.authToken)) {
                     throw ResponseException.unauthorized("Ungültiger Token für den Webhook-Trigger-Knoten.");
                 }
@@ -554,6 +561,11 @@ public class WebhookTriggerControllerV1 {
             default:
                 throw ResponseException.internalServerError("Die Authentifizierungsmethode des Webhook-Trigger-Knotens ist ungültig.");
         }
+    }
+
+    @Nonnull
+    private static ResponseException incompleteAuthenticationException() {
+        return ResponseException.internalServerError("Die Authentifizierung des Webhook-Trigger-Knotens ist nicht vollständig eingerichtet.");
     }
 
     public record Response(String message) {
