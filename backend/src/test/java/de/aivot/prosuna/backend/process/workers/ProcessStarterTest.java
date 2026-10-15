@@ -17,10 +17,14 @@ import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.QueryTimeoutException;
 
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -94,11 +98,57 @@ class ProcessStarterTest {
         var other = new ProcessInstanceEntity().setId(8L).setProcessId(1).setInitialNodeId(11)
                 .setStatus(ProcessInstanceStatus.Created);
         when(instances.findAllByStatus(ProcessInstanceStatus.Created)).thenReturn(List.of(other, instance));
-        doThrow(new IllegalStateException("lock timeout")).when(execution).inInstance(eq(8L), any());
+        doThrow(new CannotAcquireLockException("lock timeout")).when(execution).inInstance(eq(8L), any());
 
         starter.startProcesses();
 
+        // The lock timeout is transient, so the instance remains created and is started by a later run.
         assertEquals(ProcessInstanceStatus.Created, other.getStatus());
+        verify(execution, times(1)).inInstance(eq(8L), any());
         verify(workRequests).enqueueStart(7L);
+    }
+
+    @Test
+    void failureInTheStartTransactionFailsTheInstanceInANewTransaction() throws Exception {
+        // The start's transaction rolls back, so the second transaction reads the instance as still created.
+        var rolledBack = new ProcessInstanceEntity().setId(7L).setProcessId(1).setInitialNodeId(11)
+                .setStatus(ProcessInstanceStatus.Created);
+        when(instances.findById(7L)).thenReturn(Optional.of(instance), Optional.of(rolledBack));
+        // A failure thrown through a transactional proxy leaves the start's transaction rollback-only.
+        var failure = new DataIntegrityViolationException("could not insert the start request");
+        doThrow(failure).when(workRequests).enqueueStart(7L);
+
+        starter.startProcesses();
+
+        assertEquals(ProcessInstanceStatus.Failed, rolledBack.getStatus());
+        verify(execution, times(2)).inInstance(eq(7L), any());
+        var order = inOrder(instances, logger);
+        order.verify(instances).save(rolledBack);
+        order.verify(logger).logException(failure);
+    }
+
+    @Test
+    void failureToWriteTheHistoryDoesNotKeepTheInstanceCreated() {
+        when(nodes.findById(11)).thenReturn(Optional.empty());
+        doThrow(new IllegalStateException("history unavailable")).when(logger).logException(any(Exception.class));
+
+        assertDoesNotThrow(starter::startProcesses);
+
+        assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
+        verify(instances).save(instance);
+    }
+
+    @Test
+    void transientDatabaseFailureKeepsTheInstanceCreated() throws Exception {
+        var rolledBack = new ProcessInstanceEntity().setId(7L).setProcessId(1).setInitialNodeId(11)
+                .setStatus(ProcessInstanceStatus.Created);
+        when(instances.findById(7L)).thenReturn(Optional.of(instance), Optional.of(rolledBack));
+        doThrow(new QueryTimeoutException("database busy")).when(workRequests).enqueueStart(7L);
+
+        starter.startProcesses();
+
+        assertEquals(ProcessInstanceStatus.Created, rolledBack.getStatus());
+        verify(execution, times(1)).inInstance(eq(7L), any());
+        verify(logger, never()).logException(any(Exception.class));
     }
 }

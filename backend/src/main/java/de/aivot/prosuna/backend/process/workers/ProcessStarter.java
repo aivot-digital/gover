@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
+import de.aivot.prosuna.backend.utils.DatabaseFailureUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
@@ -66,16 +67,20 @@ public class ProcessStarter {
                 });
             } catch (ResponseException exception) {
                 // The instance was deleted before it could be started.
-            } catch (Exception exception) {
-                // The instance remains created, so the next run tries to start it again.
-                logger.error("Could not start process instance {}", processInstance.getId(), exception);
+            } catch (RuntimeException exception) {
+                if (DatabaseFailureUtils.isTransient(exception)) {
+                    // The instance remains created, so the next run tries to start it again.
+                    logger.warn("Could not start process instance {}; it is started again later", processInstance.getId(), exception);
+                } else {
+                    recordFailedStart(processInstance.getId(), exception);
+                }
             }
         }
     }
 
     /**
      * Starting the instance and requesting its first task commit together, so a lost message cannot strand a
-     * running instance without tasks.
+     * running instance without tasks. Any failure rolls back the start; the caller records it separately.
      */
     private void startLocked(@Nonnull Long processInstanceId) {
         var processInstance = processInstanceRepository
@@ -89,36 +94,69 @@ public class ProcessStarter {
         var logger = processNodeExecutionLoggerFactory
                 .create(processInstance.getId(), null, null, null);
 
+        var initialNode = processDefinitionNodeRepository
+                .findById(processInstance.getInitialNodeId())
+                .orElseThrow(RuntimeException::new);
+
+        var process = processDefinitionRepository
+                .findById(processInstance.getProcessId())
+                .orElseThrow(RuntimeException::new);
+
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(initialNode.getProcessNodeDefinitionKey(), initialNode.getProcessNodeDefinitionVersion())
+                .orElseThrow(RuntimeException::new);
+
+        processInstance.setStatus(ProcessInstanceStatus.Running);
+        processInstanceRepository.save(processInstance);
+        workRequests.enqueueStart(processInstance.getId());
+
+        logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                true,
+                true,
+                "Neuer Vorgang " + StringUtils.quote(process.getInternalTitle()) + " gestartet",
+                "Ein neuer Vorgang für den Prozess %s wurde gestartet. Die erste Aufgabe wird für das Prozesselement %s gestartet.",
+                StringUtils.quote(process.getInternalTitle()),
+                StringUtils.quote(initialNode.resolveName(provider))
+        );
+    }
+
+    /**
+     * Fails an instance whose start failed in a new transaction, because a failure inside the start's transaction can
+     * leave it rollback-only and would keep the instance created, so every run would try to start it again. The
+     * failure is written to the history separately, so an error while writing it cannot keep the instance created.
+     */
+    private void recordFailedStart(@Nonnull Long processInstanceId, @Nonnull RuntimeException failure) {
         try {
-            var initialNode = processDefinitionNodeRepository
-                    .findById(processInstance.getInitialNodeId())
-                    .orElseThrow(RuntimeException::new);
+            var failed = execution.inInstance(processInstanceId, () -> {
+                var processInstance = processInstanceRepository
+                        .findById(processInstanceId)
+                        .orElse(null);
+                if (processInstance == null || processInstance.getStatus() != ProcessInstanceStatus.Created) {
+                    return false;
+                }
+                processInstanceRepository.save(processInstance.setStatus(ProcessInstanceStatus.Failed));
+                return true;
+            });
+            if (!Boolean.TRUE.equals(failed)) {
+                return;
+            }
+        } catch (ResponseException exception) {
+            // The instance was deleted in the meantime.
+            return;
+        } catch (RuntimeException exception) {
+            failure.addSuppressed(exception);
+            logger.error("Could not record that process instance {} failed to start", processInstanceId, failure);
+            return;
+        }
 
-            var process = processDefinitionRepository
-                    .findById(processInstance.getProcessId())
-                    .orElseThrow(RuntimeException::new);
-
-            var provider = processNodeProviderService
-                    .getProcessNodeDefinition(initialNode.getProcessNodeDefinitionKey(), initialNode.getProcessNodeDefinitionVersion())
-                    .orElseThrow(RuntimeException::new);
-
-            processInstance.setStatus(ProcessInstanceStatus.Running);
-            processInstanceRepository.save(processInstance);
-            workRequests.enqueueStart(processInstance.getId());
-
-            logger.logf(
-                    ProcessNodeExecutionLogLevel.Info,
-                    true,
-                    true,
-                    "Neuer Vorgang " + StringUtils.quote(process.getInternalTitle()) + " gestartet",
-                    "Ein neuer Vorgang für den Prozess %s wurde gestartet. Die erste Aufgabe wird für das Prozesselement %s gestartet.",
-                    StringUtils.quote(process.getInternalTitle()),
-                    StringUtils.quote(initialNode.resolveName(provider))
-            );
-        } catch (Exception e) {
-            logger.logException(e);
-            processInstance.setStatus(ProcessInstanceStatus.Failed);
-            processInstanceRepository.save(processInstance);
+        try {
+            processNodeExecutionLoggerFactory
+                    .create(processInstanceId, null, null, null)
+                    .logException(failure);
+        } catch (RuntimeException exception) {
+            failure.addSuppressed(exception);
+            logger.error("Could not record why process instance {} failed to start", processInstanceId, failure);
         }
     }
 }
