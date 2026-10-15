@@ -18,6 +18,8 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.Clock;
 import java.time.ZoneOffset;
@@ -48,7 +50,18 @@ class ProcessTaskExecutionServiceTest {
 
     @BeforeEach
     void setup() {
-        var source = new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=5000", "sa", "");
+        var source = new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=5000", "sa", "") {
+            @Override
+            protected Connection getConnectionFromDriver(String username, String password) throws SQLException {
+                // Hibernate opens application connections with REPEATABLE READ (see application.yml), which
+                // PostgreSQL implements as snapshot isolation. H2 provides these semantics as SNAPSHOT.
+                var connection = super.getConnectionFromDriver(username, password);
+                try (var statement = connection.createStatement()) {
+                    statement.execute("SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SNAPSHOT");
+                }
+                return connection;
+            }
+        };
         jdbc = new JdbcTemplate(source);
         jdbc.execute("create table instances (id bigint primary key)");
         jdbc.execute("create table tasks (id bigint primary key, status varchar(40))");
@@ -176,5 +189,39 @@ class ProcessTaskExecutionServiceTest {
         }
         assertEquals("Completed", jdbc.queryForObject("select status from tasks where id = 2", String.class));
         verifyNoInteractions(workRequests, rabbit, logger);
+    }
+
+    @Test
+    void operationReadsWorkCommittedWhileItWaitedForTheLock() throws Exception {
+        var locked = new CountDownLatch(1);
+        var finish = new CountDownLatch(1);
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            // Like a completed task that queues the transition to the next element before its request commits.
+            var request = pool.submit(() -> execution.inInstance(1L, () -> {
+                locked.countDown();
+                try { assertTrue(finish.await(5, TimeUnit.SECONDS)); }
+                catch (InterruptedException exception) { throw new IllegalStateException(exception); }
+                jdbc.update("update tasks set status = 'Completed' where id = 2");
+                return null;
+            }));
+            assertTrue(locked.await(5, TimeUnit.SECONDS));
+            var worker = pool.submit(() -> execution.inInstance(1L,
+                    () -> jdbc.queryForObject("select status from tasks where id = 2", String.class)));
+            awaitBlockedSession();
+            finish.countDown();
+            request.get(10, TimeUnit.SECONDS);
+            assertEquals("Completed", worker.get(10, TimeUnit.SECONDS));
+        } finally {
+            finish.countDown();
+        }
+    }
+
+    private void awaitBlockedSession() throws InterruptedException {
+        var deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (jdbc.queryForObject("select count(*) from information_schema.sessions where blocker_id is not null",
+                Integer.class) == 0) {
+            assertTrue(System.nanoTime() < deadline, "The second operation did not wait for the instance lock.");
+            Thread.sleep(10);
+        }
     }
 }
