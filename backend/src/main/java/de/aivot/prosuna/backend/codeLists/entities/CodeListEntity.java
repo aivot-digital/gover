@@ -13,6 +13,7 @@ import org.hibernate.annotations.Generated;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "code_lists")
@@ -50,6 +51,13 @@ public class CodeListEntity {
     @Nonnull
     @JsonIgnore
     private Boolean syncKeepOutdated;
+    // The run that claimed the requested synchronization and when it started. Only this run records its result.
+    @Nullable
+    @JsonIgnore
+    private UUID syncRunId;
+    @Nullable
+    @JsonIgnore
+    private Instant syncStarted;
     @Nullable
     private Instant lastSync;
     @Nonnull
@@ -100,13 +108,14 @@ public class CodeListEntity {
         return Objects.equals(key, that.key) && Objects.equals(id, that.id) && sourceType == that.sourceType && Objects.equals(sourceRef, that.sourceRef) &&
                 Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(columns, that.columns) &&
                 Objects.equals(valueColumnIndex, that.valueColumnIndex) && Objects.equals(labelColumnIndex, that.labelColumnIndex) && status == that.status &&
-                Objects.equals(statusMessage, that.statusMessage) && Objects.equals(syncKeepOutdated, that.syncKeepOutdated) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) &&
+                Objects.equals(statusMessage, that.statusMessage) && Objects.equals(syncKeepOutdated, that.syncKeepOutdated) && Objects.equals(syncRunId, that.syncRunId) &&
+                Objects.equals(syncStarted, that.syncStarted) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) &&
                 Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, id, sourceType, sourceRef, name, description, columns, valueColumnIndex, labelColumnIndex, status, statusMessage, syncKeepOutdated, lastSync, created, updated);
+        return Objects.hash(key, id, sourceType, sourceRef, name, description, columns, valueColumnIndex, labelColumnIndex, status, statusMessage, syncKeepOutdated, syncRunId, syncStarted, lastSync, created, updated);
     }
 
     @Nonnull
@@ -226,6 +235,26 @@ public class CodeListEntity {
 
     public CodeListEntity setSyncKeepOutdated(@Nonnull Boolean syncKeepOutdated) {
         this.syncKeepOutdated = syncKeepOutdated;
+        return this;
+    }
+
+    @Nullable
+    public UUID getSyncRunId() {
+        return syncRunId;
+    }
+
+    public CodeListEntity setSyncRunId(@Nullable UUID syncRunId) {
+        this.syncRunId = syncRunId;
+        return this;
+    }
+
+    @Nullable
+    public Instant getSyncStarted() {
+        return syncStarted;
+    }
+
+    public CodeListEntity setSyncStarted(@Nullable Instant syncStarted) {
+        this.syncStarted = syncStarted;
         return this;
     }
 

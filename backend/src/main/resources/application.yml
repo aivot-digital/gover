@@ -197,8 +197,9 @@ prosuna:
     batch-size: "${PROSUNA_PROCESS_WORK_BATCH_SIZE:100}"
     concurrency: "${PROSUNA_PROCESS_WORK_CONCURRENCY:1}"
   # Synchronization requests of code lists and storage providers are stored in the database.
-  # Requests still pending after the sweep interval are published again; synchronizations still
-  # running after the stale threshold were interrupted by a restart and are requested again.
+  # Requests still pending after the sweep interval are published again. A synchronization that
+  # started more than the stale threshold ago is considered interrupted, e.g. by a restart, and is
+  # taken over; the threshold must exceed the longest synchronization.
   background-sync:
     sweep-interval: "${PROSUNA_BACKGROUND_SYNC_SWEEP_INTERVAL:PT5M}"
     stale-threshold: "${PROSUNA_BACKGROUND_SYNC_STALE_THRESHOLD:PT1H}"
