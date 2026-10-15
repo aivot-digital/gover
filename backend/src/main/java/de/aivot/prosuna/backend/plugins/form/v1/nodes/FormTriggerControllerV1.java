@@ -437,7 +437,8 @@ public class FormTriggerControllerV1 {
                 .setSkipValuesForElementIds(List.of())
                 .setSkipOverridesForElementIds(List.of())
                 .setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS))
-                .setSkipVisibilitiesForElementIds(List.of());
+                .setSkipVisibilitiesForElementIds(List.of())
+                .setIgnoreAuthoredValuesOfNonEditableInputs(true);
 
         var request = new ElementDerivationRequest(
                 config.formLayout,
@@ -515,7 +516,8 @@ public class FormTriggerControllerV1 {
                 .setSkipValuesForElementIds(skipValuesFor)
                 .setSkipOverridesForElementIds(skipOverridesFor)
                 .setSkipErrorsForElementIds(skipErrorsFor)
-                .setSkipVisibilitiesForElementIds(skipVisibilitiesFor);
+                .setSkipVisibilitiesForElementIds(skipVisibilitiesFor)
+                .setIgnoreAuthoredValuesOfNonEditableInputs(true);
 
         var request = new ElementDerivationRequest(
                 config.configuration().formLayout,
@@ -573,10 +575,12 @@ public class FormTriggerControllerV1 {
 
         // Perform derivation
         var logger = new ElementDerivationLogger();
+        // Customers must not fill disabled or technical inputs, for example a computed fee, with their own values.
         var derivationRequest = new ElementDerivationRequest(
                 config.configuration().formLayout,
                 inputs,
                 new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
         );
         var derivedRuntimeElementData = elementDerivationService
                 .derive(derivationRequest, identities, logger);
@@ -693,6 +697,7 @@ public class FormTriggerControllerV1 {
                             form,
                             normalizedInputs,
                             new ElementDerivationOptions()
+                                    .setIgnoreAuthoredValuesOfNonEditableInputs(true)
                     ),
                     identities,
                     new ElementDerivationLogger()

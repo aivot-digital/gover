@@ -280,9 +280,13 @@ public class ElementDerivationService {
 
             var childRowValuesAlreadyResolved = valuesAlreadyResolved;
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
-                var hasAuthoredValue = authoredElementValues
+                // Customers cannot fill disabled or technical inputs. When their input is derived, values sent for such
+                // inputs anyway are ignored, so the computed value or no value is used, as if the input was untouched.
+                var ignoreAuthoredValue = options.isIgnoreAuthoredValuesOfNonEditableInputs()
+                        && isNonEditableInput(inputElement);
+                var hasAuthoredValue = !ignoreAuthoredValue && authoredElementValues
                         .containsKey(currentElement.getId());
-                var authoredValue = authoredElementValues
+                var authoredValue = ignoreAuthoredValue ? null : authoredElementValues
                         .getOrDefault(currentElement.getId(), null);
 
                 var resolvedValue = deriveEffectiveValue(
@@ -690,6 +694,12 @@ public class ElementDerivationService {
         }
 
         return true;
+    }
+
+    private static boolean isNonEditableInput(@Nonnull InputElement<?> inputElement) {
+        return Boolean.TRUE.equals(inputElement.getDisabled())
+                || (inputElement instanceof BaseInputElement<?> baseInputElement
+                && Boolean.TRUE.equals(baseInputElement.getTechnical()));
     }
 
     /**

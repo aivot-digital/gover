@@ -716,6 +716,94 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldIgnoreCustomerValuesForTechnicalFieldsWithValueFunction() {
+        var technicalField = new TextInputElement();
+        technicalField.setId("fee");
+        technicalField.setTechnical(true);
+        technicalField.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("25")));
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("fee", "0");
+
+        var result = derive(
+                createRoot(List.of(technicalField)),
+                authoredValues,
+                new ElementDerivationOptions().setIgnoreAuthoredValuesOfNonEditableInputs(true)
+        );
+
+        assertEquals("25", result.getEffectiveValues().get("fee"));
+        assertEquals(EffectiveValueSource.Derived, result.getElementStates().get("fee").getValueSource());
+    }
+
+    @Test
+    void shouldIgnoreCustomerValuesForNonEditableFieldsWithoutValueFunction() {
+        var technicalField = new TextInputElement();
+        technicalField.setId("route");
+        technicalField.setTechnical(true);
+        var disabledField = new TextInputElement();
+        disabledField.setId("amount");
+        disabledField.setDisabled(true);
+        var editableField = new TextInputElement();
+        editableField.setId("name");
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("route", "forged");
+        authoredValues.putLiteral("amount", "1");
+        authoredValues.putLiteral("name", "Erika");
+
+        var result = derive(
+                createRoot(List.of(technicalField, disabledField, editableField)),
+                authoredValues,
+                new ElementDerivationOptions().setIgnoreAuthoredValuesOfNonEditableInputs(true)
+        );
+
+        assertNull(result.getEffectiveValues().get("route"));
+        assertNull(result.getEffectiveValues().get("amount"));
+        assertEquals("Erika", result.getEffectiveValues().get("name"));
+    }
+
+    @Test
+    void shouldIgnoreCustomerValuesForNonEditableFieldsEvenWhenTheirValuesAreSkipped() {
+        var disabledField = new TextInputElement();
+        disabledField.setId("amount");
+        disabledField.setDisabled(true);
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("amount", "1");
+
+        var result = derive(
+                createRoot(List.of(disabledField)),
+                authoredValues,
+                new ElementDerivationOptions()
+                        .setSkipValuesForElementIds(List.of("amount"))
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+        );
+
+        assertNull(result.getEffectiveValues().get("amount"));
+    }
+
+    @Test
+    void shouldKeepAuthoredValuesForTechnicalFieldsWithoutCustomerInputProtection() {
+        var technicalField = new TextInputElement();
+        technicalField.setId("route");
+        technicalField.setTechnical(true);
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("route", "stored");
+
+        var result = derive(
+                createRoot(List.of(technicalField)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("stored", result.getEffectiveValues().get("route"));
+    }
+
+    @Test
+    void shouldPassCustomerInputProtectionToChildElements() {
+        var options = new ElementDerivationOptions().setIgnoreAuthoredValuesOfNonEditableInputs(true);
+
+        assertTrue(options.copyForUseInChild("container").isIgnoreAuthoredValuesOfNonEditableInputs());
+    }
+
+    @Test
     void shouldKeepEmptyNoCodeValidationMessageAsErrorMarker() {
         var field = new TextInputElement();
         field.setId("field");
