@@ -195,7 +195,8 @@ prosuna:
     dispatch-interval: "${PROSUNA_PROCESS_WORK_DISPATCH_INTERVAL:PT30S}"
     redispatch-interval: "${PROSUNA_PROCESS_WORK_REDISPATCH_INTERVAL:PT5M}"
     batch-size: "${PROSUNA_PROCESS_WORK_BATCH_SIZE:100}"
-    concurrency: "${PROSUNA_PROCESS_WORK_CONCURRENCY:1}"
+    # Consumers lock the process instance, so work on the same instance never runs concurrently.
+    concurrency: "${PROSUNA_PROCESS_WORK_CONCURRENCY:4}"
   # Synchronization requests of code lists and storage providers are stored in the database.
   # Requests still pending after the sweep interval are published again. A synchronization that
   # started more than the stale threshold ago is considered interrupted, e.g. by a restart, and is

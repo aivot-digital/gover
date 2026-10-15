@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.repositories;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.process.entities.ProcessWorkRequestEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessWorkRequestKind;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ class ProcessWorkRequestRepositoryTest {
     private static final Instant DISPATCHED_BEFORE = Instant.parse("2030-05-01T11:55:00Z");
     private static final List<ProcessInstanceStatus> DISPATCHABLE = List.of(ProcessInstanceStatus.Running,
             ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted);
+    private static final List<ProcessTaskStatus> HELD = List.of(ProcessTaskStatus.Paused);
     @Autowired
     private EntityManager em;
     private ProcessWorkRequestRepository requests;
@@ -41,9 +43,11 @@ class ProcessWorkRequestRepositoryTest {
     void setup() {
         sql("drop table if exists process_work_requests");
         sql("drop table if exists process_instances");
+        sql("drop table if exists process_instance_tasks");
         sql("drop sequence if exists process_work_requests_id_seq");
         // Only the columns read by the dispatch query; instance statuses use their persisted ordinals.
         sql("create table process_instances (id bigint primary key, status smallint)");
+        sql("create table process_instance_tasks (id bigint primary key, status smallint)");
         sql("""
                 create table process_work_requests (
                     id bigint primary key, kind smallint, process_instance_id bigint, task_id bigint,
@@ -54,6 +58,8 @@ class ProcessWorkRequestRepositoryTest {
         sql("create sequence process_work_requests_id_seq start with 100");
         // Created, Running, Paused, Completed, Aborted and Failed instances.
         sql("insert into process_instances values (6, 0), (1, 1), (2, 2), (4, 3), (5, 4), (3, 5)");
+        // Task statuses: 1 Paused, 2 Completed, 5 Restarted, 6 AwaitingPayment.
+        sql("insert into process_instance_tasks values (100, 2), (101, 5), (102, 6), (104, 2), (105, 2), (106, 2), (108, 1)");
         sql("""
                 insert into process_work_requests values
                     (10, 1, 1, 100, 'next', 2, '2030-05-01 11:00:00+00', null),
@@ -63,17 +69,30 @@ class ProcessWorkRequestRepositoryTest {
                     (14, 1, 3, 104, 'next', 2, '2030-05-01 11:00:00+00', null),
                     (15, 1, 4, 105, 'next', 2, '2030-05-01 11:00:00+00', null),
                     (16, 1, 5, 106, 'next', 2, '2030-05-01 11:00:00+00', null),
-                    (17, 0, 6, null, null, null, '2030-05-01 11:00:00+00', null)
+                    (17, 0, 6, null, null, null, '2030-05-01 11:00:00+00', null),
+                    (18, 3, 1, 108, null, null, '2030-05-01 11:00:00+00', null)
                 """);
         requests = new JpaRepositoryFactory(em).getRepository(ProcessWorkRequestRepository.class);
     }
 
     @Test
-    void selectsUnpublishedAndStaleRequestsOnlyForInstancesThatActOnThem() {
+    void selectsUnpublishedAndStaleRequestsOnlyForInstancesAndTasksThatActOnThem() {
         assertEquals(List.of(10L, 12L, 15L, 16L),
-                requests.findDispatchableIds(0L, DISPATCHED_BEFORE, DISPATCHABLE, PageRequest.of(0, 10)));
+                requests.findDispatchableIds(0L, DISPATCHED_BEFORE, DISPATCHABLE, HELD, PageRequest.of(0, 10)));
         assertEquals(List.of(15L, 16L),
-                requests.findDispatchableIds(12L, DISPATCHED_BEFORE, DISPATCHABLE, PageRequest.of(0, 10)));
+                requests.findDispatchableIds(12L, DISPATCHED_BEFORE, DISPATCHABLE, HELD, PageRequest.of(0, 10)));
+    }
+
+    @Test
+    void releasedRequestIsDueAgain() {
+        assertEquals(1, requests.claimDispatch(10L, DISPATCHED_BEFORE, NOW));
+        assertEquals(List.of(12L, 15L, 16L),
+                requests.findDispatchableIds(0L, DISPATCHED_BEFORE, DISPATCHABLE, HELD, PageRequest.of(0, 10)));
+
+        assertEquals(1, requests.releaseDispatch(10L));
+
+        assertEquals(List.of(10L, 12L, 15L, 16L),
+                requests.findDispatchableIds(0L, DISPATCHED_BEFORE, DISPATCHABLE, HELD, PageRequest.of(0, 10)));
     }
 
     @Test
@@ -84,8 +103,8 @@ class ProcessWorkRequestRepositoryTest {
         assertEquals(0, requests.claimDispatch(99L, DISPATCHED_BEFORE, NOW));
 
         assertEquals(List.of(12L, 15L, 16L),
-                requests.findDispatchableIds(0L, DISPATCHED_BEFORE, DISPATCHABLE, PageRequest.of(0, 10)));
-        assertEquals(8L, ((Number) em.createNativeQuery("select count(*) from process_work_requests")
+                requests.findDispatchableIds(0L, DISPATCHED_BEFORE, DISPATCHABLE, HELD, PageRequest.of(0, 10)));
+        assertEquals(9L, ((Number) em.createNativeQuery("select count(*) from process_work_requests")
                 .getSingleResult()).longValue());
     }
 
@@ -95,7 +114,7 @@ class ProcessWorkRequestRepositoryTest {
         assertFalse(requests.existsByKindAndTaskId(ProcessWorkRequestKind.Restart, 100L));
         assertTrue(requests.existsByKindAndProcessInstanceId(ProcessWorkRequestKind.Start, 2L));
         assertFalse(requests.existsByKindAndProcessInstanceId(ProcessWorkRequestKind.Start, 1L));
-        assertEquals(List.of(10L, 11L, 12L), requests.findIdsByProcessInstanceId(1L));
+        assertEquals(List.of(10L, 11L, 12L, 18L), requests.findIdsByProcessInstanceId(1L));
     }
 
     @Test

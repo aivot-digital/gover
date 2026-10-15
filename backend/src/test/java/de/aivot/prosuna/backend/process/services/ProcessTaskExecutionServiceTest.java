@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.lib.services.StoredWorkSignals;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.*;
@@ -87,7 +88,7 @@ class ProcessTaskExecutionServiceTest {
         when(edges.findByFromNodeIdAndViaPort(3, "overdue")).thenReturn(Optional.of(new ProcessEdgeEntity().setToNodeId(4).setViaPort("overdue")));
         when(loggers.create(1L, 2L, null, null)).thenReturn(logger);
         var deadlines = new ProcessTaskDeadlineService(nodes, nodeService, edges, instances, tasks, loggers,
-                new ProcessTaskDeadlineResultHandler(tasks, new ProcessWorkRequestService(workRequests, rabbit, time)), time);
+                new ProcessTaskDeadlineResultHandler(tasks, new ProcessWorkRequestService(workRequests, new StoredWorkSignals(rabbit), time)), time);
         execution = new ProcessTaskExecutionService(instances, tasks, deadlines, new DataSourceTransactionManager(source), mock(jakarta.persistence.EntityManager.class));
     }
 

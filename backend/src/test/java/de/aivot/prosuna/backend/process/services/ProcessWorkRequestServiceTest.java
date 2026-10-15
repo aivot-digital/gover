@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.lib.services.StoredWorkSignals;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.process.entities.ProcessWorkRequestEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessWorkRequestKind;
@@ -42,7 +43,7 @@ class ProcessWorkRequestServiceTest {
             ReflectionTestUtils.setField(request, "id", nextId.getAndIncrement());
             return request;
         });
-        service = new ProcessWorkRequestService(requests, rabbit, new BusinessTime(ZoneOffset.UTC, clock));
+        service = new ProcessWorkRequestService(requests, new StoredWorkSignals(rabbit), new BusinessTime(ZoneOffset.UTC, clock));
         var source = new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1", "sa", "");
         transaction = new TransactionTemplate(new DataSourceTransactionManager(source));
     }

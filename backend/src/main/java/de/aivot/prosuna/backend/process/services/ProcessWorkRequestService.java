@@ -1,13 +1,11 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.lib.services.StoredWorkSignals;
 import de.aivot.prosuna.backend.process.entities.ProcessWorkRequestEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessWorkRequestKind;
 import de.aivot.prosuna.backend.process.repositories.ProcessWorkRequestRepository;
 import jakarta.annotation.Nonnull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,16 +25,15 @@ import java.util.List;
 @Service
 public class ProcessWorkRequestService {
     public static final String QUEUE = "process-work-request-queue";
-    private static final Logger logger = LoggerFactory.getLogger(ProcessWorkRequestService.class);
 
     private final ProcessWorkRequestRepository requests;
-    private final RabbitTemplate rabbit;
+    private final StoredWorkSignals signals;
     private final BusinessTime time;
 
-    public ProcessWorkRequestService(@Nonnull ProcessWorkRequestRepository requests, @Nonnull RabbitTemplate rabbit,
+    public ProcessWorkRequestService(@Nonnull ProcessWorkRequestRepository requests, @Nonnull StoredWorkSignals signals,
                                      @Nonnull BusinessTime time) {
         this.requests = requests;
-        this.rabbit = rabbit;
+        this.signals = signals;
         this.time = time;
     }
 
@@ -82,9 +79,9 @@ public class ProcessWorkRequestService {
         publishAfterCommit(List.copyOf(requestIds));
     }
 
-    /** Publishes a request ID now. Throws if the broker rejects the message. */
-    public void publish(@Nonnull Long requestId) {
-        rabbit.convertAndSend(QUEUE, requestId);
+    /** Publishes a request ID now. Returns whether the broker accepted the message. */
+    public boolean publish(@Nonnull Long requestId) {
+        return signals.publish(QUEUE, requestId);
     }
 
     private void enqueue(@Nonnull ProcessWorkRequestEntity request) {
@@ -97,13 +94,9 @@ public class ProcessWorkRequestService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
+                // A request that cannot be published stays pending, so the dispatcher publishes it again later.
                 for (var requestId : requestIds) {
-                    try {
-                        publish(requestId);
-                    } catch (RuntimeException exception) {
-                        // The committed request stays pending, so the dispatcher publishes it again later.
-                        logger.warn("Could not publish process work request {}", requestId, exception);
-                    }
+                    publish(requestId);
                 }
             }
         });

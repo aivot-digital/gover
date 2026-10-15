@@ -12,29 +12,32 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskReposito
 import de.aivot.prosuna.backend.process.repositories.ProcessWorkRequestRepository;
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
+import de.aivot.prosuna.backend.utils.DatabaseFailureUtils;
 import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.amqp.autoconfigure.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;
-import org.springframework.dao.TransientDataAccessException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.CannotCreateTransactionException;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Publishes and runs the pending process work stored in {@code process_work_requests}.
  *
  * <p>The database rows are the only record of the work; RabbitMQ only carries their IDs. The consumer never hands
- * a failure back to the broker: a request whose work cannot run yet stays pending and is published again by the
- * dispatcher, and an unexpected failure fails the instance, so staff decide whether to restart it.
+ * a failure back to the broker: a request whose work cannot run yet, e.g. because the database is temporarily
+ * unavailable, stays pending and is published again by the dispatcher, and any other failure fails the instance, so
+ * staff decide whether to restart it.
  */
 @Service
 public class ProcessWorkRequestWorker {
@@ -43,6 +46,9 @@ public class ProcessWorkRequestWorker {
     // Completed and aborted instances are still published, so the consumer discards their requests.
     static final List<ProcessInstanceStatus> DISPATCHABLE_INSTANCE_STATUSES = List.of(ProcessInstanceStatus.Running,
             ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted);
+    // A paused task cannot be resumed, so its requests are held until it runs again instead of being declined
+    // after every redispatch interval.
+    static final List<ProcessTaskStatus> HELD_TASK_STATUSES = List.of(ProcessTaskStatus.Paused);
 
     private final ProcessWorkRequestRepository requests;
     private final ProcessWorkRequestService requestService;
@@ -54,7 +60,7 @@ public class ProcessWorkRequestWorker {
     private final int batchSize;
     private final Duration redispatchInterval;
     // A new broker connection may lead to a broker that has lost all messages, e.g. after the broker was recreated.
-    private volatile boolean publishAllPending = true;
+    private final AtomicBoolean publishAllPending = new AtomicBoolean(true);
 
     public ProcessWorkRequestWorker(@Nonnull ProcessWorkRequestRepository requests,
                                     @Nonnull ProcessWorkRequestService requestService,
@@ -73,7 +79,7 @@ public class ProcessWorkRequestWorker {
         this.time = time;
         this.batchSize = Math.max(1, batchSize);
         this.redispatchInterval = redispatchInterval;
-        connectionFactory.addConnectionListener(connection -> publishAllPending = true);
+        connectionFactory.addConnectionListener(connection -> publishAllPending.set(true));
     }
 
     @Bean
@@ -82,10 +88,24 @@ public class ProcessWorkRequestWorker {
         return new Queue(ProcessWorkRequestService.QUEUE, true);
     }
 
+    /**
+     * Each consumer prefetches a single request, so a consumer that runs a slow step, e.g. a call to an external
+     * service, does not hold back requests that the other consumers could run.
+     */
+    @Bean
+    @Nonnull
+    public static SimpleRabbitListenerContainerFactory processWorkListenerContainerFactory(
+            @Nonnull SimpleRabbitListenerContainerFactoryConfigurer configurer,
+            @Nonnull ConnectionFactory connectionFactory) {
+        var factory = new SimpleRabbitListenerContainerFactory();
+        configurer.configure(factory, connectionFactory);
+        factory.setPrefetchCount(1);
+        return factory;
+    }
+
     @Scheduled(fixedDelayString = "${prosuna.process-work.dispatch-interval:PT30S}")
     public void dispatch() {
-        var publishAll = publishAllPending;
-        publishAllPending = false;
+        var publishAll = publishAllPending.getAndSet(false);
         var now = time.now();
         // A published ID stays queued until it is consumed. Publishing it again is only a fallback for requests that
         // remain pending, e.g. after a lost message or a held request, and must not pile up duplicates.
@@ -94,26 +114,30 @@ public class ProcessWorkRequestWorker {
         try {
             while (true) {
                 var ids = requests.findDispatchableIds(afterId, dispatchedBefore, DISPATCHABLE_INSTANCE_STATUSES,
-                        PageRequest.of(0, batchSize));
+                        HELD_TASK_STATUSES, PageRequest.of(0, batchSize));
                 if (ids.isEmpty()) return;
                 for (var id : ids) {
-                    try {
-                        // The claim keeps other application instances from publishing the same request again.
-                        if (requests.claimDispatch(id, dispatchedBefore, now) == 1) requestService.publish(id);
-                    } catch (Exception exception) {
-                        logger.warn("Could not dispatch process work request {}", id, exception);
+                    // The claim keeps other application instances from publishing the same request again.
+                    if (requests.claimDispatch(id, dispatchedBefore, now) != 1) continue;
+                    if (!requestService.publish(id)) {
+                        // The broker is most likely unavailable, so this pass stops. The next pass publishes the
+                        // request again instead of waiting for the redispatch interval.
+                        requests.releaseDispatch(id);
+                        if (publishAll) publishAllPending.set(true);
+                        return;
                     }
                 }
                 afterId = ids.getLast();
             }
         } catch (RuntimeException exception) {
             // Publish everything again once the database can be read, because this pass did not complete.
-            if (publishAll) publishAllPending = true;
+            if (publishAll) publishAllPending.set(true);
             throw exception;
         }
     }
 
-    @RabbitListener(queues = ProcessWorkRequestService.QUEUE, concurrency = "${prosuna.process-work.concurrency:1}")
+    @RabbitListener(queues = ProcessWorkRequestService.QUEUE, concurrency = "${prosuna.process-work.concurrency:4}",
+            containerFactory = "processWorkListenerContainerFactory")
     public void consume(@Nonnull Long requestId) {
         ProcessWorkRequestEntity request = null;
         try {
@@ -126,14 +150,14 @@ public class ProcessWorkRequestWorker {
             }
         } catch (ResponseException exception) {
             // The instance or task no longer exists; its requests were deleted with it.
-        } catch (TransientDataAccessException | CannotCreateTransactionException exception) {
-            logger.warn("Could not run process work request {}; it remains pending", requestId, exception);
         } catch (RuntimeException exception) {
-            if (request == null) {
+            // The work rolled back, so the request remains pending. A temporarily unavailable database, e.g. a lost
+            // connection or a failed commit, only delays the work until the request is published again.
+            if (request == null || DatabaseFailureUtils.isTransient(exception)) {
                 logger.warn("Could not run process work request {}; it remains pending", requestId, exception);
                 return;
             }
-            // The work rolled back, so the request remains pending and the failed instance holds it.
+            // Running the work again would fail again, so the failed instance holds the request until it is restarted.
             var taskId = request.getKind() == ProcessWorkRequestKind.Resume ? request.getTaskId() : null;
             try {
                 worker.recordFailedExecution(request.getProcessInstanceId(), taskId, exception);
@@ -242,7 +266,8 @@ public class ProcessWorkRequestWorker {
                     || instance.getStatus() == ProcessInstanceStatus.Aborted) {
                 requests.delete(request);
             }
-            // Otherwise the instance does not run; the request is held until it runs again.
+            // Otherwise the instance does not run or the task is paused; the dispatcher holds the request until both
+            // can run again.
             return null;
         });
     }
