@@ -780,6 +780,60 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldIgnoreCustomerValuesForNonEditableFieldsInsideCustomerRows() {
+        var fee = new TextInputElement();
+        fee.setId("fee");
+        fee.setTechnical(true);
+        var name = new TextInputElement();
+        name.setId("name");
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(List.of(fee, name));
+        var rowValues = new AuthoredElementValues();
+        rowValues.putLiteral("fee", "0");
+        rowValues.putLiteral("name", "Ada");
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("rows", List.of(
+                new ReplicatingContainerLayoutElementValue().setId("row-1").setValues(rowValues)
+        ));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                authoredValues,
+                new ElementDerivationOptions().setIgnoreAuthoredValuesOfNonEditableInputs(true)
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var row = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, effectiveRows.getFirst());
+        assertNull(row.getValues().get("fee"));
+        assertEquals("Ada", row.getValues().get("name"));
+    }
+
+    @Test
+    void shouldKeepValuesOfNonEditableFieldsInsideRowsComputedByTheServer() {
+        var fee = new TextInputElement();
+        fee.setId("fee");
+        fee.setTechnical(true);
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(List.of(fee));
+        rows.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(
+                List.of(Map.of("id", "row-1", "values", Map.of("fee", "25")))
+        )));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions().setIgnoreAuthoredValuesOfNonEditableInputs(true)
+        );
+
+        assertFalse(result.hasAnyError());
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var row = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, effectiveRows.getFirst());
+        assertEquals("25", row.getValues().get("fee"));
+    }
+
+    @Test
     void shouldKeepAuthoredValuesForTechnicalFieldsWithoutCustomerInputProtection() {
         var technicalField = new TextInputElement();
         technicalField.setId("route");

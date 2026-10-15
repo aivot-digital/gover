@@ -282,7 +282,9 @@ public class ElementDerivationService {
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
                 // Customers cannot fill disabled or technical inputs. When their input is derived, values sent for such
                 // inputs anyway are ignored, so the computed value or no value is used, as if the input was untouched.
+                // Rows a container computed on the server are no customer input, so their values are kept.
                 var ignoreAuthoredValue = options.isIgnoreAuthoredValuesOfNonEditableInputs()
+                        && !valuesAlreadyResolved
                         && isNonEditableInput(inputElement);
                 var hasAuthoredValue = !ignoreAuthoredValue && authoredElementValues
                         .containsKey(currentElement.getId());
