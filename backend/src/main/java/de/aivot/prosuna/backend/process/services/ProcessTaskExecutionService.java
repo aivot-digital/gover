@@ -10,6 +10,7 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Map;
@@ -32,6 +33,9 @@ public class ProcessTaskExecutionService {
         this.tasks = tasks;
         this.deadlines = deadlines;
         this.transaction = new TransactionTemplate(transactionManager);
+        // Callers recheck state after waiting for the instance lock. Under REPEATABLE READ, their snapshot would
+        // predate the previous lock holder's commit, so they would miss its changes, e.g. an already created task.
+        this.transaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         this.entityManager = entityManager;
     }
 
