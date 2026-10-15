@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.identity.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import jakarta.annotation.Nonnull;
@@ -14,7 +15,7 @@ import java.util.UUID;
  * This record is used to encapsulate all relevant information about an identity, including its type,
  * associated provider details, email address (if applicable), and any additional attributes or communication data.
  *
- * @param sessionId                      The session ID associated with the identity, used identifying an identity after a successful authentication and before the identity is stored in the database.
+ * @param sessionId                      The session ID associated with the identity, used identifying an identity after a successful authentication and before the identity is stored in the database. It is a bearer secret of the customer's browser: it is never serialized, so it is neither stored with a process instance nor returned by the API. Identities read back from storage have no session ID.
  * @param identityId                     The unique identifier by which the identity is known in the process instance. This id is not unique in the system, but only in the context of a process instance. It is used to identify the identity in the process instance and to retrieve the identity data. This is NOT the id by which the identity is unique in the originating identity provider system.
  * @param type                           The type of the identity, which can be either an email identity or a provider identity.
  * @param providerKey                    The unique identifier of the identity provider this identity originates from, if the identity is a provider identity. This is null for email identities.
@@ -27,7 +28,8 @@ import java.util.UUID;
  * @param title                          The configured slot title captured when the identity is added to a process instance. Null for older identities or identities without a configured title.
  */
 public record IdentityData(
-        @Nonnull
+        @JsonIgnore
+        @Nullable
         String sessionId,
         @Nonnull
         String identityId,
@@ -75,7 +77,7 @@ public record IdentityData(
         }
     }
 
-    public IdentityData(@Nonnull String sessionId,
+    public IdentityData(@Nullable String sessionId,
                         @Nonnull String identityId,
                         @Nonnull IdentityType type,
                         @Nullable UUID providerKey,

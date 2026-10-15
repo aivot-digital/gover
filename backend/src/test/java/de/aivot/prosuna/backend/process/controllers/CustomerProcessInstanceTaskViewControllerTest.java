@@ -293,6 +293,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .thenReturn(additionalIdentities);
         when(fixture.customerTaskIdentityService().clearTaskIdentitySession("identity-session", fixture.node()))
                 .thenReturn(false);
+        fixture.task().setAssignedCustomerIdentityId("representative");
         var servletResponse = new MockHttpServletResponse();
 
         var response = fixture.controller().update(
@@ -307,8 +308,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 servletResponse
         );
 
+        var loggerCaptor = ArgumentCaptor.forClass(ProcessNodeExecutionLogger.class);
         verify(resultHandler).handleResultWithAdditionalIdentities(
-                any(),
+                loggerCaptor.capture(),
                 eq(null),
                 same(provider),
                 same(provider.configurationUsedForEvent),
@@ -319,6 +321,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 same(completionResult),
                 same(additionalIdentities)
         );
+        // The history names the identity of the task, never the secret session ID of the browser.
+        assertEquals("representative", ((NoOpProcessNodeExecutionLogger) loggerCaptor.getValue()).identityId);
         verify(fixture.customerTaskIdentityService()).clearTaskIdentitySession(
                 "identity-session",
                 fixture.node()

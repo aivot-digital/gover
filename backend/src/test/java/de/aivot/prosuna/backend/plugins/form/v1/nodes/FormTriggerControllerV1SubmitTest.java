@@ -75,6 +75,8 @@ class FormTriggerControllerV1SubmitTest {
         assertEquals(startedProcessAccessKey, result.startedProcessAccessKey());
         assertClearsIdentityCookie(response);
         verify(fixture.identityService()).getIdentityDataMap("identity-session-id", fixture.processNodeId());
+        // The submitted identities must not stay usable through the session once the instance holds them.
+        verify(fixture.identityService()).clearIdentitySession("identity-session-id", fixture.processNodeId());
         verify(fixture.elementDerivationService(), times(2)).derive(
                 any(ElementDerivationRequest.class),
                 same(identities),
@@ -122,6 +124,7 @@ class FormTriggerControllerV1SubmitTest {
         ));
 
         assertEquals(0, response.getCookies().length);
+        verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
         verify(fixture.identityService()).getIdentityDataMap("identity-session-id", fixture.processNodeId());
         verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
         verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));

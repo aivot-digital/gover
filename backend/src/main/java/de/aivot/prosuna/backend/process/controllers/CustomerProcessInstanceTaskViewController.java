@@ -816,12 +816,13 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable String identitySessionId,
             @Nullable Map<String, List<String>> queryParameters
     ) {
+        // The history names the identity of the task, never the session ID of the customer's browser, which is a secret.
         var logger = processNodeExecutionLoggerFactory
                 .create(
                         taskViewData.instance().getId(),
                         taskViewData.task().getId(),
                         null,
-                        identitySessionId
+                        taskViewData.task().getAssignedCustomerIdentityId()
                 );
 
         return new ProcessNodeExecutionContextUICustomer<>(

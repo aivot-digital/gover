@@ -84,7 +84,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         item.task.assignedCustomerIdentityId = 'applicant';
         item.instance!.identities = {
             applicant: {
-                identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+                identityId: 'applicant', title: 'Antragstellende', type: 'Email',
                 emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
                 uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
             },
@@ -186,7 +186,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         item.instance!.identities = {
             differentMapKey: {
                 identityId: 'external',
-                sessionId: 'session',
+               
                 type: 'Email',
                 emailAddress: 'erika@example.org',
                 attributes: {
@@ -227,7 +227,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         item.instance!.identities = {
             external: {
                 identityId: 'external',
-                sessionId: 'session',
+               
                 type: 'Email',
                 emailAddress: 'erika@example.org',
                 attributes: {},

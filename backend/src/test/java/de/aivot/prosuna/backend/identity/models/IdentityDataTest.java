@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -40,7 +41,29 @@ class IdentityDataTest {
         assertNull(identity.title());
         assertEquals("Antragstellende Person", titledIdentity.title());
         assertEquals(identity, titledIdentity.withTitle(null));
-        assertEquals(titledIdentity, mapper.readValue(mapper.writeValueAsString(titledIdentity), IdentityData.class));
+        var restored = mapper.readValue(mapper.writeValueAsString(titledIdentity), IdentityData.class);
+        assertEquals("Antragstellende Person", restored.title());
+        assertEquals(titledIdentity.attributes(), restored.attributes());
+        assertEquals(titledIdentity.communicationProviderData(), restored.communicationProviderData());
+    }
+
+    @Test
+    void sessionIdIsNeitherSerializedNorRestored() {
+        var identity = new IdentityData(
+                "secret-session", "applicant", IdentityType.IdentityProvider, UUID.randomUUID(), "metadata", "user-123",
+                null, Map.of("name", "Erika Muster"), 17, Map.of("mailbox", "reference")
+        );
+        var mapper = JsonMapperTestUtils.createMapper();
+
+        var json = mapper.writeValueAsString(identity);
+        var restored = mapper.readValue("""
+                {"sessionId": "secret-session", "identityId": "contact", "type": "Email",
+                 "emailAddress": "person@example.org", "attributes": {}, "communicationProviderData": {}}
+                """, IdentityData.class);
+
+        assertFalse(json.contains("sessionId"));
+        assertFalse(json.contains("secret-session"));
+        assertNull(restored.sessionId());
     }
 
     @Test

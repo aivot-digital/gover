@@ -613,6 +613,9 @@ public class FormTriggerControllerV1 {
                 identities
         );
 
+        // The identities are stored with the instance now. Remove them from the session as well, so the session ID cannot
+        // be used to submit the form again with the same identities.
+        identityService.clearIdentitySession(identitySessionId, node.getId());
         response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
         return new FormTriggerSubmissionStatusResponseV1(processInstance.getAccessKey());
     }
