@@ -24,17 +24,13 @@ import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {useConfirm} from '../../providers/confirm-provider';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {FormLayoutElement, resolveFormNodeName} from '../../models/elements/form-layout-element';
-import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
-import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {resolveAccessibleForeground} from '../../theming/resolve-appearance-colors';
 import {ColorModePicker} from '../color-mode-picker/color-mode-picker';
 
 interface FormHeaderComponentProps {
     form: FormLayoutElement;
-    node: ProcessNodeEntity;
-    process: ProcessEntity;
-    version: ProcessVersionEntity;
+    version: Pick<ProcessVersionEntity, 'publicTitle' | 'updated'>;
     logoUrl: string | null;
     logoUrlDark: string | null;
     onDeleteFormData: () => void;
@@ -43,8 +39,6 @@ interface FormHeaderComponentProps {
 export function FormHeaderComponent(props: FormHeaderComponentProps) {
     const {
         form,
-        node,
-        process,
         version,
         logoUrl,
         logoUrlDark,

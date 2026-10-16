@@ -102,6 +102,15 @@ for asset_path in /assets/runtime.js /assets/fonts/public-sans.woff2 /assets/tes
     if grep -q 'immutable' /tmp/headers; then exit 1; fi
 done
 
+# Only the entry documents carry the Content Security Policy; assets do not need it.
+for route_path in / /form/example /staff /staff/processes; do
+    fetch "http://127.0.0.1:8080$route_path"
+    grep -q "Content-Security-Policy-Report-Only: default-src 'self';" /tmp/headers
+    grep -q "object-src 'none'" /tmp/headers
+done
+fetch http://127.0.0.1:8080/assets/runtime.js
+if grep -qi 'Content-Security-Policy' /tmp/headers; then exit 1; fi
+
 for route_path in / /form/example /staff /staff/processes /sbom/manifest.json; do
     fetch "http://127.0.0.1:8080$route_path"
     grep -q 'HTTP/1.1 200' /tmp/headers
