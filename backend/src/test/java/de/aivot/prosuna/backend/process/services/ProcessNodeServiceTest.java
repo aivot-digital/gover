@@ -50,6 +50,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
@@ -98,6 +99,7 @@ class ProcessNodeServiceTest {
     private ProcessEdgeRepository processEdgeRepository;
     private ProcessRepository processRepository;
     private ProcessVersionRepository processVersionRepository;
+    private ProcessTestClaimRepository processTestClaimRepository;
     private ElementDerivationService elementDerivationService;
     private IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
     private ProsunaConfig prosunaConfig;
@@ -111,6 +113,7 @@ class ProcessNodeServiceTest {
         processEdgeRepository = mock(ProcessEdgeRepository.class);
         processRepository = mock(ProcessRepository.class);
         processVersionRepository = mock(ProcessVersionRepository.class);
+        processTestClaimRepository = mock(ProcessTestClaimRepository.class);
         elementDerivationService = mock(ElementDerivationService.class);
         identityCommunicationAvailabilityService = mock(IdentityCommunicationAvailabilityService.class);
         prosunaConfig = new ProsunaConfig();
@@ -157,7 +160,7 @@ class ProcessNodeServiceTest {
                 permissionService,
                 new ProcessNodePortResolver(jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator()),
                 new ProcessNodePortResolutionCache(de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper()),
-                new ProcessVersionDraftGuard(processVersionRepository)
+                new ProcessVersionDraftGuard(processVersionRepository, processTestClaimRepository)
         );
     }
 
@@ -820,6 +823,78 @@ class ProcessNodeServiceTest {
         service.performDelete(node);
 
         verify(processNodeRepository).delete(node);
+    }
+
+    @Test
+    void writes_ShouldRejectAddingAndRemovingNodesOfDraftWithTestClaim() {
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.create(createNode(3, "new")));
+        assertConflict(() -> service.performDelete(existingNode));
+
+        verify(processNodeRepository, never()).saveAndFlush(any(ProcessNodeEntity.class));
+        verify(processNodeRepository, never()).delete(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performUpdate_ShouldEditNodesOfDraftWithTestClaim() throws Exception {
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
+        when(processNodeRepository.save(any(ProcessNodeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var existingNode = createNode(2, "existing");
+        var changedNode = createNode(2, "changed").setName("Changed node");
+        changedNode.getConfiguration().putLiteral("branch", "approved");
+
+        var result = service.performUpdate(2, changedNode, existingNode);
+
+        assertEquals("changed", result.getDataKey());
+        assertEquals("Changed node", result.getName());
+        assertEquals("approved", result.getConfiguration().getLiteral("branch"));
+        verify(processNodeRepository).save(existingNode);
+    }
+
+    @Test
+    void performUpdate_ShouldRejectReplacingNodeTypeOfDraftWithTestClaim() {
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing")
+                .setProcessNodeDefinitionKey("test.process.initial-configuration-node"), existingNode));
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing")
+                .setProcessNodeDefinitionVersion(2), existingNode));
+
+        assertEquals("test.process.hint-node", existingNode.getProcessNodeDefinitionKey());
+        assertEquals(1, existingNode.getProcessNodeDefinitionVersion());
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performUpdate_ShouldReplaceNodeTypeOfDraftWithoutTestClaim() throws Exception {
+        when(processNodeRepository.save(any(ProcessNodeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var existingNode = createNode(2, "existing");
+
+        var result = service.performUpdate(2, createNode(2, "existing")
+                .setProcessNodeDefinitionKey("test.process.initial-configuration-node"), existingNode);
+
+        assertEquals("test.process.initial-configuration-node", result.getProcessNodeDefinitionKey());
+        verify(processNodeRepository).save(existingNode);
+    }
+
+    @Test
+    void performUpdate_ShouldRejectMovingNodesIntoOrOutOfDraftWithTestClaim() {
+        var testedVersion = PROCESS_VERSION + 1;
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, testedVersion)))
+                .thenReturn(Optional.of(createProcessVersion().setProcessVersion(testedVersion)));
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, testedVersion)).thenReturn(true);
+        var draftNode = createNode(2, "existing");
+        var testedNode = createNode(3, "tested").setProcessVersion(testedVersion);
+
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing").setProcessVersion(testedVersion), draftNode));
+        assertConflict(() -> service.performUpdate(3, createNode(3, "tested"), testedNode));
+
+        assertEquals(PROCESS_VERSION, draftNode.getProcessVersion());
+        assertEquals(testedVersion, testedNode.getProcessVersion());
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
     }
 
     @Test

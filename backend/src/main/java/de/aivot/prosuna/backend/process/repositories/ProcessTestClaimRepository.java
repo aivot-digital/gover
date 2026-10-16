@@ -15,6 +15,8 @@ public interface ProcessTestClaimRepository extends JpaRepository<ProcessTestCla
 
     Optional<ProcessTestClaimEntity> findByProcessIdAndProcessVersion(Integer processId, Integer processVersion);
 
+    boolean existsByProcessIdAndProcessVersion(@Nonnull Integer processId, @Nonnull Integer processVersion);
+
     @Query(
             value = "SELECT EXISTS(SELECT 1 FROM v_user_process_access_permissions p WHERE p.user_id = :userId AND p.target_process_id = :processId AND p.permissions::text[] @> ARRAY[:permission])",
             nativeQuery = true
