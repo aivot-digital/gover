@@ -85,7 +85,7 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.te
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
     private static final ProcessNodeDeadlineDefinition PAYMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
             "payment", "Zahlung",
-            "Zeit für die Kund:in zur Zahlung ab Erstellung der Zahlungsanforderung.",
+            "Zeit zur Zahlung ab Erstellung der Zahlungsanforderung.",
             new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
                     "Fortsetzung nach Überschreitung der harten Frist für die Zahlung."));
 

@@ -188,7 +188,7 @@ describe('CustomerInstanceView', () => {
 
         expect(getInstanceStatus).toHaveBeenLastCalledWith('instance-key', 'second-task');
         expect(screen.queryByText('Aufgabenansicht')).not.toBeInTheDocument();
-        expect(screen.queryByText('Freuen Sie sich. Es gibt für Sie nichts zu tun!')).not.toBeInTheDocument();
+        expect(screen.queryByText('Aktuell nichts zu bearbeiten')).not.toBeInTheDocument();
         expect(mocks.navigate).not.toHaveBeenCalled();
 
         resolveSecondTaskStatus(createStatus([
@@ -219,7 +219,7 @@ describe('CustomerInstanceView', () => {
 
         render(<CustomerInstanceView/>);
 
-        expect(await screen.findByText('Freuen Sie sich. Es gibt für Sie nichts zu tun!')).toBeInTheDocument();
+        expect(await screen.findByText('Aktuell nichts zu bearbeiten')).toBeInTheDocument();
         expect(mocks.navigate).not.toHaveBeenCalled();
     });
 

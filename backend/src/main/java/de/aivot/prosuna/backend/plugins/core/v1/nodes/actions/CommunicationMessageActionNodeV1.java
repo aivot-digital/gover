@@ -162,7 +162,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Override
     public String getDescription() {
         return """
-                Sendet eine Nachricht über den Kommunikationsweg, den die Kund:in für eine Identität ausgewählt hat.
+                Sendet eine Nachricht über den für die Identität festgelegten Kommunikationsweg.
 
                 Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand durch eine Mitarbeiter:in bearbeitet. Optional können vollständige Anlagensätze angehängt werden. Nach dem synchronen Versand stehen die verwendete Identität, die Kommunikationsanbindung, die Nachrichtendaten und das Ergebnis des Kommunikationsanbieters als Ausgänge bereit.
                 """;
