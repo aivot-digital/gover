@@ -226,15 +226,14 @@ services:
     networks:
       - mail
 
-  # Durable message broker for background jobs.
+  # Message broker for background jobs. Pending work is stored in the database, so the
+  # broker needs no volume and may start empty.
   rabbitmq:
     image: docker.io/library/rabbitmq:4-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: prosuna
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - prosuna
 
@@ -265,7 +264,6 @@ volumes:
   prosuna_database_data:
   keycloak_database_data:
   mailpit_data:
-  rabbitmq_data:
 
 
 # Networks keep databases and infrastructure services reachable only by the containers

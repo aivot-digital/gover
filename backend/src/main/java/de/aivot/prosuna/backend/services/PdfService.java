@@ -40,6 +40,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
 import de.aivot.prosuna.backend.services.pdf.PdfLogoService;
+import de.aivot.prosuna.backend.services.pdf.PdfTemplateAssetService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
@@ -69,6 +70,7 @@ public class PdfService {
     private final GotenbergConfig gotenbergConfig;
     private final SystemConfigService systemConfigService;
     private final PdfLogoService pdfLogoService;
+    private final PdfTemplateAssetService pdfTemplateAssetService;
     private final ProsunaConfig prosunaConfig;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final IdentityProviderRepository identityProviderRepository;
@@ -88,6 +90,7 @@ public class PdfService {
                       ProcessRepository processRepository,
                       ProcessVersionRepository processVersionRepository,
                       PdfLogoService pdfLogoService,
+                      PdfTemplateAssetService pdfTemplateAssetService,
                       ProsunaConfig prosunaConfig,
                       PaymentTransactionRepository paymentTransactionRepository,
                       IdentityProviderRepository identityProviderRepository,
@@ -98,6 +101,7 @@ public class PdfService {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.pdfLogoService = pdfLogoService;
+        this.pdfTemplateAssetService = pdfTemplateAssetService;
         this.prosunaConfig = prosunaConfig;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.identityProviderRepository = identityProviderRepository;
@@ -469,20 +473,29 @@ public class PdfService {
         return response.body();
     }
 
+    /**
+     * Renders the custom PDF template selected for the form. Falls back to the bundled form template if no template is
+     * selected or the selected template cannot be loaded or rendered, so the PDF of a submission is always generated.
+     */
     private String loadContentTemplate(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) {
-        if (pdfTemplateKey != null) {
+        var customTemplate = pdfTemplateAssetService.loadTemplateContent(pdfTemplateKey);
+        if (customTemplate.isPresent()) {
             try {
-                var res = loadTemplate(pdfTemplateKey.toString(), dto);
-                if (StringUtils.isNotNullOrEmpty(res)) {
-                    return res;
+                var result = new TemplateLoaderService()
+                        .processTemplateContent(
+                                customTemplate.get(),
+                                dto,
+                                TemplateMode.HTML
+                        );
+                if (StringUtils.isNotNullOrEmpty(result)) {
+                    return result;
                 }
-                return loadTemplate("form.html", dto);
             } catch (Exception e) {
-                return loadTemplate("form.html", dto);
+                logger.warn("Could not render custom PDF template {}: {}", pdfTemplateKey, e.getMessage());
+                logger.debug("Custom PDF template rendering failure", e);
             }
-        } else {
-            return loadTemplate("form.html", dto);
         }
+        return loadTemplate("form.html", dto);
     }
 
     private String loadTemplate(String templateName, Map<String, Object> data) {

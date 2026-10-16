@@ -481,6 +481,43 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void derive_TakesNonEditableInputValuesFromTheTaskViewData() throws ResponseException {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues()
+        );
+
+        fixture.controller().derive(
+                null,
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                new AuthoredElementValues().putLiteral("field", "forged"),
+                List.of(),
+                Map.of(),
+                null
+        );
+
+        var options = fixture.elementDerivationService().requests.getFirst().derivationOptions();
+        assertTrue(options.isIgnoreAuthoredValuesOfNonEditableInputs());
+        assertEquals("persisted", options.getTrustedAuthoredValues().getLiteral("field"));
+    }
+
+    @Test
+    void update_TakesNonEditableInputValuesFromTheTaskViewData() throws ResponseException {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues().putLiteral("field", "forged")
+        );
+
+        fixture.controller().update(fixture.procAccess(), fixture.taskAccess(), "{}", null, null,
+                null, Map.of(), null, new MockHttpServletResponse());
+
+        var options = fixture.elementDerivationService().requests.getFirst().derivationOptions();
+        assertTrue(options.isIgnoreAuthoredValuesOfNonEditableInputs());
+        assertEquals("persisted", options.getTrustedAuthoredValues().getLiteral("field"));
+    }
+
+    @Test
     void derive_UsesCompletedCustomerTaskView() throws ResponseException {
         var fixture = createFixture(
                 new NoOpCustomerProcessNodeDefinition(),

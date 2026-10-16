@@ -191,7 +191,21 @@ prosuna:
   process-task-deadlines:
     check-interval: "${PROSUNA_PROCESS_TASK_DEADLINES_CHECK_INTERVAL:PT30S}"
     batch-size: "${PROSUNA_PROCESS_TASK_DEADLINES_BATCH_SIZE:100}"
-    redispatch-interval: "${PROSUNA_PROCESS_TASK_DEADLINES_REDISPATCH_INTERVAL:PT5M}"
+  # Pending process work is stored in the database; RabbitMQ only carries wake-up signals.
+  # Requests that are still pending after the redispatch interval are published again.
+  process-work:
+    dispatch-interval: "${PROSUNA_PROCESS_WORK_DISPATCH_INTERVAL:PT30S}"
+    redispatch-interval: "${PROSUNA_PROCESS_WORK_REDISPATCH_INTERVAL:PT5M}"
+    batch-size: "${PROSUNA_PROCESS_WORK_BATCH_SIZE:100}"
+    # Consumers lock the process instance, so work on the same instance never runs concurrently.
+    concurrency: "${PROSUNA_PROCESS_WORK_CONCURRENCY:4}"
+  # Synchronization requests of code lists and storage providers are stored in the database.
+  # Requests still pending after the sweep interval are published again. A synchronization that
+  # started more than the stale threshold ago is considered interrupted, e.g. by a restart, and is
+  # taken over; the threshold must exceed the longest synchronization.
+  background-sync:
+    sweep-interval: "${PROSUNA_BACKGROUND_SYNC_SWEEP_INTERVAL:PT5M}"
+    stale-threshold: "${PROSUNA_BACKGROUND_SYNC_STALE_THRESHOLD:PT1H}"
   prosunaHostname: "${PROSUNA_HOSTNAME}"
   timezone: "${PROSUNA_TIMEZONE:Europe/Berlin}"
   fromMail: "${PROSUNA_FROM_MAIL}"

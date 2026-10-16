@@ -44,11 +44,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.type.TypeReference;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Centralizes runtime derivation for form elements so the rest of the system can work with one consistent interpretation of a form definition.
@@ -281,14 +283,18 @@ public class ElementDerivationService {
             var childRowValuesAlreadyResolved = valuesAlreadyResolved;
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
                 // Customers cannot fill disabled or technical inputs. When their input is derived, values sent for such
-                // inputs anyway are ignored, so the computed value or no value is used, as if the input was untouched.
+                // inputs anyway are ignored. The input takes its value from trusted server data, such as the process data
+                // a task is prefilled with, or else the computed value or no value, as if the input was untouched.
                 // Rows a container computed on the server are no customer input, so their values are kept.
-                var ignoreAuthoredValue = options.isIgnoreAuthoredValuesOfNonEditableInputs()
+                var protectedInput = options.isIgnoreAuthoredValuesOfNonEditableInputs()
                         && !valuesAlreadyResolved
                         && isNonEditableInput(inputElement);
-                var hasAuthoredValue = !ignoreAuthoredValue && authoredElementValues
+                var valueSource = protectedInput
+                        ? options.getTrustedAuthoredValues()
+                        : authoredElementValues;
+                var hasAuthoredValue = valueSource != null && valueSource
                         .containsKey(currentElement.getId());
-                var authoredValue = ignoreAuthoredValue ? null : authoredElementValues
+                var authoredValue = valueSource == null ? null : valueSource
                         .getOrDefault(currentElement.getId(), null);
 
                 var resolvedValue = deriveEffectiveValue(
@@ -368,6 +374,7 @@ public class ElementDerivationService {
                 // Test if the child data is a list of child data sets.
                 if (rawEffectiveChildDataSetList instanceof List<?> effectiveChildDataSetList) {
                     var effectiveRows = new LinkedList<EffectiveReplicatingContainerLayoutElementValue>();
+                    var claimedTrustedRowIds = new HashSet<String>();
                     // Iterate through the list of all child data sets.
                     for (var itemIndex = 0; itemIndex < effectiveChildDataSetList.size(); itemIndex++) {
                         var rawEffectiveChildDataSet = effectiveChildDataSetList.get(itemIndex);
@@ -385,6 +392,17 @@ public class ElementDerivationService {
                             // Row-local effective values must be rebuilt from visible descendants only.
                             var childEffectiveElementValues = new EffectiveElementValues();
 
+                            var rowOptions = childOptions;
+                            if (childOptions.getTrustedAuthoredValues() != null) {
+                                rowOptions = childOptions
+                                        .copyForUseInChild(replicatingContainer.getId())
+                                        .setTrustedAuthoredValues(findTrustedRowValues(
+                                                childOptions.getTrustedAuthoredValues().getLiteral(replicatingContainer.getId()),
+                                                effectiveChildDataSet.getId(),
+                                                claimedTrustedRowIds
+                                        ));
+                            }
+
                             for (var currentChildElement : replicatingContainer.getChildren()) {
                                 derive(
                                         javascriptEngine,
@@ -396,7 +414,7 @@ public class ElementDerivationService {
                                         childAuthoredElementValues,
                                         childEffectiveElementValues,
                                         childItemElementStates,
-                                        childOptions,
+                                        rowOptions,
                                         isVisible,
                                         identities,
                                         logger,
@@ -696,6 +714,29 @@ public class ElementDerivationService {
         }
 
         return true;
+    }
+
+    /**
+     * Finds the trusted values of a replicating container row by its ID, so they stay with their row when the customer
+     * removes or reorders rows. A row without a trusted counterpart, for example one the customer added, gets none.
+     * Only the first row with an ID gets its trusted values. The browser never sends a row ID twice, so later rows with
+     * the same ID are copies made to repeat protected values, such as an approved amount, and are treated as added rows.
+     */
+    @Nonnull
+    private static AuthoredElementValues findTrustedRowValues(@Nullable Object trustedRows,
+                                                              @Nullable String rowId,
+                                                              @Nonnull Set<String> claimedRowIds) {
+        if (rowId != null && trustedRows instanceof List<?> rows && claimedRowIds.add(rowId)) {
+            for (var row : rows) {
+                if (row instanceof ReplicatingContainerLayoutElementValue trustedRow
+                        && rowId.equals(trustedRow.getId())
+                        && trustedRow.getValues() != null) {
+                    return trustedRow.getValues();
+                }
+            }
+        }
+
+        return new AuthoredElementValues();
     }
 
     private static boolean isNonEditableInput(@Nonnull InputElement<?> inputElement) {

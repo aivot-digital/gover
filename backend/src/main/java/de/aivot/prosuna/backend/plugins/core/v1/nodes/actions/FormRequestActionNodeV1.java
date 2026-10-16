@@ -672,6 +672,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 configuration.uiDefinition,
                 effectiveValues
         );
+        // The values of disabled and technical inputs in rows are taken from this data by row ID on submission, so
+        // the rows need the same IDs each time the view is built.
+        authoredInputValueService.assignPositionalRowIds(configuration.uiDefinition, initialData);
         return ProcessNodeCustomerView.of(
                 context,
                 configuration.uiDefinition,

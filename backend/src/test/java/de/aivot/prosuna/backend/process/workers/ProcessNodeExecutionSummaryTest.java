@@ -34,7 +34,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 
 import java.time.Instant;
 import java.util.List;
@@ -50,7 +50,7 @@ class ProcessNodeExecutionSummaryTest {
     private final ProcessInstanceRepository instances = mock(ProcessInstanceRepository.class);
     private final ProcessVersionRepository versions = mock(ProcessVersionRepository.class);
     private final ProcessEdgeRepository edges = mock(ProcessEdgeRepository.class);
-    private final RabbitTemplate rabbit = mock(RabbitTemplate.class);
+    private final ProcessWorkRequestService workRequests = mock(ProcessWorkRequestService.class);
     private final UserService users = mock(UserService.class);
     private final ProcessNodeExecutionLogger executionLogger = mock(ProcessNodeExecutionLogger.class);
     @SuppressWarnings("unchecked")
@@ -67,7 +67,7 @@ class ProcessNodeExecutionSummaryTest {
     private final UserEntity actor = new UserEntity().setId("actor").setFullName("Ada Beispiel");
     private final ProcessNodeService nodeService = mock(ProcessNodeService.class);
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
-            mock(ProcessAssignmentService.class), rabbit, null, instances, versions, tasks, edges, users,
+            mock(ProcessAssignmentService.class), workRequests, null, instances, versions, tasks, edges, users,
             mock(ProcessTaskMailService.class), mock(ProcessNodeRepository.class),
             mock(ProcessNodeDefinitionService.class), null, null, mock(ProcessInstanceMailService.class), nodeService, null);
 
@@ -115,10 +115,10 @@ class ProcessNodeExecutionSummaryTest {
                         .setNodeData(Map.of("value", 17)).setRuntimeData(Map.of("saved", true)),
                 Map.of("new-identity", identity));
 
-        var order = inOrder(definition, tasks, rabbit);
+        var order = inOrder(definition, tasks, workRequests);
         order.verify(definition).generateExecutionSummary(any());
         order.verify(tasks).save(task);
-        order.verify(rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE), any(ProcessWorker.DoWorkWorkerPayload.class));
+        order.verify(workRequests).enqueueTransition(anyLong(), anyLong(), anyString(), anyInt());
         verify(definition, times(1)).generateExecutionSummary(any());
     }
 
@@ -142,7 +142,7 @@ class ProcessNodeExecutionSummaryTest {
         assertEquals("Vorgang abgeschlossen.", task.getExecutionSummaryMarkdown());
         verify(tasks).save(task);
         verify(instances).save(instance);
-        verifyNoInteractions(rabbit);
+        verifyNoInteractions(workRequests);
     }
 
     @Test
@@ -230,9 +230,9 @@ class ProcessNodeExecutionSummaryTest {
                     && event.getThrowableProxy() != null));
             if (completeInstance) {
                 assertEquals(ProcessInstanceStatus.Completed, instance.getStatus());
-                verifyNoInteractions(rabbit);
+                verifyNoInteractions(workRequests);
             } else {
-                verify(rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE), any(ProcessWorker.DoWorkWorkerPayload.class));
+                verify(workRequests).enqueueTransition(anyLong(), anyLong(), anyString(), anyInt());
             }
         } finally {
             logger.detachAppender(appender);
@@ -261,7 +261,7 @@ class ProcessNodeExecutionSummaryTest {
         instance.setStatus(status);
         handle(new ProcessNodeExecutionResultTaskCompleted("next"));
         verify(definition, never()).generateExecutionSummary(any());
-        verifyNoInteractions(tasks, rabbit);
+        verifyNoInteractions(tasks, workRequests);
     }
 
     @ParameterizedTest
@@ -274,7 +274,7 @@ class ProcessNodeExecutionSummaryTest {
         assertEquals(hasSummary ? "Original" : null, task.getExecutionSummaryMarkdown());
         verify(definition, times(1)).generateExecutionSummary(any());
         verify(tasks, times(1)).save(task);
-        verify(rabbit, times(1)).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE), any(ProcessWorker.DoWorkWorkerPayload.class));
+        verify(workRequests, times(1)).enqueueTransition(anyLong(), anyLong(), anyString(), anyInt());
     }
 
     @Test
@@ -282,7 +282,7 @@ class ProcessNodeExecutionSummaryTest {
         assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class,
                 () -> handle(new ProcessNodeExecutionResultTaskCompleted("missing")));
         verify(definition, never()).generateExecutionSummary(any());
-        verifyNoInteractions(tasks, rabbit);
+        verifyNoInteractions(tasks, workRequests);
     }
 
     @Test
@@ -292,7 +292,7 @@ class ProcessNodeExecutionSummaryTest {
         when(tasks.save(task)).thenThrow(failure);
         assertSame(failure, assertThrows(IllegalStateException.class,
                 () -> handle(new ProcessNodeExecutionResultTaskCompleted("next"))));
-        verifyNoInteractions(rabbit);
+        verifyNoInteractions(workRequests);
     }
 
     private void handle(ProcessNodeExecutionResult result) throws Exception {

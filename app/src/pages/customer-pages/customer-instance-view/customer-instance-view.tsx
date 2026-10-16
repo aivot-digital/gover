@@ -35,6 +35,11 @@ export interface CustomerInstanceViewOutletContext {
     taskIsActive: boolean;
 }
 
+interface LoadedInstanceStatus {
+    status: ProcessInstanceStatusResponse;
+    taskAccessKey: string | undefined;
+}
+
 export function CustomerInstanceView() {
     const {
         instanceAccessKey = '',
@@ -48,10 +53,28 @@ export function CustomerInstanceView() {
     const navigate = useNavigate();
     const baseTheme = useTheme();
 
-    const [instanceStatus, setInstanceStatus] = useState<ProcessInstanceStatusResponse | null | 'failed'>(null);
+    const [loadedInstanceStatus, setLoadedInstanceStatus] = useState<LoadedInstanceStatus | null | 'failed'>(null);
     const statusRequestGenerationRef = useRef(0);
 
     const metaDialog = useAppSelector((state) => state.app.showDialog);
+
+    const instanceStatus = useMemo<ProcessInstanceStatusResponse | null | 'failed'>(() => {
+        if (loadedInstanceStatus == null || loadedInstanceStatus === 'failed') {
+            return loadedInstanceStatus;
+        }
+
+        // A status only lists the tasks visible for the task route it was requested for. Keep showing the instance
+        // while the status of a newly selected task is pending, but treat its tasks as not loaded yet, so the tasks
+        // of the previous route cannot redirect away from the new one.
+        if (loadedInstanceStatus.taskAccessKey !== taskAccessKey) {
+            return {
+                ...loadedInstanceStatus.status,
+                tasks: null,
+            };
+        }
+
+        return loadedInstanceStatus.status;
+    }, [loadedInstanceStatus, taskAccessKey]);
 
     const resolvedTheme = useMemo(() => {
         if (instanceStatus == null || instanceStatus === 'failed') {
@@ -65,10 +88,13 @@ export function CustomerInstanceView() {
         const requestGeneration = ++statusRequestGenerationRef.current;
         try {
             const status = await new CustomerTaskViewApiService()
-                .getInstanceStatus(instanceAccessKey);
+                .getInstanceStatus(instanceAccessKey, taskAccessKey);
 
             if (requestGeneration === statusRequestGenerationRef.current) {
-                setInstanceStatus(status);
+                setLoadedInstanceStatus({
+                    status,
+                    taskAccessKey,
+                });
             }
         } catch (error) {
             if (requestGeneration === statusRequestGenerationRef.current) {
@@ -77,7 +103,7 @@ export function CustomerInstanceView() {
 
             // A newer status request or an explicit invalidation already superseded this request.
         }
-    }, [instanceAccessKey]);
+    }, [instanceAccessKey, taskAccessKey]);
 
     const fetchInstanceStatus = useCallback(() => {
         void refreshInstanceStatus()
@@ -93,20 +119,23 @@ export function CustomerInstanceView() {
                         status: isApiError(error) ? error.status : 500,
                     }));
                 }
-                setInstanceStatus('failed');
+                setLoadedInstanceStatus('failed');
             });
     }, [dispatch, refreshInstanceStatus]);
 
     const invalidateInstanceTasks = useCallback(() => {
         statusRequestGenerationRef.current += 1;
-        setInstanceStatus((currentStatus) => {
+        setLoadedInstanceStatus((currentStatus) => {
             if (currentStatus == null || currentStatus === 'failed') {
                 return currentStatus;
             }
 
             return {
                 ...currentStatus,
-                tasks: null,
+                status: {
+                    ...currentStatus.status,
+                    tasks: null,
+                },
             };
         });
     }, []);

@@ -152,6 +152,53 @@ describe('CustomerInstanceView', () => {
         expect(mocks.navigate).not.toHaveBeenCalled();
     });
 
+    it('requests only the status of the task in the route', async () => {
+        mocks.params.taskAccessKey = 'form-task';
+        const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([
+            createTask('form-task', ProcessTaskStatus.AwaitingCustomer),
+        ]));
+
+        render(<CustomerInstanceView/>);
+
+        await screen.findByText('Aufgabenansicht');
+        expect(getInstanceStatus).toHaveBeenCalledWith('instance-key', 'form-task');
+    });
+
+    it('waits for the status of a newly selected task before redirecting', async () => {
+        mocks.params.taskAccessKey = 'first-task';
+        let resolveSecondTaskStatus: (status: ProcessInstanceStatusResponse) => void = () => undefined;
+        const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
+            .mockImplementation((_instanceAccessKey, taskAccessKey) => {
+                if (taskAccessKey === 'first-task') {
+                    return Promise.resolve(createStatus([
+                        createTask('first-task', ProcessTaskStatus.AwaitingCustomer),
+                    ]));
+                }
+
+                return new Promise((resolve) => {
+                    resolveSecondTaskStatus = resolve;
+                });
+            });
+
+        const {rerender} = render(<CustomerInstanceView/>);
+        await screen.findByText('Aufgabenansicht');
+
+        mocks.params.taskAccessKey = 'second-task';
+        rerender(<CustomerInstanceView/>);
+
+        expect(getInstanceStatus).toHaveBeenLastCalledWith('instance-key', 'second-task');
+        expect(screen.queryByText('Aufgabenansicht')).not.toBeInTheDocument();
+        expect(screen.queryByText('Freuen Sie sich. Es gibt für Sie nichts zu tun!')).not.toBeInTheDocument();
+        expect(mocks.navigate).not.toHaveBeenCalled();
+
+        resolveSecondTaskStatus(createStatus([
+            createTask('second-task', ProcessTaskStatus.AwaitingCustomer),
+        ]));
+
+        expect(await screen.findByText('Aufgabenansicht')).toHaveAttribute('data-task-is-active', 'true');
+        expect(mocks.navigate).not.toHaveBeenCalled();
+    });
+
     it('keeps a completed customer task route available as history', async () => {
         mocks.params.taskAccessKey = 'completed-task';
         vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus').mockResolvedValue(createStatus([

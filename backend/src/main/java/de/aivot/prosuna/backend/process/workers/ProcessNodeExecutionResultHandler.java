@@ -25,6 +25,7 @@ import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
@@ -34,7 +35,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,7 +45,7 @@ import java.util.*;
 public class ProcessNodeExecutionResultHandler {
     private static final Logger logger = LoggerFactory.getLogger(ProcessNodeExecutionResultHandler.class);
 
-    private final RabbitTemplate rabbitTemplate;
+    private final ProcessWorkRequestService workRequestService;
     private final CommunicationService communicationService;
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessVersionRepository processVersionRepository;
@@ -64,7 +64,7 @@ public class ProcessNodeExecutionResultHandler {
 
     @Autowired
     public ProcessNodeExecutionResultHandler(ProcessAssignmentService assignmentService,
-                                             RabbitTemplate rabbitTemplate,
+                                             ProcessWorkRequestService workRequestService,
                                              CommunicationService communicationService,
                                              ProcessInstanceRepository processInstanceRepository,
                                              ProcessVersionRepository processVersionRepository,
@@ -79,7 +79,7 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessNodeService processNodeService,
                                              BusinessTime businessTime) {
         this.assignmentService = assignmentService;
-        this.rabbitTemplate = rabbitTemplate;
+        this.workRequestService = workRequestService;
         this.communicationService = communicationService;
         this.processInstanceRepository = processInstanceRepository;
         this.processVersionRepository = processVersionRepository;
@@ -1170,15 +1170,6 @@ public class ProcessNodeExecutionResultHandler {
             ensureInstanceRunning(context.processInstance);
         }
 
-        var nextPayload = new ProcessWorker.DoWorkWorkerPayload(
-                context.processInstance.getId(),
-                context.processInstanceTask.getId(),
-                context.currentNode.getId(),
-                context.result.getViaPort(),
-                outEdge.getToNodeId(),
-                null
-        );
-
         var nextNode = processNodeRepository
                 .findById(outEdge.getToNodeId())
                 .map(node -> processNodeDefinitionService
@@ -1220,7 +1211,12 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
-        rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
+        workRequestService.enqueueTransition(
+                context.processInstance.getId(),
+                context.processInstanceTask.getId(),
+                context.result.getViaPort(),
+                outEdge.getToNodeId()
+        );
     }
 
     private <C> CompletionPath requireCompletionPath(@Nonnull HandlerContext<C, ?> context,
