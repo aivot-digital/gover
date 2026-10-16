@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.asset.permissions.AssetPermissionProvider;
 import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.prosuna.backend.asset.services.VStorageIndexItemWithAssetService;
+import de.aivot.prosuna.backend.asset.utils.AssetContentResponseUtils;
 import de.aivot.prosuna.backend.audit.enums.AuditAction;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
@@ -41,8 +42,6 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -50,7 +49,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -541,7 +539,7 @@ public class AssetController {
     @GetMapping("files-content/**")
     @Operation(
             summary = "Download an asset content",
-            description = "Streams the file content of an asset for authenticated users."
+            description = "Streams the file content of an asset for authenticated users. Content that browsers could run, such as HTML or SVG, is always served as a sandboxed attachment."
     )
     public ResponseEntity<InputStreamResource> downloadFileContent(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -566,27 +564,17 @@ public class AssetController {
         var inputStream = storageService
                 .getDocumentContent(storageProvider.getId(), filePath);
 
-        MediaType mediaType;
-        try {
-            mediaType = MediaType.parseMediaType(storageIndexItem.getMimeType());
-        } catch (InvalidMediaTypeException e) {
-            mediaType = MediaType.APPLICATION_OCTET_STREAM;
-        }
-
         var filename = storageIndexItem.getFilename();
         if (filename == null || filename.isBlank()) {
             filename = filePath.substring(filePath.lastIndexOf('/') + 1);
         }
 
-        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
-        var contentDispositionType = download ? "attachment" : "inline";
-        var contentDisposition = ContentDisposition
-                .builder(contentDispositionType)
-                .filename(filename, StandardCharsets.UTF_8)
-                .build();
-        responseBuilder.header("Content-Disposition", contentDisposition.toString());
-
-        return responseBuilder.body(new InputStreamResource(inputStream));
+        return AssetContentResponseUtils.createContentResponse(
+                storageIndexItem.getMimeType(),
+                filename,
+                download,
+                inputStream
+        );
     }
 
     @PostMapping(

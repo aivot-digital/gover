@@ -77,11 +77,15 @@ class FormTriggerControllerV1SubmitTest {
         verify(fixture.identityService()).getIdentityDataMap("identity-session-id", fixture.processNodeId());
         // The submitted identities must not stay usable through the session once the instance holds them.
         verify(fixture.identityService()).clearIdentitySession("identity-session-id", fixture.processNodeId());
+        var derivationRequestCaptor = ArgumentCaptor.forClass(ElementDerivationRequest.class);
         verify(fixture.elementDerivationService(), times(2)).derive(
-                any(ElementDerivationRequest.class),
+                derivationRequestCaptor.capture(),
                 same(identities),
                 any(ElementDerivationLogger.class)
         );
+        // Both derivations of the customer's input must ignore values for disabled and technical inputs.
+        assertTrue(derivationRequestCaptor.getAllValues().stream()
+                .allMatch(request -> request.derivationOptions().isIgnoreAuthoredValuesOfNonEditableInputs()));
         verify(fixture.elementDataTransformService()).buildPayload(
                 any(FormLayoutElement.class),
                 same(derivedRuntimeElementData.getEffectiveValues()),

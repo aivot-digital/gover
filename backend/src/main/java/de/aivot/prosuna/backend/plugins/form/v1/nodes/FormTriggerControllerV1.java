@@ -215,11 +215,14 @@ public class FormTriggerControllerV1 {
             }
         });
 
+        // Only return what the customer form needs. The node configuration in particular contains the unfiltered form
+        // layout, including the steps hidden above until the required identity is present, function code and internal
+        // notes of the process.
         return new RetrieveResponse(
                 formLayout,
-                node,
-                process,
-                processVersion,
+                new PublicFormNode(node.getId(), config.configuration().formSlug),
+                new PublicFormProcess(process.getSlug()),
+                PublicFormVersion.of(processVersion),
                 identitySlots
         );
     }
@@ -345,14 +348,67 @@ public class FormTriggerControllerV1 {
             @Nonnull
             FormLayoutElement layoutElement,
             @Nonnull
-            ProcessNodeEntity node,
+            PublicFormNode node,
             @Nonnull
-            ProcessEntity process,
+            PublicFormProcess process,
             @Nonnull
-            ProcessVersionEntity version,
+            PublicFormVersion version,
             @Nonnull
             List<IdentitySlotResponseDTO> identitySlots
     ) {
+    }
+
+    public record PublicFormNode(
+            @Nonnull
+            Integer id,
+            @Nullable
+            String formSlug
+    ) {
+    }
+
+    public record PublicFormProcess(
+            @Nonnull
+            String slug
+    ) {
+    }
+
+    public record PublicFormVersion(
+            @Nonnull
+            Integer processVersion,
+            @Nonnull
+            String publicTitle,
+            @Nonnull
+            Instant updated,
+            @Nullable
+            Integer legalSupportDepartmentId,
+            @Nullable
+            Integer technicalSupportDepartmentId,
+            @Nullable
+            Integer imprintDepartmentId,
+            @Nullable
+            Integer privacyDepartmentId,
+            @Nullable
+            Integer accessibilityDepartmentId,
+            @Nullable
+            String processSpecificPrivacyStatement,
+            @Nullable
+            String processSpecificAccessibilityStatement
+    ) {
+        @Nonnull
+        public static PublicFormVersion of(@Nonnull ProcessVersionEntity version) {
+            return new PublicFormVersion(
+                    version.getProcessVersion(),
+                    version.getPublicTitle(),
+                    version.getUpdated(),
+                    version.getLegalSupportDepartmentId(),
+                    version.getTechnicalSupportDepartmentId(),
+                    version.getImprintDepartmentId(),
+                    version.getPrivacyDepartmentId(),
+                    version.getAccessibilityDepartmentId(),
+                    version.getProcessSpecificPrivacyStatement(),
+                    version.getProcessSpecificAccessibilityStatement()
+            );
+        }
     }
 
     @Nonnull
@@ -437,7 +493,8 @@ public class FormTriggerControllerV1 {
                 .setSkipValuesForElementIds(List.of())
                 .setSkipOverridesForElementIds(List.of())
                 .setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS))
-                .setSkipVisibilitiesForElementIds(List.of());
+                .setSkipVisibilitiesForElementIds(List.of())
+                .setIgnoreAuthoredValuesOfNonEditableInputs(true);
 
         var request = new ElementDerivationRequest(
                 config.formLayout,
@@ -515,7 +572,8 @@ public class FormTriggerControllerV1 {
                 .setSkipValuesForElementIds(skipValuesFor)
                 .setSkipOverridesForElementIds(skipOverridesFor)
                 .setSkipErrorsForElementIds(skipErrorsFor)
-                .setSkipVisibilitiesForElementIds(skipVisibilitiesFor);
+                .setSkipVisibilitiesForElementIds(skipVisibilitiesFor)
+                .setIgnoreAuthoredValuesOfNonEditableInputs(true);
 
         var request = new ElementDerivationRequest(
                 config.configuration().formLayout,
@@ -573,10 +631,12 @@ public class FormTriggerControllerV1 {
 
         // Perform derivation
         var logger = new ElementDerivationLogger();
+        // Customers must not fill disabled or technical inputs, for example a computed fee, with their own values.
         var derivationRequest = new ElementDerivationRequest(
                 config.configuration().formLayout,
                 inputs,
                 new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
         );
         var derivedRuntimeElementData = elementDerivationService
                 .derive(derivationRequest, identities, logger);
@@ -696,6 +756,7 @@ public class FormTriggerControllerV1 {
                             form,
                             normalizedInputs,
                             new ElementDerivationOptions()
+                                    .setIgnoreAuthoredValuesOfNonEditableInputs(true)
                     ),
                     identities,
                     new ElementDerivationLogger()
