@@ -211,7 +211,8 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                         variableProcessDestinationKey,
                         "Zähler",
                         null,
-                        processNodeEntity
+                        processNodeEntity,
+                        null
                 );
     }
 

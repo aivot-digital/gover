@@ -1,16 +1,13 @@
 package de.aivot.prosuna.backend.process.models;
 
+import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.StepperLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.layout.TabLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
+import de.aivot.prosuna.backend.elements.models.elements.layout.*;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -20,6 +17,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -134,6 +132,19 @@ public record ProcessNodeDefinitionMetadata(
         return addForwardedProcessDataKey(new ForwardedProcessDataKey(processDataKey, label, subLabel, origin));
     }
 
+    public ProcessNodeDefinitionMetadata addForwardedProcessDataKey(@Nonnull
+                                                                    String processDataKey,
+                                                                    @Nonnull
+                                                                    String label,
+                                                                    @Nullable
+                                                                    String subLabel,
+                                                                    @Nonnull
+                                                                    ProcessNodeEntity origin,
+                                                                    @Nullable
+                                                                    List<ForwardedProcessDataKey.ValueOption> valueOptions) {
+        return addForwardedProcessDataKey(new ForwardedProcessDataKey(processDataKey, label, subLabel, origin, valueOptions, null, null));
+    }
+
     public ProcessNodeDefinitionMetadata addForwardedProcessDataKey(ForwardedProcessDataKey forwardedProcessDataKey) {
         forwardedProcessDataKeys.add(forwardedProcessDataKey);
         return this;
@@ -178,8 +189,8 @@ public record ProcessNodeDefinitionMetadata(
         if (layout instanceof FormLayoutElement formLayout) {
             addCompleteFormReusableUiDefinition(formLayout, origin);
         } else if (layout instanceof GroupLayoutElement ||
-                   layout instanceof StepperLayoutElement ||
-                   layout instanceof TabLayoutElement) {
+                layout instanceof StepperLayoutElement ||
+                layout instanceof TabLayoutElement) {
             addCompleteUiDefinitionReusableUiDefinition((BaseElement) layout, origin);
         }
 
@@ -196,19 +207,25 @@ public record ProcessNodeDefinitionMetadata(
                     parentDestinationKey += "[*].";
                 }
 
-                this.addForwardedProcessDataKey(
+                var valueOptions = getValueOptions(i);
+                var codeListKey = getCodeListKey(i);
+
+                this.addForwardedProcessDataKey(new ForwardedProcessDataKey(
                         parentDestinationKey + i.getDestinationKey(),
                         StringUtils.isNotNullOrEmpty(i.getLabel()) ? i.getLabel() : i.getId(),
                         i.getHint(),
-                        origin
-                );
+                        origin,
+                        valueOptions,
+                        codeListKey,
+                        getCodeListValueMode(i, codeListKey)
+                ));
             }
 
             if (e instanceof FileUploadInputElement f) {
                 var attachmentSetDataKey = resolveAttachmentSetDataKey(f);
                 if (attachmentSetDataKey != null) {
                     var isMultifile = Boolean.TRUE.equals(f.getIsMultifile()) ||
-                                      parents.stream().anyMatch(ReplicatingContainerLayoutElement.class::isInstance);
+                            parents.stream().anyMatch(ReplicatingContainerLayoutElement.class::isInstance);
 
                     this.addForwardedAttachmentSet(
                             attachmentSetDataKey,
@@ -235,6 +252,104 @@ public record ProcessNodeDefinitionMetadata(
         });
 
         return this;
+    }
+
+    private @Nullable List<ForwardedProcessDataKey.ValueOption> getValueOptions(BaseInputElement<?> i) {
+        List<ForwardedProcessDataKey.ValueOption> valueOptions = switch (i) {
+            case RadioInputElement r -> {
+                OptionsSourceType os = r.getOptionsSource();
+                if (os == null) {
+                    os = OptionsSourceType.Manual;
+                }
+
+                yield switch (os) {
+                    case Manual -> r
+                            .getOptions() == null ? null : r
+                            .getOptions()
+                            .stream()
+                            .filter(o -> o.getValue() != null && o.getLabel() != null)
+                            .map(o -> new ForwardedProcessDataKey.ValueOption(o.getValue(), o.getLabel()))
+                            .toList();
+                    case CodeList -> null;
+                };
+            }
+            case SelectInputElement s -> {
+                var os = s.getOptionsSource();
+                if (os == null) {
+                    os = OptionsSourceType.Manual;
+                }
+
+                yield switch (os) {
+                    case Manual -> s
+                            .getOptions() == null ? null : s
+                            .getOptions()
+                            .stream()
+                            .filter(o -> o.getValue() != null && o.getLabel() != null)
+                            .map(o -> new ForwardedProcessDataKey.ValueOption(o.getValue(), o.getLabel()))
+                            .toList();
+                    case CodeList -> null;
+                };
+            }
+            case MultiCheckboxInputElement m -> {
+                var os = m.getOptionsSource();
+                if (os == null) {
+                    os = OptionsSourceType.Manual;
+                }
+
+                yield switch (os) {
+                    case Manual -> m.getOptions() == null ? null : m
+                            .getOptions()
+                            .stream()
+                            .filter(o -> o.getValue() != null && o.getLabel() != null)
+                            .map(o -> new ForwardedProcessDataKey.ValueOption(o.getValue(), o.getLabel()))
+                            .toList();
+                    case CodeList -> null;
+                };
+            }
+            case ChipInputElement c -> {
+                var os = c.getOptionsSource();
+                if (os == null) {
+                    os = OptionsSourceType.Manual;
+                }
+
+                yield switch (os) {
+                    case Manual -> c.getSuggestions() == null ? null : c
+                            .getSuggestions()
+                            .stream()
+                            .filter(Objects::nonNull)
+                            .map(s -> new ForwardedProcessDataKey.ValueOption(s, s))
+                            .toList();
+                    case CodeList -> null;
+                };
+            }
+            default -> null;
+        };
+
+        return valueOptions;
+    }
+
+    private static @Nullable String getCodeListKey(@Nonnull BaseInputElement<?> i) {
+        var codeListKey = switch (i) {
+            case RadioInputElement r when r.getOptionsSource() == OptionsSourceType.CodeList -> r.getCodeListKey();
+            case SelectInputElement s when s.getOptionsSource() == OptionsSourceType.CodeList -> s.getCodeListKey();
+            case MultiCheckboxInputElement m when m.getOptionsSource() == OptionsSourceType.CodeList -> m.getCodeListKey();
+            case ChipInputElement c when c.getOptionsSource() == OptionsSourceType.CodeList -> c.getCodeListKey();
+            default -> null;
+        };
+
+        return StringUtils.toNullableTrimmedString(codeListKey);
+    }
+
+    private static @Nullable ForwardedProcessDataKey.CodeListValueMode getCodeListValueMode(@Nonnull BaseInputElement<?> i,
+                                                                                             @Nullable String codeListKey) {
+        if (codeListKey == null) {
+            return null;
+        }
+
+        // Chip inputs store plain strings, so they keep the label of the selected code list item instead of its value.
+        return i instanceof ChipInputElement
+                ? ForwardedProcessDataKey.CodeListValueMode.LabelOnly
+                : ForwardedProcessDataKey.CodeListValueMode.ValueAndLabel;
     }
 
     private void addCompleteFormReusableUiDefinition(@Nonnull FormLayoutElement formLayout,
@@ -398,8 +513,37 @@ public record ProcessNodeDefinitionMetadata(
             @Nullable
             String subLabel,
             @Nonnull
-            ProcessNodeEntity origin
+            ProcessNodeEntity origin,
+            @Nullable
+            List<ValueOption> valueOptions,
+            // Set instead of valueOptions when the options come from a code list. Clients load the options themselves
+            // and use codeListValueMode to determine which item field the process data contains.
+            @Nullable
+            String codeListKey,
+            @Nullable
+            CodeListValueMode codeListValueMode
     ) {
+        public ForwardedProcessDataKey(@Nonnull String processDataKey,
+                                       @Nonnull String label,
+                                       @Nullable String subLabel,
+                                       @Nonnull ProcessNodeEntity origin) {
+            this(processDataKey, label, subLabel, origin, null, null, null);
+        }
+
+        public record ValueOption(
+                @Nonnull
+                String value,
+                @Nonnull
+                String label
+        ) {
+        }
+
+        public enum CodeListValueMode {
+            // The process data contains the item value; the item label is used for display.
+            ValueAndLabel,
+            // The process data contains the item label itself.
+            LabelOnly
+        }
     }
 
     public record ForwardedIdentity(

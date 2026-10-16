@@ -815,7 +815,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     mappedProcessDataKey,
                     output.label(),
                     output.description(),
-                    node
+                    node,
+                    null
             );
         }
 
@@ -853,7 +854,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     processDataKey,
                     forwardedKey.label(),
                     forwardedKey.subLabel(),
-                    forwardedKey.origin()
+                    forwardedKey.origin(),
+                    forwardedKey.valueOptions(),
+                    forwardedKey.codeListKey(),
+                    forwardedKey.codeListValueMode()
             ));
 
             // Wildcard paths need a concrete row binding or an explicit collection result. Neither is part of the

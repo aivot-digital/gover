@@ -42,6 +42,7 @@ import {OptionsSourceType} from '../../../models/elements/form/input/options-sou
 import {Stack} from '@mui/material';
 import {NoCodeTreeRow} from './no-code-tree-row';
 import {useCodeListElementOptions} from '../../code-lists/hooks/use-code-list-element-options';
+import {useProcessDataReferenceOptions} from '../hooks/use-process-data-reference-options';
 
 interface NoCodeOperandEditorExpressionProps {
     allElements: ElementWithParents[];
@@ -109,6 +110,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
             .filter((element): element is ElementWithParents['element'] => element != null);
     }, [operands, allElements]);
     const codeListOptions = useCodeListElementOptions(referencedElements);
+    const processDataOptions = useProcessDataReferenceOptions(operands);
 
     const parameterOptionOverrides: NoCodeParameterOption[] = useMemo(() => {
         const options: NoCodeParameterOption[] = [];
@@ -164,8 +166,10 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
             }
         }
 
+        options.push(...processDataOptions);
+
         return options;
-    }, [operands, allElements, codeListOptions]);
+    }, [operands, allElements, codeListOptions, processDataOptions]);
 
     const leadingParameter: ResolvedParameter | undefined = useMemo(() => {
         if (parameters.length >= 2) {

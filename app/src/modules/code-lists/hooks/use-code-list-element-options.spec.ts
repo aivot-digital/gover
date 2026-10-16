@@ -4,7 +4,8 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
 import {BaseApiService} from '../../../services/base-api-service';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
-import {useCodeListElementOptions} from './use-code-list-element-options';
+import {CodeListValueMode} from '../enums/code-list-value-mode';
+import {useCodeListElementOptions, useCodeListOptions} from './use-code-list-element-options';
 
 describe('useCodeListElementOptions', () => {
     afterEach(() => {
@@ -118,6 +119,80 @@ describe('useCodeListElementOptions', () => {
         };
 
         const {result} = renderHook(() => useCodeListElementOptions([element]));
+
+        expect(result.current.size).toBe(0);
+        expect(get).not.toHaveBeenCalled();
+    });
+});
+
+describe('useCodeListOptions', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('loads item values and labels for the value-and-label mode', async () => {
+        const get = vi.spyOn(BaseApiService.prototype, 'get').mockResolvedValue([
+            {label: 'Berlin', value: 'BE'},
+        ]);
+
+        const {result} = renderHook(() => useCodeListOptions([{
+            id: 'person.state',
+            codeListKey: ' federal/states ',
+            valueMode: CodeListValueMode.ValueAndLabel,
+        }]));
+
+        await waitFor(() => expect(result.current.get('person.state')).toEqual([
+            {label: 'Berlin', value: 'BE'},
+        ]));
+        expect(get).toHaveBeenCalledWith(
+            '/api/public/code-lists/federal%2Fstates/select/',
+            {skipAuthCheck: true},
+        );
+    });
+
+    it('uses item labels as values for the label-only mode', async () => {
+        const get = vi.spyOn(BaseApiService.prototype, 'get').mockResolvedValue(['Berlin', 'Hamburg']);
+
+        const {result} = renderHook(() => useCodeListOptions([{
+            id: 'person.cities',
+            codeListKey: 'cities',
+            valueMode: CodeListValueMode.LabelOnly,
+        }]));
+
+        await waitFor(() => expect(result.current.get('person.cities')).toEqual([
+            {label: 'Berlin', value: 'Berlin'},
+            {label: 'Hamburg', value: 'Hamburg'},
+        ]));
+        expect(get).toHaveBeenCalledWith(
+            '/api/public/code-lists/cities/chip-input/',
+            {skipAuthCheck: true},
+        );
+    });
+
+    it('deduplicates requests for sources with the same codelist and mode', async () => {
+        const get = vi.spyOn(BaseApiService.prototype, 'get').mockResolvedValue([
+            {label: 'Berlin', value: 'BE'},
+        ]);
+
+        const {result} = renderHook(() => useCodeListOptions([
+            {id: 'birthState', codeListKey: 'states', valueMode: CodeListValueMode.ValueAndLabel},
+            {id: 'residenceState', codeListKey: 'states', valueMode: CodeListValueMode.ValueAndLabel},
+        ]));
+
+        await waitFor(() => {
+            expect(result.current.get('birthState')).toHaveLength(1);
+            expect(result.current.get('residenceState')).toHaveLength(1);
+        });
+        expect(get).toHaveBeenCalledOnce();
+    });
+
+    it('does not load options without a codelist key', () => {
+        const get = vi.spyOn(BaseApiService.prototype, 'get');
+
+        const {result} = renderHook(() => useCodeListOptions([
+            {id: 'blank', codeListKey: '  ', valueMode: CodeListValueMode.ValueAndLabel},
+            {id: 'missing', codeListKey: null, valueMode: CodeListValueMode.LabelOnly},
+        ]));
 
         expect(result.current.size).toBe(0);
         expect(get).not.toHaveBeenCalled();
