@@ -55,11 +55,6 @@
         }
     }
 
-    # Allow browser applications on other origins to load the bundled web fonts.
-    header /assets/fonts/* {
-        Access-Control-Allow-Origin *
-    }
-
     # Keep the legacy security.txt URL canonical.
     redir /security.txt /.well-known/security.txt 301
 }

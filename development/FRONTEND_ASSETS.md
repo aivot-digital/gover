@@ -141,10 +141,11 @@ docker run --rm --network none prosuna-nginx-test
 This script creates fixtures and starts Nginx only inside the disposable
 container. The image uses Alpine's Nginx and Brotli packages, matching the
 production Containerfile. It checks Brotli/gzip negotiation, lossless content,
-MIME types, cache headers, missing sidecars and assets, SPA routes and SBOM
-headers. Do not run the script on a persistent application host. Keep the test
-image's Alpine release aligned with the production runtime. CI runs the build
-script tests and these HTTP checks with the frontend tests.
+MIME types, cache headers, missing sidecars and assets, SPA routes, SBOM
+headers, the cross-origin header for web fonts under `/assets/fonts/` and
+relative redirects. Do not run the script on a persistent application host.
+Keep the test image's Alpine release aligned with the production runtime. CI
+runs the build script tests and these HTTP checks with the frontend tests.
 
 Use production builds to inspect chunk requests and delivery headers; a Vite
 development server does not reproduce production bundling or Nginx caching.

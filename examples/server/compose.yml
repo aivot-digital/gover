@@ -12,7 +12,7 @@ services:
   # Prosuna backend API. Infrastructure services remain on private Docker networks;
   # only Caddy can route public requests to this container.
   prosuna_api:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-147
     restart: unless-stopped
     command: serve
     depends_on:
@@ -91,7 +91,7 @@ services:
 
   # Prosuna web application. Caddy serves it at / and /staff after the API is healthy.
   prosuna_app:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-147
     restart: unless-stopped
     command: web
     depends_on:
