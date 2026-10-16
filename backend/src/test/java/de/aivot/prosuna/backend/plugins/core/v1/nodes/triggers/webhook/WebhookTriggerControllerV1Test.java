@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -271,6 +272,82 @@ class WebhookTriggerControllerV1Test {
     }
 
     @Test
+    void handleJsonShouldNotStoreTheCredentialsOfTheCall() throws ResponseException {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON
+        );
+        useTokenAuthentication(fixture.config());
+        var request = mock(HttpServletRequest.class);
+        when(request.getMethod()).thenReturn(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST);
+        when(request.getContentType()).thenReturn(MediaType.APPLICATION_JSON_VALUE);
+        when(request.getHeaderNames()).thenReturn(Collections.enumeration(List.of(
+                "Authorization", "proxy-authorization", "Cookie", "X-Request-Id"
+        )));
+        when(request.getHeaders("X-Request-Id")).thenReturn(Collections.enumeration(List.of("42")));
+        when(request.getParameterMap()).thenReturn(Map.of(
+                "token", new String[]{"secret"},
+                "source", new String[]{"crm"}
+        ));
+
+        fixture.controller().handleJson(
+                request,
+                PROCESS_SLUG,
+                "example-slug",
+                Map.<String, Object>of("token", "body-value"),
+                null,
+                "secret",
+                null
+        );
+
+        var initialPayload = storedInitialPayload(fixture);
+        var requestData = (Map<?, ?>) initialPayload.get(WebhookTriggerNodeV1.INITIAL_DATA_KEY_REQUEST);
+        assertEquals(Map.of("X-Request-Id", List.of("42")), requestData.get("headers"));
+        assertEquals(Set.of("source"), ((Map<?, ?>) requestData.get("queryParameters")).keySet());
+        // A JSON body is not built from request parameters, so its fields stay as sent.
+        assertEquals(Map.of("token", "body-value"), initialPayload.get(WebhookTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD));
+    }
+
+    @Test
+    void handleFormDataShouldNotStoreTheTokenParameterInThePayload() throws ResponseException {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM
+        );
+        useTokenAuthentication(fixture.config());
+        var request = formDataRequest(Map.of(
+                "token", new String[]{"secret"},
+                "field", new String[]{"value"}
+        ));
+
+        fixture.controller().handleFormData(request, PROCESS_SLUG, "example-slug", null, "secret", null);
+
+        var initialPayload = storedInitialPayload(fixture);
+        assertEquals(Map.of("field", "value"), initialPayload.get(WebhookTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD));
+        var requestData = (Map<?, ?>) initialPayload.get(WebhookTriggerNodeV1.INITIAL_DATA_KEY_REQUEST);
+        assertEquals(Set.of("field"), ((Map<?, ?>) requestData.get("queryParameters")).keySet());
+    }
+
+    @Test
+    void handleFormDataShouldKeepATokenFieldWithoutTokenAuthentication() throws ResponseException {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM
+        );
+        var request = formDataRequest(Map.of(
+                "token", new String[]{"data"},
+                "field", new String[]{"value"}
+        ));
+
+        fixture.controller().handleFormData(request, PROCESS_SLUG, "example-slug", null, "data", null);
+
+        assertEquals(
+                Map.of("token", "data", "field", "value"),
+                storedInitialPayload(fixture).get(WebhookTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD)
+        );
+    }
+
+    @Test
     void handleWithoutBodyShouldAllowEmptyGetRequestsWithoutContentType() throws ResponseException {
         var fixture = createControllerFixture(
                 WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_GET,
@@ -477,5 +554,28 @@ class WebhookTriggerControllerV1Test {
                                          ProcessInstanceService processInstanceService,
                                          List<ProcessInstanceAttachmentEntity> createdAttachments,
                                          List<ProcessInstanceAttachmentSetEntity> createdAttachmentSets) {
+    }
+
+    private static void useTokenAuthentication(WebhookTriggerConfigV1 config) {
+        config.authRequired = true;
+        config.authConfig = new WebhookTriggerConfigV1.WebhookConfigAuth();
+        config.authConfig.authMethod = WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM;
+        config.authConfig.authToken = "secret";
+    }
+
+    private static StandardMultipartHttpServletRequest formDataRequest(Map<String, String[]> parameters) {
+        var request = mock(StandardMultipartHttpServletRequest.class);
+        when(request.getMethod()).thenReturn(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST);
+        when(request.getContentType()).thenReturn(MediaType.MULTIPART_FORM_DATA_VALUE);
+        when(request.getParameterMap()).thenReturn(parameters);
+        when(request.getMultiFileMap()).thenReturn(new LinkedMultiValueMap<>());
+        when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+        return request;
+    }
+
+    private static Map<String, Object> storedInitialPayload(TestControllerFixture fixture) throws ResponseException {
+        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        return updatedInstanceCaptor.getValue().getInitialPayload();
     }
 }
