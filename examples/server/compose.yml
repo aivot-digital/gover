@@ -231,15 +231,15 @@ services:
     networks:
       - prosuna
 
-  # Durable message broker for background jobs. Its data must be included in backups.
+  # Message broker for background jobs. It holds no state that needs to be persisted or
+  # backed up: pending work is stored in the database, and Prosuna publishes it again when
+  # the broker starts empty.
   rabbitmq:
     image: docker.io/library/rabbitmq:4-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: prosuna
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - prosuna
 
@@ -271,12 +271,11 @@ services:
 
 
 # Back up all named volumes regularly. The database and prosuna_data volumes contain
-# critical application data; RabbitMQ and both Caddy volumes preserve operational state.
+# critical application data; both Caddy volumes preserve operational state.
 volumes:
   prosuna_data:
   prosuna_database_data:
   keycloak_database_data:
-  rabbitmq_data:
   caddy_data:
   caddy_config:
 

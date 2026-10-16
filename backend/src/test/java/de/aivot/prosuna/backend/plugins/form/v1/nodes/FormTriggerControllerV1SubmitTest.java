@@ -34,8 +34,10 @@ import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessTestClaimFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
+import de.aivot.prosuna.backend.process.cache.entities.ProcessSubmissionCacheEntity;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.process.utils.ProcessSubmissionCookieUtils;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderService;
@@ -105,6 +107,64 @@ class FormTriggerControllerV1SubmitTest {
                 createdInstanceCaptor.getValue().getStarted(),
                 updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_STARTED)
         );
+    }
+
+    @Test
+    void submitShouldBindTheSubmittingBrowserToTheStartedInstance() throws Exception {
+        var startedProcessAccessKey = UUID.randomUUID().toString();
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), startedProcessAccessKey);
+        var response = new MockHttpServletResponse();
+
+        fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        );
+
+        verify(fixture.processSubmissionBindingService()).bind(1L);
+        var cookie = response.getCookie(ProcessSubmissionCookieUtils.PROCESS_SUBMISSION_COOKIE_NAME);
+        assertNotNull(cookie);
+        assertEquals("submission-secret", cookie.getValue());
+        assertEquals("/api/public/processes/" + startedProcessAccessKey + "/", cookie.getPath());
+        assertEquals(ProcessSubmissionCacheEntity.TIME_TO_LIVE_SECONDS, cookie.getMaxAge());
+        assertEquals("Strict", cookie.getAttribute("SameSite"));
+        assertTrue(cookie.getSecure());
+        assertTrue(cookie.isHttpOnly());
+    }
+
+    @Test
+    void submitShouldFailTheInstanceWhenTheSubmittingBrowserCannotBeBound() throws Exception {
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), UUID.randomUUID().toString());
+        doThrow(new IllegalStateException("Redis is unavailable"))
+                .when(fixture.processSubmissionBindingService())
+                .bind(1L);
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        ));
+
+        // The instance must never be released to the process worker, so submitting again cannot create a duplicate.
+        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        assertEquals(ProcessInstanceStatus.Failed, updatedInstanceCaptor.getValue().getStatus());
+        assertEquals(0, response.getCookies().length);
+        // The identities stay in the session, so the customer can submit again without identifying again.
+        verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
     }
 
     @Test
@@ -270,6 +330,9 @@ class FormTriggerControllerV1SubmitTest {
         when(processTestClaimService.retrieve(any(ProcessTestClaimFilter.class)))
                 .thenReturn(Optional.empty());
 
+        var processSubmissionBindingService = mock(ProcessSubmissionBindingService.class);
+        when(processSubmissionBindingService.bind(1L)).thenReturn("submission-secret");
+
         var processNodeExecutionLoggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
         when(processNodeExecutionLoggerFactory.create(eq(1L), isNull(), isNull(), isNull()))
                 .thenReturn(mock(ProcessNodeExecutionLogger.class));
@@ -304,7 +367,8 @@ class FormTriggerControllerV1SubmitTest {
                 mock(PaymentProviderRepository.class),
                 mock(PdfService.class),
                 mock(PaymentProviderDefinitionsService.class),
-                mock(IdentitySlotService.class)
+                mock(IdentitySlotService.class),
+                processSubmissionBindingService
         );
 
         return new SubmitFixture(
@@ -315,7 +379,8 @@ class FormTriggerControllerV1SubmitTest {
                 identityService,
                 elementDerivationService,
                 elementDataTransformService,
-                processInstanceService
+                processInstanceService,
+                processSubmissionBindingService
         );
     }
 
@@ -342,7 +407,8 @@ class FormTriggerControllerV1SubmitTest {
             IdentityService identityService,
             ElementDerivationService elementDerivationService,
             ElementDataTransformService elementDataTransformService,
-            ProcessInstanceService processInstanceService
+            ProcessInstanceService processInstanceService,
+            ProcessSubmissionBindingService processSubmissionBindingService
     ) {
     }
 }

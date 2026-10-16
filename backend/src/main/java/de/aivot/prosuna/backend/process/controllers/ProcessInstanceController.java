@@ -11,16 +11,11 @@ import de.aivot.prosuna.backend.process.dtos.ProcessInstanceReassignRequestDTO;
 import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
-import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
-import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
-import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.entities.VUserProcessInstanceAccessPermissionsEntity;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceRestartService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceService;
-import de.aivot.prosuna.backend.process.services.ProcessInstanceTaskService;
-import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
-import de.aivot.prosuna.backend.process.workers.ProcessWorker;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.utils.specification.SpecificationBuilderArrayContains;
@@ -31,7 +26,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,7 +34,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -57,9 +50,7 @@ public class ProcessInstanceController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessInstanceService processInstanceService;
-    private final ProcessInstanceTaskService processInstanceTaskService;
-    private final RabbitTemplate rabbitTemplate;
-    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+    private final ProcessInstanceRestartService restartService;
     private final PermissionService permissionService;
     private final ProcessAssignmentService assignmentService;
 
@@ -67,16 +58,12 @@ public class ProcessInstanceController {
     public ProcessInstanceController(AuditService auditService,
                                      UserService userService,
                                      ProcessInstanceService processInstanceService,
-                                     ProcessInstanceTaskService processInstanceTaskService,
-                                     RabbitTemplate rabbitTemplate,
-                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                                     ProcessInstanceRestartService restartService,
                                      PermissionService permissionService, ProcessAssignmentService assignmentService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceService = processInstanceService;
-        this.processInstanceTaskService = processInstanceTaskService;
-        this.rabbitTemplate = rabbitTemplate;
-        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+        this.restartService = restartService;
         this.permissionService = permissionService;
         this.assignmentService = assignmentService;
     }
@@ -175,7 +162,7 @@ public class ProcessInstanceController {
     @PutMapping("{id}/restart-failed/")
     @Operation(
             summary = "Restart Failed Process Instance",
-            description = "Restart a failed process instance when it has no tasks yet or when the latest task failed."
+            description = "Restart a failed process instance when it has no tasks yet, when the latest task failed, or when it holds pending work."
     )
     public ProcessInstanceEntity restartFailed(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -195,74 +182,7 @@ public class ProcessInstanceController {
                 ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE
         );
 
-        if (processInstance.getStatus() != ProcessInstanceStatus.Failed) {
-            throw ResponseException.badRequest("Nur Vorgänge im Status 'Fehlgeschlagen' können neu gestartet werden.");
-        }
-
-        var latestTask = processInstanceTaskService
-                .retrieveLatestForInstanceId(processInstance.getId())
-                .orElse(null);
-
-        var now = Instant.now();
-        ProcessWorker.DoWorkWorkerPayload payload;
-
-        if (latestTask == null) {
-            if (processInstance.getInitialPayload() == null || processInstance.getInitialPayload().isEmpty()) {
-                throw ResponseException.conflict("Der Vorgang kann nicht neu gestartet werden, weil keine Initialdaten für einen erneuten Start vorliegen.");
-            }
-
-            payload = new ProcessWorker.DoWorkWorkerPayload(
-                    processInstance.getId(),
-                    null,
-                    null,
-                    null,
-                    processInstance.getInitialNodeId(),
-                    null
-            );
-        } else {
-            if (latestTask.getStatus() != ProcessTaskStatus.Failed) {
-                throw ResponseException.conflict("Der Vorgang kann derzeit nur neu gestartet werden, wenn die letzte Aufgabe fehlgeschlagen ist oder noch keine Aufgabe angelegt wurde.");
-            }
-
-            payload = new ProcessWorker.DoWorkWorkerPayload(
-                    latestTask.getProcessInstanceId(),
-                    latestTask.getPreviousProcessInstanceTaskId(),
-                    latestTask.getPreviousProcessNodeId(),
-                    latestTask.getPreviousProcessNodePortKey(),
-                    latestTask.getProcessNodeId(),
-                    latestTask.getId()
-            );
-        }
-
-        try {
-            rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, payload);
-        } catch (Exception e) {
-            throw ResponseException.internalServerError("Der Vorgang konnte nicht zum Neustart eingeplant werden.", e);
-        }
-
-        processInstance
-                .setStatus(ProcessInstanceStatus.Running)
-                .setUpdated(now);
-        var updatedInstance = processInstanceService.save(processInstance);
-
-        if (latestTask != null) {
-            latestTask
-                    .setStatus(ProcessTaskStatus.Restarted)
-                    .setUpdated(now);
-            processInstanceTaskService.save(latestTask);
-        }
-
-        processNodeExecutionLoggerFactory
-                .create(updatedInstance.getId(), latestTask != null ? latestTask.getId() : null, user.getId(), null)
-                .logf(
-                        ProcessNodeExecutionLogLevel.Info,
-                        true,
-                        true,
-                        "Vorgang neu gestartet",
-                        latestTask == null
-                                ? "Der fehlgeschlagene Vorgang wurde manuell neu gestartet, bevor eine erste Aufgabe angelegt wurde."
-                                : "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt."
-                );
+        var updatedInstance = restartService.restartFailedInstance(processInstance.getId(), user.getId());
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, ProcessInstanceEntity.class, updatedInstance.getId(), "id", Map.of(
                 "id", updatedInstance.getId(),

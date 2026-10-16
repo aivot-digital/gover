@@ -26,6 +26,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.*;
@@ -45,6 +47,7 @@ public class PaymentTransactionService implements
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final PaymentProviderRepository paymentProviderRepository;
     private final PaymentProviderConfigurationService paymentProviderConfigurationService;
+    private final TransactionTemplate transactionTemplate;
 
     @Autowired
     public PaymentTransactionService(
@@ -54,7 +57,8 @@ public class PaymentTransactionService implements
             AuditService auditService,
             PaymentProviderDefinitionsService paymentProviderDefinitionsService,
             PaymentProviderRepository paymentProviderRepository,
-            PaymentProviderConfigurationService paymentProviderConfigurationService) {
+            PaymentProviderConfigurationService paymentProviderConfigurationService,
+            PlatformTransactionManager transactionManager) {
         this.auditService = auditService.createScopedAuditService(PaymentTransactionService.class, "Zahlungen");
         this.paymentTransactionChangeListeners = paymentTransactionChangeListeners;
         this.config = config;
@@ -62,6 +66,7 @@ public class PaymentTransactionService implements
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentProviderConfigurationService = paymentProviderConfigurationService;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     /**
@@ -209,15 +214,23 @@ public class PaymentTransactionService implements
 
     @Override
     public void performDelete(@Nonnull PaymentTransactionEntity entity) throws ResponseException {
-        for (var listener : paymentTransactionChangeListeners) {
-            try {
-                listener.onDelete(entity);
-            } catch (ResponseException e) {
-                throw ResponseException.internalServerError(e, "Error notifying change listener for transaction %s", entity.getKey());
+        // Listeners request follow-up work for the deleted transaction, which commits together with the deletion.
+        var failure = transactionTemplate.execute(status -> {
+            for (var listener : paymentTransactionChangeListeners) {
+                try {
+                    listener.onDelete(entity);
+                } catch (ResponseException e) {
+                    status.setRollbackOnly();
+                    return ResponseException.internalServerError(e, "Error notifying change listener for transaction %s", entity.getKey());
+                }
             }
-        }
 
-        paymentTransactionRepository.delete(entity);
+            paymentTransactionRepository.delete(entity);
+            return null;
+        });
+        if (failure != null) {
+            throw failure;
+        }
     }
 
     public void processCallback(
@@ -292,21 +305,30 @@ public class PaymentTransactionService implements
 
         // If the payment status has changed, update the transaction and notify all listeners
         if (paymentStatusChanged) {
-            // Update and save the transaction
             var paymentInformation = xBezahldiensteTransactionUpdated.getPaymentInformation();
             paymentInformation.setTransactionTimestamp(
                     providerDefinition.fixTransactionTimestamp(paymentInformation.getTransactionTimestamp())
             );
             transaction.setPaymentInformation(paymentInformation);
-            var updatedTransaction = paymentTransactionRepository.save(transaction);
 
-            // Iterate over all listeners and notify them about the change
-            for (var listener : paymentTransactionChangeListeners) {
-                try {
-                    listener.onChange(updatedTransaction);
-                } catch (ResponseException e) {
-                    throw new PaymentException(e, "Error notifying change listener for transaction %s", updatedTransaction.getKey());
+            // Listeners request follow-up work, such as resuming the task waiting for this payment. The new status and
+            // that work commit together: if a listener fails, the status remains unchanged, so the next poll or
+            // callback detects the change and notifies the listeners again.
+            var failure = transactionTemplate.execute(status -> {
+                var updatedTransaction = paymentTransactionRepository.save(transaction);
+
+                for (var listener : paymentTransactionChangeListeners) {
+                    try {
+                        listener.onChange(updatedTransaction);
+                    } catch (ResponseException e) {
+                        status.setRollbackOnly();
+                        return new PaymentException(e, "Error notifying change listener for transaction %s", updatedTransaction.getKey());
+                    }
                 }
+                return null;
+            });
+            if (failure != null) {
+                throw failure;
             }
         }
     }

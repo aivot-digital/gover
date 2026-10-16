@@ -163,8 +163,6 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: \${RABBITMQ_USERNAME}
       RABBITMQ_DEFAULT_PASS: \${RABBITMQ_PASSWORD}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - prosuna-network
 
@@ -314,7 +312,6 @@ services:
 volumes:
   prosuna_pg_data:
   keycloak_pg_data:
-  rabbitmq_data:
   prosuna_app_data:
   caddy_data:
 

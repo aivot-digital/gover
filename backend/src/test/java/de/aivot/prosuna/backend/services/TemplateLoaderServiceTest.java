@@ -31,21 +31,177 @@ import de.aivot.prosuna.backend.services.pdf.MarkdownDialect;
 import de.aivot.prosuna.backend.services.pdf.PdfElement;
 import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
 import org.junit.jupiter.api.Test;
+import org.thymeleaf.exceptions.TemplateInputException;
 import org.thymeleaf.templatemode.TemplateMode;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TemplateLoaderServiceTest {
+
+    @Test
+    void processTemplate_DoesNotResolveTemplatesFromAssetStorage() throws IOException {
+        // The default local asset storage is rooted at ./data/assets/. Files stored there must never become templates.
+        var assetDirectory = Path.of("data", "assets");
+        var createdDirectories = new LinkedList<Path>();
+        for (var directory = assetDirectory; directory != null && !Files.exists(directory); directory = directory.getParent()) {
+            createdDirectories.addFirst(directory);
+        }
+        Files.createDirectories(assetDirectory);
+        var templateName = "template-loader-test-" + UUID.randomUUID() + ".html";
+        var assetFile = assetDirectory.resolve(templateName);
+        Files.writeString(assetFile, "<p>Vorlage aus den Dateien & Medien</p>");
+
+        try {
+            assertThrows(
+                    TemplateInputException.class,
+                    () -> new TemplateLoaderService().processTemplate(templateName, Map.of(), TemplateMode.HTML)
+            );
+        } finally {
+            Files.deleteIfExists(assetFile);
+            var directories = createdDirectories.descendingIterator();
+            while (directories.hasNext()) {
+                Files.deleteIfExists(directories.next());
+            }
+        }
+    }
+
+    @Test
+    void processTemplateContent_RendersContentWithTemplateDataAndBundledFragments() {
+        var html = new TemplateLoaderService().processTemplateContent(
+                """
+                        <style th:insert="./form-parts/style.html"></style>
+                        <h1 th:text="${title}">Titel</h1>
+                        """,
+                Map.of(
+                        "title", "Antrag auf Beispielleistung",
+                        "base", createBaseContext(FormPdfScope.Blank)
+                ),
+                TemplateMode.HTML
+        );
+
+        assertTrue(html.contains("<h1>Antrag auf Beispielleistung</h1>"));
+        assertFalse(html.contains("<style></style>"));
+    }
+
+    @Test
+    void processTemplate_DoesNotResolveTemplatesOutsideTheTemplateDirectories() throws IOException {
+        try (var outsideFiles = OutsideTemplateFiles.create()) {
+            for (var templateName : outsideFiles.traversingTemplateNames()) {
+                assertThrows(
+                        TemplateInputException.class,
+                        () -> new TemplateLoaderService().processTemplate(templateName, Map.of(), TemplateMode.HTML),
+                        templateName
+                );
+            }
+        }
+    }
+
+    @Test
+    void processTemplateContent_DoesNotIncludeFilesOutsideTheTemplateDirectories() throws IOException {
+        try (var outsideFiles = OutsideTemplateFiles.create()) {
+            for (var templateName : outsideFiles.traversingTemplateNames()) {
+                assertThrows(
+                        TemplateInputException.class,
+                        () -> new TemplateLoaderService().processTemplateContent(
+                                "<div th:insert=\"~{" + templateName + "}\"></div>",
+                                Map.of(),
+                                TemplateMode.HTML
+                        ),
+                        templateName
+                );
+            }
+        }
+    }
+
+    @Test
+    void processTemplateContent_DoesNotIncludeBundledTemplatesOutsideTheFormFragments() {
+        assertThrows(
+                TemplateInputException.class,
+                () -> new TemplateLoaderService().processTemplateContent(
+                        "<div th:insert=\"~{pp_form_header.html}\"></div>",
+                        Map.of(),
+                        TemplateMode.HTML
+                )
+        );
+    }
+
+    @Test
+    void normalizeTemplateName_RejectsNamesThatCouldLeaveTheTemplateDirectory() {
+        assertEquals("form-parts/style.html", TemplateLoaderService.normalizeTemplateName("./form-parts//style.html"));
+        assertNull(TemplateLoaderService.normalizeTemplateName("form-parts/../form.html"));
+        assertNull(TemplateLoaderService.normalizeTemplateName("..\\application.yml"));
+        assertNull(TemplateLoaderService.normalizeTemplateName("./"));
+        assertNull(TemplateLoaderService.normalizeTemplateName(null));
+    }
+
+    /**
+     * Files that template names with parent segments would reach: one in the working directory next to
+     * {@code ./templates/} and one in the default local asset storage, and a resource on the classpath next to the
+     * bundled templates.
+     */
+    private record OutsideTemplateFiles(
+            Path workingDirectoryFile,
+            Path assetFile,
+            List<Path> createdDirectories
+    ) implements AutoCloseable {
+        static OutsideTemplateFiles create() throws IOException {
+            var createdDirectories = new ArrayList<Path>();
+            // The file resolver can only follow parent segments if ./templates/ exists, as on installations with overrides.
+            createDirectories(Path.of("templates"), createdDirectories);
+            var assetDirectory = Path.of("data", "assets");
+            createDirectories(assetDirectory, createdDirectories);
+
+            var fileName = "template-loader-test-" + UUID.randomUUID() + ".html";
+            var workingDirectoryFile = Files.writeString(Path.of(fileName), "<p>Datei außerhalb der Vorlagen</p>");
+            var assetFile = Files.writeString(assetDirectory.resolve(fileName), "<p>Vorlage aus den Dateien & Medien</p>");
+            return new OutsideTemplateFiles(workingDirectoryFile, assetFile, createdDirectories);
+        }
+
+        List<String> traversingTemplateNames() {
+            return List.of(
+                    "../" + workingDirectoryFile.getFileName(),
+                    "./form-parts/../../" + workingDirectoryFile.getFileName(),
+                    "../data/assets/" + assetFile.getFileName(),
+                    "../application.yml"
+            );
+        }
+
+        @Override
+        public void close() throws IOException {
+            Files.deleteIfExists(workingDirectoryFile);
+            Files.deleteIfExists(assetFile);
+            for (var directory : createdDirectories.reversed()) {
+                Files.deleteIfExists(directory);
+            }
+        }
+
+        private static void createDirectories(Path directory, List<Path> createdDirectories) throws IOException {
+            var missingDirectories = new LinkedList<Path>();
+            for (var current = directory; current != null && !Files.exists(current); current = current.getParent()) {
+                missingDirectories.addFirst(current);
+            }
+            Files.createDirectories(directory);
+            createdDirectories.addAll(missingDirectories);
+        }
+    }
 
     @Test
     void checkboxTemplate_RendersHintOnlyOnceInBlankPrint() {

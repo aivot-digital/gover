@@ -50,6 +50,7 @@ import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.process.utils.ProcessSubmissionCookieUtils;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
@@ -119,6 +120,7 @@ public class FormTriggerControllerV1 {
     private final PdfService pdfService;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final IdentitySlotService identitySlotService;
+    private final ProcessSubmissionBindingService processSubmissionBindingService;
 
     @Autowired
     public FormTriggerControllerV1(ProsunaConfig prosunaConfig,
@@ -150,7 +152,8 @@ public class FormTriggerControllerV1 {
                                    PaymentProviderRepository paymentProviderRepository,
                                    PdfService pdfService,
                                    PaymentProviderDefinitionsService paymentProviderDefinitionsService,
-                                   IdentitySlotService identitySlotService) {
+                                   IdentitySlotService identitySlotService,
+                                   ProcessSubmissionBindingService processSubmissionBindingService) {
         this.prosunaConfig = prosunaConfig;
         this.elementDerivationService = elementDerivationService;
         this.assetService = assetService;
@@ -181,6 +184,7 @@ public class FormTriggerControllerV1 {
         this.pdfService = pdfService;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.identitySlotService = identitySlotService;
+        this.processSubmissionBindingService = processSubmissionBindingService;
     }
 
     @GetMapping("")
@@ -663,7 +667,7 @@ public class FormTriggerControllerV1 {
             identities.computeIfPresent(slot.id(), (id, identity) -> identity.withTitle(slot.title()));
         }
 
-        var processInstance = startProcess(
+        var startedProcess = startProcess(
                 testClaim,
                 config.configuration().formLayout,
                 node,
@@ -675,7 +679,11 @@ public class FormTriggerControllerV1 {
         );
 
         response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
-        return new FormTriggerSubmissionStatusResponseV1(processInstance.getAccessKey());
+        response.addCookie(ProcessSubmissionCookieUtils.createSubmissionCookie(
+                startedProcess.instance().getAccessKey(),
+                startedProcess.submissionSecret()
+        ));
+        return new FormTriggerSubmissionStatusResponseV1(startedProcess.instance().getAccessKey());
     }
 
     void testCaptchaReplayProtection(@Nonnull FormLayoutElement form,
@@ -706,14 +714,15 @@ public class FormTriggerControllerV1 {
                 .orElse(null);
     }
 
-    private ProcessInstanceEntity startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
-                                               @Nonnull FormLayoutElement form,
-                                               @Nonnull ProcessNodeEntity nodeEntity,
-                                               @Nonnull AuthoredElementValues inputs,
-                                               @Nullable MultipartFile[] files,
-                                               @Nullable List<String> fileUris,
-                                               @Nonnull IdentityDataMap identities,
-                                               @Nullable String identitySessionId) throws ResponseException {
+    @Nonnull
+    private StartedProcess startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
+                                        @Nonnull FormLayoutElement form,
+                                        @Nonnull ProcessNodeEntity nodeEntity,
+                                        @Nonnull AuthoredElementValues inputs,
+                                        @Nullable MultipartFile[] files,
+                                        @Nullable List<String> fileUris,
+                                        @Nonnull IdentityDataMap identities,
+                                        @Nullable String identitySessionId) throws ResponseException {
         var startedAt = Instant.now();
         var instance = new ProcessInstanceEntity(
                 null,
@@ -739,6 +748,7 @@ public class FormTriggerControllerV1 {
         var createdInstance = processInstanceService
                 .create(instance);
 
+        String submissionSecret;
         try {
             var normalizationResult = fileUploadMultipartInputService.normalizeInputs(
                     form,
@@ -791,10 +801,14 @@ public class FormTriggerControllerV1 {
             // TODO: Apply TimeZone here
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_STARTED, startedAt);
 
-            // The instance holds the identities now. Remove them from the session while the instance is still paused,
-            // so the session ID cannot be used to submit the form again with the same identities. If this fails, the
-            // instance is marked as failed instead of being processed without the submitter receiving its access key,
-            // and the identities stay in the session for another attempt.
+            // Bind the submitting browser while the instance is still paused. If the binding fails, the instance is
+            // marked as failed instead of being processed without the submitter receiving its access key, so the
+            // submitter can submit again without creating a duplicate.
+            submissionSecret = processSubmissionBindingService.bind(createdInstance.getId());
+
+            // The instance holds the identities now. Remove them from the session as the last step before the instance
+            // is released, so the session ID cannot be used to submit the form again with the same identities. If any
+            // step fails before, the identities stay in the session for another attempt.
             identityService.clearIdentitySession(identitySessionId, nodeEntity.getId());
 
             createdInstance
@@ -821,7 +835,10 @@ public class FormTriggerControllerV1 {
             throw ResponseException.internalServerError(e);
         }
 
-        return processInstanceService.update(createdInstance.getId(), createdInstance);
+        return new StartedProcess(
+                processInstanceService.update(createdInstance.getId(), createdInstance),
+                submissionSecret
+        );
     }
 
     @GetMapping("theme/")
@@ -1172,6 +1189,12 @@ public class FormTriggerControllerV1 {
         return userService
                 .fromJWT(jwt)
                 .orElse(null);
+    }
+
+    private record StartedProcess(
+            @Nonnull ProcessInstanceEntity instance,
+            @Nonnull String submissionSecret
+    ) {
     }
 
     private record ResolvedFormTriggerContext(

@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInpu
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
@@ -72,6 +73,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -314,6 +316,54 @@ class FormRequestActionNodeV1Test {
         assertTrue(view.data().containsKey("name"));
         assertNull(view.data().getLiteral("name"));
         assertEquals("Berlin", view.data().getLiteral("city"));
+    }
+
+    @Test
+    void customerTaskViewKeepsPrefilledRowsAsTrustedDataWithStableIds() throws Exception {
+        var amount = new TextInputElement();
+        amount.setId("amount");
+        amount.setDisabled(true);
+        amount.setDestinationKey("amount");
+        var positions = new ReplicatingContainerLayoutElement();
+        positions.setId("positions");
+        positions.setDestinationKey("positions");
+        positions.setChildren(List.of(amount));
+        var layout = new GroupLayoutElement();
+        layout.setId("form");
+        layout.setChildren(List.of(positions));
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
+        configuration.uiDefinition = layout;
+        Map<String, Object> processData = Map.of("positions", List.of(
+                Map.of("amount", "100"),
+                Map.of("amount", "5")
+        ));
+
+        var firstView = node.getCustomerTaskView(context(configuration, processData));
+        var firstRows = assertInstanceOf(List.class, firstView.data().getLiteral("positions"));
+        var firstRowId = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, firstRows.get(0)).getId();
+        var secondRowId = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, firstRows.get(1)).getId();
+        var savedData = new AuthoredElementValues().putLiteral("positions", List.of(
+                new ReplicatingContainerLayoutElementValue()
+                        .setId(firstRowId)
+                        .setValues(new AuthoredElementValues().putLiteral("amount", "0"))
+        ));
+        var savedView = node.getCustomerTaskView(context(
+                configuration,
+                processData,
+                Map.of(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY, savedData)
+        ));
+
+        assertNotEquals(firstRowId, secondRowId);
+        var savedRows = assertInstanceOf(List.class, savedView.data().getLiteral("positions"));
+        assertEquals(1, savedRows.size());
+        var trustedRows = assertInstanceOf(List.class, savedView.trustedData().getLiteral("positions"));
+        var trustedFirstRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, trustedRows.get(0));
+        var trustedSecondRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, trustedRows.get(1));
+        assertEquals(firstRowId, trustedFirstRow.getId());
+        assertEquals("100", trustedFirstRow.getValues().getLiteral("amount"));
+        assertEquals(secondRowId, trustedSecondRow.getId());
+        assertEquals("5", trustedSecondRow.getValues().getLiteral("amount"));
     }
 
     @Test

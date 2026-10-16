@@ -7,7 +7,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessTaskDeadlineExceededData;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessTaskDeadlineContinuationRepository;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Service;
@@ -20,12 +20,12 @@ import java.util.LinkedHashMap;
 @Service
 public class ProcessTaskDeadlineResultHandler {
     private final ProcessInstanceTaskRepository tasks;
-    private final ProcessTaskDeadlineContinuationRepository continuations;
+    private final ProcessWorkRequestService workRequests;
 
     public ProcessTaskDeadlineResultHandler(@Nonnull ProcessInstanceTaskRepository tasks,
-                                             @Nonnull ProcessTaskDeadlineContinuationRepository continuations) {
+                                             @Nonnull ProcessWorkRequestService workRequests) {
         this.tasks = tasks;
-        this.continuations = continuations;
+        this.workRequests = workRequests;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -40,8 +40,7 @@ public class ProcessTaskDeadlineResultHandler {
         task.setNodeData(nodeData).setStatus(ProcessTaskStatus.DeadlineExceeded).setStatusOverride(null)
                 .setFinished(now).setExecutionSummaryMarkdown(summary);
         tasks.save(task);
-        continuations.save(new ProcessTaskDeadlineContinuationEntity(task.getProcessInstanceId(), task.getId(),
-                task.getProcessNodeId(), edge.getToNodeId(), edge.getViaPort(), now));
+        workRequests.enqueueTransition(task.getProcessInstanceId(), task.getId(), edge.getViaPort(), edge.getToNodeId());
         var details = new LinkedHashMap<>(data.toMap());
         details.put("viaPort", edge.getViaPort());
         logger.logf(ProcessNodeExecutionLogLevel.Warn, false, true, true, task.getAssignedUserId(),
