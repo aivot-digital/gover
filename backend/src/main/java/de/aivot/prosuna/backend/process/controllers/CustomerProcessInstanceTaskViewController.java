@@ -564,6 +564,7 @@ public class CustomerProcessInstanceTaskViewController {
                 null
         ).inputs();
 
+        // Expressions of the form may read the process data, so derive with the same data as the preview does.
         // Disabled and technical inputs keep the values the server prefilled, whatever the customer sends for them.
         var derivedElementData = elementDerivationService.derive(
                 new ElementDerivationRequest(
@@ -571,7 +572,8 @@ public class CustomerProcessInstanceTaskViewController {
                         inputs,
                         new ElementDerivationOptions()
                                 .setIgnoreAuthoredValuesOfNonEditableInputs(true)
-                                .setTrustedAuthoredValues(customerView.trustedData())
+                                .setTrustedAuthoredValues(customerView.trustedData()),
+                        taskViewData.processExecutionData()
                 )
         );
 

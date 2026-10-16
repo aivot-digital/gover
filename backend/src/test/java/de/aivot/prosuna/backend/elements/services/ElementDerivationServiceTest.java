@@ -717,6 +717,26 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldComputeJavascriptValuesFromTheProcessDataOfTheExecution() {
+        var technicalField = new TextInputElement();
+        technicalField.setId("technical");
+        technicalField.setTechnical(true);
+        technicalField.setValue(new ElementValueFunctions().setJavascriptCode(JavascriptCode.of(
+                "(function () { return $.approvedAmount ?? null; })();")));
+
+        var result = derive(
+                createRoot(List.of(technicalField)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new ProcessExecutionData().addProcessData("approvedAmount", "100"),
+                InputModeEvaluationContext.LiteralOnly
+        );
+
+        assertFalse(result.hasAnyError());
+        assertEquals("100", result.getEffectiveValues().get("technical"));
+    }
+
+    @Test
     void shouldIgnoreCustomerValuesForTechnicalFieldsWithValueFunction() {
         var technicalField = new TextInputElement();
         technicalField.setId("fee");

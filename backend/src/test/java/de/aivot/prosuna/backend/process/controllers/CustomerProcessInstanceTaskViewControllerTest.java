@@ -549,6 +549,41 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void update_DerivesInputsWithTheProcessExecutionDataOfThePreview() throws ResponseException {
+        var normalizedInputs = new AuthoredElementValues();
+        normalizedInputs.putLiteral("field", "submitted");
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null);
+        var fixture = createFixture(provider, normalizedInputs);
+        fixture.processExecutionData().addProcessData("approvedAmount", "100");
+
+        fixture.controller().derive(
+                null,
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                new AuthoredElementValues(),
+                List.of(),
+                Map.of(),
+                null
+        );
+        fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "{}",
+                null,
+                null,
+                "inline-submit",
+                Map.of(),
+                null,
+                new MockHttpServletResponse()
+        );
+
+        var requests = fixture.elementDerivationService().requests;
+        assertEquals(2, requests.size());
+        assertSame(fixture.processExecutionData(), requests.get(0).processExecutionData());
+        assertSame(fixture.processExecutionData(), requests.get(1).processExecutionData());
+    }
+
+    @Test
     void update_AutoSavePersistsNormalizedInputsAndReturnsMergedCustomerTaskViewData() throws ResponseException {
         var procAccess = UUID.randomUUID().toString();
         var taskAccess = UUID.randomUUID().toString();
@@ -1085,6 +1120,10 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(Map.of());
 
+        var processExecutionData = new ProcessExecutionData();
+        var processDataService = mock(ProcessDataService.class);
+        when(processDataService.foldProcessInstanceData(any(), any(), any())).thenReturn(processExecutionData);
+
         var customerTaskIdentityService = mockCustomerTaskIdentityService();
         var identitySlotService = mock(IdentitySlotService.class);
         var elementDerivationService = new TestElementDerivationService(effectiveValues);
@@ -1097,7 +1136,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeExecutionLoggerFactory(),
                 elementDerivationService,
                 new TestTaskViewMultipartInputService(normalizedInputs),
-                mock(ProcessDataService.class),
+                processDataService,
                 mock(ProcessService.class),
                 mock(VDepartmentShadowedService.class),
                 mock(PaymentTransactionService.class),
@@ -1117,7 +1156,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 controller,
                 customerTaskIdentityService,
                 identitySlotService,
-                elementDerivationService
+                elementDerivationService,
+                processExecutionData
         );
     }
 
@@ -1291,7 +1331,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
             CustomerProcessInstanceTaskViewController controller,
             CustomerTaskIdentityService customerTaskIdentityService,
             IdentitySlotService identitySlotService,
-            TestElementDerivationService elementDerivationService
+            TestElementDerivationService elementDerivationService,
+            ProcessExecutionData processExecutionData
     ) {
     }
 
