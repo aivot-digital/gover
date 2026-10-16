@@ -231,6 +231,7 @@ class PaymentConfigElementValueValidationTest {
         assertEquals(2, itemErrors.size());
         assertNull(itemErrors.get(0));
         assertEquals(Map.of("fixedCosts", "Feste Kosten müssen angegeben werden."), itemErrors.get(1));
+        assertEquals(List.of("Zahlungsposition 2: Feste Kosten müssen angegeben werden."), errorDetails.get("messages"));
     }
 
     @Test

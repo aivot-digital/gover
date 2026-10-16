@@ -127,9 +127,11 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
         }
 
         if (!validationErrors.isEmpty()) {
+            // Preserve the combined error for existing consumers and expose individual messages to error lists.
             throw new ValidationException(
                     this,
-                    String.join(" ", validationErrors.stream().distinct().toList())
+                    String.join(" ", validationErrors.stream().distinct().toList()),
+                    Map.of("messages", validationErrors.stream().distinct().toList())
             );
         }
     }

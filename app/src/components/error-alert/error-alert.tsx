@@ -81,11 +81,19 @@ export function _collectErrors(
     const col: CollectedError[] = [];
 
     if (elementState.error != null) {
-        col.push({
-            id: element.id,
-            label: resolveCollectedErrorLabel(element, elementState.errorDetails),
-            error: elementState.error,
-        });
+        // These configuration fields expose user-facing summaries in errorDetails.messages.
+        // Other field types may use errorDetails differently; retain their normal error handling.
+        const details = elementState.errorDetails?.messages;
+        const messages: string[] = (element.type === ElementType.PaymentConfigElement || element.type === ElementType.IdentityConfigElement) && Array.isArray(details)
+            ? details.filter((message): message is string => typeof message === 'string' && message.length > 0)
+            : [];
+        for (const error of messages.length > 0 ? messages : [elementState.error]) {
+            col.push({
+                id: element.id,
+                label: resolveCollectedErrorLabel(element, elementState.errorDetails),
+                error,
+            });
+        }
     }
 
     if (isAnyElementWithChildren(element) && element.children != null) {
