@@ -587,7 +587,7 @@ public class CustomerProcessInstanceTaskViewController {
         );
 
         if (derivedElementData.hasAnyError()) {
-            throw ResponseException.badRequest("Es ist ein Fehler beim Ableiten der Eingabedaten aufgetreten. Bitte überprüfen Sie Ihre Eingaben.", derivedElementData);
+            throw ResponseException.badRequest("Bitte prüfen Sie Ihre Angaben und korrigieren Sie die angezeigten Fehler.", derivedElementData);
         }
 
         Optional<ProcessNodeExecutionResult> res;
