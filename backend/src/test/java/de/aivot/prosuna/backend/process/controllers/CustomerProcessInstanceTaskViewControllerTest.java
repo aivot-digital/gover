@@ -59,6 +59,8 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -261,8 +263,16 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 same(fixture.node()), any(), same(fixture.task()), isNull(), same(result));
     }
 
-    @Test
-    void update_PassesNewIdentityToCompletionHandlerAndClearsTaskIdentitySession() throws Exception {
+    @ParameterizedTest
+    @CsvSource(value = {
+            // A task that invites a new identity has no assigned identity until it is completed.
+            "NULL, representative",
+            "applicant, applicant"
+    }, nullValues = "NULL")
+    void update_PassesNewIdentityToCompletionHandlerAndClearsTaskIdentitySession(
+            String assignedIdentityId,
+            String expectedLoggedIdentityId
+    ) throws Exception {
         var completionResult = new ProcessNodeExecutionResultInstanceCompleted();
         var provider = new InlineCustomerTaskProcessNodeDefinition(null, completionResult);
         var resultHandler = mock(ProcessNodeExecutionResultHandler.class);
@@ -293,7 +303,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .thenReturn(additionalIdentities);
         when(fixture.customerTaskIdentityService().clearTaskIdentitySession("identity-session", fixture.node()))
                 .thenReturn(false);
-        fixture.task().setAssignedCustomerIdentityId("representative");
+        fixture.task().setAssignedCustomerIdentityId(assignedIdentityId);
         var servletResponse = new MockHttpServletResponse();
 
         var response = fixture.controller().update(
@@ -321,8 +331,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 same(completionResult),
                 same(additionalIdentities)
         );
-        // The history names the identity of the task, never the secret session ID of the browser.
-        assertEquals("representative", ((NoOpProcessNodeExecutionLogger) loggerCaptor.getValue()).identityId);
+        // The history names the identity assigned to the task, otherwise the newly authenticated identity, but never the
+        // secret session ID of the browser.
+        assertEquals(expectedLoggedIdentityId, ((NoOpProcessNodeExecutionLogger) loggerCaptor.getValue()).identityId);
         verify(fixture.customerTaskIdentityService()).clearTaskIdentitySession(
                 "identity-session",
                 fixture.node()
