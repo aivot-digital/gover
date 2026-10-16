@@ -670,12 +670,10 @@ public class FormTriggerControllerV1 {
                 inputs,
                 files,
                 fileUris,
-                identities
+                identities,
+                identitySessionId
         );
 
-        // The identities are stored with the instance now. Remove them from the session as well, so the session ID cannot
-        // be used to submit the form again with the same identities.
-        identityService.clearIdentitySession(identitySessionId, node.getId());
         response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
         return new FormTriggerSubmissionStatusResponseV1(processInstance.getAccessKey());
     }
@@ -714,7 +712,8 @@ public class FormTriggerControllerV1 {
                                                @Nonnull AuthoredElementValues inputs,
                                                @Nullable MultipartFile[] files,
                                                @Nullable List<String> fileUris,
-                                               @Nonnull IdentityDataMap identities) throws ResponseException {
+                                               @Nonnull IdentityDataMap identities,
+                                               @Nullable String identitySessionId) throws ResponseException {
         var startedAt = Instant.now();
         var instance = new ProcessInstanceEntity(
                 null,
@@ -791,6 +790,12 @@ public class FormTriggerControllerV1 {
             }).toList());
             // TODO: Apply TimeZone here
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_STARTED, startedAt);
+
+            // The instance holds the identities now. Remove them from the session while the instance is still paused,
+            // so the session ID cannot be used to submit the form again with the same identities. If this fails, the
+            // instance is marked as failed instead of being processed without the submitter receiving its access key,
+            // and the identities stay in the session for another attempt.
+            identityService.clearIdentitySession(identitySessionId, nodeEntity.getId());
 
             createdInstance
                     .setInitialPayload(initialPayload)

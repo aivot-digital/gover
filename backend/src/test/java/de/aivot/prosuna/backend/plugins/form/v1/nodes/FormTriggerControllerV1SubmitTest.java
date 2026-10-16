@@ -29,10 +29,12 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessTestClaimFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
+import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
@@ -103,6 +105,33 @@ class FormTriggerControllerV1SubmitTest {
                 createdInstanceCaptor.getValue().getStarted(),
                 updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_STARTED)
         );
+    }
+
+    @Test
+    void submitShouldFailTheInstanceWhenTheIdentitySessionCannotBeCleared() throws Exception {
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), UUID.randomUUID().toString());
+        doThrow(new IllegalStateException("Redis is unavailable"))
+                .when(fixture.identityService())
+                .clearIdentitySession("identity-session-id", fixture.processNodeId());
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        ));
+
+        // The instance must never be released to the process worker, so submitting again cannot create a duplicate.
+        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        assertEquals(ProcessInstanceStatus.Failed, updatedInstanceCaptor.getValue().getStatus());
+        assertEquals(0, response.getCookies().length);
     }
 
     @Test
@@ -241,6 +270,10 @@ class FormTriggerControllerV1SubmitTest {
         when(processTestClaimService.retrieve(any(ProcessTestClaimFilter.class)))
                 .thenReturn(Optional.empty());
 
+        var processNodeExecutionLoggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
+        when(processNodeExecutionLoggerFactory.create(eq(1L), isNull(), isNull(), isNull()))
+                .thenReturn(mock(ProcessNodeExecutionLogger.class));
+
         var controller = new FormTriggerControllerV1(
                 mock(ProsunaConfig.class),
                 elementDerivationService,
@@ -263,7 +296,7 @@ class FormTriggerControllerV1SubmitTest {
                 mock(StorageService.class),
                 fileUploadMultipartInputService,
                 elementDataTransformService,
-                mock(ProcessNodeExecutionLoggerFactory.class),
+                processNodeExecutionLoggerFactory,
                 provider,
                 identityService,
                 mock(PaymentPayloadCreationService.class),
