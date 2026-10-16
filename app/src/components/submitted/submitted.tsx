@@ -23,9 +23,6 @@ import {ElementType} from '../../data/element-type/element-type';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
-import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
-import {ProcessEntity} from '../../modules/process/entities/process-entity';
-import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 import {FormDepartmentAddresses} from '../form-department-addresses/form-department-addresses';
 import {
     CustomerTaskViewApiService,
@@ -34,15 +31,14 @@ import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-a
 import {downloadBlobFile} from '../../utils/download-utils';
 import {ProcessTaskStatus} from '../../modules/process/enums/process-task-status';
 import {ProcessInstanceStatus} from '../../modules/process/enums/process-instance-status';
-import {getLiteralElementValue} from '../../models/element-data';
 
 interface SubmittedProps {
     startedProcessAccessKey: string;
     paymentRequired: boolean;
     formElement: FormLayoutElement;
-    node: ProcessNodeEntity;
-    process: ProcessEntity;
-    version: ProcessVersionEntity;
+    processSlug: string;
+    formSlug: string | null;
+    processVersion: number;
 }
 
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
@@ -66,11 +62,11 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 export function Submitted(props: SubmittedProps) {
     const {
         formElement,
-        node,
+        formSlug,
         paymentRequired,
-        process,
+        processSlug,
+        processVersion,
         startedProcessAccessKey,
-        version,
     } = props;
 
     const theme = useTheme();
@@ -177,19 +173,18 @@ export function Submitted(props: SubmittedProps) {
         `/process/${encodeURIComponent(startedProcessAccessKey.trim())}/tasks/${encodeURIComponent(formTaskAccessKey)}`;
 
     const downloadSubmittedPrint = (): void => {
-        const formSlug = getLiteralElementValue<string>(node.configuration, 'formSlug');
-        if (typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
+        if (formSlug == null || formSlug.trim().length === 0 || formTaskAccessKey == null) {
             return;
         }
 
         setIsPrintDownloadPending(true);
         new FormTriggerApiService()
             .downloadSubmittedSummaryPdf(
-                process.slug,
+                processSlug,
                 formSlug.trim(),
                 startedProcessAccessKey,
                 formTaskAccessKey,
-                version.processVersion,
+                processVersion,
             )
             .then((blob) => {
                 downloadBlobFile('Antrag.pdf', blob);

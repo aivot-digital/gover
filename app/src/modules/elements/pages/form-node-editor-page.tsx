@@ -1319,8 +1319,6 @@ export function FormNodeEditorPage() {
                                             >
                                                 <FormHeaderComponent
                                                     form={formLayout}
-                                                    node={node}
-                                                    process={process}
                                                     version={processVersion}
                                                     logoUrl={formLogoUrl}
                                                     logoUrlDark={formLogoUrlDark}
@@ -1376,16 +1374,14 @@ export function FormNodeEditorPage() {
                                                         startedProcessAccessKey={startedProcessAccessInfo.processInstanceAccessKey}
                                                         paymentRequired={startedProcessAccessInfo.paymentRequired}
                                                         formElement={formLayout}
-                                                        node={node}
-                                                        process={process}
-                                                        version={processVersion}
+                                                        processSlug={process.slug}
+                                                        formSlug={configuredFormSlug ?? null}
+                                                        processVersion={processVersion.processVersion}
                                                     />
                                                 }
 
                                                 <RootComponentFooter
                                                     form={formLayout}
-                                                    node={node}
-                                                    process={process}
                                                     version={processVersion}
                                                     logoUrl={formLogoUrl}
                                                     logoUrlDark={formLogoUrlDark}

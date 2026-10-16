@@ -73,6 +73,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -140,6 +141,33 @@ class FormTriggerControllerV1Test {
 
         var step = (GenericStepElement) result.layoutElement().getChildren().getFirst();
         assertTrue(step.getChildren().isEmpty());
+    }
+
+    @Test
+    void retrieveShouldOnlyReturnPublicFormMetadata() throws Exception {
+        var fixture = createFixture(formLayoutWithGenericStep());
+        when(fixture.identitySlotService().resolveSlots(isNull(), eq("identity-session"), eq(500)))
+                .thenReturn(List.of(requiredIdentitySlot(false, null, false, List.of())));
+
+        var result = fixture.controller().retrieve(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session"
+        );
+
+        assertEquals(500, result.node().id());
+        assertEquals(fixture.formSlug(), result.node().formSlug());
+        assertEquals(fixture.processSlug(), result.process().slug());
+        assertEquals(fixture.processVersion().getProcessVersion(), result.version().processVersion());
+        // The node configuration contains the unfiltered form layout, so the hidden step content must not leak.
+        var json = JsonMapperTestUtils.createMapper().writeValueAsString(result);
+        assertFalse(json.contains("Protected form content"));
+        assertFalse(json.contains("Interne Modellierungsnotiz"));
+        assertFalse(json.contains("\"configuration\""));
+        assertFalse(json.contains("\"internalTitle\""));
+        assertFalse(json.contains("\"accessKey\""));
     }
 
     @Test
@@ -829,12 +857,17 @@ class FormTriggerControllerV1Test {
                 .setProcessVersion(resolvedProcessVersion)
                 .setStatus(ProcessVersionStatus.Published);
 
+        var nodeConfiguration = new AuthoredElementValues();
+        nodeConfiguration.putLiteral(FormTriggerConfigV1.FORM_SLUG, formSlug);
+        nodeConfiguration.putLiteral(FormTriggerConfigV1.FORM_LAYOUT, formLayout);
         var node = new ProcessNodeEntity()
                 .setId(500)
                 .setProcessId(process.getId())
                 .setProcessVersion(processVersion.getProcessVersion())
                 .setProcessNodeDefinitionKey("form.form")
-                .setProcessNodeDefinitionVersion(1);
+                .setProcessNodeDefinitionVersion(1)
+                .setConfiguration(nodeConfiguration)
+                .setNotes("Interne Modellierungsnotiz");
 
         var processService = mock(ProcessService.class);
         when(processService.retrieveBySlugOrHistory(processSlug)).thenReturn(Optional.of(process));
