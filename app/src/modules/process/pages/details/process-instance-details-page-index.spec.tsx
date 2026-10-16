@@ -71,7 +71,7 @@ describe('Process instance information', () => {
         const item = createItem();
         item.instance.identities = {
             applicant: {
-                identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+                identityId: 'applicant', title: 'Antragstellende', type: 'Email',
                 emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
                 uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
             },

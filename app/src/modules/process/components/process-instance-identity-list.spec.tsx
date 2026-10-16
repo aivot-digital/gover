@@ -11,7 +11,7 @@ import {ProcessInstanceIdentityList} from './process-instance-identity-list';
 const identityProviderKey = '36a9a19d-f9fb-4225-a9a0-07a223820b4b';
 
 const providerIdentity: IdentityData = {
-    sessionId: 'internal-session-id',
+   
     identityId: 'applicant',
     type: 'IdentityProvider',
     providerKey: identityProviderKey,
@@ -60,7 +60,7 @@ const identityProviderAttributes: IdentityAttributeMapping[] = [
 ];
 
 const emailIdentity: IdentityData = {
-    sessionId: 'internal-email-session-id',
+   
     identityId: 'contact',
     type: 'Email',
     providerKey: null,
@@ -214,7 +214,6 @@ describe('ProcessInstanceIdentityList', () => {
         expect(screen.queryByText('unmapped_claim')).not.toBeInTheDocument();
         expect(screen.queryByText('Unmapped value')).not.toBeInTheDocument();
 
-        expect(screen.queryByText('internal-session-id')).not.toBeInTheDocument();
         expect(screen.queryByText('internal-mailbox-reference')).not.toBeInTheDocument();
         expect(screen.queryByText('internal-provider-configuration')).not.toBeInTheDocument();
         expect(screen.queryByText('internal-binding-configuration')).not.toBeInTheDocument();

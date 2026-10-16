@@ -29,7 +29,7 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 
 import java.util.Map;
 import java.util.Optional;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.*;
 
 class InstanceAssignmentResultHandlerTest {
     private final ProcessAssignmentService assignments = mock(ProcessAssignmentService.class);
-    private final RabbitTemplate rabbit = mock(RabbitTemplate.class);
+    private final ProcessWorkRequestService workRequests = mock(ProcessWorkRequestService.class);
     private final ProcessInstanceRepository instances = mock(ProcessInstanceRepository.class);
     private final ProcessInstanceTaskRepository tasks = mock(ProcessInstanceTaskRepository.class);
     private final ProcessEdgeRepository edges = mock(ProcessEdgeRepository.class);
@@ -52,7 +52,7 @@ class InstanceAssignmentResultHandlerTest {
     private final InstanceUnassignmentActionNodeV1 unassignmentProvider = new InstanceUnassignmentActionNodeV1();
     private final de.aivot.prosuna.backend.process.services.ProcessNodeService nodeService = mock(de.aivot.prosuna.backend.process.services.ProcessNodeService.class);
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
-            assignments, rabbit, mock(CommunicationService.class), instances, mock(de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository.class), tasks, edges, users,
+            assignments, workRequests, mock(CommunicationService.class), instances, mock(de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository.class), tasks, edges, users,
             mock(ProcessTaskMailService.class), mock(ProcessNodeRepository.class),
             mock(ProcessNodeDefinitionService.class), mock(ProcessService.class),
             mock(DepartmentService.class), instanceMail, nodeService, null);
@@ -78,14 +78,14 @@ class InstanceAssignmentResultHandlerTest {
         completion.setProcessData(Map.of());
         handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task, null, completion);
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
-        verify(rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE), any(ProcessWorker.DoWorkWorkerPayload.class));
+        verify(workRequests).enqueueTransition(anyLong(), anyLong(), anyString(), anyInt());
 
-        clearInvocations(tasks, rabbit);
+        clearInvocations(tasks, workRequests);
         when(nodeService.resolvePorts(any(), any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(java.util.List.of(), java.util.List.of()));
         var newTask = task();
         assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance(), newTask, null, completion));
         verify(tasks, never()).save(any());
-        verifyNoInteractions(rabbit);
+        verifyNoInteractions(workRequests);
     }
 
     @Test
@@ -104,8 +104,7 @@ class InstanceAssignmentResultHandlerTest {
         verify(assignments).requireRuntimeInstanceAssignee(99L, "recipient");
         verify(instances).save(instance);
         verify(tasks).save(task);
-        verify(rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE),
-                any(ProcessWorker.DoWorkWorkerPayload.class));
+        verify(workRequests).enqueueTransition(anyLong(), anyLong(), anyString(), anyInt());
         verify(instanceMail).sendAssigned(isNull(), any(UserEntity.class), same(instance), eq(true));
         verify(instanceMail).sendUnassigned(isNull(), any(UserEntity.class), same(instance), eq(true));
     }
@@ -119,7 +118,7 @@ class InstanceAssignmentResultHandlerTest {
                 () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task(), null, result("recipient")));
 
         assertEquals("previous", instance.getAssignedUserId());
-        verifyNoInteractions(instances, tasks, rabbit, instanceMail);
+        verifyNoInteractions(instances, tasks, workRequests, instanceMail);
     }
 
     @Test
@@ -132,7 +131,7 @@ class InstanceAssignmentResultHandlerTest {
                 () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task(), null, result("recipient")));
 
         assertEquals("previous", instance.getAssignedUserId());
-        verifyNoInteractions(instances, tasks, rabbit, instanceMail);
+        verifyNoInteractions(instances, tasks, workRequests, instanceMail);
     }
 
     @Test
@@ -145,7 +144,7 @@ class InstanceAssignmentResultHandlerTest {
                 () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node, instance, task(), null, result("recipient")));
 
         assertEquals("previous", instance.getAssignedUserId());
-        verifyNoInteractions(instances, tasks, rabbit, instanceMail);
+        verifyNoInteractions(instances, tasks, workRequests, instanceMail);
     }
 
     @Test
@@ -173,8 +172,7 @@ class InstanceAssignmentResultHandlerTest {
         assertEquals(Map.of("case", "data"), task.getProcessData());
         verify(instances).save(instance);
         verify(tasks).save(task);
-        verify(rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE),
-                any(ProcessWorker.DoWorkWorkerPayload.class));
+        verify(workRequests).enqueueTransition(anyLong(), anyLong(), anyString(), anyInt());
         verify(instanceMail).sendUnassigned(isNull(), any(UserEntity.class), same(instance), eq(false));
         verify(instanceMail, never()).sendAssigned(any(), any(), any(), anyBoolean());
         verify(assignments, never()).requireRuntimeInstanceAssignee(anyLong(), anyString());
@@ -189,8 +187,7 @@ class InstanceAssignmentResultHandlerTest {
 
         assertNull(instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
-        verify(rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE),
-                any(ProcessWorker.DoWorkWorkerPayload.class));
+        verify(workRequests).enqueueTransition(anyLong(), anyLong(), anyString(), anyInt());
         verifyNoInteractions(instanceMail);
     }
 

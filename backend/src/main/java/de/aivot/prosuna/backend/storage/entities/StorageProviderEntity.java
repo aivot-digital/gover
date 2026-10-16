@@ -19,6 +19,7 @@ import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "storage_providers")
@@ -100,6 +101,15 @@ public class StorageProviderEntity {
     @Convert(converter = StorageProviderMetadataAttributesConverter.class)
     private List<StorageProviderMetadataAttribute> metadataAttributes;
 
+    // The run that claimed the requested synchronization and when it started. Only this run records its result.
+    @Nullable
+    @JsonIgnore
+    private UUID syncRunId;
+
+    @Nullable
+    @JsonIgnore
+    private Instant syncStarted;
+
     @Nullable
     private Instant lastSync;
 
@@ -173,12 +183,12 @@ public class StorageProviderEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         StorageProviderEntity that = (StorageProviderEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(readOnlyStorage, that.readOnlyStorage) && Objects.equals(testProvider, that.testProvider) && Objects.equals(configuration, that.configuration) && Objects.equals(maxFileSizeInBytes, that.maxFileSizeInBytes) && Objects.equals(systemProvider, that.systemProvider) && Objects.equals(metadataAttributes, that.metadataAttributes) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
+        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(readOnlyStorage, that.readOnlyStorage) && Objects.equals(testProvider, that.testProvider) && Objects.equals(configuration, that.configuration) && Objects.equals(maxFileSizeInBytes, that.maxFileSizeInBytes) && Objects.equals(systemProvider, that.systemProvider) && Objects.equals(metadataAttributes, that.metadataAttributes) && Objects.equals(syncRunId, that.syncRunId) && Objects.equals(syncStarted, that.syncStarted) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, readOnlyStorage, testProvider, configuration, maxFileSizeInBytes, systemProvider, metadataAttributes, lastSync, created, updated);
+        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, readOnlyStorage, testProvider, configuration, maxFileSizeInBytes, systemProvider, metadataAttributes, syncRunId, syncStarted, lastSync, created, updated);
     }
 
     // endregion
@@ -333,6 +343,26 @@ public class StorageProviderEntity {
     @Nullable
     public Instant getLastSync() {
         return lastSync;
+    }
+
+    @Nullable
+    public UUID getSyncRunId() {
+        return syncRunId;
+    }
+
+    public StorageProviderEntity setSyncRunId(@Nullable UUID syncRunId) {
+        this.syncRunId = syncRunId;
+        return this;
+    }
+
+    @Nullable
+    public Instant getSyncStarted() {
+        return syncStarted;
+    }
+
+    public StorageProviderEntity setSyncStarted(@Nullable Instant syncStarted) {
+        this.syncStarted = syncStarted;
+        return this;
     }
 
     public StorageProviderEntity setLastSync(@Nullable Instant lastSync) {

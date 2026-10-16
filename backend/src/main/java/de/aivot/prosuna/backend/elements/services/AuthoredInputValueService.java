@@ -12,10 +12,12 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Converts ordinary values into authored envelopes using the element tree to identify nested container rows.
@@ -131,6 +133,46 @@ public class AuthoredInputValueService {
                     .setValues(rowValues));
         }
         return authoredRows;
+    }
+
+    /**
+     * Replaces the IDs of all replicating container rows, including nested ones, with IDs derived from the position of
+     * each row. Rows built from process data otherwise get new random IDs each time, so rows built twice from the same
+     * data could not be matched by their ID.
+     */
+    public void assignPositionalRowIds(@Nonnull BaseElement rootElement, @Nonnull AuthoredElementValues values) {
+        assignPositionalRowIds(rootElement, values, "");
+    }
+
+    private void assignPositionalRowIds(@Nonnull BaseElement element,
+                                        @Nonnull AuthoredElementValues values,
+                                        @Nonnull String path) {
+        if (element instanceof ReplicatingContainerLayoutElement replicatingContainer) {
+            if (!(values.getLiteral(element.getId()) instanceof List<?> rows)) {
+                return;
+            }
+
+            for (var index = 0; index < rows.size(); index++) {
+                if (!(rows.get(index) instanceof ReplicatingContainerLayoutElementValue row)) {
+                    continue;
+                }
+
+                var rowPath = path + element.getId() + "/" + index + "/";
+                row.setId(UUID.nameUUIDFromBytes(rowPath.getBytes(StandardCharsets.UTF_8)).toString());
+                if (row.getValues() != null) {
+                    for (var child : replicatingContainer.getChildren()) {
+                        assignPositionalRowIds(child, row.getValues(), rowPath);
+                    }
+                }
+            }
+            return;
+        }
+
+        if (element instanceof LayoutElement<?> layoutElement) {
+            for (var child : layoutElement.getChildren()) {
+                assignPositionalRowIds(child, values, path);
+            }
+        }
     }
 
     @Nonnull

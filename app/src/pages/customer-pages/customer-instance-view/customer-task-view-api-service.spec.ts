@@ -24,6 +24,36 @@ describe('CustomerTaskViewApiService', () => {
         });
     });
 
+    it('requests the instance status for the task of the customer link', async () => {
+        const get = vi
+            .spyOn(BaseApiService.prototype, 'get')
+            .mockResolvedValue({tasks: []});
+
+        await new CustomerTaskViewApiService().getInstanceStatus('instance', 'task');
+
+        expect(get).toHaveBeenCalledWith('/api/public/processes/instance/', {
+            skipAuthCheck: true,
+            query: {
+                task: 'task',
+            },
+        });
+    });
+
+    it('requests the instance status without a task key when the link has none', async () => {
+        const get = vi
+            .spyOn(BaseApiService.prototype, 'get')
+            .mockResolvedValue({tasks: []});
+
+        await new CustomerTaskViewApiService().getInstanceStatus('instance');
+
+        expect(get).toHaveBeenCalledWith('/api/public/processes/instance/', {
+            skipAuthCheck: true,
+            query: {
+                task: undefined,
+            },
+        });
+    });
+
     it('creates a login link with the cleaned origin and existing task query parameters', () => {
         const link = new CustomerTaskViewApiService().createRequiredIdentityAuthenticationStartLink(
             'instance/key',

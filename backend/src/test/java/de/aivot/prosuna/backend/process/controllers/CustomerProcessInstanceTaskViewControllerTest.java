@@ -59,6 +59,8 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -70,6 +72,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import java.net.URI;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -261,8 +264,16 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 same(fixture.node()), any(), same(fixture.task()), isNull(), same(result));
     }
 
-    @Test
-    void update_PassesNewIdentityToCompletionHandlerAndClearsTaskIdentitySession() throws Exception {
+    @ParameterizedTest
+    @CsvSource(value = {
+            // A task that invites a new identity has no assigned identity until it is completed.
+            "NULL, representative",
+            "applicant, applicant"
+    }, nullValues = "NULL")
+    void update_PassesNewIdentityToCompletionHandlerAndClearsTaskIdentitySession(
+            String assignedIdentityId,
+            String expectedLoggedIdentityId
+    ) throws Exception {
         var completionResult = new ProcessNodeExecutionResultInstanceCompleted();
         var provider = new InlineCustomerTaskProcessNodeDefinition(null, completionResult);
         var resultHandler = mock(ProcessNodeExecutionResultHandler.class);
@@ -293,6 +304,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .thenReturn(additionalIdentities);
         when(fixture.customerTaskIdentityService().clearTaskIdentitySession("identity-session", fixture.node()))
                 .thenReturn(false);
+        fixture.task().setAssignedCustomerIdentityId(assignedIdentityId);
         var servletResponse = new MockHttpServletResponse();
 
         var response = fixture.controller().update(
@@ -307,8 +319,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 servletResponse
         );
 
+        var loggerCaptor = ArgumentCaptor.forClass(ProcessNodeExecutionLogger.class);
         verify(resultHandler).handleResultWithAdditionalIdentities(
-                any(),
+                loggerCaptor.capture(),
                 eq(null),
                 same(provider),
                 same(provider.configurationUsedForEvent),
@@ -319,6 +332,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 same(completionResult),
                 same(additionalIdentities)
         );
+        // The history names the identity assigned to the task, otherwise the newly authenticated identity, but never the
+        // secret session ID of the browser.
+        assertEquals(expectedLoggedIdentityId, ((NoOpProcessNodeExecutionLogger) loggerCaptor.getValue()).identityId);
         verify(fixture.customerTaskIdentityService()).clearTaskIdentitySession(
                 "identity-session",
                 fixture.node()
@@ -480,6 +496,43 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void derive_TakesNonEditableInputValuesFromTheTaskViewData() throws ResponseException {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues()
+        );
+
+        fixture.controller().derive(
+                null,
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                new AuthoredElementValues().putLiteral("field", "forged"),
+                List.of(),
+                Map.of(),
+                null
+        );
+
+        var options = fixture.elementDerivationService().requests.getFirst().derivationOptions();
+        assertTrue(options.isIgnoreAuthoredValuesOfNonEditableInputs());
+        assertEquals("persisted", options.getTrustedAuthoredValues().getLiteral("field"));
+    }
+
+    @Test
+    void update_TakesNonEditableInputValuesFromTheTaskViewData() throws ResponseException {
+        var fixture = createFixture(
+                new NoOpCustomerProcessNodeDefinition(),
+                new AuthoredElementValues().putLiteral("field", "forged")
+        );
+
+        fixture.controller().update(fixture.procAccess(), fixture.taskAccess(), "{}", null, null,
+                null, Map.of(), null, new MockHttpServletResponse());
+
+        var options = fixture.elementDerivationService().requests.getFirst().derivationOptions();
+        assertTrue(options.isIgnoreAuthoredValuesOfNonEditableInputs());
+        assertEquals("persisted", options.getTrustedAuthoredValues().getLiteral("field"));
+    }
+
+    @Test
     void derive_UsesCompletedCustomerTaskView() throws ResponseException {
         var fixture = createFixture(
                 new NoOpCustomerProcessNodeDefinition(),
@@ -508,6 +561,41 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 "test.citizen-noop-completed-customer-task-view",
                 customerViewCaptor.getValue().layout().getId()
         );
+    }
+
+    @Test
+    void update_DerivesInputsWithTheProcessExecutionDataOfThePreview() throws ResponseException {
+        var normalizedInputs = new AuthoredElementValues();
+        normalizedInputs.putLiteral("field", "submitted");
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null);
+        var fixture = createFixture(provider, normalizedInputs);
+        fixture.processExecutionData().addProcessData("approvedAmount", "100");
+
+        fixture.controller().derive(
+                null,
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                new AuthoredElementValues(),
+                List.of(),
+                Map.of(),
+                null
+        );
+        fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "{}",
+                null,
+                null,
+                "inline-submit",
+                Map.of(),
+                null,
+                new MockHttpServletResponse()
+        );
+
+        var requests = fixture.elementDerivationService().requests;
+        assertEquals(2, requests.size());
+        assertSame(fixture.processExecutionData(), requests.get(0).processExecutionData());
+        assertSame(fixture.processExecutionData(), requests.get(1).processExecutionData());
     }
 
     @Test
@@ -1047,8 +1135,13 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(Map.of());
 
+        var processExecutionData = new ProcessExecutionData();
+        var processDataService = mock(ProcessDataService.class);
+        when(processDataService.foldProcessInstanceData(any(), any(), any())).thenReturn(processExecutionData);
+
         var customerTaskIdentityService = mockCustomerTaskIdentityService();
         var identitySlotService = mock(IdentitySlotService.class);
+        var elementDerivationService = new TestElementDerivationService(effectiveValues);
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -1056,9 +1149,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 new TestProcessNodeService(node),
                 resultHandler,
                 new TestProcessNodeExecutionLoggerFactory(),
-                new TestElementDerivationService(effectiveValues),
+                elementDerivationService,
                 new TestTaskViewMultipartInputService(normalizedInputs),
-                mock(ProcessDataService.class),
+                processDataService,
                 mock(ProcessService.class),
                 mock(VDepartmentShadowedService.class),
                 mock(PaymentTransactionService.class),
@@ -1077,7 +1170,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 node,
                 controller,
                 customerTaskIdentityService,
-                identitySlotService
+                identitySlotService,
+                elementDerivationService,
+                processExecutionData
         );
     }
 
@@ -1250,7 +1345,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
             ProcessNodeEntity node,
             CustomerProcessInstanceTaskViewController controller,
             CustomerTaskIdentityService customerTaskIdentityService,
-            IdentitySlotService identitySlotService
+            IdentitySlotService identitySlotService,
+            TestElementDerivationService elementDerivationService,
+            ProcessExecutionData processExecutionData
     ) {
     }
 
@@ -1348,6 +1445,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class TestElementDerivationService extends ElementDerivationService {
         private final EffectiveElementValues effectiveValues;
+        private final List<ElementDerivationRequest> requests = new LinkedList<>();
 
         private TestElementDerivationService(EffectiveElementValues effectiveValues) {
             super(null, null, null, null, null, null);
@@ -1356,6 +1454,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         @Override
         public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
+            requests.add(request);
             return new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates());
         }
     }
