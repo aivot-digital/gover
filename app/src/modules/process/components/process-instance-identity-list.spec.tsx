@@ -1,4 +1,4 @@
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {IdentityProvidersApiService} from '../../identity/identity-providers-api-service';
 import {IdentityProviderType} from '../../identity/enums/identity-provider-type';
@@ -159,6 +159,8 @@ describe('ProcessInstanceIdentityList', () => {
         expect(within(article).getByRole('heading', {level: 3, name: 'Kontaktperson'})).toBeInTheDocument();
         expect(within(article).getByText(identity.identityId)).toBeInTheDocument();
         if (identity.type === 'Email') {
+            expect(within(article).queryByRole('table')).not.toBeInTheDocument();
+            fireEvent.click(within(article).getByRole('button', {name: 'Attribute'}));
             expect(within(article).getByRole('table', {
                 name: `Attribute der Identität Kontaktperson (${identity.identityId})`,
             })).toBeInTheDocument();
@@ -197,6 +199,9 @@ describe('ProcessInstanceIdentityList', () => {
         expect(screen.queryByText('urn:bundid:metadata')).not.toBeInTheDocument();
         expect(screen.queryByText('17')).not.toBeInTheDocument();
         expect(screen.queryByText('8')).not.toBeInTheDocument();
+        expect(screen.queryByText('Muster')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Attribute'})).toHaveAttribute('aria-expanded', 'false');
+        fireEvent.click(screen.getByRole('button', {name: 'Attribute'}));
         expect(screen.getByText('Nachname')).toBeInTheDocument();
         expect(screen.getByText('Vorname')).toBeInTheDocument();
         expect(screen.getByText('Geburtsdatum')).toBeInTheDocument();
@@ -235,6 +240,7 @@ describe('ProcessInstanceIdentityList', () => {
 
         await screen.findByText('BundID Produktion');
         const article = screen.getByRole('article', {name: 'Identität applicant'});
+        fireEvent.click(within(article).getByRole('button', {name: 'Attribute'}));
         const attributeTable = within(article).getByRole('table', {name: 'Attribute der Identität applicant'});
         expect(within(article).getAllByText('Vertrauensniveau')).toHaveLength(1);
         expect(within(article).getByText('level4')).toBeInTheDocument();
@@ -269,6 +275,7 @@ describe('ProcessInstanceIdentityList', () => {
 
         await screen.findByText('BundID Produktion');
         const article = screen.getByRole('article', {name: 'Identität applicant'});
+        fireEvent.click(within(article).getByRole('button', {name: 'Attribute'}));
         const attributeTable = within(article).getByRole('table', {name: 'Attribute der Identität applicant'});
         expect(within(article).getAllByText('Vertrauensniveau')).toHaveLength(1);
         expect(within(attributeTable).getByText('Vertrauensniveau')).toBeInTheDocument();
@@ -283,9 +290,11 @@ describe('ProcessInstanceIdentityList', () => {
         renderList({contact: emailIdentity});
 
         expect(screen.getByText('E-Mail')).toBeInTheDocument();
+        expect(screen.getAllByText('person@example.org')).toHaveLength(1);
+        expect(screen.queryByText('Identitätsanbieter')).not.toBeInTheDocument();
+        expect(screen.getByText('Direkte E-Mail')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: 'Attribute'}));
         expect(screen.getAllByText('person@example.org')).toHaveLength(2);
-        expect(screen.getByText('Nicht zutreffend – direkte E-Mail-Identität')).toBeInTheDocument();
-        expect(screen.getByText('Nicht zutreffend – direkter E-Mail-Versand')).toBeInTheDocument();
         expect(listIdentityProviders).not.toHaveBeenCalled();
         expect(listProviders).not.toHaveBeenCalled();
         expect(listBindings).not.toHaveBeenCalled();
@@ -297,6 +306,7 @@ describe('ProcessInstanceIdentityList', () => {
         const listBindings = vi.spyOn(CommunicationProvidersApiService.prototype, 'listBindings');
 
         renderList({applicant: providerIdentity}, false, false);
+        fireEvent.click(screen.getByRole('button', {name: 'Attribute'}));
 
         expect(screen.queryByText(identityProviderKey)).not.toBeInTheDocument();
         expect(screen.queryByText('17')).not.toBeInTheDocument();
@@ -331,6 +341,7 @@ describe('ProcessInstanceIdentityList', () => {
 
         renderList({applicant: providerIdentity});
 
+        fireEvent.click(screen.getByRole('button', {name: 'Attribute'}));
         expect(await screen.findByText('Attributzuweisungen nicht verfügbar')).toBeInTheDocument();
         expect(screen.queryByText('Muster')).not.toBeInTheDocument();
         expect(screen.queryByText('Duplicate family name')).not.toBeInTheDocument();
@@ -361,6 +372,9 @@ describe('ProcessInstanceIdentityList', () => {
         expect(within(cards[0]).getByRole('heading', {name: 'alpha'})).toBeInTheDocument();
         expect(within(cards[1]).getByRole('heading', {name: 'zeta'})).toBeInTheDocument();
 
+        for (const card of cards) {
+            fireEvent.click(within(card).getByRole('button', {name: 'Attribute'}));
+        }
         const attributeRows = within(cards[0]).getAllByRole('row');
         expect(attributeRows[1]).toHaveTextContent('NachnameLast');
         expect(attributeRows[2]).toHaveTextContent('VornameFirst');
@@ -376,6 +390,7 @@ describe('ProcessInstanceIdentityList', () => {
 
         renderList({applicant: providerIdentity});
 
+        fireEvent.click(screen.getByRole('button', {name: 'Attribute'}));
         expect(await screen.findByText('Keine Attribute konfiguriert')).toBeInTheDocument();
         expect(screen.queryByText('Muster')).not.toBeInTheDocument();
     });

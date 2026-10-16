@@ -186,7 +186,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         );
         var newIdentitySlot = identitySlotResponse("representative", false, null, false);
         var identityState = new CustomerTaskIdentityService.CustomerTaskIdentityState(
-                new CustomerTaskIdentityService.ExistingIdentityState("applicant", false, provider),
+                new CustomerTaskIdentityService.ExistingIdentityState("applicant", "Antragstellende Person", false, provider),
                 newIdentitySlot,
                 null,
                 false
@@ -206,6 +206,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertNull(response.events());
         assertSame(newIdentitySlot, response.newIdentitySlot());
         assertEquals("applicant", response.existingIdentitySlot().id());
+        assertEquals("Antragstellende Person", response.existingIdentitySlot().title());
         assertEquals(providerKey, response.existingIdentitySlot().identityProvider().identityProviderKey());
         assertNull(response.existingIdentitySlot().identityProvider().identityProviderAssetKey());
     }

@@ -316,7 +316,7 @@ export function CustomerInstanceTaskView() {
     }, []);
 
     if (deadlineExceeded) {
-        return <Alert severity="error">Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
+        return <Alert severity="error">Die Bearbeitungsfrist ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
     }
 
     if (taskView == null) {
@@ -355,7 +355,7 @@ export function CustomerInstanceTaskView() {
     const authoredValues = editedAuthoredValues ?? taskView.data;
 
     return (
-        <Box>
+        <Box sx={{maxWidth: 1200, mx: 'auto', px: {xs: 2, md: 4}, py: {xs: 3, md: 5}}}>
             <ElementDerivationContext
                 element={taskView.layout}
                 authoredElementValues={authoredValues}
@@ -514,15 +514,20 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
         }
     };
 
+    const existingIdentityTitle = existingIdentitySlot?.title?.trim();
+    const existingIdentityLabel = existingIdentityTitle || 'Bestehende Identität';
+    const accountInstruction = existingIdentityTitle
+        ? `Melden Sie sich mit dem Nutzerkonto an, das Sie für „${existingIdentityTitle}“ in diesem Vorgang verwendet haben.`
+        : 'Melden Sie sich mit dem Nutzerkonto an, das Sie für diese Identität in diesem Vorgang verwendet haben.';
     let introduction: string;
     if (existingIdentitySlot != null && newIdentitySlot != null) {
-        introduction = 'Bestätigen Sie die Empfängeridentität dieser Aufgabe und vervollständigen Sie die weitere Identitätsangabe.';
+        introduction = `Bestätigen Sie Ihre bestehende Identität und vervollständigen Sie die weitere Identitätsangabe. ${accountInstruction}`;
     } else if (existingIdentitySlot != null) {
-        introduction = 'Für diese Aufgabe ist eine erneute Anmeldung erforderlich. Melden Sie sich mit dem Nutzerkonto an, an das diese Aufgabe gesendet wurde.';
+        introduction = `Um fortzufahren, bestätigen Sie bitte Ihre Identität. ${accountInstruction}`;
     } else if (newIdentitySlot?.isRequired) {
-        introduction = 'Für diese Aufgabe ist eine Identität erforderlich. Wählen Sie ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.';
+        introduction = 'Um fortzufahren, wählen Sie ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.';
     } else {
-        introduction = 'Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie die Aufgabe ohne Identitätsangabe bearbeiten.';
+        introduction = 'Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie ohne Identitätsangabe fortfahren.';
     }
 
     return (
@@ -538,8 +543,8 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
         >
             <Grid container spacing={3}>
                 <Grid size={{xs: 12, md: 10, lg: 8}} sx={{mb: 2}}>
-                    <Typography variant="h2" component="div">
-                        Identität auswählen
+                    <Typography variant="h2" component="h1">
+                        {existingIdentitySlot != null ? 'Identität bestätigen' : 'Identität auswählen'}
                     </Typography>
                     <Typography sx={{mt: 1, maxWidth: 680}}>
                         {introduction}
@@ -575,7 +580,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                                 }}
                             >
                                 <Typography variant="h4" component="h2">
-                                    Empfängeridentität
+                                    {existingIdentityLabel}
                                 </Typography>
                                 <Chip
                                     mode="soft"
@@ -589,10 +594,12 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                                 wrongExistingAccount &&
                                 <Alert severity="error" sx={{mt: 2}}>
                                     <Typography variant="subtitle2" component="div">
-                                        Falsches Nutzerkonto
+                                        Anderes Nutzerkonto erforderlich
                                     </Typography>
-                                    Das verwendete Nutzerkonto gehört nicht zur Empfängeridentität dieser Aufgabe.
-                                    Melden Sie sich mit dem richtigen Nutzerkonto an.
+                                    {existingIdentityTitle
+                                        ? `Das verwendete Nutzerkonto gehört nicht zu „${existingIdentityTitle}“. `
+                                        : 'Das verwendete Nutzerkonto gehört nicht zur erforderlichen Identität. '}
+                                    {accountInstruction}
                                 </Alert>
                             }
 
@@ -642,7 +649,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                         {
                             canContinueWithoutAuthentication
                                 ? 'Ohne Anmeldung fortfahren'
-                                : 'Mit Aufgabe fortfahren'
+                                : 'Fortfahren'
                         }
                     </Button>
                 </Grid>

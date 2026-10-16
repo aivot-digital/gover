@@ -576,7 +576,7 @@ describe('CustomerFormPage', () => {
             undefined,
         );
         expect(screen.queryByText('Nachrichten werden an customer@example.test gesendet.')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Auswahl ändern'})).not.toBeInTheDocument();
     });
 
     it('shows persisted identities when another draft blocks a provider login', async () => {
@@ -806,7 +806,7 @@ describe('CustomerFormPage', () => {
         await waitFor(() => expect(setEmail).toHaveBeenCalledTimes(2));
         await waitFor(() => expect(emailFields[1]).toBeDisabled());
         expect(screen.queryByText('Nachrichten werden an first@example.test gesendet.')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Auswahl ändern'})).not.toBeInTheDocument();
 
         resolveSecondIdentity();
         expect(await screen.findByRole('button', {name: 'Formular absenden'})).toBeVisible();

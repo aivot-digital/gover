@@ -801,6 +801,7 @@ public class CustomerProcessInstanceTaskViewController {
         if (identityState.existingIdentity() != null) {
             existingIdentitySlot = new TaskViewExistingIdentitySlot(
                     identityState.existingIdentity().id(),
+                    identityState.existingIdentity().title(),
                     identityState.existingIdentity().isReady(),
                     identityState.existingIdentity().identityProvider()
             );
@@ -1105,6 +1106,8 @@ public class CustomerProcessInstanceTaskViewController {
     public record TaskViewExistingIdentitySlot(
             @Nonnull
             String id,
+            @Nullable
+            String title,
             boolean isReady,
             @Nonnull
             IdentityProviderOptionResponseDTO identityProvider

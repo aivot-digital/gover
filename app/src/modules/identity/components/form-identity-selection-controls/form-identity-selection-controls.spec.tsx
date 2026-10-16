@@ -208,7 +208,7 @@ describe('FormIdentitySelectionControls', () => {
         }), {clearIdentity});
         const user = userEvent.setup();
 
-        await user.click(screen.getByRole('button', {name: 'Identität entfernen'}));
+        await user.click(screen.getByRole('button', {name: 'Auswahl ändern'}));
 
         await waitFor(() => expect(clearIdentity).toHaveBeenCalledWith('applicant'));
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
