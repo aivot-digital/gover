@@ -16,7 +16,6 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -26,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,7 +34,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
     private final StorageProviderConfigurationService storageProviderConfigurationService;
-    private final RabbitTemplate rabbitTemplate;
+    private final StorageSyncWorker storageSyncWorker;
     private final DataSize maxFileSize;
     private final SystemConfigService systemConfigService;
 
@@ -42,13 +42,13 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     public StorageProviderService(StorageProviderRepository storageProviderRepository,
                                   StorageProviderDefinitionService storageProviderDefinitionService,
                                   StorageProviderConfigurationService storageProviderConfigurationService,
-                                  RabbitTemplate rabbitTemplate,
+                                  StorageSyncWorker storageSyncWorker,
                                   @Value("${spring.servlet.multipart.max-file-size}") DataSize maxFileSize,
                                   SystemConfigService systemConfigService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageProviderConfigurationService = storageProviderConfigurationService;
-        this.rabbitTemplate = rabbitTemplate;
+        this.storageSyncWorker = storageSyncWorker;
         this.maxFileSize = maxFileSize;
         this.systemConfigService = systemConfigService;
     }
@@ -77,7 +77,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         var res = storageProviderRepository.save(entity);
 
         // Trigger synchronization
-        rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, res.getId());
+        storageSyncWorker.publish(res.getId());
 
         return res;
     }
@@ -135,18 +135,9 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     ) throws ResponseException {
         validateMaxFileSize(entity);
 
+        // A resynchronization is requested through requestSync, not by sending the pending status.
         if (existingEntity.getSystemProvider()) {
-            if (entity.getStatus() == StorageProviderStatus.SyncPending) {
-                var res = storageProviderRepository.save(
-                        existingEntity
-                                .setStatus(StorageProviderStatus.SyncPending)
-                );
-                rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, res.getId());
-
-                return res;
-            } else {
-                throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
-            }
+            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
         }
 
         var def = storageProviderDefinitionService
@@ -172,7 +163,9 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         var shouldResync = shouldResync(def, existingEntity, entity);
 
         if (shouldResync) {
-            existingEntity.setStatus(StorageProviderStatus.SyncPending);
+            existingEntity
+                    .setStatus(StorageProviderStatus.SyncPending)
+                    .setStatusMessage(null);
         }
 
         // Assign this here to prevent resync check failing due to overwritten data
@@ -184,15 +177,28 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         var res = storageProviderRepository
                 .save(existingEntity);
 
-        if (entity.getStatus() == StorageProviderStatus.SyncPending) {
-            existingEntity.setStatusMessage(null); // Reset the status message
-        }
-
         if (shouldResync) {
-            rabbitTemplate.convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, res.getId());
+            storageSyncWorker.publish(res.getId());
         }
 
         return res;
+    }
+
+    /**
+     * Requests a resynchronization of a provider, including a system provider. The request is stored as the pending
+     * status, so it is published again if the message is lost.
+     */
+    @Nonnull
+    public StorageProviderEntity requestSync(@Nonnull Integer id) throws ResponseException {
+        if (storageProviderRepository.requestSync(id, Instant.now()) != 1) {
+            throw ResponseException.notFound();
+        }
+
+        storageSyncWorker.publish(id);
+
+        return storageProviderRepository
+                .findById(id)
+                .orElseThrow(ResponseException::notFound);
     }
 
     private <T> boolean shouldResync(@Nonnull StorageProviderDefinition<T> def,

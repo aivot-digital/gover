@@ -39,7 +39,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 
 import java.util.List;
 import java.util.Map;
@@ -59,7 +59,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
     private final ProcessTaskMailService taskMail = mock(ProcessTaskMailService.class);
     private final ProcessInstanceMailService instanceMail = mock(ProcessInstanceMailService.class);
     private final UserService users = mock(UserService.class);
-    private final RabbitTemplate rabbit = mock(RabbitTemplate.class);
+    private final ProcessWorkRequestService workRequests = mock(ProcessWorkRequestService.class);
     private final ProcessEdgeRepository edges = mock(ProcessEdgeRepository.class);
     private final ProcessNodeDefinition<AuthoredElementValues> definition = mock(ProcessNodeDefinition.class);
     private final ProcessService processes = mock(ProcessService.class);
@@ -73,7 +73,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
     private final UserEntity actor = new UserEntity().setId("actor").setFullName("Ada Beispiel");
     private final ProcessNodeService nodeService = mock(ProcessNodeService.class);
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
-            assignments, rabbit, communication, instances, versions, tasks, edges, users, taskMail,
+            assignments, workRequests, communication, instances, versions, tasks, edges, users, taskMail,
             mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class), processes, departments,
             instanceMail, nodeService, null);
 
@@ -233,7 +233,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
                                 .build()));
         assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handle(result, actor));
         assertEquals("task-owner", task.getAssignedUserId());
-        verifyNoInteractions(tasks, instances, events, assignments, communication, taskMail, instanceMail, users, rabbit);
+        verifyNoInteractions(tasks, instances, events, assignments, communication, taskMail, instanceMail, users, workRequests);
     }
 
     @Test

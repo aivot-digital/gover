@@ -46,6 +46,10 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
 
     boolean existsByPreviousProcessInstanceTaskId(Long previousProcessInstanceTaskId);
 
+    boolean existsByRestartForTaskId(Long restartForTaskId);
+
+    boolean existsByProcessInstanceId(Long processInstanceId);
+
     @Nonnull
     @Query("""
             select new de.aivot.prosuna.backend.process.projections.ProcessTaskRestartProjection(

@@ -1,88 +1,75 @@
 package de.aivot.prosuna.backend.process.controllers;
 
 import de.aivot.prosuna.backend.audit.services.AuditService;
+import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceReassignRequestDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
-import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
-import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
-import de.aivot.prosuna.backend.process.workers.ProcessWorker;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceService;
-import de.aivot.prosuna.backend.process.services.ProcessInstanceTaskService;
-import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceRestartService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.Optional;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class ProcessInstanceControllerTest {
-    @ParameterizedTest
-    @ValueSource(booleans = {false, true})
-    void restartQueuesTheLatestFailedTaskReferenceOrAnUnlinkedInitialStart(boolean hasTask) throws Exception {
+    @Test
+    void restartAuthorizesTheInstanceBeforeRestartingAndAuditing() throws Exception {
         var fixture = new RestartFixture();
-        when(fixture.tasks.retrieveLatestForInstanceId(7L))
-                .thenReturn(hasTask ? Optional.of(fixture.task) : Optional.empty());
+        var restarted = new ProcessInstanceEntity().setId(7L).setProcessId(1).setStatus(ProcessInstanceStatus.Running);
+        when(fixture.restarts.restartFailedInstance(7L, "actor")).thenReturn(restarted);
 
         var result = fixture.controller.restartFailed(fixture.jwt, 7L);
 
-        var payload = ArgumentCaptor.forClass(ProcessWorker.DoWorkWorkerPayload.class);
-        verify(fixture.rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE), payload.capture());
-        assertEquals(7L, payload.getValue().processInstanceId());
-        assertEquals(hasTask ? 34L : null, payload.getValue().restartForTaskId());
-        assertEquals(hasTask ? 33L : null, payload.getValue().previousTaskId());
-        assertEquals(hasTask ? 56 : 11, payload.getValue().nextNodeId());
-        assertEquals(ProcessInstanceStatus.Running, result.getStatus());
-        verify(fixture.permissions).requireProcessInstancePermission("actor", 7L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE);
-        if (hasTask) {
-            assertEquals(ProcessTaskStatus.Restarted, fixture.task.getStatus());
-            assertEquals(32L, fixture.task.getRestartForTaskId());
-            verify(fixture.tasks).save(fixture.task);
-        }
+        assertSame(restarted, result);
+        var order = inOrder(fixture.permissions, fixture.restarts, fixture.scopedAudit);
+        order.verify(fixture.permissions).requireProcessInstancePermission("actor", 7L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE);
+        order.verify(fixture.restarts).restartFailedInstance(7L, "actor");
+        order.verify(fixture.scopedAudit).create();
     }
 
     @Test
-    void failedQueueSubmissionDoesNotMarkTheTaskRestartedOrLogSuccess() throws Exception {
+    void deniedRestartDoesNotRestartTheInstance() throws Exception {
         var fixture = new RestartFixture();
-        when(fixture.tasks.retrieveLatestForInstanceId(7L)).thenReturn(Optional.of(fixture.task));
-        doThrow(new RuntimeException("Queue unavailable")).when(fixture.rabbit)
-                .convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE), any(ProcessWorker.DoWorkWorkerPayload.class));
+        doThrow(ResponseException.forbidden()).when(fixture.permissions)
+                .requireProcessInstancePermission("actor", 7L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE);
 
         assertThrows(ResponseException.class, () -> fixture.controller.restartFailed(fixture.jwt, 7L));
-        assertEquals(ProcessTaskStatus.Failed, fixture.task.getStatus());
-        verify(fixture.tasks, never()).save(any());
-        verifyNoInteractions(fixture.loggers, fixture.audit.createScopedAuditService(ProcessInstanceController.class, "Prozesse"));
+
+        verifyNoInteractions(fixture.restarts, fixture.scopedAudit);
+    }
+
+    @Test
+    void rejectedRestartIsNotAudited() throws Exception {
+        var fixture = new RestartFixture();
+        when(fixture.restarts.restartFailedInstance(7L, "actor")).thenThrow(ResponseException.conflict("Nicht möglich."));
+
+        assertThrows(ResponseException.class, () -> fixture.controller.restartFailed(fixture.jwt, 7L));
+
+        verifyNoInteractions(fixture.scopedAudit);
     }
 
     private static class RestartFixture {
         final Jwt jwt = mock(Jwt.class);
-        final ProcessInstanceTaskService tasks = mock(ProcessInstanceTaskService.class);
-        final RabbitTemplate rabbit = mock(RabbitTemplate.class);
+        final ProcessInstanceRestartService restarts = mock(ProcessInstanceRestartService.class);
         final PermissionService permissions = mock(PermissionService.class);
-        final ProcessNodeExecutionLoggerFactory loggers = mock(ProcessNodeExecutionLoggerFactory.class, RETURNS_DEEP_STUBS);
         final AuditService audit = mock(AuditService.class, RETURNS_DEEP_STUBS);
-        final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(34L).setProcessInstanceId(7L)
-                .setProcessNodeId(56).setStatus(ProcessTaskStatus.Failed).setPreviousProcessInstanceTaskId(33L)
-                .setPreviousProcessNodeId(55).setPreviousProcessNodePortKey("next").setRestartForTaskId(32L);
+        final ScopedAuditService scopedAudit = mock(ScopedAuditService.class, RETURNS_DEEP_STUBS);
         final ProcessInstanceController controller;
 
         RestartFixture() throws Exception {
@@ -90,11 +77,10 @@ class ProcessInstanceControllerTest {
             var users = mock(UserService.class);
             when(users.fromJWT(jwt)).thenReturn(Optional.of(user));
             var instances = mock(ProcessInstanceService.class);
-            var instance = new ProcessInstanceEntity().setId(7L).setProcessId(1).setInitialNodeId(11)
-                    .setInitialPayload(Map.of("input", "test")).setStatus(ProcessInstanceStatus.Failed);
+            var instance = new ProcessInstanceEntity().setId(7L).setProcessId(1).setStatus(ProcessInstanceStatus.Failed);
             when(instances.retrieve(7L)).thenReturn(Optional.of(instance));
-            when(instances.save(instance)).thenReturn(instance);
-            controller = new ProcessInstanceController(audit, users, instances, tasks, rabbit, loggers, permissions,
+            when(audit.createScopedAuditService(ProcessInstanceController.class, "Prozesse")).thenReturn(scopedAudit);
+            controller = new ProcessInstanceController(audit, users, instances, restarts, permissions,
                     mock(de.aivot.prosuna.backend.process.services.ProcessAssignmentService.class));
         }
     }
@@ -115,9 +101,7 @@ class ProcessInstanceControllerTest {
                 mock(AuditService.class, RETURNS_DEEP_STUBS),
                 userService,
                 mock(ProcessInstanceService.class),
-                mock(ProcessInstanceTaskService.class),
-                mock(RabbitTemplate.class),
-                mock(ProcessNodeExecutionLoggerFactory.class),
+                mock(ProcessInstanceRestartService.class),
                 mock(PermissionService.class), assignmentService
         );
 

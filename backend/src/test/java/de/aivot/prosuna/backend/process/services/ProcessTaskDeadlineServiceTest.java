@@ -31,7 +31,7 @@ class ProcessTaskDeadlineServiceTest {
     private final ProcessEdgeRepository edges = mock(ProcessEdgeRepository.class);
     private final ProcessInstanceRepository instances = mock(ProcessInstanceRepository.class);
     private final ProcessInstanceTaskRepository tasks = mock(ProcessInstanceTaskRepository.class);
-    private final ProcessTaskDeadlineContinuationRepository continuations = mock(ProcessTaskDeadlineContinuationRepository.class);
+    private final ProcessWorkRequestService workRequests = mock(ProcessWorkRequestService.class);
     private final ProcessInstanceHistoryEventRepository events = mock(ProcessInstanceHistoryEventRepository.class);
     private final ProcessNodeExecutionLoggerFactory loggers = mock(ProcessNodeExecutionLoggerFactory.class);
     private final Clock clock = mock(Clock.class);
@@ -46,7 +46,7 @@ class ProcessTaskDeadlineServiceTest {
     private final ProcessNodeDeadlineDefinition definition = new ProcessNodeDeadlineDefinition("customer", "Antwort der Kund:in",
             "Zeit für die Antwort", new ProcessNodePort("customer_overdue", "Antwort überfällig", "Fortsetzung"));
     private final ProcessTaskDeadlineService service = new ProcessTaskDeadlineService(nodes, nodeService, edges, instances,
-            tasks, loggers, new ProcessTaskDeadlineResultHandler(tasks, continuations), time);
+            tasks, loggers, new ProcessTaskDeadlineResultHandler(tasks, workRequests), time);
 
     @BeforeEach
     void setup() {
@@ -87,11 +87,7 @@ class ProcessTaskDeadlineServiceTest {
         assertTrue(task.getExecutionSummaryMarkdown().contains("Antwort der Kund:in"));
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
 
-        var continuation = ArgumentCaptor.forClass(ProcessTaskDeadlineContinuationEntity.class);
-        verify(continuations).save(continuation.capture());
-        assertEquals(2L, continuation.getValue().getTaskId());
-        assertEquals(4, continuation.getValue().getToNodeId());
-        assertEquals("customer_overdue", continuation.getValue().getViaPort());
+        verify(workRequests).enqueueTransition(1L, 2L, "customer_overdue", 4);
         var event = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
         verify(events).save(event.capture());
         assertTrue(event.getValue().getHistoryRelevant());
@@ -103,7 +99,7 @@ class ProcessTaskDeadlineServiceTest {
     void doesNotExpireBeforeDeadline() {
         when(clock.instant()).thenReturn(DEADLINE.minusNanos(1));
         service.expireIfDue(instance, task);
-        verifyNoInteractions(nodes, continuations, events);
+        verifyNoInteractions(nodes, workRequests, events);
     }
 
     @Test
@@ -111,7 +107,7 @@ class ProcessTaskDeadlineServiceTest {
         task.setDeadlineStrict(false);
         service.expireIfDue(instance, task);
         assertEquals(ProcessTaskStatus.AwaitingCustomer, task.getStatus());
-        verifyNoInteractions(nodes, nodeService, tasks, continuations, events);
+        verifyNoInteractions(nodes, nodeService, tasks, workRequests, events);
     }
 
     @Test
@@ -127,7 +123,7 @@ class ProcessTaskDeadlineServiceTest {
         assertEquals("customer", task.getDeadlineKey());
         verify(tasks).save(task);
         verify(nodes).findById(3);
-        verifyNoInteractions(nodeService, continuations, events);
+        verifyNoInteractions(nodeService, workRequests, events);
     }
 
     @ParameterizedTest
@@ -136,7 +132,7 @@ class ProcessTaskDeadlineServiceTest {
         task.setStatus(status);
         service.expireIfDue(instance, task);
         assertEquals(status, task.getStatus());
-        verifyNoInteractions(nodes, continuations, events);
+        verifyNoInteractions(nodes, workRequests, events);
     }
 
     @ParameterizedTest
@@ -145,7 +141,7 @@ class ProcessTaskDeadlineServiceTest {
         instance.setStatus(status);
         service.expireIfDue(instance, task);
         assertEquals(DEADLINE, task.getDeadline());
-        verifyNoInteractions(nodes, continuations, events);
+        verifyNoInteractions(nodes, workRequests, events);
     }
 
     @Test
@@ -172,7 +168,7 @@ class ProcessTaskDeadlineServiceTest {
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
         assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
         assertFalse(task.getNodeData().containsKey(ProcessTaskDeadlineExceededData.NODE_DATA_KEY));
-        verifyNoInteractions(continuations);
+        verifyNoInteractions(workRequests);
         verify(events).save(any());
     }
 }

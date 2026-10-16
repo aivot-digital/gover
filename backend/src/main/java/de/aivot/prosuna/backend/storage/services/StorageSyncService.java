@@ -21,7 +21,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -41,63 +45,87 @@ public class StorageSyncService {
     private final StorageProviderConfigurationService storageProviderConfigurationService;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final AssetRepository assetRepository;
+    private final TransactionTemplate transaction;
 
     public StorageSyncService(KnownExtensionsService knownExtensions,
                               StorageProviderRepository storageProviderRepository,
                               StorageProviderDefinitionService storageProviderDefinitionService,
                               StorageProviderConfigurationService storageProviderConfigurationService,
                               StorageIndexItemRepository storageIndexItemRepository,
-                              AssetRepository assetRepository) {
+                              AssetRepository assetRepository,
+                              PlatformTransactionManager transactionManager) {
         this.knownExtensions = knownExtensions;
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageProviderConfigurationService = storageProviderConfigurationService;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.assetRepository = assetRepository;
+        this.transaction = new TransactionTemplate(transactionManager);
     }
 
-    public void syncStorageProvider(int id) {
-        var storageProviderOpt = storageProviderRepository
-                .findById(id);
-
-        if (storageProviderOpt.isEmpty()) {
-            logger
-                    .atError()
-                    .setMessage("Storage provider with ID {} not found for syncing")
-                    .addArgument(id)
-                    .log();
-            return;
+    /**
+     * Runs a requested synchronization. Only one run can claim a request, so duplicate messages do nothing. The
+     * provider is locked only to record the result, so requests, edits and the scheduled sweeps do not wait for the
+     * storage to be read. If the provider was changed or requested again in the meantime, or a run that started
+     * after {@code staleBefore} took it over, the run's index changes are rolled back. Returns whether the provider
+     * must be published again, because a newer request is pending.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public boolean syncRequestedStorageProvider(int id, @Nonnull Instant staleBefore) {
+        var runId = UUID.randomUUID();
+        if (storageProviderRepository.claimSync(id, runId, Instant.now(), staleBefore) != 1) {
+            return false;
         }
 
-        var storageProvider = storageProviderOpt.get();
-
         try {
-            syncStorageProvider(storageProvider);
-        } catch (Exception e) {
+            var storageProvider = storageProviderRepository
+                    .findById(id)
+                    .orElse(null);
+
+            if (storageProvider == null) {
+                return false;
+            }
+
+            var recorded = transaction.execute(status -> syncClaimed(storageProvider, runId, status));
+            if (Boolean.TRUE.equals(recorded)) {
+                return false;
+            }
+        } catch (RuntimeException e) {
             logger
                     .atError()
-                    .setMessage("Error syncing storage provider with ID {}: {}")
+                    .setMessage("Error syncing storage provider {}: {}")
                     .addArgument(id)
                     .addArgument(e::getMessage)
                     .setCause(e)
                     .log();
+
+            if (storageProviderRepository.failSync(id, runId, e.getMessage(), Instant.now()) == 1) {
+                return false;
+            }
         }
+
+        // A newer request superseded this run. Releasing it lets the pending request be claimed.
+        storageProviderRepository.releaseSync(id, runId);
+        return true;
     }
 
-    public void syncStorageProvider(@Nonnull StorageProviderEntity storageProvider) {
-        storageProviderRepository
-                .save(storageProvider
-                        .setStatus(StorageProviderStatus.Syncing)
-                        .setStatusMessage(null)
-                );
-
+    /**
+     * Synchronizes the index and records the result in one transaction. Returns false and rolls back if the run no
+     * longer owns the synchronization.
+     */
+    private boolean syncClaimed(@Nonnull StorageProviderEntity storageProvider,
+                                @Nonnull UUID runId,
+                                @Nonnull TransactionStatus status) {
+        String failureMessage = null;
+        var failed = false;
         try {
             performSync(storageProvider);
-            storageProvider
-                    .setStatus(StorageProviderStatus.Synced)
-                    .setStatusMessage(null)
-                    .setLastSync(Instant.now());
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            // A failed database operation leaves nothing to commit; the failure is then recorded separately.
+            if (status.isRollbackOnly()) {
+                throw e;
+            }
+
             logger
                     .atError()
                     .setMessage("Error syncing storage provider {} ({}): {}")
@@ -107,12 +135,34 @@ public class StorageSyncService {
                     .setCause(e)
                     .log();
 
-            storageProvider
-                    .setStatus(StorageProviderStatus.SyncFailed)
-                    .setStatusMessage(e.getMessage());
-        } finally {
-            storageProviderRepository.save(storageProvider);
+            failed = true;
+            failureMessage = e.getMessage();
         }
+
+        var current = storageProviderRepository
+                .findByIdForUpdate(storageProvider.getId())
+                .orElse(null);
+
+        if (current == null || current.getStatus() != StorageProviderStatus.Syncing || !runId.equals(current.getSyncRunId())) {
+            status.setRollbackOnly();
+            return false;
+        }
+
+        if (failed) {
+            current
+                    .setStatus(StorageProviderStatus.SyncFailed)
+                    .setStatusMessage(failureMessage);
+        } else {
+            current
+                    .setStatus(StorageProviderStatus.Synced)
+                    .setStatusMessage(null)
+                    .setLastSync(Instant.now());
+        }
+
+        storageProviderRepository.save(current
+                .setSyncRunId(null)
+                .setSyncStarted(null));
+        return true;
     }
 
     private void performSync(@Nonnull StorageProviderEntity storageProvider) {

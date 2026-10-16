@@ -3,9 +3,11 @@ package de.aivot.prosuna.backend.payment.services;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.PaymentTransactionChangeListener;
@@ -15,25 +17,38 @@ import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.repositories.PaymentTransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -54,6 +69,7 @@ class PaymentTransactionServiceTest {
             .setKey(UUID.randomUUID())
             .setPaymentProviderDefinitionKey("test-provider")
             .setPaymentProviderDefinitionVersion(1);
+    private final AtomicInteger completion = new AtomicInteger(-1);
 
     private PaymentTransactionService service;
 
@@ -62,9 +78,10 @@ class PaymentTransactionServiceTest {
         when(definitions.getProviderDefinition("test-provider", 1)).thenReturn(Optional.of(definition));
         when(providers.findById(provider.getKey())).thenReturn(Optional.of(provider));
         when(configuration.deriveConfiguration(provider, definition)).thenReturn(derivedConfiguration);
+        var source = new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1", "sa", "");
         service = new PaymentTransactionService(
-                List.of(listener), mock(ProsunaConfig.class), repository, mock(AuditService.class),
-                definitions, providers, configuration
+                List.of(listener), mock(ProsunaConfig.class), repository, mock(AuditService.class, RETURNS_DEEP_STUBS),
+                definitions, providers, configuration, new DataSourceTransactionManager(source)
         );
     }
 
@@ -143,6 +160,89 @@ class PaymentTransactionServiceTest {
         assertEquals(CORRECTED_TIMESTAMP, previousInformation.getTransactionTimestamp());
         verify(definition, org.mockito.Mockito.never()).fixTransactionTimestamp(nullable(String.class));
         verifyNoInteractions(repository, listener);
+    }
+
+    // Listeners request follow-up work, which must commit or roll back together with the payment change.
+    @Test
+    void savesTheNewStatusAndNotifiesListenersInOneTransaction() throws Exception {
+        var transaction = storedTransaction(XBezahldienstStatus.INITIAL);
+        mockCallback(false, XBezahldienstStatus.PAYED);
+        recordCompletionWhenSaved();
+        doAnswer(call -> {
+            assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
+            return null;
+        }).when(listener).onChange(transaction);
+
+        service.processCallback(transaction, null);
+
+        var order = inOrder(repository, listener);
+        order.verify(repository).save(transaction);
+        order.verify(listener).onChange(transaction);
+        assertEquals(TransactionSynchronization.STATUS_COMMITTED, completion.get());
+    }
+
+    @Test
+    void failingListenerRollsBackTheStatusChange() throws Exception {
+        var transaction = storedTransaction(XBezahldienstStatus.INITIAL);
+        mockCallback(false, XBezahldienstStatus.PAYED);
+        recordCompletionWhenSaved();
+        doThrow(ResponseException.internalServerError("Fehler")).when(listener).onChange(transaction);
+
+        assertThrows(PaymentException.class, () -> service.processCallback(transaction, null));
+
+        assertEquals(TransactionSynchronization.STATUS_ROLLED_BACK, completion.get());
+    }
+
+    @Test
+    void deletesTheTransactionAndNotifiesListenersInOneTransaction() throws Exception {
+        var transaction = storedTransaction(XBezahldienstStatus.INITIAL);
+        doAnswer(call -> {
+            recordCompletion();
+            return null;
+        }).when(listener).onDelete(transaction);
+        doAnswer(call -> {
+            assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
+            return null;
+        }).when(repository).delete(transaction);
+
+        service.performDelete(transaction);
+
+        var order = inOrder(listener, repository);
+        order.verify(listener).onDelete(transaction);
+        order.verify(repository).delete(transaction);
+        assertEquals(TransactionSynchronization.STATUS_COMMITTED, completion.get());
+    }
+
+    @Test
+    void failingDeleteListenerKeepsTheTransaction() throws Exception {
+        var transaction = storedTransaction(XBezahldienstStatus.INITIAL);
+        doAnswer(call -> {
+            recordCompletion();
+            throw ResponseException.internalServerError("Fehler");
+        }).when(listener).onDelete(transaction);
+
+        var exception = assertThrows(ResponseException.class, () -> service.performDelete(transaction));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        verify(repository, never()).delete(any(PaymentTransactionEntity.class));
+        assertEquals(TransactionSynchronization.STATUS_ROLLED_BACK, completion.get());
+    }
+
+    private void recordCompletionWhenSaved() {
+        when(repository.save(any())).thenAnswer(call -> {
+            assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
+            recordCompletion();
+            return call.getArgument(0);
+        });
+    }
+
+    private void recordCompletion() {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                completion.set(status);
+            }
+        });
     }
 
     private Map<String, Object> mockCallback(boolean push, XBezahldienstStatus status) throws Exception {

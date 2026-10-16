@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.process.services.ProcessInstanceRestartService;
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
@@ -15,7 +16,6 @@ import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessListService;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceReassignRequestDTO;
 import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
-import de.aivot.prosuna.backend.process.workers.ProcessWorker;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.specification.SpecificationBuilderArrayContains;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +25,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,7 +33,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -50,7 +48,7 @@ public class ProcessInstanceTaskController {
     // staff interactions use task-view commands, reassignment and the explicit failed-task restart below.
     private final UserService userService;
     private final ProcessInstanceTaskService processInstanceTaskService;
-    private final RabbitTemplate rabbitTemplate;
+    private final ProcessInstanceRestartService restartService;
     private final PermissionService permissionService;
     private final ProcessAssignmentService assignmentService;
     private final ProcessListService listService;
@@ -59,14 +57,14 @@ public class ProcessInstanceTaskController {
     @Autowired
     public ProcessInstanceTaskController(UserService userService,
                                          ProcessInstanceTaskService processInstanceTaskService,
-                                         RabbitTemplate rabbitTemplate,
+                                         ProcessInstanceRestartService restartService,
                                          PermissionService permissionService, ProcessAssignmentService assignmentService,
                                          ProcessListService listService,
                                          ProcessTaskExecutionService execution) {
         this.execution = execution;
         this.userService = userService;
         this.processInstanceTaskService = processInstanceTaskService;
-        this.rabbitTemplate = rabbitTemplate;
+        this.restartService = restartService;
         this.permissionService = permissionService;
         this.assignmentService = assignmentService;
         this.listService = listService;
@@ -179,8 +177,9 @@ public class ProcessInstanceTaskController {
 
     @PutMapping("{id}/rerun-failed/")
     @Operation(
-            summary = "Update Process Instance Task",
-            description = "Rerun a failed process instance task. Requires the permission `" +
+            summary = "Rerun Failed Process Instance Task",
+            description = "Rerun a failed process instance task. A failed process instance is set back to running. " +
+                    "Tasks of completed or aborted process instances cannot be rerun (409). Requires the permission `" +
                     ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK +
                     "` for the affected process instance or at system level."
     )
@@ -206,24 +205,6 @@ public class ProcessInstanceTaskController {
                 ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK
         );
 
-        taskEntity
-                .setStatus(ProcessTaskStatus.Restarted)
-                .setUpdated(Instant.now());
-
-        taskEntity = processInstanceTaskService
-                .update(taskEntity.getId(), taskEntity);
-
-        var payload = new ProcessWorker.DoWorkWorkerPayload(
-                taskEntity.getProcessInstanceId(),
-                taskEntity.getPreviousProcessInstanceTaskId(),
-                taskEntity.getPreviousProcessNodeId(),
-                taskEntity.getPreviousProcessNodePortKey(),
-                taskEntity.getProcessNodeId(),
-                taskEntity.getId()
-        );
-
-        rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, payload);
-
-        return taskEntity;
+        return restartService.rerunFailedTask(taskEntity.getProcessInstanceId(), taskEntity.getId(), user);
     }
 }
