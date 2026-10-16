@@ -564,11 +564,13 @@ public class CustomerProcessInstanceTaskViewController {
                 null
         ).inputs();
 
+        // Expressions of the form may read the process data, so derive with the same data as the preview does.
         var derivedElementData = elementDerivationService.derive(
                 new ElementDerivationRequest(
                         layout,
                         inputs,
-                        new ElementDerivationOptions()
+                        new ElementDerivationOptions(),
+                        taskViewData.processExecutionData()
                 )
         );
 
