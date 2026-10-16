@@ -23,27 +23,20 @@ import {CustomerListPageHeader} from './customer-list-page-header';
 import {CustomerListPageFooter} from './customer-list-page-footer';
 import {isApiError} from '../../models/api-error';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {FormTriggerApiService, FormTriggerListItem} from '../../modules/forms/services/form-trigger-api-service';
-import {resolveFormNodeName} from '../../models/elements/form-layout-element';
-import {getLiteralElementValue} from '../../models/element-data';
-import type {FormLayoutElement} from '../../models/elements/form-layout-element';
+import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
+import type {PublicFormListItemDTO} from '../../modules/forms/dtos/public-form-response-dto';
 
-function mapPublicFormListItem(form: FormTriggerListItem): FormCustomerListResponseDTO | null {
-    const formLayout = getLiteralElementValue<FormLayoutElement>(form.node.configuration, 'formLayout');
-    if (formLayout?.showOnFormIndexPage === false) {
-        return null;
-    }
-
-    const formSlug = getLiteralElementValue<string>(form.node.configuration, 'formSlug');
-    if (formSlug == null || formSlug.length === 0) {
+function mapPublicFormListItem(form: PublicFormListItemDTO): FormCustomerListResponseDTO | null {
+    // The backend only lists forms that are shown on the form index page.
+    if (form.formSlug == null || form.formSlug.length === 0) {
         return null;
     }
 
     return {
-        slug: `form/${form.process.slug}/${formSlug}`,
-        version: form.version.processVersion,
-        title: resolveFormNodeName(formLayout, form.version),
-        updated: form.version.updated,
+        slug: `form/${form.processSlug}/${form.formSlug}`,
+        version: form.processVersion,
+        title: form.formTitle,
+        updated: form.updated,
     };
 }
 

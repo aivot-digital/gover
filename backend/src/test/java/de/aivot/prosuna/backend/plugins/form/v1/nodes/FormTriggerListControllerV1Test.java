@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.plugins.form.services.FormOverviewCountService;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
@@ -28,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -241,5 +243,75 @@ class FormTriggerListControllerV1Test {
         assertNull(item.publicUrl());
         assertNull(item.published());
         verifyNoInteractions(publicUrlService);
+    }
+
+    @Test
+    void listPublicShouldOnlyReturnPublicFormData() throws Exception {
+        var now = Instant.parse("2026-08-13T10:00:00Z");
+        var pageable = PageRequest.of(0, 12);
+        var process = new ProcessEntity(
+                42,
+                "Interner Prozesstitel",
+                10,
+                UUID.randomUUID(),
+                "hundesteuer",
+                2,
+                2,
+                1,
+                now,
+                now
+        );
+        var version = new ProcessVersionEntity(
+                42,
+                1,
+                ProcessVersionStatus.Published,
+                "Hundesteuer beantragen",
+                null,
+                now,
+                now,
+                now,
+                null
+        );
+        var formLayout = new FormLayoutElement()
+                .setPublicTitle("Hundesteuer online beantragen");
+        var configuration = new AuthoredElementValues();
+        configuration.putLiteral(FormTriggerConfigV1.FORM_SLUG, "antrag");
+        configuration.putLiteral(FormTriggerConfigV1.FORM_LAYOUT, formLayout);
+        var node = new ProcessNodeEntity(
+                7,
+                42,
+                1,
+                "Online-Antrag",
+                null,
+                "formInput",
+                "form:form:1",
+                1,
+                configuration,
+                Map.of(),
+                Map.of(),
+                null,
+                null,
+                false
+        ).setNotes("Interne Modellierungsnotiz");
+
+        when(processNodeService.list(eq(pageable), any(ProcessNodeFilter.class)))
+                .thenReturn(new PageImpl<>(List.of(node), pageable, 1));
+        when(processService.retrieve(42)).thenReturn(Optional.of(process));
+        when(processVersionService.retrieve(ProcessVersionEntityId.of(42, 1))).thenReturn(Optional.of(version));
+
+        var result = controller.listPublic(pageable, new ProcessNodeFilter());
+
+        assertEquals(1, result.getTotalElements());
+        var item = result.getContent().getFirst();
+        assertEquals("hundesteuer", item.processSlug());
+        assertEquals("antrag", item.formSlug());
+        assertEquals(1, item.processVersion());
+        assertEquals("Hundesteuer online beantragen", item.formTitle());
+        assertEquals(now, item.updated());
+        var json = JsonMapperTestUtils.createMapper().writeValueAsString(item);
+        assertFalse(json.contains("Interner Prozesstitel"));
+        assertFalse(json.contains("Interne Modellierungsnotiz"));
+        assertFalse(json.contains("\"configuration\""));
+        assertFalse(json.contains("\"accessKey\""));
     }
 }
