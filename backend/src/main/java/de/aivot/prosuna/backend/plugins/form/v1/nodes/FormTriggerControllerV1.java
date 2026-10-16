@@ -607,7 +607,7 @@ public class FormTriggerControllerV1 {
             identities.computeIfPresent(slot.id(), (id, identity) -> identity.withTitle(slot.title()));
         }
 
-        var processInstance = startProcess(
+        var startedProcess = startProcess(
                 testClaim,
                 config.configuration().formLayout,
                 node,
@@ -619,10 +619,10 @@ public class FormTriggerControllerV1 {
 
         response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
         response.addCookie(ProcessSubmissionCookieUtils.createSubmissionCookie(
-                processInstance.getAccessKey(),
-                processSubmissionBindingService.bind(processInstance.getId())
+                startedProcess.instance().getAccessKey(),
+                startedProcess.submissionSecret()
         ));
-        return new FormTriggerSubmissionStatusResponseV1(processInstance.getAccessKey());
+        return new FormTriggerSubmissionStatusResponseV1(startedProcess.instance().getAccessKey());
     }
 
     void testCaptchaReplayProtection(@Nonnull FormLayoutElement form,
@@ -653,13 +653,14 @@ public class FormTriggerControllerV1 {
                 .orElse(null);
     }
 
-    private ProcessInstanceEntity startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
-                                               @Nonnull FormLayoutElement form,
-                                               @Nonnull ProcessNodeEntity nodeEntity,
-                                               @Nonnull AuthoredElementValues inputs,
-                                               @Nullable MultipartFile[] files,
-                                               @Nullable List<String> fileUris,
-                                               @Nonnull IdentityDataMap identities) throws ResponseException {
+    @Nonnull
+    private StartedProcess startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
+                                        @Nonnull FormLayoutElement form,
+                                        @Nonnull ProcessNodeEntity nodeEntity,
+                                        @Nonnull AuthoredElementValues inputs,
+                                        @Nullable MultipartFile[] files,
+                                        @Nullable List<String> fileUris,
+                                        @Nonnull IdentityDataMap identities) throws ResponseException {
         var startedAt = Instant.now();
         var instance = new ProcessInstanceEntity(
                 null,
@@ -685,6 +686,7 @@ public class FormTriggerControllerV1 {
         var createdInstance = processInstanceService
                 .create(instance);
 
+        String submissionSecret;
         try {
             var normalizationResult = fileUploadMultipartInputService.normalizeInputs(
                     form,
@@ -736,6 +738,11 @@ public class FormTriggerControllerV1 {
             // TODO: Apply TimeZone here
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_STARTED, startedAt);
 
+            // Bind the submitting browser while the instance is still paused. If the binding fails, the instance is
+            // marked as failed instead of being processed without the submitter receiving its access key, so the
+            // submitter can submit again without creating a duplicate.
+            submissionSecret = processSubmissionBindingService.bind(createdInstance.getId());
+
             createdInstance
                     .setInitialPayload(initialPayload)
                     .setStatus(ProcessInstanceStatus.Created);
@@ -760,7 +767,10 @@ public class FormTriggerControllerV1 {
             throw ResponseException.internalServerError(e);
         }
 
-        return processInstanceService.update(createdInstance.getId(), createdInstance);
+        return new StartedProcess(
+                processInstanceService.update(createdInstance.getId(), createdInstance),
+                submissionSecret
+        );
     }
 
     @GetMapping("theme/")
@@ -1111,6 +1121,12 @@ public class FormTriggerControllerV1 {
         return userService
                 .fromJWT(jwt)
                 .orElse(null);
+    }
+
+    private record StartedProcess(
+            @Nonnull ProcessInstanceEntity instance,
+            @Nonnull String submissionSecret
+    ) {
     }
 
     private record ResolvedFormTriggerContext(
