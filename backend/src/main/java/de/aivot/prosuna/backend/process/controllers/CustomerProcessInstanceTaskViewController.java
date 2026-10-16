@@ -516,9 +516,6 @@ public class CustomerProcessInstanceTaskViewController {
     ) throws ResponseException {
         requireActiveCustomerTask(taskViewData.task());
 
-        var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
-        var logger = context.getLogger();
-
         ProcessInstanceTaskEntity previousTask;
         if (taskViewData.task.getPreviousProcessNodeId() != null) {
             previousTask = processInstanceTaskService
@@ -531,13 +528,25 @@ public class CustomerProcessInstanceTaskViewController {
             previousTask = null;
         }
 
-        var customerView = resolveCustomerTaskView(taskViewData, context);
+        var customerView = resolveCustomerTaskView(
+                taskViewData,
+                createCustomerContext(taskViewData, identitySessionId, queryParameters)
+        );
         var identityState = customerTaskIdentityService.requireAuthenticatedIdentity(
                 taskViewData.instance(),
                 taskViewData.node(),
                 customerView,
                 identitySessionId
         );
+        // A task that invites a new identity has no assigned identity until it is completed. The history of this
+        // submission names the identity the customer has just authenticated instead.
+        var context = createCustomerContext(
+                taskViewData,
+                identitySessionId,
+                queryParameters,
+                resolveLoggedIdentityId(taskViewData.task(), identityState)
+        );
+        var logger = context.getLogger();
         var layout = customerView.layout();
 
         var cleanEvent = resolveValidCustomerEvent(layout, customerView.events(), rawEvent);
@@ -823,12 +832,28 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable String identitySessionId,
             @Nullable Map<String, List<String>> queryParameters
     ) {
+        return createCustomerContext(
+                taskViewData,
+                identitySessionId,
+                queryParameters,
+                taskViewData.task().getAssignedCustomerIdentityId()
+        );
+    }
+
+    @Nonnull
+    private <NodeConfig> ProcessNodeExecutionContextUICustomer<NodeConfig> createCustomerContext(
+            @Nonnull TaskViewData<NodeConfig> taskViewData,
+            @Nullable String identitySessionId,
+            @Nullable Map<String, List<String>> queryParameters,
+            @Nullable String loggedIdentityId
+    ) {
+        // The history names an identity of the process, never the session ID of the customer's browser, which is a secret.
         var logger = processNodeExecutionLoggerFactory
                 .create(
                         taskViewData.instance().getId(),
                         taskViewData.task().getId(),
                         null,
-                        identitySessionId
+                        loggedIdentityId
                 );
 
         return new ProcessNodeExecutionContextUICustomer<>(
@@ -841,6 +866,15 @@ public class CustomerProcessInstanceTaskViewController {
                 taskViewData.nodeConfig(),
                 queryParameters
         );
+    }
+
+    @Nullable
+    private static String resolveLoggedIdentityId(@Nonnull ProcessInstanceTaskEntity task,
+                                                  @Nonnull CustomerTaskIdentityService.CustomerTaskIdentityState identityState) {
+        if (task.getAssignedCustomerIdentityId() != null) {
+            return task.getAssignedCustomerIdentityId();
+        }
+        return identityState.newIdentity() == null ? null : identityState.newIdentity().identityId();
     }
 
     @Nonnull

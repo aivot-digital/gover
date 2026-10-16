@@ -79,6 +79,8 @@ class FormTriggerControllerV1SubmitTest {
         assertEquals(startedProcessAccessKey, result.startedProcessAccessKey());
         assertClearsIdentityCookie(response);
         verify(fixture.identityService()).getIdentityDataMap("identity-session-id", fixture.processNodeId());
+        // The submitted identities must not stay usable through the session once the instance holds them.
+        verify(fixture.identityService()).clearIdentitySession("identity-session-id", fixture.processNodeId());
         var derivationRequestCaptor = ArgumentCaptor.forClass(ElementDerivationRequest.class);
         verify(fixture.elementDerivationService(), times(2)).derive(
                 derivationRequestCaptor.capture(),
@@ -161,6 +163,35 @@ class FormTriggerControllerV1SubmitTest {
         verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
         assertEquals(ProcessInstanceStatus.Failed, updatedInstanceCaptor.getValue().getStatus());
         assertEquals(0, response.getCookies().length);
+        // The identities stay in the session, so the customer can submit again without identifying again.
+        verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
+    }
+
+    @Test
+    void submitShouldFailTheInstanceWhenTheIdentitySessionCannotBeCleared() throws Exception {
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), UUID.randomUUID().toString());
+        doThrow(new IllegalStateException("Redis is unavailable"))
+                .when(fixture.identityService())
+                .clearIdentitySession("identity-session-id", fixture.processNodeId());
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        ));
+
+        // The instance must never be released to the process worker, so submitting again cannot create a duplicate.
+        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        assertEquals(ProcessInstanceStatus.Failed, updatedInstanceCaptor.getValue().getStatus());
+        assertEquals(0, response.getCookies().length);
     }
 
     @Test
@@ -186,6 +217,7 @@ class FormTriggerControllerV1SubmitTest {
         ));
 
         assertEquals(0, response.getCookies().length);
+        verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
         verify(fixture.identityService()).getIdentityDataMap("identity-session-id", fixture.processNodeId());
         verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
         verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));

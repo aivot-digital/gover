@@ -674,7 +674,8 @@ public class FormTriggerControllerV1 {
                 inputs,
                 files,
                 fileUris,
-                identities
+                identities,
+                identitySessionId
         );
 
         response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
@@ -720,7 +721,8 @@ public class FormTriggerControllerV1 {
                                         @Nonnull AuthoredElementValues inputs,
                                         @Nullable MultipartFile[] files,
                                         @Nullable List<String> fileUris,
-                                        @Nonnull IdentityDataMap identities) throws ResponseException {
+                                        @Nonnull IdentityDataMap identities,
+                                        @Nullable String identitySessionId) throws ResponseException {
         var startedAt = Instant.now();
         var instance = new ProcessInstanceEntity(
                 null,
@@ -803,6 +805,11 @@ public class FormTriggerControllerV1 {
             // marked as failed instead of being processed without the submitter receiving its access key, so the
             // submitter can submit again without creating a duplicate.
             submissionSecret = processSubmissionBindingService.bind(createdInstance.getId());
+
+            // The instance holds the identities now. Remove them from the session as the last step before the instance
+            // is released, so the session ID cannot be used to submit the form again with the same identities. If any
+            // step fails before, the identities stay in the session for another attempt.
+            identityService.clearIdentitySession(identitySessionId, nodeEntity.getId());
 
             createdInstance
                     .setInitialPayload(initialPayload)

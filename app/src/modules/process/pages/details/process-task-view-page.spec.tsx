@@ -20,7 +20,7 @@ describe('Task header status', () => {
         item.instance = new ProcessInstanceApiService().initialize();
         item.instance.identities = {
             applicant: {
-                identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+                identityId: 'applicant', title: 'Antragstellende', type: 'Email',
                 emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
                 uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
             },
