@@ -182,22 +182,10 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
 
                     {
                         !isValidating &&
-                        versionProblems.length > 0 &&
-                        <AlertComponent
-                            color="error"
-                            title="Prozessversion ist unvollständig"
-                        >
-                            <ul>
-                                {versionProblems.map((problem) => <li key={problem}>{problem}</li>)}
-                            </ul>
-                        </AlertComponent>
-                    }
-
-                    {
-                        !isValidating &&
-                        allNodeProblems.length > 0 &&
+                        (allNodeProblems.length > 0 || versionProblems.length > 0) &&
                         <NodeProblemsAlert
                             problems={allNodeProblems}
+                            versionProblems={versionProblems}
                             availableNodeProviders={renderAvailableNodeProviders}
                             mode="publish"
                         />
