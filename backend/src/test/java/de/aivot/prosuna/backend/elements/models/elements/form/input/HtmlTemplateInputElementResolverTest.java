@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -38,6 +39,19 @@ class HtmlTemplateInputElementResolverTest {
                 storageService,
                 new TemplateRenderService(new JavascriptEngineFactoryService(List.of()))
         );
+    }
+
+    @Test
+    void templateNameUsesAssetFileNameAndFallsBackWhenAssetIsUnavailable() throws Exception {
+        var key = UUID.randomUUID();
+        var template = new HtmlTemplateInputElementValue().setAssetKey(key.toString());
+        when(assetService.retrieve(key)).thenReturn(Optional.of(new AssetEntity().setStoragePathFromRoot("templates/Bescheid.html")));
+        assertEquals("Bescheid.html", resolver.getTemplateName(template));
+        when(assetService.retrieve(key)).thenReturn(Optional.empty());
+        assertEquals(key.toString(), resolver.getTemplateName(template));
+        when(assetService.retrieve(key)).thenThrow(new IllegalStateException("Unavailable"));
+        assertEquals(key.toString(), resolver.getTemplateName(template));
+        assertNull(resolver.getTemplateName(null));
     }
 
     @Test

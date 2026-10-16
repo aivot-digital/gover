@@ -17,7 +17,7 @@ public final class ProcessListDTO {
             @Nonnull Integer processId, @Nonnull Integer processVersion, @Nonnull String processName,
             @Nullable String assignedUserId, @Nullable String assignedUserName,
             @Nonnull ProcessInstanceStatus status, @Nullable String statusOverride,
-            @Nonnull Instant started, @Nullable Instant finished, boolean test
+            @Nonnull Instant started, @Nullable Instant deadline, @Nullable Instant finished, boolean test
     ) {
     }
 
@@ -27,6 +27,7 @@ public final class ProcessListDTO {
             @Nonnull Integer processVersion, @Nonnull String processName,
             @Nonnull String taskName, @Nullable String taskType, @Nullable String description,
             @Nullable String assignedUserId, @Nullable String assignedUserName,
+            @Nullable String assignedCustomerIdentityLabel,
             @Nonnull ProcessTaskStatus status, @Nullable String statusOverride,
             @Nonnull Instant started, @Nullable Instant deadline, @Nullable Instant finished, boolean test
     ) {

@@ -55,7 +55,8 @@ public class ProcessInstanceDetailsService {
                 .sorted(Comparator.comparing(task -> task.getId()))
                 .map(task -> new ProcessInstanceDetailsDTO.ActiveTask(task.getId(),
                         nodes.findById(task.getProcessNodeId()).map(this::nodeName).orElse("Unbenannte Aufgabe"),
-                        task.getStatus(), task.getStatusOverride(), task.getAssignedUserId(), task.getDeadline()))
+                        task.getStatus(), task.getStatusOverride(), task.getAssignedUserId(),
+                        task.getAssignedCustomerIdentityId(), task.getDeadline()))
                 .toList();
         return new ProcessInstanceDetailsDTO(instance, process.getInternalTitle(), process.getDepartmentId(),
                 departments.findById(process.getDepartmentId()).map(DepartmentEntity::getName).orElse(null),

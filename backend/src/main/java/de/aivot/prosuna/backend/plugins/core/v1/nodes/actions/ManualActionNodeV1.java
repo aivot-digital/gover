@@ -32,6 +32,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
@@ -52,8 +54,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
+
 @Component
 public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNodeV1.ManualActionNodeConfig> {
+    private static final ProcessNodeDeadlineDefinition PROCESSING_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "processing", "Bearbeitung",
+            "Zeit für die Bearbeitung der Aufgabe.",
+            new ProcessNodePort("processing_overdue", "Fristüberschreitung: Bearbeitung",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Bearbeitung."));
+
     public static final String NODE_KEY = "manual_action";
 
     private static final String PORT_OUTPUT = "output";
@@ -85,6 +95,16 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         this.elementDataTransformService = elementDataTransformService;
         this.elementDerivationService = elementDerivationService;
         this.authoredInputValueService = authoredInputValueService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<ManualActionNodeV1.ManualActionNodeConfig> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        var configuration = context.configurationOfExecutingNode();
+        return "Die manuelle Aufgabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " abgeschlossen."
+                + section("Beschreibung der Aufgabe", configuration.taskDescription)
+                + section("Vermerk", summary.data(OUTPUT_REMARK));
     }
 
     @Nonnull
@@ -191,7 +211,13 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull ManualActionNodeConfig configuration) {
+        return List.of(PROCESSING_DEADLINE);
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull ManualActionNodeConfig configuration) {
         return List.of(
                 new ProcessNodePort(
                         PORT_OUTPUT,
@@ -272,6 +298,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setNewDeadlineKey(PROCESSING_DEADLINE.key())
                 .setProcessData(workingProcessData)
                 .setRuntimeData(Map.of());
     }

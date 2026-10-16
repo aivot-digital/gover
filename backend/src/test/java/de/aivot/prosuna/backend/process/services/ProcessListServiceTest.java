@@ -1,6 +1,9 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.dtos.ProcessListFilter;
@@ -11,6 +14,9 @@ import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
@@ -38,6 +44,8 @@ import static org.mockito.Mockito.*;
 public class ProcessListServiceTest {
     @Autowired
     EntityManager em;
+    @Autowired
+    JsonMapper jsonMapper;
     private PermissionService permissions;
     private ProcessListService service;
 
@@ -60,12 +68,65 @@ public class ProcessListServiceTest {
         sql("drop table if exists processes");
         sql("create table processes (id int primary key, internal_title varchar)");
         sql("create table process_nodes (id int primary key, name varchar, description varchar, process_node_definition_key varchar, process_node_definition_version int)");
-        sql("create table process_instances (id bigint primary key, case_number varchar, assigned_file_numbers varchar array, process_id int, initial_process_version int, assigned_user_id varchar, status smallint, status_override varchar, started timestamp with time zone, finished timestamp with time zone, created_for_test_claim_id int)");
+        sql("create table process_instances (id bigint primary key, case_number varchar, assigned_file_numbers varchar array, process_id int, initial_process_version int, assigned_user_id varchar, status smallint, status_override varchar, started timestamp with time zone, finished timestamp with time zone, created_for_test_claim_id int, deadline timestamp with time zone)");
         sql("create table process_instance_tasks (id bigint primary key, process_instance_id bigint, process_node_id int, process_version int, assigned_user_id varchar, status smallint, status_override varchar, started timestamp with time zone, finished timestamp with time zone, deadline timestamp with time zone)");
         sql("insert into processes values (10, 'Anmeldung'), (20, 'Geschützt')");
         sql("insert into process_nodes values (100, 'Prüfung', 'Unterlagen prüfen', 'missing', 1)");
-        sql("insert into process_instances values (1, 'ABC-100', ARRAY['AZ-2026', '100%_literal'], 10, 1, null, 1, 'Eigener Status', CURRENT_TIMESTAMP, null, null), (2, 'ABC-200', ARRAY['AZ-Alt'], 10, 2, 'someone', 3, null, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1), (3, 'SECRET', ARRAY['AZ-secret'], 20, 1, 'secret-user', 5, null, CURRENT_TIMESTAMP, null, null)");
+        sql("insert into process_instances values (1, 'ABC-100', ARRAY['AZ-2026', '100%_literal'], 10, 1, null, 1, 'Eigener Status', CURRENT_TIMESTAMP, null, null, DATEADD('DAY',2,CURRENT_TIMESTAMP)), (2, 'ABC-200', ARRAY['AZ-Alt'], 10, 2, 'someone', 3, null, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, null), (3, 'SECRET', ARRAY['AZ-secret'], 20, 1, 'secret-user', 5, null, CURRENT_TIMESTAMP, null, null, DATEADD('DAY',1,CURRENT_TIMESTAMP))");
         sql("insert into process_instance_tasks values (11,1,100,1,'me',0,'Fachliche Prüfung',CURRENT_TIMESTAMP,null,DATEADD('DAY',-1,CURRENT_TIMESTAMP)), (12,1,100,1,'someone',7,null,CURRENT_TIMESTAMP,null,null), (13,2,100,2,null,2,null,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,DATEADD('DAY',-1,CURRENT_TIMESTAMP)), (14,3,100,1,'me',0,null,CURRENT_TIMESTAMP,null,DATEADD('DAY',-2,CURRENT_TIMESTAMP)), (15,1,100,1,'me',6,null,CURRENT_TIMESTAMP,null,null), (16,1,100,1,'me',1,null,CURRENT_TIMESTAMP,null,null)");
+        sql("alter table process_instances add column identities varchar default '{}'");
+        sql("alter table process_instance_tasks add column assigned_customer_identity_id varchar");
+    }
+
+    @Test
+    void resolvesOnlyTheAssignedIdentityTitleFromTheTaskInstance() throws Exception {
+        setIdentities(1L, identity("applicant", " Antragstellende "), identity("representative", "Bevollmächtigte"));
+        setIdentities(2L, identity("applicant", "Weitere Beteiligte"));
+        sql("update process_instance_tasks set assigned_customer_identity_id = 'applicant' where id in (12, 13)");
+
+        var tasks = service.tasks("me", PageRequest.of(0, 12), filter("all", "all", null));
+        var assigned = tasks.stream().filter(task -> task.id() == 12L).findFirst().orElseThrow();
+        assertEquals("Antragstellende", assigned.assignedCustomerIdentityLabel());
+        assertEquals("Weitere Beteiligte", tasks.stream().filter(task -> task.id() == 13L)
+                .findFirst().orElseThrow().assignedCustomerIdentityLabel());
+        var response = jsonMapper.valueToTree(assigned);
+        assertEquals("Antragstellende", response.get("assignedCustomerIdentityLabel").asString());
+        assertFalse(response.has("identities"));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = "   ")
+    void fallsBackToTheIdentityIdWhenItsTitleIsMissing(String title) throws Exception {
+        setIdentities(1L, identity("applicant", title));
+        sql("update process_instance_tasks set assigned_customer_identity_id = 'applicant' where id = 12");
+
+        var tasks = service.tasks("me", PageRequest.of(0, 12), filter("all", "someone", null));
+
+        assertEquals("applicant", tasks.getContent().getFirst().assignedCustomerIdentityLabel());
+    }
+
+    @Test
+    void fallsBackToTheAssignedIdentityIdWhenItsEntryIsMissing() throws Exception {
+        setIdentities(1L, identity("representative", "Bevollmächtigte"));
+        sql("update process_instance_tasks set assigned_customer_identity_id = 'applicant' where id = 12");
+
+        var tasks = service.tasks("me", PageRequest.of(0, 12), filter("all", "someone", null));
+
+        assertEquals("applicant", tasks.getContent().getFirst().assignedCustomerIdentityLabel());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = "   ")
+    void omitsTheIdentityLabelWhenNoIdentityIsAssigned(String identityId) throws Exception {
+        setIdentities(1L, identity("applicant", "Antragstellende"));
+        em.createNativeQuery("update process_instance_tasks set assigned_customer_identity_id = :identityId where id = 12")
+                .setParameter("identityId", identityId).executeUpdate();
+
+        var tasks = service.tasks("me", PageRequest.of(0, 12), filter("all", "someone", null));
+
+        assertNull(tasks.getContent().getFirst().assignedCustomerIdentityLabel());
     }
 
     @Test
@@ -80,6 +141,17 @@ public class ProcessListServiceTest {
         assertEquals(0, service.instances("me", PageRequest.of(0, 12), filter("all", "all", null)).getTotalElements());
         when(permissions.hasSystemPermission("me", PROCESS_INSTANCE_READ)).thenReturn(true);
         assertEquals(3, service.instances("me", PageRequest.of(0, 12), filter("all", "all", null)).getTotalElements());
+    }
+
+    @Test
+    void instanceRowsExposeTheirOwnDeadlineAndSortMissingDeadlinesLast() throws Exception {
+        when(permissions.hasSystemPermission("me", PROCESS_INSTANCE_READ)).thenReturn(true);
+        var ascending = service.instances("me", PageRequest.of(0, 12, Sort.by("deadline")), filter("all", "all", null));
+        assertEquals(List.of(3L, 1L, 2L), ascending.getContent().stream().map(row -> row.id()).toList());
+        assertNotNull(ascending.getContent().getFirst().deadline());
+        assertNull(ascending.getContent().getLast().deadline());
+        var descending = service.instances("me", PageRequest.of(0, 12, Sort.by(Sort.Direction.DESC, "deadline")), filter("all", "all", null));
+        assertEquals(List.of(1L, 3L, 2L), descending.getContent().stream().map(row -> row.id()).toList());
     }
 
     @Test
@@ -265,6 +337,19 @@ public class ProcessListServiceTest {
 
     private void sql(String sql) {
         em.createNativeQuery(sql).executeUpdate();
+    }
+
+    private IdentityData identity(String id, String title) {
+        return new IdentityData("session-" + id, id, IdentityType.Email, null, null, null,
+                id + "@example.org", Map.of(), null, Map.of(), title);
+    }
+
+    private void setIdentities(long instanceId, IdentityData... identities) {
+        var map = new IdentityDataMap();
+        for (var identity : identities) map.put(identity.identityId(), identity);
+        em.createNativeQuery("update process_instances set identities = :identities where id = :id")
+                .setParameter("identities", jsonMapper.writeValueAsString(map))
+                .setParameter("id", instanceId).executeUpdate();
     }
 
     @Configuration(proxyBeanMethods = false)

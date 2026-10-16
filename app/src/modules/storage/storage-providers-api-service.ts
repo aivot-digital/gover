@@ -7,6 +7,8 @@ import {StorageProviderStatus} from './enums/storage-provider-status';
 import {StorageProviderType} from './enums/storage-provider-type';
 import {type StorageIndexItem} from './entities/storage-index-item-entity';
 import {Page} from '../../models/dtos/page';
+import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../../models/element-data';
+import {type ElementDerivationOptions} from '../elements/elements-api-service';
 
 export interface StorageProviderFilter {
     name: string;
@@ -23,6 +25,19 @@ export class StorageProvidersApiService extends BaseCrudApiService<StorageProvid
 
     public async listDefinitions(): Promise<StorageProviderDefinition[]> {
         return await this.get<StorageProviderDefinition[]>('/api/storage-provider-definitions/', {});
+    }
+
+    public async deriveDefinitionConfiguration(key: string,
+                                               version: number,
+                                               authoredElementValues: AuthoredElementValues,
+                                               derivationOptions: ElementDerivationOptions,
+                                               abort?: AbortSignal): Promise<DerivedRuntimeElementData> {
+        return await this.post<unknown, DerivedRuntimeElementData>(`/api/storage-provider-definitions/${key}/${version}/derive/`, {
+            authoredElementValues,
+            derivationOptions,
+        }, {
+            abort,
+        });
     }
 
     public initialize(): StorageProviderEntity {

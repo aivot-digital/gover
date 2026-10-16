@@ -9,6 +9,7 @@ export enum ProcessTaskStatus {
     Restarted = 'Restarted',
     InProgress = 'InProgress',
     AwaitingStaff = 'AwaitingStaff',
+    DeadlineExceeded = 'DeadlineExceeded',
 }
 
 export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
@@ -22,6 +23,7 @@ export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
     [ProcessTaskStatus.Restarted]: 'Neu gestartet',
     [ProcessTaskStatus.InProgress]: 'In Bearbeitung',
     [ProcessTaskStatus.AwaitingStaff]: 'Wartet auf Bearbeitung',
+    [ProcessTaskStatus.DeadlineExceeded]: 'Frist überschritten',
 };
 
 export const ProcessTaskStatusColors: Record<ProcessTaskStatus, 'default' | 'primary' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -35,4 +37,5 @@ export const ProcessTaskStatusColors: Record<ProcessTaskStatus, 'default' | 'pri
     [ProcessTaskStatus.Restarted]: 'warning',
     [ProcessTaskStatus.InProgress]: 'primary',
     [ProcessTaskStatus.AwaitingStaff]: 'warning',
+    [ProcessTaskStatus.DeadlineExceeded]: 'error',
 };

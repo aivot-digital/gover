@@ -70,6 +70,8 @@ import {isAnyElementWithChildren} from '../../../models/elements/any-element-wit
 import {cloneElement} from '../../../utils/clone-element';
 import {ProcessNodeEntity} from '../../process/entities/process-node-entity';
 import {ProcessNodeApiService} from '../../process/services/process-node-api-service';
+import {useHasProcessPermission} from '../../permissions/hooks/use-permissions';
+import {Permission} from '../../../data/permissions/permission';
 import {ElementType} from '../../../data/element-type/element-type';
 import {getSingleUseSectionAddDisabledReason} from '../../../data/element-type/single-use-section-types';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
@@ -528,6 +530,7 @@ export function FormNodeEditorPage() {
     const notImplemented = useNotImplemented();
 
     const isEditable = processVersion?.status === ProcessStatus.Drafted;
+    const canUpdateProcess = useHasProcessPermission(node?.processId, Permission.PROCESS_DEFINITION_UPDATE);
     const previewTheme = useMemo(() => {
         const activeFormTheme = draftPreviewThemeChain?.[0] ?? (
             draftPreviewThemeChain == null ?
@@ -1316,8 +1319,6 @@ export function FormNodeEditorPage() {
                                             >
                                                 <FormHeaderComponent
                                                     form={formLayout}
-                                                    node={node}
-                                                    process={process}
                                                     version={processVersion}
                                                     logoUrl={formLogoUrl}
                                                     logoUrlDark={formLogoUrlDark}
@@ -1349,6 +1350,17 @@ export function FormNodeEditorPage() {
                                                             onAuthoredElementValuesChange={setAuthoredElementValues}
                                                             onEvent={handleSubmitEvent}
                                                             onDerivedDataChange={setDerivedData}
+                                                            onDerive={(values, derivationOptions, abort) => new ProcessNodeApiService()
+                                                                .deriveUiDefinition(
+                                                                    node.id,
+                                                                    FormLayoutFieldKey,
+                                                                    // The backend only derives an unsaved form for users who may update the node.
+                                                                    // Everyone else previews the stored form.
+                                                                    isEditable && canUpdateProcess ? formLayout : null,
+                                                                    values,
+                                                                    derivationOptions,
+                                                                    abort,
+                                                                )}
                                                             mode={ViewDispatcherMode.Editor}
                                                             disableValidation={disableValidation}
                                                             disableVisibilities={disableVisibility}
@@ -1362,16 +1374,14 @@ export function FormNodeEditorPage() {
                                                         startedProcessAccessKey={startedProcessAccessInfo.processInstanceAccessKey}
                                                         paymentRequired={startedProcessAccessInfo.paymentRequired}
                                                         formElement={formLayout}
-                                                        node={node}
-                                                        process={process}
-                                                        version={processVersion}
+                                                        processSlug={process.slug}
+                                                        formSlug={configuredFormSlug ?? null}
+                                                        processVersion={processVersion.processVersion}
                                                     />
                                                 }
 
                                                 <RootComponentFooter
                                                     form={formLayout}
-                                                    node={node}
-                                                    process={process}
                                                     version={processVersion}
                                                     logoUrl={formLogoUrl}
                                                     logoUrlDark={formLogoUrlDark}

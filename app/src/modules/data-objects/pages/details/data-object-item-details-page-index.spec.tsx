@@ -65,6 +65,7 @@ function renderPage(isNewItem: boolean) {
         return <GenericDetailsPageContext.Provider value={{
             item, setItem, isNewItem, isBusy, setIsBusy, isEditable: true,
             setAdditionalData: vi.fn(), refresh: vi.fn(),
+            subscribeEvent: vi.fn(() => vi.fn()),
         }}>
             <DataObjectItemDetailsPageIndex/>
         </GenericDetailsPageContext.Provider>;

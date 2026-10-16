@@ -63,6 +63,24 @@ public class HtmlTemplateInputElementResolver {
         this.templateRenderService = templateRenderService;
     }
 
+    /** Optional label for a completed execution; missing assets must not hide its summary. */
+    @Nullable
+    public String getTemplateName(@Nullable HtmlTemplateInputElementValue value) {
+        if (value == null || value.getAssetKey() == null) {
+            return null;
+        }
+        try {
+            var asset = assetService.retrieve(UUID.fromString(value.getAssetKey())).orElse(null);
+            if (asset == null) {
+                return value.getAssetKey();
+            }
+            var path = asset.getStoragePathFromRoot();
+            return path.substring(path.lastIndexOf('/') + 1);
+        } catch (Exception ignored) {
+            return value.getAssetKey();
+        }
+    }
+
     /**
      * Renders the full asset template and its slot templates. The result is final HTML and must not be interpolated again.
      */

@@ -73,6 +73,23 @@ public class CommunicationService {
         return sendResolved(resolved, identityData, message);
     }
 
+    /** Optional display metadata must never invalidate an already successful delivery. */
+    @Nullable
+    public String describeDeliveryChannel(@Nullable IdentityData identity) {
+        if (identity == null || identity.type() == IdentityType.Email) {
+            return "E-Mail";
+        }
+        if (identity.communicationProviderBindingId() == null) {
+            return null;
+        }
+        try {
+            return bindingRepository.findById(identity.communicationProviderBindingId())
+                    .map(CommunicationProviderBindingEntity::getName).orElse(null);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
     /** Sends an invitation without creating a process identity for its delivery address. */
     public Map<String, Object> sendMessageToEmail(@Nonnull String rawEmailAddress,
                                                   @Nonnull CommunicationMessage message) throws CommunicationException {

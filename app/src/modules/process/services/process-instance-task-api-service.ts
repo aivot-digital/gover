@@ -93,10 +93,12 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
             finished: null,
             id: 0,
             previousProcessInstanceTaskId: null,
+            restartForTaskId: null,
             previousProcessNodeId: null,
             previousProcessNodePortKey: null,
             status: ProcessTaskStatus.Running,
             statusOverride: null,
+            executionSummaryMarkdown: null,
             runtimeData: {},
             nodeData: {},
             processId: 0,
@@ -109,6 +111,8 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
             processData: {},
             processDataDiff: {},
             deadline: null,
+            deadlineKey: null,
+            deadlineStrict: false,
         };
     }
 

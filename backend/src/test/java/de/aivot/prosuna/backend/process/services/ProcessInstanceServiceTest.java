@@ -10,7 +10,9 @@ import de.aivot.prosuna.backend.process.enums.CaseNumberType;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
+import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import org.hibernate.exception.ConstraintViolationException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,6 +29,8 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -42,9 +46,12 @@ class ProcessInstanceServiceTest {
     private ProcessInstanceService service;
     private ProcessVersionEntity version;
     private ProcessInstanceEntity instance;
+    private ZoneId originalZone;
 
     @BeforeEach
     void setUp() throws ResponseException {
+        originalZone = ApplicationTimeZone.getZoneId();
+        ApplicationTimeZone.configure(ZoneId.of("Europe/Berlin"));
         repository = mock(ProcessInstanceRepository.class);
         generator = mock(CaseNumberGeneratorService.class);
         transactionManager = mock(PlatformTransactionManager.class);
@@ -64,6 +71,46 @@ class ProcessInstanceServiceTest {
                 mock(ProcessInstanceAttachmentService.class), versions, generator, transactionManager);
         instance = new ProcessInstanceEntity().setProcessId(7).setInitialProcessVersion(1);
         when(generator.generateCaseNumber(CaseNumberType.CROCKFORD_BASE32, null)).thenReturn("7K0M-9X1Q-4R8T");
+    }
+
+    @AfterEach
+    void tearDown() {
+        ApplicationTimeZone.configure(originalZone);
+    }
+
+    @Test
+    void create_FixesTheDeadlineInCalendarDaysFromTheStartAcrossDaylightSavingTime() throws ResponseException {
+        version.setInstanceDeadlineDays(10);
+        // 11:00 in Berlin before the switch to summer time on 2026-03-29.
+        instance.setStarted(Instant.parse("2026-03-20T10:00:00Z")).setDeadline(Instant.parse("2030-01-01T00:00:00Z"));
+        when(repository.saveAndFlush(instance)).thenReturn(instance);
+
+        var result = service.create(instance);
+
+        // Ten calendar days later at the same local time, now one hour closer to UTC.
+        assertEquals(Instant.parse("2026-03-30T09:00:00Z"), result.getDeadline());
+    }
+
+    @Test
+    void create_LeavesInstancesWithoutDeadlineWhenTheVersionHasNone() throws ResponseException {
+        instance.setStarted(Instant.parse("2026-03-20T10:00:00Z")).setDeadline(Instant.parse("2030-01-01T00:00:00Z"));
+        when(repository.saveAndFlush(instance)).thenReturn(instance);
+
+        var result = service.create(instance);
+
+        assertNull(result.getDeadline());
+    }
+
+    @Test
+    void performUpdate_KeepsTheDeadlineFixedAtCreation() throws ResponseException {
+        var deadline = Instant.parse("2026-03-30T09:00:00Z");
+        var existing = new ProcessInstanceEntity().setId(42L).setDeadline(deadline);
+        var update = new ProcessInstanceEntity().setDeadline(Instant.parse("2030-01-01T00:00:00Z"));
+        when(repository.save(existing)).thenReturn(existing);
+
+        var result = service.performUpdate(42L, update, existing);
+
+        assertEquals(deadline, result.getDeadline());
     }
 
     @ParameterizedTest

@@ -13,8 +13,6 @@ import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
-import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
-import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 import {ProsunaAttribution} from '../prosuna-attribution/prosuna-attribution';
 
@@ -27,9 +25,7 @@ const buttonStyle: SxProps = {
 
 interface RootComponentFooterProps {
     form: FormLayoutElement;
-    node: ProcessNodeEntity;
-    process: ProcessEntity;
-    version: ProcessVersionEntity;
+    version: Pick<ProcessVersionEntity, 'updated'>;
     logoUrl: string | null;
     logoUrlDark: string | null;
 }
@@ -37,8 +33,6 @@ interface RootComponentFooterProps {
 export function RootComponentFooter(props: RootComponentFooterProps) {
     const {
         form,
-        node,
-        process,
         version,
         logoUrl,
         logoUrlDark,

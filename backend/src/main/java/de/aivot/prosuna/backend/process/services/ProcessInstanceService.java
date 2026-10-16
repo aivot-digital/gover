@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
+import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import de.aivot.prosuna.backend.utils.DatabaseConstraintUtils;
 import de.aivot.prosuna.backend.utils.RandomUtils;
 import jakarta.annotation.Nonnull;
@@ -24,6 +25,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -64,6 +66,8 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
         var processVersion = processVersionService
                 .retrieve(ProcessVersionEntityId.of(entity.getProcessId(), entity.getInitialProcessVersion()))
                 .orElseThrow(ResponseException::badRequest);
+
+        entity.setDeadline(calculateDeadline(entity.getStarted(), processVersion.getInstanceDeadlineDays()));
 
         return createWithUniqueIdentifiers(entity, processVersion.getCaseNumberType(), processVersion.getCaseNumberTemplate());
     }
@@ -159,6 +163,15 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
     @Nonnull
     public ProcessInstanceEntity save(@Nonnull ProcessInstanceEntity entity) {
         return processInstanceRepository.save(entity);
+    }
+
+    @Nullable
+    private static Instant calculateDeadline(@Nonnull Instant started, @Nullable Integer deadlineDays) {
+        if (deadlineDays == null) {
+            return null;
+        }
+        // Calendar days follow the configured business time zone, including daylight-saving changes, like task deadlines.
+        return started.atZone(ApplicationTimeZone.getZoneId()).plusDays(deadlineDays).toInstant();
     }
 
     /**

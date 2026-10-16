@@ -6,7 +6,9 @@ import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefini
 import de.aivot.prosuna.backend.communication.permissions.CommunicationProviderPermissionProvider;
 import de.aivot.prosuna.backend.communication.services.CommunicationProviderDefinitionService;
 import de.aivot.prosuna.backend.communication.services.CommunicationProviderManagementService;
+import de.aivot.prosuna.backend.elements.dtos.ElementValuesDerivationRequestDTO;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
@@ -76,6 +78,21 @@ public class CommunicationProviderController {
     }
 
     @Nonnull
+    @PostMapping("{id}/test/derive/")
+    @Operation(
+            summary = "Derive Communication Provider Test Inputs",
+            description = "Derives values entered into the backend-defined testing layout of the communication provider. " +
+                    "Requires the system-level permission `" +
+                    CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ + "`."
+    )
+    public DerivedRuntimeElementData deriveTestingInputs(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                                         @Nonnull @PathVariable Integer id,
+                                                         @Nonnull @Valid @RequestBody ElementValuesDerivationRequestDTO request) throws ResponseException {
+        permissionService.requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ);
+        return managementService.deriveProviderTestingInputs(id, request.authoredElementValues(), request.derivationOptions());
+    }
+
+    @Nonnull
     @PostMapping("{id}/test/")
     public GroupLayoutElement test(@Nullable @AuthenticationPrincipal Jwt jwt,
                                    @Nonnull @PathVariable Integer id,
@@ -122,6 +139,28 @@ public class CommunicationProviderController {
         return managementService.getProviderConfigurationLayout(definitionKey, version);
     }
 
+    @PostMapping("definitions/configuration/derive/")
+    @Operation(
+            summary = "Derive Communication Provider Configuration",
+            description = "Derives configuration values against the backend-defined configuration layout of a communication provider definition. " +
+                    "Requires the system-level permission `" +
+                    CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ + "`."
+    )
+    public DerivedRuntimeElementData deriveProviderConfiguration(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestParam String definitionKey,
+            @Nonnull @RequestParam Integer version,
+            @Nonnull @Valid @RequestBody ElementValuesDerivationRequestDTO request
+    ) throws ResponseException {
+        permissionService.requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ);
+        return managementService.deriveProviderConfiguration(
+                definitionKey,
+                version,
+                request.authoredElementValues(),
+                request.derivationOptions()
+        );
+    }
+
     @GetMapping("bindings/")
     public List<BindingResponse> bindings(@Nullable @AuthenticationPrincipal Jwt jwt,
                                          @Nonnull @RequestParam UUID identityProviderKey) throws ResponseException {
@@ -137,6 +176,28 @@ public class CommunicationProviderController {
     ) throws ResponseException {
         permissionService.requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ);
         return managementService.getBindingConfigurationLayout(communicationProviderId, identityProviderKey);
+    }
+
+    @PostMapping("bindings/configuration/derive/")
+    @Operation(
+            summary = "Derive Communication Binding Configuration",
+            description = "Derives binding configuration values against the backend-defined binding layout of a communication provider and identity provider. " +
+                    "Requires the system-level permission `" +
+                    CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ + "`."
+    )
+    public DerivedRuntimeElementData deriveBindingConfiguration(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestParam Integer communicationProviderId,
+            @Nonnull @RequestParam UUID identityProviderKey,
+            @Nonnull @Valid @RequestBody ElementValuesDerivationRequestDTO request
+    ) throws ResponseException {
+        permissionService.requireSystemPermission(jwt, CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ);
+        return managementService.deriveBindingConfiguration(
+                communicationProviderId,
+                identityProviderKey,
+                request.authoredElementValues(),
+                request.derivationOptions()
+        );
     }
 
     @PostMapping("bindings/")

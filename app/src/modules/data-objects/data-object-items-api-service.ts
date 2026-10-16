@@ -1,6 +1,8 @@
 import {CrudApiService} from '../../services/crud-api-service';
 import {Api} from '../../hooks/use-api';
 import {DataObjectItem} from './models/data-object-item';
+import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../../models/element-data';
+import {type ElementDerivationOptions} from '../elements/elements-api-service';
 
 interface DataObjectItemFilter {
     id: string;
@@ -20,5 +22,22 @@ export class DataObjectItemsApiService extends CrudApiService<DataObjectItem, Da
             created: new Date().toISOString(),
             updated: new Date().toISOString(),
         };
+    }
+
+    public async deriveNew(authoredElementValues: AuthoredElementValues,
+                           derivationOptions: ElementDerivationOptions): Promise<DerivedRuntimeElementData> {
+        return await this.api.post<DerivedRuntimeElementData>(`${this.path}derive/`, {
+            authoredElementValues,
+            derivationOptions,
+        });
+    }
+
+    public async derive(itemId: string,
+                        authoredElementValues: AuthoredElementValues,
+                        derivationOptions: ElementDerivationOptions): Promise<DerivedRuntimeElementData> {
+        return await this.api.post<DerivedRuntimeElementData>(`${this.buildPath(itemId)}derive/`, {
+            authoredElementValues,
+            derivationOptions,
+        });
     }
 }

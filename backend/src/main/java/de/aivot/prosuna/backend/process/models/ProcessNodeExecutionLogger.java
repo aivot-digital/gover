@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ProcessNodeExecutionLogger {
@@ -66,12 +67,36 @@ public class ProcessNodeExecutionLogger {
                      @Nonnull Map<String, Object> details,
                      @Nonnull String format,
                      @Nullable Object... args) {
+        logf(level, isTechnical, isAuditable, false, null, null, null, title, details, format, args);
+    }
+
+    public void logf(@Nonnull ProcessNodeExecutionLogLevel level,
+                     @Nonnull Boolean isTechnical,
+                     @Nonnull Boolean isAuditable,
+                     @Nonnull Boolean isHistoryRelevant,
+                     @Nullable String concernedUserId,
+                     @Nullable String concernedIdentityId,
+                     @Nullable String concernedIdentityTitle,
+                     @Nonnull String title,
+                     @Nonnull Map<String, Object> details,
+                     @Nonnull String format,
+                     @Nullable Object... args) {
         String message = String.format(format, args);
         var eventDetails = new HashMap<>(details);
         if (identityId != null) {
             eventDetails.put("identityId", identityId);
         }
-        saveEvent(level, isTechnical, isAuditable, title, message, eventDetails);
+        saveEvent(level,
+                isTechnical,
+                isAuditable,
+                isHistoryRelevant,
+                title,
+                message,
+                eventDetails,
+                Instant.now(),
+                concernedUserId,
+                concernedIdentityId,
+                concernedIdentityTitle);
     }
 
     public void logException(@Nonnull ProcessNodeExecutionException exception) {
@@ -124,12 +149,36 @@ public class ProcessNodeExecutionLogger {
         );
     }
 
+    /**
+     * @deprecated Use {@link #saveEvent(ProcessNodeExecutionLogLevel, Boolean, Boolean, Boolean, String, String, Map, Instant, String, String, String)}
+     * to specify history relevance, timestamp, and concerned users or identities.
+     */
+    @Deprecated
     private void saveEvent(@Nonnull ProcessNodeExecutionLogLevel level,
                            @Nonnull Boolean isTechnical,
                            @Nonnull Boolean isAuditable,
                            @Nonnull String title,
                            @Nonnull String message,
                            @Nonnull Map<String, Object> details) {
+        saveEvent(level, isTechnical, isAuditable, false, title, message, details, Instant.now(), null, null, null);
+    }
+
+    /**
+     * Uses the logger's process, task, and triggering user context. Details are copied without
+     * identity enrichment; concerned identities are independent of the triggering identity.
+     * Persistence failures are logged without interrupting the calling operation.
+     */
+    public void saveEvent(@Nonnull ProcessNodeExecutionLogLevel level,
+                          @Nonnull Boolean isTechnical,
+                          @Nonnull Boolean isAuditable,
+                          @Nonnull Boolean isHistoryRelevant,
+                          @Nonnull String title,
+                          @Nonnull String message,
+                          @Nonnull Map<String, Object> details,
+                          @Nonnull Instant timestamp,
+                          @Nullable String concernedUserId,
+                          @Nullable String concernedIdentityId,
+                          @Nullable String concernedIdentityTitle) {
         try {
             repository.save(new ProcessInstanceEventEntity(
                     null,
@@ -138,11 +187,15 @@ public class ProcessNodeExecutionLogger {
                     level,
                     isTechnical,
                     isAuditable,
+                    isHistoryRelevant,
                     title,
                     message,
-                    details,
-                    Instant.now(),
-                    userId
+                    new LinkedHashMap<>(details),
+                    timestamp,
+                    userId,
+                    concernedUserId,
+                    concernedIdentityId,
+                    concernedIdentityTitle
             ));
         } catch (Exception e) {
             logger

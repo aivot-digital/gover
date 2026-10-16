@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.security;
 
+import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +13,12 @@ import java.io.IOException;
 
 @Component
 public class CsrfResponseHeaderFilter extends OncePerRequestFilter {
+    @Override
+    protected boolean shouldNotFilter(@Nonnull HttpServletRequest request) {
+        // Resolving a deferred CSRF token writes to Redis; health checks and Kubernetes probes must not depend on it.
+        return SecurityConfiguration.HEALTH_CHECK_REQUESTS.matches(request);
+    }
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,

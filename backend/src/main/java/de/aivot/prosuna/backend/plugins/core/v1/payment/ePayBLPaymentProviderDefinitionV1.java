@@ -29,6 +29,8 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -42,6 +44,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.KeyStore;
+import java.time.DateTimeException;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +55,8 @@ import java.util.UUID;
 
 @Component
 public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinition, PluginComponent {
+    private static final Logger logger = LoggerFactory.getLogger(ePayBLPaymentProviderDefinitionV1.class);
+    private static final ZoneId TRANSACTION_TIMESTAMP_ZONE = ZoneId.of("Europe/Berlin");
     private static final String URL_REGEX = "^(https?):\\/\\/([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$";
     private final static String ORIGINATOR_ID_FIELD = "originatorId";
     private final static String ENDPOINT_ID_FIELD = "endpointId";
@@ -121,6 +129,36 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public String getProviderDescription() {
         return "Zahlungsdienstleister ePayBL";
+    }
+
+    @Nullable
+    @Override
+    public String fixTransactionTimestamp(@Nullable String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) {
+            return null;
+        }
+
+        try {
+            var parsedTimestamp = OffsetDateTime.parse(timestamp);
+            if (!ZoneOffset.UTC.equals(parsedTimestamp.getOffset())) {
+                return parsedTimestamp.toInstant().toString();
+            }
+
+            // ePayBL labels Berlin local times as UTC. Reinterpret the local fields;
+            // converting the supplied instant would retain the incorrect point in time.
+            var localTimestamp = parsedTimestamp.toLocalDateTime();
+            var offsets = TRANSACTION_TIMESTAMP_ZONE.getRules().getValidOffsets(localTimestamp);
+            if (offsets.size() != 1) {
+                logger.warn("Cannot correct ePayBL transaction timestamp '{}': local time is {} in {}",
+                        timestamp, offsets.isEmpty() ? "nonexistent" : "ambiguous", TRANSACTION_TIMESTAMP_ZONE);
+                return null;
+            }
+
+            return localTimestamp.toInstant(offsets.getFirst()).toString();
+        } catch (DateTimeException e) {
+            logger.warn("Cannot correct ePayBL transaction timestamp '{}': {}", timestamp, e.getMessage());
+            return null;
+        }
     }
 
     @Nullable

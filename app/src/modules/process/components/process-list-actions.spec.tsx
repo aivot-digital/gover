@@ -28,6 +28,7 @@ const instance: ProcessInstanceListEntry = {
     status: ProcessInstanceStatus.Failed,
     statusOverride: null,
     started: '',
+    deadline: null,
     finished: null,
     test: false,
 };
@@ -131,6 +132,7 @@ describe('Process list actions', () => {
             taskName: 'Prüfen',
             taskType: null,
             description: null,
+            assignedCustomerIdentityLabel: null,
             deadline: null,
         };
         showActions(task);

@@ -1,19 +1,27 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.core.enums.ModuleFlags;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -42,6 +50,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
@@ -50,7 +59,11 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
+import org.mockito.ArgumentCaptor;
+import org.springframework.http.HttpStatus;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Instant;
@@ -64,11 +77,15 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -82,6 +99,7 @@ class ProcessNodeServiceTest {
     private ProcessEdgeRepository processEdgeRepository;
     private ProcessRepository processRepository;
     private ProcessVersionRepository processVersionRepository;
+    private ProcessTestClaimRepository processTestClaimRepository;
     private ElementDerivationService elementDerivationService;
     private IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
     private ProsunaConfig prosunaConfig;
@@ -95,6 +113,7 @@ class ProcessNodeServiceTest {
         processEdgeRepository = mock(ProcessEdgeRepository.class);
         processRepository = mock(ProcessRepository.class);
         processVersionRepository = mock(ProcessVersionRepository.class);
+        processTestClaimRepository = mock(ProcessTestClaimRepository.class);
         elementDerivationService = mock(ElementDerivationService.class);
         identityCommunicationAvailabilityService = mock(IdentityCommunicationAvailabilityService.class);
         prosunaConfig = new ProsunaConfig();
@@ -138,8 +157,122 @@ class ProcessNodeServiceTest {
                 processEdgeRepository,
                 config,
                 identityCommunicationAvailabilityService,
-                permissionService
+                permissionService,
+                new ProcessNodePortResolver(jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator()),
+                new ProcessNodePortResolutionCache(de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper()),
+                new ProcessVersionDraftGuard(processVersionRepository, processTestClaimRepository)
         );
+    }
+
+    @Test
+    void deadlineRequiresConnectionAndRemovedPortEdgesRemainValidationProblems() throws Exception {
+        var node = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(1, false)));
+        var provider = new HintingTestNodeDefinition();
+        assertTrue(service.validate(node, provider, true).isEmpty());
+        node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, true)));
+        var edge = createEdge(10, 1, 2).setViaPort("processing_overdue");
+        assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
+                .anyMatch(problem -> problem.contains("Fristüberschreitung")));
+        when(processEdgeRepository.existsByFromNodeIdAndViaPort(1, "processing_overdue")).thenReturn(true);
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(List.of(edge));
+        assertTrue(service.validate(node, provider, true).isEmpty());
+
+        node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
+        assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
+        org.mockito.Mockito.verify(processEdgeRepository, org.mockito.Mockito.never()).delete(any(ProcessEdgeEntity.class));
+        assertEquals("processing_overdue", edge.getViaPort());
+        node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(null, true)));
+        assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
+    }
+
+    @Test
+    void resolvesTypedAuthoringConfigurationAndExposesItInNodeResponse() throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Override
+            public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
+                return configuration.branch == null ? List.of() : List.of(new ProcessNodePort(configuration.branch, configuration.branch, "Fortsetzung"));
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(provider)), prosunaConfig);
+        var derived = new DerivedRuntimeElementData();
+        derived.getEffectiveValues().put("branch", "approved");
+        when(elementDerivationService.derive(any(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring))).thenReturn(derived);
+        var node = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(2, true)));
+        var response = de.aivot.prosuna.backend.process.dtos.ProcessNodeResponseDTO.of(node, service.resolvePorts(node));
+        assertEquals(List.of("approved", "processing_overdue"), response.ports().stream().map(ProcessNodePort::key).toList());
+        assertTrue(response.portResolutionProblems().isEmpty());
+        org.mockito.Mockito.verify(elementDerivationService).derive(any(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring));
+    }
+
+    @Test
+    void updatePersistsStrictnessAndRetainsTheSoftDueDate() throws Exception {
+        var existing = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
+        var submitted = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, true)));
+        when(processNodeRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var strict = service.performUpdate(1, submitted, existing);
+        assertTrue(strict.getDeadlines().get("processing").strict());
+
+        var soft = service.performUpdate(1, submitted.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false))), existing);
+        assertEquals(false, soft.getDeadlines().get("processing").strict());
+        assertEquals(3, soft.getDeadlines().get("processing").days());
+        assertEquals(false, soft.getSavedWithErrors());
+    }
+
+    @Test
+    void candidateResolutionPreparesDefaultsAndImportsWithoutSaving() throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Override
+            public AuthoredElementValues getInitialConfiguration() {
+                return new AuthoredElementValues().putLiteral("defaultOnly", "default").putLiteral("overridden", "default");
+            }
+
+            @Override
+            public AuthoredElementValues prefillConfigurationOnImport(@Nonnull AuthoredElementValues configuration) {
+                return configuration.putLiteral("imported", "prepared");
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(provider)), prosunaConfig);
+        var user = new de.aivot.prosuna.backend.user.entities.UserEntity().setId("staff");
+        when(processVersionRepository.existsById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION))).thenReturn(true);
+        var authored = new AuthoredElementValues().putLiteral("overridden", null);
+        var node = createNode(1, "a").setConfiguration(authored);
+        assertTrue(service.resolveCandidatePorts(user, node, true, true).problems().isEmpty());
+        var request = org.mockito.ArgumentCaptor.forClass(de.aivot.prosuna.backend.elements.models.ElementDerivationRequest.class);
+        verify(elementDerivationService).derive(request.capture(), org.mockito.ArgumentMatchers.eq(InputModeEvaluationContext.Authoring));
+        var prepared = request.getValue().authoredElementValues();
+        assertEquals("default", prepared.getLiteral("defaultOnly"));
+        assertEquals("prepared", prepared.getLiteral("imported"));
+        assertTrue(prepared.containsKey("overridden"));
+        assertNull(prepared.getLiteral("overridden"));
+        assertEquals(1, authored.size());
+        org.mockito.Mockito.verify(processNodeRepository, org.mockito.Mockito.never()).saveAndFlush(any());
+    }
+
+    @Test
+    void candidateResolutionChecksProcessPermissionBeforeReadingConfiguration() throws Exception {
+        var systemPermissions = mock(de.aivot.prosuna.backend.permissions.repositories.VUserSystemPermissionRepository.class);
+        var actualPermissions = new PermissionService(null, null, systemPermissions, null, null, processRepository, null);
+        permissionService = actualPermissions;
+        service = createService(new ProcessNodeDefinitionService(List.of(new HintingTestNodeDefinition())), prosunaConfig);
+        var user = new de.aivot.prosuna.backend.user.entities.UserEntity().setId("staff");
+        var request = new de.aivot.prosuna.backend.process.dtos.ProcessNodePortRequestDTO(createNode(1, "a"), false, false);
+        when(processVersionRepository.existsById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION))).thenReturn(true);
+        var permission = de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider.PROCESS_DEFINITION_READ;
+
+        assertThrows(ResponseException.class, () -> service.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration()));
+        verifyNoInteractions(elementDerivationService);
+        when(processRepository.hasPermission("staff", PROCESS_ID, permission)).thenReturn(true);
+        assertTrue(service.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration()).problems().isEmpty());
+        request.node().setProcessId(PROCESS_ID + 1);
+        assertThrows(ResponseException.class, () -> service.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration()));
+        request.node().setProcessId(PROCESS_ID);
+        when(processRepository.hasPermission("staff", PROCESS_ID, permission)).thenReturn(false);
+        when(systemPermissions.hasPermission("staff", permission)).thenReturn(true);
+        assertTrue(service.resolveCandidatePorts(user, request.node(), request.forImport(), request.useInitialConfiguration()).problems().isEmpty());
+        org.mockito.Mockito.verify(processNodeRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test
@@ -224,6 +357,11 @@ class ProcessNodeServiceTest {
                         variable.path().equals("result") &&
                         variable.nodeDataKey().equals("a")
         ));
+        for (var field : List.of("deadlineKey", "label", "deadline", "processedAt")) {
+            assertTrue(result.inputVariables().stream().anyMatch(variable ->
+                    variable.source() == InputVariableSource.ElementData &&
+                            variable.path().equals("_deadlineExceeded." + field) && variable.nodeDataKey().equals("a")));
+        }
         assertTrue(result.inputVariables().stream().anyMatch(variable ->
                 variable.source() == InputVariableSource.ProcessData &&
                         variable.path().equals("foo.bar")
@@ -577,6 +715,13 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void runtimeConfigurationRejectsInvalidDeadlineDurationsBeforeNodeExecution() {
+        var node = createNode(1, "a").setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(0, true)));
+        assertThrows(ResponseException.class, () -> service.deriveRuntimeConfiguration(
+                node, new HintingTestNodeDefinition(), null, false, new ProcessExecutionData()));
+    }
+
+    @Test
     void deriveRuntimeConfiguration_ShouldApplyOptedInProviderValidation() throws Exception {
         var derivedData = new DerivedRuntimeElementData();
         when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class))).thenReturn(derivedData);
@@ -637,6 +782,119 @@ class ProcessNodeServiceTest {
                         new java.sql.SQLException("foreign key", "23503"), "process_nodes_process_id_fkey"));
         when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class))).thenThrow(unrelated);
         assertEquals(unrelated, assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> service.create(node)));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessVersionStatus.class, names = {"Published", "Revoked"})
+    void writes_ShouldRejectNodesOfVersionsThatAreNoLongerDrafts(ProcessVersionStatus status) {
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION)))
+                .thenReturn(Optional.of(createProcessVersion().setStatus(status)));
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.create(createNode(3, "new")));
+        assertConflict(() -> service.performUpdate(2, createNode(2, "changed"), existingNode));
+        assertConflict(() -> service.performDelete(existingNode));
+
+        assertEquals("existing", existingNode.getDataKey());
+        verify(processNodeRepository, never()).saveAndFlush(any(ProcessNodeEntity.class));
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+        verify(processNodeRepository, never()).delete(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performUpdate_ShouldRejectMovingNodeIntoPublishedVersion() {
+        var publishedVersion = PROCESS_VERSION - 1;
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, publishedVersion)))
+                .thenReturn(Optional.of(createProcessVersion()
+                        .setProcessVersion(publishedVersion)
+                        .setStatus(ProcessVersionStatus.Published)));
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing").setProcessVersion(publishedVersion), existingNode));
+
+        assertEquals(PROCESS_VERSION, existingNode.getProcessVersion());
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performDelete_ShouldDeleteNodesOfDrafts() throws Exception {
+        var node = createNode(2, "existing");
+
+        service.performDelete(node);
+
+        verify(processNodeRepository).delete(node);
+    }
+
+    @Test
+    void writes_ShouldRejectAddingAndRemovingNodesOfDraftWithTestClaim() {
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.create(createNode(3, "new")));
+        assertConflict(() -> service.performDelete(existingNode));
+
+        verify(processNodeRepository, never()).saveAndFlush(any(ProcessNodeEntity.class));
+        verify(processNodeRepository, never()).delete(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performUpdate_ShouldEditNodesOfDraftWithTestClaim() throws Exception {
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
+        when(processNodeRepository.save(any(ProcessNodeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var existingNode = createNode(2, "existing");
+        var changedNode = createNode(2, "changed").setName("Changed node");
+        changedNode.getConfiguration().putLiteral("branch", "approved");
+
+        var result = service.performUpdate(2, changedNode, existingNode);
+
+        assertEquals("changed", result.getDataKey());
+        assertEquals("Changed node", result.getName());
+        assertEquals("approved", result.getConfiguration().getLiteral("branch"));
+        verify(processNodeRepository).save(existingNode);
+    }
+
+    @Test
+    void performUpdate_ShouldRejectReplacingNodeTypeOfDraftWithTestClaim() {
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing")
+                .setProcessNodeDefinitionKey("test.process.initial-configuration-node"), existingNode));
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing")
+                .setProcessNodeDefinitionVersion(2), existingNode));
+
+        assertEquals("test.process.hint-node", existingNode.getProcessNodeDefinitionKey());
+        assertEquals(1, existingNode.getProcessNodeDefinitionVersion());
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performUpdate_ShouldReplaceNodeTypeOfDraftWithoutTestClaim() throws Exception {
+        when(processNodeRepository.save(any(ProcessNodeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var existingNode = createNode(2, "existing");
+
+        var result = service.performUpdate(2, createNode(2, "existing")
+                .setProcessNodeDefinitionKey("test.process.initial-configuration-node"), existingNode);
+
+        assertEquals("test.process.initial-configuration-node", result.getProcessNodeDefinitionKey());
+        verify(processNodeRepository).save(existingNode);
+    }
+
+    @Test
+    void performUpdate_ShouldRejectMovingNodesIntoOrOutOfDraftWithTestClaim() {
+        var testedVersion = PROCESS_VERSION + 1;
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, testedVersion)))
+                .thenReturn(Optional.of(createProcessVersion().setProcessVersion(testedVersion)));
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, testedVersion)).thenReturn(true);
+        var draftNode = createNode(2, "existing");
+        var testedNode = createNode(3, "tested").setProcessVersion(testedVersion);
+
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing").setProcessVersion(testedVersion), draftNode));
+        assertConflict(() -> service.performUpdate(3, createNode(3, "tested"), testedNode));
+
+        assertEquals(PROCESS_VERSION, draftNode.getProcessVersion());
+        assertEquals(testedVersion, testedNode.getProcessVersion());
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
     }
 
     @Test
@@ -728,6 +986,107 @@ class ProcessNodeServiceTest {
         assertEquals("forbidden", exception.getMessage());
     }
 
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldDeriveStoredUiDefinitionWithoutDraft() throws Exception {
+        var storedUiDefinition = new GroupLayoutElement();
+        storedUiDefinition.setId("stored");
+        var node = createNode(1, "a");
+        node.getConfiguration().putLiteral(UiDefinitionTestNodeDefinition.FIELD_ID, storedUiDefinition);
+        var identities = new IdentityDataMap();
+
+        service.deriveUiDefinitionForAuthoring(
+                node,
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                null,
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                identities
+        );
+
+        var request = ArgumentCaptor.forClass(ElementDerivationRequest.class);
+        verify(elementDerivationService).derive(request.capture(), eq(identities), any(ElementDerivationLogger.class));
+        assertEquals("stored", request.getValue().element().getId());
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldDeriveDraftInsteadOfStoredUiDefinition() throws Exception {
+        var storedUiDefinition = new GroupLayoutElement();
+        storedUiDefinition.setId("stored");
+        var node = createNode(1, "a");
+        node.getConfiguration().putLiteral(UiDefinitionTestNodeDefinition.FIELD_ID, storedUiDefinition);
+        var draftUiDefinition = new GroupLayoutElement();
+        draftUiDefinition.setId("draft");
+        var identities = new IdentityDataMap();
+
+        service.deriveUiDefinitionForAuthoring(
+                node,
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                draftUiDefinition,
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                identities
+        );
+
+        var request = ArgumentCaptor.forClass(ElementDerivationRequest.class);
+        verify(elementDerivationService).derive(request.capture(), eq(identities), any(ElementDerivationLogger.class));
+        assertSame(draftUiDefinition, request.getValue().element());
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldRejectFieldsThatAreNoUiDefinitionFields() {
+        var exception = assertThrows(ResponseException.class, () -> service.deriveUiDefinitionForAuthoring(
+                createNode(1, "a"),
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.OTHER_FIELD_ID,
+                new GroupLayoutElement(),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new IdentityDataMap()
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(elementDerivationService, never()).derive(any(), any(IdentityDataMap.class), any(ElementDerivationLogger.class));
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldRejectDraftsOfAnotherElementType() {
+        var exception = assertThrows(ResponseException.class, () -> service.deriveUiDefinitionForAuthoring(
+                createNode(1, "a"),
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                new ConfigLayoutElement(),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new IdentityDataMap()
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(elementDerivationService, never()).derive(any(), any(IdentityDataMap.class), any(ElementDerivationLogger.class));
+    }
+
+    @Test
+    void deriveUiDefinitionForAuthoring_ShouldReturnEmptyDataWithoutStoredUiDefinition() throws Exception {
+        var result = service.deriveUiDefinitionForAuthoring(
+                createNode(1, "a"),
+                new UiDefinitionTestNodeDefinition(),
+                null,
+                UiDefinitionTestNodeDefinition.FIELD_ID,
+                null,
+                new AuthoredElementValues(),
+                new ElementDerivationOptions(),
+                new IdentityDataMap()
+        );
+
+        assertTrue(result.getEffectiveValues().isEmpty());
+        verify(elementDerivationService, never()).derive(any(), any(IdentityDataMap.class), any(ElementDerivationLogger.class));
+    }
+
     private ProcessEntity createProcess() {
         return new ProcessEntity()
                 .setId(PROCESS_ID)
@@ -747,6 +1106,11 @@ class ProcessNodeServiceTest {
                 .setPublicTitle("Draft")
                 .setCreated(Instant.now())
                 .setUpdated(Instant.now());
+    }
+
+    private static void assertConflict(Executable executable) {
+        var exception = assertThrows(ResponseException.class, executable);
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
     }
 
     private ProcessNodeEntity createNode(int id, String dataKey) {
@@ -854,9 +1218,14 @@ class ProcessNodeServiceTest {
             return new ProcessNodeExecutionType[]{ProcessNodeExecutionType.Automatic};
         }
 
+        @Override
+        public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull TestNodeConfig configuration) {
+            return List.of(new ProcessNodeDeadlineDefinition("processing", "Bearbeitung", "Bearbeitungsfrist", new ProcessNodePort("processing_overdue", "Fristüberschreitung", "Fortsetzung")));
+        }
+
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
             return List.of();
         }
 
@@ -906,6 +1275,8 @@ class ProcessNodeServiceTest {
         }
 
         public static class TestNodeConfig {
+            @InputElementPOJOBinding(id = "branch", type = ElementType.Text)
+            public String branch;
         }
     }
 
@@ -1186,7 +1557,7 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
             return List.of();
         }
 
@@ -1240,6 +1611,37 @@ class ProcessNodeServiceTest {
             return new AuthoredElementValues()
                     .putLiteral("defaultOnly", "default")
                     .putLiteral("overridden", "default");
+        }
+    }
+
+    private static final class UiDefinitionTestNodeDefinition extends HintingTestNodeDefinition {
+        private static final String FIELD_ID = "uiDefinition";
+        private static final String OTHER_FIELD_ID = "other";
+
+        private UiDefinitionTestNodeDefinition() {
+            super("ui-definition-node", ProcessNodeType.Action);
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(
+                @Nonnull ProcessNodeDefinitionConfigurationLayoutContext context
+        ) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+
+            var uiDefinitionField = new UiDefinitionInputElement()
+                    .setElementType(ElementType.GroupLayout);
+            uiDefinitionField.setId(FIELD_ID);
+            uiDefinitionField.setLabel("UI definition");
+            layout.addChild(uiDefinitionField);
+
+            var otherField = new TextInputElement();
+            otherField.setId(OTHER_FIELD_ID);
+            otherField.setLabel("Other");
+            layout.addChild(otherField);
+
+            return layout;
         }
     }
 
@@ -1318,7 +1720,7 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
             return List.of();
         }
 
@@ -1425,7 +1827,7 @@ class ProcessNodeServiceTest {
 
         @Nonnull
         @Override
-        public List<ProcessNodePort> getPorts() {
+        public List<ProcessNodePort> getPorts(@Nonnull TestNodeConfig configuration) {
             return List.of();
         }
 

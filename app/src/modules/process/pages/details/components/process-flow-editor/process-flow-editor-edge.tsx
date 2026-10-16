@@ -109,7 +109,7 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
         targetX,
         targetY,
     ]);
-    const edgeColor = wasPerformed ? theme.palette.primary.main : HANDLE_COLOR;
+    const edgeColor = graphEdge.port == null ? theme.palette.error.main : wasPerformed ? theme.palette.primary.main : HANDLE_COLOR;
     const edgeDashArray = wasPerformed ? '10 10' : isFeedbackEdge ? FEEDBACK_EDGE_DASH_ARRAY : undefined;
 
     return (
@@ -150,6 +150,7 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
                 >
                     {
                         editable &&
+                        graphEdge.port != null &&
                         nextTaskForEdge == null &&
                         <Tooltip title="Element einfügen" arrow>
                             <IconButton

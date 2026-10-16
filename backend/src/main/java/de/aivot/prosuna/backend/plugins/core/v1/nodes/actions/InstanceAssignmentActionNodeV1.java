@@ -29,9 +29,12 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
 import de.aivot.prosuna.backend.process.models.ProcessNodePort;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeStaffView;
 import de.aivot.prosuna.backend.process.models.TaskViewEvent;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -57,8 +60,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.user;
+
 @Component
 public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<InstanceAssignmentActionNodeV1.Config> {
+    private static final ProcessNodeDeadlineDefinition ASSIGNMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
+            "assignment", "Vorgangszuweisung",
+            "Zeit für die manuelle Zuweisung des Vorgangs.",
+            new ProcessNodePort("assignment_overdue", "Fristüberschreitung: Vorgangszuweisung",
+                    "Fortsetzung nach Überschreitung der harten Frist für die Vorgangszuweisung."));
+
     public static final String NODE_KEY = "assign_instance";
 
     private static final String PORT_SUCCESS = "success";
@@ -87,6 +98,14 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
                                           ProcessAssignmentService assignmentService) {
         this.assigneeResolverService = assigneeResolverService;
         this.assignmentService = assignmentService;
+    }
+
+    @Nonnull
+    @Override
+    public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<InstanceAssignmentActionNodeV1.Config> context) {
+        var summary = new ExecutionSummaryMarkdown(context);
+        return "Der Vorgang wurde " + user(summary.data(OUTPUT_ASSIGNED_USER_ID), summary.metadata(ExecutionSummaryMarkdown.ASSIGNED_USER_NAME))
+                + " durch " + summary.actor() + " zugewiesen.";
     }
 
     @Nonnull
@@ -254,7 +273,14 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
 
     @Nonnull
     @Override
-    public List<ProcessNodePort> getPorts() {
+    public List<ProcessNodeDeadlineDefinition> getDeadlines(@Nonnull Config configuration) {
+        return MODE_MANUAL.equals(normalizeMode(configuration.mode))
+                ? List.of(ASSIGNMENT_DEADLINE) : List.of();
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessNodePort> getPorts(@Nonnull Config configuration) {
         return List.of(new ProcessNodePort(
                 PORT_SUCCESS,
                 "Zuweisung erfolgt",
@@ -311,6 +337,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
 
         if (MODE_MANUAL.equals(mode)) {
             return ProcessNodeExecutionResultTaskAssigned.of(selectedUserId)
+                    .setNewDeadlineKey(ASSIGNMENT_DEADLINE.key())
                     .setProcessData(context.getCurrentProcessExecutionData().getProcessData())
                     .setRuntimeData(Map.of());
         }

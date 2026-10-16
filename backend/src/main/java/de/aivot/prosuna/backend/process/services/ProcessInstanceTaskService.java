@@ -55,10 +55,26 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
         return processInstanceTaskRepository.findById(id);
     }
 
+    public void authorizeStaffMutation(@Nonnull String userId, @Nonnull Long instanceId, @Nonnull Long taskId) throws ResponseException {
+        requireEditableTaskOfInstance(userId, instanceId, taskId);
+    }
+
     @Nonnull
     public ProcessInstanceTaskEntity retrieveForStaffView(@Nonnull String userId,
                                                          @Nonnull Long instanceId,
                                                          @Nonnull Long taskId) throws ResponseException {
+        var task = requireEditableTaskOfInstance(userId, instanceId, taskId);
+        if (task.getStatus() != ProcessTaskStatus.Running && task.getStatus() != ProcessTaskStatus.InProgress &&
+                task.getStatus() != ProcessTaskStatus.AwaitingStaff) {
+            throw ResponseException.forbidden();
+        }
+        return task;
+    }
+
+    @Nonnull
+    private ProcessInstanceTaskEntity requireEditableTaskOfInstance(@Nonnull String userId,
+                                                                    @Nonnull Long instanceId,
+                                                                    @Nonnull Long taskId) throws ResponseException {
         var task = retrieve(taskId).orElseThrow(ResponseException::notFound);
         // Both IDs come from the request. A mismatched pair must never combine another
         // instance's data or permissions with this task's execution context.
@@ -66,10 +82,6 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
             throw ResponseException.notFound();
         }
         permissions.requireProcessInstancePermission(userId, task.getProcessInstanceId(), PROCESS_INSTANCE_EDIT_TASK);
-        if (task.getStatus() != ProcessTaskStatus.Running && task.getStatus() != ProcessTaskStatus.InProgress &&
-                task.getStatus() != ProcessTaskStatus.AwaitingStaff) {
-            throw ResponseException.forbidden();
-        }
         return task;
     }
 
@@ -97,10 +109,7 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
         existingEntity.setStatus(entity.getStatus());
         existingEntity.setStatusOverride(entity.getStatusOverride());
 
-        if (entity.getStatus() == ProcessTaskStatus.Completed ||
-            entity.getStatus() == ProcessTaskStatus.Failed ||
-            entity.getStatus() == ProcessTaskStatus.Aborted
-        ) {
+        if (entity.getStatus().isTerminal() && existingEntity.getFinished() == null) {
             existingEntity.setFinished(Instant.now());
         }
 
@@ -111,6 +120,8 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
         existingEntity.setAssignedUserId(entity.getAssignedUserId());
 
         existingEntity.setDeadline(entity.getDeadline());
+        existingEntity.setDeadlineKey(entity.getDeadlineKey());
+        existingEntity.setDeadlineStrict(entity.getDeadlineStrict());
 
         existingEntity.setPostponedUntil(entity.getPostponedUntil());
 

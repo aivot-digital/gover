@@ -17,12 +17,14 @@ interface ProcessListEntry {
 }
 export interface ProcessInstanceListEntry extends ProcessListEntry {
     status: ProcessInstanceStatus;
+    deadline: string | null;
 }
 export interface ProcessTaskListEntry extends ProcessListEntry {
     processInstanceId: number;
     taskName: string;
     taskType: string | null;
     description: string | null;
+    assignedCustomerIdentityLabel: string | null;
     status: ProcessTaskStatus;
     deadline: string | null;
 }

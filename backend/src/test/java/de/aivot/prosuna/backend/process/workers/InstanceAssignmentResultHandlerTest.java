@@ -50,18 +50,42 @@ class InstanceAssignmentResultHandlerTest {
     private final InstanceAssignmentActionNodeV1 provider = new InstanceAssignmentActionNodeV1(
             mock(AssignmentContextAssigneeResolverService.class), assignments);
     private final InstanceUnassignmentActionNodeV1 unassignmentProvider = new InstanceUnassignmentActionNodeV1();
+    private final de.aivot.prosuna.backend.process.services.ProcessNodeService nodeService = mock(de.aivot.prosuna.backend.process.services.ProcessNodeService.class);
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
             assignments, rabbit, mock(CommunicationService.class), instances, mock(de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository.class), tasks, edges, users,
             mock(ProcessTaskMailService.class), mock(ProcessNodeRepository.class),
             mock(ProcessNodeDefinitionService.class), mock(ProcessService.class),
-            mock(DepartmentService.class), instanceMail);
+            mock(DepartmentService.class), instanceMail, nodeService, null);
 
     @BeforeEach
     void setUp() throws Exception {
+        when(nodeService.resolvePorts(any(), any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(
+                java.util.List.of(new de.aivot.prosuna.backend.process.models.ProcessNodePort("success", "Erfolg", "Fortsetzen")), java.util.List.of()));
         when(users.retrieve("previous")).thenReturn(Optional.of(user("previous")));
         when(users.retrieve("recipient")).thenReturn(Optional.of(user("recipient")));
         when(edges.findByFromNodeIdAndViaPort(12, "success"))
                 .thenReturn(Optional.of(new ProcessEdgeEntity(1, 42, 3, 12, 13, "success")));
+    }
+
+    @Test
+    void completionUsesResolvedNodePortsAndRejectsPortsRemovedByConfiguration() throws Exception {
+        var dynamic = new de.aivot.prosuna.backend.process.models.ProcessNodePort("configured", "Konfiguriert", "Fortsetzen");
+        when(nodeService.resolvePorts(any(), any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(java.util.List.of(dynamic), java.util.List.of()));
+        when(edges.findByFromNodeIdAndViaPort(12, "configured")).thenReturn(Optional.of(new ProcessEdgeEntity(1, 42, 3, 12, 13, "configured")));
+        var instance = instance();
+        var task = task();
+        var completion = new de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted().setViaPort("configured");
+        completion.setProcessData(Map.of());
+        handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task, null, completion);
+        assertEquals(ProcessTaskStatus.Completed, task.getStatus());
+        verify(rabbit).convertAndSend(eq(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE), any(ProcessWorker.DoWorkWorkerPayload.class));
+
+        clearInvocations(tasks, rabbit);
+        when(nodeService.resolvePorts(any(), any(), any())).thenReturn(new de.aivot.prosuna.backend.process.models.ProcessNodePortResolution(java.util.List.of(), java.util.List.of()));
+        var newTask = task();
+        assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance(), newTask, null, completion));
+        verify(tasks, never()).save(any());
+        verifyNoInteractions(rabbit);
     }
 
     @Test
@@ -71,7 +95,7 @@ class InstanceAssignmentResultHandlerTest {
         var node = node();
         node.setOutputMappings(Map.of("assignedUserId", "responsibleUserId"));
 
-        handler.handleResult(logger, null, provider, node, instance, task, null, result("recipient"));
+        handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node, instance, task, null, result("recipient"));
 
         assertEquals("recipient", instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
@@ -92,7 +116,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance();
 
         assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class,
-                () -> handler.handleResult(logger, null, provider, node(), instance, task(), null, result("recipient")));
+                () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task(), null, result("recipient")));
 
         assertEquals("previous", instance.getAssignedUserId());
         verifyNoInteractions(instances, tasks, rabbit, instanceMail);
@@ -105,7 +129,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance();
 
         assertThrows(ProcessNodeExecutionExceptionInvalidAssignment.class,
-                () -> handler.handleResult(logger, null, provider, node(), instance, task(), null, result("recipient")));
+                () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task(), null, result("recipient")));
 
         assertEquals("previous", instance.getAssignedUserId());
         verifyNoInteractions(instances, tasks, rabbit, instanceMail);
@@ -118,7 +142,7 @@ class InstanceAssignmentResultHandlerTest {
         node.setOutputMappings(Map.of("assignedUserId", "case..owner"));
 
         assertThrows(IllegalStateException.class,
-                () -> handler.handleResult(logger, null, provider, node, instance, task(), null, result("recipient")));
+                () -> handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node, instance, task(), null, result("recipient")));
 
         assertEquals("previous", instance.getAssignedUserId());
         verifyNoInteractions(instances, tasks, rabbit, instanceMail);
@@ -129,7 +153,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance();
         var task = task();
 
-        handler.handleResult(logger, null, provider, node(), instance, task, null, result("previous"));
+        handler.handleResult(logger, null, provider, new InstanceAssignmentActionNodeV1.Config(), node(), instance, task, null, result("previous"));
 
         assertEquals("previous", instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
@@ -141,7 +165,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance();
         var task = task();
 
-        handler.handleResult(logger, null, unassignmentProvider, node(), instance, task, null, clearResult());
+        handler.handleResult(logger, null, unassignmentProvider, new InstanceUnassignmentActionNodeV1.Config(), node(), instance, task, null, clearResult());
 
         assertNull(instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
@@ -161,7 +185,7 @@ class InstanceAssignmentResultHandlerTest {
         var instance = instance().setAssignedUserId(null);
         var task = task();
 
-        handler.handleResult(logger, null, unassignmentProvider, node(), instance, task, null, clearResult());
+        handler.handleResult(logger, null, unassignmentProvider, new InstanceUnassignmentActionNodeV1.Config(), node(), instance, task, null, clearResult());
 
         assertNull(instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());

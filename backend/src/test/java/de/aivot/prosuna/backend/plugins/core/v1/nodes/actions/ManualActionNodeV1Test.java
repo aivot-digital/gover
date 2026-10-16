@@ -68,6 +68,12 @@ class ManualActionNodeV1Test {
     }
 
     @Test
+    void offersTheManualPhaseDeadline() {
+        var config = new ManualActionNodeV1.ManualActionNodeConfig();
+        assertEquals(List.of("processing"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+    }
+
+    @Test
     void init_AssignsResolvedUserAndCopiesWorkingProcessData() throws Exception {
         assigneeResolverService.result = Optional.of("user-1");
 
@@ -86,6 +92,7 @@ class ManualActionNodeV1Test {
                 processData,
                 nodeConfiguration(configuration())
         ));
+        assertEquals("processing", result.getNewDeadlineKey());
 
         var taskAssigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result);
         assertEquals("user-1", taskAssigned.getAssignedUserId());

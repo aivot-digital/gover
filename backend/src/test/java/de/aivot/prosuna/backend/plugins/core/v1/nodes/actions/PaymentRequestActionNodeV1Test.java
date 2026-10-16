@@ -31,6 +31,7 @@ import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.models.PaymentItem;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
+import de.aivot.prosuna.backend.payment.services.PaymentTaskAttemptService;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
@@ -68,6 +69,8 @@ import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -93,6 +96,7 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class PaymentRequestActionNodeV1Test {
@@ -109,6 +113,7 @@ class PaymentRequestActionNodeV1Test {
     private PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
     private VDepartmentShadowedService vDepartmentShadowedService;
+    private PaymentTaskAttemptService paymentTaskAttemptService;
     private PaymentRequestActionNodeV1 node;
 
     @BeforeEach
@@ -119,6 +124,7 @@ class PaymentRequestActionNodeV1Test {
         paymentProviderDefinitionsService = mock(PaymentProviderDefinitionsService.class);
         assignmentContextAssigneeResolverService = mock(AssignmentContextAssigneeResolverService.class);
         vDepartmentShadowedService = mock(VDepartmentShadowedService.class);
+        paymentTaskAttemptService = mock(PaymentTaskAttemptService.class);
         node = new PaymentRequestActionNodeV1(
                 paymentPayloadCreationService,
                 paymentTransactionService,
@@ -128,8 +134,21 @@ class PaymentRequestActionNodeV1Test {
                 prosunaConfig(),
                 JsonMapperTestUtils.createMapper(),
                 assignmentContextAssigneeResolverService,
-                vDepartmentShadowedService
+                vDepartmentShadowedService,
+                paymentTaskAttemptService
         );
+    }
+
+    @Test
+    void deadlineDefinitionsFollowTheAuthoredDispatchMode() {
+        var config = new PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig();
+        assertEquals(List.of("payment"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        config.messageConfig = new SemiAutomaticMessageConfig.LayoutConfig();
+        config.messageConfig.executionType = "manual";
+        assertEquals(List.of("messageDispatch", "payment"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+        assertEquals("message_dispatch_overdue", node.getDeadlines(config).getFirst().port().key());
+        config.messageConfig.executionType = "automatic";
+        assertEquals(List.of("payment"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
     }
 
     @Test
@@ -242,7 +261,9 @@ class PaymentRequestActionNodeV1Test {
                 ProcessNodeExecutionResultPaymentRequested.class,
                 node.init(context(configuration, processData, processInstance(identity), task()))
         );
+        assertEquals("payment", result.getNewDeadlineKey());
 
+        assertNull(result.getClearCurrentlyAssignedUser());
         assertEquals("tx-1", result.getTransactionKey());
         assertEquals("Stadtkasse", result.getPaymentProviderName());
         assertEquals("tx-1", result.getRuntimeData().get(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY));
@@ -330,6 +351,7 @@ class PaymentRequestActionNodeV1Test {
                 ProcessNodeExecutionResultTaskAssigned.class,
                 node.init(context(configuration, processData, processInstance(identity), task()))
         );
+        assertEquals("messageDispatch", result.getNewDeadlineKey());
 
         assertEquals("staff-1", result.getAssignedUserId());
         assertEquals(paymentPayload, result.getRuntimeData().get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD));
@@ -432,7 +454,9 @@ class PaymentRequestActionNodeV1Test {
                         "send"
                 ).orElseThrow()
         );
+        assertEquals("payment", result.getNewDeadlineKey());
 
+        assertEquals(Boolean.TRUE, result.getClearCurrentlyAssignedUser());
         var communicationRequest = result.getCommunicationRequest();
         assertNotNull(communicationRequest);
         assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());
@@ -626,8 +650,47 @@ class PaymentRequestActionNodeV1Test {
                 processInstance(recipientIdentity()),
                 task(Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"), Map.of(), Map.of())
         ));
+        assertNull(result.getNewDeadlineKey());
 
         assertInstanceOf(ProcessNodeExecutionResultNoop.class, result);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"automatic", "manual"})
+    void init_CompletesWithThePaymentOfAnEarlierAttemptInsteadOfRequestingAgain(String executionType) throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var paymentInformation = paymentInformation(XBezahldienstStatus.PAYED);
+        var transaction = paymentTransaction(paymentProviderKey, paymentInformation);
+        var earlierAttempt = task(
+                Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"),
+                Map.of("paymentStatus", "INITIAL", "paymentTransactionKey", "tx-1"),
+                Map.of()
+        ).setId(TASK_ID - 1).setStatus(ProcessTaskStatus.Restarted);
+        var rerun = task().setRestartForTaskId(earlierAttempt.getId());
+        var paidAttempt = new PaymentTaskAttemptService.PaidAttempt(earlierAttempt, transaction);
+        when(paymentTaskAttemptService.findPaidEarlierAttempt(rerun)).thenReturn(Optional.of(paidAttempt));
+        var processData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
+
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(context(
+                        nodeConfiguration(paymentConfig(paymentProviderKey), executionType),
+                        processData,
+                        processInstance(recipientIdentity()),
+                        rerun
+                ))
+        );
+
+        assertEquals("paid", result.getViaPort());
+        assertNull(result.getNewDeadlineKey());
+        assertNull(result.getCommunicationRequest());
+        assertEquals("tx-1", result.getRuntimeData().get(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY));
+        assertEquals("tx-1", result.getNodeData().get("paymentTransactionKey"));
+        assertEquals("PAYED", result.getNodeData().get("paymentStatus"));
+        assertEquals(paymentInformation, result.getNodeData().get("paymentDetails"));
+        assertEquals(processData.getProcessData(), result.getProcessData());
+        verify(paymentTaskAttemptService).logReuse(any(), same(paidAttempt));
+        verifyNoInteractions(paymentTransactionService, paymentPayloadCreationService, paymentProviderRepository);
     }
 
     @Test
@@ -650,6 +713,7 @@ class PaymentRequestActionNodeV1Test {
                         )
                 ))
         );
+        assertNull(result.getNewDeadlineKey());
 
         assertEquals("paid", result.getViaPort());
         assertEquals("PAYED", result.getNodeData().get("paymentStatus"));

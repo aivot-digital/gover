@@ -12,6 +12,7 @@ export interface ProcessVersionEntity {
     notes: string | null;
     retentionTimeValue: number | null;
     retentionTimeUnit: RetentionTimeUnit | null;
+    instanceDeadlineDays: number | null;
     themeId: number | null;
     legalSupportDepartmentId: number | null;
     technicalSupportDepartmentId: number | null;

@@ -41,6 +41,7 @@ describe('Dashboard confetti', () => {
         fireConfetti.mockResolvedValue(null);
         vi.spyOn(DashboardApiService.prototype, 'fetchOverview').mockResolvedValue({
             tasks: {total: 0, overdue: 0, items: []},
+            instances: {total: 0, overdue: 0, items: []},
             recentProcesses: [],
         });
         vi.spyOn(DashboardApiService.prototype, 'fetchActivity').mockResolvedValue({

@@ -38,6 +38,7 @@ export class ProcessInstanceApiService extends BaseReadApiService<
             assignedUserId: null,
             createdForTestClaimId: null,
             keepUntil: null,
+            deadline: null,
             accessKey: '',
             assignedFileNumbers: [],
             identities: {},

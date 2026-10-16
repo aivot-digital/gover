@@ -32,6 +32,17 @@ public interface PaymentProviderDefinition extends PluginComponent {
     @Nullable
     GroupLayoutElement getPaymentConfigLayout() throws ResponseException;
 
+    /**
+     * Corrects an original provider timestamp once when payment information is adopted.
+     * Already stored timestamps must not be passed through this correction again.
+     * Overrides may return {@code null} when the timestamp cannot be determined reliably.
+     * The default implementation preserves the supplied value unchanged.
+     */
+    @Nullable
+    default String fixTransactionTimestamp(@Nullable String timestamp) {
+        return timestamp;
+    }
+
     @Nonnull
     default XBezahldienstePaymentRequest createPaymentRequest(
             @Nonnull PaymentProviderEntity paymentProviderEntity,

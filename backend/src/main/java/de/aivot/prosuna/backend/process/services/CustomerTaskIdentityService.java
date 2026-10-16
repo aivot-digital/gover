@@ -21,6 +21,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -145,6 +146,12 @@ public class CustomerTaskIdentityService {
         );
     }
 
+    /** Validates a customer-supplied return URL; only pages of this Prosuna installation are accepted. */
+    @Nonnull
+    public URI resolveReturnOrigin(@Nonnull String origin) throws ResponseException {
+        return identityService.resolveOrigin(origin);
+    }
+
     @Nonnull
     public IdentityConfigElementSlot requireNewIdentitySlot(@Nonnull ProcessInstanceEntity processInstance,
                                                             @Nonnull ProcessNodeCustomerView processNodeCustomerView,
@@ -164,7 +171,10 @@ public class CustomerTaskIdentityService {
         if (!isCompletingResult(executionResult) || state.newIdentity() == null) {
             return Map.of();
         }
-        return Map.of(state.newIdentity().identityId(), state.newIdentity());
+        var identity = state.newIdentity().withTitle(
+                state.newIdentitySlot() == null ? null : state.newIdentitySlot().title()
+        );
+        return Map.of(identity.identityId(), identity);
     }
 
     public boolean isCompletingResult(@Nonnull ProcessNodeExecutionResult executionResult) {
