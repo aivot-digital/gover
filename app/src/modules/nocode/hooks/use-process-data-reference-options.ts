@@ -10,33 +10,35 @@ import {useOptionalProcessNodeEditorContext} from '../../process/pages/details/c
 const EMPTY_FORWARDED_KEYS: ProcessNodeDefinitionMetadataForwardedProcessDataKey[] = [];
 
 /**
- * Collects the value options of the process data keys that the given operands reference. Options are only available
- * inside a process node editor, which provides the metadata of the incoming process data keys.
+ * Collects the value options of the process data key that each operand references, by operand position. Operands that
+ * reference no process data have no options. Options are only available inside a process node editor, which provides
+ * the metadata of the incoming process data keys.
  */
 export function useProcessDataReferenceOptions(
     operands: ReadonlyArray<NoCodeOperand | null>,
-): NoCodeParameterOption[] {
+): NoCodeParameterOption[][] {
     const forwardedKeys = useOptionalProcessNodeEditorContext()?.incomingMetadata?.forwardedProcessDataKeys ?? EMPTY_FORWARDED_KEYS;
 
-    const referencedKeys = useMemo(() => operands
-        .filter(isNoCodeProcessDataReference)
-        .flatMap((operand) => findForwardedProcessDataKeys(forwardedKeys, operand.path)), [operands, forwardedKeys]);
+    const referencedKeysByOperand = useMemo(() => operands
+        .map((operand) => isNoCodeProcessDataReference(operand)
+            ? findForwardedProcessDataKeys(forwardedKeys, operand.path)
+            : []), [operands, forwardedKeys]);
 
-    // Several upstream nodes can forward the same key with different code lists, so the index identifies the source.
-    const codeListSources: CodeListOptionsSource[] = useMemo(() => referencedKeys
-        .flatMap((key, index) => key.codeListKey == null ? [] : [{
-            id: String(index),
+    // Several upstream nodes can forward the same key with different code lists, so the positions identify the source.
+    const codeListSources: CodeListOptionsSource[] = useMemo(() => referencedKeysByOperand
+        .flatMap((keys, operandIndex) => keys.flatMap((key, keyIndex) => key.codeListKey == null ? [] : [{
+            id: getCodeListSourceId(operandIndex, keyIndex),
             codeListKey: key.codeListKey,
             valueMode: key.codeListValueMode ?? CodeListValueMode.ValueAndLabel,
-        }]), [referencedKeys]);
+        }])), [referencedKeysByOperand]);
     const codeListOptions = useCodeListOptions(codeListSources);
 
-    return useMemo(() => {
+    return useMemo(() => referencedKeysByOperand.map((keys, operandIndex) => {
         const optionsByValue = new Map<string, NoCodeParameterOption>();
 
-        referencedKeys.forEach((key, index) => {
+        keys.forEach((key, keyIndex) => {
             const options = key.codeListKey != null
-                ? codeListOptions.get(String(index)) ?? []
+                ? codeListOptions.get(getCodeListSourceId(operandIndex, keyIndex)) ?? []
                 : key.valueOptions ?? [];
 
             for (const option of options) {
@@ -47,7 +49,11 @@ export function useProcessDataReferenceOptions(
         });
 
         return Array.from(optionsByValue.values());
-    }, [referencedKeys, codeListOptions]);
+    }), [referencedKeysByOperand, codeListOptions]);
+}
+
+function getCodeListSourceId(operandIndex: number, keyIndex: number): string {
+    return `${operandIndex}:${keyIndex}`;
 }
 
 /**

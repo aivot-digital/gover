@@ -112,92 +112,74 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
     const codeListOptions = useCodeListElementOptions(referencedElements);
     const processDataOptions = useProcessDataReferenceOptions(operands);
 
-    const parameterOptionOverrides: NoCodeParameterOption[] = useMemo(() => {
-        const options: NoCodeParameterOption[] = [];
-
-        for (const op of operands) {
+    // The options of the form element or process data key that each operand references, by operand position.
+    const referenceOptions: NoCodeParameterOption[][] = useMemo(() => {
+        return operands.map((op, index) => {
             if (!isNoCodeReference(op)) {
-                continue;
+                return processDataOptions[index] ?? [];
             }
 
             const element = allElements
                 .find(el => el.element.id === op.elementId)?.element;
 
-            if (element == null) {
-                continue;
-            }
-
-            switch (element.type) {
-                case ElementType.Checkbox:
-                    options.push(...BOOL_DEFAULT_OPTIONS);
-                    break;
-                case ElementType.Radio:
-                case ElementType.Select:
-                    if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
-                        options.push(...element.options.map((option) => (
-                            typeof option === 'string' ?
-                                {
-                                    value: option,
-                                    label: option,
-                                } :
-                                option
-                        )));
-                    } else {
-                        options.push(...(codeListOptions.get(element.id) ?? []));
-                    }
-                    break;
-                case ElementType.MultiCheckbox:
-                    if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
-                        options.push(...element.options);
-                    } else {
-                        options.push(...(codeListOptions.get(element.id) ?? []));
-                    }
-                    break;
-                case ElementType.ChipInput:
-                    if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.suggestions != null) {
-                        options.push(...element.suggestions.map((value) => ({
-                            value,
-                            label: value,
-                        })));
-                    } else {
-                        options.push(...(codeListOptions.get(element.id) ?? []));
-                    }
-                    break;
-            }
-        }
-
-        options.push(...processDataOptions);
-
-        return options;
+            return element == null ? [] : getReferencedElementOptions(element, codeListOptions);
+        });
     }, [operands, allElements, codeListOptions, processDataOptions]);
+
+    const parameterOptions: NoCodeParameterOption[][] = useMemo(() => {
+        return parameters.map((parameter) => {
+            // Options defined by the operator, such as the units of a date calculation, are the only valid values.
+            if (parameter.options.length > 0) {
+                return parameter.options;
+            }
+
+            // Suggest the options of referenced values only for parameters of a compatible type, so a number of days
+            // referenced in a date calculation does not become a suggestion for the date.
+            const optionsByValue = new Map<string, NoCodeParameterOption>();
+            referenceOptions.forEach((options, operandIndex) => {
+                const referencingParameter = parameters[operandIndex];
+                if (referencingParameter == null || !areCompatibleParameterTypes(parameter.type, referencingParameter.type)) {
+                    return;
+                }
+
+                for (const option of options) {
+                    if (!optionsByValue.has(option.value)) {
+                        optionsByValue.set(option.value, option);
+                    }
+                }
+            });
+
+            return Array.from(optionsByValue.values());
+        });
+    }, [parameters, referenceOptions]);
 
     const leadingParameter: ResolvedParameter | undefined = useMemo(() => {
         if (parameters.length >= 2) {
             return {
                 parameter: {
                     ...parameters[0],
-                    options: parameterOptionOverrides.length > 0 ? parameterOptionOverrides : parameters[0].options,
+                    options: parameterOptions[0],
                 },
                 operand: operands[0],
             };
         }
 
         return undefined;
-    }, [parameters, operands, parameterOptionOverrides]);
+    }, [parameters, operands, parameterOptions]);
 
     const trailingParameters: ResolvedParameter[] = useMemo(() => {
-        const hasLeadingParameter = leadingParameter != null;
+        const offset = leadingParameter != null ? 1 : 0;
 
         return parameters
-            .slice(hasLeadingParameter ? 1 : 0)
+            .slice(offset)
             .map((p, index) => ({
                 parameter: {
                     ...p,
-                    options: parameterOptionOverrides.length > 0 ? parameterOptionOverrides : p.options,
+                    options: parameterOptions[index + offset],
                 },
-                operand: operands[index + (hasLeadingParameter ? 1 : 0)],
+                operand: operands[index + offset],
             }));
-    }, [parameters, operands, leadingParameter, parameterOptionOverrides]);
+    }, [parameters, operands, leadingParameter, parameterOptions]);
 
     const combinedParameters = useMemo(() => {
         if (leadingParameter != null) {
@@ -547,6 +529,51 @@ function getExpressionOperandLabel(operand: NoCodeExpression, allOperators: NoCo
     }
 
     return operator.label;
+}
+
+function getReferencedElementOptions(
+    element: ElementWithParents['element'],
+    codeListOptions: ReadonlyMap<string, NoCodeParameterOption[]>,
+): NoCodeParameterOption[] {
+    switch (element.type) {
+        case ElementType.Checkbox:
+            return BOOL_DEFAULT_OPTIONS;
+        case ElementType.Radio:
+        case ElementType.Select:
+            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
+                return element.options.map((option) => (
+                    typeof option === 'string' ?
+                        {
+                            value: option,
+                            label: option,
+                        } :
+                        option
+                ));
+            }
+            return codeListOptions.get(element.id) ?? [];
+        case ElementType.MultiCheckbox:
+            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
+                return element.options;
+            }
+            return codeListOptions.get(element.id) ?? [];
+        case ElementType.ChipInput:
+            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.suggestions != null) {
+                return element.suggestions.map((value) => ({
+                    value,
+                    label: value,
+                }));
+            }
+            return codeListOptions.get(element.id) ?? [];
+        default:
+            return [];
+    }
+}
+
+/**
+ * Operators that accept values of any type, such as the comparison operators, use runtime parameters.
+ */
+function areCompatibleParameterTypes(first: NoCodeDataType, second: NoCodeDataType): boolean {
+    return first === second || first === NoCodeDataType.Runtime || second === NoCodeDataType.Runtime;
 }
 
 function getProcessDataOperandLabel(

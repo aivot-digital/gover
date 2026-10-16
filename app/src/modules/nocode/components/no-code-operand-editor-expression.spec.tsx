@@ -5,7 +5,7 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {type NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
 import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
-import {type NoCodeExpression} from '../../../models/functions/no-code-expression';
+import {type NoCodeExpression, type NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {BaseApiService} from '../../../services/base-api-service';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {CodeListValueMode} from '../../code-lists/enums/code-list-value-mode';
@@ -182,7 +182,151 @@ describe('NoCodeOperandEditorExpression', () => {
 
         expect(screen.queryByRole('combobox', {name: /^Vergleichswert/})).not.toBeInTheDocument();
     });
+
+    it('keeps the options of the operator when a referenced process data key has options', async () => {
+        renderInProcessNodeEditor(
+            <NoCodeOperandEditorExpression
+                allElements={[]}
+                allOperators={[addToDateOperator]}
+                label="Frist"
+                value={createAddToDate({type: 'NoCodeProcessDataReference', path: 'deadlineDays'})}
+                onChange={vi.fn()}
+                onAddEnclosingExpression={vi.fn()}
+                contextType="PROCESS"
+            />,
+            [forwardedKey('deadlineDays', {
+                valueOptions: [
+                    {value: '7', label: '7 Tage'},
+                    {value: '14', label: '14 Tage'},
+                ],
+            })],
+        );
+
+        await expectOnlyUnitOptions();
+    });
+
+    it('keeps the options of the operator when a referenced form field has options', async () => {
+        const element = {
+            ...generateElementWithDefaultValues(ElementType.Select),
+            id: 'deadline',
+            label: 'Frist',
+            options: [
+                {value: '7', label: '7 Tage'},
+                {value: '14', label: '14 Tage'},
+            ],
+        };
+
+        render(
+            <NoCodeOperandEditorExpression
+                allElements={[{element, parents: []}]}
+                allOperators={[addToDateOperator]}
+                label="Frist"
+                value={createAddToDate({type: 'NoCodeReference', elementId: element.id})}
+                onChange={vi.fn()}
+                onAddEnclosingExpression={vi.fn()}
+            />,
+        );
+
+        await expectOnlyUnitOptions();
+    });
+
+    it('offers referenced options to a parameter that accepts any type', async () => {
+        const listOperator: NoCodeOperatorDetailsDTO = {
+            ...operator,
+            identifier: 'listContains',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: [
+                    {type: NoCodeDataType.List, label: 'Liste', description: null, options: []},
+                    {type: NoCodeDataType.Runtime, label: 'Gesuchter Wert', description: null, options: []},
+                ],
+            }],
+        };
+        const element = {
+            ...generateElementWithDefaultValues(ElementType.MultiCheckbox),
+            id: 'documents',
+            label: 'Nachweise',
+            options: [
+                {value: 'id', label: 'Personalausweis'},
+                {value: 'passport', label: 'Reisepass'},
+            ],
+        };
+
+        render(
+            <NoCodeOperandEditorExpression
+                allElements={[{element, parents: []}]}
+                allOperators={[listOperator]}
+                label="Bedingung"
+                value={{
+                    type: 'NoCodeExpression',
+                    operatorIdentifier: listOperator.identifier,
+                    operands: [
+                        {type: 'NoCodeReference', elementId: element.id},
+                        {type: 'NoCodeStaticValue', value: 'id'},
+                    ],
+                }}
+                onChange={vi.fn()}
+                onAddEnclosingExpression={vi.fn()}
+            />,
+        );
+
+        fireEvent.mouseDown(await screen.findByRole('combobox', {name: /^Gesuchter Wert/}));
+        expect(await screen.findByRole('option', {name: /Reisepass/})).toBeInTheDocument();
+    });
 });
+
+const addToDateOperator: NoCodeOperatorDetailsDTO = {
+    identifier: 'addToDate',
+    packageName: 'test',
+    label: 'Zu Datum hinzufügen',
+    description: '',
+    abstractDescription: '',
+    humanReadableTemplate: null,
+    tags: [],
+    signatures: [{
+        returnType: NoCodeDataType.Date,
+        parameters: [
+            {type: NoCodeDataType.Date, label: 'Datum', description: null, options: []},
+            {type: NoCodeDataType.Number, label: 'Anzahl', description: null, options: []},
+            {
+                type: NoCodeDataType.String,
+                label: 'Einheit',
+                description: null,
+                options: [
+                    {value: 'DAYS', label: 'Tage'},
+                    {value: 'WEEKS', label: 'Wochen'},
+                    {value: 'MONTHS', label: 'Monate'},
+                    {value: 'YEARS', label: 'Jahre'},
+                ],
+            },
+        ],
+    }],
+};
+
+function createAddToDate(amount: NoCodeOperand): NoCodeExpression {
+    return {
+        type: 'NoCodeExpression',
+        operatorIdentifier: addToDateOperator.identifier,
+        operands: [
+            {type: 'NoCodeStaticValue', value: '2026-01-01'},
+            amount,
+            {type: 'NoCodeStaticValue', value: 'DAYS'},
+        ],
+    };
+}
+
+/**
+ * The unit offers only the options of the operator, and the date, which has another type than the referenced amount,
+ * gets no suggestions.
+ */
+async function expectOnlyUnitOptions() {
+    fireEvent.mouseDown(await screen.findByRole('combobox', {name: /^Einheit/}));
+    for (const unit of ['Tage', 'Wochen', 'Monate', 'Jahre']) {
+        expect(await screen.findByRole('option', {name: new RegExp(`^${unit}`)})).toBeInTheDocument();
+    }
+    expect(screen.queryByRole('option', {name: /14 Tage/})).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', {name: /^Datum/})).not.toBeInTheDocument();
+}
 
 function createProcessDataComparison(path: string, value: string): NoCodeExpression {
     return {
