@@ -45,6 +45,7 @@ import {
 import {dynamicTextPlugin} from './rich-text-input-component-dynamic-text-plugin';
 import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import {linkDialogInteractionPlugin} from './rich-text-input-component-link-dialog-plugin';
+import {rawHtmlAsTextPlugin} from './rich-text-input-component-raw-html-plugin';
 import '@mdxeditor/editor/style.css';
 
 const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
@@ -746,6 +747,9 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                     translation={mdxEditorGermanTranslation}
                     markdown={normalizedValue}
                     readOnly={isReadOnly}
+                    // MDXEditor would otherwise turn HTML tags in the stored Markdown into DOM elements with all of
+                    // their attributes, including scripts and event handlers. See rawHtmlAsTextPlugin.
+                    suppressHtmlProcessing
                     spellCheck={enableSpellCheck}
                     onChange={(val) => {
                         if (isStringNullOrEmpty(val)) {
@@ -756,6 +760,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                     }}
                     plugins={[
                         dynamicText ? dynamicTextPlugin({highlight: true}) : placeholderPlugin(),
+                        rawHtmlAsTextPlugin(),
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
