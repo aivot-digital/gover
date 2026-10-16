@@ -32,6 +32,7 @@ vi.mock('./process-task-view-page', () => ({
     getProcessTaskNodeIcon: () => null,
     getProcessTaskProcessPath: () => null,
     getProcessTaskEditPath: () => '/edit',
+    PROCESS_TASK_NOT_EDITABLE_MESSAGE: 'Diese Aufgabe kann in ihrem aktuellen Status nicht bearbeitet werden.',
 }));
 
 function createItem(): ProcessTaskDetailsPageItem {
@@ -143,6 +144,41 @@ describe('ProcessTaskViewPageIndex metadata', () => {
             screen.getByRole('region', {name: 'Stand der Aufgabe'}).compareDocumentPosition(edit) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
+    });
+
+    it.each([
+        ProcessTaskStatus.Running,
+        ProcessTaskStatus.InProgress,
+        ProcessTaskStatus.AwaitingStaff,
+    ])('links to task editing while the task has staff status %s', (status) => {
+        const item = createItem();
+        item.task.status = status;
+        renderItem(item);
+
+        const edit = screen.getByRole('link', {name: 'Aufgabe bearbeiten'});
+        expect(edit).toHaveAttribute('href', '/edit');
+        expect(edit).not.toHaveAttribute('aria-disabled');
+    });
+
+    it.each([
+        ProcessTaskStatus.AwaitingCustomer,
+        ProcessTaskStatus.AwaitingPayment,
+        ProcessTaskStatus.Paused,
+        ProcessTaskStatus.Completed,
+        ProcessTaskStatus.DeadlineExceeded,
+    ])('disables task editing for status %s and explains why', async (status) => {
+        const item = createItem();
+        item.task.status = status;
+        const user = userEvent.setup();
+        renderItem(item);
+
+        const edit = screen.getByRole('link', {name: 'Aufgabe bearbeiten'});
+        expect(edit).toHaveAttribute('aria-disabled', 'true');
+        expect(edit).toHaveAttribute('tabindex', '-1');
+        await user.hover(edit.parentElement!);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
+            'Diese Aufgabe kann in ihrem aktuellen Status nicht bearbeitet werden.',
+        );
     });
 
     it('shows the instance deadline with its state separately from the task deadline', () => {

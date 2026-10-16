@@ -20,11 +20,12 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../../slices/shell-slice';
 import {showApiErrorSnackbar, showErrorSnackbar, showWarningSnackbar} from '../../../../slices/snackbar-slice';
 import {withDelay} from '../../../../utils/with-delay';
-import {ProcessTaskStatus} from '../../enums/process-task-status';
+import {isProcessTaskEditableByStaff, ProcessTaskStatus} from '../../enums/process-task-status';
 import {
     getProcessTaskDescription,
     getProcessTaskName,
     getProcessTaskNodeIcon,
+    PROCESS_TASK_NOT_EDITABLE_MESSAGE,
     type ProcessTaskDetailsPageItem,
 } from './process-task-view-page';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
@@ -301,6 +302,14 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         latestTaskInputDataRef.current = {};
         lastPersistedTaskInputDataRef.current = {};
 
+        // The route remains reachable by URL, but the backend rejects staff task views outside staff statuses.
+        if (!isProcessTaskEditableByStaff(item.task.status)) {
+            skipChangeBlockerRef.current = true;
+            return () => {
+                cancelled = true;
+            };
+        }
+
         new ProcessInstanceTaskApiService()
             .getStaffTaskView(item.task.processInstanceId, item.task.id)
             .then((view) => {
@@ -334,7 +343,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, item?.task.id, item?.task.processInstanceId, item?.task.status === ProcessTaskStatus.DeadlineExceeded]);
+    }, [dispatch, item?.task.id, item?.task.processInstanceId, item?.task.status === ProcessTaskStatus.DeadlineExceeded,
+        isProcessTaskEditableByStaff(item?.task.status)]);
 
     useEffect(() => {
         const handleOnline = () => {
@@ -742,6 +752,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
     if (deadlineExceeded || item.task.status === ProcessTaskStatus.DeadlineExceeded) {
         return <Alert severity="error">Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
+    }
+
+    if (!isProcessTaskEditableByStaff(item.task.status)) {
+        return <Alert severity="info">{PROCESS_TASK_NOT_EDITABLE_MESSAGE}</Alert>;
     }
 
     return (
