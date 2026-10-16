@@ -9,7 +9,7 @@ name: prosuna
 services:
   # Prosuna backend API and the central network endpoint for the local stack.
   prosuna_api:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-147
     restart: unless-stopped
     command: serve
     depends_on:
@@ -82,7 +82,7 @@ services:
   # Prosuna web application. Sharing the API network namespace makes both containers
   # available through the prosuna_api host while keeping their ports private.
   prosuna_app:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-147
     restart: unless-stopped
     command: web
     network_mode: "service:prosuna_api"
