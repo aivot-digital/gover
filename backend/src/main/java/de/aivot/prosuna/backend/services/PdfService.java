@@ -267,7 +267,6 @@ public class PdfService {
         dto.put("caseNumber", caseNumber);
         dto.put("logoDataUrl", pdfLogoService.resolveDataUrl(logoAssetKey).orElse(null));
         dto.put("department", department);
-        dto.put("generatedAt", Instant.now().toString());
 
         var contentHtml = loadTemplate("payment-confirmation/form-trigger-payment-confirmation.html", dto);
         var footerHtml = loadTemplate("payment-confirmation/form-trigger-payment-confirmation-footer.html", dto);
