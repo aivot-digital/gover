@@ -16,6 +16,7 @@ import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constra
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ThemeResponseDTO} from '../../../themes/models/theme';
+import {sortThemesByName} from '../../../themes/utils/sort-themes-by-name';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {DepartmentsDetailsPageAdditionalData, NewParentIdQueryParam} from './departments-details-page';
@@ -735,7 +736,7 @@ export function DepartmentsDetailsPageIndex() {
                         }}
                         required={false}
                         error={errors.themeId}
-                        options={availableThemes.map(theme => ({
+                        options={sortThemesByName(availableThemes).map(theme => ({
                             label: theme.name,
                             value: theme.id.toString(),
                         }))}

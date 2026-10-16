@@ -95,7 +95,7 @@ describe('ProcessSettingsDialogVersionTab', () => {
                     open
                     version={version}
                     departments={[]}
-                    themes={[theme]}
+                    themes={[createTheme(12, 'Zebra'), theme, createTheme(13, 'Alpha')]}
                     onVersionChange={onVersionChange}
                     onUnsavedChangesChange={onUnsavedChangesChange}
                 />
@@ -103,6 +103,9 @@ describe('ProcessSettingsDialogVersionTab', () => {
         );
 
         await user.click(screen.getByRole('combobox', {name: 'Erscheinungsbild – optional'}));
+        expect(screen.getAllByRole('option').map((option) => option.textContent)
+            .filter((name) => ['Alpha', 'Nordlicht', 'Zebra'].includes(name ?? '')))
+            .toEqual(['Alpha', 'Nordlicht', 'Zebra']);
         await user.click(await screen.findByText('Nordlicht'));
 
         await waitFor(() => {
