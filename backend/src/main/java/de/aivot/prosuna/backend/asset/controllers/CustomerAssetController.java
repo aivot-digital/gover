@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.asset.controllers;
 import de.aivot.prosuna.backend.asset.entities.VStorageIndexItemWithAssetEntity;
 import de.aivot.prosuna.backend.asset.entities.VStorageIndexItemWithAssetEntityId;
 import de.aivot.prosuna.backend.asset.repositories.VStorageIndexItemWithAssetRepository;
+import de.aivot.prosuna.backend.asset.utils.AssetContentResponseUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.storage.exceptions.StorageException;
@@ -14,13 +15,9 @@ import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.InvalidMediaTypeException;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @RestController
@@ -48,7 +45,7 @@ public class CustomerAssetController {
     @GetMapping("{assetId}/")
     @Operation(
             summary = "Retrieve Public Asset by key",
-            description = "Retrieves a public asset by its key and streams the file directly."
+            description = "Retrieves a public asset by its key and streams the file directly. Content that browsers could run, such as HTML or SVG, is always served as a sandboxed attachment."
     )
     public ResponseEntity<InputStreamResource> retrievePublicById(
             @PathVariable String assetId,
@@ -79,7 +76,7 @@ public class CustomerAssetController {
     @GetMapping("{storageProviderId}/files/**")
     @Operation(
             summary = "Retrieve Public Asset by storage provider id and path",
-            description = "Retrieves a public asset by its storage provider id and path from root and streams the file directly."
+            description = "Retrieves a public asset by its storage provider id and path from root and streams the file directly. Content that browsers could run, such as HTML or SVG, is always served as a sandboxed attachment."
     )
     public ResponseEntity<InputStreamResource> retrievePublicByPath(
             @Nonnull @PathVariable Integer storageProviderId,
@@ -117,25 +114,12 @@ public class CustomerAssetController {
         var inputStream = storageService
                 .getDocumentContent(asset.getStorageProviderId(), asset.getPathFromRoot());
 
-        MediaType mediaType;
-        try {
-            mediaType = MediaType.parseMediaType(asset.getMimeType());
-        } catch (InvalidMediaTypeException e) {
-            mediaType = MediaType.APPLICATION_OCTET_STREAM;
-        }
-
-        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
-        var contentDispositionType = download ? "attachment" : "inline";
-        var contentDisposition = ContentDisposition
-                .builder(contentDispositionType)
-                .filename(asset.getFilename(), StandardCharsets.UTF_8)
-                .build();
-        responseBuilder.header(
-                "Content-Disposition",
-                contentDisposition.toString()
+        return AssetContentResponseUtils.createContentResponse(
+                asset.getMimeType(),
+                asset.getFilename(),
+                download,
+                inputStream
         );
-
-        return responseBuilder.body(new InputStreamResource(inputStream));
     }
 
     private static String getNormalizedFileContentPath(@Nonnull HttpServletRequest request) throws ResponseException {

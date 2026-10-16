@@ -180,7 +180,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         // This allows us to create nodes without needing to provide a default, fully valid configuration.
         // The validity of the configuration will be checked at least before the publishing of the process version.
 
-        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
+        processVersionDraftGuard.requireStructureEditable(entity.getProcessId(), entity.getProcessVersion());
 
         // Set the ID to null, to force the database to assign a new, valid ID.
         entity.setId(null);
@@ -261,9 +261,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                                            @Nonnull ProcessNodeEntity entity,
                                            @Nonnull ProcessNodeEntity existingEntity) throws ResponseException {
         // Both the current and the requested process version must be drafts, so a node can neither be changed in nor
-        // moved into a version that is executed by the workflow engine.
-        processVersionDraftGuard.requireDrafted(existingEntity.getProcessId(), existingEntity.getProcessVersion());
-        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
+        // moved into a version that is executed by the workflow engine. Replacing the node type or moving the node
+        // changes the structure of the flow like removing and adding a node, which a test claim does not permit.
+        if (changesStructure(existingEntity, entity)) {
+            processVersionDraftGuard.requireStructureEditable(existingEntity.getProcessId(), existingEntity.getProcessVersion());
+            processVersionDraftGuard.requireStructureEditable(entity.getProcessId(), entity.getProcessVersion());
+        } else {
+            processVersionDraftGuard.requireDrafted(existingEntity.getProcessId(), existingEntity.getProcessVersion());
+        }
 
         // Update fields
         existingEntity.setProcessId(entity.getProcessId());
@@ -305,8 +310,15 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Override
     public void performDelete(@Nonnull ProcessNodeEntity entity) throws ResponseException {
-        processVersionDraftGuard.requireDrafted(entity.getProcessId(), entity.getProcessVersion());
+        processVersionDraftGuard.requireStructureEditable(entity.getProcessId(), entity.getProcessVersion());
         processNodeRepository.delete(entity);
+    }
+
+    private static boolean changesStructure(@Nonnull ProcessNodeEntity existingEntity, @Nonnull ProcessNodeEntity entity) {
+        return !Objects.equals(existingEntity.getProcessId(), entity.getProcessId())
+                || !Objects.equals(existingEntity.getProcessVersion(), entity.getProcessVersion())
+                || !Objects.equals(existingEntity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionKey())
+                || !Objects.equals(existingEntity.getProcessNodeDefinitionVersion(), entity.getProcessNodeDefinitionVersion());
     }
 
     @Nonnull

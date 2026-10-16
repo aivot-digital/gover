@@ -28,7 +28,6 @@ import {
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     ElementDerivationResponse,
-    getLiteralElementValue,
 } from '../../models/element-data';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../slices/shell-slice';
 import {isApiError} from '../../models/api-error';
@@ -39,9 +38,11 @@ import {SnackbarProvider} from 'notistack';
 import {MetaElement} from '../../components/meta-element/meta-element';
 import {setCurrentStep} from '../../slices/stepper-slice';
 import {FormHeaderComponent} from '../../components/form/form-header-component';
-import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
-import {ProcessEntity} from '../../modules/process/entities/process-entity';
-import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import type {
+    PublicFormNodeDTO,
+    PublicFormProcessDTO,
+    PublicFormVersionDTO,
+} from '../../modules/forms/dtos/public-form-response-dto';
 import {HelpDialog, HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
@@ -82,9 +83,9 @@ import type {CustomerShellOutletContext} from '../../shells/customer/customer-sh
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
-    node: ProcessNodeEntity;
-    process: ProcessEntity;
-    version: ProcessVersionEntity;
+    node: PublicFormNodeDTO;
+    process: PublicFormProcessDTO;
+    version: PublicFormVersionDTO;
     identitySlots: IdentitySlot[];
 }
 
@@ -197,9 +198,7 @@ export function CustomerFormPage() {
         process,
         version,
     } = data ?? {};
-    const configuredFormSlug = node == null
-        ? undefined
-        : getLiteralElementValue<string>(node.configuration, 'formSlug');
+    const configuredFormSlug = node?.formSlug ?? undefined;
 
     useEffect(() => {
         if (process == null || node == null || version == null || configuredFormSlug == null) {
@@ -410,8 +409,6 @@ export function CustomerFormPage() {
                 >
                     <FormHeaderComponent
                         form={layoutElement}
-                        node={node}
-                        process={process}
                         version={version}
                         logoUrl={formLogoUrl}
                         logoUrlDark={formLogoUrlDark}
@@ -523,16 +520,14 @@ export function CustomerFormPage() {
                             startedProcessAccessKey={startedProcessAccessInfo.processInstanceAccessKey}
                             paymentRequired={startedProcessAccessInfo.paymentRequired}
                             formElement={layoutElement}
-                            node={node}
-                            process={process}
-                            version={version}
+                            processSlug={process.slug}
+                            formSlug={configuredFormSlug ?? null}
+                            processVersion={version.processVersion}
                         />
                     }
 
                     <RootComponentFooter
                         form={layoutElement}
-                        node={node}
-                        process={process}
                         version={version}
                         logoUrl={formLogoUrl}
                         logoUrlDark={formLogoUrlDark}
