@@ -37,6 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -85,6 +86,22 @@ class KubernetesProbesWebMvcTest {
         mockMvc.perform(get("/api/actuator/health/" + probe))
                 .andExpect(status().isOk())
                 .andExpect(content().json("{\"status\":\"UP\"}", JsonCompareMode.STRICT))
+                .andExpect(header().doesNotExist(RedisCsrfTokenRepository.HEADER_NAME))
+                .andExpect(cookie().doesNotExist(RedisCsrfTokenRepository.COOKIE_NAME));
+
+        verifyNoInteractions(redis);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/api/actuator/health",
+            "/api/actuator/health/liveness",
+            "/api/actuator/health/readiness"
+    })
+    void anonymousHeadHealthCheckShouldSucceedWithoutAccessingRedis(String path) throws Exception {
+        // The app container waits for the API with a HEAD request to the health endpoint.
+        mockMvc.perform(head(path))
+                .andExpect(status().isOk())
                 .andExpect(header().doesNotExist(RedisCsrfTokenRepository.HEADER_NAME))
                 .andExpect(cookie().doesNotExist(RedisCsrfTokenRepository.COOKIE_NAME));
 
