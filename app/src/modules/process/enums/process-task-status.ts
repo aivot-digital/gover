@@ -16,7 +16,7 @@ export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
     [ProcessTaskStatus.Running]: 'Gestartet',
     [ProcessTaskStatus.Paused]: 'Pausiert',
     [ProcessTaskStatus.AwaitingPayment]: 'Wartet auf Zahlungsbestätigung',
-    [ProcessTaskStatus.AwaitingCustomer]: 'Wartet auf Nutzer:in',
+    [ProcessTaskStatus.AwaitingCustomer]: 'Wartet auf Rückmeldung',
     [ProcessTaskStatus.Completed]: 'Abgeschlossen',
     [ProcessTaskStatus.Aborted]: 'Abgebrochen',
     [ProcessTaskStatus.Failed]: 'Fehlgeschlagen',
