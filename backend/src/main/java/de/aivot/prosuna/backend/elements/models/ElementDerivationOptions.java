@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.elements.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -18,6 +19,12 @@ public class ElementDerivationOptions {
     private List<String> skipOverridesForElementIds = new LinkedList<>();
     @Nonnull
     private List<String> skipValuesForElementIds = new LinkedList<>();
+    /**
+     * Ignores values sent for disabled and technical inputs, which customers cannot fill. Set only on the server for
+     * input from customers, never from request data, so a client cannot switch it off.
+     */
+    @JsonIgnore
+    private boolean ignoreAuthoredValuesOfNonEditableInputs = false;
 
     // region copy
 
@@ -47,6 +54,8 @@ public class ElementDerivationOptions {
         } else {
             copy.skipValuesForElementIds.addAll(skipValuesForElementIds);
         }
+
+        copy.ignoreAuthoredValuesOfNonEditableInputs = ignoreAuthoredValuesOfNonEditableInputs;
 
         return copy;
     }
@@ -137,6 +146,17 @@ public class ElementDerivationOptions {
 
     public ElementDerivationOptions setSkipValuesForElementIds(@Nullable List<String> skipValuesForElementIds) {
         this.skipValuesForElementIds = Objects.requireNonNullElseGet(skipValuesForElementIds, LinkedList::new);
+        return this;
+    }
+
+    @JsonIgnore
+    public boolean isIgnoreAuthoredValuesOfNonEditableInputs() {
+        return ignoreAuthoredValuesOfNonEditableInputs;
+    }
+
+    @JsonIgnore
+    public ElementDerivationOptions setIgnoreAuthoredValuesOfNonEditableInputs(boolean ignoreAuthoredValuesOfNonEditableInputs) {
+        this.ignoreAuthoredValuesOfNonEditableInputs = ignoreAuthoredValuesOfNonEditableInputs;
         return this;
     }
 }

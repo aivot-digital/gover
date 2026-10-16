@@ -29,6 +29,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
@@ -43,6 +44,19 @@ public class SecurityConfiguration {
                     PathPatternRequestMatcher.withDefaults().matcher("/api/public/**"),
                     PathPatternRequestMatcher.withDefaults().matcher("/api/actuator/**")
             ))
+    );
+
+    /**
+     * Anonymous health checks: the overall status and the Kubernetes probes. HEAD is allowed as well as GET, because the
+     * app container waits for the API with HEAD requests and external monitors may use them too.
+     */
+    static final RequestMatcher HEALTH_CHECK_REQUESTS = new OrRequestMatcher(
+            Stream.of("/api/actuator/health", "/api/actuator/health/liveness", "/api/actuator/health/readiness")
+                    .flatMap(path -> Stream.<RequestMatcher>of(
+                            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.GET, path),
+                            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.HEAD, path)
+                    ))
+                    .toList()
     );
 
     private final RedisCsrfTokenRepository csrfTokenRepository;
@@ -79,12 +93,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                         requests -> requests
                                 .requestMatchers("/api/public/**").permitAll()
-                                .requestMatchers(
-                                        HttpMethod.GET,
-                                        "/api/actuator/health",
-                                        "/api/actuator/health/liveness",
-                                        "/api/actuator/health/readiness"
-                                ).permitAll()
+                                .requestMatchers(HEALTH_CHECK_REQUESTS).permitAll()
                                 .requestMatchers("/api/auth/login").permitAll()
                                 .requestMatchers("/api/auth/refresh").permitAll()
                                 .requestMatchers("/api/auth/logout").permitAll()
