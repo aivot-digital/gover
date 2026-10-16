@@ -225,9 +225,10 @@ services:
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
       CHROMIUM_DENY_PUBLIC_IPS: "true"
-      # Required: PROSUNA_HOSTNAME_REGEX is the hostname without scheme, with dots escaped
-      # for a regular expression, for example prosuna\\.example\\.org.
-      CHROMIUM_ALLOW_LIST: "^(https://${PROSUNA_HOSTNAME_REGEX}/|file:///tmp/)"
+      # Required: PROSUNA_HOSTNAME_REGEX is the hostname without scheme, with each dot
+      # escaped by a single backslash, for example prosuna\.example\.org. Gotenberg also
+      # checks each HTTPS connection as https://<host>:443, hence the optional port.
+      CHROMIUM_ALLOW_LIST: "^(https://${PROSUNA_HOSTNAME_REGEX}(:443)?(/|$$)|file:///tmp/)"
     networks:
       - prosuna
 
