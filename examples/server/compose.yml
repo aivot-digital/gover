@@ -124,7 +124,7 @@ services:
   # Production Keycloak identity provider. Caddy terminates HTTPS, so Keycloak listens
   # internally over HTTP and trusts the forwarded proxy headers.
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.7.4.0
     restart: unless-stopped
     depends_on:
       - keycloak_database
@@ -154,7 +154,7 @@ services:
   # Waits for Keycloak, then creates the required realms, clients, and managed admin.
   # It exits after successful configuration and restarts only when setup fails.
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.28
     restart: on-failure
     depends_on:
       - keycloak
