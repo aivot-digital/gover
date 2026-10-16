@@ -132,6 +132,8 @@ management:
 
   endpoint:
     health:
+      probes:
+        enabled: true
       access: read_only
       show-details: when_authorized
 
