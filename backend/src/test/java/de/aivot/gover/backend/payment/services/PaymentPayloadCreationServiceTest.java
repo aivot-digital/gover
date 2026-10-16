@@ -159,7 +159,19 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
         assertNull(requestor.getOrganizationName());
-        assertNotNull(requestor.getAddress());
+        assertNull(requestor.getAddress());
+    }
+
+    @Test
+    void shouldNotAddAnEmptyAddressWhenOnlyTheFirstNameIsMapped() throws PaymentException {
+        var request = createService().createRequest(requestorConfig(new PaymentConfigElementValueRequestorMapping(
+                PaymentConfigElementValueRequestorMapping.RequestorSourceType.FixPerson,
+                null, "firstName", null, null, null, null, null, null, null, null, null
+        )), null, new ProcessExecutionData().addProcessData("firstName", "Ada")).orElseThrow();
+
+        assertEquals("Ada", request.getRequestor().getFirstName());
+        assertNull(request.getRequestor().getName());
+        assertNull(request.getRequestor().getAddress());
     }
 
     @Test
@@ -218,7 +230,7 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getName());
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
-        assertNotNull(requestor.getAddress());
+        assertNull(requestor.getAddress());
     }
 
     @Test
@@ -282,7 +294,7 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
         assertNull(requestor.getOrganizationName());
-        assertNotNull(requestor.getAddress());
+        assertNull(requestor.getAddress());
     }
 
     @Test
