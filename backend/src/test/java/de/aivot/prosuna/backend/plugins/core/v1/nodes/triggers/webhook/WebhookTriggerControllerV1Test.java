@@ -37,6 +37,8 @@ import org.springframework.web.multipart.support.StandardMultipartHttpServletReq
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -296,6 +298,90 @@ class WebhookTriggerControllerV1Test {
         verify(fixture.processInstanceService()).update(any(Long.class), any(ProcessInstanceEntity.class));
     }
 
+    @Test
+    void handleWithoutBodyShouldRejectCallsWhenRequiredAuthenticationHasNoMethod() throws ResponseException {
+        for (var authConfig : Arrays.asList(null, new WebhookTriggerConfigV1.WebhookConfigAuth())) {
+            var fixture = createControllerFixture(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_GET, null);
+            fixture.config().authRequired = true;
+            fixture.config().authConfig = authConfig;
+
+            var exception = assertThrows(
+                    ResponseException.class,
+                    () -> fixture.controller().handleWithoutBody(getRequest(), PROCESS_SLUG, "example-slug", null, null, null)
+            );
+
+            assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+            verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
+        }
+    }
+
+    @Test
+    void handleWithoutBodyShouldRejectEmptyCredentialsOfIncompleteAuthentication() throws ResponseException {
+        var basicFixture = createControllerFixture(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_GET, null);
+        basicFixture.config().authRequired = true;
+        basicFixture.config().authConfig = authConfig(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC);
+        basicFixture.config().authConfig.authUsername = "";
+        basicFixture.config().authConfig.authPassword = "";
+        var emptyBasicCredentials = "Basic " + Base64.getEncoder().encodeToString(":".getBytes(StandardCharsets.UTF_8));
+
+        var basicException = assertThrows(
+                ResponseException.class,
+                () -> basicFixture.controller().handleWithoutBody(getRequest(), PROCESS_SLUG, "example-slug", null, null, emptyBasicCredentials)
+        );
+
+        var tokenFixture = createControllerFixture(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_GET, null);
+        tokenFixture.config().authRequired = true;
+        tokenFixture.config().authConfig = authConfig(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM);
+        tokenFixture.config().authConfig.authToken = "";
+
+        var tokenException = assertThrows(
+                ResponseException.class,
+                () -> tokenFixture.controller().handleWithoutBody(getRequest(), PROCESS_SLUG, "example-slug", null, "", null)
+        );
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, basicException.getStatus());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, tokenException.getStatus());
+        verify(basicFixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
+        verify(tokenFixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
+    }
+
+    @Test
+    void handleWithoutBodyShouldCheckTheTokenOfCompleteAuthentication() throws ResponseException {
+        var fixture = createControllerFixture(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_GET, null);
+        fixture.config().authRequired = true;
+        fixture.config().authConfig = authConfig(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM);
+        fixture.config().authConfig.authToken = "secret";
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> fixture.controller().handleWithoutBody(getRequest(), PROCESS_SLUG, "example-slug", null, "wrong", null)
+        );
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
+
+        var response = fixture.controller().handleWithoutBody(getRequest(), PROCESS_SLUG, "example-slug", null, "secret", null);
+
+        assertEquals("Webhook empfangen und verarbeitet.", response.message());
+        verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
+    }
+
+    private static HttpServletRequest getRequest() {
+        var request = mock(HttpServletRequest.class);
+        when(request.getMethod()).thenReturn(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_GET);
+        when(request.getContentType()).thenReturn(null);
+        when(request.getContentLengthLong()).thenReturn(0L);
+        when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+        when(request.getHeader("Transfer-Encoding")).thenReturn(null);
+        when(request.getParameterMap()).thenReturn(Map.of());
+        return request;
+    }
+
+    private static WebhookTriggerConfigV1.WebhookConfigAuth authConfig(String authMethod) {
+        var authConfig = new WebhookTriggerConfigV1.WebhookConfigAuth();
+        authConfig.authMethod = authMethod;
+        return authConfig;
+    }
+
     private static TestControllerFixture createControllerFixture(String requestMethod,
                                                                  String requestBodyType) throws ResponseException {
         var process = new ProcessEntity()
@@ -383,10 +469,11 @@ class WebhookTriggerControllerV1Test {
                 processNodeDefinitionService
         );
 
-        return new TestControllerFixture(controller, processInstanceService, createdAttachments, createdAttachmentSets);
+        return new TestControllerFixture(controller, webhookConfig, processInstanceService, createdAttachments, createdAttachmentSets);
     }
 
     private record TestControllerFixture(WebhookTriggerControllerV1 controller,
+                                         WebhookTriggerConfigV1 config,
                                          ProcessInstanceService processInstanceService,
                                          List<ProcessInstanceAttachmentEntity> createdAttachments,
                                          List<ProcessInstanceAttachmentSetEntity> createdAttachmentSets) {
