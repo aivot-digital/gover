@@ -9,7 +9,6 @@ import {BaseApiService} from '../../services/base-api-service';
 import {CustomerInputService} from '../../services/customer-input-service';
 import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
 import {ElementType} from '../../data/element-type/element-type';
-import {ProcessStatus} from '../../modules/process/enums/process-status';
 import {literalAuthoredValue} from '../../models/element-data';
 import {createDerivedRuntimeElementData} from '../../models/element-data';
 import {IdentityProviderType} from '../../modules/identity/enums/identity-provider-type';
@@ -960,24 +959,23 @@ function createRetrieveResponse(
         identitySlots,
         layoutElement,
         node: {
-            configuration: {
-                formSlug: literalAuthoredValue('test-form'),
-            },
             id: 1,
-            name: 'Formulareingang',
-            processId: 10,
-            processVersion: 1,
+            formSlug: 'test-form',
         },
         process: {
-            id: 10,
-            internalTitle: 'Testprozess',
             slug: 'test-process',
         },
         version: {
-            processId: 10,
             processVersion: 1,
-            status: ProcessStatus.Published,
-            themeId: null,
+            publicTitle: 'Testformular',
+            updated: '2026-09-14T10:00:00Z',
+            legalSupportDepartmentId: null,
+            technicalSupportDepartmentId: null,
+            imprintDepartmentId: null,
+            privacyDepartmentId: null,
+            accessibilityDepartmentId: null,
+            processSpecificPrivacyStatement: null,
+            processSpecificAccessibilityStatement: null,
         },
     };
 }

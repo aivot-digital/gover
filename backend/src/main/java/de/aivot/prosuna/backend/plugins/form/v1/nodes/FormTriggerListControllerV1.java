@@ -211,11 +211,26 @@ public class FormTriggerListControllerV1 {
 
         var items = new ArrayList<FormListItem>(nodes.getNumberOfElements());
 
+        // The public index only returns what the list of forms shows. The node configuration contains the unfiltered form
+        // layout, function code and internal notes of the process.
         for (var node : nodes.getContent()) {
             var process = retrieveProcess(node, processCache);
             var version = retrieveProcessVersion(node, processVersionCache);
+            var formSlug = StringUtils.toNullableTrimmedString(
+                    node.getConfiguration().getLiteral(FormTriggerConfigV1.FORM_SLUG)
+            );
+            var formLayout = resolveFormLayout(node);
+            var formTitle = formLayout != null && StringUtils.isNotNullOrEmpty(formLayout.getPublicTitle())
+                    ? formLayout.getPublicTitle().trim()
+                    : version.getPublicTitle();
 
-            items.add(new FormListItem(process, version, node));
+            items.add(new FormListItem(
+                    process.getSlug(),
+                    formSlug,
+                    version.getProcessVersion(),
+                    formTitle,
+                    version.getUpdated()
+            ));
         }
 
         return new PageImpl<>(items, nodes.getPageable(), nodes.getTotalElements());
@@ -274,13 +289,11 @@ public class FormTriggerListControllerV1 {
     }
 
     public record FormListItem(
-            @Nonnull
-            ProcessEntity process,
-            @Nonnull
-            ProcessVersionEntity version,
-            @Nonnull
-            ProcessNodeEntity node
+            @Nonnull String processSlug,
+            @Nullable String formSlug,
+            int processVersion,
+            @Nonnull String formTitle,
+            @Nonnull Instant updated
     ) {
-
     }
 }

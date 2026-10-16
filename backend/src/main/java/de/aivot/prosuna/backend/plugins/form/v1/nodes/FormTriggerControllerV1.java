@@ -215,11 +215,14 @@ public class FormTriggerControllerV1 {
             }
         });
 
+        // Only return what the customer form needs. The node configuration in particular contains the unfiltered form
+        // layout, including the steps hidden above until the required identity is present, function code and internal
+        // notes of the process.
         return new RetrieveResponse(
                 formLayout,
-                node,
-                process,
-                processVersion,
+                new PublicFormNode(node.getId(), config.configuration().formSlug),
+                new PublicFormProcess(process.getSlug()),
+                PublicFormVersion.of(processVersion),
                 identitySlots
         );
     }
@@ -345,14 +348,67 @@ public class FormTriggerControllerV1 {
             @Nonnull
             FormLayoutElement layoutElement,
             @Nonnull
-            ProcessNodeEntity node,
+            PublicFormNode node,
             @Nonnull
-            ProcessEntity process,
+            PublicFormProcess process,
             @Nonnull
-            ProcessVersionEntity version,
+            PublicFormVersion version,
             @Nonnull
             List<IdentitySlotResponseDTO> identitySlots
     ) {
+    }
+
+    public record PublicFormNode(
+            @Nonnull
+            Integer id,
+            @Nullable
+            String formSlug
+    ) {
+    }
+
+    public record PublicFormProcess(
+            @Nonnull
+            String slug
+    ) {
+    }
+
+    public record PublicFormVersion(
+            @Nonnull
+            Integer processVersion,
+            @Nonnull
+            String publicTitle,
+            @Nonnull
+            Instant updated,
+            @Nullable
+            Integer legalSupportDepartmentId,
+            @Nullable
+            Integer technicalSupportDepartmentId,
+            @Nullable
+            Integer imprintDepartmentId,
+            @Nullable
+            Integer privacyDepartmentId,
+            @Nullable
+            Integer accessibilityDepartmentId,
+            @Nullable
+            String processSpecificPrivacyStatement,
+            @Nullable
+            String processSpecificAccessibilityStatement
+    ) {
+        @Nonnull
+        public static PublicFormVersion of(@Nonnull ProcessVersionEntity version) {
+            return new PublicFormVersion(
+                    version.getProcessVersion(),
+                    version.getPublicTitle(),
+                    version.getUpdated(),
+                    version.getLegalSupportDepartmentId(),
+                    version.getTechnicalSupportDepartmentId(),
+                    version.getImprintDepartmentId(),
+                    version.getPrivacyDepartmentId(),
+                    version.getAccessibilityDepartmentId(),
+                    version.getProcessSpecificPrivacyStatement(),
+                    version.getProcessSpecificAccessibilityStatement()
+            );
+        }
     }
 
     @Nonnull
