@@ -38,6 +38,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -282,6 +283,16 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
             );
         }
 
+        // The hash only proves that GiroCheckout signed the result, not for which transaction. GiroCheckout appends the
+        // signed result to the redirect URL of the payer, so the result of one transaction must not settle another.
+        if (!isResultOfTransaction(callbackResponse, paymentTransaction)) {
+            throw new PaymentException(
+                    "Callback response for provider %s (%s) does not belong to the payment transaction",
+                    paymentProviderEntity.getName(),
+                    paymentProviderEntity.getKey()
+            );
+        }
+
         var updatedPaymentInformation = callbackResponse.toXBezahldienstePaymentInformation(paymentTransaction.getPaymentInformation());
 
         paymentTransaction.setPaymentInformation(updatedPaymentInformation);
@@ -289,6 +300,24 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         return paymentTransaction;
     }
 
+
+    private static boolean isResultOfTransaction(@Nonnull GiroPayCallbackResponse callbackResponse,
+                                                 @Nonnull XBezahldienstePaymentTransaction paymentTransaction) {
+        var paymentRequest = paymentTransaction.getPaymentRequest();
+        var paymentInformation = paymentTransaction.getPaymentInformation();
+        if (paymentRequest == null
+                || paymentInformation == null
+                || paymentRequest.getGrosAmount() == null
+                || callbackResponse.getGcMerchantTxId() == null
+                || callbackResponse.getGcReference() == null) {
+            return false;
+        }
+
+        return callbackResponse.getGcMerchantTxId().equals(paymentRequest.getRequestId())
+                && callbackResponse.getGcReference().equals(paymentInformation.getTransactionId())
+                && callbackResponse.getGcAmount() == GiroPayPaymentRequest.toCents(paymentRequest.getGrosAmount())
+                && Objects.equals(callbackResponse.getGcCurrency(), paymentRequest.getCurrency());
+    }
 
     @Nonnull
     private String getPasswordSecret(

@@ -73,6 +73,60 @@ describe('RichTextInputComponent', () => {
         expect(onInsertVariable).toHaveBeenCalledOnce();
     });
 
+    it.each([
+        ['editable', {}],
+        ['disabled', {disabled: true}],
+    ])('renders stored HTML as literal text when %s', async (_, stateProps) => {
+        const {container} = render(
+            <RichTextInputComponent
+                label="Supporthinweis"
+                value={[
+                    'Bitte wenden Sie sich an den Support.',
+                    '',
+                    '<script src="https://example.invalid/payload.js"></script>',
+                    '',
+                    '<iframe src="javascript:alert(1)"></iframe>',
+                    '',
+                    '<details open ontoggle="alert(1)">Details</details>',
+                    '',
+                    'Text mit <span onclick="alert(1)">Inline-HTML</span>',
+                ].join('\n')}
+                onChange={vi.fn()}
+                reducedMode
+                {...stateProps}
+            />,
+        );
+
+        const editor = await screen.findByRole('textbox', {name: 'Supporthinweis – optional'});
+        await waitFor(() => {
+            expect(editor).toHaveTextContent('Bitte wenden Sie sich an den Support.');
+        });
+        expect(container.querySelector('script, iframe, details, [onclick], [ontoggle]')).toBeNull();
+        expect(editor).toHaveTextContent('<script src="https://example.invalid/payload.js"></script>');
+        expect(editor).toHaveTextContent('<iframe src="javascript:alert(1)"></iframe>');
+        expect(editor).toHaveTextContent('<details open ontoggle="alert(1)">Details</details>');
+        expect(editor).toHaveTextContent('Text mit <span onclick="alert(1)">Inline-HTML</span>');
+    });
+
+    it('keeps formatting tags and reads indented lines as paragraphs', async () => {
+        render(
+            <RichTextInputComponent
+                label="Supporthinweis"
+                value={'Ein <u>unterstrichenes</u> Wort\n\n    Eingerückter Absatz'}
+                onChange={vi.fn()}
+                reducedMode
+            />,
+        );
+
+        const editor = await screen.findByRole('textbox', {name: 'Supporthinweis – optional'});
+        await waitFor(() => {
+            expect(editor).toHaveTextContent('Ein unterstrichenes Wort');
+        });
+        expect(editor).toHaveTextContent('Eingerückter Absatz');
+        expect(editor).not.toHaveTextContent('<u>');
+        expect(editor.querySelector('pre, code')).toBeNull();
+    });
+
     it('inserts a variable reference through the shared dynamic-text contract', async () => {
         const ref = createRef<RichTextInputComponentMethods>();
         const {container} = render(
