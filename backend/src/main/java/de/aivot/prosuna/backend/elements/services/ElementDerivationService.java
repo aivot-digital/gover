@@ -44,11 +44,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.type.TypeReference;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Centralizes runtime derivation for form elements so the rest of the system can work with one consistent interpretation of a form definition.
@@ -372,6 +374,7 @@ public class ElementDerivationService {
                 // Test if the child data is a list of child data sets.
                 if (rawEffectiveChildDataSetList instanceof List<?> effectiveChildDataSetList) {
                     var effectiveRows = new LinkedList<EffectiveReplicatingContainerLayoutElementValue>();
+                    var claimedTrustedRowIds = new HashSet<String>();
                     // Iterate through the list of all child data sets.
                     for (var itemIndex = 0; itemIndex < effectiveChildDataSetList.size(); itemIndex++) {
                         var rawEffectiveChildDataSet = effectiveChildDataSetList.get(itemIndex);
@@ -395,7 +398,8 @@ public class ElementDerivationService {
                                         .copyForUseInChild(replicatingContainer.getId())
                                         .setTrustedAuthoredValues(findTrustedRowValues(
                                                 childOptions.getTrustedAuthoredValues().getLiteral(replicatingContainer.getId()),
-                                                effectiveChildDataSet.getId()
+                                                effectiveChildDataSet.getId(),
+                                                claimedTrustedRowIds
                                         ));
                             }
 
@@ -715,11 +719,14 @@ public class ElementDerivationService {
     /**
      * Finds the trusted values of a replicating container row by its ID, so they stay with their row when the customer
      * removes or reorders rows. A row without a trusted counterpart, for example one the customer added, gets none.
+     * Only the first row with an ID gets its trusted values. The browser never sends a row ID twice, so later rows with
+     * the same ID are copies made to repeat protected values, such as an approved amount, and are treated as added rows.
      */
     @Nonnull
     private static AuthoredElementValues findTrustedRowValues(@Nullable Object trustedRows,
-                                                              @Nullable String rowId) {
-        if (rowId != null && trustedRows instanceof List<?> rows) {
+                                                              @Nullable String rowId,
+                                                              @Nonnull Set<String> claimedRowIds) {
+        if (rowId != null && trustedRows instanceof List<?> rows && claimedRowIds.add(rowId)) {
             for (var row : rows) {
                 if (row instanceof ReplicatingContainerLayoutElementValue trustedRow
                         && rowId.equals(trustedRow.getId())

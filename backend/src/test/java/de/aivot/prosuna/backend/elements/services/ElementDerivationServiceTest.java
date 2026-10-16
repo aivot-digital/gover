@@ -912,6 +912,45 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldGiveTrustedRowValuesOnlyToTheFirstRowWithTheRowId() {
+        var amount = new TextInputElement();
+        amount.setId("amount");
+        amount.setDisabled(true);
+        var note = new TextInputElement();
+        note.setId("note");
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(List.of(amount, note));
+        var trustedValues = new AuthoredElementValues();
+        trustedValues.putLiteral("rows", List.of(
+                rowValue("row-1", "amount", "100"),
+                rowValue("row-2", "amount", "5")
+        ));
+        // The customer sent the ID of the first row for the second row to repeat its amount.
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("rows", List.of(
+                rowValue("row-1", "amount", "100", "note", "A"),
+                rowValue("row-1", "amount", "100", "note", "B")
+        ));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                        .setTrustedAuthoredValues(trustedValues)
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var firstRow = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, effectiveRows.get(0));
+        assertEquals("100", firstRow.getValues().get("amount"));
+        assertEquals("A", firstRow.getValues().get("note"));
+        var copiedRow = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, effectiveRows.get(1));
+        assertNull(copiedRow.getValues().get("amount"));
+        assertEquals("B", copiedRow.getValues().get("note"));
+    }
+
+    @Test
     void shouldNotReadCustomerInputProtectionFromJson() throws Exception {
         var options = JsonMapperTestUtils.createMapper().readValue(
                 "{\"ignoreAuthoredValuesOfNonEditableInputs\":true,\"trustedAuthoredValues\":{}}",
