@@ -25,6 +25,14 @@ public class ElementDerivationOptions {
      */
     @JsonIgnore
     private boolean ignoreAuthoredValuesOfNonEditableInputs = false;
+    /**
+     * Values from stable server sources that disabled and technical inputs take instead of the ignored values, for
+     * example the process data a customer task is prefilled with. Without them, those inputs get their computed value
+     * or none. Set only on the server.
+     */
+    @JsonIgnore
+    @Nullable
+    private AuthoredElementValues trustedAuthoredValues;
 
     // region copy
 
@@ -56,6 +64,7 @@ public class ElementDerivationOptions {
         }
 
         copy.ignoreAuthoredValuesOfNonEditableInputs = ignoreAuthoredValuesOfNonEditableInputs;
+        copy.trustedAuthoredValues = trustedAuthoredValues;
 
         return copy;
     }
@@ -157,6 +166,18 @@ public class ElementDerivationOptions {
     @JsonIgnore
     public ElementDerivationOptions setIgnoreAuthoredValuesOfNonEditableInputs(boolean ignoreAuthoredValuesOfNonEditableInputs) {
         this.ignoreAuthoredValuesOfNonEditableInputs = ignoreAuthoredValuesOfNonEditableInputs;
+        return this;
+    }
+
+    @JsonIgnore
+    @Nullable
+    public AuthoredElementValues getTrustedAuthoredValues() {
+        return trustedAuthoredValues;
+    }
+
+    @JsonIgnore
+    public ElementDerivationOptions setTrustedAuthoredValues(@Nullable AuthoredElementValues trustedAuthoredValues) {
+        this.trustedAuthoredValues = trustedAuthoredValues;
         return this;
     }
 }

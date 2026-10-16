@@ -564,11 +564,14 @@ public class CustomerProcessInstanceTaskViewController {
                 null
         ).inputs();
 
+        // Disabled and technical inputs keep the values the server prefilled, whatever the customer sends for them.
         var derivedElementData = elementDerivationService.derive(
                 new ElementDerivationRequest(
                         layout,
                         inputs,
                         new ElementDerivationOptions()
+                                .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                                .setTrustedAuthoredValues(customerView.trustedData())
                 )
         );
 
@@ -746,7 +749,9 @@ public class CustomerProcessInstanceTaskViewController {
                 customerTaskView.layout(),
                 authoredElementValues,
                 new ElementDerivationOptions()
-                        .setSkipErrorsForElementIds(skipErrorsFor),
+                        .setSkipErrorsForElementIds(skipErrorsFor)
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                        .setTrustedAuthoredValues(customerTaskView.trustedData()),
                 taskViewData.processExecutionData()
         );
 
