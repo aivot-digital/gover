@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.models;
 
+import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 
 import java.time.Instant;
@@ -16,7 +17,11 @@ public record ProcessTaskDeadlineExceededData(
 
     @Nonnull
     public Map<String, Object> toMap() {
-        return Map.of("deadlineKey", deadlineKey, "label", label,
-                "deadline", deadline.toString(), "processedAt", processedAt.toString());
+        return Map.of(
+                "deadlineKey", deadlineKey,
+                "label", label,
+                "deadline", deadline.toString(),
+                "processedAt", IsoTimestampUtils.toOffsetString(processedAt)
+        );
     }
 }
