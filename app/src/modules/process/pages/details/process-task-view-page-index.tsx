@@ -23,6 +23,7 @@ import {
     getProcessTaskName,
     getProcessTaskNodeIcon,
     getProcessTaskProcessPath,
+    PROCESS_TASK_NOT_EDITABLE_MESSAGE,
     type ProcessTaskDetailsPageItem,
 } from './process-task-view-page';
 import Inbox from '@aivot/mui-material-symbols-400-n25-outlined/Inbox';
@@ -40,12 +41,13 @@ import {
     renderProcessLabel,
 } from '../../components/process-detail-values';
 
-import {ProcessTaskStatus} from '../../enums/process-task-status';
+import {isProcessTaskEditableByStaff, ProcessTaskStatus} from '../../enums/process-task-status';
 import {ProcessInstanceDeadlineValue} from '../../components/process-instance-deadline-value';
 import {getProcessTaskStatusDisplay} from '../../utils/process-task-status-label';
 import {type IdentityDataMap} from '../../../identity/models/identity-data';
 import {useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 function getExternalAssigneeLabel(identityId: string, identities?: IdentityDataMap): ReactNode {
     const identity = Object.values(identities ?? {}).find((value) => value.identityId === identityId);
@@ -224,6 +226,8 @@ export function ProcessTaskViewPageIndex(): ReactNode {
 
     if (item == null) return <GenericDetailsSkeleton />;
 
+    const canEditTask = isProcessTaskEditableByStaff(item.task.status);
+
     return (
         <Box
             sx={{
@@ -300,14 +304,20 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                         flexWrap: 'wrap',
                     }}
                 >
-                    <Button
-                        component={RouterLink}
-                        to={getProcessTaskEditPath(item.task.processInstanceId, item.task.id)}
-                        variant="contained"
-                        startIcon={<EditOutlinedIcon />}
+                    <DisabledTooltip
+                        disabled={!canEditTask}
+                        title={PROCESS_TASK_NOT_EDITABLE_MESSAGE}
                     >
-                        Aufgabe bearbeiten
-                    </Button>
+                        <Button
+                            component={RouterLink}
+                            to={getProcessTaskEditPath(item.task.processInstanceId, item.task.id)}
+                            variant="contained"
+                            startIcon={<EditOutlinedIcon />}
+                            disabled={!canEditTask}
+                        >
+                            Aufgabe bearbeiten
+                        </Button>
+                    </DisabledTooltip>
 
                     <Tooltip
                         title="Diese Funktion ist noch nicht verfügbar."
