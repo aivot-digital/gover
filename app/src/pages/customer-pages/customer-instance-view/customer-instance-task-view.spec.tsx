@@ -460,7 +460,7 @@ describe('CustomerInstanceTaskView', () => {
     it('shows validation errors in the form and in a snackbar', async () => {
         vi.mocked(ProcessInstanceTaskApiService.prototype.putCustomerTaskView).mockRejectedValue({
             status: 400,
-            message: 'Bitte prüfen Sie Ihre Eingaben.',
+            message: 'Bitte prüfen Sie Ihre Angaben und korrigieren Sie die angezeigten Fehler.',
             displayableToUser: true,
             details: {
                 effectiveValues: {},
@@ -477,7 +477,7 @@ describe('CustomerInstanceTaskView', () => {
         await user.click(await screen.findByRole('button', {name: 'Daten einreichen'}));
 
         expect(await screen.findByTestId('computed-errors')).toHaveTextContent('Dieses Feld ist erforderlich.');
-        expectSnackbar('Bitte prüfen Sie Ihre Eingaben.');
+        expectSnackbar('Bitte prüfen Sie Ihre Angaben und korrigieren Sie die angezeigten Fehler.');
         expectActionTypeNotDispatched('shell/setErrorMessage');
         expect(mocks.refreshInstanceStatus).not.toHaveBeenCalled();
     });

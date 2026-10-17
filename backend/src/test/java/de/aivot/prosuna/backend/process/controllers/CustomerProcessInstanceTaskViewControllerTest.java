@@ -95,6 +95,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -822,6 +823,35 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void update_RejectsInvalidInputsWithHelpfulMessageAndFieldErrors() {
+        var normalizedInputs = new AuthoredElementValues().putLiteral("field", "");
+        var effectiveValues = effective("field", "");
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null);
+        var resultHandler = mock(ProcessNodeExecutionResultHandler.class);
+        var fixture = createFixture(provider, normalizedInputs, effectiveValues, resultHandler);
+        var elementStates = fixture.elementDerivationService().elementStates;
+        elementStates.put("field", new ComputedElementState().setError("Dieses Feld ist erforderlich."));
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "{}",
+                null,
+                null,
+                "inline-submit",
+                null,
+                null,
+                new MockHttpServletResponse()
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Bitte prüfen Sie Ihre Angaben und korrigieren Sie die angezeigten Fehler.", exception.getMessage());
+        assertEquals(new DerivedRuntimeElementData(effectiveValues, elementStates), exception.getDetails());
+        assertNull(provider.eventInvokedWith);
+        verifyNoInteractions(resultHandler);
+    }
+
+    @Test
     void update_WithInlineCustomerTaskEventIsAccepted() throws ResponseException {
         var normalizedInputs = new AuthoredElementValues();
         normalizedInputs.putLiteral("field", "normalized");
@@ -1445,6 +1475,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class TestElementDerivationService extends ElementDerivationService {
         private final EffectiveElementValues effectiveValues;
+        private final ComputedElementStates elementStates = new ComputedElementStates();
         private final List<ElementDerivationRequest> requests = new LinkedList<>();
 
         private TestElementDerivationService(EffectiveElementValues effectiveValues) {
@@ -1455,7 +1486,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         @Override
         public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
             requests.add(request);
-            return new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates());
+            return new DerivedRuntimeElementData(effectiveValues, elementStates);
         }
     }
 
