@@ -30,7 +30,7 @@ describe('task status icon', () => {
 
     it('keeps the generic tooltip without an assigned identity', async () => {
         render(<ProcessInstanceTaskStatusIcon status={ProcessTaskStatus.AwaitingCustomer} />);
-        await userEvent.hover(screen.getByLabelText('Wartet auf Nutzer:in'));
-        expect(await screen.findByRole('tooltip')).toHaveTextContent('Wartet auf Nutzer:in');
+        await userEvent.hover(screen.getByLabelText('Wartet auf Rückmeldung'));
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Wartet auf Rückmeldung');
     });
 });

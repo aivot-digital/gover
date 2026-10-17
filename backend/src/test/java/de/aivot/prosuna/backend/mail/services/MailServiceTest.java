@@ -13,6 +13,9 @@ import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.mail.enums.MailTemplate;
 import de.aivot.prosuna.backend.mail.models.MailSendOptions;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.user.dtos.UserInitialCredentialsDTO;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -22,6 +25,8 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -39,8 +44,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class MailServiceTest {
-    @Test
-    void sendMailRendersStaffAccountCredentialsInTextAndHtml() throws Exception {
+    @ParameterizedTest
+    @EnumSource(value = MailTemplate.class, names = {"StaffAccountCredentials", "ProcessTaskAssigned", "ProcessInstanceAssigned"})
+    void sendMailRendersThemedStaffActionsInTextAndHtml(MailTemplate template) throws Exception {
         var prosunaConfig = new ProsunaConfig();
         prosunaConfig.setFromMail("noreply@example.org");
         prosunaConfig.setProsunaHostname("https://prosuna.example.org");
@@ -77,14 +83,25 @@ class MailServiceTest {
                 "Ab3&!xyz"
         ));
         context.put("loginUrl", "/staff");
+        context.put("processInstanceTask", new ProcessInstanceTaskEntity().setProcessVersion(1));
+        context.put("processInstance", new ProcessInstanceEntity().setCaseNumber("CASE-1"));
+        context.put("taskPath", "/staff");
+        context.put("instancePath", "/staff");
+        context.put("assignmentIntro", "Zuweisung");
+        context.put("taskName", "Prüfung");
+        context.put("startedLabel", "01.10.2026 10:00");
+        context.put("assignmentSource", "System");
+        context.put("changeSource", "System");
+        context.put("intro", "Zuweisung");
+        context.put("process", new ProcessEntity().setInternalTitle("Beispielprozess"));
 
         service.sendMail(
-                new ThemeEntity(),
+                new ThemeEntity().setPrimaryColor("#005ea8"),
                 "erika@example.org",
                 Optional.empty(),
                 Optional.empty(),
                 "[Prosuna] Ihre Zugangsdaten",
-                MailTemplate.StaffAccountCredentials,
+                template,
                 context,
                 Optional.empty()
         );
@@ -103,20 +120,25 @@ class MailServiceTest {
                 .findFirst()
                 .orElseThrow();
 
-        assertTrue(text.contains("Name: Erika & Max"));
-        assertTrue(text.contains("E-Mail-Adresse: erika@example.org"));
-        assertTrue(text.contains("Systemrolle: Sachbearbeitung <intern> & Vertretung"));
-        assertTrue(text.contains("Temporäres Passwort: Ab3&!xyz"));
-        assertTrue(text.contains("https://prosuna.example.org/staff"));
-        assertTrue(text.contains("ein neues Passwort vergeben"));
-        assertTrue(text.contains("Ihre E-Mail-Adresse bestätigen"));
-        assertTrue(html.contains("Erika &amp; Max"));
-        assertTrue(html.contains("erika@example.org"));
-        assertTrue(html.contains("Sachbearbeitung &lt;intern&gt; &amp; Vertretung"));
-        assertTrue(html.contains("Ab3&amp;!xyz"));
+        if (template == MailTemplate.StaffAccountCredentials) {
+            assertTrue(text.contains("Name: Erika & Max"));
+            assertTrue(text.contains("E-Mail-Adresse: erika@example.org"));
+            assertTrue(text.contains("Systemrolle: Sachbearbeitung <intern> & Vertretung"));
+            assertTrue(text.contains("Temporäres Passwort: Ab3&!xyz"));
+            assertTrue(text.contains("https://prosuna.example.org/staff"));
+            assertTrue(text.contains("ein neues Passwort vergeben"));
+            assertTrue(text.contains("Ihre E-Mail-Adresse bestätigen"));
+            assertTrue(html.contains("Erika &amp; Max"));
+            assertTrue(html.contains("erika@example.org"));
+            assertTrue(html.contains("Sachbearbeitung &lt;intern&gt; &amp; Vertretung"));
+            assertTrue(html.contains("Ab3&amp;!xyz"));
+            assertTrue(html.contains("ein neues Passwort vergeben"));
+            assertTrue(html.contains("Ihre E-Mail-Adresse"));
+        }
         assertTrue(html.contains("href=\"https://prosuna.example.org/staff\""));
-        assertTrue(html.contains("ein neues Passwort vergeben"));
-        assertTrue(html.contains("Ihre E-Mail-Adresse"));
+        assertTrue(html.contains("bgcolor=\"#005ea8\""));
+        assertTrue(html.contains("background:#005ea8"));
+        assertTrue(html.contains("color:#ffffff"));
         assertFalse(html.contains("th:text"));
         assertFalse(html.contains("th:href"));
     }

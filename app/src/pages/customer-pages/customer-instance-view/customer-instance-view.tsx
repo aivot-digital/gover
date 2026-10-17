@@ -1,5 +1,5 @@
 import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
-import {Box, ThemeProvider, useTheme} from '@mui/material';
+import {Typography, Box, ThemeProvider, useTheme} from '@mui/material';
 import {Outlet, useNavigate, useParams} from 'react-router-dom';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
@@ -277,8 +277,11 @@ export function CustomerInstanceView() {
 
 function NoTaskToDoPlaceholder() {
     return (
-        <Box>
-            Freuen Sie sich. Es gibt für Sie nichts zu tun!
+        <Box sx={{maxWidth: 800, mx: 'auto', px: {xs: 2, md: 4}, py: 4}}>
+            <Typography component="h1" variant="h4">Aktuell nichts zu bearbeiten</Typography>
+            <Typography sx={{mt: 1}}>
+                Für diesen Vorgang ist hier derzeit kein weiterer Schritt verfügbar.
+            </Typography>
         </Box>
     );
 }

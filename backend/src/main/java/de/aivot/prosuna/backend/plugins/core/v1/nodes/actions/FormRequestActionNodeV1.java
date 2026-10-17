@@ -15,6 +15,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
@@ -46,6 +47,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
@@ -80,7 +82,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
     private static final ProcessNodeDeadlineDefinition FORM_SUBMISSION_DEADLINE = new ProcessNodeDeadlineDefinition(
             "formSubmission", "Einreichung des Formulars",
-            "Zeit für die Kund:in zum Ausfüllen und Einreichen des Formulars ab Versand der Nachricht.",
+            "Zeit zum Ausfüllen und Einreichen des Formulars ab Versand der Nachricht.",
             new ProcessNodePort("form_submission_overdue", "Fristüberschreitung: Formulareinreichung",
                     "Fortsetzung nach Überschreitung der harten Frist für die Formulareinreichung."));
 
@@ -187,7 +189,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Override
     public String getDescription() {
         return """
-                
+                Fordert zusätzliche Angaben von einer bestehenden oder neu eingeladenen Person an.
+
+                Die Person erhält einen Link zum konfigurierten Formular. Das Prozesselement wartet auf die Einreichung der Daten oder den Ablauf einer konfigurierten Bearbeitungsfrist.
                 """;
     }
 
@@ -251,9 +255,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                             context.thisNode().getProcessVersion()
                     );
                     group.findChild(SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID, RichTextInputElement.class)
-                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Der Link, unter welchem die Identität das Formular aufrufen kann, wird automatisch an das Ende angefügt."));
+                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Ein Link zum Einreichen der angeforderten Daten wird automatisch ergänzt."));
                     group.findChild(SemiAutomaticMessageConfig.ManualContent.CONTENT_FIELD_ID, RichTextInputElement.class)
-                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Der Link, unter welchem die Identität das Formular aufrufen kann, wird automatisch an das Ende angefügt."));
+                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Ein Link zum Einreichen der angeforderten Daten wird automatisch ergänzt."));
                 });
 
         return layout;
@@ -478,7 +482,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var contentField = new RichTextInputElement();
         contentField.setId(STAFF_TASK_CONTENT_FIELD_ID);
         contentField.setLabel("Nachricht der Aufforderung");
-        contentField.setHint("Der Text der Nachricht. Der Link, unter welchem die Identität das Formular aufrufen kann, wird automatisch an das Ende angefügt.");
+        contentField.setHint("Der Text der Nachricht. Ein Link zum Einreichen der angeforderten Daten wird automatisch ergänzt.");
         contentField.setRequired(true);
 
         var root = new GroupLayoutElement();
@@ -675,9 +679,19 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         // The values of disabled and technical inputs in rows are taken from this data by row ID on submission, so
         // the rows need the same IDs each time the view is built.
         authoredInputValueService.assignPositionalRowIds(configuration.uiDefinition, initialData);
+        var introduction = new RichTextContentElement();
+        introduction.setId("form-request-introduction-" + context.getThisTask().getId());
+        introduction.setContent(context.getThisTask().getStatus() == ProcessTaskStatus.AwaitingCustomer
+                ? "# Daten einreichen\nBitte ergänzen Sie die angeforderten Angaben und reichen Sie diese anschließend ein."
+                : "# Angeforderte Angaben\nHier sehen Sie die Angaben zu dieser Datenanforderung.");
+        var layout = new GroupLayoutElement();
+        layout.setId("form-request-view-" + context.getThisTask().getId());
+        // Add orientation without changing the authored UI definition or requiring another configuration field.
+        layout.addChild(introduction);
+        layout.addChild(configuration.uiDefinition);
         return ProcessNodeCustomerView.of(
                 context,
-                configuration.uiDefinition,
+                layout,
                 List.of(new TaskViewEvent("Daten einreichen", CUSTOMER_TASK_SUBMIT_EVENT)),
                 initialData,
                 existingIdentityId,

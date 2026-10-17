@@ -231,7 +231,7 @@ describe('Process instance information', () => {
         expect(status.getByText('Fachliche Prüfung')).toBeInTheDocument();
         expect(status.getByText('(Systemstatus: Erstellt)')).toBeInTheDocument();
         expect(screen.getByRole('row', {name: /^Aufgabenstatus /})).toHaveTextContent('Unterlagen angefordert');
-        expect(screen.getByText('(Systemstatus: Wartet auf Nutzer:in)')).toBeInTheDocument();
+        expect(screen.getByText('(Systemstatus: Wartet auf Rückmeldung)')).toBeInTheDocument();
         expect(screen.getByRole('row', {name: /Vorgang zugewiesen an/})).toHaveTextContent('Vorgangsverantwortung');
         expect(screen.getByRole('row', {name: /Aufgabe zugewiesen an/})).toHaveTextContent('Aufgabenbearbeitung');
         await screen.findByText('Noch kein Ereignis vorhanden');

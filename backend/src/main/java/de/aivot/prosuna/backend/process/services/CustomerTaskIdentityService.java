@@ -67,6 +67,8 @@ public class CustomerTaskIdentityService {
             var provider = requiredExistingIdentity.provider();
             existingIdentityState = new ExistingIdentityState(
                     requiredExistingIdentity.identityId(),
+                    // Only the configured identity label is exposed before the account has been confirmed.
+                    requiredExistingIdentity.identity().title(),
                     isReady,
                     new IdentityProviderOptionResponseDTO(
                             provider.getKey(),
@@ -284,6 +286,7 @@ public class CustomerTaskIdentityService {
 
     public record ExistingIdentityState(
             @Nonnull String id,
+            @Nullable String title,
             boolean isReady,
             @Nonnull IdentityProviderOptionResponseDTO identityProvider
     ) {
