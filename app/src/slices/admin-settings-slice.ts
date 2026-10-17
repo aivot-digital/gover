@@ -5,6 +5,7 @@ import {AnyElement} from '../models/elements/any-element';
 export interface AdminSettingsState {
     useIdsInComponentTree: boolean;
     hideComponentTree: boolean;
+    hideAiChat: boolean;
     useTestMode: boolean;
     draggingTreeElement: AnyElement | undefined;
     expandElementTree: undefined | 'expanded' | 'collapsed';
@@ -21,6 +22,7 @@ export interface AdminSettingsState {
 const initialState: AdminSettingsState = {
     useIdsInComponentTree: false,
     hideComponentTree: false,
+    hideAiChat: true,
     useTestMode: false,
     draggingTreeElement: undefined,
     expandElementTree: undefined,
@@ -40,6 +42,9 @@ const adminSettingsSlice = createSlice({
         },
         toggleComponentTree: (state) => {
             state.hideComponentTree = !state.hideComponentTree;
+        },
+        toggleAiChat: (state) => {
+            state.hideAiChat = !state.hideAiChat;
         },
         setComponentTree: (state, payload: PayloadAction<boolean>) => {
             state.hideComponentTree = !payload.payload;
@@ -87,6 +92,7 @@ const adminSettingsSlice = createSlice({
 export const {
     toggleIdsInComponentTree,
     toggleComponentTree,
+    toggleAiChat,
     setComponentTree,
     toggleTestMode,
     setDraggingTreeElement,

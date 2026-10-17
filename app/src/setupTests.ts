@@ -66,6 +66,13 @@ Object.defineProperty(globalThis, 'AppConfig', {
         },
         moduleFlags: [],
         processNodeLimits: {},
+        aiEnabled: true,
+        aiChatAttachments: {
+            maxFiles: 1,
+            maxFileSizeBytes: 10 * 1024 * 1024,
+            extensions: ['pdf', 'txt', 'csv', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'fodt',
+                'ods', 'fods', 'odp', 'fodp', 'odg', 'fodg', 'odf', 'xml', 'bpmn'],
+        },
     },
     configurable: true,
 });

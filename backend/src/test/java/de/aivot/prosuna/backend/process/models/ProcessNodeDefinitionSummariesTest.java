@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.process.models;
 
-import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiCompletionActionNodeV1;
-import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiProcessDataTransformationActionNodeV1;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.AiCompletionActionNodeV1;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.AiProcessDataTransformationActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.ApprovalActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.CommunicationMessageActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.CounterActionNodeV1;
@@ -51,6 +51,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.ai.chat.client.ChatClient;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -326,7 +327,10 @@ class ProcessNodeDefinitionSummariesTest {
         task.getNodeData().put("completion", response);
         task.getNodeData().put("responseModel", "test-model");
         task.getNodeData().put("prompt", "Nicht Teil der Antwort");
-        var markdown = summary(new AiCompletionActionNodeV1(null, null, null), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
+        node.setDescription("Prüfung *A*");
+        var markdown = summary(instantiate(AiCompletionActionNodeV1.class), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
+        assertTrue(markdown.contains("**Verwendetes Modell**\n\ntest\\-model"));
+        assertTrue(markdown.contains("**Kurzbeschreibung**\n\nPrüfung \\*A\\*"));
         assertTrue(markdown.endsWith("\n\n**Antwort der KI**\n\n" + response));
         assertFalse(markdown.contains("Nicht Teil der Antwort"));
     }
@@ -336,8 +340,33 @@ class ProcessNodeDefinitionSummariesTest {
     @ValueSource(strings = {" \n\t"})
     void aiSummaryOmitsAnEmptyResponse(String response) throws Exception {
         task.getNodeData().put("completion", response);
-        var markdown = summary(new AiCompletionActionNodeV1(null, null, null), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
+        var markdown = summary(instantiate(AiCompletionActionNodeV1.class), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
         assertEquals("Die KI-Anfrage wurde erfolgreich ausgeführt.", markdown);
+    }
+
+    @Test
+    void aiTransformationSummaryIncludesModelAndEscapedDataFields() throws Exception {
+        task.getNodeData().put("responseModel", "test-model");
+        task.getNodeData().put("topLevelKeys", List.of("person", "field_*[1]"));
+        task.getNodeData().put("prompt", "Nicht Teil der Zusammenfassung");
+
+        var markdown = summary(instantiate(AiProcessDataTransformationActionNodeV1.class),
+                new AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig());
+
+        assertEquals("Die Vorgangsdaten wurden erfolgreich mit KI transformiert."
+                + "\n\n**Verwendetes Modell**\n\ntest\\-model"
+                + "\n\n**Datenfelder**\n\n- person\n\n- field\\_\\*\\[1\\]", markdown);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void aiTransformationSummaryOmitsMissingDataFields(List<String> keys) throws Exception {
+        task.getNodeData().put("topLevelKeys", keys);
+
+        var markdown = summary(instantiate(AiProcessDataTransformationActionNodeV1.class),
+                new AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig());
+
+        assertEquals("Die Vorgangsdaten wurden erfolgreich mit KI transformiert.", markdown);
     }
 
     private static ProcessNodeDefinition<?> instantiate(Class<? extends ProcessNodeDefinition<?>> type) throws Exception {
@@ -346,6 +375,10 @@ class ProcessNodeDefinitionSummariesTest {
         for (var index = 0; index < arguments.length; index++) {
             if (constructor.getParameterTypes()[index] == JsonMapper.class) {
                 arguments[index] = JsonMapperTestUtils.createMapper();
+            } else if (constructor.getParameterTypes()[index] == ChatClient.Builder.class) {
+                var builder = mock(ChatClient.Builder.class);
+                when(builder.build()).thenReturn(mock(ChatClient.class));
+                arguments[index] = builder;
             }
         }
         return (ProcessNodeDefinition<?>) constructor.newInstance(arguments);

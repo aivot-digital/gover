@@ -260,6 +260,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public ProcessNodeEntity performUpdate(@Nonnull Integer id,
                                            @Nonnull ProcessNodeEntity entity,
                                            @Nonnull ProcessNodeEntity existingEntity) throws ResponseException {
+        return updateForAuthoring(id, entity, existingEntity, null);
+    }
+
+    @Nonnull
+    public ProcessNodeEntity updateForAuthoring(@Nonnull Integer id,
+                                                @Nonnull ProcessNodeEntity entity,
+                                                @Nonnull ProcessNodeEntity existingEntity,
+                                                @Nullable UserEntity user) throws ResponseException {
         // Both the current and the requested process version must be drafts, so a node can neither be changed in nor
         // moved into a version that is executed by the workflow engine. Replacing the node type or moving the node
         // changes the structure of the flow like removing and adding a node, which a test claim does not permit.
@@ -296,7 +304,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         }
 
         // Validate the node configuration
-        validate(existingEntity, provider, false).ifPresentOrElse(
+        validate(existingEntity, provider, false, user).ifPresentOrElse(
                 (ignored) -> {
                     existingEntity.setSavedWithErrors(true);
                 },
@@ -500,7 +508,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     @Nonnull
-    private <NodeConfig> ConfigLayoutElement getConfigLayoutElement(@Nonnull ProcessNodeEntity entity, @Nonnull ProcessNodeDefinition<NodeConfig> provider, @Nullable UserEntity user) throws ResponseException {
+    public <NodeConfig> ConfigLayoutElement getConfigLayoutElement(@Nonnull ProcessNodeEntity entity, @Nonnull ProcessNodeDefinition<NodeConfig> provider, @Nullable UserEntity user) throws ResponseException {
         if (user == null &&
                 SecurityContextHolder.getContext().getAuthentication() != null &&
                 SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
@@ -637,11 +645,18 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Nonnull
     public ProcessNodeDefinitionMetadata getIncomingProcessNodeDefinitionMetadata(@Nonnull ProcessNodeEntity node) throws ResponseException {
-        return calculateIncomingProcessNodeDefinitionMetadata(node).metadata();
+        return getIncomingProcessNodeDefinitionMetadata(node, null);
     }
 
     @Nonnull
-    private IncomingProcessNodeDefinitionMetadata calculateIncomingProcessNodeDefinitionMetadata(@Nonnull ProcessNodeEntity node) throws ResponseException {
+    public ProcessNodeDefinitionMetadata getIncomingProcessNodeDefinitionMetadata(@Nonnull ProcessNodeEntity node,
+                                                                                 @Nullable UserEntity user) throws ResponseException {
+        return calculateIncomingProcessNodeDefinitionMetadata(node, user).metadata();
+    }
+
+    @Nonnull
+    private IncomingProcessNodeDefinitionMetadata calculateIncomingProcessNodeDefinitionMetadata(@Nonnull ProcessNodeEntity node,
+                                                                                               @Nullable UserEntity user) throws ResponseException {
         var processNodesById = new LinkedHashMap<Integer, ProcessNodeEntity>();
 
         processNodeRepository
@@ -675,7 +690,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     .orElseThrow(ResponseException::badRequest);
             if (provider.getType() == ProcessNodeType.Trigger) {
                 return new IncomingProcessNodeDefinitionMetadata(
-                        finalizeInputVariableSuggestions(calculateProcessDataKeyHintsForNode(node, provider, previousMetadata)),
+                        finalizeInputVariableSuggestions(calculateProcessDataKeyHintsForNode(node, provider, previousMetadata, user)),
                         true
                 );
             }
@@ -684,7 +699,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var complete = true;
         for (var previousNode : previousNodes) {
             try {
-                previousMetadata = calculateProcessDataKeyHintsForNode(previousNode, previousMetadata);
+                previousMetadata = calculateProcessDataKeyHintsForNode(previousNode, previousMetadata, user);
             } catch (ResponseException | RuntimeException exception) {
                 // Draft nodes may be incomplete or use an unavailable provider. Skipping only the broken node keeps
                 // the metadata of all other upstream nodes available to the editor and to validation.
@@ -775,20 +790,22 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Nonnull
     private ProcessNodeDefinitionMetadata calculateProcessDataKeyHintsForNode(@Nonnull ProcessNodeEntity node,
-                                                                              @Nonnull ProcessNodeDefinitionMetadata previousMetadata) throws ResponseException {
+                                                                              @Nonnull ProcessNodeDefinitionMetadata previousMetadata,
+                                                                              @Nullable UserEntity user) throws ResponseException {
 
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(node)
                 .orElseThrow(ResponseException::badRequest);
 
-        return calculateProcessDataKeyHintsForNode(node, provider, previousMetadata);
+        return calculateProcessDataKeyHintsForNode(node, provider, previousMetadata, user);
     }
 
     @Nonnull
     private <NodeConfig> ProcessNodeDefinitionMetadata calculateProcessDataKeyHintsForNode(@Nonnull ProcessNodeEntity node,
                                                                                            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
-                                                                                           @Nonnull ProcessNodeDefinitionMetadata previousMetadata) throws ResponseException {
-        var configuration = deriveConfiguration(node, provider, null, true);
+                                                                                           @Nonnull ProcessNodeDefinitionMetadata previousMetadata,
+                                                                                           @Nullable UserEntity user) throws ResponseException {
+        var configuration = deriveConfiguration(node, provider, user, true);
         // The returned metadata belongs to the provider. Add the service hints to a copy that is always mutable.
         var currentMetadata = ProcessNodeDefinitionMetadata.reuse(provider.getMetadata(
                 node,
@@ -940,6 +957,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public <NodeConfig> Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node,
                                                                @Nonnull ProcessNodeDefinition<NodeConfig> provider,
                                                                @Nonnull Boolean checkPorts) throws ResponseException {
+        return validate(node, provider, checkPorts, null);
+    }
+
+    @Nonnull
+    public <NodeConfig> Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node,
+                                                               @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                               @Nonnull Boolean checkPorts,
+                                                               @Nullable UserEntity user) throws ResponseException {
         var commonErrors = new LinkedHashMap<String, List<String>>();
         var problems = new LinkedList<String>();
 
@@ -974,12 +999,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             }
         }
 
-        var layout = getConfigLayoutElement(node, provider, null);
+        var layout = getConfigLayoutElement(node, provider, user);
 
         ProcessConfigurationDetails<NodeConfig> derivedConfiguration;
         try {
             derivedConfiguration = this
-                    .deriveConfiguration(node, provider, null, false);
+                    .deriveConfiguration(node, provider, user, false);
         } catch (ResponseException e) {
             problems.add(e.getMessage());
             derivedConfiguration = null;
@@ -989,7 +1014,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             validateProcessIdentityIdInputs(
                     node,
                     layout,
-                    derivedConfiguration.derivedRuntimeElementData
+                    derivedConfiguration.derivedRuntimeElementData,
+                    user
             );
 
             ElementStreamUtils.applyAction(
@@ -1055,7 +1081,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     private void validateProcessIdentityIdInputs(@Nonnull ProcessNodeEntity node,
                                                  @Nonnull ConfigLayoutElement layout,
-                                                 @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) {
+                                                 @Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
+                                                 @Nullable UserEntity user) {
         var selectionsByElement = new LinkedHashMap<ProcessIdentityIdInputElement, String>();
         ElementStreamUtils.applyAction(layout, element -> {
             if (element instanceof ProcessIdentityIdInputElement processIdentityIdInputElement) {
@@ -1076,7 +1103,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
         IncomingProcessNodeDefinitionMetadata incomingMetadata;
         try {
-            incomingMetadata = calculateIncomingProcessNodeDefinitionMetadata(node);
+            incomingMetadata = calculateIncomingProcessNodeDefinitionMetadata(node, user);
         } catch (ResponseException | RuntimeException exception) {
             logger.warn("Could not determine the incoming metadata of process node {}.", node.getId(), exception);
             for (var processIdentityIdInputElement : selectionsByElement.keySet()) {
