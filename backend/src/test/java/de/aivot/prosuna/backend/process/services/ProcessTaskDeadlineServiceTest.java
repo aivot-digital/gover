@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.workers.ProcessTaskDeadlineResultHandler;
+import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -78,7 +79,7 @@ class ProcessTaskDeadlineServiceTest {
         assertEquals("customer", task.getDeadlineKey());
         assertEquals("value", task.getNodeData().get("existing"));
         assertEquals(Map.of("deadlineKey", "customer", "label", "Antwort der Kund:in", "deadline", DEADLINE.toString(),
-                "processedAt", now.toString()), task.getNodeData().get(ProcessTaskDeadlineExceededData.NODE_DATA_KEY));
+                "processedAt", IsoTimestampUtils.toOffsetString(now)), task.getNodeData().get(ProcessTaskDeadlineExceededData.NODE_DATA_KEY));
         assertEquals(Map.of("keep", true), task.getProcessData());
         assertEquals(Map.of("phase", "customer"), task.getRuntimeData());
         assertEquals("staff", task.getAssignedUserId());
