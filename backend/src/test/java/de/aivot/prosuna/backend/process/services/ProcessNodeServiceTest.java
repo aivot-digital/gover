@@ -459,6 +459,33 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void incomingMetadata_ShouldPreserveValueSourcesOfCanonicalizedDataKeys() throws Exception {
+        var source = createNode(1, "source");
+        var target = createNode(2, "target");
+        var metadata = ProcessNodeDefinitionMetadata.empty()
+                .addForwardedProcessDataKey(new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
+                        " languages ", "Sprachen", null, source, null, "languages",
+                        ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.CodeListValueMode.LabelOnly))
+                .addForwardedProcessDataKey("status", "Status", null, source, List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")));
+        useMetadataProvider(metadata, ProcessNodeType.Action);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of(
+                new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
+                        "languages", "Sprachen", null, source, null, "languages",
+                        ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.CodeListValueMode.LabelOnly),
+                new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("status", "Status", null, source, List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")), null, null)
+        ), result.forwardedProcessDataKeys());
+    }
+
+    @Test
     void incomingMetadata_ShouldAddHintsToACopyOfIncompleteImmutableProviderMetadata() throws Exception {
         var source = createNode(1, "source");
         source.getOutputMappings().put("result", "mapped.result");
