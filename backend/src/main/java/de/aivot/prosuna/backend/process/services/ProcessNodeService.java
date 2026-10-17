@@ -13,6 +13,8 @@ import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
@@ -998,7 +1000,23 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     (e, state) -> {
                         if (e instanceof BaseInputElement<?> input) {
                             if (StringUtils.isNotNullOrEmpty(state.getError())) {
-                                problems.add(input.getLabel() + ": " + state.getError());
+                                // Match ErrorAlert's configuration summaries without interpreting arbitrary field details.
+                                if ((input instanceof PaymentConfigElement || input instanceof IdentityConfigElement)
+                                        && state.getErrorDetails() instanceof Map<?, ?> details
+                                        && details.get("messages") instanceof List<?> messages) {
+                                    var detailedProblems = messages.stream()
+                                            .filter(String.class::isInstance)
+                                            .map(String.class::cast)
+                                            .filter(StringUtils::isNotNullOrEmpty)
+                                            .toList();
+                                    if (detailedProblems.isEmpty()) {
+                                        problems.add(input.getLabel() + ": " + state.getError());
+                                    } else {
+                                        detailedProblems.forEach(message -> problems.add(input.getLabel() + ": " + message));
+                                    }
+                                } else {
+                                    problems.add(input.getLabel() + ": " + state.getError());
+                                }
                             }
                         }
                     }

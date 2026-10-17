@@ -1678,23 +1678,10 @@ export function ProcessDetailsPage(): ReactNode {
                             Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
                         </Typography>
                         {
-                            versionProblems.length > 0 &&
-                            <AlertComponent
-                                color="error"
-                                title="Prozessversion ist unvollständig"
-                                sx={{
-                                    marginTop: '1rem',
-                                }}
-                            >
-                                <ul>
-                                    {versionProblems.map((problem) => <li key={problem}>{problem}</li>)}
-                                </ul>
-                            </AlertComponent>
-                        }
-                        {
-                            nodeProblems.length > 0 &&
+                            (nodeProblems.length > 0 || versionProblems.length > 0) &&
                             <NodeProblemsAlert
                                 problems={nodeProblems}
+                                versionProblems={versionProblems}
                                 availableNodeProviders={availableNodeProviders}
                                 mode="test"
                                 sx={{

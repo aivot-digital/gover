@@ -25,6 +25,7 @@ vi.mock('../modules/identity/identity-providers-api-service', () => ({
 describe('IdentityConfigView', () => {
     it('limits a required identity configuration to one slot', async () => {
         const user = userEvent.setup();
+        const setValue = vi.fn();
         const element = {
             type: ElementType.IdentityConfigElement,
             id: 'new-identities',
@@ -47,7 +48,7 @@ describe('IdentityConfigView', () => {
                             isOptional: false,
                             options: [],
                         }]}
-                        setValue={vi.fn()}
+                        setValue={setValue}
                         onBlur={vi.fn()}
                         errors={null}
                         isBusy={false}
@@ -84,6 +85,21 @@ describe('IdentityConfigView', () => {
         dialog.getByRole('switch', {name: 'E-Mail-Adresse zulassen'}).focus();
         await user.tab();
         expect(key).toHaveFocus();
+        await user.clear(title);
+        await user.click(dialog.getByRole('button', {name: 'Übernehmen'}));
+        expect(title).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByRole('dialog')).toBeVisible();
+        expect(dialog.getAllByText('Geben Sie einen Titel für die Identität an.').length).toBeGreaterThan(0);
+        expect(setValue).not.toHaveBeenCalled();
+
+        await user.type(title, 'Vertretung');
+        await user.click(dialog.getByRole('switch', {name: 'E-Mail-Adresse zulassen'}));
+        await user.click(dialog.getByRole('button', {name: 'Übernehmen'}));
+        expect(setValue).toHaveBeenCalledWith([expect.objectContaining({
+            title: 'Vertretung',
+            allowsMail: false,
+            options: [],
+        })]);
     });
 
     it('exposes the identity list as one field group without including its action in the name', async () => {

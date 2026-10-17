@@ -1,13 +1,15 @@
-import React, {useEffect, useRef} from 'react';
-import {closeSnackbar, SnackbarKey, SnackbarProvider as NotistackProvider, useSnackbar} from 'notistack';
+import React, {createContext, useContext, useEffect, useRef} from 'react';
+import {SnackbarKey, SnackbarProvider as NotistackProvider, useSnackbar} from 'notistack';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {removeSnackbar} from '../slices/snackbar-slice';
+import {AppInfo} from '../app-info';
 import {Alert, CircularProgress, Fade, GlobalStyles} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {selectMinimizeDrawer, selectSnackbarMessages, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
 
 const FLOW_EDITOR_SNACKBAR_EXTRA_LEFT_OFFSET = 52;
+const SnackbarOwnerContext = createContext(false);
 
 // Default auto-hide durations for different severities
 const SNACKBAR_AUTO_HIDE_DURATION_MS: Record<SnackbarSeverity, number> = {
@@ -24,8 +26,10 @@ const SnackbarConsumer = () => {
     // list of all active snackbar messages from the store
     const snackbarMessages = useAppSelector(selectSnackbarMessages);
 
+    // Closing must use the same provider as enqueueing; nested notistack providers can replace the global helper.
     const {
         enqueueSnackbar,
+        closeSnackbar,
     } = useSnackbar();
 
     // prevents duplicate Snackbars
@@ -45,7 +49,7 @@ const SnackbarConsumer = () => {
 
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
-    }, [snackbarMessages, dispatch]);
+    }, [snackbarMessages, dispatch, closeSnackbar]);
 
     useEffect(() => {
         snackbarMessages.forEach(({key, message, severity, type}) => {
@@ -121,7 +125,7 @@ const SnackbarConsumer = () => {
                 }, autoHideDuration);
             }
         });
-    }, [snackbarMessages, enqueueSnackbar, dispatch, theme]);
+    }, [snackbarMessages, enqueueSnackbar, closeSnackbar, dispatch, theme]);
 
     // Close any snackbars that were removed from the Redux store but are still shown.
     // This keeps the UI in sync with the state and ensures "manual" snackbars (e.g. loading) are properly dismissed.
@@ -140,18 +144,22 @@ const SnackbarConsumer = () => {
             closeSnackbar(key);
             displayedMessages.current.delete(key);
         });
-    }, [snackbarMessages]);
+    }, [snackbarMessages, closeSnackbar]);
 
     return null;
 };
 
 export const SnackbarProvider = ({children}: { children: React.ReactNode }) => {
+    const hasOwner = useContext(SnackbarOwnerContext);
     const isDrawerMinimized = useAppSelector(selectMinimizeDrawer);
     const snackbarLeftOffset = isDrawerMinimized ? 88 : 280;
     const flowEditorSnackbarLeftOffset = snackbarLeftOffset + FLOW_EDITOR_SNACKBAR_EXTRA_LEFT_OFFSET;
 
+    // Nested page themes must not subscribe to and display the same Redux notifications a second time.
+    if (hasOwner) return <>{children}</>;
+
     return (
-        <>
+        <SnackbarOwnerContext.Provider value={true}>
             <NotistackProvider
                 maxSnack={5}
                 anchorOrigin={{
@@ -164,7 +172,7 @@ export const SnackbarProvider = ({children}: { children: React.ReactNode }) => {
                 {children}
             </NotistackProvider>
 
-            <GlobalStyles
+            {AppInfo.mode === 'staff' && <GlobalStyles
                 styles={{
                     '.notistack-SnackbarContainer': {
                         left: `${snackbarLeftOffset}px`,
@@ -173,7 +181,7 @@ export const SnackbarProvider = ({children}: { children: React.ReactNode }) => {
                         left: `${flowEditorSnackbarLeftOffset}px`,
                     },
                 }}
-            />
-        </>
+            />}
+        </SnackbarOwnerContext.Provider>
     );
 };

@@ -73,7 +73,7 @@ import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info'
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {PaymentRequestOverview} from '../../modules/payment/components/payment-request-overview';
-import {showApiErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-slice';
+import {showApiErrorSnackbar} from '../../slices/snackbar-slice';
 import {useConfirm} from '../../providers/confirm-provider';
 import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
@@ -273,7 +273,7 @@ export function CustomerFormPage() {
                 });
 
                 if (!proceedWithPaymentRequirements) {
-                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
+                    // The closed confirmation leaves the completed form available for editing.
                     return;
                 }
             }
@@ -521,7 +521,7 @@ export function CustomerFormPage() {
                             paymentRequired={startedProcessAccessInfo.paymentRequired}
                             formElement={layoutElement}
                             processSlug={process.slug}
-                            formSlug={configuredFormSlug ?? null}
+                            formSlug={resolvedFormSlug}
                             processVersion={version.processVersion}
                         />
                     }
