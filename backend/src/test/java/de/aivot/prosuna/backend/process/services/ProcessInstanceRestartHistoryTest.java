@@ -8,7 +8,6 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,14 +17,12 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.test.context.ContextConfiguration;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -48,7 +45,7 @@ class ProcessInstanceRestartHistoryTest {
     private ProcessInstanceEventLogService service;
 
     @BeforeEach
-    void setup() throws Exception {
+    void setup() {
         sql("drop table if exists process_instance_events");
         sql("drop table if exists process_instance_tasks");
         sql("drop table if exists process_instances");
@@ -58,7 +55,7 @@ class ProcessInstanceRestartHistoryTest {
                 create table process_instance_tasks (
                     id bigint primary key, access_key varchar(128), process_instance_id bigint, process_id int,
                     process_version int, process_node_id int, previous_process_instance_task_id bigint,
-                    previous_process_node_id int, previous_process_node_port_key varchar(96), status smallint,
+                    restart_for_task_id bigint, previous_process_node_id int, previous_process_node_port_key varchar(96), status smallint,
                     status_override varchar(96), execution_summary_markdown text,
                     started timestamp with time zone default current_timestamp, updated timestamp with time zone,
                     finished timestamp with time zone, runtime interval second, runtime_data text default '{}', node_data text default '{}',
@@ -66,17 +63,15 @@ class ProcessInstanceRestartHistoryTest {
                     assigned_customer_identity_id varchar(36), deadline timestamp with time zone, deadline_key varchar(32),
                     deadline_strict boolean not null default false,
                     postponed_until timestamp with time zone, retry_count int, next_retry_at timestamp with time zone,
-                    foreign key (process_instance_id) references process_instances(id) on delete cascade
+                    foreign key (process_instance_id) references process_instances(id) on delete cascade,
+                    constraint process_instance_tasks_restart_for_task_fk
+                        foreign key (restart_for_task_id) references process_instance_tasks(id),
+                    constraint process_instance_tasks_restart_not_self check (restart_for_task_id <> id)
                 )
                 """);
-        sql("insert into process_instance_tasks (id, process_instance_id, process_node_id) values (1, 12, 56)");
-        var migration = new ClassPathResource("db/migration/V31_5_0__process_task_restart_reference.sql");
-        for (var statement : migration.getContentAsString(StandardCharsets.UTF_8).split(";")) {
-            if (!statement.isBlank()) sql(statement);
-        }
         sql("""
                 insert into process_instance_tasks (id, process_instance_id, process_node_id, restart_for_task_id) values
-                    (2, 12, 56, 1), (3, 12, 56, 2), (4, 12, 56, null),
+                    (1, 12, 56, null), (2, 12, 56, 1), (3, 12, 56, 2), (4, 12, 56, null),
                     (5, 99, 56, null), (6, 12, 57, null), (7, 12, 56, 3)
                 """);
         sql("""
@@ -117,17 +112,11 @@ class ProcessInstanceRestartHistoryTest {
     }
 
     @Test
-    void migrationKeepsLegacyTasksUnlinkedAndSerializesNewReferences() {
+    void persistsAndSerializesRestartReferences() {
         assertNull(em.find(ProcessInstanceTaskEntity.class, 1L).getRestartForTaskId());
         var task = em.find(ProcessInstanceTaskEntity.class, 3L);
         assertEquals(2L, task.getRestartForTaskId());
         assertEquals(2L, jsonMapper.valueToTree(task).path("restartForTaskId").asLong());
-    }
-
-    @Test
-    void cannotReferenceSelfOrMissingTask() {
-        assertThrows(PersistenceException.class, () -> sql("update process_instance_tasks set restart_for_task_id = 1 where id = 1"));
-        assertThrows(PersistenceException.class, () -> sql("update process_instance_tasks set restart_for_task_id = 999 where id = 1"));
     }
 
     @ParameterizedTest

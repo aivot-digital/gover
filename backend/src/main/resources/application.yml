@@ -206,6 +206,13 @@ prosuna:
   background-sync:
     sweep-interval: "${PROSUNA_BACKGROUND_SYNC_SWEEP_INTERVAL:PT5M}"
     stale-threshold: "${PROSUNA_BACKGROUND_SYNC_STALE_THRESHOLD:PT1H}"
+  # Initial data is seeded on startup if it does not exist yet.
+  seeding:
+    # Seeds local storage providers for documents, media and process attachments below ./data and selects them as
+    # defaults. Disable this for deployments without a local disk shared by all instances, e.g. Kubernetes. The
+    # read-only provider for the shipped system documents is seeded either way.
+    local-storage-providers:
+      enabled: "${PROSUNA_SEEDING_LOCAL_STORAGE_PROVIDERS_ENABLED:true}"
   prosunaHostname: "${PROSUNA_HOSTNAME}"
   timezone: "${PROSUNA_TIMEZONE:Europe/Berlin}"
   fromMail: "${PROSUNA_FROM_MAIL}"
