@@ -8,7 +8,7 @@ interface AsyncWrapperOptions<B, M> {
 }
 
 export async function withAsyncWrapper<B, M>(options: AsyncWrapperOptions<B, M>): Promise<M> {
-    const startTime = new Date().getMilliseconds();
+    const startTime = Date.now();
 
     if (options.runtimeCallback) {
         options.runtimeCallback(true);
@@ -23,7 +23,7 @@ export async function withAsyncWrapper<B, M>(options: AsyncWrapperOptions<B, M>)
         throw new DOMException("Aborted", "AbortError");
     }
 
-    const mainResult = await options.main(beforeResult);
+    const mainResult = await options.main(beforeResult, options.signal);
 
     if (options.signal?.aborted) {
         throw new DOMException("Aborted", "AbortError");
@@ -33,7 +33,7 @@ export async function withAsyncWrapper<B, M>(options: AsyncWrapperOptions<B, M>)
         await options.after(mainResult);
     }
 
-    const deltaTime = new Date().getMilliseconds() - startTime;
+    const deltaTime = Date.now() - startTime;
     const remainingTimeout = options.desiredMinRuntime == null || deltaTime >= options.desiredMinRuntime ? 0 : options.desiredMinRuntime - deltaTime;
 
     if (remainingTimeout == 0) {

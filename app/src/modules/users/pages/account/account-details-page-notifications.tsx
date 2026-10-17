@@ -1,11 +1,11 @@
 import React, {useEffect, useState} from 'react';
 import {useApi} from '../../../../hooks/use-api';
 import {selectUser} from '../../../../slices/user-slice';
-import {Box, Divider, FormControlLabel, Grid, Skeleton, Switch, Typography} from "@mui/material";
-import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
-import {useAppSelector} from "../../../../hooks/use-app-selector";
-import {UserConfigDefinition, UserConfigsApiService} from "../../../../services/user-configs-api-service";
-import {showErrorSnackbar, showSuccessSnackbar} from "../../../../slices/snackbar-slice";
+import {Box, Divider, FormControlLabel, Grid, Skeleton, Switch, Typography} from '@mui/material';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {UserConfigDefinition, UserConfigsApiService} from '../../../../services/user-configs-api-service';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 
 export function AccountDetailsPageNotifications() {
     const dispatch = useAppDispatch();
@@ -20,11 +20,11 @@ export function AccountDetailsPageNotifications() {
         setIsBusy(true);
 
         Promise.all([
-            userConfigsApiService.listDefinitions(0, 999),
+            userConfigsApiService.listDefinitions(),
             userConfigsApiService.list(user?.id ?? 'self', 0, 999)
         ])
             .then(([definitionsRes, userConfigsRes]) => {
-                const filteredDefinitions = definitionsRes.content.filter(def => def.category === "Benachrichtigungen");
+                const filteredDefinitions = definitionsRes.filter(def => def.category === "Benachrichtigungen");
                 setDefinitions(filteredDefinitions);
 
                 const configMap: Record<string, string[]> = {};
@@ -76,26 +76,23 @@ export function AccountDetailsPageNotifications() {
                 Benachrichtigungen
             </Typography>
             <Typography sx={{ mb: 2, maxWidth: 900 }}>
-                Als Mitarbeiter:in und im Rahmen der Mitgliedschaft in Fachbereichen erhalten Sie Benachrichtigungen zu wichtigen Ereignissen und Aktivitäten in der Anwendung.
+                Als Mitarbeiter:in und im Rahmen Ihrer Mitgliedschaften in Organisationseinheiten erhalten Sie Benachrichtigungen zu wichtigen Ereignissen und Aktivitäten in der Anwendung.
                 Sie können den Erhalt dieser Benachrichtigungen individuell nach Ihren Bedürfnissen anpassen.
             </Typography>
-            <Typography sx={{ mb: 4, maxWidth: 900 }}>
-                <b>Bitte beachten Sie:</b> Wenn eine Benachrichtigung an eine Fachbereichs-Mitgliedschaft gebunden ist, kann es vorkommen, dass Sie trotz aktivierter Benachrichtigungen keine E-Mail erhalten.
-                Dies ist der Fall, wenn für den betreffenden Fachbereich eine zentrale E-Mail-Adresse für Systembenachrichtigungen hinterlegt wurde.
-            </Typography>
-
             {isBusy ? (
-                <Grid item xs={12}>
+                <Grid size={12}>
                     <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>Optionen werden geladen...</Typography>
-                    <Box sx={{ borderRadius: 1, overflow: 'hidden', border: '1px solid rgba(0, 0, 0, 0.12)' }}>
+                    <Box sx={{borderRadius: 1, overflow: 'hidden', border: '1px solid', borderColor: 'divider'}}>
                         {[...Array(3)].map((_, index) => (
                             <Box key={index} sx={{ px: 2, py: 1 }}>
-                                <Grid container alignItems="center" spacing={2}>
-                                    <Grid item xs={8}>
+                                <Grid container spacing={2} sx={{
+                                    alignItems: "center"
+                                }}>
+                                    <Grid size={8}>
                                         <Skeleton variant="text" width="60%" height={30} />
                                         <Skeleton variant="text" width="80%" height={20} sx={{ mt: 1, mb: 2 }} />
                                     </Grid>
-                                    <Grid item xs={4} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Grid sx={{ display: 'flex', justifyContent: 'flex-end' }} size={4}>
                                         <Skeleton variant="rectangular" width="20%" height={40} />
                                     </Grid>
                                 </Grid>
@@ -106,20 +103,28 @@ export function AccountDetailsPageNotifications() {
                 </Grid>
             ) : (
                 Object.entries(groupedDefinitions).map(([subCategory, items]) => (
-                    <Grid item xs={12} key={subCategory}>
+                    <Grid key={subCategory} size={12}>
                         <Typography variant="h6" sx={{ mt: 2, mb: 1.5 }}>{subCategory}</Typography>
-                        <Box sx={{ borderRadius: 1, overflow: 'hidden', border: '1px solid rgba(0, 0, 0, 0.12)', mb: 3 }}>
+                        <Box sx={{borderRadius: 1, overflow: 'hidden', border: '1px solid', borderColor: 'divider', mb: 3}}>
                             {items.map(({ key, label, description, options }, index) => (
                                 <Box key={key}>
-                                    <Grid container alignItems="center" spacing={2} sx={{ px: 2, pt: 1, pb: 1.5 }}>
-                                        <Grid item xs={8}>
+                                    <Grid
+                                        container
+                                        spacing={2}
+                                        sx={{
+                                            alignItems: "center",
+                                            px: 2,
+                                            pt: 1,
+                                            pb: 1.5
+                                        }}>
+                                        <Grid size={8}>
                                             <Typography variant="subtitle1">{label}</Typography>
-                                            <Typography variant="body2" color="text.secondary">{description}</Typography>
+                                            <Typography variant="body2" sx={{
+                                                color: "text.secondary"
+                                            }}>{description}</Typography>
                                         </Grid>
-                                        <Grid item xs={4} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                        <Grid sx={{ display: 'flex', justifyContent: 'flex-end' }} size={4}>
                                             {options.map(({ label: optionLabel, value }) => (
-                                                // Do not show "In-App" option until it's correctly implemented
-                                                optionLabel != "In-App" &&
                                                 <FormControlLabel
                                                     key={value}
                                                     control={
@@ -141,10 +146,6 @@ export function AccountDetailsPageNotifications() {
                     </Grid>
                 ))
             )}
-
-            <Typography sx={{ mt: 3, mb: 1, fontSize: "0.875rem", px: 2, color: "text.secondary" }}>
-                *¹ Benachrichtigt wird nur der ranghöchste im Formular konfigurierte Fachbereich in der Reihenfolge „bewirtschaftend → zuständig → entwickelnd“.
-            </Typography>
         </Box>
     );
 }

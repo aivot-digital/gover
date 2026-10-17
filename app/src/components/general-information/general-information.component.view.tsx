@@ -1,325 +1,240 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Grid, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
+import React, {ReactNode, useMemo} from 'react';
+import Box from '@mui/material/Box';
+import ListItem from '@mui/material/ListItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Typography from '@mui/material/Typography';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
-import {type Department} from '../../modules/departments/models/department';
-import {selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, showDialog, updateCustomerInput} from '../../slices/app-slice';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
+import {showDialog} from '../../slices/app-slice';
+import {isStringNullOrEmpty, stringOrUndefined} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
-import {selectSystemConfigValue} from '../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../data/system-config-keys';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import {useApi} from '../../hooks/use-api';
-import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import PersonOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Person';
+import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
+import UploadFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
-import ExpandableList from '../expandable-list/expandable-list';
-import {IdentityButtonGroup} from '../../modules/identity/components/identity-button-group/identity-button-group';
+import {ExpandableList} from '../expandable-list/expandable-list';
+import {MarkdownContent} from '../markdown-content/markdown-content';
+import {isFormLayoutElement} from '../../models/elements/form-layout-element';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
+import {Grid} from '@mui/material';
+import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
+import {useFormDepartmentAddressSections} from '../form-department-addresses/form-department-addresses';
 
-export const PrivacyUserInputKey = '__privacy__';
+function cleanDocuments(documents: Array<string> | undefined | null) {
+    if (documents) {
+        return documents.filter(document => document.trim() !== '');
+    } else {
+        return [];
+    }
+}
 
-export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, void>): JSX.Element {
-    const api = useApi();
+export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, boolean>) {
     const dispatch = useAppDispatch();
-    const theme = useTheme();
 
-    const application = useAppSelector(selectLoadedForm);
-    const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
+    const {
+        element,
+        value,
+        setValue,
+        errors,
+        isDeriving,
+    } = props;
 
-    const privacyValue = useAppSelector(selectCustomerInputValue(PrivacyUserInputKey));
-    const privacyError = useAppSelector(selectCustomerInputError(PrivacyUserInputKey));
+    const {
+        expectedCosts,
+        supportingDocuments: supportingDocumentsRaw,
+        documentsToAttach: documentsToAttachRaw,
+        eligiblePersons,
+        expiring: expiringRaw,
+    } = element;
 
-    const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
-    const [managingDepartment, setManagingDepartment] = useState<Department>();
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
+
+    const formElement = isFormLayoutElement(rootElement) ? rootElement : null;
+    const departmentSections = useFormDepartmentAddressSections(formElement);
 
     const initialDisplayCount = 4;
 
-    function cleanDocuments(documents: Array<string> | undefined) {
-        if (documents) {
-            return documents.filter(document => document.trim() !== '');
-        } else {
-            return [];
+    const supportingDocuments = useMemo(() => cleanDocuments(supportingDocumentsRaw), [supportingDocumentsRaw]);
+    const documentsToAttach = useMemo(() => cleanDocuments(documentsToAttachRaw), [documentsToAttachRaw]);
+    const preambleText = stringOrUndefined(element.teaserText);
+    const initiativeLogoLink = stringOrUndefined(element.initiativeLogoLink);
+    const initiativeName = stringOrUndefined(element.initiativeName);
+    const expiring = stringOrUndefined(expiringRaw);
+
+    const pass = useMemo(() => {
+        return isDeriving && hasDerivableAspects(element);
+    }, [isDeriving, element]);
+
+    const sections: ReactNode[] = useMemo(() => {
+        const sections: ReactNode[] = [...departmentSections];
+
+        if (eligiblePersons != null &&
+            eligiblePersons.length > 0) {
+            sections.push(
+                <ExpandableList
+                    key="eligible"
+                    title="Antragsberechtigte"
+                    items={eligiblePersons}
+                    initialVisible={initialDisplayCount}
+                    singularLabel="Person"
+                    pluralLabel="Personen"
+                    listId="eligible-persons-list"
+                    renderItem={renderEligiblePerson}
+                />,
+            );
         }
-    }
 
-    const supportingDocuments = cleanDocuments(props.element.supportingDocuments);
-    const documentsToAttach = cleanDocuments(props.element.documentsToAttach);
-
-    useEffect(() => {
-        if (application != null) {
-            if (application.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== application.responsibleDepartmentId) {
-                    new DepartmentsApiService(api)
-                        .retrievePublic(application.responsibleDepartmentId)
-                        .then(setResponsibleDepartment)
-                        .catch((err) => {
-                            console.error(err);
-                            dispatch(showErrorSnackbar('Fehler beim Laden der zuständigen Stelle'));
-                        });
-                }
-            } else {
-                setResponsibleDepartment(undefined);
-            }
-
-            if (application.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== application.managingDepartmentId) {
-                    new DepartmentsApiService(api)
-                        .retrievePublic(application.managingDepartmentId)
-                        .then(setManagingDepartment)
-                        .catch((err) => {
-                            console.error(err);
-                            dispatch(showErrorSnackbar('Fehler beim Laden der bewirtschaftenden Stelle'));
-                        });
-                }
-            } else {
-                setManagingDepartment(undefined);
-            }
+        if (supportingDocuments.length > 0) {
+            sections.push(
+                <ExpandableList
+                    key="supporting"
+                    title="Relevante Dokumente"
+                    items={supportingDocuments}
+                    initialVisible={initialDisplayCount}
+                    singularLabel="Dokument"
+                    pluralLabel="Dokumente"
+                    listId="supporting-documents-list"
+                    renderItem={renderSupportingDocument}
+                />,
+            );
         }
-    }, [props.element, application?.responsibleDepartmentId, application?.managingDepartmentId]);
 
-    const renderEligiblePerson = (person: string, index: number) => (
-        <ListItem
-            disableGutters
-            key={String(index) + person}
-        >
-            <ListItemIcon sx={{minWidth: '34px'}}>
-                <PersonOutlineOutlinedIcon sx={{color: theme.palette.primary.main}} />
-            </ListItemIcon>
-            <ListItemText>{person}</ListItemText>
-        </ListItem>
-    );
+        if (documentsToAttach.length > 0) {
+            sections.push(
+                <ExpandableList
+                    key="attachments"
+                    title="Einzureichende Dokumente"
+                    items={documentsToAttach}
+                    initialVisible={initialDisplayCount}
+                    singularLabel="Dokument"
+                    pluralLabel="Dokumente"
+                    listId="documents-to-attach-list"
+                    renderItem={renderDocumentToAttach}
+                />,
+            );
+        }
 
-    const renderSupportingDocument = (document: string, index: number) => (
-        <ListItem
-            disableGutters
-            key={String(index) + document}
-        >
-            <ListItemIcon sx={{minWidth: '34px'}}>
-                <DescriptionOutlinedIcon sx={{color: theme.palette.primary.main}} />
-            </ListItemIcon>
-            <ListItemText>{document}</ListItemText>
-        </ListItem>
-    );
+        if (expiring != null) {
+            sections.push(
+                <Box key="deadline">
+                    <Typography
+                        component={'h3'}
+                        variant="h5"
+                    >
+                        Fristen
+                    </Typography>
+                    <Typography
+                        component="pre"
+                        variant="body2"
+                        sx={{mt: 1}}
+                    >
+                        {expiring}
+                    </Typography>
+                </Box>,
+            );
+        }
 
-    const renderDocumentToAttach = (document: string, index: number) => (
-        <ListItem
-            disableGutters
-            key={String(index) + document}
-        >
-            <ListItemIcon sx={{minWidth: '34px'}}>
-                <UploadFileOutlinedIcon sx={{color: theme.palette.primary.main}} />
-            </ListItemIcon>
-            <ListItemText>{document}</ListItemText>
-        </ListItem>
-    );
+        if (expectedCosts != null && !isStringNullOrEmpty(expectedCosts)) {
+            sections.push(
+                <Box key="costs">
+                    <Typography
+                        component={'h3'}
+                        variant="h5"
+                    >
+                        Gebühren dieses Antrages
+                    </Typography>
 
-    const sections: JSX.Element[] = [];
+                    <MarkdownContent
+                        markdown={expectedCosts}
+                        className={'content-without-margin-on-childs'}
+                        sx={{
+                            mt: 1,
+                            typography: 'body2',
+                        }}
+                    />
+                </Box>,
+            );
+        }
 
-    if (responsibleDepartment != null) {
-        sections.push(
-            <Box key="responsible">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                    color="primary"
-                >
-                    Zuständige Stelle
-                </Typography>
-                <Typography
-                    component={'pre'}
-                    variant="body2"
-                    sx={{mt: 1}}
-                >
-                    {[
-                        isStringNotNullOrEmpty(providerName) ? providerName : null,
-                        responsibleDepartment.name,
-                        responsibleDepartment.address,
-                    ].filter(Boolean).join('\n')}
-                </Typography>
-            </Box>
-        );
-    }
-
-    if (managingDepartment != null) {
-        sections.push(
-            <Box key="managing">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                    color="primary"
-                >
-                    Bewirtschaftende Stelle
-                </Typography>
-                <Typography
-                    component={'pre'}
-                    variant="body2"
-                >
-                    {[
-                        isStringNotNullOrEmpty(providerName) ? providerName : null,
-                        managingDepartment.name,
-                        managingDepartment.address,
-                    ].filter(Boolean).join('\n')}
-                </Typography>
-            </Box>
-        );
-    }
-
-    if (props.element.eligiblePersons != null &&
-        props.element.eligiblePersons.length > 0) {
-        sections.push(
-            <ExpandableList
-                key="eligible"
-                title="Antragsberechtigte"
-                items={props.element.eligiblePersons}
-                initialVisible={initialDisplayCount}
-                singularLabel="Person"
-                pluralLabel="Personen"
-                listId="eligible-persons-list"
-                renderItem={renderEligiblePerson}
-            />
-        );
-    }
-
-    if (supportingDocuments.length > 0) {
-        sections.push(
-            <ExpandableList
-                key="supporting"
-                title="Relevante Dokumente"
-                items={supportingDocuments}
-                initialVisible={initialDisplayCount}
-                singularLabel="Dokument"
-                pluralLabel="Dokumente"
-                listId="supporting-documents-list"
-                renderItem={renderSupportingDocument}
-            />
-        );
-    }
-
-    if (documentsToAttach.length > 0) {
-        sections.push(
-            <ExpandableList
-                key="attachments"
-                title="Einzureichende Dokumente"
-                items={documentsToAttach}
-                initialVisible={initialDisplayCount}
-                singularLabel="Dokument"
-                pluralLabel="Dokumente"
-                listId="documents-to-attach-list"
-                renderItem={renderDocumentToAttach}
-            />
-        );
-    }
-
-    if (application != null &&
-        !isStringNullOrEmpty(application?.root.expiring)) {
-        sections.push(
-            <Box key="deadline">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                    color="primary"
-                >
-                    Antragsfristen
-                </Typography>
-                <Typography
-                    component="pre"
-                    variant="body2"
-                    sx={{mt: 1}}
-                >
-                    {application.root.expiring}
-                </Typography>
-            </Box>
-        );
-    }
-
-    if (props.element.expectedCosts != null &&
-        !isStringNullOrEmpty(props.element.expectedCosts)) {
-        sections.push(
-            <Box key="costs">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                    color="primary"
-                >
-                    Gebühren dieses Antrages
-                </Typography>
-
-                <Typography
-                    component={"div"}
-                    variant="body2"
-                    className={"content-without-margin-on-childs"}
-                    sx={{mt: 1}}
-                    dangerouslySetInnerHTML={{__html: props.element.expectedCosts ?? ''}}
-                />
-            </Box>
-        );
-    }
-
-
+        return sections;
+    }, [departmentSections, eligiblePersons, supportingDocuments, documentsToAttach, expiring, expectedCosts]);
 
     return (
         <>
             {
-                props.element.teaserText != null &&
-                isStringNotNullOrEmpty(props.element.teaserText) &&
+                preambleText &&
                 <Preamble
-                    text={props.element.teaserText}
-                    logoLink={props.element.initiativeLogoLink}
-                    logoAlt={props.element.initiativeName}
+                    text={preambleText}
+                    logoLink={initiativeLogoLink}
+                    logoAlt={initiativeName}
                 />
             }
 
             {
-                (
-                    responsibleDepartment != null ||
-                    managingDepartment != null ||
-                    (props.element.eligiblePersons ?? []).length > 0 ||
-                    (props.element.supportingDocuments ?? []).length > 0 ||
-                    (props.element.documentsToAttach ?? []).length > 0 ||
-                    !isStringNullOrEmpty(application?.root.expiring) ||
-                    !isStringNullOrEmpty(props.element.expectedCosts)
-                ) &&
+                sections.length > 0 &&
                 <FadingPaper>
                     <Box
                         sx={{
-                            columnCount: { xs: 1, md: 2 },
+                            columnCount: {xs: 1, md: 2},
                             columnGap: 7,
                         }}
                     >
-                        {sections.map((section, index) => (
-                            <Box
-                                key={index}
-                                sx={{
-                                    breakInside: 'avoid',
-                                    mb: 3,
-                                    display: 'inline-block',
-                                    width: '100%',
-                                }}
-                            >
-                                {section}
-                            </Box>
-                        ))}
+                        {
+                            sections.map((section, index) => (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        breakInside: 'avoid',
+                                        mb: 3,
+                                        display: 'inline-block',
+                                        width: '100%',
+                                    }}
+                                >
+                                    {section}
+                                </Box>
+                            ))
+                        }
                     </Box>
                 </FadingPaper>
             }
 
-            <IdentityButtonGroup
-                isBusy={props.isBusy}
-            />
+            {
+                element.children != null &&
+                <Grid
+                    container
+                    spacing={2}
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    {
+                        element
+                            .children
+                            .map((child, index) => (
+                                <ViewDispatcherComponent
+                                    {...props}
+                                    key={index}
+                                    element={child}
+                                    isDeriving={isDeriving || pass}
+                                />
+                            ))
+                    }
+                </Grid>
+            }
 
             <Typography
-                component={'h4'}
+                component="h4"
                 variant="h5"
-                color="primary"
                 sx={{
                     mt: 4,
                 }}
@@ -328,7 +243,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             </Typography>
 
             {
-                application?.root.privacyText != null &&
+                element.privacyText != null &&
                 <Box
                     sx={{
                         maxWidth: '600px',
@@ -336,41 +251,71 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     }}
                 >
                     <FormattedTextWithDialogTags
-                        text={application.root.privacyText}
+                        text={element.privacyText}
                     />
                 </Box>
             }
 
-            <Box id={PrivacyUserInputKey}>
+            <Box id={element.id}>
                 <CheckboxFieldComponent
                     label="Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen."
-                    value={privacyValue}
+                    value={value}
                     onChange={(checked) => {
-                        if (application != null) {
-                            dispatch(updateCustomerInput({
-                                key: PrivacyUserInputKey,
-                                value: checked,
-                            }));
-                        }
+                        setValue(checked);
                     }}
                     required={true}
-                    error={privacyError}
+                    error={errors != null ? errors[0] ?? undefined : undefined}
                     disabled={props.isBusy}
                 />
             </Box>
 
             <Typography
-                variant={'caption'}
+                variant="caption"
                 sx={{
-                    mt: 4,
-                }}
-                color={'text.secondary'}
-            >
+                    color: 'text.secondary',
+                    mt: 4
+                }}>
                 Alle mit Stern (*) gekennzeichneten Felder sind Pflichtfelder.
             </Typography>
         </>
     );
 }
+
+const renderEligiblePerson = (person: string, index: number) => (
+    <ListItem
+        disableGutters
+        key={String(index) + person}
+    >
+        <ListItemIcon sx={{minWidth: '34px'}}>
+            <PersonOutlineOutlinedIcon color="primary"/>
+        </ListItemIcon>
+        <ListItemText>{person}</ListItemText>
+    </ListItem>
+);
+
+const renderSupportingDocument = (document: string, index: number) => (
+    <ListItem
+        disableGutters
+        key={String(index) + document}
+    >
+        <ListItemIcon sx={{minWidth: '34px'}}>
+            <DescriptionOutlinedIcon color="primary"/>
+        </ListItemIcon>
+        <ListItemText>{document}</ListItemText>
+    </ListItem>
+);
+
+const renderDocumentToAttach = (document: string, index: number) => (
+    <ListItem
+        disableGutters
+        key={String(index) + document}
+    >
+        <ListItemIcon sx={{minWidth: '34px'}}>
+            <UploadFileOutlinedIcon color="primary"/>
+        </ListItemIcon>
+        <ListItemText>{document}</ListItemText>
+    </ListItem>
+);
 
 interface FormattedTextWithDialogTagsProps {
     text: string;
@@ -378,51 +323,57 @@ interface FormattedTextWithDialogTagsProps {
 
 function FormattedTextWithDialogTags(props: FormattedTextWithDialogTagsProps) {
     const {text} = props;
-
-    const typographyRef = useRef<HTMLSpanElement>(null);
-
     const dispatch = useAppDispatch();
+    let formattedText = text;
 
-    const formattedText = useMemo(() => {
-        let result: string = text;
+    for (const meta of [AccessibilityDialogId, PrivacyDialogId, ImprintDialogId, HelpDialogId]) {
+        const tag = meta.toLowerCase();
+        const pattern = new RegExp(`\\{${tag}\\}([\\s\\S]*?)\\{\\/${tag}\\}`, 'gi');
 
-        // Iterate over all possible dialog tags and replace them with the corresponding HTML anchor tags
-        for (const meta of [AccessibilityDialogId, PrivacyDialogId, ImprintDialogId, HelpDialogId]) {
-            const tag = meta.toLowerCase();
-
-            result = result
-                .replace(`{${tag}}`, `<a data-dialog="${tag}" style="cursor: pointer;">`)
-                .replace(`{/${tag}}`, '</a>');
-        }
-
-        return result;
-    }, [text]);
-
-    useEffect(() => {
-        const typo = typographyRef.current;
-
-        if (typo == null) {
-            return;
-        }
-
-        typo.querySelectorAll('[data-dialog]').forEach((element) => {
-            element.addEventListener('click', (event) => {
-                const target = event.target as HTMLElement;
-                const dialog = target.getAttribute('data-dialog');
-
-                if (dialog != null) {
-                    dispatch(showDialog(dialog));
-                }
-            });
-        });
-    }, [typographyRef.current]);
+        formattedText = formattedText.replace(pattern, '[$1](#dialog:' + tag + ')');
+    }
 
     return (
-        <Typography
-            ref={typographyRef}
-            variant="body2"
-            dangerouslySetInnerHTML={{
-                __html: formattedText,
+        <MarkdownContent
+            markdown={formattedText}
+            sx={{
+                typography: 'body2',
+                '& a': {
+                    cursor: 'pointer',
+                },
+            }}
+            components={{
+                a: ({href, children, node: _node, ...anchorProps}) => {
+                    if (href?.startsWith('#dialog:')) {
+                        const dialog = href.replace('#dialog:', '');
+
+                        return (
+                            <a
+                                href={href}
+                                {...anchorProps}
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    dispatch(showDialog(dialog));
+                                }}
+                            >
+                                {children}
+                            </a>
+                        );
+                    }
+
+                    const isExternalLink = href != null && /^(https?:)?\/\//.test(href);
+
+                    return (
+                        <a
+                            href={href}
+                            {...anchorProps}
+                            target={isExternalLink ? '_blank' : undefined}
+                            rel={isExternalLink ? 'noopener noreferrer' : undefined}
+                        >
+                            {children}
+                        </a>
+                    );
+                },
             }}
         />
     );

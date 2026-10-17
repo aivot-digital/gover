@@ -1,14 +1,19 @@
 import React from 'react';
 import {Box, Button, Grid, Typography} from '@mui/material';
-import {FunctionSelectorProps} from './function-selector-props';
 import {FunctionTypeIcon} from '../../function-type-icon';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {ElementEditorSectionHeader} from '../../../element-editor-section-header/element-editor-section-header';
 
+interface FunctionSelectorProps {
+    onSelectFunctionCode: () => void;
+    onSelectNoCode: () => void;
+    onSelectCloudCode: () => void;
+    onSelectNoCodeExpression: () => void;
+    allowNoCode: boolean;
+    allowExpression: boolean;
+    fullWidth: boolean;
+}
+
 export function FunctionSelector(props: FunctionSelectorProps) {
-    const enableNewCodeEditors = useAppSelector(selectSystemConfigValue(SystemConfigKeys.experimentalFeatures.newCodeEditors));
     const options = [];
 
     if (props.allowNoCode) {
@@ -21,7 +26,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
             },
         );
     }
-    if (props.allowExpression && enableNewCodeEditors) {
+    if (props.allowExpression) {
         options.push(
             {
                 title: '[ALPHA] Erweiterter No-Code (Fortgeschrittene Regelgestaltung)',
@@ -49,7 +54,6 @@ export function FunctionSelector(props: FunctionSelectorProps) {
             >
                 Wählen Sie einen geeigneten Typ für die Funktion aus, die Sie umsetzen möchten.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 spacing={2}
@@ -61,9 +65,8 @@ export function FunctionSelector(props: FunctionSelectorProps) {
                     options
                         .map((option, index) => (
                             <Grid
-                                item
-                                xs={props.fullWidth ? 12 : 6}
                                 key={option.title}
+                                size={props.fullWidth ? 12 : 6}
                             >
                                 <Box
                                     sx={{

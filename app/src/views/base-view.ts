@@ -1,25 +1,45 @@
-import {AnyElement} from "../models/elements/any-element";
-import React, {FunctionComponent} from "react";
+import type {AnyElement} from '../models/elements/any-element';
+import type {FunctionComponent, RefCallback} from 'react';
+import type {AuthoredElementValues, DerivedRuntimeElementData} from '../models/element-data';
+import {type InputModeLiteralRenderContext} from '../components/input-mode-field/input-mode-field';
+import type {
+    DynamicTextInputMethods,
+    DynamicTextVariableMetadata,
+} from '../components/dynamic-text/dynamic-text-metadata';
+
+export interface DynamicTextLiteralRenderContext {
+    inputRef: RefCallback<DynamicTextInputMethods>;
+    variableMetadata: readonly DynamicTextVariableMetadata[];
+}
 
 export interface BaseViewProps<M extends AnyElement, V> {
     element: M;
-    setValue: (value: V | null | undefined) => void;
-    error?: string;
-    value?: V | null | undefined;
-    idPrefix?: string;
-    allElements: AnyElement[];
-    scrollContainerRef?: React.RefObject<HTMLDivElement>;
+
     isBusy: boolean;
     isDeriving: boolean;
-    valueOverride?: {
-        values: Record<string, any>;
-        onChange: (key: string, value: any) => void;
-        onBlur?: (key: string, value: any) => void;
+
+    value?: V | null | undefined;
+    setValue: (value: V | null, triggeringElementIds?: string[]) => void;
+    onBlur: (value: V | null, triggeringElementIds?: string[]) => void;
+
+    errors?: string[] | null | undefined;
+    errorDetails?: Record<string, any> | null | undefined;
+
+    authoredElementValues: AuthoredElementValues;
+    onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+    onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
+
+    derivedData: DerivedRuntimeElementData;
+    onDerive: (data: AuthoredElementValues, triggeringElementIds: string[], skipErrorsForElements?: string[]) => Promise<DerivedRuntimeElementData>;
+    onEvent: (data: AuthoredElementValues, event: string) => Promise<boolean | void>;
+    onResetErrors: () => void;
+    suppressErrors: boolean;
+
+    derivationTriggerIdQueue: string[];
+
+    inputModeLiteralContext?: Omit<InputModeLiteralRenderContext<V>, 'value' | 'onChange'> & {
+        dynamicText?: DynamicTextLiteralRenderContext;
     };
-    errorsOverride?: Record<string, string>;
-    visibilitiesOverride?: Record<string, boolean>;
-    overridesOverride?: Record<string, AnyElement>;
-    mode: 'editor' | 'viewer';
 }
 
 export type BaseView<M extends AnyElement, V> = FunctionComponent<BaseViewProps<M, V>>;

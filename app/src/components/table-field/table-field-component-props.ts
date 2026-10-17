@@ -13,8 +13,8 @@ export type TableRowValue = Record<string, string | undefined | null>;
 export interface TableFieldComponentProps {
     label: string;
     fields: TableFieldComponentColumnDefinition[];
-    value?: TableRowValue[];
-    onChange: (value: TableRowValue[] | undefined) => void;
+    value?: TableRowValue[] | null;
+    onChange: (value: TableRowValue[] | null) => void;
     required?: boolean;
     disabled?: boolean;
     hint?: string;

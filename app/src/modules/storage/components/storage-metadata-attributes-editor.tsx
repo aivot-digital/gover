@@ -1,0 +1,77 @@
+import {Typography, Grid} from '@mui/material';
+import React from 'react';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {type StorageProviderMetadataAttribute} from '../entities/storage-provider-entity';
+
+interface StorageMetadataAttributesEditorProps {
+    storageProvider: {
+        metadataAttributes: StorageProviderMetadataAttribute[];
+    };
+    metadata: Record<string, string>;
+    onChange: (metadata: Record<string, string>) => void;
+    disabled?: boolean;
+}
+
+function normalizeMetadataValue(value: unknown): string {
+    if (value == null) {
+        return '';
+    }
+    if (typeof value === 'string') {
+        return value;
+    }
+    return String(value);
+}
+
+export function StorageMetadataAttributesEditor({
+                                                    storageProvider,
+                                                    metadata,
+                                                    onChange,
+                                                    disabled,
+                                                }: StorageMetadataAttributesEditorProps) {
+    if (storageProvider.metadataAttributes.length === 0) {
+        return (
+            <Typography sx={{
+                color: "text.secondary"
+            }}>Für diesen Speicheranbieter sind keine Metadatenattribute konfiguriert.
+                            </Typography>
+        );
+    }
+
+    return (
+        <Grid
+            container
+            spacing={2}
+        >
+            {
+                storageProvider
+                    .metadataAttributes
+                    .map((attribute) => (
+                        <Grid
+                            size={6}
+                            key={attribute.key}
+                        >
+                            <TextFieldComponent
+                                label={attribute.label}
+                                value={normalizeMetadataValue(metadata[attribute.key])}
+                                hint={attribute.description}
+                                disabled={disabled}
+                                onChange={(value) => {
+                                    const nextMetadata = {
+                                        ...metadata,
+                                    };
+
+                                    if (value == null || value.trim().length === 0) {
+                                        delete nextMetadata[attribute.key];
+                                    } else {
+                                        nextMetadata[attribute.key] = value;
+                                    }
+
+                                    onChange(nextMetadata);
+                                }}
+                            />
+                        </Grid>
+                    ))
+            }
+        </Grid>
+    );
+}

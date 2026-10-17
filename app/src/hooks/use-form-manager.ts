@@ -1,32 +1,35 @@
 import {useMemo, useState} from 'react';
 import {ObjectSchema, ValidationError} from 'yup';
-import {shallowEquals} from '../utils/equality-utils';
+import {deepEquals, shallowEquals} from '../utils/equality-utils';
+
+export type FormManagerErrors = Partial<Record<string, string>>;
 
 interface FormManager<T> {
     currentItem: T | undefined | null;
-    errors: Partial<Record<keyof T, string>>;
+    errors: FormManagerErrors;
     hasNotChanged: boolean;
 
     handleInputPatch: (patch: Partial<T>) => void;
-    handleInputChange: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
-    handleInputBlur: (field: keyof T) => () => void;
+    handleInputChange: <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => void;
+    handleInputChangeWithValidation: <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => void;
+    handleInputBlur: (field: keyof T) => (value?: T[keyof T] | null) => void;
 
     validate: () => boolean;
     reset: () => void;
 }
 
 // TODO: Fix extending type
-export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>): FormManager<T> {
+export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>, useDeepEquals: boolean = true): FormManager<T> {
     const [editedItem, setEditedItem] = useState<T>();
     const [touchedFields, setTouchedFields] = useState<Partial<Record<keyof T, boolean>>>({});
-    const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
+    const [errors, setErrors] = useState<FormManagerErrors>({});
 
     const currentItem = useMemo(() => {
         return editedItem ?? originalItem;
     }, [editedItem, originalItem]);
 
     const hasNotChanged = useMemo(() => {
-        return editedItem == null || shallowEquals(originalItem, editedItem);
+        return editedItem == null || (useDeepEquals ? deepEquals(originalItem, editedItem) : shallowEquals(originalItem, editedItem));
     }, [originalItem, editedItem]);
 
     const handleInputPatch = (patch: Partial<T>) => {
@@ -47,7 +50,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         });
     }
 
-    const handleInputChange = <K extends keyof T>(field: K) => (value: T[K] | undefined) => {
+    const handleInputChange = <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => {
         if (currentItem == null) {
             return;
         }
@@ -60,7 +63,25 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         validateField(field, value);
     };
 
-    const handleInputBlur = (field: keyof T) => () => {
+    const handleInputChangeWithValidation = <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => {
+        if (currentItem == null) {
+            return;
+        }
+
+        setEditedItem({
+            ...currentItem,
+            [field]: value,
+        });
+
+        setTouchedFields(prev => ({
+            ...prev,
+            [field]: true
+        }));
+
+        validateField(field, value, true);
+    };
+
+    const handleInputBlur = (field: keyof T) => (value?: T[keyof T] | null) => {
         if (currentItem == null) {
             return;
         }
@@ -70,29 +91,32 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             [field]: true,
         });
 
-        validateField(field, currentItem[field], true);
+        validateField(field, value === undefined ? currentItem[field] : value, true);
     };
 
-    const validateField = (field: keyof T, value: T[keyof T] | undefined, validateUntouchedField: boolean = false) => {
-        if (!validateUntouchedField && !touchedFields[field]) {
+    const validateField = (field: keyof T, value: T[keyof T] | null | undefined, validateUntouchedField: boolean = false) => {
+        if (!validateUntouchedField && !touchedFields[field] && errors[field as string] == null) {
             // Do nothing if the field hasn't been touched or is not forced to validate
             return;
         }
 
-        schema
-            .validateAt(field as string, { [field]: value })
-            .then(() => {
-                setErrors(prevErrors => ({
-                    ...prevErrors,
-                    [field]: undefined,
-                }));
-            })
-            .catch(err => {
-                setErrors(prevErrors => ({
-                    ...prevErrors,
-                    [field]: err.message || 'Ungültige Eingabe',
-                }));
-            });
+        const validationItem = {
+            ...currentItem,
+            [field]: value,
+        };
+
+        try {
+            schema.validateSyncAt(field as string, validationItem);
+            setErrors(prevErrors => ({
+                ...prevErrors,
+                [field]: undefined,
+            }));
+        } catch (err: unknown) {
+            setErrors(prevErrors => ({
+                ...prevErrors,
+                [field]: err instanceof Error ? err.message : 'Ungültige Eingabe',
+            }));
+        }
     };
 
     const validate = () => {
@@ -106,17 +130,16 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             return true;
         } catch (error) {
             if (isYupError(error)) {
-                const validationErrors: Partial<Record<keyof T, string>> = {};
+                const validationErrors: FormManagerErrors = {};
                 error.inner.forEach(err => {
                     if (err.path) {
-                        validationErrors[err.path as keyof T] = err.message;
+                        validationErrors[err.path] = err.message;
                     }
                 });
                 setErrors(validationErrors);
             }
             return false;
         }
-
     };
 
     const reset = () => {
@@ -131,6 +154,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
 
         handleInputPatch,
         handleInputChange,
+        handleInputChangeWithValidation,
         handleInputBlur,
 
         validate,

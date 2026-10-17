@@ -1,0 +1,594 @@
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
+import {
+    isNoCodeExpression,
+    isNoCodeInstanceDataReference,
+    isNoCodeNodeDataReference,
+    isNoCodeProcessDataReference,
+    isNoCodeReference,
+    isNoCodeStaticValue,
+    NoCodeInstanceDataReference,
+    NoCodeNodeDataReference,
+    NoCodeExpression,
+    NoCodeOperand,
+    NoCodeProcessDataReference,
+    NoCodeReference, NoCodeOperandError,
+} from '../../../models/functions/no-code-expression';
+import {NoCodeDataType} from '../../../data/no-code-data-type';
+import {ElementWithParents} from '../../../utils/flatten-elements';
+import {useMemo, useState} from 'react';
+import {
+    NoCodeOperatorDetailsDTO,
+    NoCodeParameter,
+    NoCodeParameterOption,
+    resolveNoCodeSignature,
+} from '../../../models/dtos/no-code-operator-details-dto';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import {NoCodeOperandEditor} from './no-code-operand-editor';
+import {Actions} from '../../../components/actions/actions';
+import Help from '@aivot/mui-material-symbols-400-n25-outlined/Help';
+import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
+import SwapVert from '@aivot/mui-material-symbols-400-n25-outlined/SwapVert';
+import {SelectOperatorDialog} from '../../../dialogs/select-operator-dialog/select-operator-dialog';
+import {OperatorInfoDialog} from '../../../dialogs/operator-info-dialog/operator-info-dialog';
+import {ReorderDialog} from '../../../dialogs/reorder-dialog/reorder-dialog';
+import {generateComponentTitle} from '../../../utils/generate-component-title';
+import {isStringNullOrEmpty} from '../../../utils/string-utils';
+import {ElementType} from '../../../data/element-type/element-type';
+import {BOOL_DEFAULT_OPTIONS} from './no-code-operand-editor-static-value';
+import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
+import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
+import {Stack} from '@mui/material';
+import {NoCodeTreeRow} from './no-code-tree-row';
+import {useCodeListElementOptions} from '../../code-lists/hooks/use-code-list-element-options';
+import {useProcessDataReferenceOptions} from '../hooks/use-process-data-reference-options';
+
+interface NoCodeOperandEditorExpressionProps {
+    allElements: ElementWithParents[];
+    allOperators: NoCodeOperatorDetailsDTO[];
+    label: string;
+    hint?: string;
+    value: NoCodeExpression;
+    onChange: (value: NoCodeOperand | undefined) => void;
+    contextType?: NoCodeOperandEditorContextType;
+    onAddEnclosingExpression: () => void;
+    operandError?: NoCodeOperandError;
+}
+
+interface ResolvedParameter {
+    parameter: NoCodeParameter;
+    operand: NoCodeOperand | undefined | null;
+}
+
+export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressionProps) {
+    const {
+        allElements,
+        allOperators,
+        label,
+        hint,
+        value: operand,
+        onChange,
+        contextType = 'BOTH',
+        onAddEnclosingExpression,
+        operandError,
+    } = props;
+
+    const [showOperatorSwitcher, setShowOperatorSwitcher] = useState(false);
+    const [showReorderParameters, setShowReorderParameters] = useState(false);
+    const [showOperatorInfo, setShowOperatorInfo] = useState(false);
+
+    const {
+        operatorIdentifier,
+        operands: originalOperands,
+    } = operand;
+
+    const operands: Array<NoCodeOperand | null> = useMemo(() => {
+        return originalOperands ?? [];
+    }, [originalOperands]);
+
+    const operator = useMemo(() => {
+        return allOperators
+            .find((op) => op.identifier === operatorIdentifier);
+    }, [allOperators, operatorIdentifier]);
+
+
+    const parameters = useMemo(() => {
+        if (operator == null) {
+            return [];
+        }
+
+        return resolveNoCodeSignature(operator, {
+            operandCount: operands.length > 0 ? operands.length : undefined,
+        }).parameters;
+    }, [operator, operands.length]);
+
+    const referencedElements = useMemo(() => {
+        return operands
+            .filter(isNoCodeReference)
+            .map((op) => allElements.find((entry) => entry.element.id === op.elementId)?.element)
+            .filter((element): element is ElementWithParents['element'] => element != null);
+    }, [operands, allElements]);
+    const codeListOptions = useCodeListElementOptions(referencedElements);
+    const processDataOptions = useProcessDataReferenceOptions(operands);
+
+    // The options of the form element or process data key that each operand references, by operand position.
+    const referenceOptions: NoCodeParameterOption[][] = useMemo(() => {
+        return operands.map((op, index) => {
+            if (!isNoCodeReference(op)) {
+                return processDataOptions[index] ?? [];
+            }
+
+            const element = allElements
+                .find(el => el.element.id === op.elementId)?.element;
+
+            return element == null ? [] : getReferencedElementOptions(element, codeListOptions);
+        });
+    }, [operands, allElements, codeListOptions, processDataOptions]);
+
+    const parameterOptions: NoCodeParameterOption[][] = useMemo(() => {
+        return parameters.map((parameter) => {
+            // Options defined by the operator, such as the units of a date calculation, are the only valid values.
+            if (parameter.options.length > 0) {
+                return parameter.options;
+            }
+
+            // Suggest the options of referenced values only for parameters of a compatible type, so a number of days
+            // referenced in a date calculation does not become a suggestion for the date.
+            const optionsByValue = new Map<string, NoCodeParameterOption>();
+            referenceOptions.forEach((options, operandIndex) => {
+                const referencingParameter = parameters[operandIndex];
+                if (referencingParameter == null || !areCompatibleParameterTypes(parameter.type, referencingParameter.type)) {
+                    return;
+                }
+
+                for (const option of options) {
+                    if (!optionsByValue.has(option.value)) {
+                        optionsByValue.set(option.value, option);
+                    }
+                }
+            });
+
+            return Array.from(optionsByValue.values());
+        });
+    }, [parameters, referenceOptions]);
+
+    const leadingParameter: ResolvedParameter | undefined = useMemo(() => {
+        if (parameters.length >= 2) {
+            return {
+                parameter: {
+                    ...parameters[0],
+                    options: parameterOptions[0],
+                },
+                operand: operands[0],
+            };
+        }
+
+        return undefined;
+    }, [parameters, operands, parameterOptions]);
+
+    const trailingParameters: ResolvedParameter[] = useMemo(() => {
+        const offset = leadingParameter != null ? 1 : 0;
+
+        return parameters
+            .slice(offset)
+            .map((p, index) => ({
+                parameter: {
+                    ...p,
+                    options: parameterOptions[index + offset],
+                },
+                operand: operands[index + offset],
+            }));
+    }, [parameters, operands, leadingParameter, parameterOptions]);
+
+    const combinedParameters = useMemo(() => {
+        if (leadingParameter != null) {
+            return [leadingParameter, ...trailingParameters];
+        } else {
+            return trailingParameters;
+        }
+    }, [leadingParameter, trailingParameters]);
+
+    if (operator == null) {
+        return (
+            <SelectOperatorDialog
+                open={true}
+                operators={allOperators}
+                onSelect={(op) => {
+                    onChange({
+                        type: 'NoCodeExpression',
+                        operatorIdentifier: op.identifier,
+                        operands: operand.operands ?? [],
+                    });
+                }}
+                onClose={() => {
+                    onChange(undefined);
+                }}
+                desiredReturnType={NoCodeDataType.Runtime}
+            />
+        );
+    }
+
+    return (
+        <>
+            <Box data-no-code-expression>
+                {
+                    leadingParameter != null &&
+                    <NoCodeTreeRow up={false} down contentSx={{pb: 2, pl: 1}}>
+                        <NoCodeOperandEditor
+                            parameter={leadingParameter.parameter}
+                            operand={leadingParameter.operand}
+                            onChange={(updatedOperand) => {
+                                onChange({
+                                    ...operand,
+                                    operands: [
+                                        updatedOperand ?? null,
+                                        ...(operand.operands?.slice(1) ?? []),
+                                    ],
+                                });
+                            }}
+                            allOperators={allOperators}
+                            allElements={allElements}
+                            contextType={contextType}
+                            operandError={operandError?.subErrors?.[0] ?? undefined}
+                        />
+                    </NoCodeTreeRow>
+                }
+
+                <NoCodeTreeRow operator up={leadingParameter != null} down={trailingParameters.length > 0}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            flex: 1,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                bgcolor: 'action.selected',
+                                pl: 1,
+                                pr: 2,
+                                py: 1,
+                                borderRadius: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                        >
+                            {
+                                false &&
+                                <Typography
+                                    sx={{
+                                        position: 'absolute',
+                                        top: -8,
+                                        left: 8,
+                                        backgroundColor: 'background.paper',
+                                        paddingX: 0.75,
+                                        color: 'text.secondary',
+                                    }}
+                                    variant="caption"
+                                >
+                                    {label} — (Ausdruck)
+                                </Typography>
+                            }
+
+                            <Functions
+                                fontSize="small"
+                                sx={{
+                                    color: 'text.secondary',
+                                }}
+                            />
+
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    ml: 0.5,
+                                }}
+                            >
+                                {operator.label}
+                            </Typography>
+                        </Box>
+
+                        <Stack
+                            direction="column"
+                            sx={{
+                                mt: 1,
+                                flex: 1,
+                            }}
+                        >
+                            {
+                                operator.abstractDescription != null &&
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "text.secondary"
+                                    }}
+                                >
+                                    {operator.abstractDescription}
+                                </Typography>
+                            }
+
+                            {
+                                operandError != null &&
+                                operandError.error != null &&
+                                <Typography
+                                    color="error"
+                                    variant="caption"
+                                    sx={{
+                                        mt: 1,
+                                    }}
+                                >
+                                    {operandError.error}
+                                </Typography>
+                            }
+                        </Stack>
+
+
+                        <Actions
+                            dense={true}
+                            size="small"
+                            sx={{
+                                ml: 1,
+                                color: 'text.secondary',
+                            }}
+                            color="inherit"
+                            actions={[
+                                {
+                                    icon: <Delete/>,
+                                    tooltip: 'Diesen Ausdruck löschen',
+                                    onClick: () => {
+                                        onChange(operands[0] ?? undefined);
+                                    },
+                                },
+                                {
+                                    icon: <SwapHoriz/>,
+                                    tooltip: 'Ausdrucksoperator austauschen',
+                                    onClick: () => {
+                                        setShowOperatorSwitcher(true);
+                                    },
+                                },
+                                {
+                                    icon: <SwapVert/>,
+                                    tooltip: 'Parameterreihenfolge ändern',
+                                    onClick: () => {
+                                        setShowReorderParameters(true);
+                                    },
+                                },
+                                {
+                                    icon: <Help/>,
+                                    tooltip: 'Hilfe zum Ausdruckstyp',
+                                    onClick: () => {
+                                        setShowOperatorInfo(true);
+                                    },
+                                },
+                                {
+                                    icon: <Functions/>,
+                                    tooltip: 'Diesen Ausdruck mit einem anderen Ausdruck verknüpfen',
+                                    onClick: () => {
+                                        onChange({
+                                            type: 'NoCodeExpression',
+                                            operatorIdentifier: null,
+                                            operands: [
+                                                operand,
+                                            ],
+                                        });
+                                    },
+                                },
+                            ]}
+                        />
+                    </Box>
+                </NoCodeTreeRow>
+
+                {
+                    trailingParameters.map((p, index, all) => (
+                        <NoCodeTreeRow
+                            key={index}
+                            up
+                            down={index < all.length - 1}
+                            contentSx={{pt: 2, pl: 1}}
+                        >
+                            <NoCodeOperandEditor
+                                parameter={p.parameter}
+                                operand={p.operand}
+                                onChange={(updatedOperand) => {
+                                    const updatedOperands = operand.operands ? [...operand.operands] : [];
+                                    updatedOperands[index + (leadingParameter != null ? 1 : 0)] = updatedOperand ?? null;
+                                    onChange({
+                                        ...operand,
+                                        operands: updatedOperands,
+                                    });
+                                }}
+                                allOperators={allOperators}
+                                allElements={allElements}
+                                contextType={contextType}
+                                operandError={
+                                    operandError != null &&
+                                    operandError.subErrors != null
+                                        ? operandError.subErrors[index + 1]
+                                        : undefined
+                                }
+                            />
+                        </NoCodeTreeRow>
+                    ))
+                }
+            </Box>
+
+            <SelectOperatorDialog
+                open={showOperatorSwitcher}
+                operators={allOperators}
+                onSelect={(op) => {
+                    setShowOperatorSwitcher(false);
+                    if (isNoCodeExpression(operand)) {
+                        onChange({
+                            ...operand,
+                            operatorIdentifier: op.identifier,
+                        });
+                    }
+                }}
+                onClose={() => {
+                    setShowOperatorSwitcher(false);
+                }}
+                desiredReturnType={NoCodeDataType.Runtime /* TODO */}
+            />
+
+            <OperatorInfoDialog
+                operator={showOperatorInfo ? operator : undefined}
+                onClose={() => setShowOperatorInfo(false)}
+            />
+
+            <ReorderDialog
+                title="Parameter neu sortieren"
+                items={(combinedParameters ?? [])}
+                getLabel={(p) => {
+                    if (isNoCodeStaticValue(p.operand)) {
+                        return {
+                            primary: `„${p.operand.value}”`,
+                            secondary: p.parameter.label,
+                        };
+                    }
+
+                    if (isNoCodeReference(p.operand)) {
+                        return {
+                            primary: getReferenceOperandLabel(p.operand, allElements),
+                            secondary: p.parameter.label,
+                        };
+                    }
+
+                    if (isNoCodeExpression(p.operand)) {
+                        return {
+                            primary: getExpressionOperandLabel(p.operand, allOperators),
+                            secondary: p.parameter.label,
+                        };
+                    }
+
+                    if (isNoCodeProcessDataReference(p.operand)) {
+                        return {
+                            primary: getProcessDataOperandLabel(p.operand, 'PROCESS'),
+                            secondary: p.parameter.label,
+                        };
+                    }
+
+                    if (isNoCodeInstanceDataReference(p.operand)) {
+                        return {
+                            primary: getProcessDataOperandLabel(p.operand, 'INSTANCE'),
+                            secondary: p.parameter.label,
+                        };
+                    }
+
+                    if (isNoCodeNodeDataReference(p.operand)) {
+                        return {
+                            primary: getProcessDataOperandLabel(p.operand, 'NODE'),
+                            secondary: p.parameter.label,
+                        };
+                    }
+
+                    return {
+                        primary: p.parameter.label,
+                    };
+                }}
+                onReorder={(p) => {
+                    if (isNoCodeExpression(operand)) {
+                        onChange({
+                            ...operand,
+                            operands: p.map(param => param.operand ?? null),
+                        });
+                    }
+                    setShowReorderParameters(false);
+                }}
+                onClose={() => setShowReorderParameters(false)}
+                open={showReorderParameters}
+            />
+        </>
+    );
+}
+
+function getReferenceOperandLabel(operand: NoCodeReference, allElements: ElementWithParents[]): string {
+    if (isStringNullOrEmpty(operand.elementId)) {
+        return 'Kein Element ausgewählt';
+    }
+
+    const element = allElements
+        .find(el => el.element.id === operand.elementId);
+
+    return element != null
+        ? generateComponentTitle(element.element)
+        : `Unbekanntes Element (ID: ${operand.elementId})`;
+}
+
+function getExpressionOperandLabel(operand: NoCodeExpression, allOperators: NoCodeOperatorDetailsDTO[]): string {
+    if (isStringNullOrEmpty(operand.operatorIdentifier)) {
+        return 'Kein Ausdrucksoperator ausgewählt';
+    }
+
+    const operator = allOperators
+        .find(op => op.identifier === operand.operatorIdentifier);
+
+    if (operator == null) {
+        return `Der Ausdruck mit dem unbekannten No-Code Operand (ID: ${operand.operatorIdentifier})`;
+    }
+
+    return operator.label;
+}
+
+function getReferencedElementOptions(
+    element: ElementWithParents['element'],
+    codeListOptions: ReadonlyMap<string, NoCodeParameterOption[]>,
+): NoCodeParameterOption[] {
+    switch (element.type) {
+        case ElementType.Checkbox:
+            return BOOL_DEFAULT_OPTIONS;
+        case ElementType.Radio:
+        case ElementType.Select:
+            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
+                return element.options.map((option) => (
+                    typeof option === 'string' ?
+                        {
+                            value: option,
+                            label: option,
+                        } :
+                        option
+                ));
+            }
+            return codeListOptions.get(element.id) ?? [];
+        case ElementType.MultiCheckbox:
+            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
+                return element.options;
+            }
+            return codeListOptions.get(element.id) ?? [];
+        case ElementType.ChipInput:
+            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.suggestions != null) {
+                return element.suggestions.map((value) => ({
+                    value,
+                    label: value,
+                }));
+            }
+            return codeListOptions.get(element.id) ?? [];
+        default:
+            return [];
+    }
+}
+
+/**
+ * Operators that accept values of any type, such as the comparison operators, use runtime parameters.
+ */
+function areCompatibleParameterTypes(first: NoCodeDataType, second: NoCodeDataType): boolean {
+    return first === second || first === NoCodeDataType.Runtime || second === NoCodeDataType.Runtime;
+}
+
+function getProcessDataOperandLabel(
+    operand: NoCodeProcessDataReference | NoCodeInstanceDataReference | NoCodeNodeDataReference,
+    source: 'PROCESS' | 'INSTANCE' | 'NODE',
+): string {
+    const sourceLabel = source === 'INSTANCE'
+        ? 'Geschützte Vorgangsdaten'
+        : source === 'NODE'
+            ? `Elementdaten (${(operand as NoCodeNodeDataReference).nodeDataKey ?? 'kein Schlüssel'})`
+            : 'Vorgangsdaten';
+
+    if (isStringNullOrEmpty(operand.path)) {
+        return sourceLabel;
+    }
+
+    return `${sourceLabel} → ${operand.path}`;
+}

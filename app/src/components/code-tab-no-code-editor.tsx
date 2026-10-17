@@ -3,17 +3,18 @@ import {flattenElementsWithParents} from '../utils/flatten-elements';
 import {CodeTabConditionSetEditor} from './code-tab-condition-set-editor';
 import React from 'react';
 import {ConditionSetOperator} from '../data/condition-set-operator';
-import Evaluators from '../evaluators';
+import {evaluators as Evaluators} from '../evaluators';
 import {type Function} from '../models/functions/function';
-import {type RootElement} from '../models/elements/root-element';
+import {type FormLayoutElement} from '../models/elements/form-layout-element';
 import {type StepElement} from '../models/elements/steps/step-element';
 import {type GroupLayout} from '../models/elements/form/layout/group-layout';
 import {ElementType} from '../data/element-type/element-type';
 import {type ConditionSet} from '../models/functions/conditions/condition-set';
 import {type ReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
+import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
 
 interface CodeTabNoCodeEditorProps {
-    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
+    parents: Array<FormLayoutElement | StepElement | GroupLayout | ReplicatingContainerLayout | SummaryLayoutElement>;
     element: AnyElement;
     func: Function;
     onChange: (func: Function) => void;
@@ -28,7 +29,7 @@ export function CodeTabNoCodeEditor({
                                         onChange,
                                         shouldReturnString,
                                         editable,
-                                    }: CodeTabNoCodeEditorProps): JSX.Element {
+                                    }: CodeTabNoCodeEditorProps) {
     let parent: AnyElement | null = null;
     for (const par of [...parents].reverse()) {
         if (par.type === ElementType.ReplicatingContainer) {

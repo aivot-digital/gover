@@ -1,0 +1,1452 @@
+package de.aivot.prosuna.backend.process.workers;
+
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.services.CommunicationService;
+import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
+import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.prosuna.backend.department.services.DepartmentService;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
+import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.mail.services.ProcessInstanceMailService;
+import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
+import de.aivot.prosuna.backend.process.entities.*;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.exceptions.*;
+import de.aivot.prosuna.backend.process.models.*;
+import de.aivot.prosuna.backend.process.models.executionResult.*;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.repositories.*;
+import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
+import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
+import de.aivot.prosuna.backend.process.services.ProcessNodeService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.services.UserService;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
+import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.*;
+
+@Service
+public class ProcessNodeExecutionResultHandler {
+    private static final Logger logger = LoggerFactory.getLogger(ProcessNodeExecutionResultHandler.class);
+
+    private final ProcessWorkRequestService workRequestService;
+    private final CommunicationService communicationService;
+    private final ProcessInstanceRepository processInstanceRepository;
+    private final ProcessVersionRepository processVersionRepository;
+    private final ProcessAssignmentService assignmentService;
+    private final ProcessInstanceTaskRepository processInstanceTaskRepository;
+    private final ProcessEdgeRepository processDefinitionEdgeRepository;
+    private final UserService userService;
+    private final ProcessTaskMailService processTaskMailService;
+    private final ProcessNodeRepository processNodeRepository;
+    private final ProcessNodeDefinitionService processNodeDefinitionService;
+    private final ProcessService processService;
+    private final ProcessNodeService processNodeService;
+    private final BusinessTime businessTime;
+    private final DepartmentService departmentService;
+    private final ProcessInstanceMailService processInstanceMailService;
+
+    @Autowired
+    public ProcessNodeExecutionResultHandler(ProcessAssignmentService assignmentService,
+                                             ProcessWorkRequestService workRequestService,
+                                             CommunicationService communicationService,
+                                             ProcessInstanceRepository processInstanceRepository,
+                                             ProcessVersionRepository processVersionRepository,
+                                             ProcessInstanceTaskRepository processInstanceTaskRepository,
+                                             ProcessEdgeRepository processDefinitionEdgeRepository,
+                                             UserService userService,
+                                             ProcessTaskMailService processTaskMailService,
+                                             ProcessNodeRepository processNodeRepository,
+                                             ProcessNodeDefinitionService processNodeDefinitionService,
+                                             ProcessService processService,
+                                             DepartmentService departmentService, ProcessInstanceMailService processInstanceMailService,
+                                             ProcessNodeService processNodeService,
+                                             BusinessTime businessTime) {
+        this.assignmentService = assignmentService;
+        this.workRequestService = workRequestService;
+        this.communicationService = communicationService;
+        this.processInstanceRepository = processInstanceRepository;
+        this.processVersionRepository = processVersionRepository;
+        this.processInstanceTaskRepository = processInstanceTaskRepository;
+        this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
+        this.userService = userService;
+        this.processTaskMailService = processTaskMailService;
+        this.processNodeRepository = processNodeRepository;
+        this.processNodeDefinitionService = processNodeDefinitionService;
+        this.processService = processService;
+        this.processNodeService = processNodeService;
+        this.businessTime = businessTime;
+        this.departmentService = departmentService;
+        this.processInstanceMailService = processInstanceMailService;
+    }
+
+    public <NodeConfig> void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
+                                        @Nullable UserEntity triggeringUser,
+                                        @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                        @Nonnull NodeConfig configurationOfExecutingNode,
+                                        @Nonnull ProcessNodeEntity currentNode,
+                                        @Nonnull ProcessInstanceEntity processInstance,
+                                        @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+                                        @Nullable ProcessInstanceTaskEntity previousTask,
+                                        @Nullable ProcessNodeExecutionResult executionResult) throws ProcessNodeExecutionException {
+        handleResultInternal(
+                logger,
+                triggeringUser,
+                provider,
+                configurationOfExecutingNode,
+                currentNode,
+                processInstance,
+                processInstanceTask,
+                previousTask,
+                executionResult,
+                Map.of()
+        );
+    }
+
+    public <NodeConfig> void handleResultWithAdditionalIdentities(
+            @Nonnull ProcessNodeExecutionLogger logger,
+            @Nullable UserEntity triggeringUser,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull NodeConfig configurationOfExecutingNode,
+            @Nonnull ProcessNodeEntity currentNode,
+            @Nonnull ProcessInstanceEntity processInstance,
+            @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+            @Nullable ProcessInstanceTaskEntity previousTask,
+            @Nullable ProcessNodeExecutionResult executionResult,
+            @Nonnull Map<String, IdentityData> additionalIdentities
+    ) throws ProcessNodeExecutionException {
+        handleResultInternal(
+                logger,
+                triggeringUser,
+                provider,
+                configurationOfExecutingNode,
+                currentNode,
+                processInstance,
+                processInstanceTask,
+                previousTask,
+                executionResult,
+                additionalIdentities
+        );
+    }
+
+    private <NodeConfig> void handleResultInternal(
+            @Nonnull ProcessNodeExecutionLogger logger,
+            @Nullable UserEntity triggeringUser,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull NodeConfig configurationOfExecutingNode,
+            @Nonnull ProcessNodeEntity currentNode,
+            @Nonnull ProcessInstanceEntity processInstance,
+            @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+            @Nullable ProcessInstanceTaskEntity previousTask,
+            @Nullable ProcessNodeExecutionResult executionResult,
+            @Nonnull Map<String, IdentityData> additionalIdentities
+    ) throws ProcessNodeExecutionException {
+        if (processInstance.getStatus() == ProcessInstanceStatus.Completed
+                || processInstance.getStatus() == ProcessInstanceStatus.Aborted
+                || processInstanceTask.getStatus().isTerminal()) {
+            // A delayed result must not change a finished process or task, including its stored summary.
+            return;
+        }
+
+        if (executionResult == null) {
+            var err = String.format(
+                    """
+                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat ein leeres Ergebnis zurückgegeben.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    StringUtils.quote(provider.getName()),
+                    StringUtils.quote(currentNode.resolveName(provider))
+            );
+            logger.logf(
+                    ProcessNodeExecutionLogLevel.Error,
+                    true,
+                    true,
+                    "Leeres Ergebnis",
+                    err,
+                    StringUtils.quote(currentNode.resolveName(provider))
+            );
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(err)
+                    .setAlreadyLogged(true);
+        }
+
+        if (Boolean.TRUE.equals(executionResult.getClearCurrentlyAssignedUser())
+                && executionResult instanceof ProcessNodeExecutionResultTaskAssigned) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    "Ein Ausführungsergebnis darf die Zuweisung einer Aufgabe nicht gleichzeitig aufheben und neu setzen."
+            );
+        }
+
+        validateAdditionalIdentities(
+                processInstance,
+                executionResult,
+                additionalIdentities
+        );
+
+        var selectedDeadline = resolveSelectedDeadline(currentNode, provider, configurationOfExecutingNode, executionResult);
+        var context = new HandlerContext<>(
+                logger,
+                triggeringUser,
+                provider,
+                configurationOfExecutingNode,
+                currentNode,
+                processInstance,
+                processInstanceTask,
+                previousTask,
+                executionResult,
+                additionalIdentities,
+                selectedDeadline
+        );
+
+        handleCommunicationRequest(context);
+
+        switch (executionResult) {
+            case ProcessNodeExecutionResultPaymentRequested paymentRequested ->
+                    handlePaymentRequested(context.withResult(paymentRequested));
+            case ProcessNodeExecutionResultTaskUpdated taskUpdated ->
+                    handleTaskUpdated(context.withResult(taskUpdated));
+            case ProcessNodeExecutionResultTaskCompleted taskCompleted ->
+                    handleTaskComplete(context.withResult(taskCompleted));
+            case ProcessNodeExecutionResultInstanceCompleted instanceCompleted ->
+                    handleInstanceComplete(context.withResult(instanceCompleted));
+            case ProcessNodeExecutionResultInstanceAssigned instanceAssigned ->
+                    handleAssignedInstance(context.withResult(instanceAssigned));
+            case ProcessNodeExecutionResultTaskAssigned assigned -> handleAssigned(context.withResult(assigned));
+            case ProcessNodeExecutionResultTaskAssignedCustomer assignedCustomer ->
+                    handleAssignedCustomer(context.withResult(assignedCustomer));
+            case ProcessNodeExecutionResultNoop ignored -> {
+                // Do nothing here.
+            }
+            default -> throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    """
+                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine unbekanntes Ergebnisklasse erzeugt: %s.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    StringUtils.quote(provider.getName()),
+                    StringUtils.quote(currentNode.resolveName(provider)),
+                    StringUtils.quote(executionResult.getClass().getName())
+            );
+        }
+
+        clearCurrentlyAssignedUser(context);
+        updateTaskDeadline(context);
+
+        if (!(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
+            ensureInstanceRunning(processInstance);
+        }
+    }
+
+    private void ensureInstanceRunning(@Nonnull ProcessInstanceEntity instance) {
+        if (instance.getStatus() != ProcessInstanceStatus.Running) {
+            instance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(instance);
+        }
+    }
+
+    @Nullable
+    private <C> ProcessNodeDeadlineDefinition resolveSelectedDeadline(@Nonnull ProcessNodeEntity node,
+                                                                      @Nonnull ProcessNodeDefinition<C> provider,
+                                                                      @Nonnull C configuration,
+                                                                      @Nonnull ProcessNodeExecutionResult result)
+            throws ProcessNodeExecutionExceptionBrokenImplementation {
+        if (result.getNewDeadlineKey() == null) {
+            return null;
+        }
+        var resolution = processNodeService.resolvePorts(node, provider, configuration);
+        if (!resolution.problems().isEmpty()) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(String.join(" ", resolution.problems()));
+        }
+        return resolution.deadlineDefinitions().stream()
+                .filter(definition -> definition.key().equals(result.getNewDeadlineKey()))
+                .findFirst()
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Die Frist mit dem Schlüssel „%s“ wird für dieses Prozesselement nicht angeboten.", result.getNewDeadlineKey()));
+    }
+
+    private void updateTaskDeadline(@Nonnull HandlerContext<?, ?> context) {
+        var definition = context.selectedDeadline;
+        if (definition == null || definition.key().equals(context.processInstanceTask.getDeadlineKey())) {
+            // Repeated results in the same phase must not extend its deadline.
+            return;
+        }
+        var setting = context.currentNode.getDeadlines().get(definition.key());
+        var newDeadline = setting == null || setting.days() == null ? null
+                : businessTime.zonedNow().plusDays(setting.days()).toInstant();
+        var newDeadlineKey = newDeadline == null ? null : definition.key();
+        var previousDeadline = context.processInstanceTask.getDeadline();
+        var previousDeadlineKey = context.processInstanceTask.getDeadlineKey();
+        if (newDeadline == null && previousDeadline == null && previousDeadlineKey == null) {
+            return;
+        }
+        context.processInstanceTask
+                .setDeadline(newDeadline)
+                .setDeadlineKey(newDeadlineKey)
+                .setDeadlineStrict(newDeadline != null && setting.strict());
+        processInstanceTaskRepository.save(context.processInstanceTask);
+
+        var details = new LinkedHashMap<String, Object>();
+        details.put("previousDeadline", previousDeadline);
+        details.put("previousDeadlineKey", previousDeadlineKey);
+        details.put("newDeadline", newDeadline);
+        details.put("newDeadlineKey", newDeadlineKey);
+        var message = newDeadline == null
+                ? "Die Frist der Aufgabe wurde aufgehoben. Für die Phase „%s“ ist keine Frist festgelegt.".formatted(definition.label())
+                : previousDeadline == null
+                ? "Für die Phase „%s“ wurde eine Frist bis %s gesetzt."
+                        .formatted(definition.label(), ExecutionSummaryMarkdown.timestamp(newDeadline))
+                : "Die Frist der Aufgabe wurde von %s auf %s geändert (Phase „%s“)."
+                        .formatted(ExecutionSummaryMarkdown.timestamp(previousDeadline), ExecutionSummaryMarkdown.timestamp(newDeadline), definition.label());
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                true,
+                null,
+                null,
+                null,
+                "Frist der Aufgabe geändert",
+                details,
+                "%s",
+                message
+        );
+    }
+
+    private void clearCurrentlyAssignedUser(@Nonnull HandlerContext<?, ?> context) throws ProcessNodeExecutionExceptionInvalidAssignment {
+        var previousAssignedUserId = context.processInstanceTask.getAssignedUserId();
+        if (!Boolean.TRUE.equals(context.result.getClearCurrentlyAssignedUser()) || previousAssignedUserId == null) {
+            return;
+        }
+
+        var previousAssignedUser = requireOptionalUser(context, previousAssignedUserId)
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
+                        "Die bisherige Aufgabenzuweisung an die Person mit der ID %s konnte nicht aufgelöst werden."
+                                .formatted(StringUtils.quote(previousAssignedUserId))
+                ));
+
+        context.processInstanceTask.setAssignedUserId(null);
+        processInstanceTaskRepository.save(context.processInstanceTask);
+
+        // The triggering user initiated the process step; clearing its staff assignment is automatic.
+        var removalDescription = switch (context.result) {
+            case ProcessNodeExecutionResultTaskAssignedCustomer assignedCustomer -> {
+                var identityId = assignedCustomer.getIdentityId();
+                if (identityId == null) {
+                    yield "automatisch aufgehoben, da zur weiteren Bearbeitung per E-Mail eingeladen wurde.";
+                }
+                var identity = context.processInstance.getIdentities().get(identityId);
+                var identityTitle = StringUtils.toNullableTrimmedString(identity.title());
+                yield "automatisch aufgehoben, da die Aufgabe an die Identität %s übergeben wurde."
+                        .formatted(StringUtils.quote(ProcessHistoryLabels.nameOrId(identityId, identityTitle)));
+            }
+            case ProcessNodeExecutionResultPaymentRequested ignored ->
+                    "automatisch aufgehoben, da eine Zahlung angefordert wurde.";
+            default -> "im Prozessablauf automatisch aufgehoben.";
+        };
+
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                true,
+                previousAssignedUserId,
+                null,
+                null,
+                "Aufgabenzuweisung automatisch aufgehoben",
+                Map.of("previousAssignedUserId", previousAssignedUserId),
+                "Die Aufgabenzuweisung an %s wurde %s",
+                ProcessHistoryLabels.quotedUser(previousAssignedUser),
+                removalDescription
+        );
+    }
+
+    private void validateAdditionalIdentities(@Nonnull ProcessInstanceEntity processInstance,
+                                              @Nonnull ProcessNodeExecutionResult executionResult,
+                                              @Nonnull Map<String, IdentityData> additionalIdentities)
+            throws ProcessNodeExecutionExceptionBrokenImplementation {
+        if (additionalIdentities.isEmpty()) {
+            return;
+        }
+        if (!(executionResult instanceof ProcessNodeExecutionResultTaskCompleted)
+                && !(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    "Neue Prozessidentitäten dürfen nur beim Abschluss einer Aufgabe oder eines Vorgangs übernommen werden."
+            );
+        }
+
+        var processIdentities = processInstance.getIdentities();
+
+        for (var entry : additionalIdentities.entrySet()) {
+            var identity = entry.getValue();
+            if (identity == null || !Objects.equals(entry.getKey(), identity.identityId())) {
+                throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Eine neue Prozessidentität besitzt keine konsistente Identitäts-ID."
+                );
+            }
+            if (processIdentities != null && processIdentities.containsKey(entry.getKey())) {
+                throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Die neue Prozessidentität %s existiert bereits im Vorgang.",
+                        StringUtils.quote(entry.getKey())
+                );
+            }
+        }
+    }
+
+    private void applyAdditionalIdentities(@Nonnull ProcessInstanceEntity processInstance,
+                                           @Nonnull Map<String, IdentityData> additionalIdentities) {
+        if (additionalIdentities.isEmpty()) {
+            return;
+        }
+
+        var processIdentities = processInstance.getIdentities();
+        if (processIdentities == null) {
+            processIdentities = new IdentityDataMap();
+            processInstance.setIdentities(processIdentities);
+        }
+        processIdentities.putAll(additionalIdentities);
+    }
+
+    private void handleCommunicationRequest(@Nonnull HandlerContext<?, ?> context) throws ProcessNodeExecutionException {
+        var communicationRequest = context.result.getCommunicationRequest();
+        if (communicationRequest == null) {
+            return;
+        }
+
+        IdentityData recipientIdentity = null;
+        if (communicationRequest.recipientIdentityId() != null) {
+            var processIdentities = context.processInstance.getIdentities();
+            recipientIdentity = processIdentities == null
+                    ? null
+                    : processIdentities.get(communicationRequest.recipientIdentityId());
+            if (recipientIdentity == null) {
+                recipientIdentity = context.additionalIdentities.get(communicationRequest.recipientIdentityId());
+            }
+            if (recipientIdentity == null) {
+                markTaskFailed(context.processInstanceTask);
+                throw new ProcessNodeExecutionExceptionMissingValue(
+                        "Die Empfängeridentität %s ist im Vorgang nicht vorhanden.",
+                        StringUtils.quote(communicationRequest.recipientIdentityId())
+                );
+            }
+        }
+
+        var originalMessage = communicationRequest.message();
+        var message = new CommunicationMessage.Builder()
+                .subject(originalMessage.subject())
+                .body(originalMessage.body())
+                .htmlBody(originalMessage.htmlBody())
+                .callToActions(originalMessage.callToActions())
+                .timestamp(originalMessage.timestamp())
+                .attachments(originalMessage.attachments())
+                .sendingUser(context.triggeringUser)
+                .sendingDepartment(resolveSendingDepartment(context, originalMessage.signatureDepartment()))
+                .signatureDepartment(originalMessage.signatureDepartment())
+                .referenceId(context.processInstance.getCaseNumber())
+                .build();
+
+        final Map<String, Object> sendResult;
+        try {
+            sendResult = recipientIdentity != null
+                    ? communicationService.sendMessage(recipientIdentity, message)
+                    : communicationService.sendMessageToEmail(communicationRequest.recipientEmailAddress(), message);
+        } catch (CommunicationException e) {
+            markTaskFailed(context.processInstanceTask);
+            if (recipientIdentity != null) {
+                throw new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die Nachricht an die Identität %s konnte nicht versendet werden: %s",
+                        StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientIdentity.identityId(), recipientIdentity.title())),
+                        e.getMessage()
+                );
+            }
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die Nachricht an die E-Mail-Adresse %s konnte nicht versendet werden: %s",
+                    StringUtils.quote(communicationRequest.recipientEmailAddress()),
+                    e.getMessage()
+            );
+        }
+
+        var receipt = new LinkedHashMap<String, Object>();
+        receipt.put(ExecutionSummaryMarkdown.SENT_AT, Instant.now());
+        receipt.put(ExecutionSummaryMarkdown.DELIVERY_CHANNEL, communicationService.describeDeliveryChannel(recipientIdentity));
+        context.result.setRuntimeData(ExecutionSummaryMarkdown.withMetadata(
+                ExecutionSummaryMarkdown.preserveMetadata(context.processInstanceTask.getRuntimeData(), context.result.getRuntimeData()), receipt));
+
+        logCommunicationSent(context, recipientIdentity, communicationRequest.recipientEmailAddress(), message, sendResult);
+
+        if (communicationRequest.nodeDataOutputKey() == null) {
+            return;
+        }
+
+        var nodeData = context.result.getNodeData() == null
+                ? new LinkedHashMap<String, Object>()
+                : new LinkedHashMap<>(context.result.getNodeData());
+        nodeData.put(communicationRequest.nodeDataOutputKey(), sendResult);
+        context.result.setNodeData(nodeData);
+    }
+
+    private void logCommunicationSent(@Nonnull HandlerContext<?, ?> context,
+                                      @Nullable IdentityData recipientIdentity,
+                                      @Nullable String recipientEmailAddress,
+                                      @Nonnull CommunicationMessage message,
+                                      @Nonnull Map<String, Object> sendResult) {
+        var processInstanceDetails = new LinkedHashMap<String, Object>();
+        processInstanceDetails.put("id", context.processInstance.getId());
+        processInstanceDetails.put("caseNumber", context.processInstance.getCaseNumber());
+        processInstanceDetails.put("processId", context.processInstance.getProcessId());
+        processInstanceDetails.put("initialProcessVersion", context.processInstance.getInitialProcessVersion());
+
+        var messageDetails = new LinkedHashMap<String, Object>();
+        messageDetails.put("subject", message.subject());
+        messageDetails.put("body", message.body());
+        messageDetails.put("htmlBody", message.htmlBody());
+        messageDetails.put("referenceId", message.referenceId());
+        messageDetails.put("sendingUser", createSendingUserDetails(message.sendingUser()));
+        messageDetails.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));
+        messageDetails.put("signatureDepartment", createSignatureDepartmentDetails(message.signatureDepartment()));
+
+        var eventDetails = new LinkedHashMap<String, Object>();
+        eventDetails.put("processInstance", processInstanceDetails);
+        if (recipientIdentity != null) {
+            var recipientIdentityDetails = new LinkedHashMap<String, Object>();
+            recipientIdentityDetails.put("identityId", recipientIdentity.identityId());
+            recipientIdentityDetails.put("type", recipientIdentity.type());
+            recipientIdentityDetails.put("providerKey", recipientIdentity.providerKey());
+            recipientIdentityDetails.put("metadataIdentifier", recipientIdentity.metadataIdentifier());
+            recipientIdentityDetails.put("emailAddress", recipientIdentity.emailAddress());
+            recipientIdentityDetails.put("communicationProviderBindingId", recipientIdentity.communicationProviderBindingId());
+            eventDetails.put("recipientIdentity", recipientIdentityDetails);
+        } else {
+            eventDetails.put("recipientEmailAddress", recipientEmailAddress);
+        }
+        eventDetails.put("message", messageDetails);
+        eventDetails.put("sendResult", sendResult);
+
+        if (recipientIdentity != null) {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    false,
+                    true,
+                    "Nachricht versendet",
+                    eventDetails,
+                    "Die Nachricht mit dem Betreff %s wurde erfolgreich an die Identität %s versendet.",
+                    StringUtils.quote(message.subject()),
+                    StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientIdentity.identityId(), recipientIdentity.title()))
+            );
+        } else {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    false,
+                    true,
+                    "Nachricht versendet",
+                    eventDetails,
+                    "Die Nachricht mit dem Betreff %s wurde erfolgreich an die E-Mail-Adresse %s versendet.",
+                    StringUtils.quote(message.subject()),
+                    StringUtils.quote(recipientEmailAddress)
+            );
+        }
+    }
+
+    @Nonnull
+    private DepartmentEntity resolveSendingDepartment(@Nonnull HandlerContext<?, ?> context,
+                                                       @Nullable VDepartmentShadowedEntity signatureDepartment)
+            throws ProcessNodeExecutionException {
+        if (signatureDepartment != null) {
+            var departmentId = signatureDepartment.getId();
+            var department = departmentId == null
+                    ? Optional.<DepartmentEntity>empty()
+                    : departmentService.retrieve(departmentId);
+            if (department.isEmpty()) {
+                markTaskFailed(context.processInstanceTask);
+                throw new ProcessNodeExecutionExceptionMissingValue(
+                        "Die ausgewählte Organisationseinheit für die E-Mail-Signatur ist nicht vorhanden."
+                );
+            }
+            return department.get();
+        }
+
+        final Optional<ProcessEntity> process;
+        try {
+            process = processService.retrieve(context.processInstance.getProcessId());
+        } catch (ResponseException e) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Der Prozess %s des Vorgangs konnte nicht geladen werden: %s",
+                    context.processInstance.getProcessId(),
+                    e.getMessage()
+            );
+        }
+
+        if (process.isEmpty()) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Der Prozess %s des Vorgangs ist nicht vorhanden.",
+                    context.processInstance.getProcessId()
+            );
+        }
+
+        var departmentId = process.get().getDepartmentId();
+        if (departmentId == null) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Für den Prozess %s ist keine Organisationseinheit hinterlegt.",
+                    process.get().getId()
+            );
+        }
+        var department = departmentService.retrieve(departmentId);
+        if (department.isEmpty()) {
+            markTaskFailed(context.processInstanceTask);
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Die Organisationseinheit %s des Prozesses ist nicht vorhanden.",
+                    departmentId
+            );
+        }
+        return department.get();
+    }
+
+    @Nullable
+    private static Map<String, Object> createSendingUserDetails(@Nullable UserEntity user) {
+        if (user == null) {
+            return null;
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("id", user.getId());
+        details.put("name", user.getFullName());
+        return details;
+    }
+
+    @Nullable
+    private static Map<String, Object> createSendingDepartmentDetails(@Nullable DepartmentEntity department) {
+        if (department == null) {
+            return null;
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("id", department.getId());
+        details.put("name", department.getName());
+        return details;
+    }
+
+    @Nullable
+    private static Map<String, Object> createSignatureDepartmentDetails(
+            @Nullable VDepartmentShadowedEntity department
+    ) {
+        if (department == null) {
+            return null;
+        }
+        var details = new LinkedHashMap<String, Object>();
+        details.put("id", department.getId());
+        details.put("name", department.getName());
+        return details;
+    }
+
+    private void markTaskFailed(@Nonnull ProcessInstanceTaskEntity task) {
+        task.setStatus(ProcessTaskStatus.Failed);
+        task.setFinished(Instant.now());
+        processInstanceTaskRepository.save(task);
+    }
+
+    private void handlePaymentRequested(@Nonnull HandlerContext<?, ProcessNodeExecutionResultPaymentRequested> context) {
+        context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingPayment);
+        assignAndSaveDataLayersAndStatusOverride(context, false);
+
+        ensureInstanceRunning(context.processInstance);
+
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                "Zahlung angefordert",
+                "Es wurde eine Zahlung über den Zahlungsanbieter %s mit der Transaktions-ID %s angefordert.",
+                StringUtils.quote(context.result.getPaymentProviderName()),
+                StringUtils.quote(context.result.getTransactionKey())
+        );
+
+        // TODO: Use communication package to send payment request information to target in a later product iteration.
+    }
+
+    private void handleAssigned(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskAssigned> context) throws ProcessNodeExecutionException {
+        String previousAssignedUserId = context.processInstanceTask.getAssignedUserId();
+
+        UserEntity assignedUser;
+        try {
+            assignedUser = userService
+                    .retrieve(context.result.getAssignedUserId())
+                    .orElse(null);
+        } catch (ResponseException e) {
+            throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                    e,
+                    """
+                            Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine ungültige Mitarbeiter:in-ID „%s“ zurückgegeben.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    context.provider.getName(),
+                    context.currentNode.resolveName(context.provider),
+                    context.result.getAssignedUserId()
+            );
+        }
+
+        if (assignedUser == null) {
+            throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                    """
+                            Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine unbekannte Mitarbeiter:in-ID „%s“ zurückgegeben.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    context.provider.getName(),
+                    context.currentNode.resolveName(context.provider),
+                    context.result.getAssignedUserId()
+            );
+        }
+
+        applyDataLayersAndStatusOverride(context, false);
+        try {
+            assignmentService.saveRuntimeAssignment(context.processInstanceTask, context.result.getAssignedUserId());
+        } catch (ResponseException exception) {
+            throw new ProcessNodeExecutionExceptionInvalidAssignment(exception,
+                    "Die ausgewählte Person hat nicht die erforderlichen Berechtigungen für diese Aufgabe. Bitte wählen Sie eine andere berechtigte Person aus.");
+        }
+
+        // Assignment notifications must already contain the new deadline.
+        updateTaskDeadline(context);
+
+        boolean unchanged = Objects.equals(previousAssignedUserId, assignedUser.getId());
+        UserEntity previousAssignedUser = null;
+        if (previousAssignedUserId != null && !unchanged) {
+            boolean lookupFailed = false;
+            try {
+                previousAssignedUser = userService.retrieve(previousAssignedUserId).orElse(null);
+            } catch (ResponseException e) {
+                lookupFailed = true;
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die bisherige Aufgabenzuweisung an die Person mit der ID %s konnte nicht aufgelöst werden.",
+                        StringUtils.quote(previousAssignedUserId)
+                ));
+            }
+            if (previousAssignedUser == null && !lookupFailed) {
+                context.logger.logf(
+                        ProcessNodeExecutionLogLevel.Warn,
+                        true,
+                        true,
+                        "Bisherige Aufgabenzuweisung nicht auflösbar",
+                        "Die bisher zugewiesene Person mit der ID %s konnte nicht per E-Mail informiert werden.",
+                        StringUtils.quote(previousAssignedUserId)
+                );
+            }
+        }
+
+        String assignedUserLabel = ProcessHistoryLabels.quotedUser(assignedUser);
+        String logMessageTitle;
+        String logMessageDetails;
+        if (unchanged) {
+            logMessageTitle = "Zuweisung zur Aufgabe unverändert";
+            logMessageDetails = "Die Aufgabe ist weiterhin %s zugewiesen.".formatted(assignedUserLabel);
+        } else if (previousAssignedUserId == null) {
+            logMessageTitle = "Aufgabe zugewiesen";
+            logMessageDetails = "Die Aufgabe wurde %s zugewiesen.".formatted(assignedUserLabel);
+        } else {
+            logMessageTitle = "Aufgabe neu zugewiesen";
+            String previousUserLabel = previousAssignedUser != null
+                    ? ProcessHistoryLabels.quotedUser(previousAssignedUser)
+                    : "der Person mit der ID " + StringUtils.quote(previousAssignedUserId);
+            logMessageDetails = "Die Aufgabe wurde von %s auf %s neu zugewiesen."
+                    .formatted(previousUserLabel, assignedUserLabel);
+        }
+        logMessageDetails += context.triggeringUser != null
+                ? " Die Zuweisung erfolgte durch %s.".formatted(ProcessHistoryLabels.quotedUser(context.triggeringUser))
+                : " Die Zuweisung erfolgte automatisch.";
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                context.triggeringUser == null,
+                true,
+                true,
+                assignedUser.getId(),
+                null,
+                null,
+                logMessageTitle,
+                Map.of(),
+                "%s",
+                logMessageDetails
+        );
+
+        ensureInstanceRunning(context.processInstance);
+
+        if (unchanged) {
+            return;
+        }
+
+        if (context.triggeringUser == null || !assignedUser.getId().equals(context.triggeringUser.getId())) {
+            try {
+                processTaskMailService.sendAssigned(
+                        context.triggeringUser,
+                        assignedUser,
+                        context.processInstance,
+                        context.processInstanceTask,
+                        context.currentNode,
+                        context.provider,
+                        previousAssignedUserId != null
+                );
+            } catch (Exception e) {
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an %s konnte nicht versendet werden.",
+                        ProcessHistoryLabels.quotedUser(assignedUser)
+                ));
+            }
+        }
+
+        if (previousAssignedUser != null && (context.triggeringUser == null
+                || !previousAssignedUser.getId().equals(context.triggeringUser.getId()))) {
+            try {
+                processTaskMailService.sendUnassigned(
+                        context.triggeringUser,
+                        previousAssignedUser,
+                        context.processInstance,
+                        context.processInstanceTask,
+                        context.currentNode,
+                        context.provider
+                );
+            } catch (Exception e) {
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die E-Mail-Benachrichtigung über das Ende der Aufgabenzuweisung an %s konnte nicht versendet werden.",
+                        ProcessHistoryLabels.quotedUser(previousAssignedUser)
+                ));
+            }
+        }
+    }
+
+    private static boolean isSameUser(@Nullable UserEntity user1, @Nullable UserEntity user2) {
+        if (user1 == null && user2 == null) {
+            return true;
+        }
+
+        if (user1 == null || user2 == null) {
+            return false;
+        }
+
+        return Objects.equals(user1.getId(), user2.getId());
+    }
+
+    private void handleAssignedInstance(HandlerContext<?, ProcessNodeExecutionResultInstanceAssigned> context) throws ProcessNodeExecutionException {
+        var viaPort = context.result.getViaPort();
+        if (viaPort != null) {
+            requireCompletionPath(context, viaPort);
+            var processData = context.result.getProcessData() != null
+                    ? context.result.getProcessData()
+                    : context.previousTask != null
+                    ? context.previousTask.getProcessData()
+                    : context.processInstance.getInitialPayload();
+            applyOutputMappings(context.provider, context.currentNode.getOutputMappings(),
+                    context.result.getNodeData() != null ? context.result.getNodeData() : Map.of(), processData);
+        }
+
+        if (context.result.getAssignedUserId() != null) {
+            try {
+                assignmentService.requireRuntimeInstanceAssignee(
+                        context.processInstance.getId(), context.result.getAssignedUserId());
+            } catch (ResponseException e) {
+                throw new ProcessNodeExecutionExceptionInvalidAssignment(e,
+                        "Die ausgewählte Person kann diesem Vorgang nicht zugewiesen werden.");
+            }
+        }
+
+        var previousAssignedUser = requireOptionalUser(context, context.processInstance.getAssignedUserId());
+        var newlyAssignedUser = requireOptionalUser(context, context.result.getAssignedUserId());
+        var triggeringUser = Optional.ofNullable(context.triggeringUser);
+        var assignmentSnapshot = new LinkedHashMap<String, Object>();
+        previousAssignedUser.ifPresent(user -> {
+            assignmentSnapshot.put(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_ID, user.getId());
+            assignmentSnapshot.put(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_NAME, user.getFullName());
+        });
+        newlyAssignedUser.ifPresent(user -> assignmentSnapshot.put(ExecutionSummaryMarkdown.ASSIGNED_USER_NAME, user.getFullName()));
+        context.result.setRuntimeData(ExecutionSummaryMarkdown.withMetadata(context.result.getRuntimeData(), assignmentSnapshot));
+
+        context
+                .processInstance
+                .setAssignedUserId(
+                        newlyAssignedUser
+                                .map(UserEntity::getId)
+                                .orElse(null)
+                );
+        if (viaPort == null) {
+            assignAndSaveDataLayersAndStatusOverride(context, false);
+        }
+        if (context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        }
+        processInstanceRepository.save(context.processInstance);
+
+
+        String logMessageTitle;
+        StringBuilder logMessageDetailsBuilder = new StringBuilder();
+        boolean sendAssignedEmail = false;
+        boolean sendUnassignedEmail = false;
+
+        // Determine the log message based on the previous and newly assigned users
+        if (previousAssignedUser.isEmpty()) {
+
+            // Determine the log message based on the newly assigned user
+            if (newlyAssignedUser.isEmpty()) {
+                logMessageTitle = "Zuweisung zu Vorgang unverändert";
+                logMessageDetailsBuilder
+                        .append("Die Zuweisung zu diesem Vorgang wurde nicht geändert. Es war keine Mitarbeiter:in zugewiesen und es ist weiterhin keine Mitarbeiter:in zugewiesen.");
+            } else {
+                logMessageTitle = "Vorgang zugewiesen";
+                logMessageDetailsBuilder
+                        .append(String.format(
+                                "Die Zuweisung zu diesem Vorgang wurde auf die Mitarbeiter:in %s geändert.",
+                                ProcessHistoryLabels.quotedUser(newlyAssignedUser.get())
+                        ));
+                sendAssignedEmail = true;
+            }
+        } else {
+
+            // Determine the log message based on the newly assigned user
+            if (newlyAssignedUser.isEmpty()) {
+                logMessageTitle = "Zuweisung zu Vorgang entfernt";
+                logMessageDetailsBuilder
+                        .append(String.format(
+                                "Die Zuweisung zu diesem Vorgang zur Mitarbeiter:in %s wurde entfernt.",
+                                ProcessHistoryLabels.quotedUser(previousAssignedUser.get())
+                        ));
+                sendUnassignedEmail = true;
+            } else {
+                if (isSameUser(previousAssignedUser.get(), newlyAssignedUser.get())) {
+                    logMessageTitle = "Zuweisung zu Vorgang unverändert";
+                    logMessageDetailsBuilder
+                            .append(String.format(
+                                    "Die Zuweisung zu diesem Vorgang wurde nicht geändert. Es war die Mitarbeiter:in %s zugewiesen und es ist weiterhin die Mitarbeiter:in %s zugewiesen.",
+                                    ProcessHistoryLabels.quotedUser(previousAssignedUser.get()),
+                                    ProcessHistoryLabels.quotedUser(newlyAssignedUser.get())
+                            ));
+                } else {
+                    logMessageTitle = "Vorgang neu zugewiesen";
+                    logMessageDetailsBuilder
+                            .append(String.format(
+                                    "Die Zuweisung zu diesem Vorgang wurde von der Mitarbeiter:in %s auf die Mitarbeiter:in %s geändert.",
+                                    ProcessHistoryLabels.quotedUser(previousAssignedUser.get()),
+                                    ProcessHistoryLabels.quotedUser(newlyAssignedUser.get())
+                            ));
+                    sendAssignedEmail = true;
+                    sendUnassignedEmail = true;
+                }
+            }
+        }
+
+        if (triggeringUser.isEmpty()) {
+            logMessageDetailsBuilder
+                    .append(" Die Änderung wurde automatisch vorgenommen.");
+        } else {
+            logMessageDetailsBuilder
+                    .append(String.format(
+                            " Die Änderung wurde durch %s vorgenommen.",
+                            ProcessHistoryLabels.quotedUser(triggeringUser.get())
+                    ));
+        }
+
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                logMessageTitle,
+                logMessageDetailsBuilder.toString()
+        );
+
+        if (viaPort != null) {
+            var completionResult = new ProcessNodeExecutionResultTaskCompleted(viaPort);
+            completionResult.setRuntimeData(context.result.getRuntimeData());
+            completionResult.setNodeData(context.result.getNodeData());
+            completionResult.setProcessData(context.result.getProcessData());
+            handleTaskComplete(context.withResult(completionResult));
+        }
+
+
+        if (sendAssignedEmail) {
+            try {
+                processInstanceMailService.sendAssigned(
+                        triggeringUser.orElse(null),
+                        newlyAssignedUser.get(),
+                        context.processInstance,
+                        previousAssignedUser.isPresent()
+                );
+            } catch (Exception e) {
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die E-Mail-Benachrichtigung über den zugewiesenen Vorgang an %s konnte nicht versendet werden.",
+                        ProcessHistoryLabels.quotedUser(newlyAssignedUser.get())
+                ));
+            }
+        }
+
+        if (sendUnassignedEmail) {
+            try {
+                processInstanceMailService.sendUnassigned(
+                        triggeringUser.orElse(null),
+                        previousAssignedUser.get(),
+                        context.processInstance,
+                        newlyAssignedUser.isPresent()
+                );
+            } catch (Exception e) {
+                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die E-Mail-Benachrichtigung über das Ende der Vorgangszuweisung an %s konnte nicht versendet werden.",
+                        ProcessHistoryLabels.quotedUser(previousAssignedUser.get())
+                ));
+            }
+        }
+    }
+
+    /**
+     * Require an optional user.
+     * If the user ID is null, no user is present but if the user id is given, the system MUST be able to retrieve the user.
+     * If the user cannot be retrieved, an exception is thrown.
+     *
+     * @param context
+     * @param userId
+     * @return
+     * @throws ProcessNodeExecutionExceptionInvalidAssignment
+     */
+    private Optional<UserEntity> requireOptionalUser(@Nonnull HandlerContext<?, ?> context,
+                                                     @Nullable String userId) throws ProcessNodeExecutionExceptionInvalidAssignment {
+        Optional<UserEntity> user = Optional.empty();
+        if (userId != null) {
+            try {
+                user = userService.retrieve(userId);
+            } catch (ResponseException e) {
+                throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                        e,
+                        """
+                                Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine ungültige Mitarbeiter:in-ID „%s“ zurückgegeben.
+                                Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                                """,
+                        context.provider.getName(),
+                        context.currentNode.resolveName(context.provider),
+                        userId
+                );
+            }
+        }
+        return user;
+    }
+
+    private void handleAssignedCustomer(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskAssignedCustomer> context) throws ProcessNodeExecutionException {
+        var identityId = context.result.getIdentityId();
+        if (identityId == null) {
+            var communicationRequest = context.result.getCommunicationRequest();
+            if (communicationRequest == null || communicationRequest.recipientEmailAddress() == null) {
+                throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                        "Eine Kundenaufgabe ohne Prozessidentität benötigt eine Einladung per E-Mail."
+                );
+            }
+
+            context.processInstanceTask.setAssignedCustomerIdentityId(null);
+            context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingCustomer);
+            assignAndSaveDataLayersAndStatusOverride(context, false);
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Aufgabe per E-Mail zugewiesen",
+                    "Die Aufgabe %s wurde per E-Mail an %s eingeladen.",
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    StringUtils.quote(communicationRequest.recipientEmailAddress())
+            );
+            return;
+        }
+
+        var processIdentities = context.processInstance.getIdentities();
+        var assignedCustomer = processIdentities == null ? null : processIdentities.get(identityId);
+        if (assignedCustomer == null) {
+            throw new ProcessNodeExecutionExceptionInvalidAssignment(
+                    """
+                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine ungültige Identitäts-ID %s zurückgegeben.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    StringUtils.quote(context.provider.getName()),
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    StringUtils.quote(identityId)
+            );
+        }
+
+        context.processInstanceTask.setAssignedCustomerIdentityId(assignedCustomer.identityId());
+        context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingCustomer);
+
+        assignAndSaveDataLayersAndStatusOverride(context, false);
+
+        if (context.triggeringUser != null) {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    false,
+                    true,
+                    "Aufgabe neu zugewiesen",
+                    "Die Aufgabe wurde durch %s der Identität %s zugewiesen.",
+                    ProcessHistoryLabels.quotedUser(context.triggeringUser),
+                    StringUtils.quote(ProcessHistoryLabels.nameOrId(assignedCustomer.identityId(), assignedCustomer.title()))
+            );
+        } else {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " automatisch zugewiesen",
+                    "Die Aufgabe wurde automatisch der Identität %s zugewiesen.",
+                    StringUtils.quote(ProcessHistoryLabels.nameOrId(assignedCustomer.identityId(), assignedCustomer.title()))
+            );
+        }
+    }
+
+    private void handleTaskUpdated(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskUpdated> context) throws ProcessNodeExecutionException {
+        if (context.triggeringUser != null || context.processInstanceTask.getStatus() == ProcessTaskStatus.InProgress) {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.InProgress);
+        } else if (context.processInstanceTask.getStatus() == ProcessTaskStatus.AwaitingStaff) {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.AwaitingStaff);
+        } else {
+            context.processInstanceTask.setStatus(ProcessTaskStatus.Running);
+        }
+        context.processInstanceTask.setUpdated(Instant.now());
+        assignAndSaveDataLayersAndStatusOverride(context, true);
+
+        if (context.triggeringUser != null && context.processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            context.processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(context.processInstance);
+        } else {
+            ensureInstanceRunning(context.processInstance);
+        }
+
+        if (context.triggeringUser != null) {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Debug,
+                    true,
+                    false,
+                    "Eingaben für " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " gespeichert",
+                    "Für die Aufgabe %s wurden durch die Mitarbeiter:in %s Eingaben abgespeichert.",
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    ProcessHistoryLabels.quotedUser(context.triggeringUser)
+            );
+        } else {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Debug,
+                    true,
+                    false,
+                    "Eingaben für " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " gespeichert",
+                    "Für die Aufgabe %s wurden durch die zugewiesen Mitarbeiter:in Eingaben abgespeichert.",
+                    StringUtils.quote(context.currentNode.resolveName(context.provider))
+            );
+        }
+    }
+
+    private void handleTaskComplete(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskCompleted> context) throws ProcessNodeExecutionException {
+        var completionPath = requireCompletionPath(context, context.result.getViaPort());
+        var port = completionPath.port();
+        var outEdge = completionPath.edge();
+
+        context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
+        context.processInstanceTask.setFinished(Instant.now());
+        applyDataLayersAndStatusOverride(context, true);
+
+        applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
+        var updateInstance = !context.additionalIdentities.isEmpty()
+                || context.processInstance.getStatus() != ProcessInstanceStatus.Running;
+        context.processInstance.setStatus(ProcessInstanceStatus.Running);
+        generateAndSaveExecutionSummary(context, context.result.getViaPort());
+        if (updateInstance) {
+            processInstanceRepository.save(context.processInstance);
+        } else {
+            ensureInstanceRunning(context.processInstance);
+        }
+
+        var nextNode = processNodeRepository
+                .findById(outEdge.getToNodeId())
+                .map(node -> processNodeDefinitionService
+                        .getProcessNodeDefinition(node)
+                        .map(node::resolveName)
+                        .orElse("UNKNOWN"))
+                .orElse("UNKNOWN");
+
+        if (context.triggeringUser != null) {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
+                    """
+                            Die Aufgabe für das Prozesselement %s wurde durch die Mitarbeiter:in %s abgeschlossen.
+                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Das nächste Prozesselement ist %s.
+                            """,
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    ProcessHistoryLabels.quotedUser(context.triggeringUser),
+                    StringUtils.quote(port.label()),
+                    StringUtils.quote(nextNode)
+            );
+        } else {
+            context.logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
+                    """
+                            Die Aufgabe für das Prozesselement %s wurde abgeschlossen.
+                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Das nächste Prozesselement ist %s.
+                            """,
+                    StringUtils.quote(context.currentNode.resolveName(context.provider)),
+                    StringUtils.quote(port.label()),
+                    StringUtils.quote(nextNode)
+            );
+        }
+
+        workRequestService.enqueueTransition(
+                context.processInstance.getId(),
+                context.processInstanceTask.getId(),
+                context.result.getViaPort(),
+                outEdge.getToNodeId()
+        );
+    }
+
+    private <C> CompletionPath requireCompletionPath(@Nonnull HandlerContext<C, ?> context,
+                                                    @Nonnull String viaPort) throws ProcessNodeExecutionExceptionBrokenImplementation {
+        var provider = context.provider;
+        var currentNode = context.currentNode;
+        var task = context.processInstanceTask;
+        var resolution = processNodeService.resolvePorts(currentNode, provider, context.configurationOfExecutingNode);
+        if (!resolution.problems().isEmpty()) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(String.join(" ", resolution.problems()));
+        }
+        var port = resolution.ports().stream()
+                .filter(candidate -> candidate.key().equals(viaPort))
+                .findFirst()
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein ausgehender Port mit dem Schlüssel %s bereitgestellt.",
+                        StringUtils.quote(currentNode.resolveName(provider)),
+                        StringUtils.quote(provider.getName()),
+                        StringUtils.quote(viaPort)
+                ));
+
+        if (port.deadlineKey() != null
+                && (task.getDeadline() == null || !port.deadlineKey().equals(task.getDeadlineKey()))) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    "Der Ausgang „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
+        }
+        var edge = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(currentNode.getId(), viaPort)
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Für das Prozesselement %s wurde kein ausgehender Pfad für den Port %s definiert. Bitte prüfen Sie den Aufbau Ihres Prozessmodells.",
+                        StringUtils.quote(currentNode.resolveName(provider)),
+                        StringUtils.quote(port.label())
+                ));
+        return new CompletionPath(port, edge);
+    }
+
+    private record CompletionPath(ProcessNodePort port, ProcessEdgeEntity edge) {
+    }
+
+    private void handleInstanceComplete(@Nonnull HandlerContext<?, ProcessNodeExecutionResultInstanceCompleted> context) throws ProcessNodeExecutionException {
+        var completionTime = Instant.now();
+        var keepUntil = resolveRetentionDate(context, completionTime);
+
+        context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
+        context.processInstanceTask.setFinished(completionTime);
+        applyDataLayersAndStatusOverride(context, true);
+
+        applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
+        context.processInstance.setStatus(ProcessInstanceStatus.Completed);
+        context.processInstance.setFinished(completionTime);
+        context.processInstance.setKeepUntil(keepUntil);
+        generateAndSaveExecutionSummary(context, null);
+        processInstanceRepository.save(context.processInstance);
+
+        context.logger.logf(
+                ProcessNodeExecutionLogLevel.Info,
+                true,
+                true,
+                "Vorgang abgeschlossen",
+                "Der Vorgang wurde erfolgreich abgeschlossen. Das abschließende Prozesselement war %s",
+                StringUtils.quote(context.currentNode.resolveName(context.provider))
+        );
+    }
+
+    private <NodeConfig> void generateAndSaveExecutionSummary(@Nonnull HandlerContext<NodeConfig, ?> context,
+                                                              @Nullable String viaPort) {
+        String summary = null;
+        try {
+            summary = context.provider.generateExecutionSummary(new ProcessNodeExecutionSummaryContext<>(
+                    context.configurationOfExecutingNode,
+                    context.currentNode,
+                    context.processInstance,
+                    context.processInstanceTask,
+                    context.previousTask,
+                    context.triggeringUser,
+                    viaPort
+            ));
+        } catch (Exception exception) {
+            // A presentation failure must not retry a node that has already performed its execution side effects.
+            logger.warn("Could not generate execution summary for task {} (node definition {}).",
+                    context.processInstanceTask.getId(), context.currentNode.getProcessNodeDefinitionKey(), exception);
+        }
+        context.processInstanceTask.setExecutionSummaryMarkdown(summary == null || summary.isBlank() ? null : summary);
+        processInstanceTaskRepository.save(context.processInstanceTask);
+    }
+
+    @Nullable
+    private Instant resolveRetentionDate(@Nonnull HandlerContext<?, ProcessNodeExecutionResultInstanceCompleted> context,
+                                         @Nonnull Instant completionTime) throws ProcessNodeExecutionException {
+        if (context.result.getRetentionDate() != null) {
+            return context.result.getRetentionDate();
+        }
+
+        var versionId = ProcessVersionEntityId.of(context.currentNode.getProcessId(), context.currentNode.getProcessVersion());
+        var version = processVersionRepository.findById(versionId)
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
+                        "Die Prozessversion %d des abschließenden Prozesselements wurde nicht gefunden.",
+                        context.currentNode.getProcessVersion()
+                ));
+        if (version.getRetentionTimeValue() == null && version.getRetentionTimeUnit() == null) {
+            return null;
+        }
+        if (version.getRetentionTimeValue() == null || version.getRetentionTimeUnit() == null) {
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(
+                    "Die Aufbewahrungsfrist der Prozessversion %d ist unvollständig.",
+                    version.getProcessVersion()
+            );
+        }
+        return ProcessRetentionTime.calculate(completionTime, version.getRetentionTimeValue(), version.getRetentionTimeUnit());
+    }
+
+    private void assignAndSaveDataLayersAndStatusOverride(@Nonnull HandlerContext<?, ?> context,
+                                                          boolean applyOutputMappings) {
+        applyDataLayersAndStatusOverride(context, applyOutputMappings);
+        processInstanceTaskRepository.save(context.processInstanceTask);
+    }
+
+    private void applyDataLayersAndStatusOverride(@Nonnull HandlerContext<?, ?> context, boolean applyOutputMappings) {
+        var newRuntimeData = ExecutionSummaryMarkdown.preserveMetadata(
+                context.processInstanceTask.getRuntimeData(), context.result.getRuntimeData());
+        context.processInstanceTask.setRuntimeData(newRuntimeData);
+
+        var newNodeData = context.result.getNodeData();
+        if (newNodeData == null) {
+            newNodeData = new HashMap<>();
+        }
+        context.processInstanceTask.setNodeData(newNodeData);
+
+        var newProcessData = context.result.getProcessData();
+        if (newProcessData == null) {
+            newProcessData = context.previousTask != null ?
+                    context.previousTask.getProcessData() :
+                    context.processInstance.getInitialPayload();
+        }
+        if (applyOutputMappings) {
+            context.processInstanceTask.setProcessData(applyOutputMappings(
+                    context.provider,
+                    context.currentNode.getOutputMappings(),
+                    newNodeData,
+                    newProcessData
+            ));
+        } else {
+            context.processInstanceTask.setProcessData(newProcessData);
+        }
+
+        // Apply task status overrides
+        if (context.result.getTaskStatusOverride() != null) {
+            context.processInstanceTask.setStatusOverride(context.result.getTaskStatusOverride());
+        }
+        if (Boolean.TRUE.equals(context.result.getClearTaskStatusOverride())) {
+            context.processInstanceTask.setStatusOverride(null);
+        }
+
+    }
+
+    private static <NodeConfig> Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                        @Nonnull Map<String, String> outputMappings,
+                                                                        @Nonnull Map<String, Object> nodeData,
+                                                                        @Nonnull Map<String, Object> processData) {
+        var executionData = new ProcessExecutionData()
+                .addProcessData(new HashMap<>(processData));
+
+        for (var nodeProviderOutput : provider.getOutputs()) {
+            var targetFieldPath = StringUtils.toNullableTrimmedString(outputMappings.get(nodeProviderOutput.key()));
+            if (targetFieldPath == null) {
+                continue;
+            }
+
+            var outputValue = nodeData.get(nodeProviderOutput.key());
+            try {
+                if (ProcessDataValueUtils.hasWildcardSegment(targetFieldPath)) {
+                    var wildcardBindings = ProcessDataValueUtils
+                            .resolveMatchingProcessDataValues(executionData, targetFieldPath)
+                            .stream()
+                            .map(ProcessDataValueUtils.ResolvedProcessDataValue::wildcardIndices)
+                            .toList();
+
+                    for (var wildcardBinding : wildcardBindings) {
+                        ProcessDataValueUtils.writeProcessDataValue(
+                                executionData,
+                                targetFieldPath,
+                                outputValue,
+                                wildcardBinding
+                        );
+                    }
+                } else {
+                    ProcessDataValueUtils.writeProcessDataValue(
+                            executionData,
+                            targetFieldPath,
+                            outputValue
+                    );
+                }
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                throw new IllegalStateException(
+                        "Das Ausgabe-Mapping '%s' fuer den Knotenausgang '%s' ist ungueltig: %s"
+                                .formatted(targetFieldPath, nodeProviderOutput.key(), e.getMessage()),
+                        e
+                );
+            }
+        }
+
+        return executionData.getProcessData();
+    }
+
+    private record HandlerContext<NodeConfig, T extends ProcessNodeExecutionResult>(
+            @Nonnull ProcessNodeExecutionLogger logger,
+            @Nullable UserEntity triggeringUser,
+            @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+            @Nonnull NodeConfig configurationOfExecutingNode,
+            @Nonnull ProcessNodeEntity currentNode,
+            @Nonnull ProcessInstanceEntity processInstance,
+            @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+            @Nullable ProcessInstanceTaskEntity previousTask,
+            @Nonnull T result,
+            @Nonnull Map<String, IdentityData> additionalIdentities,
+            @Nullable ProcessNodeDeadlineDefinition selectedDeadline
+    ) {
+        public <S extends ProcessNodeExecutionResult> HandlerContext<NodeConfig, S> withResult(@Nonnull S newResult) {
+            return new HandlerContext<>(
+                    logger,
+                    triggeringUser,
+                    provider,
+                    configurationOfExecutingNode,
+                    currentNode,
+                    processInstance,
+                    processInstanceTask,
+                    previousTask,
+                    newResult,
+                    additionalIdentities,
+                    selectedDeadline
+            );
+        }
+    }
+}

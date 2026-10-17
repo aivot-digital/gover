@@ -2,7 +2,8 @@ export enum StorageKey {
     AuthDataAccessToken = 'access_token',
     AuthDataRefreshToken = 'refresh_token',
 
-    IntroDismissed = 'intro_dismissed',
+    PreReleaseVersionNoticeDismissed = 'pre_release_version_notice_dismissed',
+    ColorMode = 'color_mode',
 
     SubmissionsIncludePaymentPending = 'submissions_include_payment_pending',
     SubmissionsIncludeArchived = 'submissions_include_archived',
@@ -11,6 +12,12 @@ export enum StorageKey {
 
     SavedModule = 'saved_module',
 
+    ProcessInstanceListColumns = 'process_instance_list_columns',
+    ProcessTaskListColumns = 'process_task_list_columns',
+    ProcessInstanceTaskListColumns = 'process_instance_task_list_columns',
+
     TokenDebuggerActive = 'debug_tokens',
     CaptchaDebuggerActive = 'debug_captcha',
+
+    ShowExperimentalFeatures = 'show_experimental_features',
 }

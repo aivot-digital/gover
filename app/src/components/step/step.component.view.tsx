@@ -1,39 +1,36 @@
 import React from 'react';
 import {type StepElement} from '../../models/elements/steps/step-element';
-import {ViewDispatcherComponent} from '../view-dispatcher.component';
-import {ElementType} from '../../data/element-type/element-type';
 import {type BaseViewProps} from '../../views/base-view';
+import Grid from '@mui/material/Grid';
+import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
 
-export function StepComponentView({
-    allElements,
-    element,
-    isBusy,
-    isDeriving,
-    valueOverride,
-    errorsOverride,
-    visibilitiesOverride,
-    overridesOverride,
-    scrollContainerRef,
-    idPrefix,
-    mode,
-}: BaseViewProps<StepElement, void>): JSX.Element {
+export function StepComponentView(props: BaseViewProps<StepElement, void>) {
+    const {
+        element,
+    } = props;
+
+    const {
+        children,
+    } = element;
+
     return (
-        <ViewDispatcherComponent
-            allElements={allElements}
-            element={{
-                ...element,
-                type: ElementType.Container,
-                storeLink: null,
-            }}
-            isBusy={isBusy}
-            isDeriving={isDeriving}
-            valueOverride={valueOverride}
-            errorsOverride={errorsOverride}
-            visibilitiesOverride={visibilitiesOverride}
-            overridesOverride={overridesOverride}
-            idPrefix={idPrefix}
-            scrollContainerRef={scrollContainerRef}
-            mode={mode}
-        />
+        <Grid
+            container
+            spacing={2}
+            sx={{mt: 0}}
+        >
+            {
+                children != null &&
+                children
+                    .map((child) => (
+                        <ViewDispatcherComponent
+                            {...props}
+                            key={child.id}
+                            element={child}
+                        />
+                    ))
+            }
+        </Grid>
+
     );
 }

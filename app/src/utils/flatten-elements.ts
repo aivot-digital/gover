@@ -1,7 +1,7 @@
 import {type AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
 import {ElementType} from '../data/element-type/element-type';
-import {generateComponentTitle} from './generate-component-title';
+import {generateComponentTitle, generateInternalComponentTitle} from './generate-component-title';
 
 export function flattenElements(elem: AnyElement, skipReplicatingChildren?: boolean): AnyElement[] {
     const res = [
@@ -9,7 +9,7 @@ export function flattenElements(elem: AnyElement, skipReplicatingChildren?: bool
     ];
 
     if (isAnyElementWithChildren(elem)) {
-        for (const child of elem.children) {
+        for (const child of elem.children ?? []) {
             if (skipReplicatingChildren === true && child.type === ElementType.ReplicatingContainer) {
                 res.push(child);
             } else {
@@ -27,7 +27,7 @@ export interface ElementWithParents {
 }
 
 export function flattenElementsWithParents(elem: AnyElement, parents: AnyElement[], skipReplicatingChildren?: boolean): ElementWithParents[] {
-    const res = [
+    const res: ElementWithParents[] = [
         {
             element: elem,
             parents,
@@ -35,7 +35,7 @@ export function flattenElementsWithParents(elem: AnyElement, parents: AnyElement
     ];
 
     if (isAnyElementWithChildren(elem)) {
-        for (const child of elem.children) {
+        for (const child of elem.children ?? []) {
             if (skipReplicatingChildren === true && child.type === ElementType.ReplicatingContainer) {
                 res.push({
                     element: child,
@@ -56,7 +56,7 @@ export function flattenElementsWithParents(elem: AnyElement, parents: AnyElement
 export function generateElementNameWithParent(element: ElementWithParents) {
     return (
         element.parents.length > 1 ?
-            (element.parents.slice(1, element.parents.length).map(generateComponentTitle).join(' > ') + ' > ') :
+            (element.parents.slice(1, element.parents.length).map(generateInternalComponentTitle).join(' > ') + ' > ') :
             ''
-    ) + generateComponentTitle(element.element)
+    ) + generateComponentTitle(element.element);
 }

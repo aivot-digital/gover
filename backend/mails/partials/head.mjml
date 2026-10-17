@@ -1,0 +1,79 @@
+<mj-html-attributes>
+    <mj-selector path=".logo">
+        <mj-html-attribute name="th:if">${base.hasLogo}</mj-html-attribute>
+    </mj-selector>
+    <mj-selector path=".logo img">
+        <!-- Keep this CID aligned with MailService.SENDER_LOGO_CONTENT_ID. -->
+        <mj-html-attribute name="src">cid:sender-logo</mj-html-attribute>
+        <mj-html-attribute name="th:alt">${base.providerName}</mj-html-attribute>
+    </mj-selector>
+    <mj-selector path=".email-signature-section">
+        <mj-html-attribute name="th:if">${mailSignature != null}</mj-html-attribute>
+    </mj-selector>
+</mj-html-attributes>
+
+<mj-attributes>
+    <!-- Keep the reliable light foundation explicit while avoiding pure black text. -->
+    <mj-all font-family="Arial, Helvetica, sans-serif"/>
+    <mj-body background-color="#ffffff"/>
+    <mj-section background-color="#ffffff" padding="24px 32px 0"/>
+    <mj-text css-class="email-copy"
+             color="#242424"
+             font-size="16px"
+             line-height="24px"
+             padding="0"/>
+    <mj-button background-color="#e5e7eb"
+               border="1px solid #c9cdd2"
+               border-radius="4px"
+               color="#242424"
+               font-size="15px"
+               font-weight="bold"
+               inner-padding="12px 20px"
+               line-height="20px"/>
+    <mj-divider border-color="#dfe2e5" border-width="1px" padding="0"/>
+</mj-attributes>
+
+<mj-style inline="inline">
+    .email-copy p {
+        margin: 0 0 16px;
+    }
+
+    .email-copy p:last-child {
+        margin-bottom: 0;
+    }
+
+    .email-copy h2 {
+        color: #242424;
+        font-size: 18px;
+        line-height: 24px;
+        margin: 24px 0 12px;
+    }
+
+    .email-copy ul {
+        margin: 0 0 16px;
+        padding-left: 24px;
+    }
+
+    .email-copy li {
+        margin-bottom: 8px;
+    }
+
+    .email-copy a {
+        color: #005ea8;
+        text-decoration: underline;
+    }
+
+    .email-footer p {
+        margin: 0;
+    }
+</mj-style>
+
+<mj-style>
+    .logo img {
+        max-width: 160px;
+        max-height: 80px;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 auto;
+    }
+</mj-style>

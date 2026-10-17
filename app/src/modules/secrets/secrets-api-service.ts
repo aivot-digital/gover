@@ -1,15 +1,22 @@
-import {CrudApiService} from '../../services/crud-api-service';
-import {Api} from '../../hooks/use-api';
 import {SecretEntityRequestDTO} from './dtos/secret-entity-request-dto';
 import {SecretEntityResponseDTO} from './dtos/secret-entity-response-dto';
+import {BaseCrudApiService} from "../../services/base-crud-api-service";
 
 interface SecretFilters {
     name: string;
 }
 
-export class SecretsApiService extends CrudApiService<SecretEntityRequestDTO, SecretEntityResponseDTO, SecretEntityResponseDTO, SecretEntityResponseDTO, SecretEntityResponseDTO, string, SecretFilters> {
-    public constructor(api: Api) {
-        super(api, 'secrets/');
+export class SecretsApiService extends BaseCrudApiService<
+    SecretEntityRequestDTO,
+    SecretEntityResponseDTO,
+    SecretEntityResponseDTO,
+    SecretEntityResponseDTO,
+    string,
+    SecretFilters,
+    keyof SecretEntityResponseDTO
+> {
+    public constructor() {
+        super('/api/secrets/');
     }
 
     public initialize(): SecretEntityResponseDTO {
