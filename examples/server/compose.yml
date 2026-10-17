@@ -124,7 +124,7 @@ services:
   # Production Keycloak identity provider. Caddy terminates HTTPS, so Keycloak listens
   # internally over HTTP and trusts the forwarded proxy headers.
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.7.4.0
     restart: unless-stopped
     depends_on:
       - keycloak_database
@@ -154,7 +154,7 @@ services:
   # Waits for Keycloak, then creates the required realms, clients, and managed admin.
   # It exits after successful configuration and restarts only when setup fails.
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.28
     restart: on-failure
     depends_on:
       - keycloak
@@ -225,9 +225,10 @@ services:
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
       CHROMIUM_DENY_PUBLIC_IPS: "true"
-      # Required: PROSUNA_HOSTNAME_REGEX is the hostname without scheme, with dots escaped
-      # for a regular expression, for example prosuna\\.example\\.org.
-      CHROMIUM_ALLOW_LIST: "^(https://${PROSUNA_HOSTNAME_REGEX}/|file:///tmp/)"
+      # Required: PROSUNA_HOSTNAME_REGEX is the hostname without scheme, with each dot
+      # escaped by a single backslash, for example prosuna\.example\.org. Gotenberg also
+      # checks each HTTPS connection as https://<host>:443, hence the optional port.
+      CHROMIUM_ALLOW_LIST: "^(https://${PROSUNA_HOSTNAME_REGEX}(:443)?(/|$$)|file:///tmp/)"
     networks:
       - prosuna
 

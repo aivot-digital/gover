@@ -114,7 +114,7 @@ services:
   # Development identity provider. start-dev and the fixed bootstrap credentials are
   # intentionally convenient and must never be copied to a production deployment.
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.7.4.0
     restart: unless-stopped
     depends_on:
       - keycloak_database
@@ -140,7 +140,7 @@ services:
   # Waits for Keycloak, then creates the Prosuna realms, clients, and managed admin.
   # The managed admin credentials come from .env; bootstrap_admin is only used during setup.
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.28
     restart: on-failure
     depends_on:
       - keycloak

@@ -29,7 +29,7 @@ Replace every example value before starting the stack.
 ```dotenv
 # Public URL
 PROSUNA_HOSTNAME=https://prosuna.example.org
-PROSUNA_HOSTNAME_REGEX=prosuna\\.example\\.org
+PROSUNA_HOSTNAME_REGEX=prosuna\.example\.org
 
 # Prosuna database and application secrets
 PROSUNA_DB_PASSWORD=change-me
@@ -65,6 +65,7 @@ RABBITMQ_PASSWORD=change-me
 
 `PROSUNA_HOSTNAME` is the full public URL including `https://`, without a trailing slash.
 `PROSUNA_HOSTNAME_REGEX` is the same hostname escaped for a regular expression, without the protocol.
+Escape each dot with a single backslash. Docker Compose keeps backslashes in unquoted values, so `prosuna\\.example\\.org` would not match the hostname.
 
 Generate strong secrets, for example:
 
