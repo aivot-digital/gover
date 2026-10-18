@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -18,6 +19,9 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -391,6 +395,26 @@ class StaffProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void retrieveAndEventResponsesResolveProcessDataReferencesToTheInputsWritingThem() throws ResponseException {
+        var fixture = createFixture(new InlineStaffTaskProcessNodeDefinition(null), new TestElementDerivationService());
+
+        var retrieved = fixture.controller().retrieve(fixture.jwt(), fixture.instance().getId(), fixture.task().getId());
+        var updated = fixture.controller().update(
+                fixture.jwt(),
+                fixture.instance().getId(),
+                fixture.task().getId(),
+                "{}",
+                null,
+                null,
+                "inline-complete",
+                null
+        );
+
+        assertEquals(List.of("brand"), visibilityReferencesOf(retrieved, "audiOnly"));
+        assertEquals(List.of("brand"), visibilityReferencesOf(updated, "audiOnly"));
+    }
+
+    @Test
     void update_WithHrefLinkButtonStaffTaskEventIsRejected() {
         var provider = new InlineStaffTaskProcessNodeDefinition("https://example.org");
         var elementDerivationService = new TestElementDerivationService();
@@ -459,6 +483,12 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
         assertFalse(loggedInsideTransaction.get());
         verify(logger).logException(failure);
+    }
+
+    private static List<String> visibilityReferencesOf(StaffProcessInstanceTaskViewController.TaskViewResponse response,
+                                                       String elementId) {
+        var element = response.layout().findChild(elementId).orElseThrow();
+        return List.copyOf(element.getVisibility().getReferencedIds());
     }
 
     private static StaffTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
@@ -978,9 +1008,21 @@ class StaffProcessInstanceTaskViewControllerTest {
                     .setStaffTaskEvent("inline-complete");
             linkButton.setId("inline-button");
 
+            var brandField = new TextInputElement();
+            brandField.setId("brand");
+            brandField.setDestinationKey("vehicle.brand");
+
+            var audiField = new TextInputElement();
+            audiField.setId("audiOnly");
+            audiField.setVisibility(ElementVisibilityFunctions.of(NoCodeExpression.of(
+                    "equals",
+                    new NoCodeProcessDataReference("vehicle.brand"),
+                    NoCodeStaticValue.of("Audi")
+            )));
+
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
-            layout.setChildren(List.of(linkButton));
+            layout.setChildren(List.of(linkButton, brandField, audiField));
             return ProcessNodeStaffView.of(context, layout, List.of(), new AuthoredElementValues());
         }
 

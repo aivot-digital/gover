@@ -1,8 +1,10 @@
 package de.aivot.prosuna.backend.elements.utils;
 
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.utils.ElementReferenceUtils;
@@ -10,6 +12,7 @@ import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
@@ -111,6 +114,47 @@ class ElementReferenceUtilsTest {
         );
 
         assertEquals(Set.of("direct_123", "tx_123"), referencedIds);
+    }
+
+    @Test
+    void shouldResolveProcessDataReferencesToInputsWritingNestedValues() {
+        var destinationKeyIndex = Map.of(
+                "fahrzeug.marke", Set.of("brand"),
+                "fahrzeug.halter[*].name", Set.of("ownerName"),
+                "fahrzeugtyp", Set.of("vehicleType")
+        );
+
+        var referencedIds = ElementReferenceUtils.getReferencedIds(
+                null,
+                new NoCodeProcessDataReference("fahrzeug"),
+                null,
+                destinationKeyIndex
+        );
+
+        assertEquals(Set.of("brand", "ownerName"), referencedIds);
+    }
+
+    @Test
+    void shouldRecalculateProcessDataReferencesAcrossTheWholeTree() {
+        var brand = new TextInputElement();
+        brand.setId("brand");
+        brand.setDestinationKey("fahrzeug.marke");
+
+        var audiOnly = new TextInputElement();
+        audiOnly.setId("audiOnly");
+        audiOnly.setVisibility(ElementVisibilityFunctions.of(NoCodeExpression.of(
+                "equals",
+                new NoCodeProcessDataReference("fahrzeug.marke"),
+                NoCodeStaticValue.of("Audi")
+        )));
+
+        var root = new GroupLayoutElement();
+        root.setId("root");
+        root.setChildren(new LinkedList<BaseFormElement>(List.of(brand, audiOnly)));
+
+        ElementReferenceUtils.recalculateReferencedIds(root);
+
+        assertEquals(Set.of("brand"), Set.copyOf(audiOnly.getVisibility().getReferencedIds()));
     }
 
     @Test

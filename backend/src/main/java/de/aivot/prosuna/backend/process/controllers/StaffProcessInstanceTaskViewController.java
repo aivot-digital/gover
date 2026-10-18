@@ -133,14 +133,7 @@ public class StaffProcessInstanceTaskViewController {
         var layout = staffView.layout();
 
         if (layout instanceof BaseElement rootElement) {
-            var destinationKeyIndex = ElementReferenceUtils
-                    .buildDestinationKeyIndex(rootElement);
-
-            ElementStreamUtils
-                    .applyAction(
-                            rootElement,
-                            element -> element.recalculateReferencedIds(destinationKeyIndex)
-                    );
+            ElementReferenceUtils.recalculateReferencedIds(rootElement);
         }
 
         return new TaskViewResponse(
@@ -310,6 +303,11 @@ public class StaffProcessInstanceTaskViewController {
         var updatedView = taskViewData
                 .provider
                 .getStaffTaskView(context);
+
+        // The task view replaces its layout with this one, so dependencies must resolve as for the initially loaded layout.
+        if (updatedView.layout() instanceof BaseElement updatedRootElement) {
+            ElementReferenceUtils.recalculateReferencedIds(updatedRootElement);
+        }
 
         return new TaskViewResponse(
                 updatedView.layout(),

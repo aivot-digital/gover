@@ -1,5 +1,5 @@
 import React, {type PropsWithChildren} from 'react';
-import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
@@ -11,6 +11,14 @@ import {type AuthoredElementValues, getLiteralElementValue, literalAuthoredValue
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type TextFieldElement} from '../../models/elements/form/input/text-field-element';
+
+const recalculateReferencedIds = vi.hoisted(() => vi.fn(async (element: unknown) => element));
+
+vi.mock('../../modules/elements/elements-api-service', () => ({
+    ElementsApiService: class {
+        recalculateReferencedIds = recalculateReferencedIds;
+    },
+}));
 
 vi.mock('../../providers/confirm-provider', () => ({
     useConfirm: () => vi.fn(),
@@ -144,6 +152,128 @@ describe('UiDefinitionInputFieldComponent', () => {
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         await user.click(validate);
         expect(await screen.findByRole('listitem')).toHaveTextContent(requiredError);
+    });
+
+    it('re-derives elements that depend on process data written by an edited field', async () => {
+        const user = userEvent.setup();
+        const value: GroupLayout = {
+            ...generateElementWithDefaultValues(ElementType.GroupLayout),
+            id: 'root',
+            children: [
+                {
+                    ...generateElementWithDefaultValues(ElementType.Text),
+                    id: 'brand',
+                    label: 'Marke',
+                    destinationKey: 'fahrzeug.marke',
+                },
+                {
+                    ...generateElementWithDefaultValues(ElementType.Text),
+                    id: 'audiOnly',
+                    label: 'Audi-Modell',
+                    visibility: {
+                        type: 'NoCode',
+                        requirements: undefined,
+                        conditionSet: undefined,
+                        javascriptCode: undefined,
+                        noCode: {
+                            type: 'NoCodeExpression',
+                            operatorIdentifier: 'equals',
+                            operands: [
+                                {type: 'NoCodeProcessDataReference', path: 'fahrzeug.marke'},
+                                {type: 'NoCodeStaticValue', value: 'Audi'},
+                            ],
+                        },
+                        // The element editor only recalculates the edited element and misses the writing input.
+                        referencedIds: [],
+                    },
+                },
+            ],
+        };
+        recalculateReferencedIds.mockImplementationOnce(async (element: unknown) => {
+            const root = element as GroupLayout;
+            return {
+                ...root,
+                children: root.children?.map(child => child.id !== 'audiOnly' || child.visibility == null ? child : {
+                    ...child,
+                    visibility: {...child.visibility, referencedIds: ['brand']},
+                }),
+            };
+        });
+        const derive = vi.fn(async (
+            _uiDefinition: UiDefinitionInputFieldElementItem,
+            authoredElementValues: AuthoredElementValues,
+        ) => {
+            const brand = getLiteralElementValue<string>(authoredElementValues, 'brand') ?? null;
+            return {
+                effectiveValues: {brand},
+                elementStates: {
+                    root: {visible: true},
+                    brand: {visible: true},
+                    audiOnly: {visible: brand === 'Audi'},
+                },
+            };
+        });
+
+        render(<UiDefinitionInputFieldComponent
+            label="Testoberfläche"
+            value={value}
+            onChange={vi.fn()}
+            displayContext={ElementDisplayContext.StaffFacing}
+            onDerive={derive}
+        />);
+        await user.click(screen.getByRole('button', {name: 'Bearbeiten'}));
+
+        expect(recalculateReferencedIds).toHaveBeenCalledWith(expect.objectContaining({
+            id: 'root',
+            children: [expect.objectContaining({id: 'brand'}), expect.objectContaining({id: 'audiOnly'})],
+        }));
+        const brandInput = await screen.findByRole('textbox', {name: /^Marke/});
+        await waitFor(() => expect(brandInput).toBeEnabled());
+        expect(screen.queryByRole('textbox', {name: /^Audi-Modell/})).not.toBeInTheDocument();
+
+        await user.type(brandInput, 'Audi');
+        await user.tab();
+
+        expect(await screen.findByRole('textbox', {name: /^Audi-Modell/})).toBeInTheDocument();
+
+        // Recalculated referenced IDs are no modeling change, so cancelling must not ask to discard changes.
+        await user.click(screen.getByRole('button', {name: 'Abbrechen'}));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    it('ignores referenced IDs recalculated for an outdated draft', async () => {
+        const user = userEvent.setup();
+        const value: GroupLayout = {
+            ...generateElementWithDefaultValues(ElementType.GroupLayout),
+            id: 'root',
+            children: [{
+                ...generateElementWithDefaultValues(ElementType.Text),
+                id: 'name',
+                label: 'Name',
+            }],
+        };
+        let resolveOutdatedRecalculation: (element: unknown) => void = () => undefined;
+        recalculateReferencedIds.mockImplementationOnce(() => new Promise((resolve) => {
+            resolveOutdatedRecalculation = resolve;
+        }));
+        const onChange = vi.fn();
+
+        render(<UiDefinitionInputFieldComponent
+            label="Testoberfläche"
+            value={value}
+            onChange={onChange}
+            displayContext={ElementDisplayContext.StaffFacing}
+        />);
+        await user.click(screen.getByRole('button', {name: 'Bearbeiten'}));
+        await user.click(await screen.findByRole('button', {name: 'Mindestlänge ändern'}));
+        await act(async () => {
+            resolveOutdatedRecalculation({...value, children: []});
+        });
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            children: [expect.objectContaining({id: 'name', minCharacters: 3})],
+        }));
     });
 
     it('keeps the summary and editor action separate from the field name', () => {
