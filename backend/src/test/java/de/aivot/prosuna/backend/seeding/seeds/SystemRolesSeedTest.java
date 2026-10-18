@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvi
 import de.aivot.prosuna.backend.identity.permissions.IdentityProviderPermissionProvider;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.payment.permissions.PaymentProviderPermissionProvider;
+import de.aivot.prosuna.backend.permissions.models.PermissionEntry;
 import de.aivot.prosuna.backend.permissions.models.PermissionProvider;
 import de.aivot.prosuna.backend.permissions.permissions.DomainResourcePermissionProvider;
 import de.aivot.prosuna.backend.permissions.permissions.PermissionSetPermissionProvider;
@@ -35,8 +36,11 @@ import de.aivot.prosuna.backend.userRoles.services.SystemRoleService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -111,9 +115,12 @@ class SystemRolesSeedTest {
                 roles.getAllValues().stream().map(SystemRoleEntity::getName).toList()
         );
 
-        var superAdministratorPermissions = roles.getAllValues().getFirst().getPermissions();
-        assertTrue(superAdministratorPermissions.contains(AuditPermissionProvider.AUDIT_LOG_READ));
-        assertTrue(superAdministratorPermissions.contains(CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_DELETE));
+        // The super administrator role must grant every permission that any provider defines.
+        var allPermissions = allPermissionProviders().stream()
+                .flatMap(provider -> Arrays.stream(provider.getPermissions()))
+                .map(PermissionEntry::permission)
+                .collect(Collectors.toSet());
+        assertEquals(allPermissions, Set.copyOf(roles.getAllValues().getFirst().getPermissions()));
         assertTrue(roles.getAllValues().getLast().getPermissions().contains(CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ));
 
         var mostPrivilegedRoleConfig = ArgumentCaptor.forClass(SystemConfigEntity.class);

@@ -13,6 +13,7 @@ import de.aivot.prosuna.backend.identity.permissions.IdentityProviderPermissionP
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.payment.permissions.PaymentProviderPermissionProvider;
 import de.aivot.prosuna.backend.permissions.permissions.DomainResourcePermissionProvider;
+import de.aivot.prosuna.backend.permissions.permissions.PermissionSetPermissionProvider;
 import de.aivot.prosuna.backend.plugin.permissions.PluginPermissionProvider;
 import de.aivot.prosuna.backend.preset.permissions.PresetPermissionProvider;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
@@ -166,6 +167,8 @@ public class SystemRolesSeed implements SeedProvider {
                         DomainResourcePermissionProvider.DOMAIN_RESOURCE_PERMISSION_UPDATE,
                         DomainResourcePermissionProvider.DOMAIN_RESOURCE_PERMISSION_DELETE,
 
+                        PermissionSetPermissionProvider.PERMISSION_SET_READ,
+
                         ProcessPermissionProvider.PROCESS_DEFINITION_CREATE,
                         ProcessPermissionProvider.PROCESS_DEFINITION_READ,
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE,
@@ -183,6 +186,7 @@ public class SystemRolesSeed implements SeedProvider {
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_REASSIGN,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_COMMUNICATION_INTERNAL,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_COMMUNICATION_EXTERNAL,
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_DATA,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_MIGRATE,
 
