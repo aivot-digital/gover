@@ -22,6 +22,7 @@ import {
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
+import {type FileUploadElementItem, isFileUploadElementItem} from '../models/elements/form/input/file-upload-element';
 import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 import {ElementType} from '../data/element-type/element-type';
@@ -447,6 +448,90 @@ export function walkAuthoredElementValues(
             walkAuthoredElementValues(child, currentElementValues, callback);
         }
     }
+}
+
+/**
+ * Collects the file items of upload fields whose files a submission of the authored values must send, which are those
+ * with a transient `blob:` URI.
+ *
+ * The backend stores files only for upload fields whose value its derivation takes and discards the others. With the
+ * derived data of exactly these values, the files of hidden upload fields are left out. Fields with an unknown state
+ * count as visible, because the backend rejects a submission that lacks the file of an upload field it takes.
+ */
+export function collectTransientFileUploadItems(
+    element: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    derivedData?: DerivedRuntimeElementData | null,
+): FileUploadElementItem[] {
+    const items: FileUploadElementItem[] = [];
+    collectTransientFileUploadItemsOfElement(element, authoredElementValues, derivedData?.elementStates ?? null, items);
+    return items;
+}
+
+function collectTransientFileUploadItemsOfElement(
+    element: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    elementStates: ComputedElementStates | null,
+    items: FileUploadElementItem[],
+): void {
+    const elementState = elementStates?.[element.id];
+    if (elementState?.visible === false) {
+        return;
+    }
+
+    const value = getLiteralAuthoredValue(authoredElementValues[element.id]);
+
+    if (element.type === ElementType.FileUpload) {
+        if (Array.isArray(value)) {
+            items.push(...value.filter((item): item is FileUploadElementItem => (
+                isFileUploadElementItem(item) && item.uri.startsWith('blob:')
+            )));
+        }
+        return;
+    }
+
+    if (isReplicatingContainerLayout(element)) {
+        if (!Array.isArray(value)) {
+            return;
+        }
+
+        value.forEach((row, index) => {
+            const rowValues = resolveReplicatingContainerElementValues(row);
+            if (rowValues == null) {
+                return;
+            }
+
+            const rowStates = resolveTransientFileUploadRowStates(elementState, row, index);
+            for (const child of element.children || []) {
+                collectTransientFileUploadItemsOfElement(child, rowValues, rowStates, items);
+            }
+        });
+        return;
+    }
+
+    if (isAnyElementWithChildren(element)) {
+        for (const child of element.children || []) {
+            collectTransientFileUploadItemsOfElement(child, authoredElementValues, elementStates, items);
+        }
+    }
+}
+
+/**
+ * Finds the states of a row by its position and checks its ID, as the backend does, so rows that share an ID stay
+ * apart. Without a matching state, the fields of the row have an unknown state.
+ */
+function resolveTransientFileUploadRowStates(
+    containerState: ComputedElementState | undefined,
+    row: unknown,
+    index: number,
+): ComputedElementStates | null {
+    const subState = containerState?.subStates?.[index];
+    const rowId = isReplicatingContainerElementValue(row) ? row.id ?? null : null;
+    if (subState == null || !isComputedElementSubState(subState) || (subState.id ?? null) !== rowId) {
+        return null;
+    }
+
+    return subState.states ?? {};
 }
 
 export function mapAuthoredElementValues(

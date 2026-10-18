@@ -77,7 +77,11 @@ interface ElementDerivationContextProps {
         derivationOptions: ElementDerivationOptions,
         abort?: AbortSignal,
     ) => Promise<DerivedRuntimeElementData>;
-    onEvent?: (values: AuthoredElementValues, event: string) => Promise<boolean | void>;
+    /**
+     * Handles an event of the form. The derived data belongs to exactly the given values, because they are derived
+     * right before the event is handled.
+     */
+    onEvent?: (values: AuthoredElementValues, event: string, derivedData: DerivedRuntimeElementData) => Promise<boolean | void>;
     mode?: ViewDispatcherMode;
     disableValidation?: boolean;
     disableVisibilities?: boolean;
@@ -475,7 +479,7 @@ export const ElementDerivationContext = forwardRef<
                             .then((derived) => {
                                 setInternalDerivedData(derived);
                                 if (!hasAnyErrorRecursively(derived.elementStates) && onEvent != null) {
-                                    return onEvent(normalizedData, event);
+                                    return onEvent(normalizedData, event, derived);
                                 }
                                 return false;
                             });

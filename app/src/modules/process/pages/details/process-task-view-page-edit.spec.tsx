@@ -245,7 +245,7 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         });
 
         expect(putTaskView).toHaveBeenCalledOnce();
-        expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues);
+        expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues, []);
         expect(screen.getByText('Eingaben wurden zwischengespeichert')).toBeInTheDocument();
         expect(testState.refresh).toHaveBeenCalledOnce();
     });
@@ -342,7 +342,7 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         });
 
         expect(putTaskView).toHaveBeenCalledOnce();
-        expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues);
+        expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues, []);
         expect(screen.getByText('Zielseite')).toBeInTheDocument();
         expect(screen.queryByText('Ungespeicherte Eingaben')).not.toBeInTheDocument();
     });

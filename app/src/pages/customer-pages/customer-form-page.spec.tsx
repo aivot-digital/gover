@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
     navigate: vi.fn(),
     observeScrollContainer: vi.fn(),
     submitValues: {} as Record<string, unknown>,
+    submitDerivedData: undefined as unknown,
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
@@ -66,7 +67,7 @@ vi.mock('../../modules/elements/components/element-derivation-context', () => ({
         onEvent,
         scrollContainerRef,
     }: {
-        onEvent: (values: Record<string, unknown>, event: string) => Promise<void>;
+        onEvent: (values: Record<string, unknown>, event: string, derivedData?: unknown) => Promise<void>;
         scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
     }) {
         mocks.observeScrollContainer(scrollContainerRef);
@@ -78,7 +79,7 @@ vi.mock('../../modules/elements/components/element-derivation-context', () => ({
                 disabled={isBusy}
                 onClick={() => {
                     setIsBusy(true);
-                    void onEvent(mocks.submitValues, 'submit')
+                    void onEvent(mocks.submitValues, 'submit', mocks.submitDerivedData)
                         .then(() => {
                             mocks.eventResolved();
                             setIsBusy(false);
@@ -127,6 +128,7 @@ describe('CustomerFormPage', () => {
         mocks.eventResolved.mockReset();
         mocks.navigate.mockReset();
         mocks.submitValues = {};
+        mocks.submitDerivedData = undefined;
 
         Object.defineProperty(window, 'matchMedia', {
             configurable: true,
@@ -272,6 +274,26 @@ describe('CustomerFormPage', () => {
         await expectSubmissionReleased();
         expect(blob).not.toHaveBeenCalled();
         expect(FormTriggerApiService.prototype.submitForm).not.toHaveBeenCalled();
+    });
+
+    it('does not send the files of upload fields that the derivation of the submitted values hides', async () => {
+        prepareAttachmentForm();
+        mocks.submitDerivedData = createDerivedRuntimeElementData({
+            elementStates: {
+                attachment: {visible: false},
+            },
+        });
+        const fetch = vi.fn();
+        vi.stubGlobal('fetch', fetch);
+        await renderLoadedForm();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Formular absenden'}));
+
+        await waitFor(() => expect(FormTriggerApiService.prototype.submitForm).toHaveBeenCalledOnce());
+        expect(fetch).not.toHaveBeenCalled();
+        const formData = vi.mocked(FormTriggerApiService.prototype.submitForm).mock.calls[0][2] as FormData;
+        expect(formData.getAll('files')).toEqual([]);
+        expect(formData.get('inputs')).toBe(JSON.stringify(mocks.submitValues));
     });
 
     it('shows submission errors, clears loading, and releases submission', async () => {
