@@ -117,7 +117,9 @@ export function Submitted(props: SubmittedProps) {
                     }
 
                     const firstTask = res.tasks?.[0];
-                    if (res.status === ProcessInstanceStatus.Failed) {
+                    // Only a failure while the submission itself is processed concerns the customer. Later process
+                    // elements only run once the form task is completed, and staff resolve their failures.
+                    if (res.status === ProcessInstanceStatus.Failed && firstTask?.status !== ProcessTaskStatus.Completed) {
                         setProcessFailed(true);
                         setFormTaskAccessKey(firstTask?.accessKey);
                         if (intervalId != null) {
@@ -283,11 +285,11 @@ export function Submitted(props: SubmittedProps) {
                 processFailed &&
                 <AlertComponent
                     color="error"
-                    title="Ihr Antrag konnte nicht verarbeitet werden"
+                    title="Ihre Einreichung konnte nicht verarbeitet werden"
                     sx={{my: 0, mb: 4}}
                 >
                     Bei der Verarbeitung Ihres Antrags ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
-                    zuständige Stelle. Die Kontaktdaten finden Sie unten.
+                    zuständige Stelle. Die Kontaktdaten finden Sie unten im Bereich „Hilfe“.
                 </AlertComponent>
             }
 

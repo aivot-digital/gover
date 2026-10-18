@@ -72,67 +72,104 @@ describe('Submitted', () => {
         expect(getInstanceStatus).toHaveBeenCalledTimes(2);
     });
 
-    it.each([ProcessTaskStatus.Completed, ProcessTaskStatus.Failed])(
-        'keeps PDF download available and payment disabled when first task is %s and process fails',
-        async (taskStatus) => {
-            vi.useFakeTimers();
+    it('keeps the submission successful when a later process element fails', async () => {
+        vi.useFakeTimers();
 
-            const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
-                .mockResolvedValueOnce(createStatusResponse(ProcessInstanceStatus.Running))
-                .mockResolvedValueOnce(createStatusResponse(
-                    ProcessInstanceStatus.Failed,
-                    taskStatus,
-                ));
-            const pdf = new Blob(['pdf'], {type: 'application/pdf'});
-            const downloadSubmittedSummaryPdf = vi.spyOn(FormTriggerApiService.prototype, 'downloadSubmittedSummaryPdf')
-                .mockResolvedValue(pdf);
+        const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
+            .mockResolvedValueOnce(createStatusResponse(ProcessInstanceStatus.Running))
+            .mockResolvedValueOnce(createStatusResponse(
+                ProcessInstanceStatus.Failed,
+                ProcessTaskStatus.Completed,
+            ));
 
-            render(
-                <Submitted
-                    startedProcessAccessKey="process-access-key"
-                    paymentRequired
-                    formElement={{children: []} as unknown as FormLayoutElement}
-                    processSlug="process"
-                    formSlug="form"
-                    processVersion={1}
-                />,
-            );
+        render(
+            <Submitted
+                startedProcessAccessKey="process-access-key"
+                paymentRequired
+                formElement={{children: []} as unknown as FormLayoutElement}
+                processSlug="process"
+                formSlug="form"
+                processVersion={1}
+            />,
+        );
 
-            await act(async () => {
-                await Promise.resolve();
-            });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1000);
+        });
 
-            expect(screen.getByRole('heading', {name: 'Angaben erfolgreich übermittelt'})).toBeVisible();
+        expect(screen.getByRole('heading', {name: 'Angaben erfolgreich übermittelt'})).toBeVisible();
+        expect(screen.queryByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).not.toBeInTheDocument();
+        expect(screen.queryByText('Ihre Einreichung konnte nicht verarbeitet werden')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Antrag als PDF herunterladen'})).toBeEnabled();
+        expect(screen.getByRole('link', {name: 'Zur Zahlung'}))
+            .toHaveAttribute('href', '/process/process-access-key/tasks/task-access-key');
 
-            await act(async () => {
-                await vi.advanceTimersByTimeAsync(1000);
-            });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(3000);
+        });
+        expect(getInstanceStatus).toHaveBeenCalledTimes(2);
+    });
 
-            expect(screen.getByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).toBeVisible();
-            expect(screen.getByText('Ihr Antrag konnte nicht verarbeitet werden')).toBeVisible();
-            expect(screen.getByText(/Bitte wenden Sie sich an die zuständige Stelle/)).toBeVisible();
-            expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
-            fireEvent.click(screen.getByRole('button', {name: 'Antrag als PDF herunterladen'}));
-            expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
+    it('keeps PDF download available and payment disabled when the form task fails', async () => {
+        vi.useFakeTimers();
 
-            await act(async () => {
-                await Promise.resolve();
-            });
-            expect(downloadSubmittedSummaryPdf).toHaveBeenCalledWith(
-                'process',
-                'form',
-                'process-access-key',
-                'task-access-key',
-                1,
-            );
-            expect(downloadBlobFileMock).toHaveBeenCalledWith('Antrag.pdf', pdf);
+        const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
+            .mockResolvedValueOnce(createStatusResponse(ProcessInstanceStatus.Running))
+            .mockResolvedValueOnce(createStatusResponse(
+                ProcessInstanceStatus.Failed,
+                ProcessTaskStatus.Failed,
+            ));
+        const pdf = new Blob(['pdf'], {type: 'application/pdf'});
+        const downloadSubmittedSummaryPdf = vi.spyOn(FormTriggerApiService.prototype, 'downloadSubmittedSummaryPdf')
+            .mockResolvedValue(pdf);
 
-            await act(async () => {
-                await vi.advanceTimersByTimeAsync(3000);
-            });
-            expect(getInstanceStatus).toHaveBeenCalledTimes(2);
-        },
-    );
+        render(
+            <Submitted
+                startedProcessAccessKey="process-access-key"
+                paymentRequired
+                formElement={{children: []} as unknown as FormLayoutElement}
+                processSlug="process"
+                formSlug="form"
+                processVersion={1}
+            />,
+        );
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(screen.getByRole('heading', {name: 'Angaben erfolgreich übermittelt'})).toBeVisible();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1000);
+        });
+
+        expect(screen.getByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).toBeVisible();
+        expect(screen.getByText('Ihre Einreichung konnte nicht verarbeitet werden')).toBeVisible();
+        expect(screen.getByText(
+            /Bitte wenden Sie sich an die zuständige Stelle\. Die Kontaktdaten finden Sie unten im Bereich „Hilfe“\./,
+        )).toBeVisible();
+        expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
+        fireEvent.click(screen.getByRole('button', {name: 'Antrag als PDF herunterladen'}));
+        expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(downloadSubmittedSummaryPdf).toHaveBeenCalledWith(
+            'process',
+            'form',
+            'process-access-key',
+            'task-access-key',
+            1,
+        );
+        expect(downloadBlobFileMock).toHaveBeenCalledWith('Antrag.pdf', pdf);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(3000);
+        });
+        expect(getInstanceStatus).toHaveBeenCalledTimes(2);
+    });
 
     it('keeps PDF download unavailable when the failed process has no first task', async () => {
         vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
@@ -153,6 +190,7 @@ describe('Submitted', () => {
             await Promise.resolve();
         });
 
+        expect(screen.getByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).toBeVisible();
         expect(screen.getByRole('button', {name: 'PDF nicht verfügbar'})).toBeDisabled();
         expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
     });
