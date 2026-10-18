@@ -72,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
@@ -309,6 +310,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertEquals("", elementDerivationService.lastRequest.authoredElementValues().getLiteral("requiredField"));
         assertFalse(provider.eventInvoked);
         assertFalse(fixture.task().getRuntimeData().containsKey(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
+        assertNull(fixture.fileUploadMultipartInputService().receivedElementStates);
     }
 
     @Test
@@ -332,7 +334,9 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         assertEquals("", response.data().getLiteral("requiredField"));
         assertFalse(provider.eventInvoked);
-        assertNull(elementDerivationService.lastRequest);
+        // The derivation only decides which upload fields store their files; its errors do not block the draft.
+        assertEquals("", elementDerivationService.lastRequest.authoredElementValues().getLiteral("requiredField"));
+        assertSame(elementDerivationService.result.getElementStates(), fixture.fileUploadMultipartInputService().receivedElementStates);
         var savedDraft = assertInstanceOf(AuthoredElementValues.class,
                 fixture.task().getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
         assertEquals("", savedDraft.getLiteral("requiredField"));
@@ -576,6 +580,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(Map.of());
 
+        var fileUploadMultipartInputService = new PassthroughTaskViewMultipartInputService();
         var controller = new StaffProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -585,19 +590,20 @@ class StaffProcessInstanceTaskViewControllerTest {
                 new TestUserService(user),
                 loggerFactory,
                 elementDerivationService,
-                new PassthroughTaskViewMultipartInputService(),
+                fileUploadMultipartInputService,
                 new TestProcessDataService(),
                 execution
         );
 
-        return new StaffTaskControllerFixture(jwt, instance, task, controller);
+        return new StaffTaskControllerFixture(jwt, instance, task, controller, fileUploadMultipartInputService);
     }
 
     private record StaffTaskControllerFixture(
             Jwt jwt,
             ProcessInstanceEntity instance,
             ProcessInstanceTaskEntity task,
-            StaffProcessInstanceTaskViewController controller
+            StaffProcessInstanceTaskViewController controller,
+            PassthroughTaskViewMultipartInputService fileUploadMultipartInputService
     ) {
     }
 
@@ -775,6 +781,8 @@ class StaffProcessInstanceTaskViewControllerTest {
     }
 
     private static final class PassthroughTaskViewMultipartInputService extends FileUploadMultipartInputService {
+        private ComputedElementStates receivedElementStates;
+
         private PassthroughTaskViewMultipartInputService() {
             super(null, null, null);
         }
@@ -782,11 +790,13 @@ class StaffProcessInstanceTaskViewControllerTest {
         @Override
         public NormalizationResult normalizeInputs(BaseElement layout,
                                                    AuthoredElementValues inputs,
+                                                   ComputedElementStates elementStates,
                                                    MultipartFile[] files,
                                                    List<String> fileUris,
                                                    Long processInstanceId,
                                                    Long processInstanceTaskId,
                                                    String uploadedByUserId) {
+            receivedElementStates = elementStates;
             return new NormalizationResult(inputs, List.of());
         }
     }

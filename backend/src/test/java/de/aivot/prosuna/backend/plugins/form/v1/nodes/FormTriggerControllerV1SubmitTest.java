@@ -110,6 +110,47 @@ class FormTriggerControllerV1SubmitTest {
     }
 
     @Test
+    void submitShouldStoreUploadsWithTheElementStatesOfTheSubmittedInputs() throws Exception {
+        var submittedElementData = new DerivedRuntimeElementData();
+        var normalizedElementData = new DerivedRuntimeElementData();
+        var fixture = createFixture(submittedElementData, new IdentityDataMap(), UUID.randomUUID().toString());
+        when(fixture.elementDerivationService().derive(
+                any(ElementDerivationRequest.class),
+                any(IdentityDataMap.class),
+                any(ElementDerivationLogger.class)
+        )).thenReturn(submittedElementData, normalizedElementData);
+
+        fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                new MockHttpServletResponse()
+        );
+
+        // Only upload fields whose value the derivation of the submission takes may store their files.
+        verify(fixture.fileUploadMultipartInputService()).normalizeInputs(
+                any(FormLayoutElement.class),
+                any(AuthoredElementValues.class),
+                same(submittedElementData.getElementStates()),
+                isNull(),
+                isNull(),
+                eq(1L),
+                isNull(),
+                isNull()
+        );
+        verify(fixture.elementDataTransformService()).buildPayload(
+                any(FormLayoutElement.class),
+                same(normalizedElementData.getEffectiveValues()),
+                same(normalizedElementData.getElementStates())
+        );
+    }
+
+    @Test
     void submitShouldBindTheSubmittingBrowserToTheStartedInstance() throws Exception {
         var startedProcessAccessKey = UUID.randomUUID().toString();
         var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), startedProcessAccessKey);
@@ -316,6 +357,7 @@ class FormTriggerControllerV1SubmitTest {
         when(fileUploadMultipartInputService.normalizeInputs(
                 any(FormLayoutElement.class),
                 any(AuthoredElementValues.class),
+                any(ComputedElementStates.class),
                 isNull(),
                 isNull(),
                 eq(1L),
@@ -380,7 +422,8 @@ class FormTriggerControllerV1SubmitTest {
                 elementDerivationService,
                 elementDataTransformService,
                 processInstanceService,
-                processSubmissionBindingService
+                processSubmissionBindingService,
+                fileUploadMultipartInputService
         );
     }
 
@@ -408,7 +451,8 @@ class FormTriggerControllerV1SubmitTest {
             ElementDerivationService elementDerivationService,
             ElementDataTransformService elementDataTransformService,
             ProcessInstanceService processInstanceService,
-            ProcessSubmissionBindingService processSubmissionBindingService
+            ProcessSubmissionBindingService processSubmissionBindingService,
+            FileUploadMultipartInputService fileUploadMultipartInputService
     ) {
     }
 }

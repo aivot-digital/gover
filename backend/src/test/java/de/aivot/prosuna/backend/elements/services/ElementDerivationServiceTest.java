@@ -855,6 +855,109 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldMarkOnlyVisibleInputsWithoutComputedValueAsAdoptingTheirAuthoredValue() {
+        var visibleField = new TextInputElement();
+        visibleField.setId("visible");
+        var hiddenField = new TextInputElement();
+        hiddenField.setId("hidden");
+        hiddenField.setVisibility(new ElementVisibilityFunctions().setNoCode(NoCodeStaticValue.of(false)));
+        var computedField = new TextInputElement();
+        computedField.setId("computed");
+        computedField.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("computed value")));
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("visible", "visible value");
+        authoredValues.putLiteral("hidden", "hidden value");
+
+        var result = derive(
+                createRoot(List.of(visibleField, hiddenField, computedField)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertTrue(result.getElementStates().get("visible").isAuthoredValueAdopted());
+        assertFalse(result.getElementStates().get("hidden").isAuthoredValueAdopted());
+        assertFalse(result.getElementStates().get("computed").isAuthoredValueAdopted());
+    }
+
+    @Test
+    void shouldMarkNonEditableInputsAsAdoptingTheirAuthoredValueOnlyOutsideCustomerInput() {
+        var disabledField = new TextInputElement();
+        disabledField.setId("disabled");
+        disabledField.setDisabled(true);
+        var technicalField = new TextInputElement();
+        technicalField.setId("technical");
+        technicalField.setTechnical(true);
+        var editableField = new TextInputElement();
+        editableField.setId("editable");
+        var root = createRoot(List.of(disabledField, technicalField, editableField));
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("disabled", "1");
+        authoredValues.putLiteral("technical", "2");
+        authoredValues.putLiteral("editable", "3");
+
+        var customerResult = derive(
+                root,
+                authoredValues,
+                new ElementDerivationOptions().setIgnoreAuthoredValuesOfNonEditableInputs(true)
+        );
+        var staffResult = derive(root, authoredValues, new ElementDerivationOptions());
+
+        assertFalse(customerResult.getElementStates().get("disabled").isAuthoredValueAdopted());
+        assertFalse(customerResult.getElementStates().get("technical").isAuthoredValueAdopted());
+        assertTrue(customerResult.getElementStates().get("editable").isAuthoredValueAdopted());
+        assertTrue(staffResult.getElementStates().get("disabled").isAuthoredValueAdopted());
+        assertTrue(staffResult.getElementStates().get("technical").isAuthoredValueAdopted());
+    }
+
+    @Test
+    void shouldMarkInputsInRowsAsAdoptingTheirAuthoredValueOnlyWhenTheRowsAreAuthored() {
+        var authoredRowsName = new TextInputElement();
+        authoredRowsName.setId("authoredName");
+        var authoredRows = new ReplicatingContainerLayoutElement();
+        authoredRows.setId("authoredRows");
+        authoredRows.setChildren(List.of(authoredRowsName));
+
+        var computedRowsName = new TextInputElement();
+        computedRowsName.setId("computedName");
+        var computedRows = new ReplicatingContainerLayoutElement();
+        computedRows.setId("computedRows");
+        computedRows.setChildren(List.of(computedRowsName));
+        computedRows.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(
+                List.of(Map.of("id", "row-1", "values", Map.of("computedName", "Ada")))
+        )));
+
+        // The name is editable, but the rows of the disabled container come from the trusted values.
+        var protectedRowsName = new TextInputElement();
+        protectedRowsName.setId("protectedName");
+        var protectedRows = new ReplicatingContainerLayoutElement();
+        protectedRows.setId("protectedRows");
+        protectedRows.setDisabled(true);
+        protectedRows.setChildren(List.of(protectedRowsName));
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("authoredRows", List.of(rowValue("row-1", "authoredName", "Erika")));
+        authoredValues.putLiteral("protectedRows", List.of(rowValue("row-1", "protectedName", "forged")));
+        var trustedValues = new AuthoredElementValues();
+        trustedValues.putLiteral("protectedRows", List.of(rowValue("row-1", "protectedName", "Grace")));
+
+        var result = derive(
+                createRoot(List.of(authoredRows, computedRows, protectedRows)),
+                authoredValues,
+                new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                        .setTrustedAuthoredValues(trustedValues)
+        );
+
+        assertTrue(result.getElementStates().get("authoredRows").getSubStates().getFirst().getStates()
+                .get("authoredName").isAuthoredValueAdopted());
+        assertFalse(result.getElementStates().get("computedRows").getSubStates().getFirst().getStates()
+                .get("computedName").isAuthoredValueAdopted());
+        assertFalse(result.getElementStates().get("protectedRows").isAuthoredValueAdopted());
+        assertFalse(result.getElementStates().get("protectedRows").getSubStates().getFirst().getStates()
+                .get("protectedName").isAuthoredValueAdopted());
+    }
+
+    @Test
     void shouldTakeValuesOfNonEditableFieldsFromTrustedValues() {
         var technicalField = new TextInputElement();
         technicalField.setId("route");

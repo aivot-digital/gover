@@ -108,7 +108,7 @@ class FormTriggerControllerV1Test {
         when(fixture.processInstanceService().update(eq(17L), any(ProcessInstanceEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(1));
         when(fixture.fileUploadMultipartInputService().normalizeInputs(
-                any(), any(), isNull(), isNull(), eq(17L), isNull(), isNull()
+                any(), any(), any(), isNull(), isNull(), eq(17L), isNull(), isNull()
         )).thenReturn(new FileUploadMultipartInputService.NormalizationResult(new AuthoredElementValues(), List.of()));
 
         var previousMapper = JsonMapperTestUtils.installMapper();
