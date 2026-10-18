@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {type ReactNode, useCallback, useContext, useMemo, useState} from 'react';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -21,6 +21,11 @@ import {
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
+import {
+    ViewDispatcherContext,
+    ViewDispatcherContextProvider,
+    type ViewDispatcherRowScope,
+} from '../view-dispatcher/view-dispatcher.context';
 import {generateUUIDv7} from '../../utils/id-utils';
 import {FormFieldGroup, type FormFieldGroupContext} from '../form-field';
 
@@ -123,6 +128,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                     >
                         {(value ?? []).map((val: ReplicatingContainerElementValue, valueIndex: number) => {
                             const rowValues = resolveAuthoredReplicatingContainerElementValues(val) ?? {};
+                            const rowDerivedData = resolveReplicatingContainerItemDerivedData(element, derivedData, valueIndex);
                             const rowKey = val.id ?? valueIndex;
                             const itemLabelId = `${fieldContext.groupId}-item-${valueIndex}-label`;
                             const itemLabel = stringOrDefault(element.headlineTemplate, 'Datensatz #')
@@ -221,26 +227,32 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                         spacing={2}
                                         sx={{mt: 0}}
                                     >
-                                        {(children ?? []).map((child) => (
-                                            <ViewDispatcherComponent
-                                                {...props}
-                                                key={child.id}
-                                                element={child}
-                                                isBusy={isDisabled}
-                                                authoredElementValues={rowValues}
-                                                derivedData={resolveReplicatingContainerItemDerivedData(element, derivedData, valueIndex)}
-                                                onAuthoredElementValuesChange={(data, triggeringElementIds) => {
-                                                    const newValue = (value ?? [])
-                                                        .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
-                                                    setValue(newValue, triggeringElementIds);
-                                                }}
-                                                onElementBlur={(data, triggeringElementIds) => {
-                                                    const newValue = (value ?? [])
-                                                        .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
-                                                    onBlur(newValue, triggeringElementIds);
-                                                }}
-                                            />
-                                        ))}
+                                        <ReplicatingContainerRowScope
+                                            containerId={element.id}
+                                            authoredElementValues={rowValues}
+                                            derivedData={rowDerivedData}
+                                        >
+                                            {(children ?? []).map((child) => (
+                                                <ViewDispatcherComponent
+                                                    {...props}
+                                                    key={child.id}
+                                                    element={child}
+                                                    isBusy={isDisabled}
+                                                    authoredElementValues={rowValues}
+                                                    derivedData={rowDerivedData}
+                                                    onAuthoredElementValuesChange={(data, triggeringElementIds) => {
+                                                        const newValue = (value ?? [])
+                                                            .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
+                                                        setValue(newValue, triggeringElementIds);
+                                                    }}
+                                                    onElementBlur={(data, triggeringElementIds) => {
+                                                        const newValue = (value ?? [])
+                                                            .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
+                                                        onBlur(newValue, triggeringElementIds);
+                                                    }}
+                                                />
+                                            ))}
+                                        </ReplicatingContainerRowScope>
                                     </Grid>
                                 </Box>
                             );
@@ -297,6 +309,37 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                 Bedarf erneut eingeben. Möchten Sie den Datensatz wirklich löschen?
             </ConfirmDialog>
         </>
+    );
+}
+
+interface ReplicatingContainerRowScopeProps extends ViewDispatcherRowScope {
+    children: ReactNode;
+}
+
+/**
+ * Lets the fields of a row read the values of this row and of the rows around it, e.g. a dependent select whose
+ * referenced select belongs to a surrounding row.
+ */
+function ReplicatingContainerRowScope(props: ReplicatingContainerRowScopeProps) {
+    const {
+        children,
+        ...rowScope
+    } = props;
+    const context = useContext(ViewDispatcherContext);
+
+    if (context == null) {
+        return <>{children}</>;
+    }
+
+    return (
+        <ViewDispatcherContextProvider
+            value={{
+                ...context,
+                rowScopes: [...(context.rowScopes ?? []), rowScope],
+            }}
+        >
+            {children}
+        </ViewDispatcherContextProvider>
     );
 }
 
