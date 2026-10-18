@@ -36,7 +36,7 @@ public class DomainRolesSeed implements SeedProvider {
     public void seed() throws ResponseException {
         userRoleService.create(new UserRoleEntity()
                 .setName("Domänenadministration")
-                .setDescription("Rolle für Domänenadministratoren mit erweiterten Rechten")
+                .setDescription("Rolle für Domänenadministrator:innen mit erweiterten Rechten")
                 .setPermissions(List.of(
                         DepartmentPermissionProvider.DEPARTMENT_READ,
                         DepartmentPermissionProvider.DEPARTMENT_UPDATE,
@@ -81,7 +81,7 @@ public class DomainRolesSeed implements SeedProvider {
 
         userRoleService.create(new UserRoleEntity()
                 .setName("Sachbearbeitung")
-                .setDescription("Rolle für Sachbearbeiter mit eingeschränkten Rechten")
+                .setDescription("Rolle für Sachbearbeiter:innen mit eingeschränkten Rechten")
                 .setPermissions(List.of(
                         DepartmentPermissionProvider.DEPARTMENT_READ,
                         DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ,
@@ -100,7 +100,7 @@ public class DomainRolesSeed implements SeedProvider {
 
         userRoleService.create(new UserRoleEntity()
                 .setName("Modellierung")
-                .setDescription("Rolle für Modellierer mit Rechten zur Prozessdefinition")
+                .setDescription("Rolle für Modellierer:innen mit Rechten zur Prozessdefinition")
                 .setPermissions(List.of(
                         DepartmentPermissionProvider.DEPARTMENT_READ,
                         DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ,
@@ -119,7 +119,7 @@ public class DomainRolesSeed implements SeedProvider {
 
         userRoleService.create(new UserRoleEntity()
                 .setName("Prüfung")
-                .setDescription("Rolle für Prüfer mit Rechten zur Prozessdefinition")
+                .setDescription("Rolle für Prüfer:innen mit Rechten zur Prozessdefinition")
                 .setPermissions(List.of(
                         DepartmentPermissionProvider.DEPARTMENT_READ,
                         DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ,
@@ -137,7 +137,7 @@ public class DomainRolesSeed implements SeedProvider {
 
         userRoleService.create(new UserRoleEntity()
                 .setName("Prozessmanagement")
-                .setDescription("Rolle für Prozessmanager mit Rechten zur Prozessdefinition")
+                .setDescription("Rolle für Prozessmanager:innen mit Rechten zur Prozessdefinition")
                 .setPermissions(List.of(
                         DepartmentPermissionProvider.DEPARTMENT_READ,
                         DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ,
@@ -157,7 +157,7 @@ public class DomainRolesSeed implements SeedProvider {
 
         userRoleService.create(new UserRoleEntity()
                 .setName("Betrachtung")
-                .setDescription("Rolle für Betrachter mit Rechten zur Prozessdefinition")
+                .setDescription("Rolle für Betrachter:innen mit Rechten zur Prozessdefinition")
                 .setPermissions(List.of(
                         DepartmentPermissionProvider.DEPARTMENT_READ,
                         DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ,
