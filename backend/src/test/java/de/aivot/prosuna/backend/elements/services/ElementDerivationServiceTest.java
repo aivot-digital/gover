@@ -50,6 +50,8 @@ import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -1363,6 +1365,140 @@ class ElementDerivationServiceTest {
         assertNull(firstRow.getValues().get("row_child"));
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void shouldIgnoreRowValuesUnderTheIdOfAReferencedSelectOutsideTheRow(boolean protectedParent) {
+        var parent = createGroupSelect("parent");
+        parent.setDisabled(protectedParent);
+        var rows = createRows("rows", createGroupOptionSelect("child", "parent"));
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("parent", "group_b");
+        // The row claims a value for the select on the form level to make the option of group A valid.
+        authoredValues.putLiteral("rows", List.of(rowValue("row-1", "child", "option_a", "parent", "group_a")));
+        var trustedValues = new AuthoredElementValues();
+        trustedValues.putLiteral("parent", "group_b");
+
+        var result = derive(
+                createRoot(List.of(parent, rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                        .setTrustedAuthoredValues(trustedValues)
+        );
+
+        assertEquals("group_b", result.getEffectiveValues().get("parent"));
+        assertNull(effectiveRow(result.getEffectiveValues(), "rows", 0).getValues().get("child"));
+    }
+
+    @Test
+    void shouldCheckDependentSelectsInNestedRowsAgainstTheParentRowAndTheFormLevel() {
+        var parent = createGroupSelect("parent");
+        var innerRows = createRows("inner_rows",
+                createGroupOptionSelect("row_child", "row_parent"),
+                createGroupOptionSelect("form_child", "parent"));
+        var outerRows = createRows("outer_rows", createGroupSelect("row_parent"), innerRows);
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("parent", "group_b");
+        authoredValues.putLiteral("outer_rows", List.of(
+                outerRowValue("outer-1", "group_a", rowValue("inner-1", "row_child", "option_a", "form_child", "option_b")),
+                outerRowValue("outer-2", "group_b", rowValue("inner-2", "row_child", "option_a", "form_child", "option_a"))
+        ));
+
+        var result = derive(createRoot(List.of(parent, outerRows)), authoredValues, new ElementDerivationOptions());
+
+        var matchingRow = effectiveRow(effectiveRow(result.getEffectiveValues(), "outer_rows", 0).getValues(), "inner_rows", 0);
+        assertEquals("option_a", matchingRow.getValues().get("row_child"));
+        assertEquals("option_b", matchingRow.getValues().get("form_child"));
+        var mismatchingRow = effectiveRow(effectiveRow(result.getEffectiveValues(), "outer_rows", 1).getValues(), "inner_rows", 0);
+        assertNull(mismatchingRow.getValues().get("row_child"));
+        assertNull(mismatchingRow.getValues().get("form_child"));
+    }
+
+    @Test
+    void shouldNotResolveReferencedSelectsInRowsOfAnotherContainer() {
+        var otherRows = createRows("other_rows", createGroupSelect("parent"));
+        var rows = createRows("rows", createGroupOptionSelect("child", "parent"));
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("parent", "group_a");
+        authoredValues.putLiteral("other_rows", List.of(rowValue("other-1", "parent", "group_a")));
+        authoredValues.putLiteral("rows", List.of(rowValue("row-1", "child", "option_a")));
+
+        var result = derive(createRoot(List.of(otherRows, rows)), authoredValues, new ElementDerivationOptions());
+
+        assertNull(effectiveRow(result.getEffectiveValues(), "rows", 0).getValues().get("child"));
+    }
+
+    @Test
+    void shouldIgnoreSubmittedValuesOfHiddenReferencedSelects() {
+        var parent = createGroupSelect("parent");
+        parent.setVisibility(ElementVisibilityFunctions.of(NoCodeStaticValue.of(false)));
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("parent", "group_a");
+        authoredValues.putLiteral("child", "option_a");
+
+        var result = derive(
+                createRoot(List.of(parent, createGroupOptionSelect("child", "parent"))),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertNull(result.getEffectiveValues().get("child"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"disabled", "technical"})
+    void shouldCheckAgainstTheTrustedValueOfAProtectedReferencedSelectPlacedLater(String protection) {
+        var parent = createGroupSelect("parent");
+        parent.setLabel("Gruppe");
+        parent.setDisabled("disabled".equals(protection));
+        parent.setTechnical("technical".equals(protection));
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("parent", "group_a");
+        authoredValues.putLiteral("child", "option_a");
+        var trustedValues = new AuthoredElementValues();
+        trustedValues.putLiteral("parent", "group_b");
+
+        var result = derive(
+                createRoot(List.of(createGroupOptionSelect("child", "parent"), parent)),
+                authoredValues,
+                new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                        .setTrustedAuthoredValues(trustedValues)
+        );
+
+        assertEquals("group_b", result.getEffectiveValues().get("parent"));
+        assertEquals(
+                "Die ausgewählte Option passt nicht zur Auswahl im Feld „Gruppe“. Wählen Sie eine passende Option aus.",
+                result.getElementStates().get("child").getError()
+        );
+    }
+
+    @Test
+    void shouldCheckDependentSelectsAgainstReferencedSelectsPlacedLaterOnceTheyAreDerived() {
+        var matchingValues = new AuthoredElementValues();
+        matchingValues.putLiteral("child", "option_a");
+        matchingValues.putLiteral("parent", "group_a");
+        var mismatchingValues = new AuthoredElementValues();
+        mismatchingValues.putLiteral("child", "option_a");
+        mismatchingValues.putLiteral("parent", "group_b");
+        var root = createRoot(List.of(createGroupOptionSelect("child", "parent"), createGroupSelect("parent")));
+
+        var matching = derive(root, matchingValues, new ElementDerivationOptions());
+        var mismatching = derive(root, mismatchingValues, new ElementDerivationOptions());
+        var mismatchingWithoutErrors = derive(root, mismatchingValues,
+                new ElementDerivationOptions().setSkipErrorsForElementIds(List.of("child")));
+
+        assertFalse(matching.hasAnyError());
+        assertEquals("option_a", matching.getEffectiveValues().get("child"));
+        // Later elements may already have used the value, so it stays and the error blocks the submission.
+        assertEquals("option_a", mismatching.getEffectiveValues().get("child"));
+        assertEquals(
+                "Die ausgewählte Option passt nicht zur Auswahl im übergeordneten Auswahlfeld. Wählen Sie eine passende Option aus.",
+                mismatching.getElementStates().get("child").getError()
+        );
+        assertFalse(mismatchingWithoutErrors.hasAnyError());
+    }
+
     @Test
     void shouldOmitHiddenReplicatingRowChildFromEffectiveValues() {
         var visibleChild = new TextInputElement();
@@ -1486,6 +1622,40 @@ class ElementDerivationServiceTest {
         root.setId("root");
         root.setChildren(new LinkedList<BaseStepElement>(List.of(step)));
         return root;
+    }
+
+    private static SelectInputElement createGroupSelect(String id) {
+        return createGroupedSelect(id, null, List.of(
+                SelectInputElementOption.of("group_a", "Gruppe A"),
+                SelectInputElementOption.of("group_b", "Gruppe B")
+        ));
+    }
+
+    private static SelectInputElement createGroupOptionSelect(String id, String dependsOnSelectFieldId) {
+        return createGroupedSelect(id, dependsOnSelectFieldId, List.of(
+                SelectInputElementOption.of("option_a", "Option A", "group_a"),
+                SelectInputElementOption.of("option_b", "Option B", "group_b")
+        ));
+    }
+
+    private static ReplicatingContainerLayoutElement createRows(String id, BaseFormElement... children) {
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId(id);
+        rows.setChildren(new LinkedList<>(List.of(children)));
+        return rows;
+    }
+
+    private static ReplicatingContainerLayoutElementValue outerRowValue(String id, String rowParent,
+                                                                        ReplicatingContainerLayoutElementValue innerRow) {
+        var values = new AuthoredElementValues();
+        values.putLiteral("row_parent", rowParent);
+        values.putLiteral("inner_rows", List.of(innerRow));
+        return new ReplicatingContainerLayoutElementValue().setId(id).setValues(values);
+    }
+
+    private static EffectiveReplicatingContainerLayoutElementValue effectiveRow(Map<String, Object> values, String containerId, int index) {
+        var rows = assertInstanceOf(List.class, values.get(containerId));
+        return assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, rows.get(index));
     }
 
     private static ReplicatingContainerLayoutElementValue rowValue(String id, String... keysAndValues) {
