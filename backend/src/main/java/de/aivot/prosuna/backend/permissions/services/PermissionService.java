@@ -18,10 +18,17 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/*
+ * The declared repository queries of the checks get no transaction of their own. Within a request, open-in-view shares
+ * one connection without autocommit, so a check outside a transaction would leave a database transaction open. A
+ * following transaction with its own isolation level, such as the instance lock, then fails on PostgreSQL.
+ */
 @Service
+@Transactional(readOnly = true)
 public class PermissionService {
     /*
      * Resource checks intentionally treat the matching system permission as a global override.

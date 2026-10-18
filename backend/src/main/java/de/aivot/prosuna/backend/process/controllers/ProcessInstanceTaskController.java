@@ -199,12 +199,11 @@ public class ProcessInstanceTaskController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.requireProcessInstancePermission(
-                user.getId(),
-                taskEntity.getProcessInstanceId(),
-                ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK
-        );
-
-        return restartService.rerunFailedTask(taskEntity.getProcessInstanceId(), taskEntity.getId(), user);
+        return restartService.rerunFailedTask(taskEntity.getProcessInstanceId(), taskEntity.getId(), user,
+                () -> permissionService.requireProcessInstancePermission(
+                        user.getId(),
+                        taskEntity.getProcessInstanceId(),
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK
+                ));
     }
 }

@@ -176,13 +176,12 @@ public class ProcessInstanceController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.requireProcessInstancePermission(
-                user.getId(),
-                processInstance.getId(),
-                ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE
-        );
-
-        var updatedInstance = restartService.restartFailedInstance(processInstance.getId(), user.getId());
+        var updatedInstance = restartService.restartFailedInstance(processInstance.getId(), user.getId(),
+                () -> permissionService.requireProcessInstancePermission(
+                        user.getId(),
+                        processInstance.getId(),
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE
+                ));
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, ProcessInstanceEntity.class, updatedInstance.getId(), "id", Map.of(
                 "id", updatedInstance.getId(),

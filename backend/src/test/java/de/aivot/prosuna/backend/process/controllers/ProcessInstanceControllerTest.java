@@ -10,9 +10,11 @@ import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceRestartService;
+import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.Optional;
@@ -29,35 +31,44 @@ import static org.mockito.Mockito.when;
 
 class ProcessInstanceControllerTest {
     @Test
-    void restartAuthorizesTheInstanceBeforeRestartingAndAuditing() throws Exception {
+    void restartAuthorizesTheInstanceWithinTheRestartBeforeAuditing() throws Exception {
         var fixture = new RestartFixture();
         var restarted = new ProcessInstanceEntity().setId(7L).setProcessId(1).setStatus(ProcessInstanceStatus.Running);
-        when(fixture.restarts.restartFailedInstance(7L, "actor")).thenReturn(restarted);
+        when(fixture.restarts.restartFailedInstance(eq(7L), eq("actor"), any())).thenAnswer(invocation -> {
+            invocation.<ProcessTaskExecutionService.Authorization>getArgument(2).run();
+            return restarted;
+        });
 
         var result = fixture.controller.restartFailed(fixture.jwt, 7L);
 
         assertSame(restarted, result);
-        var order = inOrder(fixture.permissions, fixture.restarts, fixture.scopedAudit);
+        // The restart service runs the authorization under the instance lock.
+        var order = inOrder(fixture.restarts, fixture.permissions, fixture.scopedAudit);
+        order.verify(fixture.restarts).restartFailedInstance(eq(7L), eq("actor"), any());
         order.verify(fixture.permissions).requireProcessInstancePermission("actor", 7L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE);
-        order.verify(fixture.restarts).restartFailedInstance(7L, "actor");
         order.verify(fixture.scopedAudit).create();
     }
 
     @Test
-    void deniedRestartDoesNotRestartTheInstance() throws Exception {
+    void deniedRestartIsRejectedAndNotAudited() throws Exception {
         var fixture = new RestartFixture();
         doThrow(ResponseException.forbidden()).when(fixture.permissions)
                 .requireProcessInstancePermission("actor", 7L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE);
+        when(fixture.restarts.restartFailedInstance(eq(7L), eq("actor"), any())).thenAnswer(invocation -> {
+            invocation.<ProcessTaskExecutionService.Authorization>getArgument(2).run();
+            return new ProcessInstanceEntity().setId(7L).setProcessId(1).setStatus(ProcessInstanceStatus.Running);
+        });
 
-        assertThrows(ResponseException.class, () -> fixture.controller.restartFailed(fixture.jwt, 7L));
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller.restartFailed(fixture.jwt, 7L));
 
-        verifyNoInteractions(fixture.restarts, fixture.scopedAudit);
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        verifyNoInteractions(fixture.scopedAudit);
     }
 
     @Test
     void rejectedRestartIsNotAudited() throws Exception {
         var fixture = new RestartFixture();
-        when(fixture.restarts.restartFailedInstance(7L, "actor")).thenThrow(ResponseException.conflict("Nicht möglich."));
+        when(fixture.restarts.restartFailedInstance(eq(7L), eq("actor"), any())).thenThrow(ResponseException.conflict("Nicht möglich."));
 
         assertThrows(ResponseException.class, () -> fixture.controller.restartFailed(fixture.jwt, 7L));
 
