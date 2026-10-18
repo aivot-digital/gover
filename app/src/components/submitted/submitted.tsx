@@ -189,10 +189,10 @@ export function Submitted(props: SubmittedProps) {
                 processVersion,
             )
             .then((blob) => {
-                downloadBlobFile('Antrag.pdf', blob);
+                downloadBlobFile('Einreichung.pdf', blob);
             })
             .catch(() => {
-                dispatch(showErrorSnackbar('Der Antrag konnte nicht als PDF heruntergeladen werden. Bitte versuchen Sie es später erneut.'));
+                dispatch(showErrorSnackbar('Die Einreichung konnte nicht als PDF heruntergeladen werden. Bitte versuchen Sie es später erneut.'));
             })
             .finally(() => {
                 setIsPrintDownloadPending(false);
@@ -218,13 +218,13 @@ export function Submitted(props: SubmittedProps) {
                                 setMailErrorWithSnackbar('Es konnte keine E-Mail an diese Adresse verschickt werden.');
                                 setMailSent(false);
                             } else if (err.status === 403) {
-                                setMailErrorWithSnackbar('Die Zugriffsfrist für diesen Antrag ist bereits abgelaufen. Bitte wenden Sie sich an die zuständige Dienststelle.');
+                                setMailErrorWithSnackbar('Die Zugriffsfrist für diese Einreichung ist bereits abgelaufen. Bitte wenden Sie sich an die zuständige Dienststelle.');
                             } else if (err.status === 404) {
-                                setMailErrorWithSnackbar('Der Antrag konnte nicht gefunden werden.');
+                                setMailErrorWithSnackbar('Die Einreichung konnte nicht gefunden werden.');
                             } else if (err.status === 409) {
                                 setMailErrorWithSnackbar('Sie hatten bereits zu viele Fehlversuche.');
                             } else if (err.status === 406) {
-                                setMailErrorWithSnackbar('Sie haben bereits eine E-Mail für diesen Antrag verschickt.');
+                                setMailErrorWithSnackbar('Sie haben bereits eine E-Mail für diese Einreichung verschickt.');
                             } else {
                                 console.error(err);
                                 dispatch(showErrorSnackbar('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
@@ -288,7 +288,7 @@ export function Submitted(props: SubmittedProps) {
                     title="Ihre Einreichung konnte nicht verarbeitet werden"
                     sx={{my: 0, mb: 4}}
                 >
-                    Bei der Verarbeitung Ihres Antrags ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
+                    Bei der Verarbeitung Ihrer Einreichung ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
                     zuständige Stelle. Die Kontaktdaten finden Sie unten im Bereich „Hilfe“.
                 </AlertComponent>
             }
@@ -311,11 +311,11 @@ export function Submitted(props: SubmittedProps) {
                         >
                             <AlertComponent
                                 color="warning"
-                                title="Bitte bezahlen Sie die für Ihren Antrag anfallenden Gebühren"
+                                title="Bitte bezahlen Sie die für Ihre Einreichung anfallenden Gebühren"
                                 sx={{my: 0}}
                             >
                                 <p>
-                                    Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
+                                    Um Ihre Einreichung bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
                                     Die Zahlung wird durch den
                                     Dienstleister <strong>{status.paymentProviderName}</strong> abgewickelt.
                                     Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben
@@ -323,7 +323,7 @@ export function Submitted(props: SubmittedProps) {
                                 </p>
                                 <p>
                                     <strong>Wichtig:</strong>
-                                    &nbsp;Ihr Antrag wird erst nach erfolgter Zahlung bearbeitet.
+                                    &nbsp;Ihre Einreichung wird erst nach erfolgter Zahlung bearbeitet.
                                 </p>
                             </AlertComponent>
                         </Grid>
@@ -391,7 +391,7 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 >
                     Sie haben Ihre Gebühren erfolgreich online bezahlt.
-                    Der Antrag wird nach Bestätigung durch den Zahlungs&shy;dienstleister (in der Regel innerhalb
+                    Die Einreichung wird nach Bestätigung durch den Zahlungs&shy;dienstleister (in der Regel innerhalb
                     weniger Minuten) für die weitere Bearbeitung freigegeben.
                     Vielen Dank!
                 </AlertComponent>
@@ -446,7 +446,7 @@ export function Submitted(props: SubmittedProps) {
                         sx={{my: 0}}
                     >
                         <p>
-                            Für Ihren Antrag ist eine Zahlung erforderlich. Öffnen Sie die Zahlungsaufgabe, um
+                            Für Ihre Einreichung ist eine Zahlung erforderlich. Öffnen Sie die Zahlungsaufgabe, um
                             fortzufahren.
                         </p>
 
@@ -501,7 +501,7 @@ export function Submitted(props: SubmittedProps) {
                             component="h3"
                             variant="h5"
                         >
-                            Antrag als PDF herunterladen
+                            Einreichung als PDF herunterladen
                         </Typography>
                         <Typography
                             sx={{
@@ -510,9 +510,8 @@ export function Submitted(props: SubmittedProps) {
                             }}
                             variant={'body2'}
                         >
-                            Über die Schaltfläche “Antrag als PDF herunterladen” können Sie sich den von Ihnen
-                            eingereichten
-                            Antrag als PDF herunterladen.
+                            Über die Schaltfläche „Einreichung als PDF herunterladen“ können Sie sich Ihre
+                            Einreichung als PDF herunterladen.
                         </Typography>
 
                         <Button
@@ -534,7 +533,7 @@ export function Submitted(props: SubmittedProps) {
                             {
                                 formTaskAccessKey == null ?
                                     processFailed ? 'PDF nicht verfügbar' : 'PDF wird vorbereitet' :
-                                    'Antrag als PDF herunterladen'
+                                    'Einreichung als PDF herunterladen'
                             }
                         </Button>
                     </Grid>
@@ -550,7 +549,7 @@ export function Submitted(props: SubmittedProps) {
                                 component="h3"
                                 variant="h5"
                             >
-                                Antrag per E-Mail erhalten
+                                Einreichung per E-Mail erhalten
                             </Typography>
 
                             <Typography
@@ -560,8 +559,7 @@ export function Submitted(props: SubmittedProps) {
                                 }}
                                 variant={'body2'}
                             >
-                                Lassen Sie sich Ihren eingereichten Antrag durch das Ausfüllen des folgenden Formulars an
-                                die
+                                Lassen Sie sich Ihre Einreichung durch das Ausfüllen des folgenden Formulars an die
                                 von Ihnen angegebene E-Mail-Adresse zusenden.
                             </Typography>
 
@@ -578,7 +576,7 @@ export function Submitted(props: SubmittedProps) {
                             />
 
                             <CheckboxFieldComponent
-                                label="Ich erteile mein Einverständnis, dass der Antrag per unverschlüsselter E-Mail versandt wird."
+                                label="Ich erteile mein Einverständnis, dass die Einreichung per unverschlüsselter E-Mail versandt wird."
                                 value={privacy}
                                 onChange={setPrivacy}
                                 error={privacyError}
@@ -595,7 +593,7 @@ export function Submitted(props: SubmittedProps) {
                                 size={'large'}
                                 disabled={status.copySent || mailSent}
                             >
-                                Antrag per E-Mail erhalten
+                                Einreichung per E-Mail erhalten
                             </Button>
                         </Grid>
                     }
@@ -613,11 +611,10 @@ export function Submitted(props: SubmittedProps) {
                         color="warning"
                         title="Zugriff abgelaufen"
                     >
-                        Aus Sicherheitsgründen ist der Zugriff auf Ihren eingereichten Antrag nicht mehr möglich. Dies
-                        passiert im Regelfall, wenn zu viel Zeit zwischen der Einreichung des Antrages und dem Bezahlen
-                        der Gebühren vergeht.
-                        Sollten Sie die von Ihnen eingereichten Antragsunterlagen inklusive des Zahlungsbelegs für Ihre
-                        Unterlagen wünschen, wenden Sie sich bitte an den Fachlichen Support auf der <Link
+                        Aus Sicherheitsgründen ist der Zugriff auf Ihre Einreichung nicht mehr möglich. Dies passiert
+                        im Regelfall, wenn zu viel Zeit zwischen der Einreichung und dem Bezahlen der Gebühren vergeht.
+                        Sollten Sie Ihre Einreichung inklusive des Zahlungsbelegs für Ihre Unterlagen wünschen, wenden
+                        Sie sich bitte an den Fachlichen Support auf der <Link
                         onClick={() => {
                             dispatch(showDialog(HelpDialogId));
                         }}
@@ -643,7 +640,7 @@ export function Submitted(props: SubmittedProps) {
                 variant={'body2'}
             >
                 Ihre Rückmeldung wird anonym an uns übertragen und hilft uns
-                bei der Verbesserung unserer Anträge &amp; Prozesse. Vielen Dank!
+                bei der Verbesserung unserer Formulare &amp; Prozesse. Vielen Dank!
             </Typography>
             <Box
                 sx={{
@@ -672,7 +669,7 @@ export function Submitted(props: SubmittedProps) {
                     setShowMailSentDialog(false);
                 }}
             >
-                Eine E-Mail mit dem eingereichten Antrag wurde an die
+                Eine E-Mail mit Ihrer Einreichung wurde an die
                 angegebene <span style={{whiteSpace: 'nowrap'}}>E-Mail-Adresse</span> versendet.
             </InfoDialog>
         </Container>

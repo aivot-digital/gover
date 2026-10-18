@@ -64,7 +64,7 @@ describe('Submitted', () => {
             await vi.advanceTimersByTimeAsync(1000);
         });
 
-        expect(screen.getByRole('button', {name: 'Antrag als PDF herunterladen'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Einreichung als PDF herunterladen'})).toBeEnabled();
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(3000);
@@ -100,7 +100,7 @@ describe('Submitted', () => {
         expect(screen.getByRole('heading', {name: 'Angaben erfolgreich übermittelt'})).toBeVisible();
         expect(screen.queryByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).not.toBeInTheDocument();
         expect(screen.queryByText('Ihre Einreichung konnte nicht verarbeitet werden')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Antrag als PDF herunterladen'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Einreichung als PDF herunterladen'})).toBeEnabled();
         expect(screen.getByRole('link', {name: 'Zur Zahlung'}))
             .toHaveAttribute('href', '/process/process-access-key/tasks/task-access-key');
 
@@ -147,10 +147,11 @@ describe('Submitted', () => {
         expect(screen.getByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).toBeVisible();
         expect(screen.getByText('Ihre Einreichung konnte nicht verarbeitet werden')).toBeVisible();
         expect(screen.getByText(
-            /Bitte wenden Sie sich an die zuständige Stelle\. Die Kontaktdaten finden Sie unten im Bereich „Hilfe“\./,
+            'Bei der Verarbeitung Ihrer Einreichung ist ein Fehler aufgetreten. Bitte wenden Sie sich an die ' +
+            'zuständige Stelle. Die Kontaktdaten finden Sie unten im Bereich „Hilfe“.',
         )).toBeVisible();
         expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
-        fireEvent.click(screen.getByRole('button', {name: 'Antrag als PDF herunterladen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Einreichung als PDF herunterladen'}));
         expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
 
         await act(async () => {
@@ -163,7 +164,7 @@ describe('Submitted', () => {
             'task-access-key',
             1,
         );
-        expect(downloadBlobFileMock).toHaveBeenCalledWith('Antrag.pdf', pdf);
+        expect(downloadBlobFileMock).toHaveBeenCalledWith('Einreichung.pdf', pdf);
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(3000);
