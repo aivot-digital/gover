@@ -219,7 +219,7 @@ describe('CustomerInstanceView', () => {
 
         render(<CustomerInstanceView/>);
 
-        expect(await screen.findByText('Aktuell nichts zu bearbeiten')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: 'Aktuell nichts zu bearbeiten', level: 2})).toBeVisible();
         expect(mocks.navigate).not.toHaveBeenCalled();
     });
 

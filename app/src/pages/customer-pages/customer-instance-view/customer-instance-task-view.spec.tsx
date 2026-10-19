@@ -113,7 +113,9 @@ describe('CustomerInstanceTaskView', () => {
 
         expect(await screen.findByText('Antragsteller:in')).toBeInTheDocument();
         expect(screen.getByText(/Um fortzufahren, bestätigen Sie bitte Ihre Identität/)).toBeInTheDocument();
-        expect(screen.getByRole('heading', {name: 'Identität bestätigen'})).toBeVisible();
+        expect(screen.getByRole('heading', {name: 'Identität bestätigen', level: 2})).toBeVisible();
+        expect(screen.getByRole('heading', {name: 'Antragsteller:in', level: 3})).toBeVisible();
+        expect(screen.queryByRole('heading', {level: 1})).not.toBeInTheDocument();
         expect(screen.getByText(/das Sie für „Antragsteller:in“ in diesem Vorgang verwendet haben/)).toBeVisible();
         const loginLink = screen.getByRole('link', {name: /Mit „BundID“ anmelden/});
         expect(loginLink).toHaveAttribute(
@@ -148,6 +150,7 @@ describe('CustomerInstanceTaskView', () => {
 
         expect(await screen.findByText('Anderes Nutzerkonto erforderlich')).toBeInTheDocument();
         expect(screen.getByText(/gehört nicht zu „Antragsteller:in“/)).toBeInTheDocument();
+        expect(screen.getAllByText(/Melden Sie sich mit dem Nutzerkonto an/)).toHaveLength(1);
         expect(screen.getByRole('link', {name: /Mit „BundID“ anmelden/})).toBeInTheDocument();
         await waitFor(() => expect(window.location.search).toBe(''));
     });
@@ -165,6 +168,8 @@ describe('CustomerInstanceTaskView', () => {
         render(<CustomerInstanceTaskView/>);
 
         expect(await screen.findByRole('status')).toHaveTextContent('Mit „BundID“ angemeldet');
+        expect(screen.getByText(/Ihre Identität ist bestätigt/)).toBeVisible();
+        expect(screen.queryByText(/Melden Sie sich mit dem Nutzerkonto an/)).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Daten einreichen'})).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'Fortfahren'}));
 
@@ -189,6 +194,8 @@ describe('CustomerInstanceTaskView', () => {
         render(<CustomerInstanceTaskView/>);
 
         expect(await screen.findByText('Antragsteller:in')).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Identität auswählen', level: 2})).toBeVisible();
+        expect(screen.getByRole('heading', {name: 'Antragsteller:in', level: 3})).toBeVisible();
         const continueButton = screen.getByRole('button', {name: 'Fortfahren'});
         expect(continueButton).toBeDisabled();
         await user.type(screen.getByRole('textbox', {name: /E-Mail-Adresse/}), 'customer@example.test');

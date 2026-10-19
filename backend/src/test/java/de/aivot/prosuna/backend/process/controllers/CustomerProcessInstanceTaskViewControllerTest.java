@@ -25,6 +25,7 @@ import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.FormRequestActionNodeV1;
 import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
@@ -129,6 +130,28 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void retrieveCompletedFormRequestUsesItsReceiptWithoutExposingSubmittedData() throws ResponseException {
+        var provider = new FormRequestActionNodeV1(null, null, null, null, null, null);
+        var fixture = createFixture(provider, new AuthoredElementValues(), new EffectiveElementValues(),
+                new ApplyingProcessNodeExecutionResultHandler(), passthrough(), new FormRequestActionNodeV1.NodeConfig());
+        fixture.task().setStatus(ProcessTaskStatus.Completed);
+        fixture.task().setProcessData(Map.of("private", "process data"));
+        fixture.task().setRuntimeData(Map.of(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY,
+                Map.of("private", "submitted data")));
+
+        var response = fixture.controller().retrieve(fixture.procAccess(), fixture.taskAccess(), null, null);
+
+        var confirmation = response.layout().findChild("form-request-completed-9", AlertContentElement.class).orElseThrow();
+        assertEquals("Daten eingereicht", confirmation.getTitle());
+        assertEquals(AlertType.Success, confirmation.getAlertType());
+        assertEquals(1, response.layout().getChildren().size());
+        assertTrue(response.data().isEmpty());
+        assertTrue(response.events().isEmpty());
+        assertNull(response.existingIdentitySlot());
+        assertNull(response.newIdentitySlot());
+    }
+
+    @Test
     void retrieveShowsExpiredTaskWithoutCompletionMessageOrActions() throws ResponseException {
         var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), new AuthoredElementValues());
         fixture.task().setStatus(ProcessTaskStatus.DeadlineExceeded);
@@ -137,6 +160,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         var alert = response.layout().findChild("deadline-exceeded", AlertContentElement.class).orElseThrow();
         assertEquals("Frist überschritten", alert.getTitle());
+        assertEquals("Die Bearbeitungsfrist ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.", alert.getText());
         assertEquals(AlertType.Error, alert.getAlertType());
         assertEquals(List.of(), response.events());
         assertNull(response.existingIdentitySlot());
@@ -1033,7 +1057,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
     }
 
-    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
                                                                AuthoredElementValues normalizedInputs) {
         return createFixture(
                 provider,
@@ -1042,36 +1066,45 @@ class CustomerProcessInstanceTaskViewControllerTest {
         );
     }
 
-    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
                                                                AuthoredElementValues normalizedInputs,
                                                                ProcessNodeExecutionResultHandler resultHandler) {
         return createFixture(provider, normalizedInputs, new EffectiveElementValues(), resultHandler);
     }
 
-    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
                                                                AuthoredElementValues normalizedInputs,
                                                                EffectiveElementValues effectiveValues) {
         return createFixture(provider, normalizedInputs, effectiveValues, new ApplyingProcessNodeExecutionResultHandler());
     }
 
-    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
                                                                AuthoredElementValues normalizedInputs,
                                                                EffectiveElementValues effectiveValues,
                                                                ProcessNodeExecutionResultHandler resultHandler) {
         return createFixture(provider, normalizedInputs, effectiveValues, resultHandler, passthrough());
     }
 
-    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
                                                                ProcessTaskExecutionService execution) {
         return createFixture(provider, new AuthoredElementValues(), new EffectiveElementValues(),
                 new ApplyingProcessNodeExecutionResultHandler(), execution);
     }
 
-    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
                                                                AuthoredElementValues normalizedInputs,
                                                                EffectiveElementValues effectiveValues,
                                                                ProcessNodeExecutionResultHandler resultHandler,
                                                                ProcessTaskExecutionService execution) {
+        return createFixture(provider, normalizedInputs, effectiveValues, resultHandler, execution, new AuthoredElementValues());
+    }
+
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
+                                                               AuthoredElementValues normalizedInputs,
+                                                               EffectiveElementValues effectiveValues,
+                                                               ProcessNodeExecutionResultHandler resultHandler,
+                                                               ProcessTaskExecutionService execution,
+                                                               Object runtimeConfiguration) {
         var procAccess = UUID.randomUUID().toString();
         var taskAccess = UUID.randomUUID().toString();
         var now = Instant.now();
@@ -1147,7 +1180,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
                 new ProcessNodeDefinitionService(List.of(provider)),
-                new TestProcessNodeService(node),
+                new TestProcessNodeService(node, runtimeConfiguration),
                 resultHandler,
                 new TestProcessNodeExecutionLoggerFactory(),
                 elementDerivationService,
@@ -1395,10 +1428,16 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class TestProcessNodeService extends ProcessNodeService {
         private final ProcessNodeEntity node;
+        private final Object runtimeConfiguration;
 
         private TestProcessNodeService(ProcessNodeEntity node) {
+            this(node, node.getConfiguration());
+        }
+
+        private TestProcessNodeService(ProcessNodeEntity node, Object runtimeConfiguration) {
             super(null, null, null, null, null, null, null, new ProsunaConfig(), null, null, null, null, null);
             this.node = node;
+            this.runtimeConfiguration = runtimeConfiguration;
         }
 
         @Nonnull
@@ -1418,7 +1457,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         ) {
             assertFalse(skipErrors, "Task views must validate their resolved runtime configuration.");
             return new ProcessConfigurationDetails<>(
-                    provider.getNodeConfigurationClass().cast(node.getConfiguration()),
+                    provider.getNodeConfigurationClass().cast(runtimeConfiguration),
                     new DerivedRuntimeElementData()
             );
         }

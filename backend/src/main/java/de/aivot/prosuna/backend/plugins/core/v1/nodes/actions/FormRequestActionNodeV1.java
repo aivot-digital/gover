@@ -15,6 +15,8 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
@@ -32,6 +34,7 @@ import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.ValueFunctionType;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
@@ -679,24 +682,44 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         // The values of disabled and technical inputs in rows are taken from this data by row ID on submission, so
         // the rows need the same IDs each time the view is built.
         authoredInputValueService.assignPositionalRowIds(configuration.uiDefinition, initialData);
+        var canSubmit = context.getThisTask().getStatus() == ProcessTaskStatus.AwaitingCustomer;
+        var headline = new HeadlineContentElement();
+        headline.setId("form-request-headline-" + context.getThisTask().getId());
+        headline.setContent(canSubmit ? "Daten einreichen" : "Angeforderte Angaben");
         var introduction = new RichTextContentElement();
         introduction.setId("form-request-introduction-" + context.getThisTask().getId());
-        introduction.setContent(context.getThisTask().getStatus() == ProcessTaskStatus.AwaitingCustomer
-                ? "# Daten einreichen\nBitte ergänzen Sie die angeforderten Angaben und reichen Sie diese anschließend ein."
-                : "# Angeforderte Angaben\nHier sehen Sie die Angaben zu dieser Datenanforderung.");
+        introduction.setContent(canSubmit
+                ? "Bitte ergänzen Sie die angeforderten Angaben und reichen Sie diese anschließend ein."
+                : "Hier sehen Sie die Angaben zu dieser Datenanforderung.");
         var layout = new GroupLayoutElement();
         layout.setId("form-request-view-" + context.getThisTask().getId());
         // Add orientation without changing the authored UI definition or requiring another configuration field.
+        layout.addChild(headline);
         layout.addChild(introduction);
         layout.addChild(configuration.uiDefinition);
         return ProcessNodeCustomerView.of(
                 context,
                 layout,
-                List.of(new TaskViewEvent("Daten einreichen", CUSTOMER_TASK_SUBMIT_EVENT)),
+                canSubmit ? List.of(new TaskViewEvent("Daten einreichen", CUSTOMER_TASK_SUBMIT_EVENT)) : List.of(),
                 initialData,
                 existingIdentityId,
                 newIdentitySlot
         );
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeCustomerView getCompletedCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) {
+        // Completed views are available without another identity check, so only expose a receipt, not submitted data.
+        var confirmation = new AlertContentElement()
+                .setTitle("Daten eingereicht")
+                .setText("Sie haben die angeforderten Daten erfolgreich eingereicht.")
+                .setAlertType(AlertType.Success);
+        confirmation.setId("form-request-completed-" + context.getThisTask().getId());
+        var layout = new GroupLayoutElement();
+        layout.setId("form-request-completed-view-" + context.getThisTask().getId());
+        layout.addChild(confirmation);
+        return new ProcessNodeCustomerView(layout, List.of(), new AuthoredElementValues(), null);
     }
 
     @Nonnull

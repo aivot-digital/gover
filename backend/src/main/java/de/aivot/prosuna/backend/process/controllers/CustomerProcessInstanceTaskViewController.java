@@ -886,7 +886,7 @@ public class CustomerProcessInstanceTaskViewController {
         if (taskViewData.task().getStatus() == ProcessTaskStatus.DeadlineExceeded) {
             var alert = new AlertContentElement()
                     .setTitle("Frist überschritten")
-                    .setText("Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.")
+                    .setText("Die Bearbeitungsfrist ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.")
                     .setAlertType(AlertType.Error);
             alert.setId("deadline-exceeded");
             var layout = new GroupLayoutElement();

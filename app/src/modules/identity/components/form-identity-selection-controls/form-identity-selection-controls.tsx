@@ -141,7 +141,7 @@ export const FormIdentitySelectionControls = forwardRef<
                 })),
             });
         } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Die Identität konnte nicht entfernt werden.'));
+            dispatch(showApiErrorSnackbar(error, 'Die Auswahl konnte nicht geändert werden. Bitte versuchen Sie es erneut.'));
         } finally {
             setBusy(false);
         }

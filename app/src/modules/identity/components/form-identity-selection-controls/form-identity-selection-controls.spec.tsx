@@ -219,4 +219,22 @@ describe('FormIdentitySelectionControls', () => {
             availableIdentityProviders: [expect.objectContaining({isAuthenticatedWithThis: false})],
         }));
     });
+
+    it('explains a failed selection change without claiming the identity was removed', async () => {
+        const clearIdentity = vi.fn().mockRejectedValue(new Error('Network error'));
+        const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const {onChange} = renderControls(slot({identityType: 'Email', emailAddress: 'customer@example.test', isReady: true}), {clearIdentity});
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole('button', {name: 'Auswahl ändern'}));
+
+        await waitFor(() => expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({
+                message: 'Die Auswahl konnte nicht geändert werden. Bitte versuchen Sie es erneut.',
+            }),
+        })));
+        expect(onChange).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', {name: 'Auswahl ändern'})).toBeEnabled();
+        errorLog.mockRestore();
+    });
 });

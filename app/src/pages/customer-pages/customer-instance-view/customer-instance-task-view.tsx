@@ -355,7 +355,7 @@ export function CustomerInstanceTaskView() {
     const authoredValues = editedAuthoredValues ?? taskView.data;
 
     return (
-        <Box sx={{maxWidth: 1200, mx: 'auto', px: {xs: 2, md: 4}, py: {xs: 3, md: 5}}}>
+        <Box>
             <ElementDerivationContext
                 element={taskView.layout}
                 authoredElementValues={authoredValues}
@@ -521,29 +521,27 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
         : 'Melden Sie sich mit dem Nutzerkonto an, das Sie für diese Identität in diesem Vorgang verwendet haben.';
     let introduction: string;
     if (existingIdentitySlot != null && newIdentitySlot != null) {
-        introduction = `Bestätigen Sie Ihre bestehende Identität und vervollständigen Sie die weitere Identitätsangabe. ${accountInstruction}`;
+        introduction = existingIdentityReady
+            ? 'Ihre bestehende Identität ist bestätigt. Vervollständigen Sie die weitere Identitätsangabe, um fortzufahren.'
+            : 'Bestätigen Sie Ihre bestehende Identität und vervollständigen Sie die weitere Identitätsangabe.';
     } else if (existingIdentitySlot != null) {
-        introduction = `Um fortzufahren, bestätigen Sie bitte Ihre Identität. ${accountInstruction}`;
+        introduction = existingIdentityReady
+            ? 'Ihre Identität ist bestätigt. Wählen Sie „Fortfahren“, um zum nächsten Schritt zu gelangen.'
+            : 'Um fortzufahren, bestätigen Sie bitte Ihre Identität.';
     } else if (newIdentitySlot?.isRequired) {
         introduction = 'Um fortzufahren, wählen Sie ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.';
     } else {
         introduction = 'Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie ohne Identitätsangabe fortfahren.';
     }
+    if (existingIdentitySlot != null && !existingIdentityReady && !wrongExistingAccount) {
+        introduction += ` ${accountInstruction}`;
+    }
 
     return (
-        <Box
-            sx={{
-                maxWidth: 1200,
-                mx: 'auto',
-                py: {
-                    xs: 3,
-                    md: 5,
-                },
-            }}
-        >
+        <Box>
             <Grid container spacing={3}>
                 <Grid size={{xs: 12, md: 10, lg: 8}} sx={{mb: 2}}>
-                    <Typography variant="h2" component="h1">
+                    <Typography variant="h2" component="h2">
                         {existingIdentitySlot != null ? 'Identität bestätigen' : 'Identität auswählen'}
                     </Typography>
                     <Typography sx={{mt: 1, maxWidth: 680}}>
@@ -579,7 +577,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                                     mt: 0.25,
                                 }}
                             >
-                                <Typography variant="h4" component="h2">
+                                <Typography variant="h4" component="h3">
                                     {existingIdentityLabel}
                                 </Typography>
                                 <Chip
@@ -622,6 +620,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                         <IdentitySlotCard
                             ref={controlsRef}
                             slot={newIdentitySlot}
+                            headingComponent="h3"
                             api={identitySelectionApi}
                             saveMode="deferred"
                             beforeIdentityProviderStart={handleIdentityProviderStart}

@@ -7,6 +7,8 @@ import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
@@ -45,6 +47,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
+import de.aivot.prosuna.backend.process.models.TaskViewEvent;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssignedCustomer;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
@@ -294,7 +297,7 @@ class FormRequestActionNodeV1Test {
     }
 
     @ParameterizedTest
-    @EnumSource(value = ProcessTaskStatus.class, names = {"AwaitingCustomer", "Completed"})
+    @EnumSource(value = ProcessTaskStatus.class, names = {"AwaitingCustomer", "Paused", "Aborted", "Failed", "Restarted", "AwaitingStaff"})
     void customerTaskViewExplainsTheStepWithoutChangingTheAuthoredLayout(ProcessTaskStatus status) throws Exception {
         var authoredLayout = new GroupLayoutElement();
         authoredLayout.setId("authored-form");
@@ -306,15 +309,39 @@ class FormRequestActionNodeV1Test {
 
         var view = node.getCustomerTaskView(context);
 
-        assertSame(authoredLayout, view.layout().getChildren().get(1));
+        assertSame(authoredLayout, view.layout().getChildren().get(2));
         assertTrue(authoredLayout.getChildren().isEmpty());
-        var introduction = assertInstanceOf(RichTextContentElement.class, view.layout().getChildren().getFirst());
+        assertEquals(RECIPIENT_IDENTITY_ID, view.requiredExistingIdentityId());
+        var headline = assertInstanceOf(HeadlineContentElement.class, view.layout().getChildren().getFirst());
+        var introduction = assertInstanceOf(RichTextContentElement.class, view.layout().getChildren().get(1));
         if (status == ProcessTaskStatus.AwaitingCustomer) {
+            assertEquals("Daten einreichen", headline.getContent());
             assertTrue(introduction.getContent().contains("Bitte ergänzen Sie"));
+            assertEquals(List.of(new TaskViewEvent("Daten einreichen", "submit")), view.events());
         } else {
+            assertEquals("Angeforderte Angaben", headline.getContent());
             assertFalse(introduction.getContent().contains("Bitte ergänzen Sie"));
-            assertTrue(introduction.getContent().contains("Angeforderte Angaben"));
+            assertTrue(view.events().isEmpty());
         }
+    }
+
+    @Test
+    void completedCustomerTaskViewConfirmsSubmissionWithoutExposingFormData() {
+        var context = context(new FormRequestActionNodeV1.NodeConfig(), Map.of("private", "process data"),
+                Map.of(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY, Map.of("private", "submitted data")));
+        context.getThisTask().setStatus(ProcessTaskStatus.Completed);
+
+        var view = node.getCompletedCustomerTaskView(context);
+
+        assertEquals(1, view.layout().getChildren().size());
+        var confirmation = assertInstanceOf(AlertContentElement.class, view.layout().getChildren().getFirst());
+        assertEquals("Daten eingereicht", confirmation.getTitle());
+        assertEquals("Sie haben die angeforderten Daten erfolgreich eingereicht.", confirmation.getText());
+        assertTrue(view.data().isEmpty());
+        assertTrue(view.trustedData().isEmpty());
+        assertTrue(view.events().isEmpty());
+        assertNull(view.requiredExistingIdentityId());
+        assertNull(view.requiredNewIdentitySlot());
     }
 
     @Test
