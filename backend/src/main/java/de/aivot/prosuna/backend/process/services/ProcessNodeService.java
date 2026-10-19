@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.process.models.ProcessTaskDeadlineExceededData;
+import de.aivot.prosuna.backend.process.utils.ProcessNodeDataKeyUtils;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
@@ -183,6 +184,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
         processVersionDraftGuard.requireStructureEditable(entity.getProcessId(), entity.getProcessVersion());
 
+        requireValidDataKey(entity);
+
         // Set the ID to null, to force the database to assign a new, valid ID.
         entity.setId(null);
 
@@ -270,6 +273,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         } else {
             processVersionDraftGuard.requireDrafted(existingEntity.getProcessId(), existingEntity.getProcessVersion());
         }
+
+        requireValidDataKey(entity);
 
         // Update fields
         existingEntity.setProcessId(entity.getProcessId());
@@ -620,6 +625,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var countsByType = new EnumMap<ProcessNodeType, Integer>(ProcessNodeType.class);
 
         for (var node : nodes) {
+            requireValidDataKey(node);
             var provider = processNodeProviderService
                     .getProcessNodeDefinition(node)
                     .orElseThrow(() -> ResponseException.badRequest(
@@ -946,14 +952,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
         collectProcessNodePolicyProblems(node, provider, problems);
 
-        if (StringUtils.isNullOrEmpty(node.getDataKey())) {
-            var commonErrorMessage = "Der Datenschlüssel darf nicht leer sein.";
+        var dataKeyError = ProcessNodeDataKeyUtils.getValidationError(node.getDataKey());
+        if (dataKeyError != null) {
             addCommonError(
                     commonErrors,
                     problems,
                     ProcessNodeProblems.COMMON_ERROR_KEY_DATA_KEY,
                     "Datenschlüssel",
-                    commonErrorMessage
+                    dataKeyError
             );
         } else {
             var duplicateDataKeyFilter = ProcessNodeFilter
@@ -1357,6 +1363,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 .computeIfAbsent(commonErrorKey, ignored -> new LinkedList<>())
                 .add(errorMessage);
         problems.add(problemLabel + ": " + errorMessage);
+    }
+
+    private static void requireValidDataKey(@Nonnull ProcessNodeEntity node) throws ResponseException {
+        // Imports and internal copies can bypass request bean validation; enforce the same rule before mutation.
+        var error = ProcessNodeDataKeyUtils.getValidationError(node.getDataKey());
+        if (error != null) {
+            throw ResponseException.badRequest(error);
+        }
     }
 
     public record ProcessConfigurationDetails<NodeConfig>(

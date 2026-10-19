@@ -86,7 +86,7 @@ public class ProcessNodeController {
                 : requestedDataKey;
 
         for (var copyIndex = 2; copyIndex < 10_000; copyIndex++) {
-            var suffix = "-%d".formatted(copyIndex);
+            var suffix = "_%d".formatted(copyIndex);
             var truncatedBase = normalizedBase.length() > 32 - suffix.length()
                     ? normalizedBase.substring(0, 32 - suffix.length())
                     : normalizedBase;

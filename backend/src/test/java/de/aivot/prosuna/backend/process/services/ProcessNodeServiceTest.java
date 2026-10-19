@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
+import de.aivot.prosuna.backend.process.utils.ProcessNodeDataKeyUtils;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
@@ -850,6 +851,30 @@ class ProcessNodeServiceTest {
         var exception = assertThrows(ResponseException.class, () -> service.create(createNode(2, "new")));
 
         assertTrue(exception.getMessage().contains("maximal 1"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"name-2", "1name", "person.name", "items[0]", "", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
+    void rejectsInvalidDataKeysBeforeCreatingUpdatingOrImportingNodes(String key) {
+        var node = createNode(2, key);
+        var existing = createNode(2, "existing");
+        var expectedMessage = ProcessNodeDataKeyUtils.getValidationError(key);
+
+        assertEquals(expectedMessage, assertThrows(ResponseException.class, () -> service.create(node)).getMessage());
+        assertEquals(expectedMessage, assertThrows(ResponseException.class,
+                () -> service.performUpdate(2, node, existing)).getMessage());
+        assertEquals(expectedMessage, assertThrows(ResponseException.class,
+                () -> service.validateNewProcessNodeBatch(List.of(node))).getMessage());
+        assertEquals("existing", existing.getDataKey());
+        verify(processNodeRepository, never()).saveAndFlush(any());
+        verify(processNodeRepository, never()).save(any());
+    }
+
+    @Test
+    void reportsAnInvalidDataKeyInProcessValidation() throws Exception {
+        var problems = service.validate(createNode(1, "name-2"), new HintingTestNodeDefinition(), false).orElseThrow();
+
+        assertEquals(List.of(ProcessNodeDataKeyUtils.FORMAT_ERROR), problems.commonErrors().get("dataKey"));
     }
 
     @Test
