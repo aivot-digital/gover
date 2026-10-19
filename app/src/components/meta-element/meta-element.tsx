@@ -19,7 +19,7 @@ export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) 
         <>
             <meta charSet="utf-8" />
             <title>
-                {(titlePrefix ?? 'Prosuna') + (title ? ` - ${title}` : '')}
+                {(titlePrefix?.trim() || 'Prosuna') + (title ? ` - ${title}` : '')}
             </title>
             <meta
                 name="robots"
