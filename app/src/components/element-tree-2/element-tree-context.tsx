@@ -37,6 +37,9 @@ export interface ElementTreeContextType {
     allElements: ElementWithParents[];
     displayContext: ElementDisplayContext;
     allowElementIdEditing: boolean;
+    newElementIds?: ReadonlySet<string>;
+    registerNewElement?: (id: string) => void;
+    markElementApplied?: (id: string) => void;
     identityMappingInformation?: IdentityConfigElementSlotWithProviders[];
 }
 

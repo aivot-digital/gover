@@ -14,6 +14,8 @@ import {ProcessNodeEditorProvider} from '../process-node-editor-context';
 import {ProcessNodeEditorOutputsTab} from './process-node-editor-outputs-tab';
 import {copyToClipboardText} from '../../../../../../../utils/copy-to-clipboard';
 
+vi.mock('../../../../../../../providers/confirm-provider', () => ({useConfirm: () => vi.fn().mockResolvedValue(true)}));
+
 vi.mock('../../../../../../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => vi.fn(),
 }));
@@ -23,7 +25,7 @@ vi.mock('../../../../../../../utils/copy-to-clipboard', () => ({
 }));
 
 describe('ProcessNodeEditorOutputsTab', () => {
-    it('shows and updates the data key even when the provider has no outputs', () => {
+    it('shows and updates the data key even when the provider has no outputs', async () => {
         const {node, setNode} = renderOutputsTab();
         const dataKey = screen.getByRole('textbox', {name: /Datenschlüssel/});
 
@@ -35,6 +37,8 @@ describe('ProcessNodeEditorOutputsTab', () => {
         expect(screen.getByText(/auf die Daten des Prozesselements und Informationen zur Ausführung zu/)).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /Details zu/})).not.toBeInTheDocument();
 
+        expect(dataKey).toHaveAttribute('readonly');
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
         fireEvent.change(dataKey, {target: {value: 'copied_field'}});
         expect(setNode).toHaveBeenCalledWith({...node, dataKey: 'copied_field'}, false);
     });
@@ -98,10 +102,27 @@ describe('ProcessNodeEditorOutputsTab', () => {
         expect(target).toHaveValue('');
     });
 
+    it('normalizes output targets while preserving path segments and reports invalid paths on blur', () => {
+        const {node, setNode} = renderOutputsTab({outputs: [resultOutput]});
+        const input = screen.getByRole('textbox', {name: /^Zielpfad in den Vorgangsdaten/});
+        fireEvent.change(input, {target: {value: 'personen[0].Äußere-Größe'}});
+        expect(input).toHaveValue('personen[0].Aeussere_Groesse');
+        expect(setNode).toHaveBeenLastCalledWith({
+            ...node, outputMappings: {result: 'personen[0].Aeussere_Groesse'},
+        }, false);
+        fireEvent.change(input, {target: {value: 'personen[0].'}});
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+        fireEvent.blur(input);
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        fireEvent.change(input, {target: {value: 'personen[0].Name'}});
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+    });
+
     it('uses the current element data key in the detail path', async () => {
         const user = userEvent.setup();
         renderOutputsTab({outputs: [resultOutput]});
 
+        await user.click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
         fireEvent.change(screen.getByRole('textbox', {name: /Datenschlüssel/}), {
             target: {value: 'new_key'},
         });
@@ -226,6 +247,7 @@ function renderOutputsTab({
 
     function Harness() {
         const [currentNode, setCurrentNode] = useState(node);
+        const [dataKeyUnlocked, setDataKeyUnlocked] = useState(false);
 
         return (
             <ProcessNodeEditorProvider value={{
@@ -233,6 +255,10 @@ function renderOutputsTab({
                 layout: {} as GroupLayout,
                 testClaim: null,
                 node: currentNode,
+                originalNode: node,
+                dataKeyUnlocked,
+                onUnlockDataKey: () => setDataKeyUnlocked(true),
+                onLockDataKey: () => setDataKeyUnlocked(false),
                 setNode: (nextNode, updateOriginal) => {
                     setNode(nextNode, updateOriginal);
                     setCurrentNode(nextNode);

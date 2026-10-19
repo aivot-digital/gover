@@ -28,6 +28,7 @@ import Search from '@aivot/mui-material-symbols-400-n25-outlined/Search';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {SelectFieldComponent} from '../select-field/select-field-component';
 import {TextFieldComponent} from '../text-field/text-field-component';
+import {DataPathInput} from '../data-path-input/data-path-input';
 import type {EndAction} from '../text-field/text-field-component-props';
 import {FormField, type FormFieldControlContext, type FormFieldLayoutProps} from '../form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
@@ -618,13 +619,20 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                             }
                         }}
                     />
-                    <TextFieldComponent
+                    <DataPathInput
                         label="Variablenpfad"
                         hint={VARIABLE_SOURCE_DEFINITIONS[customSource].pathHint}
-                        startIcon={VARIABLE_SOURCE_DEFINITIONS[customSource].prefix}
+                        prefix={VARIABLE_SOURCE_DEFINITIONS[customSource].prefix}
                         value={customPath}
                         disabled={props.readOnly}
                         margin="none"
+                        validatePath={(path) => {
+                            // An element reference addresses a value below its node key. Keep this in sync with
+                            // parseCustomVariableReference, which splits the two parts before storing them.
+                            if (sourceRequiresNodeDataKey(customSource) && path?.trim() && parseProcessDataPath(path)?.length === 1) {
+                                return 'Ergänzen Sie nach dem Element-Datenschlüssel den Pfad zum gewünschten Wert.';
+                            }
+                        }}
                         onChange={(path) => {
                             setDraftSelectedKey(null);
                             setCustomPath(path ?? '');

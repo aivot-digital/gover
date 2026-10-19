@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.process.converters.ProcessNodeDeadlinesConverter;
+import de.aivot.prosuna.backend.process.utils.ProcessNodeDataKeyUtils;
 import jakarta.validation.Valid;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -48,6 +49,7 @@ public class ProcessNodeEntity {
     @NotBlank(message = "Der Data-Key darf nicht leer sein.")
     @NotNull(message = "Der Data-Key darf nicht null sein.")
     @Size(min = 1, max = 32, message = "Der Data-Key muss zwischen 1 und 32 Zeichen lang sein.")
+    @Pattern(regexp = ProcessNodeDataKeyUtils.REGEX, message = ProcessNodeDataKeyUtils.FORMAT_ERROR)
     private String dataKey;
 
     @Nonnull

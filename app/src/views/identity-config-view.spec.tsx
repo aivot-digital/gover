@@ -14,6 +14,9 @@ import {
 } from '../components/view-dispatcher/view-dispatcher.context';
 import {IdentityConfigView} from './identity-config-view';
 
+// The variable picker's copy action uses the app dispatch; these view tests render without a Redux store.
+vi.mock('../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 vi.mock('../modules/identity/identity-providers-api-service', () => ({
     IdentityProvidersApiService: class {
         listAll() {

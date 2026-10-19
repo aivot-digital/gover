@@ -12,6 +12,12 @@ interface ProcessNodeEditorContextType {
     testClaim: ProcessTestClaimEntity | null;
 
     node: ProcessNodeEntity;
+    originalNode?: ProcessNodeEntity;
+    dataKeyUnlocked?: boolean;
+    onUnlockDataKey?: () => void;
+    onLockDataKey?: () => void;
+    dataKeyValidationRequested?: boolean;
+    outputMappingErrors?: Record<string, string>;
     setNode: (node: ProcessNodeEntity, updateOriginal: boolean) => void;
 
     isEditable: boolean;

@@ -58,6 +58,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
             return;
         }
 
+        props.onCreateElement?.(element);
         props.onAddElements([element]);
     };
 

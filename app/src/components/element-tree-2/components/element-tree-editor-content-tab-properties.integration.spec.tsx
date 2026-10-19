@@ -9,6 +9,8 @@ import {ElementTreeContextProvider, type ElementTreeContextType} from '../elemen
 import {ElementTreeEditorContextProvider} from './element-tree-editor-context';
 import {ElementTreeEditorContentTabProperties} from './element-tree-editor-content-tab-properties';
 
+vi.mock('../../../providers/confirm-provider', () => ({useConfirm: () => vi.fn().mockResolvedValue(true)}));
+
 vi.mock('../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
 vi.mock('../../../editors', async () => {
     const {StepComponentEditor} = await import('../../step/step.component.editor');
@@ -78,8 +80,10 @@ describe('ElementTreeEditorContentTabProperties editor naming', () => {
         render(<TestProperties element={generateElementWithDefaultValues(ElementType.Text)}/>);
 
         const title = screen.getByRole('textbox', {name: /^Titel – optional$/});
+        const key = screen.getByRole('textbox', {name: /^Datenschlüssel/});
+        expect(title.compareDocumentPosition(key) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         const width = screen.getByRole('combobox', {name: 'Breite des Elements in der Darstellung'});
-        expect(title.compareDocumentPosition(width) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(key.compareDocumentPosition(width) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it('does not show an empty basic-properties section inside a summary layout', () => {

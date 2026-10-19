@@ -13,6 +13,9 @@ import {type ProcessNodeDefinitionMetadataForwardedProcessDataKey} from '../../p
 import {ProcessNodeEditorProvider} from '../../process/pages/details/components/process-node-editor/process-node-editor-context';
 import {NoCodeOperandEditorExpression} from './no-code-operand-editor-expression';
 
+// The data path's copy action uses the app dispatch; these editor tests render without a Redux store.
+vi.mock('../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 const operator: NoCodeOperatorDetailsDTO = {
     identifier: 'equals',
     packageName: 'test',

@@ -31,6 +31,11 @@ export interface TextFieldComponentProps extends FormFieldLayoutProps {
         regex: string;
         message: string;
     };
+    /** Validates on first blur, then while correcting the value. */
+    validate?: (value: string | null) => string | undefined;
+    validationRequested?: boolean;
+    /** Normalizes typed/pasted text before updating the visible input. */
+    normalizeInput?: (value: string) => string;
     controlSx?: SxProps<Theme>;
     bufferInputUntilBlur?: boolean;
     debounce?: number;
@@ -43,4 +48,5 @@ export type EndAction = {
     tooltip?: string;
     ariaLabel?: string;
     onClick: () => void;
+    disabled?: boolean;
 };

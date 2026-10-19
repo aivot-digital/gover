@@ -20,6 +20,9 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {ElementsApiService} from '../../../modules/elements/elements-api-service';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
+import {validateDataKeyPath} from '../../../utils/data-key-input';
+import {suggestDestinationKey} from './element-tree-editor-content-tab-properties-utils';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;
@@ -46,6 +49,9 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         parentModalZIndex,
         displayContext,
         identityMappingInformation,
+        newElementIds,
+        markElementApplied,
+        allElements,
     } = useElementTreeContext();
 
     const {
@@ -60,25 +66,57 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     const [updatedElement, setUpdatedElement] = useState<T>();
     const [isBusy, setIsBusy] = useState<boolean>(false);
+    const [dataKeyUnlocked, setDataKeyUnlocked] = useState(false);
+    const [automaticDataKey, setAutomaticDataKey] = useState(false);
+    const [dataKeyValidationRequested, setDataKeyValidationRequested] = useState(false);
 
     const hasSummaryAsParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
     }, [parents]);
 
-    // Reset the updated states when opening the editor
+    // Only a newly added field follows its title. A loaded empty key deliberately keeps values in element data.
+    // Snapshot this policy per editor session; ordinary parent updates must not reset an in-progress edit.
     useEffect(() => {
         if (open) {
-            setUpdatedElement(undefined);
+            const automatic = displayContext !== ElementDisplayContext.DataObjectSchema &&
+                newElementIds?.has(value.id) === true && isAnyInputElement(value) && !value.destinationKey;
+            setAutomaticDataKey(automatic);
+            setDataKeyUnlocked(false);
+            setDataKeyValidationRequested(false);
+            const generatedKey = automatic && isAnyInputElement(value)
+                ? suggestDestinationKey(value.label, {element: value, parents}, allElements)
+                : null;
+            setUpdatedElement(generatedKey == null ? undefined : {...value, destinationKey: generatedKey});
             setIsBusy(false);
         }
-    }, [open]);
+    }, [open, value.id]);
+
+    const changeCurrentElement = (updated: T) => {
+        const previous = updatedElement ?? value;
+        if (automaticDataKey && isAnyInputElement(previous) && isAnyInputElement(updated)) {
+            if (updated.destinationKey !== previous.destinationKey) {
+                setAutomaticDataKey(false);
+            } else if (updated.label !== previous.label) {
+                updated = {...updated, destinationKey: suggestDestinationKey(updated.label, {element: updated, parents}, allElements)};
+            }
+        }
+        setUpdatedElement(updated);
+    };
 
     const handleSetCurrentTab = (newTab: string): void => {
         navigateToEditorTab(newTab);
     };
 
     const handleSave = (): void => {
+        const current = updatedElement ?? value;
+        setDataKeyValidationRequested(true);
+        if (displayContext !== ElementDisplayContext.DataObjectSchema && isAnyInputElement(current) &&
+            validateDataKeyPath(current.destinationKey) != null) {
+            navigateToEditorTab(DefaultTabs.properties);
+            return;
+        }
         if (updatedElement == null) {
+            markElementApplied?.(value.id);
             handleClose();
             return;
         }
@@ -87,10 +125,14 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         new ElementsApiService()
             .recalculateReferencedIds(updatedElement)
             .then((recalculatedElement) => {
+                setDataKeyUnlocked(false);
+                markElementApplied?.(value.id);
                 onChange(recalculatedElement);
             })
             .catch(() => {
                 // If the recalculation fails, we can still try to save the element with the risk of broken references.
+                setDataKeyUnlocked(false);
+                markElementApplied?.(value.id);
                 onChange(updatedElement);
             })
             .finally(() => {
@@ -362,9 +404,16 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         <ElementTreeEditorContextProvider
                             value={{
                                 currentElement: updatedElement ?? value,
-                                onChangeCurrentElement: (updated) => {
-                                    setUpdatedElement(updated);
+                                originalElement: value,
+                                dataKeyUnlocked,
+                                onUnlockDataKey: () => {
+                                    setDataKeyUnlocked(true);
+                                    // Manual control ends title tracking, even if the user later locks the key again.
+                                    setAutomaticDataKey(false);
                                 },
+                                onLockDataKey: () => setDataKeyUnlocked(false),
+                                dataKeyValidationRequested,
+                                onChangeCurrentElement: changeCurrentElement,
                                 parents: parents,
                             }}
                         >

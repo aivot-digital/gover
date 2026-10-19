@@ -23,6 +23,9 @@ import type {PaymentProviderResponseDTO} from '../modules/payment/dtos/payment-p
 import type {PaymentProviderDefinitionResponseDTO} from '../modules/payment/dtos/payment-provider-definition-response-dto';
 import {InputVariableSource} from '../models/input-mode';
 
+// The variable picker's copy action uses the app dispatch; these view tests render without a Redux store.
+vi.mock('../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 vi.mock('./process-data-key-input-field-view', () => ({
     ProcessDataKeyInputFieldView: () => null,
     ProcessDataKeyInputComponent: (props: {
@@ -424,11 +427,15 @@ describe('PaymentConfigView', () => {
         await user.tab();
         expect(taxRate).toHaveValue('7,1234');
 
-        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        const itemDialog = screen.getByRole('dialog', {name: 'Zahlungspositionen bearbeiten'});
+        await user.click(within(itemDialog).getByRole('button', {name: 'Übernehmen'}));
+        // The fields are cleared before the dialog's exit animation ends. Wait for the entire inner dialog
+        // to leave, otherwise the second click can hit its now inactive save button instead of the outer one.
         await waitFor(() => {
-            expect(screen.queryByRole('textbox', {name: /Steuersatz/})).not.toBeInTheDocument();
+            expect(itemDialog).not.toBeInTheDocument();
         });
-        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        await user.click(within(screen.getByRole('dialog', {name: 'Zahlungskonfiguration bearbeiten'}))
+            .getByRole('button', {name: 'Übernehmen'}));
 
         expect(setValue).toHaveBeenCalledWith(expect.objectContaining({
             items: [expect.objectContaining({fixedTaxRate: 7.1234})],
