@@ -62,8 +62,8 @@ public class ProcessVersionEntity {
      * process flow and is independent of task deadlines; an empty value leaves instances without a deadline.
      */
     @Nullable
-    @Min(value = 1, message = "Die Bearbeitungsdauer muss mindestens 1 Tag betragen.")
-    @Max(value = MAX_INSTANCE_DEADLINE_DAYS, message = "Die Bearbeitungsdauer darf maximal 3.652 Tage betragen.")
+    @Min(value = 1, message = "Die Bearbeitungsfrist muss mindestens 1 Tag betragen.")
+    @Max(value = MAX_INSTANCE_DEADLINE_DAYS, message = "Die Bearbeitungsfrist darf maximal 3.652 Tage betragen.")
     private Integer instanceDeadlineDays;
 
     @Nullable

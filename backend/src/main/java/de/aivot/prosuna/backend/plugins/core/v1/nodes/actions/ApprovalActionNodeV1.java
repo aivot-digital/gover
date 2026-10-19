@@ -63,7 +63,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
             "approval", "Freigabe",
             "Zeit für die Prüfung und Freigabe.",
             new ProcessNodePort("approval_overdue", "Fristüberschreitung: Freigabe",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Freigabe."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Freigabe beendet wurde."));
 
     public static final String NODE_KEY = "approval";
 

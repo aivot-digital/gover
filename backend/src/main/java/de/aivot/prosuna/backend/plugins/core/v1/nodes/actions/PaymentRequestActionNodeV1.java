@@ -87,7 +87,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             "payment", "Zahlung",
             "Zeit zur Zahlung ab Versand der Zahlungsaufforderung.",
             new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Zahlung."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Zahlung beendet wurde."));
 
     public static final String NODE_KEY = "payment_request";
 

@@ -44,8 +44,8 @@ export function getProcessInstanceDeadlineProgress(
     }
 
     const started = Date.parse(startedValue);
-    // Warn once half of the period between creation and deadline has passed.
-    if (!Number.isNaN(started) && now >= started + (deadline - started) / 2) {
+    // Warn during the final quarter of the period between creation and deadline.
+    if (!Number.isNaN(started) && now >= started + (deadline - started) * 0.75) {
         return 'warning';
     }
 
