@@ -23,6 +23,9 @@ import type {PaymentProviderResponseDTO} from '../modules/payment/dtos/payment-p
 import type {PaymentProviderDefinitionResponseDTO} from '../modules/payment/dtos/payment-provider-definition-response-dto';
 import {InputVariableSource} from '../models/input-mode';
 
+// The variable picker's copy action uses the app dispatch; these view tests render without a Redux store.
+vi.mock('../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 vi.mock('./process-data-key-input-field-view', () => ({
     ProcessDataKeyInputFieldView: () => null,
     ProcessDataKeyInputComponent: (props: {

@@ -13,6 +13,9 @@ import {
 import {HtmlTemplateInputComponentDialog} from './html-template-input-component-dialog';
 import type {VStorageIndexItemWithAssetEntity} from '../../modules/storage/entities/storage-index-item-entity';
 
+// The variable picker's copy action uses the app dispatch; this dialog test renders without a Redux store.
+vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 describe('HtmlTemplateInputComponentDialog', () => {
     afterEach(() => {
         vi.restoreAllMocks();
