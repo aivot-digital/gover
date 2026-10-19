@@ -20,9 +20,9 @@ import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {ElementWidthSelector} from '../../element-width-selector/element-width-selector';
 import {normalizeElementWeight} from '../../../utils/element-widths';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
-import {ProcessDataKeyInputComponent} from '../../../views/process-data-key-input-field-view';
+import {DataKeyDefinitionField} from '../../data-key-definition-field/data-key-definition-field';
 import {isGroupLayout} from '../../../models/elements/form/layout/group-layout';
-import {collectHttpMappingProblems} from './element-tree-editor-content-tab-properties-utils';
+import {collectHttpMappingProblems, suggestDestinationKey} from './element-tree-editor-content-tab-properties-utils';
 
 const summaryLayoutHiddenElementSpecificPropertyTypes = new Set<ElementType>([
     ElementType.ChipInput,
@@ -44,6 +44,11 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
 
     const {
         currentElement,
+        originalElement,
+        dataKeyUnlocked = false,
+        onUnlockDataKey,
+        onLockDataKey,
+        dataKeyValidationRequested,
         onChangeCurrentElement,
         parents,
     } = useElementTreeEditorContext<T>();
@@ -161,10 +166,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     {
                         showInputTitleField &&
                         <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
-                            }}
+                            size={{xs: 12, lg: 6}}
                         >
                             <TextFieldComponent
                                 value={currentElement.label}
@@ -178,6 +180,31 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 hint="Dieser Titel wird als Beschriftung des Feldes angezeigt. Nutzen Sie eine kurze, aussagekräftige Bezeichnung."
                                 disabled={!editable}
                             />
+                        </Grid>
+                    }
+
+                    {
+                        isAnyInputElement(currentElement) && displayContext !== ElementDisplayContext.DataObjectSchema &&
+                        <Grid size={{xs: 12, lg: 6}}>
+                            <DataKeyDefinitionField
+                                key={currentElement.id}
+                                value={currentElement.destinationKey}
+                                persistedValue={originalElement != null && isAnyInputElement(originalElement)
+                                    ? originalElement.destinationKey : currentElement.destinationKey}
+                                source={currentElement.label}
+                                onChange={(destinationKey) => onChangeCurrentElement({...currentElement, destinationKey} as T)}
+                                unlocked={dataKeyUnlocked}
+                                onUnlock={() => onUnlockDataKey?.()}
+                                onLock={() => onLockDataKey?.()}
+                                disabled={!editable}
+                                prefix={replicatingParentDestinationKeyPrefix}
+                                error={replicatingParentDestinationKeyError}
+                                validationRequested={dataKeyValidationRequested}
+                                resolveGeneratedKey={(key) => suggestDestinationKey(key, {element: currentElement, parents}, allElements) ?? key}
+                            />
+                            {httpKeyProblems.length > 0 && <AlertComponent title="Warnungen zu Ihrem gewählten Datenschlüssel" color="warning">
+                                <ul>{httpKeyProblems.map((problem, index) => <li key={index}>{problem}</li>)}</ul>
+                            </AlertComponent>}
                         </Grid>
                     }
 
@@ -343,73 +370,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     Für dieses Wurzelelement stehen keine grundlegenden oder elementspezifischen Einstellungen zur
                     Verfügung.
                 </AlertComponent>
-            }
-
-            {
-                isAnyInputElement(currentElement) &&
-                displayContext != ElementDisplayContext.DataObjectSchema &&
-                <>
-                    <ElementEditorSectionHeader
-                        title="Datenzuordnung im Prozess"
-                        sx={{mt: 8}}
-                    >
-                        Legt fest, unter welchem Datenschlüssel der Wert dieses Feldes in den Vorgangsdaten gespeichert
-                        und ggf. aus vorhandenen Vorgangsdaten vorbelegt wird. Ohne Datenschlüssel wird der Wert unter
-                        der ID des Feldes ausschließlich in den Elementdaten gespeichert. Werte können unter Nutzung
-                        einer Punktnotation in verschachtelte Datenstrukturen geschrieben und gelesen werden (z. B.
-                        „person.vorname“).
-                    </ElementEditorSectionHeader>
-
-                    <Grid
-                        container
-                        columnSpacing={4}
-                    >
-                        <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
-                                xl: 6,
-                            }}
-                        >
-                            <ProcessDataKeyInputComponent
-                                label="Datenschlüssel"
-                                value={currentElement.destinationKey}
-                                onChange={(val) => {
-                                    onChangeCurrentElement({
-                                        ...currentElement,
-                                        destinationKey: val,
-                                    } as T);
-                                }}
-                                disabled={!editable}
-                                disableWildCards={true}
-                                prefix={replicatingParentDestinationKeyPrefix}
-                                error={replicatingParentDestinationKeyError}
-                            />
-                        </Grid>
-                    </Grid>
-
-                    {
-                        httpKeyProblems.length > 0 &&
-                        <AlertComponent
-                            title="Warnungen zu Ihrem gewählten Datenschlüssel"
-                            color="warning"
-                        >
-                            <ul>
-                                {
-                                    httpKeyProblems
-                                        .map((problem, index) => (
-                                            <li key={index}>
-                                                <Typography>
-                                                    {problem}
-                                                </Typography>
-                                            </li>
-                                        ))
-                                }
-                            </ul>
-                        </AlertComponent>
-                    }
-
-                </>
             }
 
             <ElementEditorSectionHeader

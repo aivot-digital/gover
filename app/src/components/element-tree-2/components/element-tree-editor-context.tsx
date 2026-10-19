@@ -5,6 +5,11 @@ export interface ElementTreeEditorContextType<T extends AnyElement> {
     currentElement: T;
     onChangeCurrentElement: (element: T) => void;
     parents: AnyElement[];
+    originalElement?: T;
+    dataKeyUnlocked?: boolean;
+    onUnlockDataKey?: () => void;
+    onLockDataKey?: () => void;
+    dataKeyValidationRequested?: boolean;
 }
 
 export const ElementTreeEditorContext = createContext<ElementTreeEditorContextType<any> | null>(null);

@@ -3,16 +3,23 @@ import {Box, Button, Divider, Stack, Typography} from '@mui/material';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import Info from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import {useProcessNodeEditorContext} from '../process-node-editor-context';
-import {TextFieldComponent} from '../../../../../../../components/text-field/text-field-component';
+import {DataKeyDefinitionField} from '../../../../../../../components/data-key-definition-field/data-key-definition-field';
 import {ElementEditorSectionHeader} from '../../../../../../../components/element-editor-section-header/element-editor-section-header';
 import {ProcessNodeOutputTypeDialog} from '../../../../../components/process-node-output-type-dialog';
 import {ProcessNodeOutputReference} from '../../../../../components/process-node-output-reference';
 import {type ProcessNodeOutput} from '../../../../../services/process-node-provider-api-service';
 import {ProcessDataKeyInputComponent} from '../../../../../../../views/process-data-key-input-field-view';
+import {normalizeDataKeyInput} from '../../../../../../../utils/data-key-input';
 
 export function ProcessNodeEditorOutputsTab() {
     const {
         node: localNode,
+        originalNode,
+        dataKeyUnlocked = false,
+        onUnlockDataKey,
+        onLockDataKey,
+        dataKeyValidationRequested,
+        outputMappingErrors,
         setNode,
         provider,
         isEditable,
@@ -32,9 +39,15 @@ export function ProcessNodeEditorOutputsTab() {
                 Über diesen Schlüssel greifen Sie in weiteren Prozessschritten auf die Daten des Prozesselements und
                 Informationen zur Ausführung zu.
             </ElementEditorSectionHeader>
-            <TextFieldComponent
-                label="Datenschlüssel"
-                hint="Der Schlüssel muss innerhalb dieser Prozessversion eindeutig sein. Für die Übersicht empfehlen wir einen sprechenden Schlüssel."
+            <DataKeyDefinitionField
+                key={localNode.id}
+                kind="node-key"
+                persistedValue={originalNode?.dataKey ?? localNode.dataKey}
+                source={localNode.name}
+                unlocked={dataKeyUnlocked}
+                onUnlock={() => onUnlockDataKey?.()}
+                onLock={() => onLockDataKey?.()}
+                validationRequested={dataKeyValidationRequested}
                 value={localNode.dataKey}
                 onChange={(val) => {
                     setNode({
@@ -42,8 +55,6 @@ export function ProcessNodeEditorOutputsTab() {
                         dataKey: val ?? '',
                     }, false);
                 }}
-                required
-                maxCharacters={32}
                 error={problems?.commonErrors.dataKey}
                 disabled={!isEditable}
             />
@@ -101,7 +112,11 @@ export function ProcessNodeEditorOutputsTab() {
                                             }, false);
                                         }}
                                         disabled={!isEditable}
+                                        error={outputMappingErrors?.[output.key]}
+                                        validationRequested={dataKeyValidationRequested}
                                         disableWildCards
+                                        normalizeInput={normalizeDataKeyInput}
+                                        debounce={0}
                                         margin="none"
                                     />
                                 </Box>

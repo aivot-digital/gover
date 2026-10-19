@@ -71,6 +71,9 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         closeElementEditor,
     } = useElementEditorNavigation();
 
+    // Creation provenance is editor-only: an empty destinationKey alone cannot distinguish a new field from
+    // an intentionally unmapped or imported one. Applying a field ends its automatic naming phase.
+    const [newElements, setNewElements] = useState({rootId: value.id, ids: new Set<string>()});
     const [showSearch, setShowSearch] = useState(false);
     const [search, setSearch] = useState('');
     const [currentSearchResultIndex, setCurrentSearchResultIndex] = useState(0);
@@ -107,6 +110,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
 
     useEffect(() => {
         if (knownRootChildrenRef.current.rootId !== value.id) {
+            setNewElements({rootId: value.id, ids: new Set()});
             knownRootChildrenRef.current = {
                 rootId: value.id,
                 ids: new Set(),
@@ -496,6 +500,16 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                     <ElementTreeContextProvider
                         value={{
                             root: value,
+                            newElementIds: newElements.rootId === value.id ? newElements.ids : new Set(),
+                            registerNewElement: (id) => setNewElements((previous) => ({
+                                rootId: value.id,
+                                ids: new Set([...(previous.rootId === value.id ? previous.ids : []), id]),
+                            })),
+                            markElementApplied: (id) => setNewElements((previous) => {
+                                const ids = new Set(previous.ids);
+                                ids.delete(id);
+                                return {...previous, ids};
+                            }),
                             editable: editable,
                             parentModalZIndex: parentModalZIndex,
                             scrollToElement: handleScrollToElement,

@@ -1,3 +1,6 @@
+import {AuthService} from '../../../../../../services/auth-service';
+import {ProcessNodeEditorOutputsTab} from './tabs/process-node-editor-outputs-tab';
+import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, type MockInstance, vi} from 'vitest';
@@ -85,11 +88,12 @@ function EditorPage({editable}: {editable: boolean}) {
 
 function renderEditor({editable = true, tab = 'configuration'}: {editable?: boolean; tab?: string} = {}) {
     const router = createMemoryRouter([{
-        path: '/processes/10/versions/1/nodes/:nodeId',
+        path: '/processes/:processId/versions/:processVersion/nodes/:nodeId',
         element: <EditorPage editable={editable}/>,
         children: [
             {path: 'tabs/configuration', element: <EditorFields/>},
             {path: 'tabs/more', element: <EditorFields/>},
+            {path: 'tabs/outputs', element: <ProcessNodeEditorOutputsTab/>},
         ],
     }], {initialEntries: [`/processes/10/versions/1/nodes/1/tabs/${tab}`]});
     render(<RouterProvider router={router}/>);
@@ -103,6 +107,7 @@ describe('ProcessNodeEditor metadata loading', () => {
         logError = vi.spyOn(console, 'error').mockImplementation(() => {});
         // jsdom does not implement element scrolling, which the editor uses on navigation.
         Object.defineProperty(HTMLElement.prototype, 'scrollTo', {value: vi.fn(), configurable: true, writable: true});
+        testState.confirm.mockResolvedValue(true);
         testState.save.mockImplementation(async (node: ProcessNodeEntity) => node);
         vi.spyOn(ProcessNodeApiService.prototype, 'retrieve').mockImplementation(async (id) => createNode(id));
         vi.spyOn(ProcessNodeApiService.prototype, 'getConfigurationLayout')
@@ -135,6 +140,75 @@ describe('ProcessNodeEditor metadata loading', () => {
             name: 'Geändert', outputMappings: {result: 'name'}, configuration: createNode(1).configuration,
         });
         await waitFor(() => expect(screen.getByRole('button', {name: 'Konfiguration speichern'})).toBeDisabled());
+    });
+
+    it('preserves the unlocked state across tabs and failed saves, and relocks after a successful save', async () => {
+        vi.spyOn(AuthService, 'isAuthenticated').mockReturnValue(true);
+        const user = userEvent.setup();
+        renderEditor({tab: 'outputs'});
+        const input = await screen.findByRole('textbox', {name: /^Datenschlüssel/});
+        expect(input).toHaveAttribute('readonly');
+        await user.click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
+        fireEvent.change(input, {target: {value: 'renamed_node'}});
+        await user.click(screen.getByRole('tab', {name: 'Weiteres'}));
+        await user.click(screen.getByRole('tab', {name: 'Ausgangsdaten'}));
+        expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).not.toHaveAttribute('readonly');
+        expect(testState.confirm).toHaveBeenCalledOnce();
+        testState.save.mockRejectedValueOnce(new Error('Save failed'));
+        await user.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
+        await waitFor(() => expect(testState.save).toHaveBeenCalledOnce());
+        expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).not.toHaveAttribute('readonly');
+        await user.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
+        await waitFor(() => expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).toHaveAttribute('readonly'));
+        expect(testState.save.mock.calls[1][0].dataKey).toBe('renamed_node');
+    });
+
+    it('rejects an empty required node key even without blur', async () => {
+        renderEditor({tab: 'outputs'});
+        const input = await screen.findByRole('textbox', {name: /^Datenschlüssel/});
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
+        fireEvent.change(input, {target: {value: ''}});
+        fireEvent.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
+        expect(testState.save).not.toHaveBeenCalled();
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        await waitFor(() => expect(screen.getByRole('textbox', {name: /^Datenschlüssel/}))
+            .toHaveAccessibleDescription(/Geben Sie einen Datenschlüssel ein/));
+    });
+
+    it('protects unsaved changes when navigating back to another node after an internal tab switch', async () => {
+        vi.spyOn(AuthService, 'isAuthenticated').mockReturnValue(true);
+        const user = userEvent.setup();
+        const router = renderEditor();
+        await screen.findByRole('textbox', {name: 'Name bearbeiten'});
+        await user.click(screen.getByRole('tab', {name: 'Ausgangsdaten'}));
+        await act(() => router.navigate('/processes/10/versions/1/nodes/2/tabs/configuration'));
+        await waitFor(() => expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Element 2'));
+        const nameInput = screen.getByRole('textbox', {name: 'Name bearbeiten'});
+        fireEvent.change(nameInput, {target: {value: 'Ungespeichert'}});
+
+        await act(() => router.navigate(-1));
+
+        expect(await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen'})).toBeVisible();
+        expect(nameInput).toHaveValue('Ungespeichert');
+    });
+
+    it('keeps manual locking across tabs without saving or changing the node key', async () => {
+        vi.spyOn(AuthService, 'isAuthenticated').mockReturnValue(true);
+        const user = userEvent.setup();
+        renderEditor({tab: 'outputs'});
+        const input = await screen.findByRole('textbox', {name: /^Datenschlüssel/});
+        await user.click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
+        fireEvent.change(input, {target: {value: 'renamed_node'}});
+        await user.click(screen.getByRole('button', {name: 'Datenschlüssel sperren'}));
+        expect(input).toHaveAttribute('readonly');
+        expect(testState.save).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('tab', {name: 'Weiteres'}));
+        await user.click(screen.getByRole('tab', {name: 'Ausgangsdaten'}));
+        expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).toHaveAttribute('readonly');
+        expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).toHaveValue('renamed_node');
+        await user.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
+        await waitFor(() => expect(testState.save).toHaveBeenCalledOnce());
+        expect(testState.save.mock.calls[0][0].dataKey).toBe('renamed_node');
     });
 
     it('does not offer editing in the metadata warning when the configuration is read-only', async () => {

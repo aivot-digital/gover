@@ -1,3 +1,4 @@
+import {validateDataKeyPath, validateNodeDataKey} from '../../../../../../utils/data-key-input';
 import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
@@ -28,7 +29,7 @@ import {useDelayedVisibility} from '../../../../../../hooks/use-delayed-visibili
 import {downloadObjectFile} from '../../../../../../utils/download-utils';
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 import {isDerivedRuntimeElementData} from '../../../../../../models/element-data';
-import {shouldSkipProcessNodeEditorChangeBlocker} from './process-node-editor-change-blocker';
+import {isProcessNodeEditorTabNavigation, shouldSkipProcessNodeEditorChangeBlocker} from './process-node-editor-change-blocker';
 import {flattenElements} from '../../../../../../utils/flatten-elements';
 import {
     isUiDefinitionInputFieldElement,
@@ -87,6 +88,9 @@ export function ProcessNodeEditor(): ReactNode {
         testClaim,
     } = useProcessDetailsPageContext();
 
+    const [dataKeyUnlocked, setDataKeyUnlocked] = useState(false);
+    const [dataKeyValidationRequested, setDataKeyValidationRequested] = useState(false);
+    const [outputMappingErrors, setOutputMappingErrors] = useState<Record<string, string>>({});
     const [provider, setProvider] = useState<ProcessNodeProvider | null>(null);
     const [editedNode, setEditedNode] = useState<ProcessNodeEntity | null>(null);
     const [layout, setLayout] = useState<GroupLayout | null>(null);
@@ -124,7 +128,11 @@ export function ProcessNodeEditor(): ReactNode {
         onConfirmNavigation: () => {
             setEditedNode(originalNode);
         },
-        shouldAllowNavigation: ({nextLocation}) => shouldSkipProcessNodeEditorChangeBlocker(nextLocation.state),
+        // Tab changes keep the same editing session. Do not persist a bypass in history state: revisiting that
+        // entry from a different node would otherwise discard its unsaved changes without confirmation.
+        shouldAllowNavigation: ({currentLocation, nextLocation}) =>
+            isProcessNodeEditorTabNavigation(currentLocation.pathname, nextLocation.pathname) ||
+            shouldSkipProcessNodeEditorChangeBlocker(nextLocation.state),
     });
 
     useEffect(() => {
@@ -170,6 +178,9 @@ export function ProcessNodeEditor(): ReactNode {
                 if (isCancelled) {
                     return;
                 }
+                setDataKeyUnlocked(false);
+                setDataKeyValidationRequested(false);
+                setOutputMappingErrors({});
                 setOriginalNode(node);
                 setEditedNode(node);
                 setLayout(configurationLayout);
@@ -289,6 +300,17 @@ export function ProcessNodeEditor(): ReactNode {
             return;
         }
 
+        setDataKeyValidationRequested(true);
+        const invalidMappings = Object.fromEntries(Object.entries(editedNode.outputMappings ?? {})
+            .filter(([key]) => provider?.outputs.some((output) => output.key === key))
+            .map(([key, path]) => [key, validateDataKeyPath(path)])
+            .filter((entry): entry is [string, string] => entry[1] != null));
+        setOutputMappingErrors(invalidMappings);
+        if (validateNodeDataKey(editedNode.dataKey) != null || Object.keys(invalidMappings).length > 0) {
+            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${editedNode.id}/tabs/outputs?${searchParams.toString()}`);
+            return;
+        }
+
         const fieldsToOmit = flattenElements(layout!, false)
             .filter((e) => isUiDefinitionInputFieldElement(e) && e.openExternalEditor)
             .map((e) => e.id);
@@ -299,6 +321,9 @@ export function ProcessNodeEditor(): ReactNode {
             }
         })
             .then((savedNode) => {
+                setDataKeyUnlocked(false);
+                setDataKeyValidationRequested(false);
+                setOutputMappingErrors({});
                 setOriginalNode(savedNode);
                 setEditedNode(savedNode);
 
@@ -560,10 +585,23 @@ export function ProcessNodeEditor(): ReactNode {
                                 layout,
                                 testClaim,
                                 node: editedNode ?? originalNode,
+                                originalNode,
+                                dataKeyUnlocked,
+                                onUnlockDataKey: () => setDataKeyUnlocked(true),
+                                onLockDataKey: () => setDataKeyUnlocked(false),
+                                dataKeyValidationRequested,
+                                outputMappingErrors,
                                 setNode: (node, updateOriginal) => {
                                     if (updateOriginal) {
                                         setOriginalNode(node);
                                     }
+                                    if (node.dataKey !== (editedNode ?? originalNode).dataKey) {
+                                        setProblems((previous) => previous == null ? previous : {
+                                            ...previous,
+                                            commonErrors: {...previous.commonErrors, dataKey: []},
+                                        });
+                                    }
+                                    setOutputMappingErrors({});
                                     setEditedNode(node);
                                 },
                                 isEditable: editable,
