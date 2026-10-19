@@ -21,7 +21,6 @@ import {Hint} from '../../../../components/hint/hint';
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
 import {RetentionTimeUnit} from '../../enums/retention-time-unit';
 import {formatNumToGermanNum} from '../../../../utils/format-german-numbers';
-import {pluralize} from '../../../../utils/humanization-utils';
 
 interface ProcessSettingsDialogVersionTabProps {
     open: boolean;
@@ -455,7 +454,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                     key={`instance-deadline-${numberInputRevision}`}
                     label="Bearbeitungsfrist"
                     hint="Ohne Angabe gilt für Vorgänge dieser Prozessversion keine Bearbeitungsfrist."
-                    suffix={draft.instanceDeadlineDays == null ? 'Tage' : pluralize(draft.instanceDeadlineDays, 'Tag', 'Tage')}
+                    suffix={draft.instanceDeadlineDays === 1 ? 'Tag' : 'Tage'}
                     value={draft.instanceDeadlineDays}
                     onChange={(value) => {
                         setDraft({...draft, instanceDeadlineDays: value ?? null});

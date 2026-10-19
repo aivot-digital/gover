@@ -434,7 +434,43 @@ describe('ProcessSettingsDialogVersionTab', () => {
         ));
     });
 
-    it.each(['0', '3653'])('blocks the processing deadline %s outside the task deadline bounds', async (value) => {
+    it.each([
+        {value: '', unit: 'Tage', invalid: false},
+        {value: '0', unit: 'Tage', invalid: true},
+        {value: '-3', unit: 'Tage', invalid: true},
+        {value: '1', unit: 'Tag', invalid: false},
+        {value: '2', unit: 'Tage', invalid: false},
+    ])('uses "$unit" for the entered processing deadline "$value"', async ({value, unit, invalid}) => {
+        const user = userEvent.setup();
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    open
+                    version={{
+                        ...ProcessDefinitionVersionApiService.initialize(),
+                        publicTitle: 'Bauantrag',
+                        instanceDeadlineDays: 3,
+                    }}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                />
+            </Provider>,
+        );
+        const input = screen.getByRole('textbox', {name: /Bearbeitungsfrist/});
+        await user.clear(input);
+        if (value) await user.type(input, value);
+        expect(input).toHaveValue(value);
+        expect(screen.getByText(unit)).toBeVisible();
+        if (invalid) {
+            expect(input).toBeInvalid();
+            expect(input).toHaveAccessibleDescription(/Die Bearbeitungsfrist muss zwischen 1 und 3.652 Tagen liegen\./);
+        } else {
+            expect(input).toBeValid();
+        }
+    });
+
+    it.each(['0', '-3', '3653'])('blocks the processing deadline %s outside the task deadline bounds', async (value) => {
         const user = userEvent.setup();
         const ref = createRef<ProcessSettingsDialogVersionTabHandle>();
         const version = {

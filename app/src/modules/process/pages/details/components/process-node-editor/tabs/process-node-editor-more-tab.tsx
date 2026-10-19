@@ -9,7 +9,6 @@ import {
 import {type ProcessNodeDeadlineDefinition} from '../../../../../services/process-node-provider-api-service';
 import {ProcessNodeApiService} from '../../../../../services/process-node-api-service';
 import {ElementEditorSectionHeader} from '../../../../../../../components/element-editor-section-header/element-editor-section-header';
-import {pluralize} from '../../../../../../../utils/humanization-utils';
 import {FormFieldGroup} from '../../../../../../../components/form-field';
 
 export function ProcessNodeEditorMoreTab() {
@@ -79,7 +78,7 @@ export function ProcessNodeEditorMoreTab() {
                         <NumberFieldComponent
                             label="Frist"
                             hint={`${definition.description} Ohne Angabe gilt keine Frist.`}
-                            suffix={setting.days == null ? 'Tage' : pluralize(setting.days, 'Tag', 'Tage')}
+                            suffix={setting.days === 1 ? 'Tag' : 'Tage'}
                             decimalPlaces={0}
                             minValue={1}
                             maxValue={3652}

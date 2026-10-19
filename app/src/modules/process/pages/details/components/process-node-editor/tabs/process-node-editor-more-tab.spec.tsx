@@ -72,17 +72,33 @@ describe('configurable phase deadlines', () => {
         expect(within(screen.getByRole('group', {name: 'Nachrichtenversand'})).getByRole('checkbox', {name: 'Aufgabe bei Fristüberschreitung beenden'})).toBeDisabled();
     });
 
-    it('explains the missing duration on hover and pluralizes the day unit', async () => {
+    it('explains the missing duration on hover', async () => {
         renderMoreTab();
-        const input = within(await screen.findByRole('group', {name: 'Nachrichtenversand'})).getByRole('textbox', {name: /^Frist/});
-        const group = within(screen.getByRole('group', {name: 'Nachrichtenversand'}));
+        const group = within(await screen.findByRole('group', {name: 'Nachrichtenversand'}));
         await userEvent.hover(group.getByText('Aufgabe bei Fristüberschreitung beenden'));
         expect(await screen.findByRole('tooltip')).toHaveTextContent('Legen Sie zunächst eine Frist fest');
         await userEvent.unhover(group.getByText('Aufgabe bei Fristüberschreitung beenden'));
-        fireEvent.change(input, {target: {value: '1'}});
-        expect(group.getByText('Tag')).toBeVisible();
-        fireEvent.change(input, {target: {value: '2'}});
-        expect(group.getByText('Tage')).toBeVisible();
+    });
+
+    it.each([
+        {value: '', unit: 'Tage', invalid: false},
+        {value: '0', unit: 'Tage', invalid: true},
+        {value: '-3', unit: 'Tage', invalid: true},
+        {value: '1', unit: 'Tag', invalid: false},
+        {value: '2', unit: 'Tage', invalid: false},
+    ])('uses "$unit" for the entered phase deadline "$value"', async ({value, unit, invalid}) => {
+        renderMoreTab({deadlines: {message: {days: 3, strict: false}}});
+        const group = within(await screen.findByRole('group', {name: 'Nachrichtenversand'}));
+        const input = group.getByRole('textbox', {name: /^Frist/});
+        fireEvent.change(input, {target: {value}});
+        expect(input).toHaveValue(value);
+        expect(group.getByText(unit)).toBeVisible();
+        if (invalid) {
+            expect(input).toBeInvalid();
+            expect(input).toHaveAccessibleDescription(/Der Wert muss mindestens 1 betragen\./);
+        } else {
+            expect(input).toBeValid();
+        }
     });
 
     it('does not blame a missing duration when the configuration is read-only', async () => {
