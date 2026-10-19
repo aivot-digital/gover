@@ -46,15 +46,8 @@ import {type ProcessTestClaimEntity} from '../../entities/process-test-claim-ent
 import {type User} from '../../../users/models/user';
 import {UsersApiService} from '../../../users/users-api-service';
 import {resolveUserName} from '../../../users/utils/resolve-user-name';
-import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
-import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
-import {type ProcessInstanceEventEntity} from '../../entities/process-instance-event-entity';
 import {type ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
-import {type ProcessInstanceAttachmentSetEntity} from '../../entities/process-instance-attachment-set-entity';
-import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
-import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
-import {ProcessInstanceAttachmentApiService} from '../../services/process-instance-attachment-api-service';
-import {ProcessInstanceAttachmentSetApiService} from '../../services/process-instance-attachment-set-api-service';
+import {useProcessRuntimeData} from '../../hooks/use-process-runtime-data';
 import {ProcessInstanceStatus} from '../../enums/process-instance-status';
 import {BaseApiService, RequestOptions} from '../../../../services/base-api-service';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
@@ -508,14 +501,6 @@ export function ProcessDetailsPage(): ReactNode {
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
     const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
-    const [runtimeData, setRuntimeData] = useState<{
-        instance: ProcessInstanceEntity;
-        tasks: ProcessInstanceTaskEntity[];
-        events: ProcessInstanceEventEntity[];
-        attachments: ProcessInstanceAttachmentEntity[];
-        attachmentSets: ProcessInstanceAttachmentSetEntity[];
-    } | null>(null);
-    const [isRefreshingRuntimeData, setIsRefreshingRuntimeData] = useState(false);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
     const [flowNodeProviderCache, setFlowNodeProviderCache] = useState<Record<string, ProcessNodeProvider>>({});
     const [isLoadingFlowNodeProviders, setIsLoadingFlowNodeProviders] = useState(false);
@@ -704,6 +689,13 @@ export function ProcessDetailsPage(): ReactNode {
         }
         return parseInt(instanceIdParam);
     }, [searchParams]);
+
+    const {
+        runtimeData,
+        isRefreshingRuntimeData,
+        loadRuntimeData,
+        clearRuntimeData,
+    } = useProcessRuntimeData(instanceId);
 
     const activeTestClaimId = currentTestClaim?.claim.id ?? runtimeData?.instance.createdForTestClaimId ?? null;
     const showRuntimePendingStartHint = runtimeData != null &&
@@ -1094,56 +1086,6 @@ export function ProcessDetailsPage(): ReactNode {
         }
     }, [flowEditorKey, isFlowEditorReady, readyFlowEditorKey]);
 
-    const loadRuntimeData = useCallback(() => {
-        if (instanceId == null) {
-            setRuntimeData(null);
-            return Promise.resolve();
-        }
-
-        dispatch(setLoadingMessage({
-            message: 'Lade Laufzeitdaten',
-            blocking: false,
-            estimatedTime: 1000,
-        }));
-
-        setIsRefreshingRuntimeData(true);
-        new ProcessInstanceApiService()
-            .retrieve(instanceId)
-            .then((instance) => {
-                return Promise.all([
-                    Promise.resolve(instance),
-                    new ProcessInstanceTaskApiService().listAll({
-                        processInstanceId: instanceId,
-                    }),
-                    new ProcessInstanceAttachmentApiService().listAll({
-                        processInstanceId: instanceId,
-                    }),
-                    new ProcessInstanceAttachmentSetApiService().listAll({
-                        processInstanceId: instanceId,
-                    }),
-                    /* new ProcessInstanceEventApiService().listAll({
-                        processInstanceId: instanceId,
-                    })*/Promise.resolve([]),
-                ]);
-            })
-            .then(([instance, tasks, attachments, attachmentSets, events]) => {
-                setRuntimeData({
-                    instance,
-                    tasks: tasks.content,
-                    attachments: attachments.content,
-                    attachmentSets: attachmentSets.content,
-                    events,
-                });
-            })
-            .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Der Vorgang konnte nicht geladen werden.'));
-            })
-            .finally(() => {
-                setIsRefreshingRuntimeData(false);
-                dispatch(clearLoadingMessage());
-            });
-    }, [instanceId, dispatch]);
-
     const handleSelectProcessTestClaimInstance = useCallback((selectedInstanceId: number): void => {
         setShowProcessTestClaimInstancesDialog(false);
 
@@ -1156,10 +1098,6 @@ export function ProcessDetailsPage(): ReactNode {
         nextSearchParams.set('instanceId', selectedInstanceId.toString());
         setSearchParams(nextSearchParams);
     }, [instanceId, loadRuntimeData, searchParams, setSearchParams]);
-
-    useEffect(() => {
-        void loadRuntimeData();
-    }, [loadRuntimeData]);
 
     useEffect(() => {
         if (Object.keys(showProcessNodeProblemsForNodes).length > 0) {
@@ -1759,7 +1697,7 @@ export function ProcessDetailsPage(): ReactNode {
                     })
                     .then(() => {
                         setCurrentTestClaim(null);
-                        setRuntimeData(null);
+                        clearRuntimeData();
                         setShowProcessTestClaimInstancesDialog(false);
                         dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
 
@@ -1773,7 +1711,7 @@ export function ProcessDetailsPage(): ReactNode {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
             });
-    }, [confirm, currentTestClaim, dispatch, instanceId, refreshPermissionSet, searchParams, setSearchParams]);
+    }, [clearRuntimeData, confirm, currentTestClaim, dispatch, instanceId, refreshPermissionSet, searchParams, setSearchParams]);
 
     const handleDeleteProcess = useCallback((): void => {
         if (processFlow == null) {

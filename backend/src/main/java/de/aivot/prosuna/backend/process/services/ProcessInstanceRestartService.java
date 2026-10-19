@@ -26,7 +26,7 @@ import java.util.Objects;
 /**
  * Restarts failed process work. The status changes and the request for the work commit together under the instance
  * lock, so concurrent restarts cannot request the same work twice and a lost message cannot lose a restart.
- * Callers authorize the restart.
+ * The callers' authorization runs under the instance lock, as for other task mutations.
  */
 @Service
 public class ProcessInstanceRestartService {
@@ -62,11 +62,14 @@ public class ProcessInstanceRestartService {
      * or by releasing the work it holds, e.g. a transition whose target could not be resolved.
      */
     @Nonnull
-    public ProcessInstanceEntity restartFailedInstance(@Nonnull Long instanceId, @Nonnull String userId) throws ResponseException {
+    public ProcessInstanceEntity restartFailedInstance(@Nonnull Long instanceId, @Nonnull String userId,
+                                                       @Nonnull ProcessTaskExecutionService.Authorization authorization)
+            throws ResponseException {
         return Objects.requireNonNull(execution.inInstance(instanceId, () -> {
             var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
             // Open EntityManager in View can retain entities loaded before the instance lock was acquired.
             entityManager.refresh(instance);
+            authorization.run();
             if (instance.getStatus() != ProcessInstanceStatus.Failed) {
                 throw ResponseException.badRequest("Nur Vorgänge im Status 'Fehlgeschlagen' können neu gestartet werden.");
             }
@@ -112,7 +115,9 @@ public class ProcessInstanceRestartService {
      */
     @Nonnull
     public ProcessInstanceTaskEntity rerunFailedTask(@Nonnull Long instanceId, @Nonnull Long taskId,
-                                                     @Nonnull UserEntity actor) throws ResponseException {
+                                                     @Nonnull UserEntity actor,
+                                                     @Nonnull ProcessTaskExecutionService.Authorization authorization)
+            throws ResponseException {
         return Objects.requireNonNull(execution.inInstance(instanceId, () -> {
             var task = tasks.findById(taskId).orElseThrow(ResponseException::notFound);
             var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
@@ -122,6 +127,7 @@ public class ProcessInstanceRestartService {
             if (!instanceId.equals(task.getProcessInstanceId())) {
                 throw ResponseException.notFound();
             }
+            authorization.run();
             if (task.getStatus() != ProcessTaskStatus.Failed) {
                 throw ResponseException.badRequest("Nur Aufgaben im Status 'Fehlgeschlagen' können erneut ausgeführt werden.");
             }

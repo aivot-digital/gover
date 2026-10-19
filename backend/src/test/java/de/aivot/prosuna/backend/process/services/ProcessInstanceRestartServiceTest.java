@@ -66,7 +66,7 @@ class ProcessInstanceRestartServiceTest {
     void restartRunsTheFailedLatestTaskAgain() throws Exception {
         when(tasks.findFirstByProcessInstanceIdOrderByStartedDescIdDesc(7L)).thenReturn(Optional.of(task));
 
-        var result = service.restartFailedInstance(7L, "actor");
+        var result = service.restartFailedInstance(7L, "actor", () -> {});
 
         assertSame(instance, result);
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
@@ -82,7 +82,7 @@ class ProcessInstanceRestartServiceTest {
 
     @Test
     void restartStartsAnInstanceWithoutTasksAgain() throws Exception {
-        service.restartFailedInstance(7L, "actor");
+        service.restartFailedInstance(7L, "actor", () -> {});
 
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         verify(workRequests).enqueueStart(7L);
@@ -94,7 +94,7 @@ class ProcessInstanceRestartServiceTest {
     void restartWithoutTasksRequiresTheInitialData() {
         instance.setInitialPayload(Map.of());
 
-        var exception = assertThrows(ResponseException.class, () -> service.restartFailedInstance(7L, "actor"));
+        var exception = assertThrows(ResponseException.class, () -> service.restartFailedInstance(7L, "actor", () -> {}));
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
@@ -108,7 +108,7 @@ class ProcessInstanceRestartServiceTest {
         when(tasks.findFirstByProcessInstanceIdOrderByStartedDescIdDesc(7L)).thenReturn(Optional.of(task));
         when(requests.findIdsByProcessInstanceId(7L)).thenReturn(List.of(3L));
 
-        service.restartFailedInstance(7L, "actor");
+        service.restartFailedInstance(7L, "actor", () -> {});
 
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
@@ -123,7 +123,7 @@ class ProcessInstanceRestartServiceTest {
         task.setStatus(ProcessTaskStatus.Completed);
         when(tasks.findFirstByProcessInstanceIdOrderByStartedDescIdDesc(7L)).thenReturn(Optional.of(task));
 
-        var exception = assertThrows(ResponseException.class, () -> service.restartFailedInstance(7L, "actor"));
+        var exception = assertThrows(ResponseException.class, () -> service.restartFailedInstance(7L, "actor", () -> {}));
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         verifyNoInteractions(workRequests, loggers);
@@ -135,9 +135,23 @@ class ProcessInstanceRestartServiceTest {
         // The first restart committed while this one waited for the instance lock.
         doAnswer(call -> instance.setStatus(ProcessInstanceStatus.Running)).when(entityManager).refresh(instance);
 
-        var exception = assertThrows(ResponseException.class, () -> service.restartFailedInstance(7L, "actor"));
+        var exception = assertThrows(ResponseException.class, () -> service.restartFailedInstance(7L, "actor", () -> {}));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verifyNoInteractions(workRequests, loggers);
+    }
+
+    @Test
+    void restartWithoutPermissionIsRejectedUnderTheLockAndChangesNothing() {
+        var exception = assertThrows(ResponseException.class, () -> service.restartFailedInstance(7L, "actor", () -> {
+            // The authorization runs within the instance lock, not before it.
+            verify(execution).inInstance(eq(7L), any());
+            throw ResponseException.forbidden();
+        }));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
+        verify(instances, never()).save(any());
         verifyNoInteractions(workRequests, loggers);
     }
 
@@ -145,7 +159,7 @@ class ProcessInstanceRestartServiceTest {
     void rerunOfATaskOfAFailedInstanceRunsTheInstanceAndItsHeldWorkAgain() throws Exception {
         when(requests.findIdsByProcessInstanceId(7L)).thenReturn(List.of(3L));
 
-        var result = service.rerunFailedTask(7L, 34L, actor);
+        var result = service.rerunFailedTask(7L, 34L, actor, () -> {});
 
         assertSame(task, result);
         assertEquals(ProcessTaskStatus.Restarted, task.getStatus());
@@ -174,7 +188,7 @@ class ProcessInstanceRestartServiceTest {
     void rerunInARunningInstanceOnlyRunsTheTaskAgain() throws Exception {
         instance.setStatus(ProcessInstanceStatus.Running);
 
-        service.rerunFailedTask(7L, 34L, actor);
+        service.rerunFailedTask(7L, 34L, actor, () -> {});
 
         verify(instances, never()).save(any());
         verify(workRequests, never()).redispatchAfterCommit(any());
@@ -192,7 +206,7 @@ class ProcessInstanceRestartServiceTest {
     void rerunIsRejectedWhileTheInstanceCannotRun(ProcessInstanceStatus status) {
         instance.setStatus(status);
 
-        var exception = assertThrows(ResponseException.class, () -> service.rerunFailedTask(7L, 34L, actor));
+        var exception = assertThrows(ResponseException.class, () -> service.rerunFailedTask(7L, 34L, actor, () -> {}));
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
@@ -204,7 +218,7 @@ class ProcessInstanceRestartServiceTest {
         // The first rerun committed while this one waited for the instance lock.
         doAnswer(call -> task.setStatus(ProcessTaskStatus.Restarted)).when(entityManager).refresh(task);
 
-        var exception = assertThrows(ResponseException.class, () -> service.rerunFailedTask(7L, 34L, actor));
+        var exception = assertThrows(ResponseException.class, () -> service.rerunFailedTask(7L, 34L, actor, () -> {}));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         verifyNoInteractions(workRequests);
@@ -215,9 +229,25 @@ class ProcessInstanceRestartServiceTest {
     void rerunRejectsATaskOfAnotherInstance() {
         task.setProcessInstanceId(8L);
 
-        var exception = assertThrows(ResponseException.class, () -> service.rerunFailedTask(7L, 34L, actor));
+        var exception = assertThrows(ResponseException.class, () -> service.rerunFailedTask(7L, 34L, actor, () -> {}));
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
         verifyNoInteractions(workRequests);
+    }
+
+    @Test
+    void rerunWithoutPermissionIsRejectedUnderTheLockAndChangesNothing() {
+        var exception = assertThrows(ResponseException.class, () -> service.rerunFailedTask(7L, 34L, actor, () -> {
+            // The authorization runs within the instance lock, not before it.
+            verify(execution).inInstance(eq(7L), any());
+            throw ResponseException.forbidden();
+        }));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+        assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
+        verify(tasks, never()).save(any());
+        verify(instances, never()).save(any());
+        verifyNoInteractions(workRequests, loggers, audit);
     }
 }

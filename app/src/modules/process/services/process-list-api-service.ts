@@ -43,12 +43,12 @@ export class ProcessListApiService extends BaseApiService {
         });
     }
 
-    public instancesCounts(abort?: AbortSignal): Promise<ListFilterCounts> {
-        return this.get('/api/process-lists/instances/counts/', {abort});
+    public instancesCounts(filter: Pick<ProcessListFilter, 'assignee'>, abort?: AbortSignal): Promise<ListFilterCounts> {
+        return this.get('/api/process-lists/instances/counts/', {query: {...filter}, abort});
     }
 
-    public tasksCounts(instanceId?: number, abort?: AbortSignal): Promise<ListFilterCounts> {
-        return this.get('/api/process-lists/tasks/counts/', {query: {instanceId}, abort});
+    public tasksCounts(filter: Pick<ProcessListFilter, 'instanceId' | 'assignee'>, abort?: AbortSignal): Promise<ListFilterCounts> {
+        return this.get('/api/process-lists/tasks/counts/', {query: {...filter}, abort});
     }
 
     public options(tasks: boolean, instanceId?: number): Promise<ProcessListOptions> {

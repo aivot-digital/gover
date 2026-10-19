@@ -54,18 +54,20 @@ public class ProcessListController {
     }
 
     @GetMapping("instances/counts/")
-    @Operation(summary = "Count active and failed instances", description = "Counts readable instances independently of the selected tab, search and secondary list filters.")
+    @Operation(summary = "Count active and failed instances", description = "Counts readable instances with the given assignment filter, independently of the selected tab, search and the other list filters.")
     @Nonnull
-    public Map<String, Long> instanceCounts(@Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
-        return lists.counts(userId(jwt), null, false);
+    public Map<String, Long> instanceCounts(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                            @Nullable @RequestParam(required = false) String assignee) throws ResponseException {
+        return lists.counts(userId(jwt), null, assignee, false);
     }
 
     @GetMapping("tasks/counts/")
-    @Operation(summary = "Count open, overdue and failed tasks", description = "Counts tasks in readable instances independently of search and assignment filters. An optional instance ID restricts the list scope.")
+    @Operation(summary = "Count open, overdue and failed tasks", description = "Counts tasks in readable instances with the given assignment filter, independently of the selected tab, search and the other list filters. An optional instance ID restricts the list scope.")
     @Nonnull
     public Map<String, Long> taskCounts(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                       @Nullable @RequestParam(required = false) Long instanceId) throws ResponseException {
-        return lists.counts(userId(jwt), instanceId, true);
+                                       @Nullable @RequestParam(required = false) Long instanceId,
+                                       @Nullable @RequestParam(required = false) String assignee) throws ResponseException {
+        return lists.counts(userId(jwt), instanceId, assignee, true);
     }
 
     @GetMapping("instances/options/")

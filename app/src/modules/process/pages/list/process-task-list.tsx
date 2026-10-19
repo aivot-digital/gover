@@ -72,8 +72,8 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
     }, []);
     const columns = useMemo(() => processListColumns<ProcessTaskListEntry>(true, refresh), [refresh]);
     const fetchFilterCounts = useCallback<FetchListFilterCounts>(
-        ({signal}) => new ProcessListApiService().tasksCounts(instanceId, signal),
-        [instanceId],
+        ({signal}) => new ProcessListApiService().tasksCounts({instanceId, assignee}, signal),
+        [instanceId, assignee],
     );
     const fetch = useCallback(
         async (options: GenericListPropsFetchOptions<ProcessTaskListEntry>) => {
