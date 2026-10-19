@@ -1,9 +1,10 @@
 import {literalAuthoredValue} from '../../../models/element-data';
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {createDerivedRuntimeElementData} from '../../../models/element-data';
+import {ElementType} from '../../../data/element-type/element-type';
 import type {GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {IdentityProviderType} from '../../../modules/identity/enums/identity-provider-type';
 import type {IdentitySlot} from '../../../modules/identity/models/identity-slot';
@@ -111,15 +112,30 @@ describe('CustomerInstanceTaskView', () => {
 
         render(<CustomerInstanceTaskView/>);
 
-        expect(await screen.findByText('Empfängeridentität')).toBeInTheDocument();
-        expect(screen.getByText(/erneute Anmeldung erforderlich/)).toBeInTheDocument();
+        expect(await screen.findByText('Antragsteller:in')).toBeInTheDocument();
+        expect(screen.getByText(/Um fortzufahren, bestätigen Sie bitte Ihre Identität/)).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Identität bestätigen', level: 2})).toBeVisible();
+        expect(screen.getByRole('heading', {name: 'Antragsteller:in', level: 3})).toBeVisible();
+        expect(screen.queryByRole('heading', {level: 1})).not.toBeInTheDocument();
+        expect(screen.getByText(/das Sie für „Antragsteller:in“ in diesem Vorgang verwendet haben/)).toBeVisible();
         const loginLink = screen.getByRole('link', {name: /Mit „BundID“ anmelden/});
         expect(loginLink).toHaveAttribute(
             'href',
             expect.stringContaining('/api/public/processes/instance-key/tasks/task-key/identity/start/'),
         );
-        expect(screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Fortfahren'})).toBeDisabled();
         expectActionTypeNotDispatched('shell/setErrorMessage');
+    });
+
+    it('explains reauthentication for older identities without a stored title', async () => {
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView)
+            .mockResolvedValue(createBlockedTaskView({existingIdentitySlot: createExistingIdentitySlot({title: null})}));
+
+        render(<CustomerInstanceTaskView/>);
+
+        expect(await screen.findByText('Bestehende Identität')).toBeVisible();
+        expect(screen.getByText(/das Sie für diese Identität in diesem Vorgang verwendet haben/)).toBeVisible();
+        expect(screen.getByRole('button', {name: 'Fortfahren'})).toBeDisabled();
     });
 
     it('keeps reauthentication available and explains a wrong provider account', async () => {
@@ -133,8 +149,9 @@ describe('CustomerInstanceTaskView', () => {
 
         render(<CustomerInstanceTaskView/>);
 
-        expect(await screen.findByText('Falsches Nutzerkonto')).toBeInTheDocument();
-        expect(screen.getByText(/gehört nicht zur Empfängeridentität/)).toBeInTheDocument();
+        expect(await screen.findByText('Anderes Nutzerkonto erforderlich')).toBeInTheDocument();
+        expect(screen.getByText(/gehört nicht zu „Antragsteller:in“/)).toBeInTheDocument();
+        expect(screen.getAllByText(/Melden Sie sich mit dem Nutzerkonto an/)).toHaveLength(1);
         expect(screen.getByRole('link', {name: /Mit „BundID“ anmelden/})).toBeInTheDocument();
         await waitFor(() => expect(window.location.search).toBe(''));
     });
@@ -152,8 +169,10 @@ describe('CustomerInstanceTaskView', () => {
         render(<CustomerInstanceTaskView/>);
 
         expect(await screen.findByRole('status')).toHaveTextContent('Mit „BundID“ angemeldet');
+        expect(screen.getByText(/Ihre Identität ist bestätigt/)).toBeVisible();
+        expect(screen.queryByText(/Melden Sie sich mit dem Nutzerkonto an/)).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Daten einreichen'})).not.toBeInTheDocument();
-        await user.click(screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'}));
+        await user.click(screen.getByRole('button', {name: 'Fortfahren'}));
 
         expect(await screen.findByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
         expect(CustomerTaskViewApiService.prototype.getTaskView).toHaveBeenCalledTimes(2);
@@ -176,7 +195,9 @@ describe('CustomerInstanceTaskView', () => {
         render(<CustomerInstanceTaskView/>);
 
         expect(await screen.findByText('Antragsteller:in')).toBeInTheDocument();
-        const continueButton = screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'});
+        expect(screen.getByRole('heading', {name: 'Identität auswählen', level: 2})).toBeVisible();
+        expect(screen.getByRole('heading', {name: 'Antragsteller:in', level: 3})).toBeVisible();
+        const continueButton = screen.getByRole('button', {name: 'Fortfahren'});
         expect(continueButton).toBeDisabled();
         await user.type(screen.getByRole('textbox', {name: /E-Mail-Adresse/}), 'customer@example.test');
         await waitFor(() => expect(continueButton).toBeEnabled());
@@ -210,7 +231,7 @@ describe('CustomerInstanceTaskView', () => {
         render(<CustomerInstanceTaskView/>);
 
         const emailField = await screen.findByRole('textbox', {name: /E-Mail-Adresse/});
-        const continueButton = screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'});
+        const continueButton = screen.getByRole('button', {name: 'Fortfahren'});
         await user.type(emailField, 'customer@example.test');
         await waitFor(() => expect(continueButton).toBeEnabled());
         await user.click(continueButton);
@@ -218,7 +239,7 @@ describe('CustomerInstanceTaskView', () => {
         await waitFor(() => expect(getTaskView).toHaveBeenCalledTimes(2));
         await waitFor(() => expect(emailField).toBeEnabled());
         expect(screen.queryByText('Nachrichten werden an customer@example.test gesendet.')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Auswahl ändern'})).not.toBeInTheDocument();
 
         resolveTaskView();
         expect(await screen.findByRole('button', {name: 'Daten einreichen'})).toBeInTheDocument();
@@ -282,7 +303,7 @@ describe('CustomerInstanceTaskView', () => {
 
         render(<CustomerInstanceTaskView/>);
 
-        const continueButton = await screen.findByRole('button', {name: 'Mit Aufgabe fortfahren'});
+        const continueButton = await screen.findByRole('button', {name: 'Fortfahren'});
         expect(continueButton).toBeDisabled();
         await user.click(screen.getByRole('radio', {name: /Postfach/}));
         await waitFor(() => expect(deriveCommunication).toHaveBeenCalledWith(
@@ -395,7 +416,7 @@ describe('CustomerInstanceTaskView', () => {
             'customer@example.test',
         );
         expect(screen.queryByText('Nachrichten werden an customer@example.test gesendet.')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Auswahl ändern'})).not.toBeInTheDocument();
     });
 
     it('shows existing and new identity requirements together', async () => {
@@ -407,14 +428,14 @@ describe('CustomerInstanceTaskView', () => {
 
         render(<CustomerInstanceTaskView/>);
 
-        expect(await screen.findByText('Empfängeridentität')).toBeInTheDocument();
+        expect(await screen.findByText('Antragsteller:in')).toBeInTheDocument();
         expect(screen.getByText('Vertretung')).toBeInTheDocument();
         const loginLinks = screen.getAllByRole('link', {name: /Mit „BundID“ anmelden/});
         expect(loginLinks).toHaveLength(2);
         expect(loginLinks.some((link) => link.getAttribute('href')?.includes(
             '/identities/applicant/providers/36a9a19d-f9fb-4225-a9a0-07a223820b4b/start/',
         ))).toBe(true);
-        expect(screen.getByRole('button', {name: 'Mit Aufgabe fortfahren'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Fortfahren'})).toBeDisabled();
     });
 
     it('renders backend events and submits the latest authored values on click', async () => {
@@ -429,6 +450,7 @@ describe('CustomerInstanceTaskView', () => {
             'instance-key',
             'task-key',
             {field: 'edited'},
+            [],
             'submit',
         ));
         expect(mocks.refreshInstanceStatus).toHaveBeenCalledOnce();
@@ -450,11 +472,50 @@ describe('CustomerInstanceTaskView', () => {
             'instance-key',
             'task-key',
             {field: 'inline'},
+            [],
             'submit',
         ));
         expectDispatchedAction('shell/setLoadingMessage', expect.objectContaining({
             message: 'Verarbeite Aktion: Daten einreichen',
         }));
+    });
+
+    it('sends only the files of upload fields that the derivation of the submitted values shows', async () => {
+        const visibleFile = {name: 'visible.pdf', size: 1, uri: 'blob:visible'};
+        const hiddenFile = {name: 'hidden.pdf', size: 2, uri: 'blob:hidden'};
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView).mockResolvedValue(createTaskView({
+            layout: {
+                id: 'root',
+                type: ElementType.GroupLayout,
+                children: [
+                    {id: 'visibleUpload', type: ElementType.FileUpload},
+                    {id: 'hiddenUpload', type: ElementType.FileUpload},
+                ],
+            } as GroupLayout,
+        }));
+        const deriveTaskView = vi.spyOn(CustomerTaskViewApiService.prototype, 'deriveTaskView')
+            .mockResolvedValue(createDerivedRuntimeElementData({
+                elementStates: {
+                    hiddenUpload: {visible: false},
+                },
+            }));
+        const values = {
+            visibleUpload: literalAuthoredValue([visibleFile]),
+            hiddenUpload: literalAuthoredValue([hiddenFile]),
+        };
+
+        render(<CustomerInstanceTaskView/>);
+        await screen.findByRole('button', {name: 'Inline-Event'});
+        await act(() => mocks.elementDerivationProps.onEvent(values, 'submit'));
+
+        expect(deriveTaskView).toHaveBeenCalledWith('instance-key', 'task-key', values, ['ALL']);
+        expect(ProcessInstanceTaskApiService.prototype.putCustomerTaskView).toHaveBeenCalledWith(
+            'instance-key',
+            'task-key',
+            values,
+            [visibleFile],
+            'submit',
+        );
     });
 
     it('shows validation errors in the form and in a snackbar', async () => {
@@ -493,7 +554,7 @@ describe('CustomerInstanceTaskView', () => {
         render(<CustomerInstanceTaskView/>);
         await user.click(await screen.findByRole('button', {name: 'Daten einreichen'}));
 
-        expect(await screen.findByRole('alert')).toHaveTextContent('Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen.');
+        expect(await screen.findByRole('alert')).toHaveTextContent('Die Bearbeitungsfrist ist abgelaufen.');
         expect(screen.queryByRole('button', {name: 'Daten einreichen'})).not.toBeInTheDocument();
         expect(mocks.refreshInstanceStatus).toHaveBeenCalledOnce();
         expect(CustomerTaskViewApiService.prototype.getTaskView).toHaveBeenCalledTimes(2);
@@ -643,6 +704,7 @@ function createExistingIdentitySlot(
 ): NonNullable<TaskViewResponse['existingIdentitySlot']> {
     return {
         id: 'applicant',
+        title: 'Antragsteller:in',
         isReady: false,
         identityProvider: createIdentityProvider(),
         ...overrides,

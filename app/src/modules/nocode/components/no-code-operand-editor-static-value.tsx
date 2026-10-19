@@ -1,7 +1,7 @@
 import Article from '@aivot/mui-material-symbols-400-n25-outlined/Article';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
-import {Autocomplete, Box, createFilterOptions} from '@mui/material';
+import {Autocomplete, Box, createFilterOptions, FormHelperText} from '@mui/material';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {NoCodeOperandError, NoCodeStaticValue} from '../../../models/functions/no-code-expression';
 import {NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
@@ -15,6 +15,8 @@ import {TimeFieldComponentModelMode} from '../../../models/elements/form/input/t
 import Typography from '@mui/material/Typography';
 import {DateTimeFieldComponent} from '../../../components/date-time-field/date-time-field-component';
 import {TimeFieldComponent} from '../../../components/time-field/time-field-component';
+import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
+import {formFieldHelperTextSx} from '../../../theming/form-field-tokens';
 
 interface NoCodeOperandEditorStaticValueProps {
     label: string;
@@ -247,71 +249,109 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
         return props.options.find((option) => option.value === currentValue) ?? currentValue;
     }, [props.options, props.value.value]);
 
+    const valueNoteId = `${useNormalizedReactId()}-value-note`;
+    const valueNote = useMemo(() => (
+        getSuggestedValueNote(props.options, props.value.value)
+    ), [props.options, props.value.value]);
+
     return (
-        <Autocomplete<SelectFieldComponentOption, false, true, true>
-            freeSolo
-            disableClearable
-            options={props.options}
-            filterOptions={staticValueOptionFilter}
-            value={selectedValue}
-            getOptionLabel={(option) => (
-                typeof option === 'string' ? option : option.value
-            )}
-            isOptionEqualToValue={(option, value) => (
-                typeof value !== 'string' && option.value === value.value
-            )}
-            onInputChange={(_, value, reason) => {
-                if (reason === 'input' || reason === 'clear') {
-                    updateStaticValue(props, value);
-                }
-            }}
-            onChange={(_, value) => {
-                updateStaticValue(
-                    props,
-                    typeof value === 'string' ? value : value?.value,
-                );
-            }}
-            renderOption={({key, ...renderProps}, option) => (
-                <Box
-                    key={key}
-                    component="li"
-                    {...renderProps}
-                    sx={{display: 'block !important'}}
-                >
+        <>
+            <Autocomplete<SelectFieldComponentOption, false, true, true>
+                freeSolo
+                disableClearable
+                options={props.options}
+                filterOptions={staticValueOptionFilter}
+                value={selectedValue}
+                getOptionLabel={(option) => (
+                    typeof option === 'string' ? option : option.value
+                )}
+                isOptionEqualToValue={(option, value) => (
+                    typeof value !== 'string' && option.value === value.value
+                )}
+                onInputChange={(_, value, reason) => {
+                    if (reason === 'input' || reason === 'clear') {
+                        updateStaticValue(props, value);
+                    }
+                }}
+                onChange={(_, value) => {
+                    updateStaticValue(
+                        props,
+                        typeof value === 'string' ? value : value?.value,
+                    );
+                }}
+                renderOption={({key, ...renderProps}, option) => (
                     <Box
-                        component="span"
-                        sx={{fontWeight: 500}}
+                        key={key}
+                        component="li"
+                        {...renderProps}
+                        sx={{display: 'block !important'}}
                     >
-                        {option.label}
-                    </Box>
-                    {
-                        option.label !== option.value &&
                         <Box
                             component="span"
-                            sx={{
-                                color: 'text.secondary',
-                                ml: 1,
-                            }}
+                            sx={{fontWeight: 500}}
                         >
-                            {option.value}
+                            {option.label}
                         </Box>
-                    }
-                </Box>
-            )}
-            renderInput={(params) => (
-                <TextFieldComponent
-                    muiPassTroughProps={params}
-                    label={getStaticValueLabel(props.label)}
-                    hint={props.hint}
-                    value={props.value.value}
-                    onChange={(value) => updateStaticValue(props, value)}
-                    margin="none"
-                    startIcon={<Article/>}
-                    endAction={getStaticValueActions(props)}
-                />
-            )}
-        />
+                        {
+                            option.label !== option.value &&
+                            <Box
+                                component="span"
+                                sx={{
+                                    color: 'text.secondary',
+                                    ml: 1,
+                                }}
+                            >
+                                {option.value}
+                            </Box>
+                        }
+                    </Box>
+                )}
+                renderInput={(params) => (
+                    <TextFieldComponent
+                        muiPassTroughProps={params}
+                        label={getStaticValueLabel(props.label)}
+                        hint={props.hint}
+                        value={props.value.value}
+                        onChange={(value) => updateStaticValue(props, value)}
+                        margin="none"
+                        startIcon={<Article/>}
+                        endAction={getStaticValueActions(props)}
+                        ariaDescribedBy={valueNote != null ? valueNoteId : undefined}
+                    />
+                )}
+            />
+
+            {
+                valueNote != null &&
+                <FormHelperText
+                    id={valueNoteId}
+                    sx={formFieldHelperTextSx}
+                >
+                    {valueNote}
+                </FormHelperText>
+            }
+        </>
     );
+}
+
+/**
+ * Describes how the authored literal relates to the suggestions. The input keeps showing the literal because it is
+ * the stored value, so the label of a matching option is named in this note instead. Literals outside the suggestions
+ * remain valid, for example free chip input values or entries that were removed from a code list.
+ */
+function getSuggestedValueNote(options: SelectFieldComponentOption[], value: string | null | undefined): string | undefined {
+    if (value == null || value.length === 0) {
+        return undefined;
+    }
+
+    const matchingOption = options.find((option) => option.value === value);
+    if (matchingOption == null) {
+        return 'Der Wert entspricht keiner Auswahloption.';
+    }
+
+    return matchingOption.label !== matchingOption.value
+        ? `Der Wert entspricht der Auswahloption „${matchingOption.label}“.`
+        : 'Der Wert entspricht einer Auswahloption.';
 }
 
 function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { options: SelectFieldComponentOption[] }) {

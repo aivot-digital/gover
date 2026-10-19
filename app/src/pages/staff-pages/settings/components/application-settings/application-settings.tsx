@@ -17,6 +17,7 @@ import {useApi} from '../../../../../hooks/use-api';
 import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
+import {sortThemesByName} from '../../../../../modules/themes/utils/sort-themes-by-name';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
 import {
     VDepartmentShadowedApiService,
@@ -228,7 +229,7 @@ export function ApplicationSettings() {
                 if (isActive) {
                     setThemes([
                         SYSTEM_THEME_FALLBACK_OPTION,
-                        ...themes.content.map((theme) => ({
+                        ...sortThemesByName(themes.content).map((theme) => ({
                             value: theme.id.toString(),
                             label: theme.name,
                         })),

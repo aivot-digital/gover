@@ -85,7 +85,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
     private static final ProcessNodeDeadlineDefinition PAYMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
             "payment", "Zahlung",
-            "Zeit für die Kund:in zur Zahlung ab Versand der Zahlungsaufforderung.",
+            "Zeit zur Zahlung ab Versand der Zahlungsaufforderung.",
             new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
                     "Fortsetzung nach Überschreitung der harten Frist für die Zahlung."));
 

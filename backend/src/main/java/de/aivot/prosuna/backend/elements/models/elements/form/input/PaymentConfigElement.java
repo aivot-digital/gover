@@ -6,10 +6,12 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nullable;
+import jakarta.annotation.Nonnull;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.LinkedHashMap;
 
 public class PaymentConfigElement extends BaseInputElement<PaymentConfigElementValue> {
     public PaymentConfigElement() {
@@ -25,14 +27,14 @@ public class PaymentConfigElement extends BaseInputElement<PaymentConfigElementV
             return;
         }
 
-        var errorDetails = new HashMap<String, Object>();
+        var errorDetails = new LinkedHashMap<String, Object>();
 
         if (value.paymentProviderKey() == null) {
             errorDetails.put("paymentProviderKey", "Es muss ein Zahlungsanbieter ausgewählt werden.");
         }
 
         if (StringUtils.isNullOrEmpty(value.purpose())) {
-            errorDetails.put("purpose", "Es muss ein Buchungszweck angegeben werden.");
+            errorDetails.put("purpose", "Geben Sie einen Verwendungszweck an.");
         }
 
         if (StringUtils.isNullOrEmpty(value.description())) {
@@ -66,8 +68,29 @@ public class PaymentConfigElement extends BaseInputElement<PaymentConfigElementV
         }
 
         if (!errorDetails.isEmpty()) {
+            // Keep field paths for the editor and add readable summaries for field and node error lists.
+            errorDetails.put("messages", describeErrors(errorDetails, ""));
             throw new ValidationException(this, "Konfiguration fehlerhaft.", errorDetails);
         }
+    }
+
+    @Nonnull
+    private static List<String> describeErrors(@Nonnull Map<?, ?> details, @Nonnull String prefix) {
+        var messages = new ArrayList<String>();
+        details.forEach((key, detail) -> {
+            if (detail instanceof String message) {
+                messages.add(prefix + message);
+            } else if (detail instanceof Map<?, ?> nested) {
+                messages.addAll(describeErrors(nested, prefix));
+            } else if (detail instanceof List<?> items) {
+                for (int index = 0; index < items.size(); index++) {
+                    if (items.get(index) instanceof Map<?, ?> item) {
+                        messages.addAll(describeErrors(item, "Zahlungsposition " + (index + 1) + ": "));
+                    }
+                }
+            }
+        });
+        return messages;
     }
 
     @Nullable

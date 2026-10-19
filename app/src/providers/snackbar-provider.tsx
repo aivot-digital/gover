@@ -1,13 +1,35 @@
-import React, {useEffect, useRef} from 'react';
-import {closeSnackbar, SnackbarKey, SnackbarProvider as NotistackProvider, useSnackbar} from 'notistack';
+import React, {createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {SnackbarKey, SnackbarProvider as NotistackProvider, useSnackbar} from 'notistack';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {removeSnackbar} from '../slices/snackbar-slice';
-import {Alert, CircularProgress, Fade, GlobalStyles} from '@mui/material';
+import {AppInfo} from '../app-info';
+import {Alert, CircularProgress, Fade, GlobalStyles, ThemeProvider, type Theme, type AlertProps} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {selectMinimizeDrawer, selectSnackbarMessages, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
 
 const FLOW_EDITOR_SNACKBAR_EXTRA_LEFT_OFFSET = 52;
+const SnackbarThemeContext = createContext<{
+    theme?: Theme;
+    setTheme: (theme: Theme | undefined) => void;
+}>({setTheme: () => undefined});
+
+/** Customer pages supply their process theme without adding another notification subscription. */
+export function SnackbarTheme({theme, children}: React.PropsWithChildren<{theme: Theme}>) {
+    const {setTheme} = useContext(SnackbarThemeContext);
+    useLayoutEffect(() => {
+        setTheme(theme);
+        return () => setTheme(undefined);
+    }, [theme, setTheme]);
+    return <>{children}</>;
+}
+
+const SnackbarAlert = React.forwardRef<HTMLDivElement, AlertProps>((props, ref) => {
+    const baseTheme = useTheme();
+    const {theme} = useContext(SnackbarThemeContext);
+    // Forward notistack's transition ref to the actual DOM element.
+    return <ThemeProvider theme={theme ?? baseTheme}><Alert {...props} ref={ref}/></ThemeProvider>;
+});
 
 // Default auto-hide durations for different severities
 const SNACKBAR_AUTO_HIDE_DURATION_MS: Record<SnackbarSeverity, number> = {
@@ -18,14 +40,15 @@ const SNACKBAR_AUTO_HIDE_DURATION_MS: Record<SnackbarSeverity, number> = {
 };
 
 const SnackbarConsumer = () => {
-    const theme = useTheme();
     const dispatch = useAppDispatch();
 
     // list of all active snackbar messages from the store
     const snackbarMessages = useAppSelector(selectSnackbarMessages);
 
+    // Closing must use the same provider as enqueueing; nested notistack providers can replace the global helper.
     const {
         enqueueSnackbar,
+        closeSnackbar,
     } = useSnackbar();
 
     // prevents duplicate Snackbars
@@ -45,7 +68,7 @@ const SnackbarConsumer = () => {
 
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
-    }, [snackbarMessages, dispatch]);
+    }, [snackbarMessages, dispatch, closeSnackbar]);
 
     useEffect(() => {
         snackbarMessages.forEach(({key, message, severity, type}) => {
@@ -72,7 +95,7 @@ const SnackbarConsumer = () => {
                 preventDuplicate: true,
                 content: (key) => {
                     return (
-                        <Alert
+                        <SnackbarAlert
                             onClose={
                                 (
                                     type === SnackbarType.Loading ||
@@ -87,7 +110,7 @@ const SnackbarConsumer = () => {
                             }
                             severity={severity}
                             icon={type === SnackbarType.Loading ? <CircularProgress size={22} /> : undefined}
-                            sx={{
+                            sx={(theme) => ({
                                 width: '100%',
                                 maxWidth: 460,
                                 backgroundColor: 'background.paper',
@@ -105,10 +128,10 @@ const SnackbarConsumer = () => {
                                                 severity === 'success' ? theme.palette.success.light :
                                                     theme.palette.grey[400]
                                 }` : `4px solid ${theme.palette.grey[400]}`,
-                            }}
+                            })}
                         >
                             {formattedMessage}
-                        </Alert>
+                        </SnackbarAlert>
                     );
                 },
             });
@@ -121,7 +144,7 @@ const SnackbarConsumer = () => {
                 }, autoHideDuration);
             }
         });
-    }, [snackbarMessages, enqueueSnackbar, dispatch, theme]);
+    }, [snackbarMessages, enqueueSnackbar, closeSnackbar, dispatch]);
 
     // Close any snackbars that were removed from the Redux store but are still shown.
     // This keeps the UI in sync with the state and ensures "manual" snackbars (e.g. loading) are properly dismissed.
@@ -140,18 +163,20 @@ const SnackbarConsumer = () => {
             closeSnackbar(key);
             displayedMessages.current.delete(key);
         });
-    }, [snackbarMessages]);
+    }, [snackbarMessages, closeSnackbar]);
 
     return null;
 };
 
 export const SnackbarProvider = ({children}: { children: React.ReactNode }) => {
+    const [theme, setTheme] = useState<Theme>();
+    const themeContext = useMemo(() => ({theme, setTheme}), [theme]);
     const isDrawerMinimized = useAppSelector(selectMinimizeDrawer);
     const snackbarLeftOffset = isDrawerMinimized ? 88 : 280;
     const flowEditorSnackbarLeftOffset = snackbarLeftOffset + FLOW_EDITOR_SNACKBAR_EXTRA_LEFT_OFFSET;
 
     return (
-        <>
+        <SnackbarThemeContext.Provider value={themeContext}>
             <NotistackProvider
                 maxSnack={5}
                 anchorOrigin={{
@@ -164,7 +189,7 @@ export const SnackbarProvider = ({children}: { children: React.ReactNode }) => {
                 {children}
             </NotistackProvider>
 
-            <GlobalStyles
+            {AppInfo.mode === 'staff' && <GlobalStyles
                 styles={{
                     '.notistack-SnackbarContainer': {
                         left: `${snackbarLeftOffset}px`,
@@ -173,7 +198,7 @@ export const SnackbarProvider = ({children}: { children: React.ReactNode }) => {
                         left: `${flowEditorSnackbarLeftOffset}px`,
                     },
                 }}
-            />
-        </>
+            />}
+        </SnackbarThemeContext.Provider>
     );
 };

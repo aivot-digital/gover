@@ -165,7 +165,7 @@ describe('PaymentConfigView', () => {
         expect(listDefinitionsMock).toHaveBeenCalledWith();
 
         fireEvent.click(screen.getByText('Neue Zahlungskonfiguration'));
-        fireEvent.mouseDown(screen.getByLabelText(/Zahlungsdienstleister/));
+        fireEvent.mouseDown(screen.getByLabelText(/Zahlungsanbieter/));
 
         expect(await screen.findByText('Stadtkasse Musterstadt (pmPayment) – Live-System')).toBeInTheDocument();
         expect(await screen.findByText('Test-Anbindung Kasse (ePayBL) – Test-System')).toBeInTheDocument();
@@ -240,10 +240,10 @@ describe('PaymentConfigView', () => {
         });
 
         fireEvent.click(screen.getByText('Neue Zahlungskonfiguration'));
-        fireEvent.change(screen.getByLabelText('Erfolgsmeldung nach Zahlung'), {
+        fireEvent.change(screen.getByLabelText('Erfolgsmeldung'), {
             target: {value: '# Danke\n**{{ $.name }}**'},
         });
-        fireEvent.change(screen.getByLabelText('Fehlermeldung bei Zahlungsfehler'), {
+        fireEvent.change(screen.getByLabelText('Fehlermeldung'), {
             target: {value: '# Nicht bezahlt\nDie Zahlung fuer **{{ $.name }}** wurde nicht abgeschlossen.'},
         });
         fireEvent.click(screen.getByText('Übernehmen'));
@@ -270,7 +270,7 @@ describe('PaymentConfigView', () => {
         await user.click(screen.getByTestId('use-variable-reference'));
         await waitFor(() => {
             expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
-            expect(screen.getByLabelText('Erfolgsmeldung nach Zahlung')).toHaveValue('{{ $.person.name }}');
+            expect(screen.getByLabelText('Erfolgsmeldung')).toHaveValue('{{ $.person.name }}');
         });
 
         await user.click(screen.getAllByRole('button', {name: 'Variable referenzieren'})[1]);
@@ -278,7 +278,7 @@ describe('PaymentConfigView', () => {
         await user.click(screen.getByTestId('use-variable-reference'));
         await waitFor(() => {
             expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
-            expect(screen.getByLabelText('Fehlermeldung bei Zahlungsfehler')).toHaveValue('{{ $.person.name }}');
+            expect(screen.getByLabelText('Fehlermeldung')).toHaveValue('{{ $.person.name }}');
         });
 
         await user.click(screen.getByText('Übernehmen'));
@@ -301,7 +301,7 @@ describe('PaymentConfigView', () => {
         });
 
         fireEvent.click(screen.getByText('Neue Zahlungskonfiguration'));
-        await screen.findByLabelText(/Zahlungsdienstleister/);
+        await screen.findByLabelText(/Zahlungsanbieter/);
 
         expect(await screen.findByText('Bitte waehlen Sie einen Anbieter.')).toBeInTheDocument();
         expect(screen.getByText('Bitte geben Sie einen Buchungstext an.')).toBeInTheDocument();
@@ -499,6 +499,61 @@ describe('PaymentConfigView', () => {
         expect(screen.getByText('Bitte korrigieren Sie den zweiten Steuersatz.')).toBeInTheDocument();
         expect(screen.queryByText('Bitte korrigieren Sie die erste Beschreibung.')).not.toBeInTheDocument();
     });
+    it('reports an empty key and duplicate keys on their respective rows', async () => {
+        const config = validPaymentConfig();
+        config.items![0].additionalBookingData = {one: '1', two: '2', three: '3'};
+        renderPaymentConfigView({value: config});
+        fireEvent.click(await screen.findByText('Stadtkasse Musterstadt (pmPayment) – Live-System'));
+        fireEvent.click(screen.getByText('Position'));
+        const dialog = within(screen.getAllByRole('dialog').at(-1)!);
+        const keys = dialog.getAllByRole('textbox', {name: 'Schlüssel'});
+        fireEvent.change(keys[0], {target: {value: ''}});
+        fireEvent.change(keys[1], {target: {value: 'three '}});
+        expect(keys[0]).toHaveAccessibleDescription('Geben Sie für diesen Buchungseintrag einen Schlüssel an.');
+        expect(keys[1]).toHaveAccessibleDescription('Die Schlüssel der Buchungsdaten müssen eindeutig sein.');
+        expect(keys[2]).toHaveAccessibleDescription('Die Schlüssel der Buchungsdaten müssen eindeutig sein.');
+    });
+
+    it('allows clearing the purpose in an editable payment draft', async () => {
+        const setValue = vi.fn();
+        renderPaymentConfigView({value: validPaymentConfig(), setValue});
+        fireEvent.click(await screen.findByText('Stadtkasse Musterstadt (pmPayment) – Live-System'));
+        fireEvent.change(screen.getByRole('textbox', {name: 'Buchungstext'}), {target: {value: ''}});
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        expect(setValue).toHaveBeenCalledWith(expect.objectContaining({purpose: null}));
+    });
+
+    it('keeps booking values when deleting, adding, and correcting duplicate keys', async () => {
+        const config = validPaymentConfig();
+        config.items![0].additionalBookingData = {schluessel1: 'erster Wert', schluessel2: 'zweiter Wert'};
+        renderPaymentConfigView({value: config});
+        fireEvent.click(await screen.findByText('Stadtkasse Musterstadt (pmPayment) – Live-System'));
+        fireEvent.click(screen.getByText('Position'));
+        const dialog = within(screen.getAllByRole('dialog').at(-1)!);
+        fireEvent.click(dialog.getByRole('button', {name: 'Buchungseintrag 1 entfernen'}));
+        fireEvent.click(dialog.getByRole('button', {name: 'Hinzufügen'}));
+        expect(dialog.getAllByRole('textbox', {name: 'Schlüssel'})).toHaveLength(2);
+        expect(dialog.getAllByRole('textbox', {name: /^Wert/})[0]).toHaveValue('zweiter Wert');
+        const keys = dialog.getAllByRole('textbox', {name: 'Schlüssel'});
+        fireEvent.change(keys[1], {target: {value: ''}});
+        fireEvent.click(dialog.getByRole('button', {name: 'Übernehmen'}));
+        expect(keys[1]).toHaveValue('');
+        expect(dialog.getAllByText('Geben Sie für diesen Buchungseintrag einen Schlüssel an.').length).toBeGreaterThan(0);
+        fireEvent.change(keys[1], {target: {value: 'schluessel2 '}});
+        fireEvent.change(dialog.getAllByRole('textbox', {name: /^Wert/})[1], {target: {value: 'dritter Wert'}});
+        fireEvent.click(dialog.getByRole('button', {name: 'Übernehmen'}));
+        expect(dialog.getAllByRole('textbox', {name: /^Wert/})[0]).toHaveValue('zweiter Wert');
+        expect(dialog.getAllByRole('textbox', {name: /^Wert/})[1]).toHaveValue('dritter Wert');
+        expect(dialog.getAllByText('Die Schlüssel der Buchungsdaten müssen eindeutig sein.').length).toBeGreaterThan(0);
+        fireEvent.change(keys[1], {target: {value: 'neuerSchluessel'}});
+        fireEvent.click(dialog.getByRole('button', {name: 'Übernehmen'}));
+        await waitFor(() => expect(screen.queryByText('Zahlungspositionen bearbeiten')).not.toBeInTheDocument());
+        fireEvent.click(screen.getByText('Position'));
+        const reopened = within(screen.getAllByRole('dialog').at(-1)!);
+        expect(reopened.getAllByRole('textbox', {name: /^Wert/})[0]).toHaveValue('zweiter Wert');
+        expect(reopened.getAllByRole('textbox', {name: /^Wert/})[1]).toHaveValue('dritter Wert');
+    });
+
 });
 
 function renderPaymentConfigView(options?: {
@@ -648,5 +703,13 @@ function createPaymentProviderDefinition(definition: Partial<PaymentProviderDefi
         configLayout: null,
         documentationUrl: null,
         ...definition,
+    };
+}
+
+function validPaymentConfig(): PaymentConfigElementValue {
+    return {
+        paymentProviderKey: 'live-provider', purpose: 'Verwendungszweck', description: 'Beschreibung',
+        mapRequestor: false, requestorMapping: null,
+        items: [createPaymentItem({description: 'Position', reference: 'REF'})], successMessage: null, failureMessage: null,
     };
 }

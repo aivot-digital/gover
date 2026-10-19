@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.dtos.ElementDerivationResponse;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
@@ -672,6 +673,7 @@ public class FormTriggerControllerV1 {
                 config.configuration().formLayout,
                 node,
                 inputs,
+                derivedRuntimeElementData.getElementStates(),
                 files,
                 fileUris,
                 identities,
@@ -719,6 +721,7 @@ public class FormTriggerControllerV1 {
                                         @Nonnull FormLayoutElement form,
                                         @Nonnull ProcessNodeEntity nodeEntity,
                                         @Nonnull AuthoredElementValues inputs,
+                                        @Nonnull ComputedElementStates elementStates,
                                         @Nullable MultipartFile[] files,
                                         @Nullable List<String> fileUris,
                                         @Nonnull IdentityDataMap identities,
@@ -750,9 +753,11 @@ public class FormTriggerControllerV1 {
 
         String submissionSecret;
         try {
+            // Only upload fields whose value the derivation of the submission takes store their files.
             var normalizationResult = fileUploadMultipartInputService.normalizeInputs(
                     form,
                     inputs,
+                    elementStates,
                     files,
                     fileUris,
                     createdInstance.getId(),

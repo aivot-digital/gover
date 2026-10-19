@@ -1,3 +1,5 @@
+import {getConfigurationErrorMessages} from '../utils/configuration-error-utils';
+import {ConfigurationErrorList} from './configuration-error-list';
 import {Box, Button, Grid, Stack, Typography} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import React, {FunctionComponent, useEffect, useMemo, useState} from 'react';
@@ -38,6 +40,7 @@ import {NoCodeOperand} from '../models/functions/no-code-expression';
 import {JavascriptCode} from '../models/functions/javascript-code';
 import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/PaymentArrowDown';
 import {DisabledTooltip} from '../components/disabled-tooltip/disabled-tooltip';
+import {generateId} from '../utils/id-utils';
 import {pluralize} from '../utils/humanization-utils';
 import {RadioFieldComponent} from '../components/radio-field/radio-field-component';
 import {RichTextInputWithVariablePicker} from '../components/rich-text-input-component/rich-text-input-with-variable-picker';
@@ -135,7 +138,7 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                 if (isApiError(err) && err.displayableToUser) {
                     setProvidersError(err.message);
                 } else {
-                    setProvidersError('Beim Abruf der Zahlungsdienstleister ist ein unbekannter Fehler aufgetreten.');
+                    setProvidersError('Beim Abruf der Zahlungsanbieter ist ein unbekannter Fehler aufgetreten.');
                 }
             })
             .finally(() => {
@@ -171,19 +174,18 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
         setValue(EmptyPaymentConfigValue);
     };
 
-    const errorText = [
-        errors?.join(' '),
-        providersError,
-    ]
-        .filter((part) => part != null && part.length > 0)
-        .join(' ');
+    const messages = [
+        ...getConfigurationErrorMessages(element.type, errors, errorDetails),
+        ...(providersError ? [providersError] : []),
+    ];
+    const errorContent = messages.length > 0 ? <ConfigurationErrorList messages={messages}/> : undefined;
 
     return (
         <FormFieldGroup
             id={element.id}
             label={element.label ?? ''}
             hint={element.hint}
-            error={errorText || undefined}
+            error={errorContent}
             required={element.required ?? false}
             readOnly={isDisabled}
             busy={isFieldBusy}
@@ -212,10 +214,10 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                         display: 'flex',
                         alignItems: 'center',
                         borderRadius: 1,
-                        border: errorText.length > 0
+                        border: messages.length > 0
                             ? '1px solid'
                             : '1px dashed',
-                        borderColor: errorText.length > 0
+                        borderColor: messages.length > 0
                             ? theme.palette.error.main
                             : alpha(theme.palette.text.primary, 0.18),
                         textAlign: 'left',
@@ -242,11 +244,7 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                                 minWidth: 0,
                             }}
                         >
-                            Keine Zahlungskonfiguration vorhanden.{' '}
-                            {
-                                element.required &&
-                                <>Eine Zahlungskonfiguration ist erforderlich.</>
-                            }
+                            Keine Zahlungskonfiguration vorhanden.
                         </Typography>
                     </Stack>
                 </Box>
@@ -425,13 +423,13 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
             >
                 <Grid size={{xs: 12, md: 6}}>
                     <SelectFieldComponent
-                        label="Zahlungsdienstleister"
+                        label="Zahlungsanbieter"
                         value={currentValue.paymentProviderKey}
                         onChange={(providerKey) => updateValue({paymentProviderKey: providerKey})}
                         options={paymentProviderOptions}
                         required={true}
                         disabled={isInteractionDisabled}
-                        emptyStatePlaceholder="Keine Zahlungsdienstleister vorhanden"
+                        emptyStatePlaceholder="Keine Zahlungsanbieter vorhanden"
                         error={getFieldError(errorDetails, 'paymentProviderKey')}
                     />
                 </Grid>
@@ -520,6 +518,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         title={(row) => getPaymentItemTitle(row.item)}
                         subTitle={(row) => getPaymentItemSubtitle(row.item, isInteractionDisabled)}
                         dialogContentComponent={ItemDialogContent}
+                        validate={(row) => validateBookingData(row.item.additionalBookingData)}
                         onDialogSave={handleItemChanged}
                         onDelete={handleDeleteItem}
                         readOnly={isReadOnly}
@@ -535,7 +534,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 }}
             >
                 <RichTextInputWithVariablePicker
-                    label="Erfolgsmeldung nach Zahlung"
+                    label="Erfolgsmeldung"
                     value={currentValue.successMessage}
                     onChange={(successMessage) => updateValue({
                         successMessage: isStringNullOrEmpty(successMessage) ? null : successMessage,
@@ -552,7 +551,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 }}
             >
                 <RichTextInputWithVariablePicker
-                    label="Fehlermeldung bei Zahlungsfehler"
+                    label="Fehlermeldung"
                     value={currentValue.failureMessage}
                     onChange={(failureMessage) => updateValue({
                         failureMessage: isStringNullOrEmpty(failureMessage) ? null : failureMessage,
@@ -661,7 +660,7 @@ function RequestorMappingEditor(props: {
                         value={value.genderDestinationKey}
                         onChange={(next) => onChange('genderDestinationKey', next)}
                         disabled={disabled}
-                        hint="Dieses Prozessdatenfeld muss einen der folgenden enthalten: M, W, D"
+                        hint="Dieses Prozessdatenfeld muss einen der folgenden Werte enthalten: M, W oder D."
                         error={getFieldError(errorDetails, 'genderDestinationKey')}
                     />
                 </>
@@ -775,7 +774,8 @@ function wrapPaymentConfigItem(rootElement: AnyElement, errorDetails: PaymentCon
         item: PaymentItemRow,
         onChange: (item: PaymentItemRow) => void,
         readOnly?: boolean,
-        busy?: boolean
+        busy?: boolean;
+        onValidationChange?: (errors: Record<string, string>) => void;
     }) => (
         <PaymentConfigItemEditor
             item={props.item.item}
@@ -786,6 +786,7 @@ function wrapPaymentConfigItem(rootElement: AnyElement, errorDetails: PaymentCon
             rootElement={rootElement}
             disabled={props.readOnly === true || props.busy === true}
             errorDetails={getItemErrorDetails(errorDetails, props.item.index)}
+            onValidationChange={props.onValidationChange}
         />
     );
 }
@@ -796,6 +797,7 @@ function PaymentConfigItemEditor(props: {
     rootElement: AnyElement;
     disabled: boolean;
     errorDetails?: PaymentConfigErrorDetails;
+    onValidationChange?: (errors: Record<string, string>) => void;
 }) {
     const {
         item,
@@ -1096,6 +1098,7 @@ function PaymentConfigItemEditor(props: {
 
                 <AdditionalBookingDataEditor
                     value={item.additionalBookingData}
+                    onValidationChange={props.onValidationChange}
                     onChange={(additionalBookingData) => onChange({...item, additionalBookingData})}
                     disabled={disabled}
                     error={getFieldError(errorDetails, 'additionalBookingData')}
@@ -1150,101 +1153,121 @@ function PaymentValueCalculationEditor(props: {
     );
 }
 
+interface BookingRow {
+    id: string;
+    key: string;
+    value: string;
+}
+
+function getBookingRowError(rows: Pick<BookingRow, 'key'>[], index: number): string | undefined {
+    // Compare without surrounding whitespace; retain the entered keys when publishing to external booking systems.
+    const key = rows[index].key.trim();
+    if (key.length === 0) {
+        return 'Geben Sie für diesen Buchungseintrag einen Schlüssel an.';
+    }
+    if (rows.some((row, otherIndex) => otherIndex !== index && row.key.trim() === key)) {
+        return 'Die Schlüssel der Buchungsdaten müssen eindeutig sein.';
+    }
+    return undefined;
+}
+
+function getBookingError(rows: Pick<BookingRow, 'key'>[]): string | undefined {
+    return rows.map((_, index) => getBookingRowError(rows, index)).find((error) => error != null);
+}
+
+function validateBookingData(value: Record<string, string> | null): Record<string, string> {
+    const message = getBookingError(Object.keys(value ?? {}).map((key) => ({key})));
+    return message == null ? {} : {additionalBookingData: message};
+}
+
 function AdditionalBookingDataEditor(props: {
     value: Record<string, string> | null;
     onChange: (value: Record<string, string> | null) => void;
     disabled: boolean;
     error?: string;
+    onValidationChange?: (errors: Record<string, string>) => void;
 }) {
-    const rows = Object.entries(props.value ?? {});
-
-    const updateRows = (nextRows: Array<[string, string]>) => {
-        const nextValue = Object.fromEntries(nextRows.filter(([key]) => !isStringNullOrEmpty(key)));
-        props.onChange(Object.keys(nextValue).length === 0 ? null : nextValue);
+    // Keep draft rows until they are valid: converting duplicate or empty keys to a map would silently lose data.
+    const [rows, setRows] = useState<BookingRow[]>(() => Object.entries(props.value ?? {}).map(([key, value]) => ({
+        id: generateId(10),
+        key,
+        value,
+    })));
+    const error = getBookingError(rows) ?? props.error;
+    const updateRows = (nextRows: BookingRow[]) => {
+        setRows(nextRows);
+        const message = getBookingError(nextRows);
+        props.onValidationChange?.(message == null ? {} : {additionalBookingData: message});
+        if (message == null) {
+            props.onChange(nextRows.length === 0 ? null : Object.fromEntries(nextRows.map((row) => [row.key, row.value])));
+        }
+    };
+    const addRow = () => {
+        let index = 1;
+        while (rows.some((row) => row.key.trim() === `schluessel${index}`)) {
+            index++;
+        }
+        updateRows([...rows, {id: generateId(10), key: `schluessel${index}`, value: ''}]);
     };
 
     return (
         <FormFieldGroup
             label="Buchungsdaten"
-            hint="In den Buchungsdaten können technisch relevante Informationen für die weitergehende Verbuchung in Folgesystemen mitgegeben werden."
-            error={props.error}
+            hint="Hier können Sie technische Informationen für die Verbuchung in Folgesystemen mitgeben."
+            error={error}
             disabled={props.disabled}
             margin="none"
             sx={{mt: 2}}
             labelAction={(
-                <Button
-                    size="small"
-                    startIcon={<Add/>}
-                    disabled={props.disabled}
-                    onClick={() => updateRows([...rows, [`schluessel${rows.length + 1}`, '']])}
-                >
+                <Button size="small" startIcon={<Add/>} disabled={props.disabled} onClick={addRow}>
                     Hinzufügen
                 </Button>
             )}
         >
-
-            {rows.length === 0 && (
-                <EmptyBookingDataState
-                    hasError={props.error != null}
-                />
-            )}
-
+            {rows.length === 0 && <EmptyBookingDataState hasError={error != null}/>}
             <Stack spacing={1.5}>
-                {
-                    rows.map(([key, value], index) => (
-                        <Grid
-                            key={index}
-                            container
-                            spacing={1.5}
-                            sx={{
-                                alignItems: 'flex-start',
-                            }}
-                        >
-                            <Grid size={{xs: 12, md: 5}}>
-                                <TextFieldComponent
-                                    label="Schlüssel"
-                                    value={key}
-                                    onChange={(nextKey) => {
-                                        const nextRows = [...rows];
-                                        nextRows[index] = [nextKey ?? '', value];
-                                        updateRows(nextRows);
-                                    }}
-                                    disabled={props.disabled}
-                                    muiPassTroughProps={{margin: 'none'}}
-                                    required
-                                    error={isStringNullOrEmpty(key) ? props.error : undefined}
-                                />
-                            </Grid>
-
-                            <Grid size={{xs: 12, md: 5}}>
-                                <TextFieldComponent
-                                    label="Wert"
-                                    value={value}
-                                    onChange={(nextValue) => {
-                                        const nextRows = [...rows];
-                                        nextRows[index] = [key, nextValue ?? ''];
-                                        updateRows(nextRows);
-                                    }}
-                                    disabled={props.disabled}
-                                    muiPassTroughProps={{margin: 'none'}}
-                                />
-                            </Grid>
-
-                            <Grid size={{xs: 12, md: 2}}>
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    startIcon={<Delete/>}
-                                    disabled={props.disabled}
-                                    onClick={() => updateRows(rows.filter((_, rowIndex) => rowIndex !== index))}
-                                    sx={{mt: {xs: 0, md: 1}}}
-                                >
-                                    Entfernen
-                                </Button>
-                            </Grid>
+                {rows.map((row, index) => (
+                    <Grid key={row.id} container spacing={1.5} sx={{alignItems: 'flex-start'}}>
+                        <Grid size={{xs: 12, md: 5}}>
+                            <TextFieldComponent
+                                label="Schlüssel"
+                                value={row.key}
+                                required
+                                disabled={props.disabled}
+                                onChange={(key) => updateRows(rows.map((candidate) => candidate.id === row.id ? {...row, key: key ?? ''} : candidate))}
+                                muiPassTroughProps={{margin: 'none'}}
+                                error={getBookingRowError(rows, index)}
+                            />
                         </Grid>
-                    ))
-                }
+                        <Grid size={{xs: 12, md: 5}}>
+                            <TextFieldComponent
+                                label="Wert"
+                                value={row.value}
+                                disabled={props.disabled}
+                                onChange={(value) => updateRows(rows.map((candidate) => candidate.id === row.id ? {...row, value: value ?? ''} : candidate))}
+                                muiPassTroughProps={{margin: 'none'}}
+                            />
+                        </Grid>
+                        <Grid size={{xs: 12, md: 2}} sx={(theme) => ({
+                            // Align with the input control, independent of helper or validation text below it.
+                            mt: {xs: 0, md: `calc(${FormFieldTokens.labelRowMinHeight}px + ${theme.spacing(FormFieldTokens.labelToControlGap)})`},
+                            minHeight: FormFieldTokens.controlMinHeight,
+                            display: 'flex',
+                            alignItems: 'center',
+                        })}>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<Delete/>}
+                                disabled={props.disabled}
+                                aria-label={`Buchungseintrag ${index + 1} entfernen`}
+                                onClick={() => updateRows(rows.filter((candidate) => candidate.id !== row.id))}
+                            >
+                                Entfernen
+                            </Button>
+                        </Grid>
+                    </Grid>
+                ))}
             </Stack>
         </FormFieldGroup>
     );

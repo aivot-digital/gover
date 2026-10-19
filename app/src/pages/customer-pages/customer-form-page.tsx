@@ -34,7 +34,7 @@ import {isApiError} from '../../models/api-error';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {BaseApiService} from '../../services/base-api-service';
 import {CustomerInputService} from '../../services/customer-input-service';
-import {SnackbarProvider} from 'notistack';
+import {SnackbarTheme} from '../../providers/snackbar-provider';
 import {MetaElement} from '../../components/meta-element/meta-element';
 import {setCurrentStep} from '../../slices/stepper-slice';
 import {FormHeaderComponent} from '../../components/form/form-header-component';
@@ -50,9 +50,7 @@ import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessib
 import {RootComponentFooter} from '../../components/form/root-component-footer';
 import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
 import {SUBMIT_EVENT} from '../../components/form/root.component.view';
-import {FileUploadElementItem, isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
-import {walkAuthoredElementValues} from '../../utils/element-data-utils';
-import {ElementType} from '../../data/element-type/element-type';
+import {collectTransientFileUploadItems} from '../../utils/element-data-utils';
 import {Submitted} from '../../components/submitted/submitted';
 import {DialogSearchParam, TestClaimSearchParam} from '../../modules/forms/constants/form-trigger-search-params';
 import {
@@ -73,7 +71,7 @@ import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info'
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {PaymentRequestOverview} from '../../modules/payment/components/payment-request-overview';
-import {showApiErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-slice';
+import {showApiErrorSnackbar} from '../../slices/snackbar-slice';
 import {useConfirm} from '../../providers/confirm-provider';
 import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
@@ -240,7 +238,7 @@ export function CustomerFormPage() {
         return createAppTheme(theme, BaseTheme, baseTheme.palette.mode);
     }, [baseTheme, theme]);
 
-    const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
+    const handleSubmitEvent = async (values: AuthoredElementValues, event: string, submittedDerivedData?: DerivedRuntimeElementData) => {
         if (event !== SUBMIT_EVENT || layoutElement == null || node == null || process == null || version == null) {
             return;
         }
@@ -273,7 +271,7 @@ export function CustomerFormPage() {
                 });
 
                 if (!proceedWithPaymentRequirements) {
-                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
+                    // The closed confirmation leaves the completed form available for editing.
                     return;
                 }
             }
@@ -282,12 +280,8 @@ export function CustomerFormPage() {
             const formData = new FormData();
             formData.append('inputs', JSON.stringify(values));
 
-            const files: FileUploadElementItem[] = [];
-            walkAuthoredElementValues(layoutElement, values, (element, value) => {
-                if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
-                    files.push(...value);
-                }
-            });
+            // The backend discards the files of hidden upload fields, so they are not sent.
+            const files = collectTransientFileUploadItems(layoutElement, values, submittedDerivedData);
 
             for (const file of files) {
                 const response = await fetch(file.uri);
@@ -391,7 +385,7 @@ export function CustomerFormPage() {
 
     return (
         <ThemeProvider theme={resolvedTheme}>
-            <SnackbarProvider>
+            <SnackbarTheme theme={resolvedTheme}>
                 <MetaElement
                     faviconUrl={formFaviconUrl}
                     title={layoutElement.tabTitle ?? layoutElement.publicTitle ?? ''}
@@ -521,7 +515,7 @@ export function CustomerFormPage() {
                             paymentRequired={startedProcessAccessInfo.paymentRequired}
                             formElement={layoutElement}
                             processSlug={process.slug}
-                            formSlug={configuredFormSlug ?? null}
+                            formSlug={resolvedFormSlug}
                             processVersion={version.processVersion}
                         />
                     }
@@ -561,7 +555,7 @@ export function CustomerFormPage() {
                     form={layoutElement}
                     version={version}
                 />
-            </SnackbarProvider>
+            </SnackbarTheme>
         </ThemeProvider>
     );
 }

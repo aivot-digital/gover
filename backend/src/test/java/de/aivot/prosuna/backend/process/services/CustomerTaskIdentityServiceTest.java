@@ -98,7 +98,7 @@ class CustomerTaskIdentityServiceTest {
     @Test
     void requireAuthenticatedIdentity_AllowsMatchingProviderIdentityByUniqueProviderId() throws ResponseException {
         var providerKey = UUID.randomUUID();
-        var requiredIdentity = providerIdentity(REQUIRED_IDENTITY_ID, providerKey, "provider-user-123");
+        var requiredIdentity = providerIdentity(REQUIRED_IDENTITY_ID, providerKey, "provider-user-123").withTitle("Antragstellende Person");
         var storedIdentities = new IdentityDataMap();
         storedIdentities.put(REQUIRED_IDENTITY_ID, requiredIdentity);
         var authenticatedIdentities = new IdentityDataMap();
@@ -116,6 +116,7 @@ class CustomerTaskIdentityServiceTest {
 
         assertTrue(state.isReady());
         assertEquals(REQUIRED_IDENTITY_ID, state.existingIdentity().id());
+        assertEquals("Antragstellende Person", state.existingIdentity().title());
         assertTrue(state.existingIdentity().isReady());
         assertEquals(providerKey, state.existingIdentity().identityProvider().identityProviderKey());
         assertEquals("BundID", state.existingIdentity().identityProvider().identityProviderName());

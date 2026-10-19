@@ -1,3 +1,4 @@
+import {getConfigurationErrorMessages} from '../../utils/configuration-error-utils';
 import {AlertComponent} from '../alert/alert-component';
 import {useMemo} from 'react';
 import {AnyElement} from '../../models/elements/any-element';
@@ -81,11 +82,13 @@ export function _collectErrors(
     const col: CollectedError[] = [];
 
     if (elementState.error != null) {
-        col.push({
-            id: element.id,
-            label: resolveCollectedErrorLabel(element, elementState.errorDetails),
-            error: elementState.error,
-        });
+        for (const error of getConfigurationErrorMessages(element.type, [elementState.error], elementState.errorDetails)) {
+            col.push({
+                id: element.id,
+                label: resolveCollectedErrorLabel(element, elementState.errorDetails),
+                error,
+            });
+        }
     }
 
     if (isAnyElementWithChildren(element) && element.children != null) {

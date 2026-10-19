@@ -16,6 +16,7 @@ import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constra
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ThemeResponseDTO} from '../../../themes/models/theme';
+import {sortThemesByName} from '../../../themes/utils/sort-themes-by-name';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {DepartmentsDetailsPageAdditionalData, NewParentIdQueryParam} from './departments-details-page';
@@ -272,6 +273,10 @@ export function DepartmentsDetailsPageIndex() {
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
     const [relatedApplications, setRelatedApplications] = useState<ConstraintLinkProps[] | undefined>(undefined);
     const [availableThemes, setAvailableThemes] = useState<ThemeResponseDTO[]>();
+    const themeOptions = useMemo(() => sortThemesByName(availableThemes ?? []).map(theme => ({
+        label: theme.name,
+        value: theme.id.toString(),
+    })), [availableThemes]);
     const [showMoveDialog, setShowMoveDialog] = useState(false);
     const [inheritedDepartment, setInheritedDepartment] = useState<VDepartmentShadowedEntity | null>(null);
     const shouldLoadAvailableThemes = department != null;
@@ -735,10 +740,7 @@ export function DepartmentsDetailsPageIndex() {
                         }}
                         required={false}
                         error={errors.themeId}
-                        options={availableThemes.map(theme => ({
-                            label: theme.name,
-                            value: theme.id.toString(),
-                        }))}
+                        options={themeOptions}
                         disabled={!isEditable}
                     />
                 </Grid>
