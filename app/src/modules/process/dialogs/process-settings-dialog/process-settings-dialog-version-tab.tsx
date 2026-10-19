@@ -1,3 +1,4 @@
+import {sortThemesByName} from '../../../themes/utils/sort-themes-by-name';
 import {CaseNumberType} from '../../enums/case-number-type';
 import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
 import {Alert, Box, Grid, Skeleton, Stack} from '@mui/material';
@@ -105,7 +106,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
     const isEditable = version.status === ProcessStatus.Drafted;
     const caseNumberType = draft.caseNumberType;
     const themeOptions = useMemo<SelectFieldComponentOption[]>(() => {
-        return (themes ?? []).map((theme) => ({
+        return sortThemesByName(themes ?? []).map((theme) => ({
             value: theme.id.toString(),
             label: theme.name,
         }));

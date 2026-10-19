@@ -162,7 +162,7 @@ describe('Process list columns', () => {
         it.each([null, '', '   '])('uses the generic status when the identity label is %s', assignedCustomerIdentityLabel => {
             renderCell({...awaitingTask, assignedCustomerIdentityLabel}, 'status');
 
-            expect(screen.getByText('Wartet auf Nutzer:in')).toBeInTheDocument();
+            expect(screen.getByText('Wartet auf Rückmeldung')).toBeInTheDocument();
         });
 
         it('shows a custom status and explains the identity in the system status tooltip', async () => {

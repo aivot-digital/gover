@@ -9,7 +9,7 @@ import Cancel from '@aivot/mui-material-symbols-400-n25-outlined/Cancel';
 import StopCircle from '@aivot/mui-material-symbols-400-n25-outlined/StopCircle';
 import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import PaymentArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/PaymentArrowDown';
-import ContractEdit from '@aivot/mui-material-symbols-400-n25-outlined/ContractEdit';
+import HourglassTop from '@aivot/mui-material-symbols-400-n25-outlined/HourglassTop';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import TimerOff from '@aivot/mui-material-symbols-400-n25-outlined/TimerOff';
@@ -43,7 +43,7 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
                 icon = <PaymentArrowDown color="info"/>;
                 break;
             case ProcessTaskStatus.AwaitingCustomer:
-                icon = <ContractEdit color="info"/>;
+                icon = <HourglassTop color="info"/>;
                 break;
             case ProcessTaskStatus.Paused:
                 icon = <PauseCircle color="primary"/>;

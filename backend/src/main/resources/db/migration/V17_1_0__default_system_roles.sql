@@ -14,6 +14,11 @@ values (1,
             'code_list.delete',
             'code_list.export',
 
+            'communication_provider.create',
+            'communication_provider.read',
+            'communication_provider.update',
+            'communication_provider.delete',
+
             'object_schema.create',
             'object_schema.read',
             'object_schema.update',
@@ -38,6 +43,8 @@ values (1,
             'payment_provider.read',
             'payment_provider.update',
             'payment_provider.delete',
+
+            'permission_set.read',
 
             'preset.create',
             'preset.read',
@@ -126,6 +133,7 @@ values (1,
             'process_instance.communication.internal',
             'process_instance.communication.external',
             'process_instance.edit_task',
+            'process_instance.edit_data',
             'process_instance.migrate',
 
             'storage_provider.read',

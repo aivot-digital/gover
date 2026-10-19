@@ -322,7 +322,7 @@ export function CustomerInstanceTaskView() {
     }, []);
 
     if (deadlineExceeded) {
-        return <Alert severity="error">Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
+        return <Alert severity="error">Die Bearbeitungsfrist ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
     }
 
     if (taskView == null) {
@@ -520,32 +520,35 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
         }
     };
 
+    const existingIdentityTitle = existingIdentitySlot?.title?.trim();
+    const existingIdentityLabel = existingIdentityTitle || 'Bestehende Identität';
+    const accountInstruction = existingIdentityTitle
+        ? `Melden Sie sich mit dem Nutzerkonto an, das Sie für „${existingIdentityTitle}“ in diesem Vorgang verwendet haben.`
+        : 'Melden Sie sich mit dem Nutzerkonto an, das Sie für diese Identität in diesem Vorgang verwendet haben.';
     let introduction: string;
     if (existingIdentitySlot != null && newIdentitySlot != null) {
-        introduction = 'Bestätigen Sie die Empfängeridentität dieser Aufgabe und vervollständigen Sie die weitere Identitätsangabe.';
+        introduction = existingIdentityReady
+            ? 'Ihre bestehende Identität ist bestätigt. Vervollständigen Sie die weitere Identitätsangabe, um fortzufahren.'
+            : 'Bestätigen Sie Ihre bestehende Identität und vervollständigen Sie die weitere Identitätsangabe.';
     } else if (existingIdentitySlot != null) {
-        introduction = 'Für diese Aufgabe ist eine erneute Anmeldung erforderlich. Melden Sie sich mit dem Nutzerkonto an, an das diese Aufgabe gesendet wurde.';
+        introduction = existingIdentityReady
+            ? 'Ihre Identität ist bestätigt. Wählen Sie „Fortfahren“, um zum nächsten Schritt zu gelangen.'
+            : 'Um fortzufahren, bestätigen Sie bitte Ihre Identität.';
     } else if (newIdentitySlot?.isRequired) {
-        introduction = 'Für diese Aufgabe ist eine Identität erforderlich. Wählen Sie ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.';
+        introduction = 'Um fortzufahren, wählen Sie ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.';
     } else {
-        introduction = 'Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie die Aufgabe ohne Identitätsangabe bearbeiten.';
+        introduction = 'Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie ohne Identitätsangabe fortfahren.';
+    }
+    if (existingIdentitySlot != null && !existingIdentityReady && !wrongExistingAccount) {
+        introduction += ` ${accountInstruction}`;
     }
 
     return (
-        <Box
-            sx={{
-                maxWidth: 1200,
-                mx: 'auto',
-                py: {
-                    xs: 3,
-                    md: 5,
-                },
-            }}
-        >
+        <Box>
             <Grid container spacing={3}>
                 <Grid size={{xs: 12, md: 10, lg: 8}} sx={{mb: 2}}>
-                    <Typography variant="h2" component="div">
-                        Identität auswählen
+                    <Typography variant="h2" component="h2">
+                        {existingIdentitySlot != null ? 'Identität bestätigen' : 'Identität auswählen'}
                     </Typography>
                     <Typography sx={{mt: 1, maxWidth: 680}}>
                         {introduction}
@@ -580,8 +583,8 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                                     mt: 0.25,
                                 }}
                             >
-                                <Typography variant="h4" component="h2">
-                                    Empfängeridentität
+                                <Typography variant="h4" component="h3">
+                                    {existingIdentityLabel}
                                 </Typography>
                                 <Chip
                                     mode="soft"
@@ -595,10 +598,12 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                                 wrongExistingAccount &&
                                 <Alert severity="error" sx={{mt: 2}}>
                                     <Typography variant="subtitle2" component="div">
-                                        Falsches Nutzerkonto
+                                        Anderes Nutzerkonto erforderlich
                                     </Typography>
-                                    Das verwendete Nutzerkonto gehört nicht zur Empfängeridentität dieser Aufgabe.
-                                    Melden Sie sich mit dem richtigen Nutzerkonto an.
+                                    {existingIdentityTitle
+                                        ? `Das verwendete Nutzerkonto gehört nicht zu „${existingIdentityTitle}“. `
+                                        : 'Das verwendete Nutzerkonto gehört nicht zur erforderlichen Identität. '}
+                                    {accountInstruction}
                                 </Alert>
                             }
 
@@ -621,6 +626,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                         <IdentitySlotCard
                             ref={controlsRef}
                             slot={newIdentitySlot}
+                            headingComponent="h3"
                             api={identitySelectionApi}
                             saveMode="deferred"
                             beforeIdentityProviderStart={handleIdentityProviderStart}
@@ -648,7 +654,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                         {
                             canContinueWithoutAuthentication
                                 ? 'Ohne Anmeldung fortfahren'
-                                : 'Mit Aufgabe fortfahren'
+                                : 'Fortfahren'
                         }
                     </Button>
                 </Grid>

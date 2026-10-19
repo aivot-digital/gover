@@ -1,5 +1,5 @@
 import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
-import {Box, ThemeProvider, useTheme} from '@mui/material';
+import {Typography, Box, ThemeProvider, useTheme} from '@mui/material';
 import {Outlet, useNavigate, useParams} from 'react-router-dom';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
@@ -219,25 +219,28 @@ export function CustomerInstanceView() {
                             titlePrefix={AppConfig.providerName}
                             faviconUrl={instanceStatus.theme.faviconUrl}
                         >
-                            {
-                                instanceStatus.tasks == null &&
-                                <LoadingPlaceholder/>
-                            }
+                            {/* PageWrapper owns the horizontal gutters; keep all task states aligned with the header. */}
+                            <Box sx={{py: {xs: 3, md: 5}}}>
+                                {
+                                    instanceStatus.tasks == null &&
+                                    <LoadingPlaceholder/>
+                                }
 
-                            {
-                                instanceStatus.tasks != null && !selectedTaskExists && activeCustomerTasks.length === 0 &&
-                                <NoTaskToDoPlaceholder/>
-                            }
+                                {
+                                    instanceStatus.tasks != null && !selectedTaskExists && activeCustomerTasks.length === 0 &&
+                                    <NoTaskToDoPlaceholder/>
+                                }
 
-                            {
-                                instanceStatus.tasks != null && activeCustomerTasks.length > 0 && !selectedTaskExists &&
-                                <LoadingPlaceholder/>
-                            }
+                                {
+                                    instanceStatus.tasks != null && activeCustomerTasks.length > 0 && !selectedTaskExists &&
+                                    <LoadingPlaceholder/>
+                                }
 
-                            {
-                                instanceStatus.tasks != null && selectedTaskExists &&
-                                <Outlet context={outletContext}/>
-                            }
+                                {
+                                    instanceStatus.tasks != null && selectedTaskExists &&
+                                    <Outlet context={outletContext}/>
+                                }
+                            </Box>
                         </PageWrapper>
                     </Box>
 
@@ -278,7 +281,10 @@ export function CustomerInstanceView() {
 function NoTaskToDoPlaceholder() {
     return (
         <Box>
-            Freuen Sie sich. Es gibt für Sie nichts zu tun!
+            <Typography component="h2" variant="h4">Aktuell nichts zu bearbeiten</Typography>
+            <Typography sx={{mt: 1}}>
+                Für diesen Vorgang ist hier derzeit kein weiterer Schritt verfügbar.
+            </Typography>
         </Box>
     );
 }
