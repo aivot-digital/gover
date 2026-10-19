@@ -1162,7 +1162,9 @@ public class ElementDerivationService {
             return effectiveValue;
         }
 
-        var selectedValue = selectField.formatValue(effectiveValue);
+        // String values are trimmed before they are validated. Check the trimmed value, so that a padded value of an option of another group does not skip the group check.
+        var formattedValue = selectField.formatValue(effectiveValue);
+        var selectedValue = formattedValue == null ? null : formattedValue.trim();
         if (selectedValue == null || !selectField.containsOptionValue(selectedValue)) {
             return effectiveValue;
         }

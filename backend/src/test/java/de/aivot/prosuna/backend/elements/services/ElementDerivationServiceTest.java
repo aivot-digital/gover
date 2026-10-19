@@ -1499,6 +1499,38 @@ class ElementDerivationServiceTest {
         assertFalse(mismatchingWithoutErrors.hasAnyError());
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void shouldCheckTheTrimmedValueOfADependentSelectAgainstTheGroup(boolean parentPlacedLater) {
+        var parent = createGroupSelect("parent");
+        parent.setLabel("Gruppe");
+        parent.setDisabled(true);
+        var child = createGroupOptionSelect("child", "parent");
+        var authoredValues = new AuthoredElementValues();
+        // Padded, the value is no option of the select. Before validation, it is trimmed to the option of group A.
+        authoredValues.putLiteral("child", " option_a ");
+        var trustedValues = new AuthoredElementValues();
+        trustedValues.putLiteral("parent", "group_b");
+
+        var result = derive(
+                createRoot(parentPlacedLater ? List.of(child, parent) : List.of(parent, child)),
+                authoredValues,
+                new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                        .setTrustedAuthoredValues(trustedValues)
+        );
+
+        if (parentPlacedLater) {
+            assertEquals("option_a", result.getEffectiveValues().get("child"));
+            assertEquals(
+                    "Die ausgewählte Option passt nicht zur Auswahl im Feld „Gruppe“. Wählen Sie eine passende Option aus.",
+                    result.getElementStates().get("child").getError()
+            );
+        } else {
+            assertNull(result.getEffectiveValues().get("child"));
+        }
+    }
+
     @Test
     void shouldOmitHiddenReplicatingRowChildFromEffectiveValues() {
         var visibleChild = new TextInputElement();
