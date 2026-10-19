@@ -9,8 +9,6 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
 import jakarta.annotation.Nullable;
 
-import java.util.Objects;
-
 public class NoCodeListCountOperator extends NoCodeOperator {
     @Override
     public String getIdentifier() {
@@ -100,7 +98,6 @@ public class NoCodeListCountOperator extends NoCodeOperator {
             return false;
         }
 
-        var castedItem = castToTypeOfReference(value, item);
-        return Objects.equals(castedItem, value);
+        return isEqualToReference(value, item);
     }
 }

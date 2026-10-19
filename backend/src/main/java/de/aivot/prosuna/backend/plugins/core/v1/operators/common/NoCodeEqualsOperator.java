@@ -9,8 +9,6 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
 import jakarta.annotation.Nullable;
 
-import java.util.Objects;
-
 public class NoCodeEqualsOperator extends NoCodeOperator {
     public static final String OPERATOR_ID = "equals";
 
@@ -91,8 +89,7 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
             return new NoCodeResult(false);
         }
 
-        var castedArg1 = castToTypeOfReference(arg0, arg1);
-        return new NoCodeResult(Objects.equals(arg0, castedArg1));
+        return new NoCodeResult(isEqualToReference(arg0, arg1));
     }
 
     @Nullable

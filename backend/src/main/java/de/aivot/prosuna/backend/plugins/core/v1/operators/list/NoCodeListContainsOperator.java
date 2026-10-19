@@ -100,8 +100,7 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
                 continue;
             }
 
-            var castedItem = castToTypeOfReference(value, item);
-            if (Objects.equals(castedItem, value)) {
+            if (isEqualToReference(value, item)) {
                 return new NoCodeResult(true);
             }
         }

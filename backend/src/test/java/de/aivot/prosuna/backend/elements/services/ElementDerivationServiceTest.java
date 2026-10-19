@@ -46,6 +46,8 @@ import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
+import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
@@ -879,6 +881,37 @@ class ElementDerivationServiceTest {
         var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
         var row = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, effectiveRows.getFirst());
         assertEquals("25", row.getValues().get("fee"));
+    }
+
+    @Test
+    void shouldMatchNumberFieldValuesInNoCodeEqualityThroughProcessDataAndFieldReferences() {
+        var amount = new NumberInputElement();
+        amount.setId("amount");
+        amount.setDestinationKey("antrag.betrag");
+        amount.setDecimalPlaces(2);
+        var byProcessData = createVisibleIfEquals("byProcessData", new NoCodeProcessDataReference("antrag.betrag"), "5.5");
+        var byField = createVisibleIfEquals("byField", new NoCodeReference("amount"), "5.5");
+        var otherAmount = createVisibleIfEquals("otherAmount", new NoCodeProcessDataReference("antrag.betrag"), "6");
+        var constantFirst = new TextInputElement();
+        constantFirst.setId("constantFirst");
+        constantFirst.setVisibility(ElementVisibilityFunctions.of(NoCodeExpression.of(
+                "equals",
+                NoCodeStaticValue.of("5.5"),
+                new NoCodeProcessDataReference("antrag.betrag")
+        )));
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("amount", 5.5);
+
+        var result = derive(
+                createRoot(List.of(amount, byProcessData, byField, otherAmount, constantFirst)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertTrue(result.getElementStates().get("byProcessData").getVisible());
+        assertTrue(result.getElementStates().get("byField").getVisible());
+        assertFalse(result.getElementStates().get("otherAmount").getVisible());
+        assertTrue(result.getElementStates().get("constantFirst").getVisible());
     }
 
     @Test
@@ -1770,6 +1803,17 @@ class ElementDerivationServiceTest {
         field.setId(id);
         field.setOptions(options);
         field.setDependsOnSelectFieldId(dependsOnSelectFieldId);
+        return field;
+    }
+
+    private static TextInputElement createVisibleIfEquals(String id, NoCodeOperand reference, String value) {
+        var field = new TextInputElement();
+        field.setId(id);
+        field.setVisibility(ElementVisibilityFunctions.of(NoCodeExpression.of(
+                "equals",
+                reference,
+                NoCodeStaticValue.of(value)
+        )));
         return field;
     }
 

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -122,6 +123,41 @@ class NoCodeOperatorTest {
                 now.toInstant().atZone(TEST_ZONE),
                 operator.castToTypeOfReference(now, now.toOffsetDateTime().toString())
         );
+    }
+
+    @Test
+    void isEqualToReferenceComparesNumbersByValue() {
+        // Number fields keep their decimal places, e.g. 5 or 5.50, while number casts use eight.
+        assertTrue(operator.isEqualToReference(new BigDecimal("5"), "5"));
+        // Constants are stored as text and may precede the number field.
+        assertTrue(operator.isEqualToReference("5.5", new BigDecimal("5.50")));
+        assertTrue(operator.isEqualToReference("05", 5));
+        assertTrue(operator.isEqualToReference(new BigDecimal("5.50"), "5.5"));
+        assertTrue(operator.isEqualToReference(new BigDecimal("5.50"), 5.5));
+        assertTrue(operator.isEqualToReference(5, new BigDecimal("5.00")));
+        assertFalse(operator.isEqualToReference(new BigDecimal("5"), "6"));
+
+        // Integer casts no longer drop the decimals of the compared value.
+        assertFalse(operator.isEqualToReference(5, "5.5"));
+
+        // Text that is not a number is not compared by value. Two texts stay texts.
+        assertFalse(operator.isEqualToReference("abc", 3));
+        assertFalse(operator.isEqualToReference("5,5", new BigDecimal("5.5")));
+        assertFalse(operator.isEqualToReference("5.0", "5"));
+
+        assertTrue(operator.isEqualToReference("a", "a"));
+        assertFalse(operator.isEqualToReference("a", "b"));
+        assertTrue(operator.isEqualToReference(true, "true"));
+    }
+
+    @Test
+    void isEqualToReferenceDoesNotExpandHugeNumbersInText() {
+        // Rescaling such text to the eight decimal places of number casts fails or computes an enormous number.
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+            assertFalse(operator.isEqualToReference("1e999999999", new BigDecimal("5")));
+            assertFalse(operator.isEqualToReference(new BigDecimal("5"), "1e-999999999"));
+            assertFalse(operator.isEqualToReference(new BigDecimal("5"), "1e300000000"));
+        });
     }
 
     @Test
