@@ -1,11 +1,10 @@
-import {processDataPathPattern} from '../utils/process-data-path';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {BaseViewProps} from './base-view';
 import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
-import {TextFieldComponent} from '../components/text-field/text-field-component';
-import {type EndAction} from '../components/text-field/text-field-component-props';
-import {type FormFieldMargin} from '../components/form-field';
+import {DataPathInput} from '../components/data-path-input/data-path-input';
+import {type EndAction, type TextFieldComponentProps} from '../components/text-field/text-field-component-props';
+import {type FormFieldLayoutProps} from '../components/form-field';
 import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import {ProcessDataKeyPickerDialog} from '../components/process-data-key-picker-dialog/process-data-key-picker-dialog';
@@ -19,16 +18,6 @@ import {isStringNullOrEmpty} from '../utils/string-utils';
 import {
     type ProcessNodeDefinitionMetadataForwardedProcessDataKey,
 } from '../modules/process/entities/process-node-definition-metadata';
-
-const processDataKeyPatternWithWildcard = {
-    regex: processDataPathPattern(true),
-    message: 'Verwenden Sie einen Pfad wie person.name, items[0].name oder items[*].name.',
-};
-
-const processDataKeyPattern = {
-    regex: processDataPathPattern(false),
-    message: 'Verwenden Sie einen Pfad wie person.name oder items[0].name.',
-};
 
 export function ProcessDataKeyInputFieldView(props: BaseViewProps<ProcessDataKeyInputFieldElement, string>) {
     const {
@@ -113,17 +102,20 @@ export type ProcessDataKeySuggestion = {
     subLabel?: string;
 };
 
-interface ProcessDataKeyInputComponentProps {
+export interface ProcessDataKeyInputComponentProps extends FormFieldLayoutProps {
     endAction?: EndAction | EndAction[];
-    ariaDescribedBy?: string;
-    margin?: FormFieldMargin;
     value: string | null | undefined;
     onChange: (value: string | null) => void;
     onBlur?: (value: string | null) => void;
     label: string;
     hint?: string;
     required?: boolean;
-    error?: string;
+    error?: string | string[];
+    readOnly?: boolean;
+    controlSx?: TextFieldComponentProps['controlSx'];
+    normalizeInput?: (value: string) => string;
+    validationRequested?: boolean;
+    debounce?: number;
     disabled?: boolean;
     busy?: boolean;
     disableWildCards?: boolean;
@@ -196,15 +188,15 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
 
     // Scoped fields only accept the child keys suggested for their scope. Typing is blocked, but choosing from the
     // picker and clearing the field must stay possible.
-    const readOnly = hasScopeProcessDataKey && hasProcessDataKeyMetadata;
+    const readOnly = props.readOnly || (hasScopeProcessDataKey && hasProcessDataKeyMetadata);
     const interactionDisabled = Boolean(disabled || busy);
     const endActions = interactionDisabled ? undefined : [
-        ...(isStringNullOrEmpty(value) ? [] : [{
+        ...(!props.readOnly && !isStringNullOrEmpty(value) ? [{
             icon: <Close/>,
             tooltip: 'Vorgangsdatenpfad leeren',
             onClick: () => onChange(null),
-        }]),
-        ...(hasProcessDataKeyMetadata ? [{
+        }] : []),
+        ...(!props.readOnly && hasProcessDataKeyMetadata ? [{
             icon: <DataObject/>,
             tooltip: 'Vorgangsdatenpfad auswählen',
             onClick: () => setPickerOpen(true),
@@ -213,7 +205,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
     ];
 
     return <>
-        <TextFieldComponent
+        <DataPathInput
             label={label}
             value={value}
             onChange={onChange}
@@ -223,17 +215,26 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
             hint={hint}
             disabled={disabled}
             readonly={readOnly}
+            controlSx={props.controlSx}
             busy={busy}
-            startIcon={`$.${effectivePrefix}`}
+            prefix={`$.${effectivePrefix}`}
             endAction={endActions}
             margin={props.margin}
             ariaDescribedBy={props.ariaDescribedBy}
-            debounce={1000}
-            pattern={disableWildCards ? processDataKeyPattern : processDataKeyPatternWithWildcard}
+            labelAction={props.labelAction}
+            id={props.id}
+            ariaLabel={props.ariaLabel}
+            externalAction={props.externalAction}
+            showOptionalIndicator={props.showOptionalIndicator}
+            sx={props.sx}
+            normalizeInput={props.normalizeInput}
+            validationRequested={props.validationRequested}
+            debounce={props.debounce ?? 1000}
+            allowWildcards={!disableWildCards}
         />
 
         <ProcessDataKeyPickerDialog
-            open={pickerOpen && !interactionDisabled && hasProcessDataKeyMetadata}
+            open={pickerOpen && !interactionDisabled && !props.readOnly && hasProcessDataKeyMetadata}
             options={suggestions}
             value={value}
             displayPrefix={effectivePrefix}

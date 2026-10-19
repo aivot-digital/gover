@@ -8,4 +8,5 @@ export interface HintProps {
     sx?: SxProps;
     isError?: boolean;
     label?: string;
+    ariaLabel?: string;
 }

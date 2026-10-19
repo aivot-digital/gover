@@ -341,3 +341,26 @@ describe('TextFieldComponent', () => {
         expect(onChange).not.toHaveBeenCalledWith(null);
     });
 });
+
+describe('local text field validation', () => {
+    const validate = (value: string | null) => value === 'valid' ? undefined : 'Bitte korrigieren Sie den Wert.';
+
+    it('validates the current input after blur and immediately clears a corrected error', () => {
+        render(<TextFieldComponent label="Wert" onChange={vi.fn()} validate={validate}/>);
+        const input = screen.getByRole('textbox', {name: /^Wert/});
+        fireEvent.change(input, {target: {value: 'incomplete'}});
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+        fireEvent.blur(input);
+        expect(input).toHaveAccessibleDescription('Bitte korrigieren Sie den Wert.');
+        fireEvent.change(input, {target: {value: 'valid'}});
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('allows a submit attempt to validate untouched input and retains external errors', () => {
+        const {rerender} = render(<TextFieldComponent label="Wert" onChange={vi.fn()} validate={validate} validationRequested/>);
+        const input = screen.getByRole('textbox', {name: /^Wert/});
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        rerender(<TextFieldComponent label="Wert" value="valid" onChange={vi.fn()} validate={validate} error="Dieser Wert wird bereits verwendet."/>);
+        expect(input).toHaveAccessibleDescription('Dieser Wert wird bereits verwendet.');
+    });
+});

@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Box, IconButton, InputAdornment, ListItemText, TextField, Typography} from '@mui/material';
 import {type EndAction, type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
@@ -186,7 +186,21 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
 
 export function TextFieldComponent(props: TextFieldComponentProps) {
     const [inputValue, setInputValue] = useState(props.value ?? '');
+    const [hasBlurred, setHasBlurred] = useState(false);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [normalizedSelection, setNormalizedSelection] = useState<{
+        input: HTMLInputElement;
+        start: number;
+        end: number;
+        direction: 'forward' | 'backward' | 'none' | null;
+    } | null>(null);
+
+    useLayoutEffect(() => {
+        if (normalizedSelection != null && document.activeElement === normalizedSelection.input) {
+            const {input, start, end, direction} = normalizedSelection;
+            input.setSelectionRange(start, end, direction ?? undefined);
+        }
+    }, [normalizedSelection]);
 
     // Determine if the soft limit is exceeded
     const isSoftLimitExceeded = props.softLimitCharacters && inputValue.length > props.softLimitCharacters;
@@ -197,7 +211,26 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             return; // Ignore changes if readonly
         }
 
-        const newValue = event.target.value;
+        const input = event.target;
+        const rawValue = input.value;
+        const newValue = props.normalizeInput?.(rawValue) ?? rawValue;
+        if (props.normalizeInput && newValue !== rawValue && input.selectionStart != null && input.selectionEnd != null) {
+            // React moves the caret to the end when a controlled value is rewritten. Map the selection before
+            // committing so typing in the middle still works, including expansions such as ä -> ae.
+            const normalizedOffset = (offset: number) => {
+                const prefix = props.normalizeInput!(rawValue.slice(0, offset));
+                let index = 0;
+                // Normalizing the complete value may also remove whitespace next to a following path separator.
+                while (index < prefix.length && prefix[index] === newValue[index]) index++;
+                return index;
+            };
+            setNormalizedSelection({
+                input,
+                start: normalizedOffset(input.selectionStart),
+                end: normalizedOffset(input.selectionEnd),
+                direction: input.selectionDirection,
+            });
+        }
         setInputValue(newValue); // update UI directly!
 
         if (props.bufferInputUntilBlur) {
@@ -221,6 +254,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
 
     // Handle blur event
     const handleBlur = () => {
+        setHasBlurred(true);
         const cleanedValue = cleanValue(inputValue, 'dropTrailingWhitespace');
         const cleanedInputValue = cleanedValue ?? '';
 
@@ -311,7 +345,10 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             ))}
         </Box>
     ) : errorMessages[0];
-    const helperMessage = patternError ?? errorHelperMessage ?? props.hint;
+    const validationError = (hasBlurred || props.validationRequested || errorMessages.length > 0)
+        ? props.validate?.(cleanValue(inputValue, 'dropTrailingWhitespace'))
+        : undefined;
+    const helperMessage = patternError ?? errorHelperMessage ?? validationError ?? props.hint;
     const showMaxCharacters = Boolean(
         props.maxCharacters &&
         (!props.minCharacters || inputValue.length >= props.minCharacters),
@@ -340,7 +377,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         />
     ) : undefined;
 
-    const hasError = errorMessages.length > 0 || patternError != null;
+    const hasError = errorMessages.length > 0 || patternError != null || validationError != null;
     const helperTextContent = hasHelperTextContent ? (
         <>
             {(helperMessage || showMaxCharacters || showMinCharacters) && (
@@ -490,6 +527,14 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
 
 // Render function for IconButtons
 export function renderIconButton(action: EndAction, key?: number) {
+    const button = <IconButton
+        key={key}
+        aria-label={action.ariaLabel ?? action.tooltip}
+        onClick={action.onClick}
+        disabled={action.disabled}
+    >
+        {action.icon}
+    </IconButton>;
     if (action.tooltip != null) {
         return (
             <Tooltip
@@ -497,22 +542,9 @@ export function renderIconButton(action: EndAction, key?: number) {
                 title={action.tooltip}
                 arrow
             >
-                <IconButton
-                    aria-label={action.ariaLabel ?? action.tooltip}
-                    onClick={action.onClick}
-                >
-                    {action.icon}
-                </IconButton>
+                {action.disabled ? <span>{button}</span> : button}
             </Tooltip>
         );
     }
-    return (
-        <IconButton
-            key={key}
-            aria-label={action.ariaLabel}
-            onClick={action.onClick}
-        >
-            {action.icon}
-        </IconButton>
-    );
+    return button;
 }
