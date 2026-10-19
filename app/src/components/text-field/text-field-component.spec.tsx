@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {AutocompleteTextField, TextFieldComponent} from './text-field-component';
+import {normalizeDataKeyInput} from '../../utils/data-key-input';
 
 vi.mock('../copy-to-clipboard-button/copy-to-clipboard-button', () => ({
     CopyToClipboardButton: ({text, disabled, ariaLabel}: {
@@ -339,6 +340,120 @@ describe('TextFieldComponent', () => {
 
         expect(onChange).toHaveBeenLastCalledWith('Leipzig');
         expect(onChange).not.toHaveBeenCalledWith(null);
+    });
+});
+
+describe('text field composition with normalization', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it.each([
+        {draft: 'caf´', completed: 'café', expected: 'cafe', nativeComposing: true},
+        {draft: 'gr¨', completed: 'grü', expected: 'grue', nativeComposing: false},
+    ])('keeps $draft intact until composition ends', ({draft, completed, expected, nativeComposing}) => {
+        const onChange = vi.fn();
+        render(<TextFieldComponent label="Key" onChange={onChange} normalizeInput={normalizeDataKeyInput}/>);
+        const input = screen.getByRole('textbox', {name: /^Key/});
+        fireEvent.compositionStart(input);
+        fireEvent.input(input, {target: {value: draft}, isComposing: nativeComposing});
+        expect(input).toHaveValue(draft);
+        expect(onChange).not.toHaveBeenCalled();
+
+        // Some browsers finish composition without a subsequent input event.
+        fireEvent.compositionEnd(input, {target: {value: completed}});
+        expect(input).toHaveValue(expected);
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(expected);
+    });
+
+    it('honors native isComposing even if the start event was not observed', () => {
+        const onChange = vi.fn();
+        render(<TextFieldComponent label="Key" onChange={onChange} normalizeInput={normalizeDataKeyInput}/>);
+        const input = screen.getByRole('textbox', {name: /^Key/});
+        fireEvent.input(input, {target: {value: 'caf´'}, isComposing: true});
+        expect(input).toHaveValue('caf´');
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.compositionEnd(input, {target: {value: 'café'}});
+        expect(onChange).toHaveBeenCalledExactlyOnceWith('cafe');
+    });
+
+    it('cancels pending debounced updates during composition and flushes the completed value on blur', () => {
+        vi.useFakeTimers();
+        const onChange = vi.fn();
+        const onBlur = vi.fn();
+        render(<TextFieldComponent label="Key" onChange={onChange} onBlur={onBlur}
+                                   normalizeInput={normalizeDataKeyInput} debounce={1000}/>);
+        const input = screen.getByRole('textbox', {name: /^Key/});
+        fireEvent.change(input, {target: {value: 'caf'}});
+        fireEvent.compositionStart(input);
+        fireEvent.input(input, {target: {value: 'caf´'}, isComposing: true});
+        act(() => vi.advanceTimersByTime(1000));
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.compositionEnd(input, {target: {value: 'café'}});
+        expect(input).toHaveValue('cafe');
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.blur(input);
+        expect(onChange).toHaveBeenCalledExactlyOnceWith('cafe');
+        expect(onBlur).toHaveBeenCalledWith('cafe');
+        act(() => vi.advanceTimersByTime(1000));
+        expect(onChange).toHaveBeenCalledOnce();
+    });
+
+    it('buffers the normalized composition result until blur when configured', () => {
+        const onChange = vi.fn();
+        render(<TextFieldComponent label="Key" onChange={onChange}
+                                   normalizeInput={normalizeDataKeyInput} bufferInputUntilBlur/>);
+        const input = screen.getByRole('textbox', {name: /^Key/});
+        fireEvent.compositionStart(input);
+        fireEvent.input(input, {target: {value: 'gr¨'}, isComposing: true});
+        fireEvent.compositionEnd(input, {target: {value: 'grü'}});
+        expect(input).toHaveValue('grue');
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.blur(input);
+        expect(onChange).toHaveBeenCalledExactlyOnceWith('grue');
+    });
+
+    it('finishes normalization on blur if composition end has not fired yet', () => {
+        const onChange = vi.fn();
+        const onBlur = vi.fn();
+        render(<TextFieldComponent label="Key" onChange={onChange} onBlur={onBlur}
+                                   normalizeInput={normalizeDataKeyInput}/>);
+        const input = screen.getByRole('textbox', {name: /^Key/});
+        fireEvent.compositionStart(input);
+        fireEvent.input(input, {target: {value: 'café'}, isComposing: true});
+        fireEvent.blur(input);
+        expect(input).toHaveValue('cafe');
+        expect(onChange).toHaveBeenCalledExactlyOnceWith('cafe');
+        expect(onBlur).toHaveBeenCalledWith('cafe');
+        fireEvent.compositionEnd(input);
+        expect(onChange).toHaveBeenCalledOnce();
+    });
+
+    it('preserves native composition handlers and the caret when completing text in the middle', () => {
+        const onCompositionStart = vi.fn();
+        const onCompositionEnd = vi.fn();
+        render(<TextFieldComponent label="Key" value="name_end" onChange={vi.fn()}
+                                   normalizeInput={normalizeDataKeyInput}
+                                   muiPassTroughProps={{slotProps: {htmlInput: () => ({onCompositionStart, onCompositionEnd})}}}/>);
+        const input = screen.getByRole('textbox', {name: /^Key/}) as HTMLInputElement;
+        input.focus();
+        fireEvent.compositionStart(input);
+        fireEvent.input(input, {target: {value: 'name¨_end'}, isComposing: true});
+        fireEvent.compositionEnd(input, {target: {value: 'nameü_end', selectionStart: 5, selectionEnd: 5}});
+        expect(input).toHaveValue('nameue_end');
+        expect(input.selectionStart).toBe(6);
+        expect(onCompositionStart).toHaveBeenCalledOnce();
+        expect(onCompositionEnd).toHaveBeenCalledOnce();
+    });
+
+    it('preserves change delivery during composition for ordinary text fields', () => {
+        const onChange = vi.fn();
+        render(<TextFieldComponent label="Name" onChange={onChange}/>);
+        const input = screen.getByRole('textbox', {name: /^Name/});
+        fireEvent.compositionStart(input);
+        fireEvent.input(input, {target: {value: 'ü'}, isComposing: true});
+        expect(input).toHaveValue('ü');
+        expect(onChange).toHaveBeenCalledExactlyOnceWith('ü');
+        fireEvent.compositionEnd(input);
+        expect(onChange).toHaveBeenCalledOnce();
     });
 });
 

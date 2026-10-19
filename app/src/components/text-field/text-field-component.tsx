@@ -188,8 +188,9 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
     const [inputValue, setInputValue] = useState(props.value ?? '');
     const [hasBlurred, setHasBlurred] = useState(false);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const composingRef = useRef(false);
     const [normalizedSelection, setNormalizedSelection] = useState<{
-        input: HTMLInputElement;
+        input: HTMLInputElement | HTMLTextAreaElement;
         start: number;
         end: number;
         direction: 'forward' | 'backward' | 'none' | null;
@@ -205,13 +206,11 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
     // Determine if the soft limit is exceeded
     const isSoftLimitExceeded = props.softLimitCharacters && inputValue.length > props.softLimitCharacters;
 
-    // Handle input change
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const updateInput = (input: HTMLInputElement | HTMLTextAreaElement) => {
         if (props.readonly) {
             return; // Ignore changes if readonly
         }
 
-        const input = event.target;
         const rawValue = input.value;
         const newValue = props.normalizeInput?.(rawValue) ?? rawValue;
         if (props.normalizeInput && newValue !== rawValue && input.selectionStart != null && input.selectionEnd != null) {
@@ -252,10 +251,34 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         }
     };
 
+    const startComposition = () => {
+        if (!props.normalizeInput || props.readonly) return;
+        composingRef.current = true;
+        // Do not let an earlier debounced update replace the browser's active composition.
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+            debounceTimeoutRef.current = null;
+        }
+    };
+
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (props.readonly) return;
+        if (props.normalizeInput && (composingRef.current || (event.nativeEvent as InputEvent).isComposing)) {
+            startComposition();
+            // Spacing accents and IME candidates are unfinished text. Rewriting them would interrupt composition.
+            setInputValue(event.target.value);
+            return;
+        }
+        updateInput(event.target);
+    };
+
     // Handle blur event
     const handleBlur = () => {
         setHasBlurred(true);
-        const cleanedValue = cleanValue(inputValue, 'dropTrailingWhitespace');
+        const wasComposing = composingRef.current;
+        composingRef.current = false;
+        const completedValue = wasComposing ? (props.normalizeInput?.(inputValue) ?? inputValue) : inputValue;
+        const cleanedValue = cleanValue(completedValue, 'dropTrailingWhitespace');
         const cleanedInputValue = cleanedValue ?? '';
 
         if (cleanedInputValue !== inputValue) {
@@ -272,7 +295,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
                 clearTimeout(debounceTimeoutRef.current);
                 debounceTimeoutRef.current = null;
                 props.onChange(cleanedValue);
-            } else if (cleanedInputValue !== inputValue) {
+            } else if (wasComposing || cleanedInputValue !== inputValue) {
                 props.onChange(cleanedValue);
             }
         }
@@ -514,6 +537,17 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
 
                             return {
                                 ...htmlInputSlotProps,
+                                onCompositionStart: (event: React.CompositionEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                                    startComposition();
+                                    htmlInputSlotProps?.onCompositionStart?.(event);
+                                },
+                                onCompositionEnd: (event: React.CompositionEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                                    if (composingRef.current) {
+                                        composingRef.current = false;
+                                        updateInput(event.currentTarget);
+                                    }
+                                    htmlInputSlotProps?.onCompositionEnd?.(event);
+                                },
                                 ...(props.maxCharacters ? {maxLength: props.maxCharacters} : undefined),
                                 ...nativeAriaProps,
                             };
