@@ -92,6 +92,10 @@ class NoCodeCommonOperatorsTest {
 
         assertFalse(notEquals.evaluate(data, new BigDecimal("5"), "5").getValueAsBoolean());
         assertTrue(notEquals.evaluate(data, new BigDecimal("5.50"), "5.4").getValueAsBoolean());
+
+        // A constant may also precede the number field.
+        assertTrue(equals.evaluate(data, "5.5", new BigDecimal("5.50")).getValueAsBoolean());
+        assertFalse(notEquals.evaluate(data, "5.5", new BigDecimal("5.50")).getValueAsBoolean());
     }
 
     @Test

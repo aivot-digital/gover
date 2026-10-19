@@ -892,11 +892,18 @@ class ElementDerivationServiceTest {
         var byProcessData = createVisibleIfEquals("byProcessData", new NoCodeProcessDataReference("antrag.betrag"), "5.5");
         var byField = createVisibleIfEquals("byField", new NoCodeReference("amount"), "5.5");
         var otherAmount = createVisibleIfEquals("otherAmount", new NoCodeProcessDataReference("antrag.betrag"), "6");
+        var constantFirst = new TextInputElement();
+        constantFirst.setId("constantFirst");
+        constantFirst.setVisibility(ElementVisibilityFunctions.of(NoCodeExpression.of(
+                "equals",
+                NoCodeStaticValue.of("5.5"),
+                new NoCodeProcessDataReference("antrag.betrag")
+        )));
         var authoredValues = new AuthoredElementValues();
         authoredValues.putLiteral("amount", 5.5);
 
         var result = derive(
-                createRoot(List.of(amount, byProcessData, byField, otherAmount)),
+                createRoot(List.of(amount, byProcessData, byField, otherAmount, constantFirst)),
                 authoredValues,
                 new ElementDerivationOptions()
         );
@@ -904,6 +911,7 @@ class ElementDerivationServiceTest {
         assertTrue(result.getElementStates().get("byProcessData").getVisible());
         assertTrue(result.getElementStates().get("byField").getVisible());
         assertFalse(result.getElementStates().get("otherAmount").getVisible());
+        assertTrue(result.getElementStates().get("constantFirst").getVisible());
     }
 
     @Test
