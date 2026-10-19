@@ -1,3 +1,5 @@
+import {getConfigurationErrorMessages} from '../utils/configuration-error-utils';
+import {ConfigurationErrorList} from './configuration-error-list';
 import {Box, Button, Grid, Stack, Typography} from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import React, {FunctionComponent, useEffect, useMemo, useState} from 'react';
@@ -172,18 +174,11 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
         setValue(EmptyPaymentConfigValue);
     };
 
-    const errorText = [
-        errors?.join(' '),
-        providersError,
-    ]
-        .filter((part) => part != null && part.length > 0)
-        .join(' ');
-
-    const detailMessages = asErrorDetails(errorDetails)?.messages;
-    const messages = Array.isArray(detailMessages) ? detailMessages.filter((message): message is string => typeof message === 'string') : [];
-    const errorContent = messages.length > 0
-        ? <><ul>{messages.map((message, index) => <li key={index}>{message}</li>)}</ul>{providersError}</>
-        : errorText || undefined;
+    const messages = [
+        ...getConfigurationErrorMessages(element.type, errors, errorDetails),
+        ...(providersError ? [providersError] : []),
+    ];
+    const errorContent = messages.length > 0 ? <ConfigurationErrorList messages={messages}/> : undefined;
 
     return (
         <FormFieldGroup
@@ -219,10 +214,10 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                         display: 'flex',
                         alignItems: 'center',
                         borderRadius: 1,
-                        border: errorText.length > 0
+                        border: messages.length > 0
                             ? '1px solid'
                             : '1px dashed',
-                        borderColor: errorText.length > 0
+                        borderColor: messages.length > 0
                             ? theme.palette.error.main
                             : alpha(theme.palette.text.primary, 0.18),
                         textAlign: 'left',
@@ -1164,14 +1159,20 @@ interface BookingRow {
     value: string;
 }
 
-function getBookingError(rows: Pick<BookingRow, 'key'>[]): string | undefined {
-    if (rows.some((row) => row.key.trim().length === 0)) {
-        return 'Geben Sie für jeden Buchungseintrag einen Schlüssel an.';
+function getBookingRowError(rows: Pick<BookingRow, 'key'>[], index: number): string | undefined {
+    // Compare without surrounding whitespace; retain the entered keys when publishing to external booking systems.
+    const key = rows[index].key.trim();
+    if (key.length === 0) {
+        return 'Geben Sie für diesen Buchungseintrag einen Schlüssel an.';
     }
-    if (new Set(rows.map((row) => row.key)).size !== rows.length) {
+    if (rows.some((row, otherIndex) => otherIndex !== index && row.key.trim() === key)) {
         return 'Die Schlüssel der Buchungsdaten müssen eindeutig sein.';
     }
     return undefined;
+}
+
+function getBookingError(rows: Pick<BookingRow, 'key'>[]): string | undefined {
+    return rows.map((_, index) => getBookingRowError(rows, index)).find((error) => error != null);
 }
 
 function validateBookingData(value: Record<string, string> | null): Record<string, string> {
@@ -1203,7 +1204,7 @@ function AdditionalBookingDataEditor(props: {
     };
     const addRow = () => {
         let index = 1;
-        while (rows.some((row) => row.key === `schluessel${index}`)) {
+        while (rows.some((row) => row.key.trim() === `schluessel${index}`)) {
             index++;
         }
         updateRows([...rows, {id: generateId(10), key: `schluessel${index}`, value: ''}]);
@@ -1235,7 +1236,7 @@ function AdditionalBookingDataEditor(props: {
                                 disabled={props.disabled}
                                 onChange={(key) => updateRows(rows.map((candidate) => candidate.id === row.id ? {...row, key: key ?? ''} : candidate))}
                                 muiPassTroughProps={{margin: 'none'}}
-                                error={row.key.trim().length === 0 || rows.some((candidate) => candidate.id !== row.id && candidate.key === row.key) ? error : undefined}
+                                error={getBookingRowError(rows, index)}
                             />
                         </Grid>
                         <Grid size={{xs: 12, md: 5}}>
@@ -1247,7 +1248,13 @@ function AdditionalBookingDataEditor(props: {
                                 muiPassTroughProps={{margin: 'none'}}
                             />
                         </Grid>
-                        <Grid size={{xs: 12, md: 2}}>
+                        <Grid size={{xs: 12, md: 2}} sx={(theme) => ({
+                            // Align with the input control, independent of helper or validation text below it.
+                            mt: {xs: 0, md: `calc(${FormFieldTokens.labelRowMinHeight}px + ${theme.spacing(FormFieldTokens.labelToControlGap)})`},
+                            minHeight: FormFieldTokens.controlMinHeight,
+                            display: 'flex',
+                            alignItems: 'center',
+                        })}>
                             <Button
                                 variant="outlined"
                                 size="small"
@@ -1255,7 +1262,6 @@ function AdditionalBookingDataEditor(props: {
                                 disabled={props.disabled}
                                 aria-label={`Buchungseintrag ${index + 1} entfernen`}
                                 onClick={() => updateRows(rows.filter((candidate) => candidate.id !== row.id))}
-                                sx={{mt: {xs: 0, md: 1}}}
                             >
                                 Entfernen
                             </Button>

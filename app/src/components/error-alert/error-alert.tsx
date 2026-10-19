@@ -1,3 +1,4 @@
+import {getConfigurationErrorMessages} from '../../utils/configuration-error-utils';
 import {AlertComponent} from '../alert/alert-component';
 import {useMemo} from 'react';
 import {AnyElement} from '../../models/elements/any-element';
@@ -81,13 +82,7 @@ export function _collectErrors(
     const col: CollectedError[] = [];
 
     if (elementState.error != null) {
-        // These configuration fields expose user-facing summaries in errorDetails.messages.
-        // Other field types may use errorDetails differently; retain their normal error handling.
-        const details = elementState.errorDetails?.messages;
-        const messages: string[] = (element.type === ElementType.PaymentConfigElement || element.type === ElementType.IdentityConfigElement) && Array.isArray(details)
-            ? details.filter((message): message is string => typeof message === 'string' && message.length > 0)
-            : [];
-        for (const error of messages.length > 0 ? messages : [elementState.error]) {
+        for (const error of getConfigurationErrorMessages(element.type, [elementState.error], elementState.errorDetails)) {
             col.push({
                 id: element.id,
                 label: resolveCollectedErrorLabel(element, elementState.errorDetails),

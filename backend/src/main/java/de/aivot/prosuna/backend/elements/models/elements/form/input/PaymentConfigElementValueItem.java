@@ -6,7 +6,7 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nullable;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public record PaymentConfigElementValueItem(
@@ -52,7 +52,7 @@ public record PaymentConfigElementValueItem(
         Map<String, String> additionalBookingData // Value Field Supports Template Tag Rendering
 ) {
     public Map<String, Object> performValidation() {
-        var errors = new HashMap<String, Object>();
+        var errors = new LinkedHashMap<String, Object>();
 
         requireText(errors, "description", description, "Beschreibung");
         requireText(errors, "reference", reference, "Referenz");

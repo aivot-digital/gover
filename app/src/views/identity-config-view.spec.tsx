@@ -23,6 +23,53 @@ vi.mock('../modules/identity/identity-providers-api-service', () => ({
 }));
 
 describe('IdentityConfigView', () => {
+    it('lists identity and provider errors directly at the field', async () => {
+        const user = userEvent.setup();
+        const setValue = vi.fn();
+        const element = {
+            type: ElementType.IdentityConfigElement,
+            id: 'new-identities',
+            label: 'Neue Identität',
+            required: true,
+            maxSlots: 1,
+            optionalSlotsAllowed: false,
+        } as IdentityConfigElement;
+
+        render(
+            <TestViewDispatcherProvider>
+                <ConfirmProvider>
+                    <IdentityConfigView
+                        element={element}
+                        value={[{
+                            id: 'representative',
+                            title: 'Vertretung',
+                            description: null,
+                            allowsMail: true,
+                            isOptional: false,
+                            options: [],
+                        }]}
+                        setValue={setValue}
+                        onBlur={vi.fn()}
+                        errors={['Titel fehlt. Schlüssel ist ungültig.']}
+                        errorDetails={{messages: ['Titel fehlt.', 'Schlüssel ist ungültig.']}}
+                        isBusy={false}
+                        isDeriving={false}
+                        authoredElementValues={{}}
+                        onAuthoredElementValuesChange={vi.fn()}
+                        derivedData={createDerivedRuntimeElementData()}
+                        onDerive={async () => createDerivedRuntimeElementData()}
+                        onEvent={async () => undefined}
+                        onResetErrors={vi.fn()}
+                        suppressErrors={false}
+                        derivationTriggerIdQueue={[]}
+                    />
+                </ConfirmProvider>
+            </TestViewDispatcherProvider>,
+        );
+
+        const errors = within(await screen.findByRole('alert')).getAllByRole('listitem');
+        expect(errors.map((item) => item.textContent)).toEqual(['Titel fehlt.', 'Schlüssel ist ungültig.']);
+    });
     it('limits a required identity configuration to one slot', async () => {
         const user = userEvent.setup();
         const setValue = vi.fn();

@@ -1,3 +1,5 @@
+import {getConfigurationErrorMessages} from '../utils/configuration-error-utils';
+import {ConfigurationErrorList} from './configuration-error-list';
 import {Box, Button, Chip, Grid, Stack, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {alpha} from '@mui/material/styles';
@@ -30,6 +32,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
         value,
         setValue,
         errors,
+        errorDetails,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -71,12 +74,11 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
     }, [providers, element.optionalSlotsAllowed]);
 
     const shouldShowEmptyState = (value?.length ?? 0) === 0;
-    const errorText = [
-        errors?.join(' '),
-        providersError,
-    ]
-        .filter((part) => part != null && part.length > 0)
-        .join(' ');
+    const messages = [
+        ...getConfigurationErrorMessages(element.type, errors, errorDetails),
+        ...(providersError ? [providersError] : []),
+    ];
+    const errorContent = messages.length > 0 ? <ConfigurationErrorList messages={messages}/> : undefined;
 
     const handleAddSlot = () => {
         if (element.maxSlots != null && element.maxSlots > 0 && (value?.length ?? 0) >= element.maxSlots) {
@@ -128,7 +130,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
             id={element.id}
             label={element.label ?? ''}
             hint={element.hint}
-            error={errorText || undefined}
+            error={errorContent}
             required={element.required ?? false}
             readOnly={isReadOnly}
             busy={isFieldBusy}
@@ -206,7 +208,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                         subTitle={(i) => getIdentityConfigSubtitle(i, isReadOnly || isFieldBusy)}
                         dialogContentComponent={Component}
                         validate={validateIdentityTitle}
-                        hasError={(item) => !item.title?.trim()}
+                        hasError={(item) => Object.keys(validateIdentityTitle(item)).length > 0}
                         onDialogSave={handleSlotChanged}
                         onDelete={handleDelete}
                         readOnly={isReadOnly}

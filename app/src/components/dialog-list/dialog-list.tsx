@@ -1,4 +1,4 @@
-import {FunctionComponent, useState} from 'react';
+import {FunctionComponent, useEffect, useRef, useState} from 'react';
 import {
     Box,
     Button,
@@ -68,6 +68,9 @@ export function DialogList<T>(props: DialogListProps<T>) {
     const isBusy = busy === true;
     const confirm = useConfirm();
 
+    const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const [dialogSession, setDialogSession] = useState(0);
+    useEffect(() => () => clearTimeout(closeTimer.current), []);
     const [showDialog, setShowDialog] = useState(false);
     // Child editors can hold drafts that cannot yet be represented by T, such as duplicate booking keys.
     // Include their errors when saving or discarding so those drafts cannot be lost silently.
@@ -84,6 +87,9 @@ export function DialogList<T>(props: DialogListProps<T>) {
         : {};
 
     const handleDialogOpen = (item: T) => {
+        clearTimeout(closeTimer.current);
+        // A new editing session must not inherit local drafts, even when opened during the exit animation.
+        setDialogSession((session) => session + 1);
         setDraftErrors({});
         setValidationAttempted(false);
         setOpenForItem({
@@ -136,7 +142,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
         setShowDialog(false);
         // Reset the item with a timeout to prevent the dialog content from being cleared,
         // before the dialog has fully vanished.
-        setTimeout(() => {
+        closeTimer.current = setTimeout(() => {
             setOpenForItem(undefined);
         }, 200);
     };
@@ -352,6 +358,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
                     {
                         openForItem != null &&
                         <DialogContentComponent
+                            key={dialogSession}
                             item={openForItem.edited}
                             onChange={(changed) => {
                                 setOpenForItem({

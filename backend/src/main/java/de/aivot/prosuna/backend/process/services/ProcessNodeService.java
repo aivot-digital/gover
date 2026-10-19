@@ -8,13 +8,12 @@ import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
@@ -996,23 +995,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     (e, state) -> {
                         if (e instanceof BaseInputElement<?> input) {
                             if (StringUtils.isNotNullOrEmpty(state.getError())) {
-                                // Match ErrorAlert's configuration summaries without interpreting arbitrary field details.
-                                if ((input instanceof PaymentConfigElement || input instanceof IdentityConfigElement)
-                                        && state.getErrorDetails() instanceof Map<?, ?> details
-                                        && details.get("messages") instanceof List<?> messages) {
-                                    var detailedProblems = messages.stream()
-                                            .filter(String.class::isInstance)
-                                            .map(String.class::cast)
-                                            .filter(StringUtils::isNotNullOrEmpty)
-                                            .toList();
-                                    if (detailedProblems.isEmpty()) {
-                                        problems.add(input.getLabel() + ": " + state.getError());
-                                    } else {
-                                        detailedProblems.forEach(message -> problems.add(input.getLabel() + ": " + message));
-                                    }
-                                } else {
-                                    problems.add(input.getLabel() + ": " + state.getError());
-                                }
+                                getConfigurationValidationMessages(state).forEach(message -> problems.add(input.getLabel() + ": " + message));
                             }
                         }
                     }
@@ -1192,6 +1175,21 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         return String.join(" ", cleanedErrors);
     }
 
+    @Nonnull
+    private static List<String> getConfigurationValidationMessages(@Nonnull ComputedElementState state) {
+        if (state.getErrorDetails() instanceof Map<?, ?> details && details.get("messages") instanceof List<?> messages) {
+            var summaries = messages.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .filter(StringUtils::isNotNullOrEmpty)
+                    .toList();
+            if (!summaries.isEmpty()) {
+                return summaries;
+            }
+        }
+        return StringUtils.isNotNullOrEmpty(state.getError()) ? List.of(state.getError()) : List.of();
+    }
+
     private static void applyProviderValidationErrors(
             @Nonnull ConfigLayoutElement layout,
             @Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
@@ -1206,12 +1204,21 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             // Keep errors from identity availability and element derivation alongside provider-specific checks.
             var state = derivedRuntimeElementData.getElementStates().get(error.getKey());
             var messages = new ArrayList<String>();
-            messages.add(state == null ? null : state.getError());
+            if (state != null) {
+                messages.addAll(getConfigurationValidationMessages(state));
+            }
             messages.addAll(error.getValue());
             var combinedValidationError = combineValidationErrors(messages);
             if (StringUtils.isNotNullOrEmpty(combinedValidationError)) {
-                // Provider errors use element IDs so the editor and runtime worker share the same failure channel.
                 derivedRuntimeElementData.putError(error.getKey(), combinedValidationError);
+                // Configuration fields opt into detailed summaries. Keep that list authoritative when
+                // provider checks add errors, while preserving the field paths used by their dialogs.
+                if (state != null && state.getErrorDetails() instanceof Map<?, ?> details
+                        && details.get("messages") instanceof List<?>) {
+                    Map<Object, Object> updatedDetails = new LinkedHashMap<>(details);
+                    updatedDetails.put("messages", messages.stream().filter(StringUtils::isNotNullOrEmpty).distinct().toList());
+                    state.setErrorDetails(updatedDetails);
+                }
             }
 
             if (problems == null) {

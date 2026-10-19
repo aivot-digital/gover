@@ -499,6 +499,30 @@ describe('PaymentConfigView', () => {
         expect(screen.getByText('Bitte korrigieren Sie den zweiten Steuersatz.')).toBeInTheDocument();
         expect(screen.queryByText('Bitte korrigieren Sie die erste Beschreibung.')).not.toBeInTheDocument();
     });
+    it('reports an empty key and duplicate keys on their respective rows', async () => {
+        const config = validPaymentConfig();
+        config.items![0].additionalBookingData = {one: '1', two: '2', three: '3'};
+        renderPaymentConfigView({value: config});
+        fireEvent.click(await screen.findByText('Stadtkasse Musterstadt (pmPayment) – Live-System'));
+        fireEvent.click(screen.getByText('Position'));
+        const dialog = within(screen.getAllByRole('dialog').at(-1)!);
+        const keys = dialog.getAllByRole('textbox', {name: 'Schlüssel'});
+        fireEvent.change(keys[0], {target: {value: ''}});
+        fireEvent.change(keys[1], {target: {value: 'three '}});
+        expect(keys[0]).toHaveAccessibleDescription('Geben Sie für diesen Buchungseintrag einen Schlüssel an.');
+        expect(keys[1]).toHaveAccessibleDescription('Die Schlüssel der Buchungsdaten müssen eindeutig sein.');
+        expect(keys[2]).toHaveAccessibleDescription('Die Schlüssel der Buchungsdaten müssen eindeutig sein.');
+    });
+
+    it('allows clearing the purpose in an editable payment draft', async () => {
+        const setValue = vi.fn();
+        renderPaymentConfigView({value: validPaymentConfig(), setValue});
+        fireEvent.click(await screen.findByText('Stadtkasse Musterstadt (pmPayment) – Live-System'));
+        fireEvent.change(screen.getByRole('textbox', {name: 'Buchungstext'}), {target: {value: ''}});
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        expect(setValue).toHaveBeenCalledWith(expect.objectContaining({purpose: null}));
+    });
+
     it('keeps booking values when deleting, adding, and correcting duplicate keys', async () => {
         const config = validPaymentConfig();
         config.items![0].additionalBookingData = {schluessel1: 'erster Wert', schluessel2: 'zweiter Wert'};
@@ -514,8 +538,8 @@ describe('PaymentConfigView', () => {
         fireEvent.change(keys[1], {target: {value: ''}});
         fireEvent.click(dialog.getByRole('button', {name: 'Übernehmen'}));
         expect(keys[1]).toHaveValue('');
-        expect(dialog.getAllByText('Geben Sie für jeden Buchungseintrag einen Schlüssel an.').length).toBeGreaterThan(0);
-        fireEvent.change(keys[1], {target: {value: 'schluessel2'}});
+        expect(dialog.getAllByText('Geben Sie für diesen Buchungseintrag einen Schlüssel an.').length).toBeGreaterThan(0);
+        fireEvent.change(keys[1], {target: {value: 'schluessel2 '}});
         fireEvent.change(dialog.getAllByRole('textbox', {name: /^Wert/})[1], {target: {value: 'dritter Wert'}});
         fireEvent.click(dialog.getByRole('button', {name: 'Übernehmen'}));
         expect(dialog.getAllByRole('textbox', {name: /^Wert/})[0]).toHaveValue('zweiter Wert');

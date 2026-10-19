@@ -727,6 +727,38 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void validate_ShouldKeepProviderErrorsInConfigurationSummaries() throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Nonnull
+            @Override
+            public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
+                var field = new PaymentConfigElement();
+                field.setId("payment");
+                field.setLabel("Zahlung");
+                var layout = new ConfigLayoutElement();
+                layout.setId("configuration");
+                layout.addChild(field);
+                return layout;
+            }
+            @Override
+            public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeConfigurationValidationContext<TestNodeConfig> context) {
+                return Map.of("payment", List.of("Provider error."));
+            }
+        };
+        var data = new DerivedRuntimeElementData();
+        data.getElementStates().put("payment", new ComputedElementState().setError("Konfiguration fehlerhaft.")
+                .setErrorDetails(Map.of("description", "Beschreibung fehlt.", "messages", List.of("Beschreibung fehlt.", "Zahlungsposition 2: Betrag fehlt."))));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class))).thenReturn(data);
+
+        var problems = service.validate(createNode(1, "a"), provider, false).orElseThrow();
+
+        assertEquals(List.of("Zahlung: Beschreibung fehlt.", "Zahlung: Zahlungsposition 2: Betrag fehlt.", "Zahlung: Provider error."), problems.problems());
+        var details = (Map<?, ?>) data.getElementStates().get("payment").getErrorDetails();
+        assertEquals("Beschreibung fehlt.", details.get("description"));
+        assertEquals(List.of("Beschreibung fehlt.", "Zahlungsposition 2: Betrag fehlt.", "Provider error."), details.get("messages"));
+    }
+
+    @Test
     void validate_ShouldNotTreatADeferredDynamicValueAsMissing() throws Exception {
         var derivedData = new DerivedRuntimeElementData();
         derivedData.getElementStates().put(

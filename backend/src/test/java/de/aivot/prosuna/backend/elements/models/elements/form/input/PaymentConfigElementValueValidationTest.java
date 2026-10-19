@@ -19,6 +19,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PaymentConfigElementValueValidationTest {
     @Test
+    void shouldReportClearedPurposeAsAConfigurationError() {
+        var exception = assertThrows(ValidationException.class, () -> new PaymentConfigElement().performValidation(
+                new PaymentConfigElementValue(UUID.randomUUID(), null, "Description", false, null, List.of(fixedItem()), null, null)));
+        assertEquals(Map.of("purpose", "Geben Sie einen Verwendungszweck an.",
+                "messages", List.of("Geben Sie einen Verwendungszweck an.")), exception.getErrorDetails());
+    }
+
+    @Test
+    void shouldKeepNestedErrorsInFieldOrder() {
+        var paymentItem = new PaymentConfigElementValueItem(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        assertEquals(List.of("description", "reference", "idType", "costType", "quantityType", "fixedTaxRate"),
+                List.copyOf(paymentItem.performValidation().keySet()));
+        var requestor = new PaymentConfigElementValueRequestorMapping(null, "invalid-key", "invalid-key", null, null, null, null, null, null, null, null, null);
+        assertEquals(List.of("lastNameDestinationKey", "firstNameDestinationKey", "requestorSourceType"),
+                List.copyOf(requestor.performValidation().keySet()));
+    }
+
+    @Test
     void shouldValidateFixedPaymentItem() {
         assertEquals(Map.of(), fixedItem().performValidation());
     }
