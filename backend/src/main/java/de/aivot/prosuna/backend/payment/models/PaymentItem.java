@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.payment.models;
 import de.aivot.prosuna.backend.models.payment.PaymentProduct;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -11,6 +12,12 @@ import java.util.List;
 import java.util.Optional;
 
 public class PaymentItem {
+    /**
+     * Tax rates are percentages with up to four decimal places, e.g. 7.1234 %.
+     */
+    public static final int TAX_RATE_SCALE = 4;
+    private static final int MONEY_SCALE = 2;
+
     private String id;
     private String reference;
     private String description;
@@ -90,32 +97,40 @@ public class PaymentItem {
     }
 
     public BigDecimal getTotalPrice() {
-        var quantity = BigDecimal
-                .valueOf(this.quantity)
-                .setScale(2, RoundingMode.HALF_UP);
+        var netPricePerItem = calculateSingleNetAmount();
 
-        var normalizedTaxRate = this.taxRate
-                .setScale(4, RoundingMode.HALF_UP)
-                .movePointLeft(2);
+        return multiplyByQuantity(netPricePerItem)
+                .add(multiplyByQuantity(calculateSingleTaxAmount(netPricePerItem)))
+                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+    }
 
-        var netPricePerItem = this.netPrice
-                .setScale(2, RoundingMode.HALF_UP);
+    // getTotalPrice() and toXBezahldienstePaymentItem() share these helpers so the payload total always
+    // matches the gross amount sent to the payment provider.
+    @Nonnull
+    private BigDecimal calculateNormalizedTaxRate() {
+        return this.taxRate
+                .setScale(TAX_RATE_SCALE, RoundingMode.HALF_UP);
+    }
 
-        var taxPerItem = netPricePerItem
-                .multiply(normalizedTaxRate)
-                .setScale(2, RoundingMode.HALF_UP);
+    @Nonnull
+    private BigDecimal calculateSingleNetAmount() {
+        return this.netPrice
+                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+    }
 
-        var totalNetPrice = netPricePerItem
-                .multiply(quantity)
-                .setScale(2, RoundingMode.HALF_UP);
+    // Taxes are rounded per item before they are multiplied by the quantity.
+    @Nonnull
+    private BigDecimal calculateSingleTaxAmount(@Nonnull BigDecimal singleNetAmount) {
+        return singleNetAmount
+                .multiply(calculateNormalizedTaxRate().movePointLeft(2))
+                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+    }
 
-        var totalTax = taxPerItem
-                .multiply(quantity)
-                .setScale(2, RoundingMode.HALF_UP);
-
-        return totalNetPrice
-                .add(totalTax)
-                .setScale(2, RoundingMode.HALF_UP);
+    @Nonnull
+    private BigDecimal multiplyByQuantity(@Nonnull BigDecimal singleAmount) {
+        return singleAmount
+                .multiply(BigDecimal.valueOf(this.quantity))
+                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
     }
 
     public Optional<XBezahldienstePaymentItem> toXBezahldienstePaymentItem() throws PaymentException {
@@ -136,28 +151,11 @@ public class PaymentItem {
         }
 
         if (this.getQuantity() > 0) {
-            var tax = this
-                    .getTaxRate()
-                    .setScale(4, RoundingMode.HALF_UP);
-
-            var taxRate = tax
-                    .movePointLeft(2);
-
-            var netPricePerItem = this
-                    .getNetPrice()
-                    .setScale(2, RoundingMode.HALF_UP);
-
-            var taxPerItem = netPricePerItem
-                    .multiply(taxRate)
-                    .setScale(2, RoundingMode.HALF_UP);
-
-            var totalNetPrice = netPricePerItem
-                    .multiply(BigDecimal.valueOf(this.getQuantity()).setScale(2, RoundingMode.HALF_UP))
-                    .setScale(2, RoundingMode.HALF_UP);
-
-            var totalTax = taxPerItem
-                    .multiply(BigDecimal.valueOf(this.getQuantity()).setScale(2, RoundingMode.HALF_UP))
-                    .setScale(2, RoundingMode.HALF_UP);
+            var tax = calculateNormalizedTaxRate();
+            var netPricePerItem = calculateSingleNetAmount();
+            var taxPerItem = calculateSingleTaxAmount(netPricePerItem);
+            var totalNetPrice = multiplyByQuantity(netPricePerItem);
+            var totalTax = multiplyByQuantity(taxPerItem);
 
             var item = new XBezahldienstePaymentItem();
 

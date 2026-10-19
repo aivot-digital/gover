@@ -420,6 +420,37 @@ class PaymentRequestActionNodeV1Test {
     }
 
     @Test
+    void staffTaskView_ShowsAllFourTaxRateDecimals() throws Exception {
+        var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
+        var item = new PaymentItem();
+        item.setDescription("Gebühr");
+        item.setQuantity(1L);
+        item.setNetPrice(new BigDecimal("10000.00"));
+        item.setTaxRate(new BigDecimal("7.1234"));
+        var paymentPayload = new PaymentPayload()
+                .setPurpose("Gebührenbescheid AZ-123")
+                .setDescription("Gebühren für die Bearbeitung")
+                .setTotal(item.getTotalPrice())
+                .setPaymentItems(List.of(item));
+        var persistedPaymentPayload = JsonMapperTestUtils
+                .createMapper()
+                .convertValue(paymentPayload, Map.class);
+        var context = staffContext(
+                configuration,
+                new ProcessExecutionData().addProcessData(Map.of("name", "Ada")),
+                processInstance(recipientIdentity()),
+                task(Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD, persistedPaymentPayload), Map.of(), Map.of())
+        );
+
+        var layout = assertInstanceOf(GroupLayoutElement.class, node.getStaffTaskView(context).layout());
+        var paymentInformation = layout
+                .findChild("payment-information", RichTextContentElement.class)
+                .orElseThrow();
+
+        assertTrue(paymentInformation.getContent().contains("- Gebühr: 10.712,34 Euro inkl. 7,1234 % Steuern"));
+    }
+
+    @Test
     void staffTask_SendCreatesPaymentAndSendsEditedMessageWithoutRenderingAgain() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var paymentConfig = paymentConfig(paymentProviderKey);

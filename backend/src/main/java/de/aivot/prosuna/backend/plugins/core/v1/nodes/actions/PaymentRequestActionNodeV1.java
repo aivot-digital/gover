@@ -29,6 +29,7 @@ import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
+import de.aivot.prosuna.backend.payment.models.PaymentItem;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
@@ -187,7 +188,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                     .map(item -> "- " + text(item.getDescription()) + ": "
                             + NumberUtils.formatGermanNumber(item.getTotalPrice(), 2) + " Euro"
                             + (item.getTaxRate().signum() > 0
-                            ? " (inkl. " + NumberUtils.formatGermanNumber(item.getTaxRate(), 2) + " % Steuern)" : ""))
+                            ? " (inkl. " + formatTaxRate(item.getTaxRate()) + " % Steuern)" : ""))
                     .collect(Collectors.joining("\n"));
             return section("Zahlungspositionen", items);
         } catch (RuntimeException ignored) {
@@ -931,7 +932,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         item.getDescription(),
                         NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
                         item.getTaxRate().signum() > 0
-                                ? " inkl. %s %% Steuern".formatted(NumberUtils.formatGermanNumber(item.getTaxRate(), 2))
+                                ? " inkl. %s %% Steuern".formatted(formatTaxRate(item.getTaxRate()))
                                 : ""
                 ))
                 .collect(Collectors.joining("\n"));
@@ -959,6 +960,12 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 NumberUtils.formatGermanNumber(paymentPayload.getTotal(), 2),
                 includesTaxes ? " inkl. Steuern" : ""
         );
+    }
+
+    // Show every configured tax rate decimal so staff see the rate that was used for the calculation.
+    @Nonnull
+    private static String formatTaxRate(@Nonnull BigDecimal taxRate) {
+        return NumberUtils.formatGermanNumber(taxRate, 2, PaymentItem.TAX_RATE_SCALE);
     }
 
     @Nonnull

@@ -32,7 +32,6 @@ import java.util.*;
 @Service
 public class PaymentPayloadCreationService {
     private static final int MONEY_SCALE = 2;
-    private static final int TAX_RATE_SCALE = 4;
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
     private final TemplateRenderService templateRenderService;
@@ -125,7 +124,7 @@ public class PaymentPayloadCreationService {
         }
 
         var normalizedSingleNetAmount = singleNetAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
-        var normalizedTaxRate = taxRate.setScale(TAX_RATE_SCALE, RoundingMode.HALF_UP);
+        var normalizedTaxRate = taxRate.setScale(PaymentItem.TAX_RATE_SCALE, RoundingMode.HALF_UP);
 
         var paymentItem = new PaymentItem();
         paymentItem.setId(resolveItemId(itemConfig, index));
