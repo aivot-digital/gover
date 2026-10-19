@@ -594,9 +594,38 @@ class CustomerProcessInstanceTaskViewControllerTest {
         );
 
         var requests = fixture.elementDerivationService().requests;
+        assertEquals(3, requests.size());
+        assertTrue(requests.stream().allMatch(request -> request.processExecutionData() == fixture.processExecutionData()));
+    }
+
+    @Test
+    void update_StoresUploadsWithTheElementStatesOfTheSubmittedInputs() throws ResponseException {
+        var normalizedInputs = new AuthoredElementValues();
+        normalizedInputs.putLiteral("field", "normalized");
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null);
+        var fixture = createFixture(provider, normalizedInputs);
+
+        fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "{\"field\":{\"type\":\"Literal\",\"value\":\"submitted\"}}",
+                null,
+                null,
+                "inline-submit",
+                Map.of(),
+                null,
+                new MockHttpServletResponse()
+        );
+
+        var requests = fixture.elementDerivationService().requests;
         assertEquals(2, requests.size());
-        assertSame(fixture.processExecutionData(), requests.get(0).processExecutionData());
-        assertSame(fixture.processExecutionData(), requests.get(1).processExecutionData());
+        // The submitted inputs are derived first, so only upload fields whose value the derivation takes store files.
+        assertEquals("submitted", requests.get(0).authoredElementValues().getLiteral("field"));
+        assertEquals("submitted", fixture.fileUploadMultipartInputService().receivedInputs.getLiteral("field"));
+        assertSame(fixture.elementDerivationService().elementStates, fixture.fileUploadMultipartInputService().receivedElementStates);
+        // The provider receives the derivation of the inputs that reference the stored attachments.
+        assertSame(normalizedInputs, requests.get(1).authoredElementValues());
+        assertTrue(requests.stream().allMatch(request -> request.derivationOptions().isIgnoreAuthoredValuesOfNonEditableInputs()));
     }
 
     @Test
@@ -849,6 +878,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals(new DerivedRuntimeElementData(effectiveValues, elementStates), exception.getDetails());
         assertNull(provider.eventInvokedWith);
         verifyNoInteractions(resultHandler);
+        assertNull(fixture.fileUploadMultipartInputService().receivedElementStates);
     }
 
     @Test
@@ -1172,6 +1202,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         var customerTaskIdentityService = mockCustomerTaskIdentityService();
         var identitySlotService = mock(IdentitySlotService.class);
         var elementDerivationService = new TestElementDerivationService(effectiveValues);
+        var fileUploadMultipartInputService = new TestTaskViewMultipartInputService(normalizedInputs);
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -1180,7 +1211,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 resultHandler,
                 new TestProcessNodeExecutionLoggerFactory(),
                 elementDerivationService,
-                new TestTaskViewMultipartInputService(normalizedInputs),
+                fileUploadMultipartInputService,
                 processDataService,
                 mock(ProcessService.class),
                 mock(VDepartmentShadowedService.class),
@@ -1202,6 +1233,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 customerTaskIdentityService,
                 identitySlotService,
                 elementDerivationService,
+                fileUploadMultipartInputService,
                 processExecutionData
         );
     }
@@ -1377,6 +1409,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
             CustomerTaskIdentityService customerTaskIdentityService,
             IdentitySlotService identitySlotService,
             TestElementDerivationService elementDerivationService,
+            TestTaskViewMultipartInputService fileUploadMultipartInputService,
             ProcessExecutionData processExecutionData
     ) {
     }
@@ -1455,6 +1488,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class TestTaskViewMultipartInputService extends FileUploadMultipartInputService {
         private final AuthoredElementValues normalizedInputs;
+        private AuthoredElementValues receivedInputs;
+        private ComputedElementStates receivedElementStates;
 
         private TestTaskViewMultipartInputService(AuthoredElementValues normalizedInputs) {
             super(null, null, null);
@@ -1464,11 +1499,14 @@ class CustomerProcessInstanceTaskViewControllerTest {
         @Override
         public NormalizationResult normalizeInputs(BaseElement layout,
                                                    AuthoredElementValues inputs,
+                                                   ComputedElementStates elementStates,
                                                    MultipartFile[] files,
                                                    List<String> fileUris,
                                                    Long processInstanceId,
                                                    Long processInstanceTaskId,
                                                    String uploadedByUserId) {
+            receivedInputs = inputs;
+            receivedElementStates = elementStates;
             return new NormalizationResult(normalizedInputs, List.of());
         }
     }

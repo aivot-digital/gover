@@ -316,6 +316,10 @@ public class ElementDerivationService {
                         inputModeContext,
                         valuesAlreadyResolved
                 );
+                // Callers persist request data, such as uploaded files, only for inputs that take their authored value.
+                elementState.setAuthoredValueAdopted(!protectedInput
+                        && !valuesAlreadyResolved
+                        && elementState.getValueSource() == EffectiveValueSource.Authored);
                 var effectiveValue = resolvedValue.value();
                 // Node-specific authoring validation receives null for dynamic values. Preserve why the value is
                 // absent so it can defer only value-dependent checks instead of treating the field as empty.
@@ -429,6 +433,12 @@ public class ElementDerivationService {
                         }
                     }
                     effectiveElementValues.put(replicatingContainer.getId(), effectiveRows);
+
+                    // Rows that do not come from the authored value, such as the trusted rows of a protected
+                    // container, contain no authored value of their inputs either.
+                    if (!elementState.isAuthoredValueAdopted()) {
+                        clearAuthoredValueAdoption(elementState.getSubStates());
+                    }
                 }
             } else if (actualElement instanceof LayoutElement<?> layoutElement) {
                 var children = layoutElement.getChildren();
@@ -737,6 +747,19 @@ public class ElementDerivationService {
         }
 
         return new AuthoredElementValues();
+    }
+
+    private static void clearAuthoredValueAdoption(@Nullable List<ComputedElementSubState> subStates) {
+        if (subStates == null) {
+            return;
+        }
+
+        for (var subState : subStates) {
+            for (var state : subState.getStates().values()) {
+                state.setAuthoredValueAdopted(false);
+                clearAuthoredValueAdoption(state.getSubStates());
+            }
+        }
     }
 
     private static boolean isNonEditableInput(@Nonnull InputElement<?> inputElement) {

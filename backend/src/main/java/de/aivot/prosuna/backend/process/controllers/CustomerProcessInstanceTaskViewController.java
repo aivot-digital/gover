@@ -563,9 +563,17 @@ public class CustomerProcessInstanceTaskViewController {
         } catch (JacksonException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
+
+        // Derive before storing the uploaded files, so only upload fields whose value the derivation takes store theirs.
+        var submittedElementData = deriveCustomerInputs(customerView, inputs, taskViewData.processExecutionData());
+        if (submittedElementData.hasAnyError()) {
+            throw ResponseException.badRequest("Bitte prüfen Sie Ihre Angaben und korrigieren Sie die angezeigten Fehler.", submittedElementData);
+        }
+
         inputs = fileUploadMultipartInputService.normalizeInputs(
                 layout,
                 inputs,
+                submittedElementData.getElementStates(),
                 files,
                 fileUris,
                 taskViewData.instance.getId(),
@@ -573,19 +581,8 @@ public class CustomerProcessInstanceTaskViewController {
                 null
         ).inputs();
 
-        // Expressions of the form may read the process data, so derive with the same data as the preview does.
-        // Disabled and technical inputs keep the values the server prefilled, whatever the customer sends for them.
-        var derivedElementData = elementDerivationService.derive(
-                new ElementDerivationRequest(
-                        layout,
-                        inputs,
-                        new ElementDerivationOptions()
-                                .setIgnoreAuthoredValuesOfNonEditableInputs(true)
-                                .setTrustedAuthoredValues(customerView.trustedData()),
-                        taskViewData.processExecutionData()
-                )
-        );
-
+        // The provider receives the stored attachments instead of the transient files.
+        var derivedElementData = deriveCustomerInputs(customerView, inputs, taskViewData.processExecutionData());
         if (derivedElementData.hasAnyError()) {
             throw ResponseException.badRequest("Bitte prüfen Sie Ihre Angaben und korrigieren Sie die angezeigten Fehler.", derivedElementData);
         }
@@ -689,6 +686,26 @@ public class CustomerProcessInstanceTaskViewController {
                 updatedView.layout(),
                 updatedView.data(),
                 updatedView.events()
+        );
+    }
+
+    /**
+     * Expressions of the form may read the process data, so derive with the same data as the preview does. Disabled
+     * and technical inputs keep the values the server prefilled, whatever the customer sends for them.
+     */
+    @Nonnull
+    private DerivedRuntimeElementData deriveCustomerInputs(@Nonnull ProcessNodeCustomerView customerView,
+                                                           @Nonnull AuthoredElementValues inputs,
+                                                           @Nonnull ProcessExecutionData processExecutionData) {
+        return elementDerivationService.derive(
+                new ElementDerivationRequest(
+                        customerView.layout(),
+                        inputs,
+                        new ElementDerivationOptions()
+                                .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                                .setTrustedAuthoredValues(customerView.trustedData()),
+                        processExecutionData
+                )
         );
     }
 

@@ -163,7 +163,7 @@ describe('Task timestamps after autosave', () => {
         fireEvent.change(screen.getByRole('textbox', {name: 'Betreff'}), {target: {value: 'Second draft'}});
         await showGeneralInformation();
 
-        expect(putView).toHaveBeenLastCalledWith(10, 20, {subject: literalAuthoredValue('Second draft')});
+        expect(putView).toHaveBeenLastCalledWith(10, 20, {subject: literalAuthoredValue('Second draft')}, []);
         expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 um 08:27 Uhr');
     });
 
@@ -185,7 +185,7 @@ describe('Task timestamps after autosave', () => {
         await act(async () => {
             await vi.advanceTimersByTimeAsync(2000);
         });
-        expect(putView).toHaveBeenLastCalledWith(10, 20, {subject: literalAuthoredValue('Second draft')});
+        expect(putView).toHaveBeenLastCalledWith(10, 20, {subject: literalAuthoredValue('Second draft')}, []);
         await showGeneralInformation();
         expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 um 08:27 Uhr');
     });

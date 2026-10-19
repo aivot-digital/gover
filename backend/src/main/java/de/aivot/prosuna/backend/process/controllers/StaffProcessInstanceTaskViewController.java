@@ -244,30 +244,31 @@ public class StaffProcessInstanceTaskViewController {
         } catch (JacksonException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
+        // Derive before storing the uploaded files, so only upload fields whose value the derivation takes store theirs.
+        // Auto-saves keep incomplete drafts, so only events are validated.
+        var derivedElementData = elementDerivationService.derive(
+                new ElementDerivationRequest(
+                        rootLayout,
+                        inputs,
+                        new ElementDerivationOptions(),
+                        taskViewData.processExecutionData()
+                )
+        );
+
+        if (cleanEvent != null && derivedElementData.hasAnyError()) {
+            throw ResponseException.badRequest(derivedElementData);
+        }
+
         inputs = fileUploadMultipartInputService.normalizeInputs(
                 rootLayout,
                 inputs,
+                derivedElementData.getElementStates(),
                 files,
                 fileUris,
                 taskViewData.instance().getId(),
                 taskViewData.task().getId(),
                 user.getId()
         ).inputs();
-
-        if (cleanEvent != null) {
-            var derivedElementData = elementDerivationService.derive(
-                    new ElementDerivationRequest(
-                            rootLayout,
-                            inputs,
-                            new ElementDerivationOptions(),
-                            taskViewData.processExecutionData()
-                    )
-            );
-
-            if (derivedElementData.hasAnyError()) {
-                throw ResponseException.badRequest(derivedElementData);
-            }
-        }
 
         Optional<ProcessNodeExecutionResult> res;
         try {

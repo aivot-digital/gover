@@ -1,9 +1,10 @@
 import {literalAuthoredValue} from '../../../models/element-data';
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {createDerivedRuntimeElementData} from '../../../models/element-data';
+import {ElementType} from '../../../data/element-type/element-type';
 import type {GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {IdentityProviderType} from '../../../modules/identity/enums/identity-provider-type';
 import type {IdentitySlot} from '../../../modules/identity/models/identity-slot';
@@ -429,6 +430,7 @@ describe('CustomerInstanceTaskView', () => {
             'instance-key',
             'task-key',
             {field: 'edited'},
+            [],
             'submit',
         ));
         expect(mocks.refreshInstanceStatus).toHaveBeenCalledOnce();
@@ -450,11 +452,50 @@ describe('CustomerInstanceTaskView', () => {
             'instance-key',
             'task-key',
             {field: 'inline'},
+            [],
             'submit',
         ));
         expectDispatchedAction('shell/setLoadingMessage', expect.objectContaining({
             message: 'Verarbeite Aktion: Daten einreichen',
         }));
+    });
+
+    it('sends only the files of upload fields that the derivation of the submitted values shows', async () => {
+        const visibleFile = {name: 'visible.pdf', size: 1, uri: 'blob:visible'};
+        const hiddenFile = {name: 'hidden.pdf', size: 2, uri: 'blob:hidden'};
+        vi.mocked(CustomerTaskViewApiService.prototype.getTaskView).mockResolvedValue(createTaskView({
+            layout: {
+                id: 'root',
+                type: ElementType.GroupLayout,
+                children: [
+                    {id: 'visibleUpload', type: ElementType.FileUpload},
+                    {id: 'hiddenUpload', type: ElementType.FileUpload},
+                ],
+            } as GroupLayout,
+        }));
+        const deriveTaskView = vi.spyOn(CustomerTaskViewApiService.prototype, 'deriveTaskView')
+            .mockResolvedValue(createDerivedRuntimeElementData({
+                elementStates: {
+                    hiddenUpload: {visible: false},
+                },
+            }));
+        const values = {
+            visibleUpload: literalAuthoredValue([visibleFile]),
+            hiddenUpload: literalAuthoredValue([hiddenFile]),
+        };
+
+        render(<CustomerInstanceTaskView/>);
+        await screen.findByRole('button', {name: 'Inline-Event'});
+        await act(() => mocks.elementDerivationProps.onEvent(values, 'submit'));
+
+        expect(deriveTaskView).toHaveBeenCalledWith('instance-key', 'task-key', values, ['ALL']);
+        expect(ProcessInstanceTaskApiService.prototype.putCustomerTaskView).toHaveBeenCalledWith(
+            'instance-key',
+            'task-key',
+            values,
+            [visibleFile],
+            'submit',
+        );
     });
 
     it('shows validation errors in the form and in a snackbar', async () => {

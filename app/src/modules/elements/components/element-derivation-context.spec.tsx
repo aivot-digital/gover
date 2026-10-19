@@ -623,6 +623,35 @@ describe('ElementDerivationContext', () => {
         );
     });
 
+    it('passes the derivation of the submitted values to the event handler', async () => {
+        const derivedData = createDerivedRuntimeElementData({
+            elementStates: {
+                field: {visible: false},
+            },
+        });
+        const onDerive = vi.fn().mockResolvedValue(derivedData);
+        const onEvent = vi.fn().mockResolvedValue(undefined);
+        const submittedValues = {field: literalAuthoredValue('submitted')};
+
+        render(
+            <ElementDerivationContext
+                element={createRootElement()}
+                authoredElementValues={{field: literalAuthoredValue('value')}}
+                onAuthoredElementValuesChange={vi.fn()}
+                onDerive={onDerive}
+                onEvent={onEvent}
+                deriveOnMount={false}
+            />,
+        );
+
+        await act(async () => {
+            await observeViewProps.mock.lastCall?.[0].onEvent(submittedValues, 'submit');
+        });
+
+        expect(onDerive).toHaveBeenCalledWith(submittedValues, expect.anything(), undefined);
+        expect(onEvent).toHaveBeenCalledWith(submittedValues, 'submit', derivedData);
+    });
+
     it('can use supplied derived data without deriving again on mount', async () => {
         const onDerive = vi.fn().mockResolvedValue(createDerivedRuntimeElementData());
 

@@ -47,6 +47,8 @@ import {ProcessTaskViewAttachmentProvider} from './process-task-view-attachment-
 import {BaseApiService} from '../../../../services/base-api-service';
 import {TaskViewEventButtons} from '../../components/task-view-event-buttons';
 import {isTaskDeadlineExceededError} from '../../utils/task-deadline-error';
+import {collectTaskViewFileUploads} from '../../utils/task-view-file-uploads';
+import type {FileUploadElementItem} from '../../../../models/elements/form/input/file-upload-element';
 
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
 const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
@@ -125,6 +127,16 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return true;
     }, [refresh]);
 
+    const collectFileUploads = useCallback((values: AuthoredElementValues): Promise<FileUploadElementItem[]> => {
+        if (item == null || taskView == null) {
+            return Promise.resolve([]);
+        }
+
+        return collectTaskViewFileUploads(taskView.layout, values, (derivableValues) => (
+            new ProcessInstanceTaskApiService().deriveStaffTaskView(item.task.processInstanceId, item.task.id, derivableValues)
+        ));
+    }, [item, taskView]);
+
     const saveTaskInputData = useCallback(
         async (payload: AuthoredElementValues): Promise<boolean> => {
             if (item == null || deadlineExceededRef.current) {
@@ -162,11 +174,12 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             setTaskInputDataSaveState(ProcessTaskInputSaveState.Saving);
 
             const savePromise = withDelay(
-                new ProcessInstanceTaskApiService().putStaffTaskView(
+                collectFileUploads(payload).then((files) => new ProcessInstanceTaskApiService().putStaffTaskView(
                     item.task.processInstanceId,
                     item.task.id,
                     payload,
-                ),
+                    files,
+                )),
                 TASK_INPUT_DATA_MIN_SAVE_DURATION_MS,
             )
                 .then(() => {
@@ -218,7 +231,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             return await savePromise;
         },
-        [dispatch, handleDeadlineExceeded, item, refresh],
+        [collectFileUploads, dispatch, handleDeadlineExceeded, item, refresh],
     );
 
     const flushCurrentTaskInputData = useCallback(async (): Promise<boolean> => {
@@ -548,12 +561,13 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         latestTaskInputDataRef.current = eventPayload;
 
         return withDelay(
-            new ProcessInstanceTaskApiService().putStaffTaskView(
+            collectFileUploads(eventPayload).then((files) => new ProcessInstanceTaskApiService().putStaffTaskView(
                 item.task.processInstanceId,
                 item.task.id,
                 eventPayload,
+                files,
                 evt.event,
-            ),
+            )),
             500,
         )
             .then(async (updatedTaskView) => {

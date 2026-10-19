@@ -2,6 +2,8 @@ package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
+import de.aivot.prosuna.backend.elements.models.ComputedElementSubState;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
@@ -39,20 +41,32 @@ public class FileUploadMultipartInputService {
         this.avService = avService;
     }
 
+    /**
+     * Stores the uploaded files of the upload fields whose authored value the derivation of the inputs takes, and
+     * replaces their transient items with references to the stored attachments.
+     * <p>
+     * Hidden upload fields and upload fields whose value the derivation does not take, such as disabled or technical
+     * fields in customer input, store nothing. Their transient items are removed and their files discarded, because
+     * the frontend sends them with legitimate submissions as well.
+     *
+     * @param elementStates the element states of the derivation of {@code inputs}
+     */
     @Nonnull
     public NormalizationResult normalizeInputs(@Nonnull BaseElement layout,
                                                @Nonnull AuthoredElementValues inputs,
+                                               @Nonnull ComputedElementStates elementStates,
                                                @Nullable MultipartFile[] files,
                                                @Nullable List<String> fileUris,
                                                @Nonnull Long processInstanceId,
                                                @Nullable Long processInstanceTaskId,
                                                @Nullable String uploadedByUserId) throws ResponseException {
-        return normalizeInputs(layout, inputs, files, fileUris, processInstanceId, processInstanceTaskId, uploadedByUserId, new LinkedHashMap<>(), new LinkedHashMap<>());
+        return normalizeInputs(layout, inputs, elementStates, files, fileUris, processInstanceId, processInstanceTaskId, uploadedByUserId, new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
     @Nonnull
     private NormalizationResult normalizeInputs(@Nonnull BaseElement layout,
                                                 @Nonnull AuthoredElementValues inputs,
+                                                @Nonnull ComputedElementStates elementStates,
                                                 @Nullable MultipartFile[] files,
                                                 @Nullable List<String> fileUris,
                                                 @Nonnull Long processInstanceId,
@@ -71,10 +85,12 @@ public class FileUploadMultipartInputService {
         var normalizedInputs = inputs.clone();
         var createdAttachments = new LinkedList<ProcessInstanceAttachmentEntity>();
         var createdFileItems = new LinkedList<FileUploadInputElementItem>();
+        var skippedFileItems = new LinkedList<FileUploadInputElementItem>();
 
         normalizeElement(
                 layout,
                 normalizedInputs,
+                elementStates,
                 remainingFiles,
                 filesByUri,
                 processInstanceId,
@@ -82,11 +98,16 @@ public class FileUploadMultipartInputService {
                 uploadedByUserId,
                 createdAttachments,
                 createdFileItems,
+                skippedFileItems,
                 attachmentSetsByDataKey,
                 nextAttachmentPositionsByDataKey,
                 null,
                 false
         );
+
+        // Discard the files of skipped upload fields only after the stored fields took theirs, so a skipped field
+        // cannot claim a file that a stored field matches by name and size.
+        discardSkippedFiles(skippedFileItems, remainingFiles, filesByUri);
 
         if (!remainingFiles.isEmpty()) {
             throw ResponseException.badRequest("Es wurden Dateien übertragen, die keinem Anlagen-Feld zugeordnet werden konnten.");
@@ -101,6 +122,7 @@ public class FileUploadMultipartInputService {
 
     private void normalizeElement(@Nonnull BaseElement element,
                                   @Nonnull AuthoredElementValues values,
+                                  @Nonnull ComputedElementStates elementStates,
                                   @Nonnull List<MultipartFile> remainingFiles,
                                   @Nonnull Map<String, Deque<MultipartFile>> filesByUri,
                                   @Nonnull Long processInstanceId,
@@ -108,6 +130,7 @@ public class FileUploadMultipartInputService {
                                   @Nullable String uploadedByUserId,
                                   @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments,
                                   @Nonnull List<FileUploadInputElementItem> createdFileItems,
+                                  @Nonnull List<FileUploadInputElementItem> skippedFileItems,
                                   @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey,
                                   @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey,
                                   @Nullable String attachmentGroup,
@@ -119,6 +142,12 @@ public class FileUploadMultipartInputService {
 
             var authoredValue = values.get(fileUploadElement.getId());
             if (!(authoredValue instanceof LiteralAuthoredInputValue literal)) {
+                return;
+            }
+
+            var elementState = elementStates.get(fileUploadElement.getId());
+            if (elementState == null || !elementState.isAuthoredValueAdopted()) {
+                skipFileUploadValue(fileUploadElement, values, literal.value(), skippedFileItems);
                 return;
             }
 
@@ -149,6 +178,13 @@ public class FileUploadMultipartInputService {
                 return;
             }
 
+            // Rows of a container whose value the derivation does not take have no states, so their upload fields are
+            // skipped as well.
+            var containerState = elementStates.get(replicatingContainer.getId());
+            var rowStates = containerState != null && containerState.isAuthoredValueAdopted()
+                    ? containerState.getSubStates()
+                    : null;
+
             var normalizedRows = new ArrayList<>(rawRows.size());
             for (var rowIndex = 0; rowIndex < rawRows.size(); rowIndex++) {
                 var rawRow = rawRows.get(rowIndex);
@@ -162,10 +198,12 @@ public class FileUploadMultipartInputService {
                 var rowId = StringUtils.toNullableTrimmedString(rowValue.getId());
                 var childAttachmentGroup = appendAttachmentGroup(attachmentGroup, rowId);
                 var childHasMissingAttachmentGroupPart = hasMissingAttachmentGroupPart || rowId == null;
+                var rowElementStates = resolveRowElementStates(rowStates, rowIndex, rowValue.getId());
                 for (var child : replicatingContainer.getChildren()) {
                     normalizeElement(
                             child,
                             rowValues,
+                            rowElementStates,
                             remainingFiles,
                             filesByUri,
                             processInstanceId,
@@ -173,6 +211,7 @@ public class FileUploadMultipartInputService {
                             uploadedByUserId,
                             createdAttachments,
                             createdFileItems,
+                            skippedFileItems,
                             attachmentSetsByDataKey,
                             nextAttachmentPositionsByDataKey,
                             childAttachmentGroup,
@@ -191,6 +230,7 @@ public class FileUploadMultipartInputService {
                 normalizeElement(
                         child,
                         values,
+                        elementStates,
                         remainingFiles,
                         filesByUri,
                         processInstanceId,
@@ -198,12 +238,42 @@ public class FileUploadMultipartInputService {
                         uploadedByUserId,
                         createdAttachments,
                         createdFileItems,
+                        skippedFileItems,
                         attachmentSetsByDataKey,
                         nextAttachmentPositionsByDataKey,
                         attachmentGroup,
                         hasMissingAttachmentGroupPart
                 );
             }
+        }
+    }
+
+    /**
+     * Removes the transient items of an upload field whose value the derivation does not take, so the inputs keep no
+     * reference to a file that is not stored. Items of attachments stored before stay unchanged.
+     */
+    private void skipFileUploadValue(@Nonnull FileUploadInputElement element,
+                                     @Nonnull AuthoredElementValues values,
+                                     @Nullable Object rawValue,
+                                     @Nonnull List<FileUploadInputElementItem> skippedFileItems) {
+        var items = FileUploadInputElement._formatValue(rawValue);
+        if (items == null || items.stream().noneMatch(this::requiresUpload)) {
+            return;
+        }
+
+        var keptItems = new ArrayList<Map<String, Object>>(items.size());
+        for (var item : items) {
+            if (requiresUpload(item)) {
+                skippedFileItems.add(item);
+            } else {
+                keptItems.add(createFileUploadItemMap(item));
+            }
+        }
+
+        if (keptItems.isEmpty()) {
+            values.remove(element.getId());
+        } else {
+            values.putLiteral(element.getId(), keptItems);
         }
     }
 
@@ -372,6 +442,28 @@ public class FileUploadMultipartInputService {
                 "Für die Datei „%s“ wurden keine Binärdaten übertragen.",
                 resolveDisplayName(item)
         );
+    }
+
+    /**
+     * Discards the files of skipped transient items. A missing file is no error, because the frontend need not send
+     * the files of fields the derivation does not take.
+     */
+    private void discardSkippedFiles(@Nonnull List<FileUploadInputElementItem> skippedFileItems,
+                                     @Nonnull List<MultipartFile> remainingFiles,
+                                     @Nonnull Map<String, Deque<MultipartFile>> filesByUri) {
+        for (var item : skippedFileItems) {
+            var mappedFiles = item.getUri() != null ? filesByUri.get(item.getUri()) : null;
+            if (mappedFiles != null && !mappedFiles.isEmpty()) {
+                remainingFiles.remove(mappedFiles.pollFirst());
+                continue;
+            }
+
+            remainingFiles
+                    .stream()
+                    .filter(candidate -> matchesFile(item, candidate))
+                    .findFirst()
+                    .ifPresent(remainingFiles::remove);
+        }
     }
 
     private boolean matchesFile(@Nonnull FileUploadInputElementItem item,
@@ -626,6 +718,23 @@ public class FileUploadMultipartInputService {
 
         var rows = ReplicatingContainerLayoutElement._formatValue(List.of(rawRow));
         return rows != null && !rows.isEmpty() ? rows.getFirst() : null;
+    }
+
+    /**
+     * Finds the element states of a row by its position. The derivation keeps one state per row of the authored value
+     * in the same order. Matching by position instead of by ID keeps rows apart that share an ID, and the ID check
+     * skips a row whose state belongs to another row.
+     */
+    @Nonnull
+    private static ComputedElementStates resolveRowElementStates(@Nullable List<ComputedElementSubState> rowStates,
+                                                                 int rowIndex,
+                                                                 @Nullable String rowId) {
+        if (rowStates == null || rowIndex >= rowStates.size()) {
+            return new ComputedElementStates();
+        }
+
+        var rowState = rowStates.get(rowIndex);
+        return Objects.equals(rowState.getId(), rowId) ? rowState.getStates() : new ComputedElementStates();
     }
 
     public record NormalizationResult(

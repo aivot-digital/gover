@@ -35,6 +35,13 @@ public class ComputedElementState implements Serializable {
      */
     private boolean inputValueDeferred = false;
 
+    /**
+     * Indicates that the input takes its effective value from the authored values of the derivation request. Hidden
+     * inputs, protected inputs that take trusted values, computed values and rows computed on the server do not.
+     * Callers use it to persist only the request data that the derivation actually took, for example uploaded files.
+     */
+    private boolean authoredValueAdopted = false;
+
     @Nullable
     private List<ComputedElementSubState> subStates = null;
 
@@ -58,12 +65,13 @@ public class ComputedElementState implements Serializable {
         ComputedElementState that = (ComputedElementState) o;
         return Objects.equals(visible, that.visible) && Objects.equals(disabled, that.disabled) && Objects.equals(error, that.error) &&
                 Objects.equals(errorDetails, that.errorDetails) && Objects.equals(override, that.override) &&
-                valueSource == that.valueSource && inputValueDeferred == that.inputValueDeferred && Objects.equals(subStates, that.subStates);
+                valueSource == that.valueSource && inputValueDeferred == that.inputValueDeferred &&
+                authoredValueAdopted == that.authoredValueAdopted && Objects.equals(subStates, that.subStates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(visible, disabled, error, errorDetails, override, valueSource, inputValueDeferred, subStates);
+        return Objects.hash(visible, disabled, error, errorDetails, override, valueSource, inputValueDeferred, authoredValueAdopted, subStates);
     }
 
 
@@ -129,6 +137,17 @@ public class ComputedElementState implements Serializable {
 
     public ComputedElementState setInputValueDeferred(boolean inputValueDeferred) {
         this.inputValueDeferred = inputValueDeferred;
+        return this;
+    }
+
+    /** The flag is an internal derivation detail and is not part of the element-state API consumed by clients. */
+    @JsonIgnore
+    public boolean isAuthoredValueAdopted() {
+        return authoredValueAdopted;
+    }
+
+    public ComputedElementState setAuthoredValueAdopted(boolean authoredValueAdopted) {
+        this.authoredValueAdopted = authoredValueAdopted;
         return this;
     }
 

@@ -24,6 +24,7 @@ import type {IdentitySelectionApi} from '../../../modules/identity/models/identi
 import type {IdentitySlot} from '../../../modules/identity/models/identity-slot';
 import {TaskViewEventButtons} from '../../../modules/process/components/task-view-event-buttons';
 import {isTaskDeadlineExceededError} from '../../../modules/process/utils/task-deadline-error';
+import {collectTaskViewFileUploads} from '../../../modules/process/utils/task-view-file-uploads';
 import {
     hasCustomerTaskIdentityRequirements,
     hasCustomerTaskViewContent,
@@ -244,9 +245,12 @@ export function CustomerInstanceTaskView() {
         latestAuthoredValuesRef.current = values;
 
         try {
+            const files = taskView != null && taskView !== 'failed' && hasCustomerTaskViewContent(taskView)
+                ? await collectTaskViewFileUploads(taskView.layout, values, (derivableValues) => handleDerive(derivableValues, ['ALL']))
+                : [];
             const updatedTaskView = await withDelay(
                 new ProcessInstanceTaskApiService()
-                    .putCustomerTaskView(instanceAccessKey, taskAccessKey, values, event.event),
+                    .putCustomerTaskView(instanceAccessKey, taskAccessKey, values, files, event.event),
                 500,
             );
 
@@ -287,12 +291,14 @@ export function CustomerInstanceTaskView() {
     }, [
         dispatch,
         handleDeadlineExceeded,
+        handleDerive,
         handleRequiredIdentityAuthentication,
         instanceAccessKey,
         invalidateInstanceTasks,
         navigate,
         refreshInstanceStatus,
         taskAccessKey,
+        taskView,
     ]);
 
     const handleEventClick = useCallback(async (event: TaskViewEvent): Promise<void> => {

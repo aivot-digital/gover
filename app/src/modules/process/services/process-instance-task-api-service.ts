@@ -4,7 +4,7 @@ import {ProcessInstanceTaskEntity} from '../entities/process-instance-task-entit
 import {ProcessTaskStatus} from '../enums/process-task-status';
 import {GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {AuthoredElementValues, DerivedRuntimeElementData} from '../../../models/element-data';
-import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
+import {FileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
 import type {CustomerTaskViewResponse} from '../models/customer-task-view';
 import {type ProcessTaskDetails} from '../entities/process-task-details';
 
@@ -39,35 +39,11 @@ export interface TaskViewEvent {
     alignment?: TaskViewEventAlignment | null;
 }
 
-function shouldUploadTaskViewFile(file: FileUploadElementItem): boolean {
-    return file.uri.startsWith('blob:');
-}
-
-async function appendTaskViewFiles(formData: FormData, value: unknown): Promise<void> {
-    if (Array.isArray(value)) {
-        for (const item of value) {
-            await appendTaskViewFiles(formData, item);
-        }
-        return;
-    }
-
-    if (isFileUploadElementItem(value)) {
-        if (!shouldUploadTaskViewFile(value)) {
-            return;
-        }
-
-        const blob = await fetch(value.uri).then((response) => response.blob());
-        formData.append('files', blob, value.name);
-        formData.append('fileUris', value.uri);
-        return;
-    }
-
-    // Authored wrappers and replicating-container rows are both ordinary object envelopes. Walking their values
-    // keeps file discovery independent of the number of structural layers around a literal file item.
-    if (value != null && typeof value === 'object') {
-        for (const nestedValue of Object.values(value)) {
-            await appendTaskViewFiles(formData, nestedValue);
-        }
+async function appendTaskViewFiles(formData: FormData, files: FileUploadElementItem[]): Promise<void> {
+    for (const file of files) {
+        const blob = await fetch(file.uri).then((response) => response.blob());
+        formData.append('files', blob, file.name);
+        formData.append('fileUris', file.uri);
     }
 }
 
@@ -148,15 +124,19 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         });
     }
 
+    /**
+     * @param files the transient file items of the payload whose files to upload, usually from collectTaskViewFileUploads
+     */
     public async putStaffTaskView(
         instanceId: number,
         taskId: number,
         payload: AuthoredElementValues,
+        files: FileUploadElementItem[],
         event?: string,
     ): Promise<TaskView> {
         const formData = new FormData();
         formData.set('inputs', JSON.stringify(payload));
-        await appendTaskViewFiles(formData, payload);
+        await appendTaskViewFiles(formData, files);
 
         return this.putFormData<TaskView>(`/api/processes/${instanceId}/tasks/${taskId}/`, formData, {
             query: {
@@ -165,15 +145,19 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
         });
     }
 
+    /**
+     * @param files the transient file items of the payload whose files to upload, usually from collectTaskViewFileUploads
+     */
     public async putCustomerTaskView(
         instanceAccessKey: string,
         taskAccessKey: string,
         payload: AuthoredElementValues,
+        files: FileUploadElementItem[],
         event: string,
     ): Promise<CustomerTaskViewResponse> {
         const formData = new FormData();
         formData.set('inputs', JSON.stringify(payload));
-        await appendTaskViewFiles(formData, payload);
+        await appendTaskViewFiles(formData, files);
 
         return this.putFormData<CustomerTaskViewResponse>(
             `/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`,
