@@ -242,13 +242,6 @@ services:
   caddy:
     image: docker.io/library/caddy:2-alpine
     restart: unless-stopped
-    depends_on:
-      prosuna_api:
-        condition: service_healthy
-        restart: true
-      prosuna_app:
-        condition: service_healthy
-        restart: true
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:Z
     ports:
