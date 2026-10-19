@@ -21,10 +21,15 @@ public class NumberUtils {
 
     @Nonnull
     public static String formatGermanNumber(@Nonnull Number value, int scale) {
+        return formatGermanNumber(value, scale, scale);
+    }
+
+    @Nonnull
+    public static String formatGermanNumber(@Nonnull Number value, int minScale, int maxScale) {
         Locale locale = Locale.GERMAN;
         NumberFormat formatter = NumberFormat.getNumberInstance(locale);
-        formatter.setMinimumFractionDigits(scale);
-        formatter.setMaximumFractionDigits(scale);
+        formatter.setMinimumFractionDigits(minScale);
+        formatter.setMaximumFractionDigits(maxScale);
         return formatter.format(value);
     }
 

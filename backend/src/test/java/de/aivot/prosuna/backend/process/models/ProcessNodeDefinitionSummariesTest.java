@@ -304,6 +304,23 @@ class ProcessNodeDefinitionSummariesTest {
         assertEquals(typed, summary(definition, config));
     }
 
+    @Test
+    void paymentListsPositionsWithAllFourTaxRateDecimals() throws Exception {
+        var item = new PaymentItem();
+        item.setDescription("Gebühr");
+        item.setQuantity(1L);
+        item.setNetPrice(new BigDecimal("10000.00"));
+        item.setTaxRate(new BigDecimal("7.1234"));
+        var runtime = new HashMap<>(task.getRuntimeData());
+        runtime.put("paymentPayload", new PaymentPayload().setPaymentItems(List.of(item)));
+        task.setRuntimeData(runtime);
+        task.getNodeData().put("paymentTotal", item.getTotalPrice());
+
+        var markdown = summary(instantiate(PaymentRequestActionNodeV1.class), new PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig());
+
+        assertTrue(markdown.contains("Gebühr: 10.712,34 Euro (inkl. 7,1234 % Steuern)"), markdown);
+    }
+
     @ParameterizedTest
     @CsvSource({"Antragstellende, Antragstellende", "'  Titel *A*  ', Titel \\*A\\*", ", customer", "'', customer", "'   ', customer"})
     void allIdentitySummariesUseTheTitleOrIdWithoutRepeatingTheId(String title, String expected) throws Exception {
