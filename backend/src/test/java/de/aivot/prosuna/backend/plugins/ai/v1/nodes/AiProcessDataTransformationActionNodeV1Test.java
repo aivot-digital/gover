@@ -1,56 +1,59 @@
 package de.aivot.prosuna.backend.plugins.ai.v1.nodes;
 
-import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
-import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementState;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
-import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.AiProcessDataTransformationActionNodeV1;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.InputVariableSuggestion;
+import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
-import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
-import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
-import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
-import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
-import de.aivot.prosuna.backend.secrets.services.SecretService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.openai.OpenAiChatOptions;
 
 import java.lang.reflect.Proxy;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AiProcessDataTransformationActionNodeV1Test {
@@ -59,61 +62,37 @@ class AiProcessDataTransformationActionNodeV1Test {
     private static final Integer NODE_ID = 123;
     private static final Long PROCESS_INSTANCE_ID = 99L;
     private static final Long TASK_ID = 456L;
-    private static final int CONFIGURED_TRANSFORMATION_MAX_TOKENS = 4444;
+    private static final int CENTRAL_MAX_TOKENS = 4096;
+    private static final String CENTRAL_MODEL = "central-model";
+    private static final Duration CENTRAL_CHAT_TIMEOUT = Duration.ofMinutes(2);
 
-    private HttpService httpService;
-    private SecretService secretService;
+    private final List<Prompt> prompts = new ArrayList<>();
+    private ChatModel chatModel;
     private AiProcessDataTransformationActionNodeV1 node;
 
     @BeforeEach
     void setUp() {
-        httpService = mock(HttpService.class);
-        secretService = mock(SecretService.class);
-        node = new AiProcessDataTransformationActionNodeV1(
-                httpService,
-                secretService,
-                createAiPluginProperties(1000, 1337, CONFIGURED_TRANSFORMATION_MAX_TOKENS)
-        );
+        chatModel = mock(ChatModel.class, CALLS_REAL_METHODS);
+        when(chatModel.getOptions()).thenReturn(OpenAiChatOptions.builder()
+                .model(CENTRAL_MODEL)
+                .temperature(0.25d)
+                .topP(0.7d)
+                .n(2)
+                .maxTokens(CENTRAL_MAX_TOKENS)
+                .timeout(CENTRAL_CHAT_TIMEOUT)
+                .build());
+        when(chatModel.call(any(Prompt.class))).thenAnswer(invocation -> {
+            prompts.add(invocation.getArgument(0));
+            return completionResponse("{\"decision\":\"approve\",\"person\":{\"name\":\"Ada Lovelace\"}}");
+        });
+        node = createNode();
     }
 
     @Test
-    void init_ShouldUseDerivedPromptSendFullExecutionDataAndReplaceProcessData() throws Exception {
-        var secretId = UUID.randomUUID();
-        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
-        when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
-        when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any()))
-                .thenReturn(ResponseEntity.ok("""
-                        {
-                          "id": "resp-1",
-                          "choices": [
-                            {
-                              "finish_reason": "stop",
-                              "index": 0,
-                              "message": {
-                                "role": "assistant",
-                                "content": "{\\"decision\\":\\"approve\\",\\"person\\":{\\"name\\":\\"Ada Lovelace\\"}}"
-                              }
-                            }
-                          ],
-                          "created": 1716972000,
-                          "object": "chat.completion",
-                          "model": "meta-llama/Llama-3.3-70B-Instruct",
-                          "usage": {
-                            "prompt_tokens": 42,
-                            "completion_tokens": 17,
-                            "total_tokens": 59
-                          }
-                        }
-                        """.getBytes(StandardCharsets.UTF_8)));
-
+    void init_ShouldUseCentralSpringAiOptionsAndTransformProcessData() throws Exception {
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(context(configuration(
-                        "https://aihub.example/api/completions",
-                        secretId,
-                        "meta-llama/Llama-3.3-70B-Instruct",
-                        "Use formalized applicant data."
-                )))
+                node.init(context(configuration("Use formalized applicant data.")))
         );
 
         assertEquals("success", result.getViaPort());
@@ -126,7 +105,7 @@ class AiProcessDataTransformationActionNodeV1Test {
         );
         assertEquals("Use formalized applicant data.", result.getNodeData().get("prompt"));
         assertEquals("stop", result.getNodeData().get("finishReason"));
-        assertEquals("meta-llama/Llama-3.3-70B-Instruct", result.getNodeData().get("responseModel"));
+        assertEquals("response-model", result.getNodeData().get("responseModel"));
         assertEquals(
                 Map.of(
                         "prompt_tokens", 42,
@@ -137,203 +116,124 @@ class AiProcessDataTransformationActionNodeV1Test {
         );
         assertEquals(List.of("decision", "person"), result.getNodeData().get("topLevelKeys"));
 
-        var uriCaptor = ArgumentCaptor.forClass(URI.class);
-        var bodyCaptor = ArgumentCaptor.forClass(String.class);
-        var headersCaptor = ArgumentCaptor.forClass(HttpServiceHeaders.class);
-        verify(httpService).request(eq(HttpMethod.POST), uriCaptor.capture(), bodyCaptor.capture(), headersCaptor.capture());
+        var prompt = prompts.getFirst();
+        assertEquals(2, prompt.getInstructions().size());
+        var systemMessage = assertInstanceOf(SystemMessage.class, prompt.getInstructions().get(0));
+        assertTrue(systemMessage.getText().contains("Return exactly one valid JSON object"));
+        var userMessage = assertInstanceOf(UserMessage.class, prompt.getInstructions().get(1));
+        assertTrue(userMessage.getText().contains("Use formalized applicant data."));
+        assertTrue(userMessage.getText().contains("\"$\""));
+        assertTrue(userMessage.getText().contains("\"$$\""));
+        assertTrue(userMessage.getText().contains("\"_\""));
+        assertTrue(userMessage.getText().contains("\"workflow\":\"intake\""));
 
-        assertEquals(URI.create("https://aihub.example/api/completions/chat/completions"), uriCaptor.getValue());
-        var requestBody = JsonMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
-        assertEquals("meta-llama/Llama-3.3-70B-Instruct", requestBody.get("model"));
-        assertEquals(CONFIGURED_TRANSFORMATION_MAX_TOKENS, ((Number) requestBody.get("max_tokens")).intValue());
-
-        @SuppressWarnings("unchecked")
-        var messages = (List<Map<String, Object>>) requestBody.get("messages");
-        assertEquals(2, messages.size());
-        assertEquals("system", messages.get(0).get("role"));
-        assertTrue(messages.get(0).get("content").toString().contains("Return exactly one valid JSON object"));
-        assertEquals("user", messages.get(1).get("role"));
-        assertTrue(messages.get(1).get("content").toString().contains("Use formalized applicant data."));
-        assertTrue(messages.get(1).get("content").toString().contains("\"$\""));
-        assertTrue(messages.get(1).get("content").toString().contains("\"$$\""));
-        assertTrue(messages.get(1).get("content").toString().contains("\"_\""));
-        assertTrue(messages.get(1).get("content").toString().contains("\"workflow\":\"intake\""));
-
-        var headers = new LinkedHashMap<String, String>();
-        headersCaptor.getValue().forEach(headers::put);
-        assertEquals("application/json", headers.get("Content-Type"));
-        assertEquals("application/json", headers.get("Accept"));
-        assertEquals("Bearer secret-token", headers.get("Authorization"));
+        var options = assertInstanceOf(OpenAiChatOptions.class, prompt.getOptions());
+        assertEquals(CENTRAL_MODEL, options.getModel());
+        assertEquals(0.25d, options.getTemperature());
+        assertEquals(0.7d, options.getTopP());
+        assertEquals(2, options.getN());
+        assertEquals(CENTRAL_MAX_TOKENS, options.getMaxTokens());
+        assertEquals(CENTRAL_CHAT_TIMEOUT, options.getTimeout());
     }
 
     @Test
     void init_ShouldAcceptJsonCodeFenceResponses() throws Exception {
-        var secretId = UUID.randomUUID();
-        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
-        when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
-        when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any()))
-                .thenReturn(ResponseEntity.ok("""
-                        {
-                          "id": "resp-2",
-                          "choices": [
-                            {
-                              "finish_reason": "stop",
-                              "index": 0,
-                              "message": {
-                                "role": "assistant",
-                                "content": "```json\\n{\\"status\\":\\"updated\\"}\\n```"
-                              }
-                            }
-                          ],
-                          "created": 1716972001,
-                          "object": "chat.completion",
-                          "model": "meta-llama/Llama-3.3-70B-Instruct",
-                          "usage": {
-                            "prompt_tokens": 12,
-                            "completion_tokens": 6,
-                            "total_tokens": 18
-                          }
-                        }
-                        """.getBytes(StandardCharsets.UTF_8)));
+        when(chatModel.call(any(Prompt.class))).thenReturn(completionResponse("""
+                ```json
+                {"status":"updated"}
+                ```
+                """));
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(context(configuration(
-                        "https://aihub.example/api/completions",
-                        secretId,
-                        "meta-llama/Llama-3.3-70B-Instruct",
-                        "Prompt"
-                )))
+                node.init(context(configuration("Prompt")))
         );
 
         assertEquals(Map.of("status", "updated"), result.getProcessData());
     }
 
     @Test
-    void init_ShouldUsePluginDefaultMaxTokensWhenTransformationOverrideIsMissing() throws Exception {
-        var secretId = UUID.randomUUID();
-        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
-        when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
-        when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any()))
-                .thenReturn(ResponseEntity.ok("""
-                        {
-                          "id": "resp-3",
-                          "choices": [
-                            {
-                              "finish_reason": "stop",
-                              "index": 0,
-                              "message": {
-                                "role": "assistant",
-                                "content": "{\\"status\\":\\"ok\\"}"
-                              }
-                            }
-                          ],
-                          "created": 1716972002,
-                          "object": "chat.completion",
-                          "model": "meta-llama/Llama-3.3-70B-Instruct",
-                          "usage": {
-                            "prompt_tokens": 10,
-                            "completion_tokens": 4,
-                            "total_tokens": 14
-                          }
-                        }
-                        """.getBytes(StandardCharsets.UTF_8)));
+    void init_ShouldLeaveMaxTokensUnsetWhenCentralModelDoesNotConfigureLimit() throws Exception {
+        when(chatModel.getOptions()).thenReturn(OpenAiChatOptions.builder()
+                .model(CENTRAL_MODEL)
+                .build());
+        var nodeWithoutTokenLimit = createNode();
 
-        var defaultOnlyNode = new AiProcessDataTransformationActionNodeV1(
-                httpService,
-                secretService,
-                createAiPluginProperties(2222, 1337, null)
-        );
+        nodeWithoutTokenLimit.init(context(configuration("Prompt")));
 
-        defaultOnlyNode.init(context(configuration(
-                "https://aihub.example/api/completions",
-                secretId,
-                "meta-llama/Llama-3.3-70B-Instruct",
-                "Prompt"
-        )));
-
-        var bodyCaptor = ArgumentCaptor.forClass(String.class);
-        verify(httpService).request(eq(HttpMethod.POST), any(), bodyCaptor.capture(), any());
-
-        var requestBody = JsonMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
-        assertEquals(2222, ((Number) requestBody.get("max_tokens")).intValue());
+        var options = assertInstanceOf(OpenAiChatOptions.class, prompts.getFirst().getOptions());
+        assertNull(options.getMaxTokens());
     }
 
     @Test
-    void init_ShouldThrowWhenResponseIsNotAJsonObject() throws Exception {
-        var secretId = UUID.randomUUID();
-        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
-        when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
-        when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any()))
-                .thenReturn(ResponseEntity.ok("""
-                        {
-                          "id": "resp-4",
-                          "choices": [
-                            {
-                              "finish_reason": "stop",
-                              "index": 0,
-                              "message": {
-                                "role": "assistant",
-                                "content": "[1, 2, 3]"
-                              }
-                            }
-                          ],
-                          "created": 1716972003,
-                          "object": "chat.completion",
-                          "model": "meta-llama/Llama-3.3-70B-Instruct",
-                          "usage": {
-                            "prompt_tokens": 10,
-                            "completion_tokens": 4,
-                            "total_tokens": 14
-                          }
-                        }
-                        """.getBytes(StandardCharsets.UTF_8)));
+    void init_ShouldThrowWhenResponseIsNotAJsonObject() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(completionResponse("[1, 2, 3]"));
 
         var exception = assertThrows(
                 ProcessNodeExecutionExceptionUnknown.class,
-                () -> node.init(context(configuration(
-                        "https://aihub.example/api/completions",
-                        secretId,
-                        "meta-llama/Llama-3.3-70B-Instruct",
-                        "Prompt"
-                )))
+                () -> node.init(context(configuration("Prompt")))
         );
 
         assertTrue(exception.getMessage().contains("JSON-Objekt"));
     }
 
     @Test
-    void validateConfiguration_ShouldAllowValidConfig() throws Exception {
-        var secretId = UUID.randomUUID();
-        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
+    void init_ShouldWrapSpringAiFailures() {
+        var failure = new IllegalStateException("upstream failed");
+        when(chatModel.call(any(Prompt.class))).thenThrow(failure);
 
-        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
-                processNode(Map.of()),
-                configuration(
-                        "https://aihub.example/api/completions",
-                        secretId,
-                        "meta-llama/Llama-3.3-70B-Instruct",
-                        "Prompt"
-                ),
-                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
-        ));
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(configuration("Prompt")))
+        );
 
-        assertNull(errors);
+        assertEquals("Die KI-Anfrage konnte nicht ausgeführt werden.", exception.getMessage());
+        assertEquals(failure, exception.getCause());
     }
 
     @Test
-    void cleanConfigurationForExport_ShouldRemoveSecretReference() {
+    void validateConfiguration_ShouldDeferPromptChecksOnlyDuringAuthoring() throws Exception {
+        var configuration = configuration(null);
+        var derivedData = new DerivedRuntimeElementData();
+        derivedData.getElementStates().put(
+                AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID,
+                new ComputedElementState().setInputValueDeferred(true)
+        );
+
+        var authoringErrors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(Map.of()),
+                configuration,
+                derivedData,
+                ProcessNodeConfigurationValidationPhase.Authoring
+        ));
+        var runtimeErrors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                processNode(Map.of()),
+                configuration,
+                derivedData,
+                ProcessNodeConfigurationValidationPhase.Runtime
+        ));
+
+        assertNull(authoringErrors);
+        assertNotNull(runtimeErrors);
+        assertTrue(runtimeErrors.containsKey(
+                AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID
+        ));
+    }
+
+    @Test
+    void cleanConfigurationForExport_ShouldRemoveLegacyConnectionFields() {
         var configuration = new AuthoredElementValues();
-        configuration.putLiteral(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, "https://aihub.example/api/completions");
-        configuration.putLiteral(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, UUID.randomUUID().toString());
+        configuration.putLiteral("endpointUrl", "https://aihub.example/api/completions");
+        configuration.putLiteral("apiKeySecret", UUID.randomUUID().toString());
+        configuration.putLiteral("model", "legacy-model");
+        configuration.putLiteral("prompt", "Prompt");
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
-        assertEquals(
-                "https://aihub.example/api/completions",
-                cleaned.getLiteral(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID)
-        );
-        assertTrue(!cleaned.containsKey(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID));
+        assertFalse(cleaned.containsKey("endpointUrl"));
+        assertFalse(cleaned.containsKey("apiKeySecret"));
+        assertFalse(cleaned.containsKey("model"));
+        assertEquals("Prompt", cleaned.getLiteral("prompt"));
     }
 
     @Test
@@ -357,19 +257,34 @@ class AiProcessDataTransformationActionNodeV1Test {
                         origin
                 ));
 
-        var metadata = node.getMetadata(origin, new AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig(), previousMetadata);
+        var metadata = node.getMetadata(
+                origin,
+                new AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig(),
+                previousMetadata
+        );
 
         assertEquals(previousMetadata, metadata);
     }
 
-    private static AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig configuration(String endpointUrl,
-                                                                                                                     UUID apiKeySecret,
-                                                                                                                     String model,
-                                                                                                                     String prompt) {
+    private AiProcessDataTransformationActionNodeV1 createNode() {
+        return new AiProcessDataTransformationActionNodeV1(ChatClient.builder(chatModel));
+    }
+
+    private static ChatResponse completionResponse(String content) {
+        return new ChatResponse(
+                List.of(new Generation(
+                        new AssistantMessage(content),
+                        ChatGenerationMetadata.builder().finishReason("STOP").build()
+                )),
+                ChatResponseMetadata.builder()
+                        .model("response-model")
+                        .usage(new DefaultUsage(42, 17, 59))
+                        .build()
+        );
+    }
+
+    private static AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig configuration(String prompt) {
         var configuration = new AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig();
-        configuration.endpointUrl = endpointUrl;
-        configuration.apiKeySecret = apiKeySecret.toString();
-        configuration.model = model;
         configuration.prompt = prompt;
         return configuration;
     }
@@ -378,15 +293,9 @@ class AiProcessDataTransformationActionNodeV1Test {
             AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig configuration
     ) {
         var processData = new ProcessExecutionData();
-        processData.put("$", Map.of(
-                "person", Map.of("name", "Ada")
-        ));
-        processData.put("_", Map.of(
-                "previous", Map.of("result", "kept")
-        ));
-        processData.put("$$", Map.of(
-                "workflow", "intake"
-        ));
+        processData.put("$", Map.of("person", Map.of("name", "Ada")));
+        processData.put("_", Map.of("previous", Map.of("result", "kept")));
+        processData.put("$$", Map.of("workflow", "intake"));
 
         return new ProcessNodeExecutionInitContext<>(
                 logger(),
@@ -414,7 +323,6 @@ class AiProcessDataTransformationActionNodeV1Test {
 
     private static ProcessInstanceEntity processInstance() {
         var now = Instant.now();
-
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
                 .setAccessKey(UUID.randomUUID().toString())
@@ -431,7 +339,6 @@ class AiProcessDataTransformationActionNodeV1Test {
 
     private static ProcessInstanceTaskEntity task() {
         var now = Instant.now();
-
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
                 .setAccessKey(UUID.randomUUID().toString())
@@ -460,33 +367,6 @@ class AiProcessDataTransformationActionNodeV1Test {
                     default -> unsupported(methodName);
                 })
         );
-    }
-
-    private static SecretEntity secret(UUID key, String name) {
-        var secret = new SecretEntity();
-        secret.setKey(key);
-        secret.setName(name);
-        secret.setDescription(name);
-        secret.setValue("encrypted");
-        secret.setSalt("salt");
-        return secret;
-    }
-
-    private static AiPluginProperties createAiPluginProperties(int defaultMaxTokens,
-                                                               Integer completionMaxTokens,
-                                                               Integer processDataTransformationMaxTokens) {
-        var properties = new AiPluginProperties();
-        properties.setDefaultMaxTokens(defaultMaxTokens);
-
-        var completion = new AiPluginProperties.CompletionProperties();
-        completion.setMaxTokens(completionMaxTokens);
-        properties.setCompletion(completion);
-
-        var processDataTransformation = new AiPluginProperties.ProcessDataTransformationProperties();
-        processDataTransformation.setMaxTokens(processDataTransformationMaxTokens);
-        properties.setProcessDataTransformation(processDataTransformation);
-
-        return properties;
     }
 
     @SuppressWarnings("unchecked")

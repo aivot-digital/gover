@@ -275,6 +275,7 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             `- sentryDsnConfigured: ${toDebugBooleanString(AppConfig.sentryDsn.length > 0)}`,
             `- moduleFlags: ${AppConfig.moduleFlags.join(', ')}`,
             `- processNodeLimits: ${JSON.stringify(AppConfig.processNodeLimits)}`,
+            `- aiEnabled: ${AppConfig.aiEnabled}`,
             `- page: ${window.location.origin}${window.location.pathname}`,
             '',
             '## health',

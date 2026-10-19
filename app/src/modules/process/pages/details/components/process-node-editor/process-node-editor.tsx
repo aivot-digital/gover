@@ -1,5 +1,5 @@
 import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
-import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
 import {Alert, Box, Button, IconButton, Tab, Tabs, useTheme} from '@mui/material';
@@ -79,6 +79,7 @@ export function ProcessNodeEditor(): ReactNode {
 
     const {
         editable,
+        registerChatEditor,
         structureEditable,
         onSave,
         onDelete,
@@ -127,22 +128,13 @@ export function ProcessNodeEditor(): ReactNode {
         shouldAllowNavigation: ({nextLocation}) => shouldSkipProcessNodeEditorChangeBlocker(nextLocation.state),
     });
 
-    useEffect(() => {
-        let isCancelled = false;
-        const hasEditorContent = originalNode != null && layout != null && provider != null;
-
-        if (!hasEditorContent) {
-            setOriginalNode(null);
-            setEditedNode(null);
-            setLayout(null);
-            setProvider(null);
-            setIncomingMetadataState({status: 'loading'});
-        }
-
+    const loadGeneration = useRef(0);
+    const hasLoadedNode = useRef(false);
+    const refreshNode = useCallback(async () => {
+        const generation = ++loadGeneration.current;
         setIsNodeLoading(true);
         setShowNodeLoadedFeedback(false);
-
-        (async () => {
+        try {
             const [node, configurationLayout, problems, incomingMetadataState] = await Promise.all([
                 new ProcessNodeApiService().retrieve(nodeId),
                 new ProcessNodeApiService().getConfigurationLayout(nodeId),
@@ -157,47 +149,30 @@ export function ProcessNodeEditor(): ReactNode {
             ]);
             const nodeProvider = await new ProcessNodeProviderApiService()
                 .getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion);
+            if (generation !== loadGeneration.current) return;
+            setOriginalNode(node);
+            setEditedNode(node);
+            setLayout(configurationLayout);
+            setProvider(nodeProvider);
+            setProblems(problems);
+            setIncomingMetadataState(incomingMetadataState);
+            setShowNodeLoadedFeedback(hasLoadedNode.current);
+            hasLoadedNode.current = true;
+        } finally {
+            if (generation === loadGeneration.current) setIsNodeLoading(false);
+        }
+    }, [nodeId]);
 
-            return {
-                node,
-                configurationLayout,
-                nodeProvider,
-                problems,
-                incomingMetadataState,
-            };
-        })()
-            .then(({node, configurationLayout, nodeProvider, problems, incomingMetadataState}) => {
-                if (isCancelled) {
-                    return;
-                }
-                setOriginalNode(node);
-                setEditedNode(node);
-                setLayout(configurationLayout);
-                setProvider(nodeProvider);
-                setProblems(problems);
-                setIncomingMetadataState(incomingMetadataState);
-                if (hasEditorContent) {
-                    setShowNodeLoadedFeedback(true);
-                }
-            })
-            .catch((error) => {
-                if (isCancelled) {
-                    return;
-                }
-                dispatch(showApiErrorSnackbar(error, 'Die Details für das Prozesselement konnten nicht geladen werden.'));
-            })
-            .finally(() => {
-                if (isCancelled) {
-                    return;
-                }
-
-                setIsNodeLoading(false);
-            });
-
+    useEffect(() => {
+        let cancelled = false;
+        void refreshNode().catch(error => {
+            if (!cancelled) dispatch(showApiErrorSnackbar(error, 'Die Details für das Prozesselement konnten nicht geladen werden.'));
+        });
         return () => {
-            isCancelled = true;
+            cancelled = true;
+            loadGeneration.current++;
         };
-    }, [nodeId, nodeRefreshVersion]);
+    }, [refreshNode, nodeRefreshVersion, dispatch]);
 
     useEffect(() => {
         if (!showNodeLoadingOverlay) {
@@ -284,21 +259,27 @@ export function ProcessNodeEditor(): ReactNode {
         });
     }, [location]);
 
-    const handleSaveSelected = (): void => {
-        if (!editable || !hasChanged || editedNode == null) {
-            return;
+    const [isSaving, setIsSaving] = useState(false);
+    const pendingSave = useRef<Promise<void> | null>(null);
+    const persistSelected = async (): Promise<void> => {
+        if (isNodeLoading || editedNode == null || editedNode.id !== nodeId || layout == null) {
+            throw new Error('Node editor is not ready');
         }
+        if (!hasChanged) return;
+        if (!editable) throw new Error('Node editor is read-only');
 
-        const fieldsToOmit = flattenElements(layout!, false)
+        const generation = loadGeneration.current;
+        const fieldsToOmit = flattenElements(layout, false)
             .filter((e) => isUiDefinitionInputFieldElement(e) && e.openExternalEditor)
             .map((e) => e.id);
 
-        onSave(editedNode, {
+        await onSave(editedNode, {
             query: {
                 omitConfigSave: fieldsToOmit,
             }
         })
             .then((savedNode) => {
+                if (generation !== loadGeneration.current) return null;
                 setOriginalNode(savedNode);
                 setEditedNode(savedNode);
 
@@ -308,7 +289,7 @@ export function ProcessNodeEditor(): ReactNode {
                     .validate(editedNode.id);
             })
             .then((problems) => {
-                setProblems(problems);
+                if (generation === loadGeneration.current && problems != null) setProblems(problems);
             })
             .catch((err: any) => {
                 if (isApiError(err) && err.status === 400) {
@@ -325,7 +306,31 @@ export function ProcessNodeEditor(): ReactNode {
                 } else {
                     dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.'));
                 }
+                throw err;
             });
+    };
+
+    const saveSelected = (): Promise<void> => {
+        if (pendingSave.current != null) return pendingSave.current;
+        setIsSaving(true);
+        const request = persistSelected().finally(() => {
+            pendingSave.current = null;
+            setIsSaving(false);
+        });
+        pendingSave.current = request;
+        return request;
+    };
+
+    const saveSelectedRef = useRef(saveSelected);
+    saveSelectedRef.current = saveSelected;
+    useEffect(() => registerChatEditor({
+        nodeId,
+        save: () => saveSelectedRef.current(),
+        refresh: refreshNode,
+    }), [nodeId, refreshNode, registerChatEditor]);
+
+    const handleSaveSelected = () => {
+        void saveSelected().catch(() => { /* The save function displays the field/API error. */ });
     };
 
     const handleDeleteSelected = (): void => {
@@ -566,7 +571,7 @@ export function ProcessNodeEditor(): ReactNode {
                                     }
                                     setEditedNode(node);
                                 },
-                                isEditable: editable,
+                                isEditable: editable && !isSaving && !isNodeLoading,
                                 problems: problems,
                                 incomingMetadata: incomingMetadataState.status === 'loaded'
                                     ? incomingMetadataState.metadata
@@ -595,7 +600,7 @@ export function ProcessNodeEditor(): ReactNode {
                         onClick={handleSaveSelected}
                         variant="contained"
                         startIcon={<Save/>}
-                        disabled={!editable || !hasChanged || isNodeLoading}
+                        disabled={!editable || !hasChanged || isNodeLoading || isSaving}
                     >
                         Konfiguration speichern
                     </Button>

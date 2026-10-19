@@ -21,7 +21,10 @@ import java.util.List;
 public class ServerConfiguration implements WebMvcConfigurer {
     @Override
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
-        configurer.strategies(List.of(new FixedContentNegotiationStrategy(MediaType.APPLICATION_JSON)));
+        // Honor Accept headers to support SSE, while defaulting to JSON when no specific format is requested.
+        configurer
+                .ignoreAcceptHeader(false)
+                .defaultContentType(MediaType.APPLICATION_JSON);
     }
 
     @Value("${spring.flyway.repairOnMigrate}")
