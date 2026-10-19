@@ -3,10 +3,13 @@ import {type BaseViewProps} from './base-view';
 import {type SelectFieldElement, type SelectFieldElementOption} from '../models/elements/form/input/select-field-element';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
-import {resolveValue} from '../utils/element-data-utils';
+import {resolveElementState, resolveValue} from '../utils/element-data-utils';
 import {ElementType} from '../data/element-type/element-type';
 import {isStringNullOrEmpty} from '../utils/string-utils';
-import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
+import {
+    resolveViewDispatcherValueScope,
+    useViewDispatcherContext,
+} from '../components/view-dispatcher/view-dispatcher.context';
 import {getDisabledFieldBackground} from '../theming/field-state-colors';
 import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
 
@@ -18,15 +21,12 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
         errors,
         isBusy: isGloballyDisabled,
         isDeriving,
-        authoredElementValues,
-        derivedData,
     } = props;
 
+    const viewDispatcherContext = useViewDispatcherContext();
     const {
         allElements,
-        rootAuthoredElementValues,
-        rootDerivedData,
-    } = useViewDispatcherContext();
+    } = viewDispatcherContext;
 
     const {
         options: baseOptions,
@@ -68,18 +68,16 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
             return undefined;
         }
 
-        const localValue = resolveValue(dependencyElement, authoredElementValues, derivedData);
-        if (localValue != null) {
-            return `${localValue}`;
+        // As in the backend derivation, the referenced select counts only in the row, surrounding row or form level
+        // that contains it, and only while it is visible.
+        const scope = resolveViewDispatcherValueScope(viewDispatcherContext, dependencyElement.id);
+        if (scope == null || resolveElementState(dependencyElement, scope.derivedData)?.visible === false) {
+            return undefined;
         }
 
-        const rootValue = resolveValue(dependencyElement, rootAuthoredElementValues, rootDerivedData);
-        if (rootValue != null) {
-            return `${rootValue}`;
-        }
-
-        return undefined;
-    }, [authoredElementValues, dependencyElement, derivedData, rootAuthoredElementValues, rootDerivedData]);
+        const referencedValue = resolveValue(dependencyElement, scope.authoredElementValues, scope.derivedData);
+        return referencedValue != null ? `${referencedValue}` : undefined;
+    }, [dependencyElement, viewDispatcherContext]);
 
     const options = useMemo(() => {
         if (dependencyElement == null || isStringNullOrEmpty(dependsOnSelectFieldId)) {
