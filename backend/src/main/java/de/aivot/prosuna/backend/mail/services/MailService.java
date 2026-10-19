@@ -22,6 +22,7 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.activation.DataSource;
 import jakarta.activation.FileDataSource;
+import jakarta.annotation.Nullable;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
@@ -403,7 +404,7 @@ public class MailService {
         context.put("base", createBaseContext(senderLogo.isPresent()));
         context.put("mailSignature", resolveDefaultMailSignature(context, options));
         context.put("mailActionBackgroundColor", mailActionBackgroundColor);
-        context.put("mailActionTextColor", readableTextColor(mailActionBackgroundColor));
+        context.put("mailActionTextColor", mailActionBackgroundColor == null ? null : readableTextColor(mailActionBackgroundColor));
 
         String textMessage = loadTemplate(template.getKey() + ".txt", context, TemplateMode.TEXT);
         String htmlMessage = loadTemplate(template.getKey() + ".html", context, TemplateMode.HTML);
@@ -445,8 +446,10 @@ public class MailService {
         }
     }
 
-    private static String normalizeMailActionColor(String color) {
-        return color != null && color.matches("^#[0-9a-fA-F]{6}$") ? color : "#e5e7eb";
+    @Nullable
+    private static String normalizeMailActionColor(@Nullable String color) {
+        // No valid theme color means the shared MJML defaults should be left intact.
+        return color != null && color.matches("^#[0-9a-fA-F]{6}$") ? color : null;
     }
 
     private static String readableTextColor(String backgroundColor) {

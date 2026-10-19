@@ -85,7 +85,7 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.te
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
     private static final ProcessNodeDeadlineDefinition PAYMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
             "payment", "Zahlung",
-            "Zeit für die Kund:in zur Zahlung ab Erstellung der Zahlungsanforderung.",
+            "Zeit zur Zahlung ab Erstellung der Zahlungsanforderung.",
             new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
                     "Fortsetzung nach Überschreitung der harten Frist für die Zahlung."));
 
@@ -420,14 +420,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var formSlug = configuration.formSlug;
 
         if (StringUtils.isNotNullOrEmpty(formSlug)) {
-            if (!formSlug.matches("^[a-z0-9-]+$")) {
-                addValidationError(
-                        errors,
-                        FormTriggerConfigV1.FORM_SLUG,
-                        "Das URL-Segment des Formulars darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
-                );
-            }
-
+            // The configuration field already reports the format error. Only the cross-node uniqueness check belongs here.
             var duplicateNodeFilter = ProcessNodeFilter
                     .create()
                     .setNotId(processNodeEntity.getId())

@@ -359,25 +359,24 @@ public class PaymentPayloadCreationService {
             @Nonnull PaymentConfigElementValueRequestorMapping mapping,
             @Nonnull ProcessExecutionData processExecutionData
     ) {
-        var address = new XBezahldiensteAddress();
-        address.setStreet(readString(processExecutionData, mapping.streetDestinationKey()));
-        address.setHouseNumber(readString(processExecutionData, mapping.houseNumberDestinationKey()));
-        address.setAddressLineFromString(readString(processExecutionData, mapping.addressLineDestinationKey()));
-        address.setPostalCode(readString(processExecutionData, mapping.postalCodeDestinationKey()));
-        address.setCity(readString(processExecutionData, mapping.cityDestinationKey()));
-
+        var street = readString(processExecutionData, mapping.streetDestinationKey());
+        var houseNumber = readString(processExecutionData, mapping.houseNumberDestinationKey());
+        var addressLine = readString(processExecutionData, mapping.addressLineDestinationKey());
+        var postalCode = readString(processExecutionData, mapping.postalCodeDestinationKey());
+        var city = readString(processExecutionData, mapping.cityDestinationKey());
         var country = readString(processExecutionData, mapping.countryDestinationKey());
-        address.setCountry(country == null ? null : country.toUpperCase(Locale.ROOT));
-
-        if (address.getStreet() == null &&
-                address.getHouseNumber() == null &&
-                address.getAddressLine() == null &&
-                address.getPostalCode() == null &&
-                address.getCity() == null &&
-                address.getCountry() == null) {
+        // Address getters supply display defaults; inspect the mapped values before creating the API payload.
+        if (street == null && houseNumber == null && addressLine == null && postalCode == null && city == null && country == null) {
             return null;
         }
 
+        var address = new XBezahldiensteAddress();
+        address.setStreet(street);
+        address.setHouseNumber(houseNumber);
+        address.setAddressLineFromString(addressLine);
+        address.setPostalCode(postalCode);
+        address.setCity(city);
+        address.setCountry(country == null ? null : country.toUpperCase(Locale.ROOT));
         return address;
     }
 

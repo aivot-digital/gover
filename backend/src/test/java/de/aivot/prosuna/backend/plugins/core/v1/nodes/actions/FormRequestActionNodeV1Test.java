@@ -7,6 +7,9 @@ import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElement;
@@ -32,6 +35,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -43,6 +47,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.ProcessNodeOutput;
+import de.aivot.prosuna.backend.process.models.TaskViewEvent;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssignedCustomer;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
@@ -59,6 +64,7 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
@@ -164,7 +170,7 @@ class FormRequestActionNodeV1Test {
                 RichTextInputElement.class
         ).orElseThrow();
         assertEquals(
-                "Der Text der Nachricht. Der Link, unter welchem die Identität das Formular aufrufen kann, wird automatisch an das Ende angefügt.",
+                "Der Text der Nachricht. Ein Link zum Einreichen der angeforderten Daten wird automatisch ergänzt.",
                 automaticContent.getHint()
         );
     }
@@ -288,6 +294,54 @@ class FormRequestActionNodeV1Test {
         assertEquals("Ada", view.data().getLiteral("name"));
         assertFalse(view.data().containsKey("internalNote"));
         assertEquals(RECIPIENT_IDENTITY_ID, view.requiredExistingIdentityId());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessTaskStatus.class, names = {"AwaitingCustomer", "Paused", "Aborted", "Failed", "Restarted", "AwaitingStaff"})
+    void customerTaskViewExplainsTheStepWithoutChangingTheAuthoredLayout(ProcessTaskStatus status) throws Exception {
+        var authoredLayout = new GroupLayoutElement();
+        authoredLayout.setId("authored-form");
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientIdentityId = RECIPIENT_IDENTITY_ID;
+        configuration.uiDefinition = authoredLayout;
+        var context = context(configuration, Map.of());
+        context.getThisTask().setStatus(status);
+
+        var view = node.getCustomerTaskView(context);
+
+        assertSame(authoredLayout, view.layout().getChildren().get(2));
+        assertTrue(authoredLayout.getChildren().isEmpty());
+        assertEquals(RECIPIENT_IDENTITY_ID, view.requiredExistingIdentityId());
+        var headline = assertInstanceOf(HeadlineContentElement.class, view.layout().getChildren().getFirst());
+        var introduction = assertInstanceOf(RichTextContentElement.class, view.layout().getChildren().get(1));
+        if (status == ProcessTaskStatus.AwaitingCustomer) {
+            assertEquals("Daten einreichen", headline.getContent());
+            assertTrue(introduction.getContent().contains("Bitte ergänzen Sie"));
+            assertEquals(List.of(new TaskViewEvent("Daten einreichen", "submit")), view.events());
+        } else {
+            assertEquals("Angeforderte Angaben", headline.getContent());
+            assertFalse(introduction.getContent().contains("Bitte ergänzen Sie"));
+            assertTrue(view.events().isEmpty());
+        }
+    }
+
+    @Test
+    void completedCustomerTaskViewConfirmsSubmissionWithoutExposingFormData() {
+        var context = context(new FormRequestActionNodeV1.NodeConfig(), Map.of("private", "process data"),
+                Map.of(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY, Map.of("private", "submitted data")));
+        context.getThisTask().setStatus(ProcessTaskStatus.Completed);
+
+        var view = node.getCompletedCustomerTaskView(context);
+
+        assertEquals(1, view.layout().getChildren().size());
+        var confirmation = assertInstanceOf(AlertContentElement.class, view.layout().getChildren().getFirst());
+        assertEquals("Daten eingereicht", confirmation.getTitle());
+        assertEquals("Sie haben die angeforderten Daten erfolgreich eingereicht.", confirmation.getText());
+        assertTrue(view.data().isEmpty());
+        assertTrue(view.trustedData().isEmpty());
+        assertTrue(view.events().isEmpty());
+        assertNull(view.requiredExistingIdentityId());
+        assertNull(view.requiredNewIdentitySlot());
     }
 
     @Test

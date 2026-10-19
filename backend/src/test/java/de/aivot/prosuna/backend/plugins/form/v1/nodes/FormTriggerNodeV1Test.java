@@ -383,7 +383,6 @@ class FormTriggerNodeV1Test {
         assertNotNull(errors);
         assertEquals(
                 List.of(
-                        "Das URL-Segment des Formulars darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.",
                         "Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
                 ),
                 errors.get(FormTriggerConfigV1.FORM_SLUG)

@@ -34,7 +34,7 @@ import {isApiError} from '../../models/api-error';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {BaseApiService} from '../../services/base-api-service';
 import {CustomerInputService} from '../../services/customer-input-service';
-import {SnackbarProvider} from 'notistack';
+import {SnackbarTheme} from '../../providers/snackbar-provider';
 import {MetaElement} from '../../components/meta-element/meta-element';
 import {setCurrentStep} from '../../slices/stepper-slice';
 import {FormHeaderComponent} from '../../components/form/form-header-component';
@@ -71,7 +71,7 @@ import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info'
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {PaymentRequestOverview} from '../../modules/payment/components/payment-request-overview';
-import {showApiErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-slice';
+import {showApiErrorSnackbar} from '../../slices/snackbar-slice';
 import {useConfirm} from '../../providers/confirm-provider';
 import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
@@ -271,7 +271,7 @@ export function CustomerFormPage() {
                 });
 
                 if (!proceedWithPaymentRequirements) {
-                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
+                    // The closed confirmation leaves the completed form available for editing.
                     return;
                 }
             }
@@ -385,7 +385,7 @@ export function CustomerFormPage() {
 
     return (
         <ThemeProvider theme={resolvedTheme}>
-            <SnackbarProvider>
+            <SnackbarTheme theme={resolvedTheme}>
                 <MetaElement
                     faviconUrl={formFaviconUrl}
                     title={layoutElement.tabTitle ?? layoutElement.publicTitle ?? ''}
@@ -515,7 +515,7 @@ export function CustomerFormPage() {
                             paymentRequired={startedProcessAccessInfo.paymentRequired}
                             formElement={layoutElement}
                             processSlug={process.slug}
-                            formSlug={configuredFormSlug ?? null}
+                            formSlug={resolvedFormSlug}
                             processVersion={version.processVersion}
                         />
                     }
@@ -555,7 +555,7 @@ export function CustomerFormPage() {
                     form={layoutElement}
                     version={version}
                 />
-            </SnackbarProvider>
+            </SnackbarTheme>
         </ThemeProvider>
     );
 }

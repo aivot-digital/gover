@@ -152,7 +152,7 @@ export function CommunicationProvidersListPage() {
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<CommunicationProvider>) => (
         <EmptyDataListPlaceholder
             title="Keine Kommunikationsanbieter vorhanden"
-            description="Kommunikationsanbieter verbinden Prosuna mit Versanddiensten für Nachrichten an Kund:innen."
+            description="Kommunikationsanbieter verbinden Prosuna mit Versanddiensten für Nachrichten an Personen."
             addText="Neuen Kommunikationsanbieter anlegen"
             onAdd={() => navigate('/communication-providers/new')}
             addDisabled={!permissions.canCreate}

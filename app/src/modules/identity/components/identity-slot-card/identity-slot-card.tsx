@@ -15,6 +15,7 @@ export interface IdentitySlotCardProps {
     slot: IdentitySlot;
     api: IdentitySelectionApi;
     saveMode?: 'explicit' | 'deferred';
+    headingComponent?: 'h2' | 'h3';
     onChange: (slot: IdentitySlot) => void;
     onStatusChange?: (slotId: string, status: FormIdentitySelectionControlsStatus | null) => void;
     beforeIdentityProviderStart?: (identityId: string) => Promise<boolean>;
@@ -32,6 +33,7 @@ export const IdentitySlotCard = forwardRef<FormIdentitySelectionControlsHandle, 
             api,
             beforeIdentityProviderStart,
             identityProviderAuthenticationDisabled,
+            headingComponent = 'h2',
             onChange,
             onStatusChange,
             saveMode,
@@ -74,7 +76,7 @@ export const IdentitySlotCard = forwardRef<FormIdentitySelectionControlsHandle, 
                         >
                             <Typography
                                 variant="h4"
-                                component="h2"
+                                component={headingComponent}
                             >
                                 {getIdentityDisplayName(slot)}
                             </Typography>

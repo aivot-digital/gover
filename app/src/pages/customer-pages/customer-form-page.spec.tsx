@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     eventResolved: vi.fn(),
     navigate: vi.fn(),
     observeScrollContainer: vi.fn(),
+    observeSubmitted: vi.fn(),
     submitValues: {} as Record<string, unknown>,
     submitDerivedData: undefined as unknown,
 }));
@@ -56,8 +57,8 @@ vi.mock('../../providers/confirm-provider', () => ({
     useConfirm: () => mocks.confirm,
 }));
 
-vi.mock('notistack', () => ({
-    SnackbarProvider: ({children}: {children?: React.ReactNode}) => <>{children}</>,
+vi.mock('../../providers/snackbar-provider', () => ({
+    SnackbarTheme: ({children}: {children?: React.ReactNode}) => <>{children}</>,
 }));
 
 vi.mock('../../components/code-editor/code-editor', () => ({CodeEditor: () => null}));
@@ -106,9 +107,10 @@ vi.mock('../../components/meta-element/meta-element', () => ({MetaElement: () =>
 vi.mock('../../components/form/form-header-component', () => ({FormHeaderComponent: () => null}));
 vi.mock('../../components/form/root-component-footer', () => ({RootComponentFooter: () => null}));
 vi.mock('../../components/submitted/submitted', () => ({
-    Submitted: ({startedProcessAccessKey}: {startedProcessAccessKey: string}) => (
-        <div>{`Übermittelt: ${startedProcessAccessKey}`}</div>
-    ),
+    Submitted: (props: {startedProcessAccessKey: string; formSlug: string | null}) => {
+        mocks.observeSubmitted(props);
+        return <div>{`Übermittelt: ${props.startedProcessAccessKey}`}</div>;
+    },
 }));
 vi.mock('../../dialogs/help-dialog/help.dialog', () => ({HelpDialog: () => null, HelpDialogId: 'help'}));
 vi.mock('../../dialogs/privacy-dialog/privacy-dialog', () => ({PrivacyDialog: () => null, PrivacyDialogId: 'privacy'}));
@@ -127,6 +129,7 @@ describe('CustomerFormPage', () => {
         mocks.dispatch.mockReset();
         mocks.eventResolved.mockReset();
         mocks.navigate.mockReset();
+        mocks.observeSubmitted.mockReset();
         mocks.submitValues = {};
         mocks.submitDerivedData = undefined;
 
@@ -323,6 +326,7 @@ describe('CustomerFormPage', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Formular absenden'}));
 
         expect(await screen.findByText('Übermittelt: started-process')).toBeVisible();
+        expect(mocks.observeSubmitted).toHaveBeenLastCalledWith(expect.objectContaining({formSlug: 'test-form'}));
         await waitFor(() => expect(mocks.eventResolved).toHaveBeenCalledOnce());
         expectActionTypeDispatched('shell/clearLoadingMessage');
     });
@@ -598,7 +602,7 @@ describe('CustomerFormPage', () => {
             undefined,
         );
         expect(screen.queryByText('Nachrichten werden an customer@example.test gesendet.')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Auswahl ändern'})).not.toBeInTheDocument();
     });
 
     it('shows persisted identities when another draft blocks a provider login', async () => {
@@ -828,7 +832,7 @@ describe('CustomerFormPage', () => {
         await waitFor(() => expect(setEmail).toHaveBeenCalledTimes(2));
         await waitFor(() => expect(emailFields[1]).toBeDisabled());
         expect(screen.queryByText('Nachrichten werden an first@example.test gesendet.')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'Identität entfernen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Auswahl ändern'})).not.toBeInTheDocument();
 
         resolveSecondIdentity();
         expect(await screen.findByRole('button', {name: 'Formular absenden'})).toBeVisible();

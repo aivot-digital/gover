@@ -30,6 +30,25 @@ describe('Submitted', () => {
         downloadBlobFileMock.mockClear();
     });
 
+    it('does not offer a status retry without an access key', async () => {
+        const getInstanceStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus');
+        render(<Submitted startedProcessAccessKey="  " paymentRequired formElement={{children: []} as unknown as FormLayoutElement}
+            processSlug="process" formSlug="form" processVersion={1}/>);
+        expect(await screen.findByText('Status nicht verfügbar')).toBeVisible();
+        expect(screen.queryByRole('button', {name: 'Status erneut prüfen'})).not.toBeInTheDocument();
+        expect(getInstanceStatus).not.toHaveBeenCalled();
+    });
+
+    it('does not claim payment success from a completed form task', async () => {
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
+            .mockResolvedValue(createStatusResponse(ProcessInstanceStatus.Running, ProcessTaskStatus.Completed));
+        render(<Submitted startedProcessAccessKey="access-key" paymentRequired formElement={{children: []} as unknown as FormLayoutElement}
+            processSlug="process" formSlug="form" processVersion={1}/>);
+        expect(await screen.findByText('Für Ihre Einreichung ist keine weitere Zahlung erforderlich.')).toBeVisible();
+        expect(screen.queryByText('Zahlung abgeschlossen')).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
+    });
+
     it('enables the PDF download when form processing completes without payment', async () => {
         vi.useFakeTimers();
 
@@ -64,7 +83,7 @@ describe('Submitted', () => {
             await vi.advanceTimersByTimeAsync(1000);
         });
 
-        expect(screen.getByRole('button', {name: 'Antrag als PDF herunterladen'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Einreichung als PDF herunterladen'})).toBeEnabled();
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(3000);
@@ -109,10 +128,15 @@ describe('Submitted', () => {
             });
 
             expect(screen.getByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).toBeVisible();
-            expect(screen.getByText('Ihr Antrag konnte nicht verarbeitet werden')).toBeVisible();
+            expect(screen.getByText('Ihre Einreichung konnte nicht weiterverarbeitet werden')).toBeVisible();
             expect(screen.getByText(/Bitte wenden Sie sich an die zuständige Stelle/)).toBeVisible();
-            expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
-            fireEvent.click(screen.getByRole('button', {name: 'Antrag als PDF herunterladen'}));
+            if (taskStatus === ProcessTaskStatus.Completed) {
+                expect(screen.getByText('Für Ihre Einreichung ist keine weitere Zahlung erforderlich.')).toBeVisible();
+                expect(screen.queryByText('Zahlung abgeschlossen')).not.toBeInTheDocument();
+            } else {
+                expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
+            }
+            fireEvent.click(screen.getByRole('button', {name: 'Einreichung als PDF herunterladen'}));
             expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
 
             await act(async () => {
@@ -125,7 +149,7 @@ describe('Submitted', () => {
                 'task-access-key',
                 1,
             );
-            expect(downloadBlobFileMock).toHaveBeenCalledWith('Antrag.pdf', pdf);
+            expect(downloadBlobFileMock).toHaveBeenCalledWith('Einreichung.pdf', pdf);
 
             await act(async () => {
                 await vi.advanceTimersByTimeAsync(3000);
@@ -156,6 +180,34 @@ describe('Submitted', () => {
         expect(screen.getByRole('button', {name: 'PDF nicht verfügbar'})).toBeDisabled();
         expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
     });
+    it('shows a status error and retries without resubmitting the form', async () => {
+        const getStatus = vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValueOnce(createStatusResponse(ProcessInstanceStatus.Running, ProcessTaskStatus.AwaitingPayment));
+        const submit = vi.spyOn(FormTriggerApiService.prototype, 'submitForm');
+        render(<Submitted startedProcessAccessKey="process-key" paymentRequired formElement={{children: []} as unknown as FormLayoutElement} processSlug="process" formSlug="form" processVersion={1}/>);
+        expect(await screen.findByText('Status nicht verfügbar')).toBeVisible();
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: 'Status erneut prüfen'}));
+        expect(await screen.findByRole('link', {name: 'Zur Zahlung'})).toHaveAttribute('href', '/process/process-key/tasks/task-access-key');
+        expect(getStatus).toHaveBeenCalledTimes(2);
+        expect(submit).not.toHaveBeenCalled();
+    });
+
+    it('stops the loading indicators after a long preparation without claiming failure', async () => {
+        vi.useFakeTimers();
+        vi.spyOn(CustomerTaskViewApiService.prototype, 'getInstanceStatus')
+            .mockResolvedValue(createStatusResponse(ProcessInstanceStatus.Running, ProcessTaskStatus.Running));
+        render(<Submitted startedProcessAccessKey="process-key" paymentRequired formElement={{children: []} as unknown as FormLayoutElement} processSlug="process" formSlug="form" processVersion={1}/>);
+        expect(screen.getByRole('button', {name: 'Zahlung wird vorbereitet'})).toBeDisabled();
+        expect(screen.getAllByRole('progressbar', {hidden: true})).toHaveLength(2);
+        await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+        expect(screen.getByText('Die Vorbereitung dauert länger')).toBeVisible();
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+        expect(screen.queryByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Status erneut prüfen'})).toBeEnabled();
+    });
+
 });
 
 function createStatusResponse(

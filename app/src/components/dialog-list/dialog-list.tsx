@@ -1,4 +1,4 @@
-import {FunctionComponent, useState} from 'react';
+import {FunctionComponent, useEffect, useRef, useState} from 'react';
 import {
     Box,
     Button,
@@ -9,6 +9,7 @@ import {
     ButtonBase,
     Tooltip,
     Typography,
+    Alert,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
@@ -26,6 +27,8 @@ export type DialogListPropsDialogContentComponent<T> = FunctionComponent<{
     onChange: (item: T) => void;
     readOnly?: boolean;
     busy?: boolean;
+    validationErrors?: Record<string, string>;
+    onValidationChange?: (errors: Record<string, string>) => void;
 }>
 
 interface DialogListProps<T> {
@@ -42,6 +45,7 @@ interface DialogListProps<T> {
     readOnly?: boolean;
     busy?: boolean;
     hasError?: (item: T) => boolean;
+    validate?: (item: T) => Record<string, string>;
 }
 
 export function DialogList<T>(props: DialogListProps<T>) {
@@ -64,14 +68,30 @@ export function DialogList<T>(props: DialogListProps<T>) {
     const isBusy = busy === true;
     const confirm = useConfirm();
 
+    const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const [dialogSession, setDialogSession] = useState(0);
+    useEffect(() => () => clearTimeout(closeTimer.current), []);
     const [showDialog, setShowDialog] = useState(false);
+    // Child editors can hold drafts that cannot yet be represented by T, such as duplicate booking keys.
+    // Include their errors when saving or discarding so those drafts cannot be lost silently.
+    const [draftErrors, setDraftErrors] = useState<Record<string, string>>({});
+    const [validationAttempted, setValidationAttempted] = useState(false);
 
     const [openForItem, setOpenForItem] = useState<{
         edited: T;
         original: T;
     }>();
 
+    const validationErrors = validationAttempted && openForItem != null
+        ? {...props.validate?.(openForItem.edited), ...draftErrors}
+        : {};
+
     const handleDialogOpen = (item: T) => {
+        clearTimeout(closeTimer.current);
+        // A new editing session must not inherit local drafts, even when opened during the exit animation.
+        setDialogSession((session) => session + 1);
+        setDraftErrors({});
+        setValidationAttempted(false);
         setOpenForItem({
             edited: JSON.parse(JSON.stringify(item)),
             original: item,
@@ -81,6 +101,12 @@ export function DialogList<T>(props: DialogListProps<T>) {
 
     const handleDialogSave = () => {
         if (openForItem == null || isReadOnly || isBusy) {
+            return;
+        }
+
+        const errors = {...props.validate?.(openForItem.edited), ...draftErrors};
+        setValidationAttempted(true);
+        if (Object.keys(errors).length > 0) {
             return;
         }
 
@@ -94,7 +120,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
             return;
         }
 
-        if (!isReadOnly && !deepEquals(openForItem.original, openForItem.edited)) {
+        if (!isReadOnly && (Object.keys(draftErrors).length > 0 || !deepEquals(openForItem.original, openForItem.edited))) {
             const conf = await confirm({
                 title: 'Änderungen verwerfen',
                 children: (
@@ -116,7 +142,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
         setShowDialog(false);
         // Reset the item with a timeout to prevent the dialog content from being cleared,
         // before the dialog has fully vanished.
-        setTimeout(() => {
+        closeTimer.current = setTimeout(() => {
             setOpenForItem(undefined);
         }, 200);
     };
@@ -319,9 +345,20 @@ export function DialogList<T>(props: DialogListProps<T>) {
                 </DialogTitleWithClose>
 
                 <DialogContent>
+                    {Object.keys(validationErrors).length > 0 && (
+                        <Alert severity="error" sx={{mb: 2}}>
+                            Bitte korrigieren Sie die folgenden Angaben:
+                            <ul>
+                                {Object.entries(validationErrors).map(([key, message]) => (
+                                    <li key={key}>{message}</li>
+                                ))}
+                            </ul>
+                        </Alert>
+                    )}
                     {
                         openForItem != null &&
                         <DialogContentComponent
+                            key={dialogSession}
                             item={openForItem.edited}
                             onChange={(changed) => {
                                 setOpenForItem({
@@ -331,6 +368,10 @@ export function DialogList<T>(props: DialogListProps<T>) {
                             }}
                             readOnly={isReadOnly}
                             busy={isBusy}
+                            validationErrors={validationAttempted ? validationErrors : undefined}
+                            onValidationChange={(errors) => {
+                                setDraftErrors(errors);
+                            }}
                         />
                     }
                 </DialogContent>

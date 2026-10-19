@@ -1,3 +1,4 @@
+import {sortThemesByName} from '../../../themes/utils/sort-themes-by-name';
 import {CaseNumberType} from '../../enums/case-number-type';
 import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
 import {Alert, Box, Grid, Skeleton, Stack} from '@mui/material';
@@ -105,7 +106,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
     const isEditable = version.status === ProcessStatus.Drafted;
     const caseNumberType = draft.caseNumberType;
     const themeOptions = useMemo<SelectFieldComponentOption[]>(() => {
-        return (themes ?? []).map((theme) => ({
+        return sortThemesByName(themes ?? []).map((theme) => ({
             value: theme.id.toString(),
             label: theme.name,
         }));
@@ -521,7 +522,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginBottom
                 maxWidth={680}
             >
-                Das ausgewählte Erscheinungsbild gilt für alle Formulare dieser Prozessversion.
+                Das ausgewählte Erscheinungsbild gilt für die Formulare und Kundenansichten dieser Prozessversion.
             </ElementEditorSectionHeader>
 
             <Box
@@ -547,7 +548,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         }}
                         externalAction={
                             <Hint
-                                summary="Sie können ein abweichendes Erscheinungsbild für alle Formulare dieser Prozessversion auswählen."
+                                summary="Sie können ein abweichendes Erscheinungsbild für die Formulare und Kundenansichten dieser Prozessversion auswählen."
                                 detailsTitle="Erscheinungsbild"
                                 details={
                                     <>
@@ -569,7 +570,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                                             <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
                                         </ol>
                                         <p>
-                                            Das Erscheinungsbild legt Farben, Logo und Favicon aller Formulare der
+                                            Das Erscheinungsbild legt Farben, Logo und Favicon der Formulare und Kundenansichten dieser
                                             Prozessversion fest.
                                         </p>
                                     </>

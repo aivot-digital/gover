@@ -55,7 +55,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                         %s
                         
                         
-                        Insgesamt zu entrichtende Gebühr: %s Euro %s
+                        Insgesamt zu entrichtende Zahlung: %s Euro%s
                         """
                         .formatted(
                                 StringUtils.quote(paymentProviderDefinition.getProviderName()),
@@ -66,7 +66,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                                                 item.getDescription(),
                                                 NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
                                                 item.getTaxRate().compareTo(BigDecimal.ZERO) > 0
-                                                        ? " inkl. %s Steuern".formatted(NumberUtils.formatGermanNumber(item.getTaxRate(), 2))
+                                                        ? " inkl. %s%% Steuern".formatted(item.getTaxRate().stripTrailingZeros().toPlainString().replace('.', ','))
                                                         : ""
                                         ))
                                         .collect(Collectors.joining()),
@@ -76,7 +76,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                                         .stream()
                                         .map(PaymentItem::getTaxRate)
                                         .map(BigDecimal.ZERO::compareTo)
-                                        .anyMatch(i -> i != 0) ? "inkl. Steuern." : ""
+                                        .anyMatch(i -> i != 0) ? " inkl. Steuern" : ""
                         );
             }
             case XBezahldienstStatus.FAILED -> {

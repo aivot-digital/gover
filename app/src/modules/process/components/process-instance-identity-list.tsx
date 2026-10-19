@@ -1,5 +1,9 @@
+import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
     Box,
     Divider,
     Skeleton,
@@ -243,6 +247,7 @@ interface IdentityAttributeRow {
 }
 
 function IdentityItem(props: IdentityItemProps): React.JSX.Element {
+    const attributesId = React.useId();
     const identity = props.identity;
     const isEmailIdentity = identity.type === 'Email';
     const identityKey = identity.identityId || 'Unbenannte Identität';
@@ -309,14 +314,11 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
 
             <Divider sx={{my: 1.5}}/>
 
-            <Typography sx={{fontWeight: 600, mb: 0.5}}>
-                Identitätsanbieter
-            </Typography>
-            {
-                isEmailIdentity ?
-                    <UnavailableText>
-                        Nicht zutreffend – direkte E-Mail-Identität
-                    </UnavailableText> :
+            {!isEmailIdentity && (
+                <>
+                    <Typography sx={{fontWeight: 600, mb: 0.5}}>
+                        Identitätsanbieter
+                    </Typography>
                     <Box component="dl" sx={{m: 0}}>
                         <DetailRow label="Name">
                             <ResolvedName
@@ -332,16 +334,15 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
                             </DetailRow>
                         }
                     </Box>
-            }
+                </>
+            )}
 
             <Typography sx={{fontWeight: 600, mt: 1.5, mb: 0.5}}>
-                Kommunikationsanbieter
+                {isEmailIdentity ? 'Kommunikationsweg' : 'Kommunikationsanbieter'}
             </Typography>
             {
                 isEmailIdentity ?
-                    <UnavailableText>
-                        Nicht zutreffend – direkter E-Mail-Versand
-                    </UnavailableText> :
+                    <Typography variant="body2">Direkte E-Mail</Typography> :
                     <CommunicationProviderDetails
                         bindingId={identity.communicationProviderBindingId}
                         binding={props.communicationBinding}
@@ -351,56 +352,70 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
                     />
             }
 
-            <Typography sx={{fontWeight: 600, mt: 1.5, mb: 0.5}}>
-                Attribute
-            </Typography>
-            {
-                !isEmailIdentity && props.isLoadingIdentityProviders ?
-                    <Skeleton width={180}/> :
-                    attributes == null ?
-                        <UnavailableText>
-                            {
-                                props.canReadIdentityProviders ?
-                                    'Attributzuweisungen nicht verfügbar' :
-                                    'Attributzuweisungen mangels Berechtigung nicht verfügbar'
-                            }
-                        </UnavailableText> :
-                        attributes.length === 0 ?
-                            <UnavailableText>
-                                {isEmailIdentity ? 'Keine Attribute vorhanden' : 'Keine Attribute konfiguriert'}
-                            </UnavailableText> :
-                            <TableContainer
-                                sx={{
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    borderRadius: 1,
-                                }}
-                            >
-                                <Table
-                                    size="small"
-                                    aria-label={`Attribute der Identität ${identityLabel}`}
-                                >
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell sx={{fontWeight: 600}}>Attribut</TableCell>
-                                            <TableCell sx={{fontWeight: 600}}>Wert</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            attributes.map((attribute) => (
-                                                <TableRow key={attribute.key}>
-                                                    <TableCell sx={{overflowWrap: 'anywhere'}}>{attribute.label}</TableCell>
-                                                    <TableCell sx={{overflowWrap: 'anywhere'}}>
-                                                        {attribute.value ?? <i>Kein Wert übergeben</i>}
-                                                    </TableCell>
+            <Accordion
+                disableGutters
+                elevation={0}
+                sx={{mt: 1.5, '&:before': {display: 'none'}}}
+                slotProps={{transition: {unmountOnExit: true}}}
+            >
+                <AccordionSummary
+                    id={`${attributesId}-header`}
+                    aria-controls={`${attributesId}-content`}
+                    expandIcon={<KeyboardArrowDown/>}
+                    sx={{px: 0}}
+                >
+                    <Typography sx={{fontWeight: 600}}>Attribute</Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{p: 0}}>
+                    {
+                        !isEmailIdentity && props.isLoadingIdentityProviders ?
+                            <Skeleton width={180}/> :
+                            attributes == null ?
+                                <UnavailableText>
+                                    {
+                                        props.canReadIdentityProviders ?
+                                            'Attributzuweisungen nicht verfügbar' :
+                                            'Attributzuweisungen mangels Berechtigung nicht verfügbar'
+                                    }
+                                </UnavailableText> :
+                                attributes.length === 0 ?
+                                    <UnavailableText>
+                                        {isEmailIdentity ? 'Keine Attribute vorhanden' : 'Keine Attribute konfiguriert'}
+                                    </UnavailableText> :
+                                    <TableContainer
+                                        sx={{
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                            borderRadius: 1,
+                                        }}
+                                    >
+                                        <Table
+                                            size="small"
+                                            aria-label={`Attribute der Identität ${identityLabel}`}
+                                        >
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell sx={{fontWeight: 600}}>Attribut</TableCell>
+                                                    <TableCell sx={{fontWeight: 600}}>Wert</TableCell>
                                                 </TableRow>
-                                            ))
-                                        }
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-            }
+                                            </TableHead>
+                                            <TableBody>
+                                                {
+                                                    attributes.map((attribute) => (
+                                                        <TableRow key={attribute.key}>
+                                                            <TableCell sx={{overflowWrap: 'anywhere'}}>{attribute.label}</TableCell>
+                                                            <TableCell sx={{overflowWrap: 'anywhere'}}>
+                                                                {attribute.value ?? <i>Kein Wert übergeben</i>}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                }
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                    }
+                </AccordionDetails>
+            </Accordion>
         </Box>
     );
 }

@@ -7,7 +7,7 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import jakarta.annotation.Nullable;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public record PaymentConfigElementValueRequestorMapping(
@@ -44,7 +44,7 @@ public record PaymentConfigElementValueRequestorMapping(
 ) {
 
     public Map<String, Object> performValidation() {
-        var errors = new HashMap<String, Object>();
+        var errors = new LinkedHashMap<String, Object>();
 
         validateDestinationKeys(errors);
 

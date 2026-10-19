@@ -5,6 +5,7 @@ import type {TaskViewEvent} from '../services/process-instance-task-api-service'
 
 export interface CustomerTaskExistingIdentitySlot {
     id: string;
+    title?: string | null;
     isReady: boolean;
     identityProvider: IdentityProviderOption;
 }

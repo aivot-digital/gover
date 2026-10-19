@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,6 +23,18 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PaymentPayloadCreationServiceTest {
+    @ParameterizedTest
+    @ValueSource(strings = {"Suite 2", "Suite 2\nBuilding A", "Suite 2\r\nBuilding A", "Suite 2\rBuilding A"})
+    void shouldPreserveMappedAddressLines(String addressLine) throws PaymentException {
+        var request = createService().createRequest(requestorConfig(new PaymentConfigElementValueRequestorMapping(
+                PaymentConfigElementValueRequestorMapping.RequestorSourceType.FixPerson,
+                null, null, null, null, null, null, null, "addressLine", null, null, null
+        )), null, new ProcessExecutionData().addProcessData("addressLine", addressLine)).orElseThrow();
+
+        assertEquals(addressLine.contains("Building A") ? List.of("Suite 2", "Building A") : List.of("Suite 2"),
+                request.getRequestor().getAddress().getAddressLine());
+    }
+
     @Test
     void shouldCreatePaymentRequestFromFixedItemAndRequestorMapping() throws PaymentException {
         var processData = new ProcessExecutionData().addProcessData(Map.of(
@@ -161,7 +174,19 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
         assertNull(requestor.getOrganizationName());
-        assertNotNull(requestor.getAddress());
+        assertNull(requestor.getAddress());
+    }
+
+    @Test
+    void shouldNotAddAnEmptyAddressWhenOnlyTheFirstNameIsMapped() throws PaymentException {
+        var request = createService().createRequest(requestorConfig(new PaymentConfigElementValueRequestorMapping(
+                PaymentConfigElementValueRequestorMapping.RequestorSourceType.FixPerson,
+                null, "firstName", null, null, null, null, null, null, null, null, null
+        )), null, new ProcessExecutionData().addProcessData("firstName", "Ada")).orElseThrow();
+
+        assertEquals("Ada", request.getRequestor().getFirstName());
+        assertNull(request.getRequestor().getName());
+        assertNull(request.getRequestor().getAddress());
     }
 
     @Test
@@ -220,7 +245,7 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getName());
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
-        assertNotNull(requestor.getAddress());
+        assertNull(requestor.getAddress());
     }
 
     @Test
@@ -284,7 +309,7 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
         assertNull(requestor.getOrganizationName());
-        assertNotNull(requestor.getAddress());
+        assertNull(requestor.getAddress());
     }
 
     @Test
