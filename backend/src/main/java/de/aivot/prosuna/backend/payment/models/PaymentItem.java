@@ -95,8 +95,8 @@ public class PaymentItem {
                 .setScale(2, RoundingMode.HALF_UP);
 
         var normalizedTaxRate = this.taxRate
-                .setScale(2, RoundingMode.HALF_UP)
-                .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP);
+                .setScale(4, RoundingMode.HALF_UP)
+                .movePointLeft(2);
 
         var netPricePerItem = this.netPrice
                 .setScale(2, RoundingMode.HALF_UP);
@@ -141,7 +141,7 @@ public class PaymentItem {
                     .setScale(4, RoundingMode.HALF_UP);
 
             var taxRate = tax
-                    .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP);
+                    .movePointLeft(2);
 
             var netPricePerItem = this
                     .getNetPrice()

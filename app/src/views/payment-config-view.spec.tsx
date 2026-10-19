@@ -397,6 +397,44 @@ describe('PaymentConfigView', () => {
         expect(screen.getByTestId('process-data-key-Land')).toHaveAttribute('data-required', 'false');
     });
 
+    it('should preserve four decimal places when entering and saving a tax rate', async () => {
+        const setValue = vi.fn();
+        const user = userEvent.setup();
+
+        renderPaymentConfigView({
+            setValue,
+            value: {
+                paymentProviderKey: null,
+                purpose: null,
+                description: null,
+                mapRequestor: false,
+                requestorMapping: null,
+                items: [createPaymentItem({description: 'Position', reference: 'fee'})],
+                successMessage: null,
+                failureMessage: null,
+            },
+        });
+
+        await user.click(await screen.findByText('Neue Zahlungskonfiguration'));
+        await user.click(await screen.findByText('Position'));
+
+        const taxRate = screen.getByRole('textbox', {name: /Steuersatz/});
+        await user.clear(taxRate);
+        await user.type(taxRate, '7,1234');
+        await user.tab();
+        expect(taxRate).toHaveValue('7,1234');
+
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        await waitFor(() => {
+            expect(screen.queryByRole('textbox', {name: /Steuersatz/})).not.toBeInTheDocument();
+        });
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+
+        expect(setValue).toHaveBeenCalledWith(expect.objectContaining({
+            items: [expect.objectContaining({fixedTaxRate: 7.1234})],
+        }));
+    });
+
     it('should render the generic missing payment items error', async () => {
         renderPaymentConfigView({
             errorDetails: {

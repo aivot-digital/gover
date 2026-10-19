@@ -1084,7 +1084,7 @@ function PaymentConfigItemEditor(props: {
                             label="Steuersatz"
                             value={item.fixedTaxRate}
                             onChange={(taxRate) => onChange({...item, fixedTaxRate: taxRate})}
-                            decimalPlaces={2}
+                            decimalPlaces={4}
                             minValue={0}
                             maxValue={100}
                             suffix="%"
