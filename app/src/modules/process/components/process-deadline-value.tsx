@@ -37,7 +37,8 @@ interface ProcessDeadlineValueProps {
 export function ProcessDeadlineValue({deadline, now, color, label, emptyLabel}: ProcessDeadlineValueProps): ReactNode {
     const validDeadline = deadline != null && Number.isFinite(Date.parse(deadline));
     const relative = validDeadline && now != null ? formatRelativeInstantInApplicationTimeZone(deadline, now) : null;
-    const remaining = relative?.startsWith('in ') ? `noch ${relative.slice(3)}`
+    // Preserve the localized future phrase: replacing "in" with "noch" would require a different German noun inflection.
+    const remaining = relative?.startsWith('in ') ? `fällig ${relative}`
         : relative?.startsWith('vor ') ? `seit ${relative.slice(4)} überschritten` : relative;
 
     return (

@@ -25,7 +25,7 @@ describe('deadline values', () => {
             status: ProcessTaskStatus.AwaitingStaff,
             deadline: '2026-10-01T10:00:30Z',
         }}/>);
-        expect(container).toHaveTextContent('01.10.2026 um 12:00 Uhr (noch 30 Sekunden)');
+        expect(container).toHaveTextContent('01.10.2026 um 12:00 Uhr (fällig in 30 Sekunden)');
         expect(screen.queryByText('Frist überschritten')).not.toBeInTheDocument();
 
         act(() => vi.advanceTimersByTime(60_000));
@@ -34,6 +34,23 @@ describe('deadline values', () => {
         expect(screen.getByText('Frist überschritten')).toBeVisible();
         unmount();
         expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it.each([
+        {deadline: '2026-10-05T10:00:00Z', relative: 'fällig in 4 Tagen'},
+        {deadline: '2026-12-01T11:00:00Z', relative: 'fällig in 2 Monaten'},
+        {deadline: '2028-10-01T10:00:00Z', relative: 'fällig in 2 Jahren'},
+        {deadline: '2026-09-27T10:00:00Z', relative: 'seit 4 Tagen überschritten'},
+    ])('preserves German inflection in "$relative" for tasks and instances', ({deadline, relative}) => {
+        render(<>
+            <ProcessTaskDeadlineValue task={{status: ProcessTaskStatus.AwaitingStaff, deadline}}/>
+            <ProcessInstanceDeadlineValue instance={{
+                status: ProcessInstanceStatus.Running,
+                started: '2026-09-01T10:00:00Z',
+                deadline,
+            }}/>
+        </>);
+        expect(screen.getAllByText(text => text.endsWith(`(${relative})`))).toHaveLength(2);
     });
 
     it('does not show a percentage-based warning for a task', () => {
@@ -56,7 +73,7 @@ describe('deadline values', () => {
             finished,
         }}/>);
         expect(container).toHaveTextContent('30.09.2026 um 12:00 Uhr');
-        expect(container).not.toHaveTextContent(/noch|seit|Frist eingehalten/);
+        expect(container).not.toHaveTextContent(/fällig in|seit|Frist eingehalten/);
         expect(screen.queryByText('Frist überschritten') != null).toBe(exceeded);
         expect(vi.getTimerCount()).toBe(0);
     });
@@ -66,7 +83,7 @@ describe('deadline values', () => {
             status: ProcessTaskStatus.Aborted,
             deadline: '2026-09-30T10:00:00Z',
         }}/>);
-        expect(container).not.toHaveTextContent(/überschritten|noch|seit/);
+        expect(container).not.toHaveTextContent(/überschritten|fällig in|seit/);
         expect(vi.getTimerCount()).toBe(0);
     });
 
@@ -91,7 +108,7 @@ describe('deadline values', () => {
         expect(screen.queryByText('Bald fällig')).not.toBeInTheDocument();
         act(() => vi.advanceTimersByTime(60_000));
         expect(screen.getByText('Bald fällig')).toBeVisible();
-        expect(container).toHaveTextContent('02.10.2026 um 12:00 Uhr (noch 1 Tag)');
+        expect(container).toHaveTextContent('02.10.2026 um 12:00 Uhr (fällig in 1 Tag)');
     });
 
     it('does not keep counting down after an instance ends', () => {
@@ -101,7 +118,7 @@ describe('deadline values', () => {
             deadline: '2026-09-02T10:00:00Z',
         }}/>);
         expect(container).toHaveTextContent('02.09.2026 um 12:00 Uhr');
-        expect(container).not.toHaveTextContent(/überschritten|noch|seit/);
+        expect(container).not.toHaveTextContent(/überschritten|fällig in|seit/);
         expect(vi.getTimerCount()).toBe(0);
     });
 
