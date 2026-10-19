@@ -16,7 +16,7 @@ import {setErrorMessage} from '../../../slices/shell-slice';
 import {isApiError} from '../../../models/api-error';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {CustomerInstanceViewHeader} from "./customer-instance-view-header";
-import {SnackbarProvider} from "../../../providers/snackbar-provider";
+import {SnackbarTheme} from '../../../providers/snackbar-provider';
 import {useAppSelector} from "../../../hooks/use-app-selector";
 import {createAppTheme} from "../../../theming/themes";
 import {BaseTheme} from "../../../theming/base-theme";
@@ -200,7 +200,7 @@ export function CustomerInstanceView() {
 
     return (
         <ThemeProvider theme={resolvedTheme}>
-            <SnackbarProvider>
+            <SnackbarTheme theme={resolvedTheme}>
                 {/* Own the surface above the outlet so identity steps, task content and empty states stay consistent. */}
                 <Box sx={{
                     backgroundColor: getCustomerPageSurfaceColor,
@@ -270,7 +270,7 @@ export function CustomerInstanceView() {
                     technicalSupportDepartmentId={instanceStatus.technicalSupportDepartmentId}
                     legalSupportDepartmentId={instanceStatus.legalSupportDepartmentId}
                 />
-            </SnackbarProvider>
+            </SnackbarTheme>
         </ThemeProvider>
     );
 }

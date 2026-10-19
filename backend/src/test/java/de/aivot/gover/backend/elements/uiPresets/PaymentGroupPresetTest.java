@@ -10,8 +10,14 @@ import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.UUID;
+import java.util.List;
+import java.math.BigDecimal;
+import java.net.URI;
+import de.aivot.prosuna.backend.payment.models.PaymentItem;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,6 +52,28 @@ class PaymentGroupPresetTest {
         assertTrue(renderMessage(XBezahldienstStatus.PAYED, " ", null).contains("# Zahlung erfolgreich"));
         assertTrue(renderMessage(XBezahldienstStatus.FAILED, null, " ").contains("# Zahlung fehlgeschlagen"));
         assertTrue(renderMessage(XBezahldienstStatus.CANCELED, null, " ").contains("# Zahlung abgebrochen"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"19, 19", "7.5, '7,5'"})
+    void shouldDescribeTaxedPaymentItemsConsistentlyWithTheFormDialog(String taxRate, String formattedTaxRate) throws Exception {
+        var item = new PaymentItem();
+        item.setDescription("Position");
+        item.setNetPrice(BigDecimal.TEN);
+        item.setQuantity(1L);
+        item.setTaxRate(new BigDecimal(taxRate));
+        var transaction = paymentTransaction(XBezahldienstStatus.INITIAL);
+        transaction.getPaymentInformation().setTransactionRedirectUrl(URI.create("https://example.test/pay"));
+        var preset = new PaymentGroupPreset(paymentProvider(), paymentProviderDefinition(),
+                new PaymentPayload().setPaymentItems(List.of(item)).setTotal(item.getTotalPrice()),
+                transaction, null, null, "https://example.test/confirmation");
+
+        var text = renderMessage(preset);
+        assertTrue(text.contains(" Euro inkl. " + formattedTaxRate + "% Steuern"));
+        if (taxRate.equals("19")) {
+            assertTrue(text.contains("Position: 11,90 Euro inkl. 19% Steuern"));
+            assertTrue(text.contains("Insgesamt zu entrichtende Zahlung: 11,90 Euro inkl. Steuern"));
+        }
     }
 
     private static String renderMessage(XBezahldienstStatus status,

@@ -2,7 +2,6 @@
 <!--/*@thymesVar id="caseNumber" type="java.lang.String"*/-->
 <!--/*@thymesVar id="logoDataUrl" type="java.lang.String"*/-->
 <!--/*@thymesVar id="department" type="de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity"*/-->
-<!--/*@thymesVar id="generatedAt" type="java.lang.String"*/-->
 <!--/*@thymesVar id="#numberformat" type="de.aivot.prosuna.backend.services.pdf.NumberFormatDialect"*/-->
 
 <html lang="de">
@@ -18,7 +17,9 @@
             html, body {
                 padding: 0;
                 margin: 0;
-                font-family: sans-serif;
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 11pt;
+                line-height: 1.45;
             }
 
             #logo {
@@ -36,7 +37,7 @@
             }
 
             #absender {
-                font-size: 8pt;
+                font-size: 9pt;
                 margin-bottom: 0.25cm;
             }
 
@@ -47,13 +48,7 @@
             #daten {
                 flex: 1;
                 margin-left: auto;
-                font-size: 8pt;
-            }
-
-            #date {
-                display: flex;
-                justify-content: flex-end;
-                margin-top: 2cm;
+                font-size: 9pt;
             }
 
             #daten div {
@@ -69,7 +64,7 @@
             }
 
             #content p {
-                font-size: 12pt;
+                font-size: 11pt;
             }
         </style>
     </head>
@@ -135,7 +130,7 @@
                 </div>
             </div>
 
-            <!-- Rechnungsdaten -->
+            <!-- Zahlungsdaten -->
             <div id="daten">
                 <div>
                     <strong>Transaktionsnummer</strong><br/>
@@ -148,16 +143,16 @@
                 </div>
 
                 <div>
-                    <strong>Rechnungsdatum</strong><br/>
+                    <strong>Datum der Zahlung</strong><br/>
                     <span th:text="${#numberformat.formatISOTimestamp(transaction.getPaymentInformation().getTransactionTimestamp(), 'dd.MM.yyyy')}">
                         01.01.2000
                     </span>
                 </div>
+                <div th:if="${transaction.getPaymentInformation().getPaymentMethod() != null}">
+                    <strong>Zahlungsart</strong><br/>
+                    <span th:text="${transaction.getPaymentInformation().getPaymentMethod().getLabel()}">Kreditkarte</span>
+                </div>
             </div>
-        </div>
-
-        <div id="date">
-            <span th:text="${#numberformat.formatISOTimestamp(generatedAt, 'dd.MM.yyyy')}">01.01.2000</span>
         </div>
 
         <!-- Content -->

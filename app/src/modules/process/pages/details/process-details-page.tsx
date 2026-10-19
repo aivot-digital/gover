@@ -92,7 +92,6 @@ import {useProcessExport} from '../../../../hooks/use-process-export';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
-import {AlertComponent} from '../../../../components/alert/alert-component';
 import {useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 import {
@@ -1678,23 +1677,10 @@ export function ProcessDetailsPage(): ReactNode {
                             Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
                         </Typography>
                         {
-                            versionProblems.length > 0 &&
-                            <AlertComponent
-                                color="error"
-                                title="Prozessversion ist unvollständig"
-                                sx={{
-                                    marginTop: '1rem',
-                                }}
-                            >
-                                <ul>
-                                    {versionProblems.map((problem) => <li key={problem}>{problem}</li>)}
-                                </ul>
-                            </AlertComponent>
-                        }
-                        {
-                            nodeProblems.length > 0 &&
+                            (nodeProblems.length > 0 || versionProblems.length > 0) &&
                             <NodeProblemsAlert
                                 problems={nodeProblems}
+                                versionProblems={versionProblems}
                                 availableNodeProviders={availableNodeProviders}
                                 mode="test"
                                 sx={{

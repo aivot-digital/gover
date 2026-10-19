@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.services;
 
 import de.aivot.prosuna.backend.config.entities.SystemConfigEntity;
+import de.aivot.prosuna.backend.enums.XBezahldienstPaymentMethod;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.prosuna.backend.core.services.HttpService;
@@ -142,6 +143,7 @@ class PdfServiceTest {
         var paymentInformation = new XBezahldienstePaymentInformation();
         paymentInformation.setTransactionId("transaction-1");
         paymentInformation.setTransactionTimestamp("2026-09-14T10:00:00Z");
+        paymentInformation.setPaymentMethod(XBezahldienstPaymentMethod.CREDITCARD);
         var transaction = new PaymentTransactionEntity()
                 .setPaymentRequest(paymentRequest)
                 .setPaymentInformation(paymentInformation);
@@ -173,6 +175,16 @@ class PdfServiceTest {
                 .orElseThrow();
 
         assertTrue(indexHtml.contains("src=\"" + logoDataUrl + "\""));
+        assertTrue(indexHtml.contains("Datum der Zahlung"));
+        assertFalse(indexHtml.contains("Rechnungsdatum"));
+        assertTrue(indexHtml.contains("Kreditkarte"));
+        var footerHtml = parts.get("files").stream()
+                .filter(ByteArrayResource.class::isInstance).map(ByteArrayResource.class::cast)
+                .filter(part -> "footer.html".equals(part.getFilename()))
+                .findFirst().map(part -> new String(part.getByteArray(), StandardCharsets.UTF_8)).orElseThrow();
+        assertTrue(footerHtml.contains("pageNumber"));
+        assertTrue(footerHtml.contains("totalPages"));
+        assertFalse(footerHtml.contains("Example Street"));
         assertFalse(indexHtml.contains("/api/public/assets/"));
     }
 

@@ -85,7 +85,7 @@ public class XBezahldiensteAddress implements Serializable {
     public void setAddressLineFromString(String addressLine) {
         if (addressLine != null) {
             this.addressLine = Arrays
-                    .stream(addressLine.split("[^\r\n]+"))
+                    .stream(addressLine.split("[\r\n]+"))
                     .map(ln -> StringUtils.cleanAndTruncate(
                                     ln,
                                     "[^\\w\\d\\s-,:\\.\\u00C0-\\u017F]",
