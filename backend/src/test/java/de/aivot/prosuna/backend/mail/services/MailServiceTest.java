@@ -19,6 +19,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.user.dtos.UserInitialCredentialsDTO;
 import de.aivot.prosuna.backend.user.services.UserService;
+import jakarta.annotation.Nullable;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Multipart;
 import jakarta.mail.Session;
@@ -26,7 +27,9 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -37,6 +40,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,9 +48,82 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class MailServiceTest {
+    @Test
+    void sendMailRendersCredentialsContentInTextAndHtml() throws Exception {
+        var mail = renderActionMail(MailTemplate.StaffAccountCredentials, null);
+        var text = mail.text();
+        var html = mail.html();
+        assertTrue(text.contains("Name: Erika & Max"));
+        assertTrue(text.contains("E-Mail-Adresse: erika@example.org"));
+        assertTrue(text.contains("Systemrolle: Sachbearbeitung <intern> & Vertretung"));
+        assertTrue(text.contains("Temporäres Passwort: Ab3&!xyz"));
+        assertTrue(text.contains("https://prosuna.example.org/staff"));
+        assertTrue(text.contains("ein neues Passwort vergeben"));
+        assertTrue(text.contains("Ihre E-Mail-Adresse bestätigen"));
+        assertTrue(html.contains("Erika &amp; Max"));
+        assertTrue(html.contains("erika@example.org"));
+        assertTrue(html.contains("Sachbearbeitung &lt;intern&gt; &amp; Vertretung"));
+        assertTrue(html.contains("Ab3&amp;!xyz"));
+        assertTrue(html.contains("ein neues Passwort vergeben"));
+        assertTrue(html.contains("Ihre E-Mail-Adresse"));
+    }
+
     @ParameterizedTest
-    @EnumSource(value = MailTemplate.class, names = {"StaffAccountCredentials", "ProcessTaskAssigned", "ProcessInstanceAssigned"})
-    void sendMailRendersThemedStaffActionsInTextAndHtml(MailTemplate template) throws Exception {
+    @CsvSource({
+            "ProcessTaskAssigned, Aufgabe: Prüfung, Aufgabe öffnen",
+            "ProcessInstanceAssigned, Vorgangskennung: CASE-1, Vorgang öffnen"
+    })
+    void sendMailRendersAssignmentContentInTextAndHtml(MailTemplate template, String detail, String action) throws Exception {
+        var mail = renderActionMail(template, null);
+
+        assertTrue(mail.text().contains("Prozess: Beispielprozess"));
+        assertTrue(mail.text().contains(detail));
+        assertTrue(mail.text().contains(action));
+        assertTrue(mail.text().contains("https://prosuna.example.org/staff"));
+        assertTrue(mail.html().contains("Beispielprozess"));
+        assertTrue(mail.html().contains(action));
+    }
+
+    @ParameterizedTest
+    @MethodSource("actionThemeCases")
+    void sendMailPreservesButtonDefaultsAndAppliesValidThemeColors(MailTemplate template,
+                                                                  @Nullable String primaryColor,
+                                                                  String backgroundColor,
+                                                                  String textColor,
+                                                                  @Nullable String borderColor) throws Exception {
+        var mail = renderActionMail(template, primaryColor);
+        var html = mail.html();
+
+        assertTrue(mail.text().contains("https://prosuna.example.org/staff"));
+        assertTrue(html.contains("href=\"https://prosuna.example.org/staff\""));
+        assertTrue(html.contains("bgcolor=\"" + backgroundColor + "\""));
+        assertTrue(html.contains("background:" + backgroundColor + ";"));
+        assertTrue(html.contains("color:" + textColor + ";"));
+        assertTrue(html.contains("border:1px solid #c9cdd2;"));
+        assertTrue(html.contains("font-size:15px;"));
+        assertTrue(html.contains("padding:12px 20px;"));
+        if (borderColor == null) {
+            assertFalse(html.contains("border-color:"));
+            assertFalse(html.contains("color:#000000;"));
+        } else {
+            assertTrue(html.contains("border-color:" + borderColor + ";"));
+        }
+        assertFalse(html.contains(" th:"));
+    }
+
+    private static Stream<Arguments> actionThemeCases() {
+        return Stream.of(MailTemplate.StaffAccountCredentials, MailTemplate.ProcessTaskAssigned,
+                MailTemplate.ProcessInstanceAssigned, MailTemplate.GenericEmailMessage).flatMap(template -> Stream.of(
+                Arguments.of(template, "#005ea8", "#005ea8", "#ffffff", "#005ea8"),
+                Arguments.of(template, "#ffcc00", "#ffcc00", "#000000", "#ffcc00"),
+                Arguments.of(template, null, "#e5e7eb", "#242424", null),
+                Arguments.of(template, "", "#e5e7eb", "#242424", null),
+                Arguments.of(template, "#abc", "#e5e7eb", "#242424", null),
+                Arguments.of(template, "invalid", "#e5e7eb", "#242424", null)
+        ));
+    }
+
+    private RenderedMail renderActionMail(MailTemplate template, @Nullable String primaryColor) throws Exception {
         var prosunaConfig = new ProsunaConfig();
         prosunaConfig.setFromMail("noreply@example.org");
         prosunaConfig.setProsunaHostname("https://prosuna.example.org");
@@ -95,8 +172,12 @@ class MailServiceTest {
         context.put("intro", "Zuweisung");
         context.put("process", new ProcessEntity().setInternalTitle("Beispielprozess"));
 
+        context.put("messageText", "Status update");
+        context.put("messageHtml", "<p>Status update</p>");
+        context.put("callToActions", List.of(new CommunicationMessageCallToAction("Open portal", "https://prosuna.example.org/staff")));
+
         service.sendMail(
-                new ThemeEntity().setPrimaryColor("#005ea8"),
+                new ThemeEntity().setPrimaryColor(primaryColor),
                 "erika@example.org",
                 Optional.empty(),
                 Optional.empty(),
@@ -120,28 +201,10 @@ class MailServiceTest {
                 .findFirst()
                 .orElseThrow();
 
-        if (template == MailTemplate.StaffAccountCredentials) {
-            assertTrue(text.contains("Name: Erika & Max"));
-            assertTrue(text.contains("E-Mail-Adresse: erika@example.org"));
-            assertTrue(text.contains("Systemrolle: Sachbearbeitung <intern> & Vertretung"));
-            assertTrue(text.contains("Temporäres Passwort: Ab3&!xyz"));
-            assertTrue(text.contains("https://prosuna.example.org/staff"));
-            assertTrue(text.contains("ein neues Passwort vergeben"));
-            assertTrue(text.contains("Ihre E-Mail-Adresse bestätigen"));
-            assertTrue(html.contains("Erika &amp; Max"));
-            assertTrue(html.contains("erika@example.org"));
-            assertTrue(html.contains("Sachbearbeitung &lt;intern&gt; &amp; Vertretung"));
-            assertTrue(html.contains("Ab3&amp;!xyz"));
-            assertTrue(html.contains("ein neues Passwort vergeben"));
-            assertTrue(html.contains("Ihre E-Mail-Adresse"));
-        }
-        assertTrue(html.contains("href=\"https://prosuna.example.org/staff\""));
-        assertTrue(html.contains("bgcolor=\"#005ea8\""));
-        assertTrue(html.contains("background:#005ea8"));
-        assertTrue(html.contains("color:#ffffff"));
-        assertFalse(html.contains("th:text"));
-        assertFalse(html.contains("th:href"));
+        return new RenderedMail(text, html);
     }
+
+    private record RenderedMail(String text, String html) {}
 
     @Test
     void sendMailRendersGenericMessageAndCallToActionsWithCustomEnvelopeHeaders() throws Exception {
