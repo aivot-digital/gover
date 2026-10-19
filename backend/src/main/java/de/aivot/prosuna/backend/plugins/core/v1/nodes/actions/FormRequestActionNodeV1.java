@@ -82,7 +82,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             "formSubmission", "Einreichung des Formulars",
             "Zeit für die Kund:in zum Ausfüllen und Einreichen des Formulars ab Versand der Nachricht.",
             new ProcessNodePort("form_submission_overdue", "Fristüberschreitung: Formulareinreichung",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Formulareinreichung."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Formulareinreichung beendet wurde."));
 
     public static final String NODE_KEY = "form_request";
     private static final String RECIPIENT_MODE_EXISTING = "existing";

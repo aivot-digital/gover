@@ -87,7 +87,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             "payment", "Zahlung",
             "Zeit für die Kund:in zur Zahlung ab Erstellung der Zahlungsanforderung.",
             new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Zahlung."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Zahlung beendet wurde."));
 
     public static final String NODE_KEY = "form";
     private static final String PORT_NAME = "input";

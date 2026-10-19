@@ -62,7 +62,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
             "processing", "Bearbeitung",
             "Zeit für die Bearbeitung der Aufgabe.",
             new ProcessNodePort("processing_overdue", "Fristüberschreitung: Bearbeitung",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Bearbeitung."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Bearbeitung beendet wurde."));
 
     public static final String NODE_KEY = "manual_action";
 

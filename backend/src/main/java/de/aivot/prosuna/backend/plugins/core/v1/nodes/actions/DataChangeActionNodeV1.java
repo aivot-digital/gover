@@ -64,7 +64,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
             "dataEntry", "Dateneingabe",
             "Zeit für die Eingabe oder Änderung der Daten.",
             new ProcessNodePort("data_entry_overdue", "Fristüberschreitung: Dateneingabe",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Dateneingabe."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Dateneingabe beendet wurde."));
 
     public static final String NODE_KEY = "data_change";
 

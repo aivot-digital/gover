@@ -828,7 +828,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     Map.entry("processedAt", "Zeitpunkt der Fristverarbeitung"))) {
                 currentMetadata.addInputVariable(new InputVariableSuggestion(InputVariableSource.ElementData,
                         prefix + "." + field.getKey(), node.getDataKey(), field.getValue(),
-                        "Steht nach einer harten Fristüberschreitung zur Verfügung.", node));
+                        "Steht zur Verfügung, wenn die Aufgabe wegen Fristüberschreitung beendet wurde.", node));
             }
         }
         addElementMetadataSuggestions(currentMetadata, node);
