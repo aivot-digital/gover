@@ -48,6 +48,7 @@ import {type IdentityDataMap} from '../../../identity/models/identity-data';
 import {useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {ProcessTaskDeadlineValue} from '../../components/process-task-deadline-value';
 
 function getExternalAssigneeLabel(identityId: string, identities?: IdentityDataMap): ReactNode {
     const identity = Object.values(identities ?? {}).find((value) => value.identityId === identityId);
@@ -189,7 +190,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
             {
                 label: 'Fälligkeit (spätestens)',
                 icon: <Acute />,
-                children: formatDateTimeWithRelative(item.task.deadline, 'Nicht festgelegt'),
+                children: <ProcessTaskDeadlineValue task={item.task}/>,
             },
             {
                 label: 'Zuletzt aktualisiert',

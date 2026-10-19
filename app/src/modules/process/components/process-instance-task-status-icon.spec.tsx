@@ -28,6 +28,12 @@ describe('task status icon', () => {
         expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip);
     });
 
+    it('explains that a deadline ended the task automatically', async () => {
+        render(<ProcessInstanceTaskStatusIcon status={ProcessTaskStatus.DeadlineExceeded}/>);
+        await userEvent.hover(screen.getByLabelText('Aufgabe wegen Fristüberschreitung beendet'));
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Aufgabe wegen Fristüberschreitung beendet');
+    });
+
     it('keeps the generic tooltip without an assigned identity', async () => {
         render(<ProcessInstanceTaskStatusIcon status={ProcessTaskStatus.AwaitingCustomer} />);
         await userEvent.hover(screen.getByLabelText('Wartet auf Nutzer:in'));

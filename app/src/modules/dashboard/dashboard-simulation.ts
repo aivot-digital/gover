@@ -25,7 +25,7 @@ export function createSimulatedDashboardData(
     // One example per deadline state: exceeded, at least half elapsed, recently started, and without deadline.
     const instanceExamples = [
         {processTitle: 'Gewerbe anmelden', prefix: 'GEW', daysAgo: 32, deadlineDays: 30},
-        {processTitle: 'Baumfällung beantragen', prefix: 'BFG', daysAgo: 10, deadlineDays: 14},
+        {processTitle: 'Baumfällung beantragen', prefix: 'BFG', daysAgo: 11, deadlineDays: 14},
         {processTitle: 'Wohngeld beantragen', prefix: 'WOG', daysAgo: 3, deadlineDays: 30},
         {processTitle: 'Fundsache melden', prefix: 'FUN', daysAgo: 1, deadlineDays: null},
     ];

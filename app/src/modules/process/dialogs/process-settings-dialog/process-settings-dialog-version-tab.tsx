@@ -21,6 +21,7 @@ import {Hint} from '../../../../components/hint/hint';
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
 import {RetentionTimeUnit} from '../../enums/retention-time-unit';
 import {formatNumToGermanNum} from '../../../../utils/format-german-numbers';
+import {pluralize} from '../../../../utils/humanization-utils';
 
 interface ProcessSettingsDialogVersionTabProps {
     open: boolean;
@@ -195,7 +196,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             return undefined;
         }
         if (!Number.isInteger(value) || value < 1 || value > MAX_INSTANCE_DEADLINE_DAYS) {
-            return `Die Bearbeitungsdauer muss zwischen 1 und ${formatNumToGermanNum(MAX_INSTANCE_DEADLINE_DAYS)} Tagen liegen.`;
+            return `Die Bearbeitungsfrist muss zwischen 1 und ${formatNumToGermanNum(MAX_INSTANCE_DEADLINE_DAYS)} Tagen liegen.`;
         }
         return undefined;
     }, [draft.instanceDeadlineDays, isEditable]);
@@ -443,8 +444,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginBottom
                 maxWidth={680}
             >
-                Die Frist beginnt mit dem Eingang eines Vorgangs und wird in Kalendertagen gezählt. Ab der Hälfte der
-                Frist wird der Vorgang als bald fällig hervorgehoben, nach Fristablauf als überschritten. Eine
+                Die Frist beginnt mit dem Eingang eines Vorgangs und wird in Kalendertagen gezählt. Sobald 75 % der
+                Frist verstrichen sind, wird der Vorgang als bald fällig hervorgehoben, nach Fristablauf als überschritten. Eine
                 Überschreitung hat keine Auswirkungen auf den Prozessablauf. Fristen einzelner Aufgaben gelten
                 unabhängig davon.
             </ElementEditorSectionHeader>
@@ -452,9 +453,9 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             <Box sx={{maxWidth: 680}}>
                 <NumberFieldComponent
                     key={`instance-deadline-${numberInputRevision}`}
-                    label="Bearbeitungsdauer"
+                    label="Bearbeitungsfrist"
                     hint="Ohne Angabe gilt für Vorgänge dieser Prozessversion keine Bearbeitungsfrist."
-                    suffix="Tage"
+                    suffix={draft.instanceDeadlineDays == null ? 'Tage' : pluralize(draft.instanceDeadlineDays, 'Tag', 'Tage')}
                     value={draft.instanceDeadlineDays}
                     onChange={(value) => {
                         setDraft({...draft, instanceDeadlineDays: value ?? null});

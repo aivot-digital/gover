@@ -26,7 +26,10 @@ import {ProcessInstanceEventApiService} from "../../services/process-instance-ev
 import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
 import {showApiErrorSnackbar} from "../../../../slices/snackbar-slice";
 import {getNodeDescription} from "./components/process-flow-editor/utils/node-utils";
-import {Chip, type ChipProps} from "../../../../components/chip/chip";
+import {type ChipProps} from '../../../../components/chip/chip';
+import {ProcessDeadlineChip} from '../../components/process-deadline-value';
+import {getProcessTaskDeadlineState, hasActiveTaskDeadline} from '../../utils/process-task-deadline';
+import {useDeadlineNow} from '../../hooks/use-deadline-now';
 import {formatDateTimeWithRelative} from "../../components/process-detail-values";
 import {humanizeMillisecondsDuration} from "../../../../utils/duration-utils";
 import {ProcessDefinitionEdgeApiService} from '../../services/process-definition-edge-api-service';
@@ -416,39 +419,14 @@ function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEnt
     };
 }
 
-function getTaskDeadlineChipProps(task?: ProcessInstanceTaskEntity): Pick<ChipProps, 'color' | 'label'> | null {
-    if (task?.status === ProcessTaskStatus.DeadlineExceeded) {
+function getTaskDeadlineChipProps(task: ProcessInstanceTaskEntity, now: number): Pick<ChipProps, 'label'> & {color: 'default' | 'error'} | null {
+    const state = getProcessTaskDeadlineState(task, now);
+    if (state === 'exceeded') {
         return {color: 'error', label: 'Frist überschritten'};
     }
-    if (task?.deadline == null) {
-        return null;
-    }
-
-    const deadline = Date.parse(task.deadline);
-
-    if (task.finished != null) {
-        const deadlineMet = Date.parse(task.finished) <= deadline;
-        return {
-            color: deadlineMet ? 'success' : 'error',
-            label: deadlineMet ? 'Frist eingehalten' : 'Abgelaufen',
-        };
-    }
-
-    let color: ChipProps['color'] = 'default';
-    if (activeTaskStatuses.has(task.status)) {
-        const now = Date.now();
-        const started = Date.parse(task.started);
-        if (now > deadline) {
-            color = 'error';
-        } else if (deadline > started && now > started + (deadline - started) / 2) {
-            color = 'warning';
-        }
-    }
-
-    return {
-        color,
-        label: <>{color === 'error' ? 'Abgelaufen' : 'Frist'}: {formatDateTimeWithRelative(task.deadline)}</>,
-    };
+    // Successful completion needs no extra badge. Keep upcoming deadlines visible while the task is active.
+    if (task.finished != null || task.deadline == null || !Number.isFinite(Date.parse(task.deadline))) return null;
+    return {color: 'default', label: <>Frist: {formatDateTimeWithRelative(task.deadline)}</>};
 }
 
 interface TimelineLabelProps {
@@ -489,7 +467,8 @@ interface TimelineItemProps extends TimelineLabelProps {
 
 function TimelineItem({index, node, nodeDefinition, task, identities, expanded, onExpandedChange}: TimelineItemProps) {
     const id = useId();
-    const deadlineChipProps = getTaskDeadlineChipProps(task);
+    const now = useDeadlineNow(hasActiveTaskDeadline(task));
+    const deadlineChipProps = getTaskDeadlineChipProps(task, now);
     const hasSummary = Boolean(task.executionSummaryMarkdown?.trim());
     const status = getProcessTaskStatusDisplay(task, identities);
     const activeNotice = status.identityLabel
@@ -529,7 +508,7 @@ function TimelineItem({index, node, nodeDefinition, task, identities, expanded, 
                 />
                 <TimelineLabel index={index} node={node} nodeDefinition={nodeDefinition}/>
                 {deadlineChipProps != null && (
-                    <Chip {...deadlineChipProps} size="small" sx={{mx: 1, flexShrink: 0}}/>
+                    <ProcessDeadlineChip {...deadlineChipProps} size="small" sx={{mx: 1, flexShrink: 0}}/>
                 )}
             </AccordionSummary>
             <AccordionDetails sx={{p: 2}}>
@@ -571,6 +550,7 @@ function TimelineItem({index, node, nodeDefinition, task, identities, expanded, 
                         '& span:first-of-type::before': {content: '""'},
                     }}
                 >
+                    {task.deadline != null && <span>Frist: {formatDateTimeWithRelative(task.deadline)}</span>}
                     <span>Beginn der Ausführung: {formatDateTimeWithRelative(task.started)}</span>
                     {task.finished != null && <span>Ende der Ausführung: {formatDateTimeWithRelative(task.finished)}</span>}
                     {task.runtime != null && <span>Ausführungsdauer: {humanizeMillisecondsDuration(task.runtime)}</span>}

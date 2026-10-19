@@ -283,7 +283,7 @@ describe('Process instance information', () => {
         for (const [name, deadline] of [
             ['Später', '02.10.2026'],
             ['Überfällig', '01.09.2026'],
-            ['Ohne Frist', 'Nicht festgelegt'],
+            ['Ohne Frist', 'Keine aktive Frist'],
         ]) {
             const task = within(tasks.getByRole('group', {name: `Aufgabe ${name}`}));
             expect(task.getAllByRole('row')).toHaveLength(4);
@@ -308,10 +308,11 @@ describe('Process instance information', () => {
         it.each([
             {deadline: null, text: 'Keine Bearbeitungsfrist festgelegt', state: null},
             {deadline: '2026-10-20T08:00:00Z', text: '20.10.2026 um 10:00 Uhr', state: null},
-            {deadline: '2026-09-26T08:00:00Z', text: '26.09.2026 um 10:00 Uhr', state: 'Bald fällig'},
+            {deadline: '2026-09-25T08:00:00Z', text: '25.09.2026 um 10:00 Uhr', state: 'Bald fällig'},
             {deadline: '2026-09-23T08:00:00Z', text: '23.09.2026 um 10:00 Uhr', state: 'Frist überschritten'},
         ])('shows the deadline $deadline of the instance with its state', async ({deadline, text, state}) => {
             const item = createItem();
+            item.instance.started = '2026-09-20T08:00:00Z';
             item.instance.deadline = deadline;
             renderItem(item);
 

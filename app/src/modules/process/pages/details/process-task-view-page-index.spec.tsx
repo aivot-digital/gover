@@ -191,7 +191,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         const instance = within(screen.getByRole('region', {name: 'Angaben zum Vorgang'}));
         const status = within(screen.getByRole('region', {name: 'Stand der Aufgabe'}));
         expect(instance.getByRole('row', {name: /^Bearbeitungsfrist des Vorgangs /})).toHaveTextContent('Frist überschritten');
-        expect(status.getByRole('row', {name: /Fälligkeit/})).toHaveTextContent('Nicht festgelegt');
+        expect(status.getByRole('row', {name: /Fälligkeit/})).toHaveTextContent('Keine aktive Frist');
     });
 
     it('shows the task status independently of the instance and omits absent optional metadata', () => {
