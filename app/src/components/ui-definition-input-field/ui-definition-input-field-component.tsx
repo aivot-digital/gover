@@ -60,7 +60,7 @@ import {
 } from '../../slices/admin-settings-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
-import {normalizeUiDefinitionForStorage} from '../../utils/ui-definition-utils';
+import {mergeRecalculatedReferencedIds, normalizeUiDefinitionForStorage} from '../../utils/ui-definition-utils';
 import {getSingleUseSectionAddDisabledReason} from '../../data/element-type/single-use-section-types';
 import {FormField, type FormFieldLayoutProps} from '../form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
@@ -221,18 +221,24 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         new ElementsApiService()
             .recalculateReferencedIds(draftValue)
             .then((recalculatedDraftValue) => {
-                if (!isCurrentDraftValue || deepEquals(recalculatedDraftValue, draftValue)) {
+                if (!isCurrentDraftValue) {
                     return;
                 }
 
-                recalculatedDraftValueRef.current = recalculatedDraftValue;
+                // Adopt only the referenced IDs. The response is a re-serialized tree that would alter the authored draft.
+                const nextDraftValue = mergeRecalculatedReferencedIds(draftValue, recalculatedDraftValue);
+                if (deepEquals(nextDraftValue, draftValue)) {
+                    return;
+                }
+
+                recalculatedDraftValueRef.current = nextDraftValue;
                 // Referenced IDs are derived from the draft, so updating them is neither an undo step nor an unsaved change.
                 setInitialDraftValue((currentInitialDraftValue) => (
                     currentInitialDraftValue != null && deepEquals(currentInitialDraftValue, draftValue) ?
-                        cloneUiDefinitionValue(recalculatedDraftValue) :
+                        cloneUiDefinitionValue(nextDraftValue) :
                         currentInitialDraftValue
                 ));
-                setCurrentDraftValue(recalculatedDraftValue);
+                setCurrentDraftValue(nextDraftValue);
             })
             .catch(() => {
                 // Keep the draft. The preview then only re-derives the dependencies that are already known.

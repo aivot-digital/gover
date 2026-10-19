@@ -276,6 +276,36 @@ describe('UiDefinitionInputFieldComponent', () => {
         }));
     });
 
+    it('keeps an untouched unconfigured definition empty after recalculating its references', async () => {
+        const user = userEvent.setup();
+        let completeRecalculation: () => void = () => undefined;
+        recalculateReferencedIds.mockImplementationOnce((element: unknown) => new Promise((resolve) => {
+            // The backend serializes absent element properties as null.
+            completeRecalculation = () => resolve({
+                ...(element as GroupLayout),
+                name: null,
+                visibility: null,
+                override: null,
+                metadata: null,
+            });
+        }));
+        const onChange = vi.fn();
+
+        render(<UiDefinitionInputFieldComponent
+            label="Testoberfläche"
+            value={null}
+            onChange={onChange}
+            displayContext={ElementDisplayContext.StaffFacing}
+        />);
+        await user.click(screen.getByRole('button', {name: 'Bearbeiten'}));
+        await act(async () => {
+            completeRecalculation();
+        });
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+
+        expect(onChange).toHaveBeenCalledWith(null);
+    });
+
     it('keeps the summary and editor action separate from the field name', () => {
         render(
             <UiDefinitionInputFieldComponent
