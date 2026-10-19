@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Box,
     Button,
@@ -29,7 +29,7 @@ import {generateElementWithDefaultValues} from '../../utils/generate-element-wit
 import {ElementDerivationContext, type ElementDerivationContextHandle} from '../../modules/elements/components/element-derivation-context';
 import {Allotment} from 'allotment';
 import {AuthoredElementValues, type DerivedRuntimeElementData} from '../../models/element-data';
-import {type ElementDerivationOptions} from '../../modules/elements/elements-api-service';
+import {ElementsApiService, type ElementDerivationOptions} from '../../modules/elements/elements-api-service';
 import {ElementChildOptions, ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {Hint} from '../hint/hint';
 import {humanizeNumberCapitalized} from '../../utils/humanization-utils';
@@ -60,7 +60,7 @@ import {
 } from '../../slices/admin-settings-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
-import {normalizeUiDefinitionForStorage} from '../../utils/ui-definition-utils';
+import {mergeRecalculatedReferencedIds, normalizeUiDefinitionForStorage} from '../../utils/ui-definition-utils';
 import {getSingleUseSectionAddDisabledReason} from '../../data/element-type/single-use-section-types';
 import {FormField, type FormFieldLayoutProps} from '../form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
@@ -146,6 +146,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const [disableVisibilities, setDisableVisibilities] = useState(false);
     const [settingsMenuAnchorEl, setSettingsMenuAnchorEl] = useState<HTMLElement | null>(null);
     const draftValueRef = useRef<UiDefinitionInputFieldElementItem | null>(null);
+    const recalculatedDraftValueRef = useRef<UiDefinitionInputFieldElementItem | null>(null);
 
     const {
         navigateToElementEditor,
@@ -208,6 +209,45 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         draftValueRef.current = nextDraftValue;
         setDraftValue(nextDraftValue);
     }, []);
+
+    // Process data references only resolve to the inputs writing them within the complete tree, which the element
+    // editor's per-element recalculation cannot see. Without them, edits would not re-derive dependent elements.
+    useEffect(() => {
+        if (draftValue == null || draftValue === recalculatedDraftValueRef.current) {
+            return;
+        }
+
+        let isCurrentDraftValue = true;
+        new ElementsApiService()
+            .recalculateReferencedIds(draftValue)
+            .then((recalculatedDraftValue) => {
+                if (!isCurrentDraftValue) {
+                    return;
+                }
+
+                // Adopt only the referenced IDs. The response is a re-serialized tree that would alter the authored draft.
+                const nextDraftValue = mergeRecalculatedReferencedIds(draftValue, recalculatedDraftValue);
+                if (deepEquals(nextDraftValue, draftValue)) {
+                    return;
+                }
+
+                recalculatedDraftValueRef.current = nextDraftValue;
+                // Referenced IDs are derived from the draft, so updating them is neither an undo step nor an unsaved change.
+                setInitialDraftValue((currentInitialDraftValue) => (
+                    currentInitialDraftValue != null && deepEquals(currentInitialDraftValue, draftValue) ?
+                        cloneUiDefinitionValue(nextDraftValue) :
+                        currentInitialDraftValue
+                ));
+                setCurrentDraftValue(nextDraftValue);
+            })
+            .catch(() => {
+                // Keep the draft. The preview then only re-derives the dependencies that are already known.
+            });
+
+        return () => {
+            isCurrentDraftValue = false;
+        };
+    }, [draftValue, setCurrentDraftValue]);
 
     const resetDraftDialogState = useCallback(() => {
         setCurrentDraftValue(null);

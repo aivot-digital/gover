@@ -53,6 +53,18 @@ public class ElementReferenceUtils {
         return referencedIds;
     }
 
+    /**
+     * Recalculates the referenced IDs of all elements in the tree.
+     * <p>
+     * Process data references depend on the inputs of the same tree that write the referenced destination key. These
+     * dependencies change whenever any input of the tree changes its destination key, so the complete tree must be
+     * recalculated instead of a single element.
+     */
+    public static void recalculateReferencedIds(@Nonnull BaseElement rootElement) {
+        var destinationKeyIndex = buildDestinationKeyIndex(rootElement);
+        ElementStreamUtils.applyAction(rootElement, element -> element.recalculateReferencedIds(destinationKeyIndex));
+    }
+
     @Nonnull
     public static Map<String, Set<String>> buildDestinationKeyIndex(@Nullable BaseElement rootElement) {
         var destinationKeyIndex = new HashMap<String, Set<String>>();
@@ -121,6 +133,25 @@ public class ElementReferenceUtils {
             @Nullable String path
     ) {
         var normalizedPath = normalizePath(path);
+        if (normalizedPath == null) {
+            return;
+        }
+
+        // A reference to an object or list also changes when an input writes one of its nested values.
+        var pathSegments = ProcessDataValueUtils.parseDestinationKeySegments(normalizedPath, true);
+        for (var entry : destinationKeyIndex.entrySet()) {
+            var destinationKey = normalizePath(entry.getKey());
+            if (destinationKey == null) {
+                continue;
+            }
+
+            var destinationKeySegments = ProcessDataValueUtils.parseDestinationKeySegments(destinationKey, true);
+            if (destinationKeySegments.size() > pathSegments.size()
+                    && destinationKeySegments.subList(0, pathSegments.size()).equals(pathSegments)) {
+                referencedIds.addAll(entry.getValue());
+            }
+        }
+
         while (normalizedPath != null) {
             var matchingReferencedIds = destinationKeyIndex.get(normalizedPath);
             if (matchingReferencedIds != null) {
