@@ -289,6 +289,7 @@ export function Submitted(props: SubmittedProps) {
 
             {
                 processFailed &&
+                !formTaskCompleted &&
                 <AlertComponent
                     color="error"
                     title="Ihre Einreichung konnte nicht weiterverarbeitet werden"
