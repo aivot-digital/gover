@@ -37,7 +37,7 @@ vi.mock('../../../hooks/use-app-dispatch', () => ({
 }));
 
 vi.mock('../../../providers/snackbar-provider', () => ({
-    SnackbarProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+    SnackbarTheme: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));
 
 vi.mock('../../../components/logo/logo', () => ({

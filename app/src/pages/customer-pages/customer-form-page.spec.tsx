@@ -56,8 +56,8 @@ vi.mock('../../providers/confirm-provider', () => ({
     useConfirm: () => mocks.confirm,
 }));
 
-vi.mock('notistack', () => ({
-    SnackbarProvider: ({children}: {children?: React.ReactNode}) => <>{children}</>,
+vi.mock('../../providers/snackbar-provider', () => ({
+    SnackbarTheme: ({children}: {children?: React.ReactNode}) => <>{children}</>,
 }));
 
 vi.mock('../../components/code-editor/code-editor', () => ({CodeEditor: () => null}));
