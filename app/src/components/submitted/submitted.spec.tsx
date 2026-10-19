@@ -128,12 +128,14 @@ describe('Submitted', () => {
             });
 
             expect(screen.getByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).toBeVisible();
-            expect(screen.getByText('Ihre Einreichung konnte nicht weiterverarbeitet werden')).toBeVisible();
-            expect(screen.getByText(/Bitte wenden Sie sich an die zuständige Stelle/)).toBeVisible();
             if (taskStatus === ProcessTaskStatus.Completed) {
+                expect(screen.queryByText('Ihre Einreichung konnte nicht weiterverarbeitet werden')).not.toBeInTheDocument();
+                expect(screen.queryByText(/Bitte wenden Sie sich an die zuständige Stelle/)).not.toBeInTheDocument();
                 expect(screen.getByText('Für Ihre Einreichung ist keine weitere Zahlung erforderlich.')).toBeVisible();
                 expect(screen.queryByText('Zahlung abgeschlossen')).not.toBeInTheDocument();
             } else {
+                expect(screen.getByText('Ihre Einreichung konnte nicht weiterverarbeitet werden')).toBeVisible();
+                expect(screen.getByText(/Bitte wenden Sie sich an die zuständige Stelle/)).toBeVisible();
                 expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
             }
             fireEvent.click(screen.getByRole('button', {name: 'Einreichung als PDF herunterladen'}));
