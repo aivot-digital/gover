@@ -4,6 +4,7 @@ export interface AlertComponentProps {
     title?: string;
     text?: string;
     color: AlertColor;
+    colorVariant?: 'default' | 'prominent';
     sx?: SxProps;
     richtext?: boolean;
 }

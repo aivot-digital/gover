@@ -7,6 +7,7 @@ export interface IdentityProviderListDTO {
     type: IdentityProviderType;
     name: string;
     description: string;
+    iconAssetKey: string | null;
     attributes: IdentityAttributeMapping[];
     isEnabled: boolean;
     isTestProvider: boolean;

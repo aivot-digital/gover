@@ -1,0 +1,133 @@
+package de.aivot.prosuna.backend.process.repositories;
+
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.projections.DashboardTaskCountsProjection;
+import de.aivot.prosuna.backend.process.projections.ProcessTaskAssignmentProjection;
+import de.aivot.prosuna.backend.process.projections.ProcessTaskRestartProjection;
+import jakarta.annotation.Nonnull;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Pageable;
+
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInstanceTaskEntity, Long>, JpaSpecificationExecutor<ProcessInstanceTaskEntity> {
+    @Nonnull
+    @Query("""
+            select task.id from ProcessInstanceTaskEntity task
+            join ProcessInstanceEntity instance on instance.id = task.processInstanceId
+            where task.id > :afterId and task.deadline <= :now and task.deadlineStrict = true
+              and task.status in :statuses and instance.status = de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus.Running
+            order by task.id
+            """)
+    List<Long> findDueDeadlineIds(@Param("afterId") long afterId, @Nonnull @Param("now") Instant now,
+                                  @Nonnull @Param("statuses") Collection<ProcessTaskStatus> statuses, @Nonnull Pageable page);
+
+    Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdOrderByStartedDescIdDesc(Long processInstanceId);
+
+    Optional<ProcessInstanceTaskEntity> findByProcessInstanceIdAndAccessKey(Long processInstanceId, String accessKey);
+
+    Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(Long processInstanceId, Integer processDefinitionNodeId);
+
+    Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc(Long processInstanceId,
+                                                                                                               Integer processDefinitionNodeId,
+                                                                                                               Long excludedTaskId);
+
+    @Query("select task.processInstanceId from ProcessInstanceTaskEntity task where task.id = :id")
+    Optional<Long> findInstanceIdById(@Param("id") Long id);
+
+    List<ProcessInstanceTaskEntity> findAllByProcessInstanceId(Long processInstanceId);
+
+    boolean existsByPreviousProcessInstanceTaskId(Long previousProcessInstanceTaskId);
+
+    boolean existsByRestartForTaskId(Long restartForTaskId);
+
+    boolean existsByProcessInstanceId(Long processInstanceId);
+
+    @Nonnull
+    @Query("""
+            select new de.aivot.prosuna.backend.process.projections.ProcessTaskRestartProjection(
+                task.id, task.restartForTaskId)
+            from ProcessInstanceTaskEntity task
+            where task.processInstanceId = :instanceId and task.processNodeId = :nodeId
+            """)
+    List<ProcessTaskRestartProjection> findRestartLinks(@Nonnull @Param("instanceId") Long instanceId,
+                                                       @Nonnull @Param("nodeId") Integer nodeId);
+
+    @Query("""
+            select new de.aivot.prosuna.backend.process.projections.ProcessTaskAssignmentProjection(
+                task.id, task.processNodeId, task.status, task.assignedUserId)
+            from ProcessInstanceTaskEntity task
+            where task.processInstanceId = :instanceId
+            """)
+    List<ProcessTaskAssignmentProjection> findAssignmentSnapshots(@Param("instanceId") Long instanceId);
+
+    List<ProcessInstanceTaskEntity> findAllByAssignedUserIdInAndStatusIn(Collection<String> assignedUserIds,
+                                                                         Collection<ProcessTaskStatus> statuses);
+
+    long countByAssignedUserIdAndStatusIn(String assignedUserId,
+                                          Collection<ProcessTaskStatus> statuses);
+
+    @Query(value = """
+            SELECT task.*
+            FROM process_instance_tasks task
+            WHERE task.assigned_user_id = :userId
+              AND task.status in (:statuses)
+              AND (
+                    :hasSystemAccess = true
+                    OR EXISTS (
+                        SELECT 1
+                        FROM v_user_process_instance_access_permissions access
+                        WHERE access.user_id = :userId
+                          AND access.target_process_instance_id = task.process_instance_id
+                          AND access.permissions::text[] @> ARRAY[:permission]
+                    )
+              )
+            -- Deadlines take precedence; otherwise tasks waiting the longest are shown first.
+            ORDER BY task.deadline ASC NULLS LAST, task.started ASC, task.id ASC
+            """, nativeQuery = true)
+    List<ProcessInstanceTaskEntity> findDashboardTasks(@Param("userId") String userId,
+                                                       @Param("statuses") Collection<Short> statuses,
+                                                       @Param("hasSystemAccess") boolean hasSystemAccess,
+                                                       @Param("permission") String permission,
+                                                       Pageable pageable);
+
+    @Query(value = """
+            SELECT COUNT(*) AS "totalCount",
+                   COUNT(*) FILTER (WHERE task.deadline IS NOT NULL AND task.deadline < :now) AS "overdueCount"
+            FROM process_instance_tasks task
+            WHERE task.assigned_user_id = :userId
+              AND task.status in (:statuses)
+              AND (
+                    :hasSystemAccess = true
+                    OR EXISTS (
+                        SELECT 1
+                        FROM v_user_process_instance_access_permissions access
+                        WHERE access.user_id = :userId
+                          AND access.target_process_instance_id = task.process_instance_id
+                          AND access.permissions::text[] @> ARRAY[:permission]
+                    )
+              )
+            """, nativeQuery = true)
+    DashboardTaskCountsProjection getDashboardTaskCounts(@Param("userId") String userId,
+                                                          @Param("statuses") Collection<Short> statuses,
+                                                          @Param("hasSystemAccess") boolean hasSystemAccess,
+                                                          @Param("permission") String permission,
+                                                          @Param("now") Instant now);
+
+    @Query(
+            value = """
+                    SELECT distinct on (process_node_id) * from process_instance_tasks where process_instance_id = :processInstanceId order by process_node_id, started desc;
+                    """,
+            nativeQuery = true
+    )
+    List<ProcessInstanceTaskEntity> getLatestTasksByProcessInstanceId(@Param("processInstanceId") Long processInstanceId);
+
+    long countAllByStatusIs(ProcessTaskStatus status);
+}

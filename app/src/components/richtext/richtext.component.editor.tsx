@@ -1,25 +1,25 @@
 import React from 'react';
 import {type RichtextElement} from '../../models/elements/form/content/richtext-element';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {type BaseEditorProps} from '../../editors/base-editor';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function RichtextComponentEditor(props: BaseEditorProps<RichtextElement, ElementTreeEntity>): JSX.Element {
+export function RichtextComponentEditor(props: BaseEditorProps<RichtextElement>) {
     return (
         <Grid
             container
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
-                <RichTextEditorComponentView
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
+                <RichTextInputComponent
+                    label={'Anzuzeigender Text'}
                     value={props.element.content ?? ''}
                     onChange={(value) => {
-                        props.onPatch({content: value});
+                        props.onPatch({content: value ?? undefined});
                     }}
                     disabled={!props.editable}
                 />

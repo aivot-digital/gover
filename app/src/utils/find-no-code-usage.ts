@@ -1,12 +1,15 @@
 import {type AnyElement} from '../models/elements/any-element';
-import {type Function as AppFunction} from '../models/functions/function';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {type AnyElementWithChildren, isAnyElementWithChildren} from '../models/elements/any-element-with-children';
-import {type ConditionSet} from '../models/functions/conditions/condition-set';
+import {ElementVisibilityFunction} from '../models/elements/element-visibility-function';
+import {ElementValidationFunction} from '../models/elements/element-validation-function';
+import {ElementOverrideFunction} from '../models/elements/element-override-function';
+import {ElementValueFunction} from '../models/elements/element-value-function';
 
-export function findNoCodeUsageOfChildren(target: AnyElementWithChildren, current: AnyElement): [AnyElement, AnyElement[]][] {
+export function findUsageOfChild(target: AnyElementWithChildren, current: AnyElement): [AnyElement, AnyElement[]][] {
     const found: [AnyElement, AnyElement[]][] = [];
-    for (const child of target.children) {
+
+    for (const child of target.children ?? []) {
         const usages = findNoCodeUsage(child, current);
         if (usages.length > 0) {
             found.push([
@@ -16,7 +19,7 @@ export function findNoCodeUsageOfChildren(target: AnyElementWithChildren, curren
         }
 
         if (isAnyElementWithChildren(child)) {
-            found.push(...findNoCodeUsageOfChildren(child, current));
+            found.push(...findUsageOfChild(child, current));
         }
     }
 
@@ -26,17 +29,17 @@ export function findNoCodeUsageOfChildren(target: AnyElementWithChildren, curren
 export function findNoCodeUsage(elementToFindUsageFor: AnyElement, currentlyInspectedElement: AnyElement): AnyElement[] {
     const foundReferences: AnyElement[] = [];
 
-    const referencedInVisibilityFunc = testTargetIsReferencedInFunc(elementToFindUsageFor, currentlyInspectedElement.isVisible);
+    const referencedInVisibilityFunc = testTargetIsReferencedInFunc(elementToFindUsageFor, currentlyInspectedElement.visibility);
     if (referencedInVisibilityFunc) {
         foundReferences.push(currentlyInspectedElement);
     } else if (isAnyInputElement(currentlyInspectedElement)) {
-        if (testTargetIsReferencedInFunc(elementToFindUsageFor, currentlyInspectedElement.validate)) {
+        if (testTargetIsReferencedInFunc(elementToFindUsageFor, currentlyInspectedElement.validation)) {
             foundReferences.push(currentlyInspectedElement);
         }
     }
 
     if (isAnyElementWithChildren(currentlyInspectedElement)) {
-        for (const child of currentlyInspectedElement.children) {
+        for (const child of currentlyInspectedElement.children ?? []) {
             foundReferences.push(...findNoCodeUsage(elementToFindUsageFor, child));
         }
     }
@@ -47,32 +50,12 @@ export function findNoCodeUsage(elementToFindUsageFor: AnyElement, currentlyInsp
 
 // region Utils
 
-function testTargetIsReferencedInFunc(target: AnyElement, func?: AppFunction): boolean {
-    if (func == null || func.conditionSet == null) {
+function testTargetIsReferencedInFunc(target: AnyElement, func?: ElementVisibilityFunction | ElementValidationFunction | ElementOverrideFunction | ElementValueFunction | undefined | null): boolean {
+    if (func == null || func.referencedIds == null) {
         return false;
     }
 
-    return testTargetIsReferencedInConditionSet(target, func.conditionSet);
-}
-
-function testTargetIsReferencedInConditionSet(target: AnyElement, conditionSet: ConditionSet): boolean {
-    if (conditionSet.conditions != null) {
-        for (const cond of conditionSet.conditions) {
-            if (cond.reference === target.id || cond.target === target.id) {
-                return true;
-            }
-        }
-    }
-
-    if (conditionSet.conditionsSets != null) {
-        for (const condSet of conditionSet.conditionsSets) {
-            if (testTargetIsReferencedInConditionSet(target, condSet)) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return func.referencedIds.includes(target.id);
 }
 
 // endregion

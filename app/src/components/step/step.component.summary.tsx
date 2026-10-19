@@ -1,92 +1,109 @@
-import {Box, IconButton, Typography} from '@mui/material';
-import {StepElement} from '../../models/elements/steps/step-element';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import {type StepElement} from '../../models/elements/steps/step-element';
 import Tooltip from '@mui/material/Tooltip';
-import React from 'react';
+import React, {useMemo} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {setCurrentStep} from '../../slices/stepper-slice';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {clearErrors, selectLoadedForm} from '../../slices/app-slice';
 import {getStepIcon} from '../../data/step-icons';
-import {BaseSummaryProps} from '../../summaries/base-summary';
-import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import {type BaseSummaryProps} from '../../summaries/base-summary';
+import EditNoteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/EditNote';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {resolveSummaryStepIndex} from '../../utils/resolve-summary-step-index';
 
-export function StepComponentSummary({allElements, model, showTechnical, allowStepNavigation, isBusy, idPrefix, customerInput}: BaseSummaryProps<StepElement, any>) {
+export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) {
+    const {
+        model,
+        showTechnical,
+        allowStepNavigation,
+        authoredElementValues,
+        derivedData,
+    } = props;
+
+    const {
+        children,
+    } = model;
+
     const dispatch = useAppDispatch();
-    const application = useAppSelector(selectLoadedForm);
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
 
-    // FIXME: This is no a good solution.
-    const index = application?.root.children?.findIndex(step => step.id === model.id);
+    const stepIndex = useMemo(() => {
+        return resolveSummaryStepIndex(rootElement, derivedData, model.id);
+    }, [derivedData, model.id, rootElement]);
+
+    const canNavigateToStep = (allowStepNavigation == null || allowStepNavigation === true) && stepIndex !== -1;
 
     const handleNavigateToStep = () => {
-        if (index != null) {
-            dispatch(clearErrors());
-            dispatch(setCurrentStep(index + 1)); // Add 1 to skip general information page
+        if (stepIndex === -1) {
+            return;
         }
+
+        dispatch(setCurrentStep(stepIndex));
     };
 
     const Icon = getStepIcon(model);
     return (
         <>
-        <Box
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-                mt: 4,
-                mb: 1.5,
-            }}
-        >
-            <Typography
-                component="h3"
-                variant="h5"
-                color="primary"
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    mt: 4,
+                    mb: 1.5,
+                }}
             >
-                <Icon
-                    sx={{
-                        marginRight: '8px',
-                        fontSize: '1rem',
-                        transform: 'scale(1.6) translateY(1px)',
-                    }}
-                />
-                &nbsp;
-                {
-                    model.title ? model.title : 'Unbenannter Abschnitt'
-                }
-            </Typography>
-            {
-                (allowStepNavigation == null || allowStepNavigation === true) &&
-                <Tooltip
-                    title="Diesen Abschnitt bearbeiten"
-                    arrow
-                    placement="top"
+                <Typography
+                    component="h3"
+                    variant="h5"
                 >
-                    <IconButton
-                        onClick={handleNavigateToStep}
-                        size="small"
+                    <Icon
                         sx={{
-                            ml: 'auto',
-                            color: '#BFBFBF',
+                            marginRight: '8px',
+                            fontSize: '1rem',
+                            transform: 'scale(1.6) translateY(1px)',
                         }}
-                        disabled={isBusy}
-                    >
-                        <EditNoteOutlinedIcon />
-                    </IconButton>
-                </Tooltip>
-            }
-        </Box>
-            {
-                model.children.map((model, index) => (
-                    <SummaryDispatcherComponent
-                        allElements={allElements}
-                        key={model.id + index.toString()}
-                        element={model}
-                        showTechnical={showTechnical}
-                        allowStepNavigation={allowStepNavigation}
-                        isBusy={isBusy}
-                        idPrefix={idPrefix}
-                        customerInput={customerInput}
                     />
-                ))
+                    &nbsp;
+                    {
+                        model.title ? model.title : 'Unbenannter Abschnitt'
+                    }
+                </Typography>
+                {
+                    canNavigateToStep &&
+                    <Tooltip
+                        title="Diesen Abschnitt bearbeiten"
+                        arrow
+                        placement="top"
+                    >
+                        <IconButton
+                            onClick={handleNavigateToStep}
+                            size="small"
+                            sx={{
+                                ml: 'auto',
+                                color: '#BFBFBF',
+                            }}
+                        >
+                            <EditNoteOutlinedIcon />
+                        </IconButton>
+                    </Tooltip>
+                }
+            </Box>
+            {
+                (children ?? [])
+                    .map((model) => (
+                        <SummaryDispatcherComponent
+                            key={model.id}
+                            element={model}
+                            showTechnical={showTechnical}
+                            allowStepNavigation={allowStepNavigation}
+                            authoredElementValues={authoredElementValues}
+                            derivedData={derivedData}
+                        />
+                    ))
             }
         </>
     );

@@ -1,0 +1,35 @@
+<mjml lang="de">
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Mitteilung zur Änderung Ihrer Rolle in einer Organisationseinheit
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml" />
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        Ihnen wurde in einer Organisationseinheit in Prosuna eine neue Rolle zugewiesen.
+                        <br/>
+                        Organisationseinheit: <b th:text="${department.name}">Beispiel-Organisationseinheit</b>
+                        <br/>
+                        Neue Rolle: <b th:text="${newRole.getLabel}">Neue Rolle</b>
+                        <br/>
+                        Bisherige Rolle: <b th:text="${oldRole.getLabel}">Bisherige Rolle</b>
+                        <br/>
+                        Änderung durch: <b th:text="${admin.getFullName()}">Max Mustermann</b>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/default-mail-signature.mjml"/>
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

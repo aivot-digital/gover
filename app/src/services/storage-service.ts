@@ -101,7 +101,7 @@ class _StorageService {
     }
 
     public generateKey(key: string): string {
-        return `gover-${key}`;
+        return `prosuna-${key}`;
     }
 }
 

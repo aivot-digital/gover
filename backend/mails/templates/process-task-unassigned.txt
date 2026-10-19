@@ -1,0 +1,15 @@
+Hallo,
+
+Die Ihnen zugewiesene Aufgabe wurde einer anderen Person zugewiesen.
+Prozess: [(${process.internalTitle})] - Version [(${processInstanceTask.processVersion})]
+Aufgabe: [(${taskName})]
+[# th:if="${fileNumbersDisplay != null}"]Aktenzeichen: [(${fileNumbersDisplay})]
+[/]
+Geändert durch: [(${changeSource})]
+
+[# th:if="${mailSignature != null}"]
+---
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

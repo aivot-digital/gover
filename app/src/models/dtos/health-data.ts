@@ -1,43 +1,8 @@
 export type Status = 'UP' | 'DOWN' | 'UNKNOWN';
 
-export interface AvComponent {
+interface BaseComponent<T> {
     status: Status;
-}
-
-export interface DbComponent {
-    status: Status;
-}
-
-export interface DiskSpaceComponent {
-    status: Status;
-    details: {
-        total: number;
-        free: number;
-        threshold: number;
-        exists: boolean;
-    };
-}
-
-export interface MailComponent {
-    status: Status;
-    details: {
-        location: string;
-    };
-}
-
-export interface S3Component {
-    status: Status;
-    details?: {
-        hint?: string;
-        error?: string;
-    };
-}
-
-export interface PuppetComponent {
-    status: Status;
-    details?: {
-        error?: string;
-    };
+    details?: T;
 }
 
 export interface HealthData {
@@ -45,17 +10,47 @@ export interface HealthData {
     components?: HealthDataComponents;
 }
 
-export interface RedisComponent {
-    status: Status;
-}
-
-
 export interface HealthDataComponents {
-    av: AvComponent;
-    db: DbComponent;
-    diskSpace: DiskSpaceComponent;
-    mail: MailComponent;
-    s3: S3Component;
-    puppet: PuppetComponent;
-    redis: RedisComponent;
+    av: BaseComponent<{
+        error?: string;
+    }>;
+    db: BaseComponent<{
+        database: string;
+        validationQuery: string;
+    }>;
+    diskSpace: BaseComponent<{
+        total: number;
+        free: number;
+        threshold: number;
+        path: string;
+        exists: boolean;
+    }>;
+    gotenberg: BaseComponent<{
+        error?: string;
+    }>;
+    mail: BaseComponent<{
+        location: string;
+    }>;
+    rabbit: BaseComponent<{
+        version: string;
+    }>;
+    ssl: BaseComponent<{
+        validChains: Array<any>;
+        invalidChains: Array<any>;
+    }>;
+    redis: BaseComponent<{
+        version: string;
+    }>;
+    storage: BaseComponent<{
+        error?: string;
+        providers: Array<{
+            name: string;
+            definitionKey: string;
+            definitionVersion: string;
+            definitionName?: string;
+            isDefaultAttachmentStorage: boolean;
+            error?: string;
+            hint?: string;
+        }>
+    }>;
 }

@@ -1,5 +1,10 @@
-export interface SelectFieldComponentOption {
+import {type ReactNode} from 'react';
+
+export type SelectFieldValue = string | number;
+
+export interface SelectFieldComponentOption<T extends SelectFieldValue = string> {
     label: string;
     subLabel?: string;
-    value: string;
+    icon?: ReactNode;
+    value: T;
 }

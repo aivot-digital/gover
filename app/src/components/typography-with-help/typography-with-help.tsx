@@ -8,10 +8,10 @@ export function TypographyWithHelp(props: TypographyWithHelpProps & TypographyPr
 
     return (
         <Box
-            display="flex"
-            alignItems="center"
-            sx={sx}
-        >
+            sx={[{
+                display: "flex",
+                alignItems: "center"
+            }, ...(Array.isArray(sx) ? sx : [sx])]}>
             <Typography {...rest} >
                 {children}
             </Typography>

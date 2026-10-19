@@ -1,16 +1,55 @@
-import React, {useEffect, useRef} from 'react';
-import {useSnackbar, SnackbarProvider as NotistackProvider, closeSnackbar, SnackbarKey} from 'notistack';
-import { useAppSelector} from '../hooks/use-app-selector';
-import { useAppDispatch} from '../hooks/use-app-dispatch';
+import React, {createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {SnackbarKey, SnackbarProvider as NotistackProvider, useSnackbar} from 'notistack';
+import {useAppSelector} from '../hooks/use-app-selector';
+import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {removeSnackbar} from '../slices/snackbar-slice';
-import {Alert, CircularProgress, Fade} from '@mui/material';
+import {AppInfo} from '../app-info';
+import {Alert, CircularProgress, Fade, GlobalStyles, ThemeProvider, type Theme, type AlertProps} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
+import {selectMinimizeDrawer, selectSnackbarMessages, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
+
+const FLOW_EDITOR_SNACKBAR_EXTRA_LEFT_OFFSET = 52;
+const SnackbarThemeContext = createContext<{
+    theme?: Theme;
+    setTheme: (theme: Theme | undefined) => void;
+}>({setTheme: () => undefined});
+
+/** Customer pages supply their process theme without adding another notification subscription. */
+export function SnackbarTheme({theme, children}: React.PropsWithChildren<{theme: Theme}>) {
+    const {setTheme} = useContext(SnackbarThemeContext);
+    useLayoutEffect(() => {
+        setTheme(theme);
+        return () => setTheme(undefined);
+    }, [theme, setTheme]);
+    return <>{children}</>;
+}
+
+const SnackbarAlert = React.forwardRef<HTMLDivElement, AlertProps>((props, ref) => {
+    const baseTheme = useTheme();
+    const {theme} = useContext(SnackbarThemeContext);
+    // Forward notistack's transition ref to the actual DOM element.
+    return <ThemeProvider theme={theme ?? baseTheme}><Alert {...props} ref={ref}/></ThemeProvider>;
+});
+
+// Default auto-hide durations for different severities
+const SNACKBAR_AUTO_HIDE_DURATION_MS: Record<SnackbarSeverity, number> = {
+    [SnackbarSeverity.Error]: 7000,
+    [SnackbarSeverity.Warning]: 6000,
+    [SnackbarSeverity.Info]: 5000,
+    [SnackbarSeverity.Success]: 4000,
+};
 
 const SnackbarConsumer = () => {
     const dispatch = useAppDispatch();
-    const { enqueueSnackbar } = useSnackbar();
-    const snackbarMessages = useAppSelector(state => state.snackbar.messages);
-    const theme = useTheme();
+
+    // list of all active snackbar messages from the store
+    const snackbarMessages = useAppSelector(selectSnackbarMessages);
+
+    // Closing must use the same provider as enqueueing; nested notistack providers can replace the global helper.
+    const {
+        enqueueSnackbar,
+        closeSnackbar,
+    } = useSnackbar();
 
     // prevents duplicate Snackbars
     const displayedMessages = useRef<Set<SnackbarKey>>(new Set());
@@ -29,36 +68,40 @@ const SnackbarConsumer = () => {
 
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
-    }, [snackbarMessages, dispatch]);
+    }, [snackbarMessages, dispatch, closeSnackbar]);
 
     useEffect(() => {
-        snackbarMessages.forEach(({ key, message, severity }, index) => {
-            if (!displayedMessages.current.has(key)) {
-                displayedMessages.current.add(key);
+        snackbarMessages.forEach(({key, message, severity, type}) => {
+            if (displayedMessages.current.has(key)) {
+                return;
+            }
 
-                const autoHideDuration = severity === 'error' ? 7000 :
-                    severity === 'warning' ? 6000 :
-                        severity === 'info' ? 5000 :
-                            4000; // standard for 'success'
+            // Store the key of the displayed message
+            displayedMessages.current.add(key);
 
-                // replace hyphens with non-breaking hyphens, because Chrome does not respect word-break: keep-all
-                const formattedMessage = message.replace(/-/g, '\u2011');
+            // Determine the auto-hide duration based on the given duration or the default duration for the given severity
+            const autoHideDuration = SNACKBAR_AUTO_HIDE_DURATION_MS[severity];
 
-                const isLoading = severity === 'info' && key === 'loading-toast';
+            // replace hyphens with non-breaking hyphens, because Chrome does not respect word-break: keep-all
+            // Remove this for now because it breaks the ability to copy technical information from the message.
+            // const formattedMessage = message.replace(/-/g, '\u2011');
+            const formattedMessage = message;
 
-                enqueueSnackbar(message, {
-                    key,
-                    variant: severity,
-                    autoHideDuration: isLoading ? null : autoHideDuration,
-                    persist: isLoading,
-                    preventDuplicate: true,
-                    content: (key) => {
-                        const isLoading = severity === 'info' && key === 'loading-toast';
-
-                        return (<Alert
+            enqueueSnackbar(message, {
+                key,
+                variant: severity,
+                autoHideDuration: type === SnackbarType.AutoHiding ? autoHideDuration : null,
+                persist: type !== SnackbarType.AutoHiding,
+                preventDuplicate: true,
+                content: (key) => {
+                    return (
+                        <SnackbarAlert
                             onClose={
-                                isLoading
-                                    ? undefined
+                                (
+                                    type === SnackbarType.Loading ||
+                                    type == SnackbarType.Permanent
+                                ) ?
+                                    undefined
                                     : () => {
                                         closeSnackbar(key);
                                         dispatch(removeSnackbar(key as string));
@@ -66,11 +109,11 @@ const SnackbarConsumer = () => {
                                     }
                             }
                             severity={severity}
-                            icon={isLoading ? <CircularProgress size={22} /> : undefined}
-                            sx={{
+                            icon={type === SnackbarType.Loading ? <CircularProgress size={22} /> : undefined}
+                            sx={(theme) => ({
                                 width: '100%',
                                 maxWidth: 460,
-                                backgroundColor: "white",
+                                backgroundColor: 'background.paper',
                                 fontSize: '0.9375rem',
                                 borderRadius: '6px',
                                 padding: '6px 14px',
@@ -78,30 +121,30 @@ const SnackbarConsumer = () => {
                                 wordBreak: 'keep-all',
                                 hyphens: 'manual',
                                 boxShadow: 'rgba(2, 6, 12, 0.31) 0px 0px 1px 0px, rgba(2, 6, 12, 0.25) 0px 6px 12px -4px',
-                                borderLeft: !isLoading ? `4px solid ${
+                                borderLeft: type !== SnackbarType.Loading ? `4px solid ${
                                     severity === 'error' ? theme.palette.error.light :
                                         severity === 'warning' ? theme.palette.warning.light :
                                             severity === 'info' ? theme.palette.info.light :
                                                 severity === 'success' ? theme.palette.success.light :
                                                     theme.palette.grey[400]
                                 }` : `4px solid ${theme.palette.grey[400]}`,
-                            }}
+                            })}
                         >
                             {formattedMessage}
-                        </Alert>);
-                    },
-                });
+                        </SnackbarAlert>
+                    );
+                },
+            });
 
-                // remove Snackbar after autoHideDuration
-                if (key !== 'loading-toast') {
-                    setTimeout(() => {
-                        dispatch(removeSnackbar(key));
-                        displayedMessages.current.delete(key);
-                    }, autoHideDuration);
-                }
+            // remove Snackbar after autoHideDuration
+            if (type === SnackbarType.AutoHiding) {
+                setTimeout(() => {
+                    dispatch(removeSnackbar(key));
+                    displayedMessages.current.delete(key);
+                }, autoHideDuration);
             }
         });
-    }, [snackbarMessages, enqueueSnackbar, dispatch, theme]);
+    }, [snackbarMessages, enqueueSnackbar, closeSnackbar, dispatch]);
 
     // Close any snackbars that were removed from the Redux store but are still shown.
     // This keeps the UI in sync with the state and ensures "manual" snackbars (e.g. loading) are properly dismissed.
@@ -120,20 +163,42 @@ const SnackbarConsumer = () => {
             closeSnackbar(key);
             displayedMessages.current.delete(key);
         });
-    }, [snackbarMessages]);
+    }, [snackbarMessages, closeSnackbar]);
 
     return null;
 };
 
-export const SnackbarProvider = ({ children }: { children: React.ReactNode }) => {
+export const SnackbarProvider = ({children}: { children: React.ReactNode }) => {
+    const [theme, setTheme] = useState<Theme>();
+    const themeContext = useMemo(() => ({theme, setTheme}), [theme]);
+    const isDrawerMinimized = useAppSelector(selectMinimizeDrawer);
+    const snackbarLeftOffset = isDrawerMinimized ? 88 : 280;
+    const flowEditorSnackbarLeftOffset = snackbarLeftOffset + FLOW_EDITOR_SNACKBAR_EXTRA_LEFT_OFFSET;
+
     return (
-        <NotistackProvider
-            maxSnack={5}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-            TransitionComponent={Fade}
-        >
-            <SnackbarConsumer />
-            {children}
-        </NotistackProvider>
+        <SnackbarThemeContext.Provider value={themeContext}>
+            <NotistackProvider
+                maxSnack={5}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                }}
+                TransitionComponent={Fade}
+            >
+                <SnackbarConsumer />
+                {children}
+            </NotistackProvider>
+
+            {AppInfo.mode === 'staff' && <GlobalStyles
+                styles={{
+                    '.notistack-SnackbarContainer': {
+                        left: `${snackbarLeftOffset}px`,
+                    },
+                    'body[data-has-flow-editor="true"] .notistack-SnackbarContainer': {
+                        left: `${flowEditorSnackbarLeftOffset}px`,
+                    },
+                }}
+            />}
+        </SnackbarThemeContext.Provider>
     );
 };

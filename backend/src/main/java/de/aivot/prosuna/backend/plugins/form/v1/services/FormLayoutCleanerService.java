@@ -1,0 +1,48 @@
+package de.aivot.prosuna.backend.plugins.form.v1.services;
+
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.ImageContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
+import tools.jackson.core.JacksonException;
+
+public class FormLayoutCleanerService {
+    public static FormLayoutElement clean(FormLayoutElement formLayoutElement) {
+        if (formLayoutElement == null) {
+            return null;
+        }
+
+        var om = JsonMapperFactory
+                .getInstance();
+
+        String json;
+        try {
+            json = om.writeValueAsString(formLayoutElement);
+        } catch (JacksonException e) {
+            throw new RuntimeException(e);
+        }
+
+        FormLayoutElement copy;
+        try {
+            copy = om.readValue(json, FormLayoutElement.class);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        copy.setManagingDepartmentId(null);
+        copy.setResponsibleDepartmentId(null);
+        copy.setPdfTemplateKey(null);
+
+        ElementStreamUtils.applyAction(copy, element -> {
+            switch (element) {
+                case ImageContentElement ice:
+                    ice.setSrc(null);
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        return copy;
+    }
+}
