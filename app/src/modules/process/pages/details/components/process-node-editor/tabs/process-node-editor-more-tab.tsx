@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {Alert, Box} from "@mui/material";
+import {Alert, Box, Tooltip} from "@mui/material";
 import {NumberFieldComponent} from "../../../../../../../components/number-field/number-field-component";
 import {CheckboxFieldComponent} from '../../../../../../../components/checkbox-field/checkbox-field-component';
 import {useProcessNodeEditorContext} from "../process-node-editor-context";
@@ -9,6 +9,7 @@ import {
 import {type ProcessNodeDeadlineDefinition} from '../../../../../services/process-node-provider-api-service';
 import {ProcessNodeApiService} from '../../../../../services/process-node-api-service';
 import {ElementEditorSectionHeader} from '../../../../../../../components/element-editor-section-header/element-editor-section-header';
+import {FormFieldGroup} from '../../../../../../../components/form-field';
 
 export function ProcessNodeEditorMoreTab() {
     const {
@@ -64,32 +65,51 @@ export function ProcessNodeEditorMoreTab() {
             {problems.length > 0 && <Alert severity="warning">{problems.join(' ')}</Alert>}
             {!loading && definitions.map((definition) => {
                 const setting = node.deadlines[definition.key] ?? {days: null, strict: false};
-                return <Box key={definition.key} sx={{mb: 3}}>
-                    <NumberFieldComponent
-                        label={definition.label}
-                        hint={`${definition.description} Ohne Angabe gilt keine Frist.`}
-                        suffix="Tage"
-                        decimalPlaces={0}
-                        minValue={1}
-                        maxValue={3652}
-                        value={setting.days ?? undefined}
-                        onChange={(value) => setNode({
-                            ...node,
-                            deadlines: {...node.deadlines, [definition.key]: {...setting, days: value ?? null}},
-                        }, false)}
+                const missingDeadlineHint = isEditable && setting.days == null
+                    ? 'Legen Sie zunächst eine Frist fest, um diese Option zu aktivieren.'
+                    : undefined;
+                return <Box key={definition.key} sx={{mb: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1}}>
+                    <FormFieldGroup
+                        label={<Box component="span" sx={{typography: 'subtitle1', fontWeight: 600}}>{definition.label}</Box>}
                         disabled={!isEditable}
-                    />
-                    <CheckboxFieldComponent
-                        label={`Harte Frist: ${definition.label}`}
-                        hint={`Bei Fristüberschreitung wird die Aufgabe beendet und der Prozess über den Ausgang „${definition.port.label}“ fortgesetzt. Ohne diese Option kann die Frist ohne Prozessübergang verstreichen.`}
-                        value={setting.strict}
-                        onChange={(value) => setNode({
-                            ...node,
-                            deadlines: {...node.deadlines, [definition.key]: {...setting, strict: value}},
-                        }, false)}
-                        disabled={!isEditable || setting.days == null}
-                        sx={{mt: 2}}
-                    />
+                        margin="none"
+                        showOptionalIndicator={false}
+                    >
+                        <NumberFieldComponent
+                            label="Frist"
+                            hint={`${definition.description} Ohne Angabe gilt keine Frist.`}
+                            suffix={setting.days === 1 ? 'Tag' : 'Tage'}
+                            decimalPlaces={0}
+                            minValue={1}
+                            maxValue={3652}
+                            value={setting.days ?? undefined}
+                            onChange={(value) => setNode({
+                                ...node,
+                                deadlines: {...node.deadlines, [definition.key]: {...setting, days: value ?? null}},
+                            }, false)}
+                            disabled={!isEditable}
+                            margin="none"
+                            sx={{mt: 1}}
+                        />
+                        <Tooltip title={missingDeadlineHint ?? ''} arrow>
+                            <Box>
+                                <CheckboxFieldComponent
+                                    label="Aufgabe bei Fristüberschreitung beenden"
+                                    hint={setting.days == null
+                                        ? missingDeadlineHint ?? 'Keine Frist festgelegt.'
+                                        : `Die Aufgabe wird beendet und der Prozess über den Ausgang „${definition.port.label}“ fortgesetzt. Ohne diese Option bleibt die Aufgabe aktiv; die Fristüberschreitung wird nur angezeigt.`}
+                                    value={setting.strict}
+                                    onChange={(value) => setNode({
+                                        ...node,
+                                        deadlines: {...node.deadlines, [definition.key]: {...setting, strict: value}},
+                                    }, false)}
+                                    disabled={!isEditable || setting.days == null}
+                                    margin="none"
+                                    sx={{mt: 2}}
+                                />
+                            </Box>
+                        </Tooltip>
+                    </FormFieldGroup>
                 </Box>;
             })}
 

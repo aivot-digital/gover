@@ -11,7 +11,14 @@ import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.teams.repositories.TeamRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK;
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ;
@@ -20,7 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +56,27 @@ class PermissionServiceTest {
                 processRepository,
                 instances
         );
+    }
+
+    @Test
+    void permissionChecksShouldCommitTheirQueriesInReadOnlyTransactions() throws ResponseException {
+        // Uncommitted queries would keep the request's connection in a transaction under open-in-view, so the
+        // instance lock could no longer set its isolation level.
+        var transactionManager = mock(PlatformTransactionManager.class);
+        var transaction = new SimpleTransactionStatus();
+        when(transactionManager.getTransaction(any())).thenReturn(transaction);
+        var proxyFactory = new ProxyFactory(permissionService);
+        proxyFactory.setProxyTargetClass(true);
+        proxyFactory.addAdvice(new TransactionInterceptor(transactionManager, new AnnotationTransactionAttributeSource()));
+        var transactionalPermissionService = (PermissionService) proxyFactory.getProxy();
+        when(instances.hasPermission(USER_ID, 42L, PROCESS_INSTANCE_EDIT_TASK)).thenReturn(true);
+
+        transactionalPermissionService.requireProcessInstancePermission(USER_ID, 42L, PROCESS_INSTANCE_EDIT_TASK);
+
+        var definition = ArgumentCaptor.forClass(TransactionDefinition.class);
+        verify(transactionManager).getTransaction(definition.capture());
+        assertTrue(definition.getValue().isReadOnly());
+        verify(transactionManager).commit(transaction);
     }
 
     @Test

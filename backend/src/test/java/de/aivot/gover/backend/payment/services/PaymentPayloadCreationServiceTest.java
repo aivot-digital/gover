@@ -13,6 +13,7 @@ import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
@@ -408,6 +409,60 @@ class PaymentPayloadCreationServiceTest {
 
         assertEquals(new BigDecimal("0.03"), request.getPaymentItems().getFirst().getTotalPrice());
         assertEquals(new BigDecimal("0.03"), request.getTotal());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "7.1234,  7.1234, 712.34, 10712.34",
+            "0.0001,  0.0001, 0.01,   10000.01",
+            "7.12344, 7.1234, 712.34, 10712.34",
+            "7.12345, 7.1235, 712.35, 10712.35"
+    })
+    void shouldPreserveFourDecimalTaxRatesInPaymentPayload(
+            BigDecimal taxRate,
+            BigDecimal expectedTaxRate,
+            BigDecimal expectedTax,
+            BigDecimal expectedTotal
+    ) throws PaymentException {
+        var config = new PaymentConfigElementValue(
+                null,
+                "Purpose",
+                "Description",
+                false,
+                null,
+                List.of(new PaymentConfigElementValueItem(
+                        PaymentConfigElementValueItem.IdType.Predefined,
+                        "fee",
+                        "Fee",
+                        "FEE",
+                        PaymentConfigElementValueItem.CostType.FixedCosts,
+                        new BigDecimal("10000.00"),
+                        null,
+                        null,
+                        null,
+                        PaymentConfigElementValueItem.QuantityType.FixedQuantity,
+                        1L,
+                        null,
+                        null,
+                        null,
+                        taxRate,
+                        null
+                )),
+                null,
+                null
+        );
+
+        var request = createService().createRequest(config, null, new ProcessExecutionData()).orElseThrow();
+        var item = request.getPaymentItems().getFirst();
+        var providerItem = item.toXBezahldienstePaymentItem().orElseThrow();
+
+        assertAll(
+                () -> assertEquals(expectedTaxRate, item.getTaxRate()),
+                () -> assertEquals(expectedTaxRate, providerItem.getTaxRate()),
+                () -> assertEquals(expectedTax, providerItem.getTotalTaxAmount()),
+                () -> assertEquals(expectedTotal, request.getTotal()),
+                () -> assertEquals(request.getTotal(), providerItem.getBruttoAmount())
+        );
     }
 
     @Test

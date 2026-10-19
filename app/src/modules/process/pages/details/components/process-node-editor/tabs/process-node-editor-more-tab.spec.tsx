@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {literalAuthoredValue} from '../../../../../../../models/element-data';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {type GroupLayout} from '../../../../../../../models/elements/form/layout/group-layout';
@@ -30,19 +30,24 @@ afterEach(() => vi.restoreAllMocks());
 describe('configurable phase deadlines', () => {
     it('defaults to optional soft deadlines and changes each phase independently without updating saved ports', async () => {
         const {setNode} = renderMoreTab();
-        const input = await screen.findByRole('textbox', {name: /^Nachrichtenversand/});
+        const input = within(await screen.findByRole('group', {name: 'Nachrichtenversand'})).getByRole('textbox', {name: /^Frist/});
         expect(screen.getByRole('heading', {name: 'Fristen', level: 5})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: 'Anforderungen und Anmerkungen', level: 5})).toBeInTheDocument();
-        const checkbox = screen.getByRole('checkbox', {name: /^Harte Frist: Nachrichtenversand/});
+        const checkbox = within(screen.getByRole('group', {name: 'Nachrichtenversand'})).getByRole('checkbox', {name: 'Aufgabe bei Fristüberschreitung beenden'});
         expect(checkbox).not.toBeChecked();
         expect(checkbox).toBeDisabled();
+        expect(checkbox).toHaveAccessibleDescription('Legen Sie zunächst eine Frist fest, um diese Option zu aktivieren.');
         expect(input).toHaveAccessibleDescription(/Ohne Angabe gilt keine Frist/);
         fireEvent.change(input, {target: {value: '3'}});
+        expect(checkbox).not.toHaveAccessibleDescription(/Legen Sie zunächst eine Frist fest/);
+        expect(checkbox).toHaveAccessibleDescription(/Ausgang „Fristüberschreitung: Nachrichtenversand“/);
+        const otherPhase = within(screen.getByRole('group', {name: 'Formulareinreichung'}));
+        expect(otherPhase.getByRole('checkbox')).toHaveAccessibleDescription('Legen Sie zunächst eine Frist fest, um diese Option zu aktivieren.');
         await userEvent.click(checkbox);
         expect(setNode).toHaveBeenLastCalledWith(expect.objectContaining({
             deadlines: {message: {days: 3, strict: true}}, ports: [],
         }), false);
-        fireEvent.change(screen.getByRole('textbox', {name: /^Formulareinreichung/}), {target: {value: '7'}});
+        fireEvent.change(within(screen.getByRole('group', {name: 'Formulareinreichung'})).getByRole('textbox', {name: /^Frist/}), {target: {value: '7'}});
         expect(setNode).toHaveBeenLastCalledWith(expect.objectContaining({
             deadlines: {message: {days: 3, strict: true}, customer: {days: 7, strict: false}}, ports: [],
         }), false);
@@ -50,11 +55,12 @@ describe('configurable phase deadlines', () => {
 
     it('retains strictness when the duration is cleared and disables the checkbox', async () => {
         const {setNode} = renderMoreTab({deadlines: {message: {days: 3, strict: true}}});
-        const input = await screen.findByRole('textbox', {name: /^Nachrichtenversand/});
-        const checkbox = screen.getByRole('checkbox', {name: /^Harte Frist: Nachrichtenversand/});
+        const input = within(await screen.findByRole('group', {name: 'Nachrichtenversand'})).getByRole('textbox', {name: /^Frist/});
+        const checkbox = within(screen.getByRole('group', {name: 'Nachrichtenversand'})).getByRole('checkbox', {name: 'Aufgabe bei Fristüberschreitung beenden'});
         fireEvent.change(input, {target: {value: ''}});
         expect(checkbox).toBeChecked();
         expect(checkbox).toBeDisabled();
+        expect(checkbox).toHaveAccessibleDescription('Legen Sie zunächst eine Frist fest, um diese Option zu aktivieren.');
         expect(setNode).toHaveBeenLastCalledWith(expect.objectContaining({deadlines: {message: {days: null, strict: true}}}), false);
         fireEvent.change(input, {target: {value: '2'}});
         expect(checkbox).toBeEnabled();
@@ -62,24 +68,62 @@ describe('configurable phase deadlines', () => {
 
     it('shows offered deadlines for triggers and respects read-only mode', async () => {
         renderMoreTab({deadlines: {message: {days: 3, strict: true}}}, false, ProcessNodeType.Trigger);
-        expect(await screen.findByRole('textbox', {name: /^Nachrichtenversand/})).toBeDisabled();
-        expect(screen.getByRole('checkbox', {name: /^Harte Frist: Nachrichtenversand/})).toBeDisabled();
+        expect(within(await screen.findByRole('group', {name: 'Nachrichtenversand'})).getByRole('textbox', {name: /^Frist/})).toBeDisabled();
+        expect(within(screen.getByRole('group', {name: 'Nachrichtenversand'})).getByRole('checkbox', {name: 'Aufgabe bei Fristüberschreitung beenden'})).toBeDisabled();
+    });
+
+    it('explains the missing duration on hover', async () => {
+        renderMoreTab();
+        const group = within(await screen.findByRole('group', {name: 'Nachrichtenversand'}));
+        await userEvent.hover(group.getByText('Aufgabe bei Fristüberschreitung beenden'));
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Legen Sie zunächst eine Frist fest');
+        await userEvent.unhover(group.getByText('Aufgabe bei Fristüberschreitung beenden'));
+    });
+
+    it.each([
+        {value: '', unit: 'Tage', invalid: false},
+        {value: '0', unit: 'Tage', invalid: true},
+        {value: '-3', unit: 'Tage', invalid: true},
+        {value: '1', unit: 'Tag', invalid: false},
+        {value: '2', unit: 'Tage', invalid: false},
+    ])('uses "$unit" for the entered phase deadline "$value"', async ({value, unit, invalid}) => {
+        renderMoreTab({deadlines: {message: {days: 3, strict: false}}});
+        const group = within(await screen.findByRole('group', {name: 'Nachrichtenversand'}));
+        const input = group.getByRole('textbox', {name: /^Frist/});
+        fireEvent.change(input, {target: {value}});
+        expect(input).toHaveValue(value);
+        expect(group.getByText(unit)).toBeVisible();
+        if (invalid) {
+            expect(input).toBeInvalid();
+            expect(input).toHaveAccessibleDescription(/Der Wert muss mindestens 1 betragen\./);
+        } else {
+            expect(input).toBeValid();
+        }
+    });
+
+    it('does not blame a missing duration when the configuration is read-only', async () => {
+        renderMoreTab({}, false);
+        within(await screen.findByRole('group', {name: 'Nachrichtenversand'})).getByRole('textbox', {name: /^Frist/});
+        for (const checkbox of screen.getAllByRole('checkbox')) {
+            expect(checkbox).toBeDisabled();
+            expect(checkbox).not.toHaveAccessibleDescription(/Legen Sie zunächst eine Frist fest/);
+        }
     });
 
     it('preserves settings for temporarily hidden phases and previews unsaved configuration', async () => {
         const {updateNode} = renderMoreTab({deadlines: {message: {days: 3, strict: true}}});
-        await screen.findByRole('textbox', {name: /^Nachrichtenversand/});
+        within(await screen.findByRole('group', {name: 'Nachrichtenversand'})).getByRole('textbox', {name: /^Frist/});
         vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockResolvedValueOnce(resolution([customer]));
         act(() => updateNode({configuration: {executionType: literalAuthoredValue('automatic')}}));
         await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
         expect(screen.getByRole('heading', {name: 'Fristen', level: 5})).toBeInTheDocument();
-        expect(screen.queryByRole('textbox', {name: /^Nachrichtenversand/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('group', {name: 'Nachrichtenversand'})).not.toBeInTheDocument();
         expect(ProcessNodeApiService.prototype.resolvePorts).toHaveBeenLastCalledWith(expect.objectContaining({
             configuration: {executionType: literalAuthoredValue('automatic')}, deadlines: {message: {days: 3, strict: true}},
         }));
         act(() => updateNode({configuration: {executionType: literalAuthoredValue('manual')}}));
-        expect(await screen.findByRole('textbox', {name: /^Nachrichtenversand/})).toHaveValue('3');
-        expect(screen.getByRole('checkbox', {name: /^Harte Frist: Nachrichtenversand/})).toBeChecked();
+        expect(within(await screen.findByRole('group', {name: 'Nachrichtenversand'})).getByRole('textbox', {name: /^Frist/})).toHaveValue('3');
+        expect(within(screen.getByRole('group', {name: 'Nachrichtenversand'})).getByRole('checkbox', {name: 'Aufgabe bei Fristüberschreitung beenden'})).toBeChecked();
     });
 
     it('ignores outdated preview responses', async () => {
@@ -90,9 +134,9 @@ describe('configurable phase deadlines', () => {
         expect(screen.getByRole('heading', {name: 'Anforderungen und Anmerkungen', level: 5})).toBeInTheDocument();
         vi.mocked(ProcessNodeApiService.prototype.resolvePorts).mockResolvedValueOnce(resolution([customer]));
         act(() => updateNode({configuration: {executionType: literalAuthoredValue('automatic')}}));
-        await screen.findByRole('textbox', {name: /^Formulareinreichung/});
+        within(await screen.findByRole('group', {name: 'Formulareinreichung'})).getByRole('textbox', {name: /^Frist/});
         await act(async () => resolveOld(resolution()));
-        expect(screen.queryByRole('textbox', {name: /^Nachrichtenversand/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('group', {name: 'Nachrichtenversand'})).not.toBeInTheDocument();
     });
 
     it('shows a recoverable error when preview loading fails', async () => {

@@ -59,8 +59,8 @@ export function ProcessInstanceListPage() {
     }, [refreshOptions]);
     const columns = useMemo(() => processListColumns<ProcessInstanceListEntry>(false, refresh), [refresh]);
     const fetchFilterCounts = useCallback<FetchListFilterCounts>(
-        ({signal}) => new ProcessListApiService().instancesCounts(signal),
-        [],
+        ({signal}) => new ProcessListApiService().instancesCounts({assignee}, signal),
+        [assignee],
     );
     const fetch = useCallback(
         async (options: GenericListPropsFetchOptions<ProcessInstanceListEntry>) => {

@@ -68,7 +68,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
             "assignment", "Vorgangszuweisung",
             "Zeit für die manuelle Zuweisung des Vorgangs.",
             new ProcessNodePort("assignment_overdue", "Fristüberschreitung: Vorgangszuweisung",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Vorgangszuweisung."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Vorgangszuweisung beendet wurde."));
 
     public static final String NODE_KEY = "assign_instance";
 

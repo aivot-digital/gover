@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.elements.controllers;
 
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
-import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
+import de.aivot.prosuna.backend.elements.utils.ElementReferenceUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
@@ -29,13 +29,13 @@ public class ElementDerivationController {
     @PostMapping("recalculate-referenced-ids/")
     @Operation(
             summary = "Recalculate Referenced IDs",
-            description = "Recalculates the referenced IDs of the provided element and all its children. This is necessary, when the element structure is changed"
+            description = "Recalculates the referenced IDs of the provided element and all its children. This is necessary, when the element structure is changed. " +
+                    "Process data references resolve to the inputs within the provided element that write the referenced destination key, so the complete element tree should be provided."
     )
     public BaseElement recalculateReferencedIds(
             @Nonnull @RequestBody @Valid BaseElement element
     ) throws ResponseException {
-        ElementStreamUtils
-                .applyAction(element, BaseElement::recalculateReferencedIds);
+        ElementReferenceUtils.recalculateReferencedIds(element);
 
         return element;
     }

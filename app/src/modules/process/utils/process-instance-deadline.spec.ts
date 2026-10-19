@@ -7,17 +7,17 @@ const deadline = '2026-10-11T08:00:00Z';
 const at = (value: string) => Date.parse(value);
 
 describe('getProcessInstanceDeadlineState', () => {
-    it('stays open until half of the period has passed', () => {
+    it('stays open until 75% of the period has passed', () => {
         const instance = {status: ProcessInstanceStatus.Running, started, deadline};
 
         expect(getProcessInstanceDeadlineState(instance, at('2026-10-01T08:00:00Z'))).toBe('open');
-        expect(getProcessInstanceDeadlineState(instance, at('2026-10-06T07:59:59Z'))).toBe('open');
+        expect(getProcessInstanceDeadlineState(instance, at('2026-10-08T19:59:59.999Z'))).toBe('open');
     });
 
-    it('warns from the halfway point until the deadline', () => {
+    it('warns from the 75% boundary until the deadline', () => {
         const instance = {status: ProcessInstanceStatus.Running, started, deadline};
 
-        expect(getProcessInstanceDeadlineState(instance, at('2026-10-06T08:00:00Z'))).toBe('warning');
+        expect(getProcessInstanceDeadlineState(instance, at('2026-10-08T20:00:00Z'))).toBe('warning');
         expect(getProcessInstanceDeadlineState(instance, at('2026-10-11T07:59:59Z'))).toBe('warning');
     });
 

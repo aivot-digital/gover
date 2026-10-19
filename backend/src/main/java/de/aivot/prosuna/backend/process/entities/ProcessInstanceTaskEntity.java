@@ -139,7 +139,7 @@ public class ProcessInstanceTaskEntity {
 
     // Fixed with the date when the phase starts, so the deadline worker only scans hard deadlines.
     @Nonnull
-    @NotNull(message = "Die Angabe, ob die Frist hart ist, muss gesetzt sein.")
+    @NotNull(message = "Die Angabe zur automatischen Beendigung bei Fristüberschreitung muss gesetzt sein.")
     private Boolean deadlineStrict = false;
 
     @Nullable

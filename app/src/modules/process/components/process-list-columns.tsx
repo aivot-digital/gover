@@ -22,6 +22,9 @@ import {
     ProcessInstanceDeadlineStateLabels,
 } from '../utils/process-instance-deadline';
 
+import {getDeadlineForegroundColor} from './process-deadline-value';
+import {useDeadlineNow} from '../hooks/use-deadline-now';
+import {getProcessTaskDeadlineState, hasActiveTaskDeadline} from '../utils/process-task-deadline';
 type Entry = ProcessInstanceListEntry | ProcessTaskListEntry;
 
 function ListText({value}: {value: string}) {
@@ -58,8 +61,7 @@ function ListDate({value, tone, statusLabel}: ListDateProps) {
             <Box
                 component="span"
                 sx={{
-                    // The darker warning shade keeps text readable on light backgrounds.
-                    color: tone === 'error' ? 'error.main' : tone === 'warning' ? 'warning.dark' : undefined,
+                    color: tone == null ? undefined : (theme) => getDeadlineForegroundColor(theme, tone),
                     display: 'block',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -70,6 +72,21 @@ function ListDate({value, tone, statusLabel}: ListDateProps) {
                 {statusLabel && <span className="visually-hidden"> ({statusLabel})</span>}
             </Box>
         </Tooltip>
+    );
+}
+
+function ListDeadline({entry}: {entry: Entry}) {
+    const task = 'processInstanceId' in entry;
+    const active = task ? hasActiveTaskDeadline(entry) : getProcessInstanceDeadlineState(entry) != null;
+    const now = useDeadlineNow(active);
+    const state = task ? getProcessTaskDeadlineState(entry, now) : getProcessInstanceDeadlineState(entry, now);
+    const highlighted = state === 'warning' || state === 'exceeded';
+    return (
+        <ListDate
+            value={entry.deadline}
+            tone={highlighted ? ProcessInstanceDeadlineStateColors[state] : undefined}
+            statusLabel={highlighted ? ProcessInstanceDeadlineStateLabels[state] : undefined}
+        />
     );
 }
 
@@ -204,50 +221,12 @@ export function processListColumns<T extends Entry>(tasks: boolean, onChanged: (
             },
         },
     );
-    if (tasks)
-        columns.push({
-            field: 'deadline',
-            headerName: 'Fällig am',
-            width: 170,
-            renderCell: ({row}) => {
-                const task = row as ProcessTaskListEntry;
-                const overdue =
-                    task.deadline != null &&
-                    Date.parse(task.deadline) < Date.now() &&
-                    [
-                        ProcessTaskStatus.Running,
-                        ProcessTaskStatus.InProgress,
-                        ProcessTaskStatus.AwaitingStaff,
-                        ProcessTaskStatus.Paused,
-                        ProcessTaskStatus.AwaitingCustomer,
-                        ProcessTaskStatus.AwaitingPayment,
-                    ].includes(task.status);
-                return (
-                    <ListDate
-                        value={task.deadline}
-                        tone={overdue ? 'error' : undefined}
-                    />
-                );
-            },
-        });
-    else
-        columns.push({
-            field: 'deadline',
-            headerName: 'Bearbeitungsfrist',
-            width: 170,
-            renderCell: ({row}) => {
-                const instance = row as ProcessInstanceListEntry;
-                const state = getProcessInstanceDeadlineState(instance);
-                const highlighted = state === 'warning' || state === 'exceeded';
-                return (
-                    <ListDate
-                        value={instance.deadline}
-                        tone={highlighted ? ProcessInstanceDeadlineStateColors[state] : undefined}
-                        statusLabel={highlighted ? ProcessInstanceDeadlineStateLabels[state] : undefined}
-                    />
-                );
-            },
-        });
+    columns.push({
+        field: 'deadline',
+        headerName: tasks ? 'Fällig am' : 'Bearbeitungsfrist',
+        width: 170,
+        renderCell: ({row}) => <ListDeadline entry={row}/>,
+    });
     columns.push(
         {
             field: 'started',

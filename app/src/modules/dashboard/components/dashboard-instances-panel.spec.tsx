@@ -35,7 +35,7 @@ function renderPanel(value: DashboardInstanceSummary, previewOnly = false) {
 
 describe('DashboardInstancesPanel', () => {
     beforeEach(() => {
-        // Only the clock is faked; started 2026-10-01, so the halfway point of a 14-day deadline has passed.
+        // Only the clock is faked; started 2026-10-01, so the 75% boundary of a 14-day deadline has passed.
         vi.useFakeTimers({toFake: ['Date']});
         vi.setSystemTime(new Date('2026-10-12T10:00:00Z'));
     });

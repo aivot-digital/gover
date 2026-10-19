@@ -124,7 +124,7 @@ public class PaymentPayloadCreationService {
         }
 
         var normalizedSingleNetAmount = singleNetAmount.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
-        var normalizedTaxRate = taxRate.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+        var normalizedTaxRate = taxRate.setScale(PaymentItem.TAX_RATE_SCALE, RoundingMode.HALF_UP);
 
         var paymentItem = new PaymentItem();
         paymentItem.setId(resolveItemId(itemConfig, index));

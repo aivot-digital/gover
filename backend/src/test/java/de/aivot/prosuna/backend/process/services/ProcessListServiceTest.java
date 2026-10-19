@@ -246,26 +246,26 @@ public class ProcessListServiceTest {
 
     @Test
     void instanceTabCountsRespectScopeAndOnlyReturnActionableCategories() throws Exception {
-        assertEquals(Map.of("active", 1L, "failed", 0L), service.counts("me", null, false));
+        assertEquals(Map.of("active", 1L, "failed", 0L), service.counts("me", null, null, false));
         when(permissions.hasSystemPermission("me", PROCESS_INSTANCE_READ)).thenReturn(true);
-        assertEquals(Map.of("active", 1L, "failed", 1L), service.counts("me", null, false));
+        assertEquals(Map.of("active", 1L, "failed", 1L), service.counts("me", null, null, false));
     }
 
     @Test
     void taskTabCountsIncludeOtherAssigneesAndKeepOverdueWithinOpen() throws Exception {
         assertEquals(3, service.countOpenAssignedTasks("me"));
-        assertEquals(Map.of("open", 4L, "overdue", 1L, "failed", 0L), service.counts("me", null, true));
+        assertEquals(Map.of("open", 4L, "overdue", 1L, "failed", 0L), service.counts("me", null, null, true));
         sql("update process_instance_tasks set status = 4 where id = 11");
-        assertEquals(Map.of("open", 3L, "overdue", 0L, "failed", 1L), service.counts("me", null, true));
+        assertEquals(Map.of("open", 3L, "overdue", 0L, "failed", 1L), service.counts("me", null, null, true));
         when(permissions.hasSystemPermission("me", PROCESS_INSTANCE_READ)).thenReturn(true);
-        assertEquals(Map.of("open", 4L, "overdue", 1L, "failed", 1L), service.counts("me", null, true));
+        assertEquals(Map.of("open", 4L, "overdue", 1L, "failed", 1L), service.counts("me", null, null, true));
     }
 
     @Test
     void tabCountsMatchUnfilteredRowsWithinTheListScope() throws Exception {
         for (Long instanceId : new Long[]{null, 1L, 2L}) {
             for (var tasks : List.of(false, true)) {
-                var counts = service.counts("me", instanceId, tasks);
+                var counts = service.counts("me", instanceId, null, tasks);
                 for (var entry : counts.entrySet()) {
                     var filter = new ProcessListFilter(null, entry.getKey(), null, null, instanceId, "all", null);
                     var rows = tasks ? service.tasks("me", PageRequest.of(0, 1), filter)
@@ -275,17 +275,36 @@ public class ProcessListServiceTest {
             }
         }
         // A nested task list still describes only its own instance, including when it has no active tasks.
-        assertEquals(Map.of("open", 0L, "overdue", 0L, "failed", 0L), service.counts("me", 2L, true));
+        assertEquals(Map.of("open", 0L, "overdue", 0L, "failed", 0L), service.counts("me", 2L, null, true));
+    }
+
+    @Test
+    void tabCountsFollowTheAssignmentFilter() throws Exception {
+        // A task that failed before it was assigned must not be counted in the list of the user's own tasks.
+        sql("update process_instance_tasks set status = 4, assigned_user_id = null where id = 12");
+        for (var assignee : List.of("all", "mine", "unassigned", "someone")) {
+            for (var tasks : List.of(false, true)) {
+                var counts = service.counts("me", null, assignee, tasks);
+                for (var entry : counts.entrySet()) {
+                    var filter = filter(entry.getKey(), assignee, null);
+                    var rows = tasks ? service.tasks("me", PageRequest.of(0, 1), filter)
+                            : service.instances("me", PageRequest.of(0, 1), filter);
+                    assertEquals(rows.getTotalElements(), entry.getValue(), assignee + " " + entry.getKey());
+                }
+            }
+        }
+        assertEquals(0L, service.counts("me", null, "mine", true).get("failed"));
+        assertEquals(1L, service.counts("me", null, "unassigned", true).get("failed"));
     }
 
     @Test
     void tabCountsDoNotLeakUnreadableInstances() throws Exception {
         when(permissions.getProcessInstancesWithPermission("me", PROCESS_INSTANCE_READ)).thenReturn(List.of());
         for (var tasks : List.of(false, true)) {
-            assertTrue(service.counts("me", null, tasks).values().stream().allMatch(count -> count == 0));
+            assertTrue(service.counts("me", null, null, tasks).values().stream().allMatch(count -> count == 0));
             doThrow(ResponseException.forbidden("Kein Zugriff")).when(permissions)
                     .requireProcessInstancePermission("me", 3L, PROCESS_INSTANCE_READ);
-            assertThrows(ResponseException.class, () -> service.counts("me", 3L, tasks));
+            assertThrows(ResponseException.class, () -> service.counts("me", 3L, null, tasks));
         }
     }
 
@@ -305,7 +324,7 @@ public class ProcessListServiceTest {
         assertEquals(1L, regular.getContent().getFirst().id());
         assertFalse(regular.getContent().getFirst().test());
         assertTrue(service.instances("me", page.next(), excluded).isEmpty());
-        assertEquals(Map.of("active", 2L, "failed", 0L), service.counts("me", null, false));
+        assertEquals(Map.of("active", 2L, "failed", 0L), service.counts("me", null, null, false));
     }
 
     @Test

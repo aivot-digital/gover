@@ -216,7 +216,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     private void validateInstanceDeadlineConfiguration(@Nonnull ProcessVersionEntity entity) throws ResponseException {
         var days = entity.getInstanceDeadlineDays();
         if (days != null && (days < 1 || days > ProcessVersionEntity.MAX_INSTANCE_DEADLINE_DAYS)) {
-            throw ResponseException.badRequest("Die Bearbeitungsdauer muss zwischen 1 und 3.652 Tagen liegen.");
+            throw ResponseException.badRequest("Die Bearbeitungsfrist muss zwischen 1 und 3.652 Tagen liegen.");
         }
     }
 
