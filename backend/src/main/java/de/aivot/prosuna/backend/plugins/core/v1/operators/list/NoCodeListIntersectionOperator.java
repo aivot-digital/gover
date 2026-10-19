@@ -121,12 +121,6 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
             return left == null && right == null;
         }
 
-        var castedRight = castToTypeOfReference(left, right);
-        if (Objects.equals(left, castedRight)) {
-            return true;
-        }
-
-        var castedLeft = castToTypeOfReference(right, left);
-        return Objects.equals(castedLeft, right);
+        return isEqualToReference(left, right) || isEqualToReference(right, left);
     }
 }

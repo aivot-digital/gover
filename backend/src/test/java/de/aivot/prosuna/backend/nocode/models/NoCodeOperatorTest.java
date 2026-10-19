@@ -125,6 +125,23 @@ class NoCodeOperatorTest {
     }
 
     @Test
+    void isEqualToReferenceComparesNumbersByValue() {
+        // Number fields keep their decimal places, e.g. 5 or 5.50, while number casts use eight.
+        assertTrue(operator.isEqualToReference(new BigDecimal("5"), "5"));
+        assertTrue(operator.isEqualToReference(new BigDecimal("5.50"), "5.5"));
+        assertTrue(operator.isEqualToReference(new BigDecimal("5.50"), 5.5));
+        assertTrue(operator.isEqualToReference(5, new BigDecimal("5.00")));
+        assertFalse(operator.isEqualToReference(new BigDecimal("5"), "6"));
+
+        // Integer casts no longer drop the decimals of the compared value.
+        assertFalse(operator.isEqualToReference(5, "5.5"));
+
+        assertTrue(operator.isEqualToReference("a", "a"));
+        assertFalse(operator.isEqualToReference("a", "b"));
+        assertTrue(operator.isEqualToReference(true, "true"));
+    }
+
+    @Test
     void castToBoolean() {
         assertTrue(operator.castToBoolean(true));
         assertFalse(operator.castToBoolean(false));

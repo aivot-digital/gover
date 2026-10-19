@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -76,6 +77,21 @@ class NoCodeCommonOperatorsTest {
 
         assertFalse(notEquals.evaluate(data, 5, "5").getValueAsBoolean());
         assertTrue(notEquals.evaluate(data, 5, "6").getValueAsBoolean());
+    }
+
+    @Test
+    void equalsAndNotEqualsShouldCompareNumberFieldValuesByValue() throws NoCodeException {
+        var data = runtime();
+        var equals = new NoCodeEqualsOperator();
+        var notEquals = new NoCodeNotEqualsOperator();
+
+        // Number fields provide their value with their configured decimal places.
+        assertTrue(equals.evaluate(data, new BigDecimal("5"), "5").getValueAsBoolean());
+        assertTrue(equals.evaluate(data, new BigDecimal("5.50"), "5.5").getValueAsBoolean());
+        assertFalse(equals.evaluate(data, new BigDecimal("5.50"), "5.4").getValueAsBoolean());
+
+        assertFalse(notEquals.evaluate(data, new BigDecimal("5"), "5").getValueAsBoolean());
+        assertTrue(notEquals.evaluate(data, new BigDecimal("5.50"), "5.4").getValueAsBoolean());
     }
 
     @Test

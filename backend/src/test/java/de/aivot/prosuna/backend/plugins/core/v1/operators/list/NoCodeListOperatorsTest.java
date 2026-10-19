@@ -134,6 +134,20 @@ class NoCodeListOperatorsTest {
     }
 
     @Test
+    void listOperatorsShouldCompareNumberFieldValuesByValue() throws NoCodeException {
+        var data = runtime();
+        var numberFieldValue = new BigDecimal("5.50");
+
+        assertTrue(new NoCodeListContainsOperator().evaluate(data, List.of("5.5", "6"), numberFieldValue).getValueAsBoolean());
+        assertEquals(2, new NoCodeListCountOperator().evaluate(data, List.of("5.5", 5.5, "6"), numberFieldValue).getValue());
+        assertTrue(new NoCodeListOverlapsOperator().evaluate(data, List.of(numberFieldValue), List.of("5.5")).getValueAsBoolean());
+        assertEquals(
+                List.of(numberFieldValue),
+                new NoCodeListIntersectionOperator().evaluate(data, List.of(numberFieldValue), List.of(5.5)).getValue()
+        );
+    }
+
+    @Test
     void listLengthShouldReturnListSize() throws NoCodeException {
         var operator = new NoCodeListLengthOperator();
         var data = runtime();

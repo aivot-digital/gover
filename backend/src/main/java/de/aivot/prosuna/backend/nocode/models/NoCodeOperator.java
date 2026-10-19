@@ -223,6 +223,20 @@ public abstract class NoCodeOperator {
         }
     }
 
+    /**
+     * Checks whether a value equals the reference after casting it to the type of the reference.
+     * <p>
+     * Numbers are compared by their value. {@link BigDecimal#equals} also compares the scale, but number fields keep
+     * their configured decimal places and number casts use eight, and integer casts would drop decimals.
+     */
+    public boolean isEqualToReference(@Nullable Object referenceObject, @Nullable Object objectToCompare) {
+        var castedObject = castToTypeOfReference(referenceObject, objectToCompare);
+        if (castedObject instanceof Number) {
+            return castToNumber(referenceObject).compareTo(castToNumber(objectToCompare)) == 0;
+        }
+        return Objects.equals(referenceObject, castedObject);
+    }
+
     @Nonnull
     public Boolean castToBoolean(@Nullable Object value) {
         if (value == null) {
