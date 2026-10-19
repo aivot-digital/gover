@@ -1,40 +1,22 @@
 package de.aivot.prosuna.backend.seeding.seeds;
 
-import de.aivot.prosuna.backend.asset.permissions.AssetPermissionProvider;
-import de.aivot.prosuna.backend.audit.permissions.AuditPermissionProvider;
-import de.aivot.prosuna.backend.codeLists.permissions.CodeListPermissionProvider;
 import de.aivot.prosuna.backend.communication.permissions.CommunicationProviderPermissionProvider;
 import de.aivot.prosuna.backend.config.entities.SystemConfigEntity;
-import de.aivot.prosuna.backend.config.permissions.ConfigPermissionProvider;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
-import de.aivot.prosuna.backend.dataObject.permissions.DataObjectPermissionProvider;
-import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
-import de.aivot.prosuna.backend.identity.permissions.IdentityProviderPermissionProvider;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.payment.permissions.PaymentProviderPermissionProvider;
 import de.aivot.prosuna.backend.permissions.models.PermissionEntry;
 import de.aivot.prosuna.backend.permissions.models.PermissionProvider;
-import de.aivot.prosuna.backend.permissions.permissions.DomainResourcePermissionProvider;
-import de.aivot.prosuna.backend.permissions.permissions.PermissionSetPermissionProvider;
-import de.aivot.prosuna.backend.plugin.permissions.PluginPermissionProvider;
-import de.aivot.prosuna.backend.preset.permissions.PresetPermissionProvider;
-import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
-import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
-import de.aivot.prosuna.backend.secrets.permissions.SecretPermissionProvider;
-import de.aivot.prosuna.backend.storage.permissions.StoragePermissionProvider;
-import de.aivot.prosuna.backend.teams.permissions.TeamPermissionProvider;
-import de.aivot.prosuna.backend.theme.permissions.ThemePermissionProvider;
 import de.aivot.prosuna.backend.user.configs.DefaultUserSystemRoleSystemConfigDefinition;
-import de.aivot.prosuna.backend.user.permissions.UserPermissionProvider;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import de.aivot.prosuna.backend.userRoles.configs.MostPrivilegedSystemRoleSystemConfigDefinition;
 import de.aivot.prosuna.backend.userRoles.entities.SystemRoleEntity;
-import de.aivot.prosuna.backend.userRoles.permissions.DomainRolePermissionProvider;
-import de.aivot.prosuna.backend.userRoles.permissions.SystemRolePermissionProvider;
 import de.aivot.prosuna.backend.userRoles.repositories.SystemRoleRepository;
 import de.aivot.prosuna.backend.userRoles.services.SystemRoleService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -53,31 +35,23 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SystemRolesSeedTest {
+    // Discover the providers instead of listing them, so the default roles cannot silently miss a new provider.
     static List<PermissionProvider> allPermissionProviders() {
-        return List.of(
-                new AssetPermissionProvider(),
-                new AuditPermissionProvider(),
-                new CodeListPermissionProvider(),
-                new CommunicationProviderPermissionProvider(),
-                new ConfigPermissionProvider(),
-                new DataObjectPermissionProvider(),
-                new DepartmentPermissionProvider(),
-                new DomainResourcePermissionProvider(),
-                new DomainRolePermissionProvider(),
-                new IdentityProviderPermissionProvider(),
-                new PaymentProviderPermissionProvider(),
-                new PermissionSetPermissionProvider(),
-                new PluginPermissionProvider(),
-                new PresetPermissionProvider(),
-                new ProcessInstancePermissionProvider(),
-                new ProcessPermissionProvider(),
-                new SecretPermissionProvider(),
-                new StoragePermissionProvider(),
-                new SystemRolePermissionProvider(),
-                new TeamPermissionProvider(),
-                new ThemePermissionProvider(),
-                new UserPermissionProvider()
-        );
+        var scanner = new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter(new AssignableTypeFilter(PermissionProvider.class));
+        return scanner.findCandidateComponents("de.aivot.prosuna.backend").stream()
+                .map(BeanDefinition::getBeanClassName)
+                .sorted()
+                .map(SystemRolesSeedTest::createPermissionProvider)
+                .toList();
+    }
+
+    private static PermissionProvider createPermissionProvider(String className) {
+        try {
+            return (PermissionProvider) Class.forName(className).getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Permission provider " + className + " needs a no-argument constructor.", e);
+        }
     }
 
     @Test
@@ -121,6 +95,11 @@ class SystemRolesSeedTest {
                 .map(PermissionEntry::permission)
                 .collect(Collectors.toSet());
         assertEquals(allPermissions, Set.copyOf(roles.getAllValues().getFirst().getPermissions()));
+        // The service does not remove repeated keys, so they would be stored as duplicate grants.
+        for (var role : roles.getAllValues()) {
+            assertEquals(Set.copyOf(role.getPermissions()).size(), role.getPermissions().size(),
+                    role.getName() + " must not grant a permission more than once.");
+        }
         assertTrue(roles.getAllValues().getLast().getPermissions().contains(CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ));
 
         var mostPrivilegedRoleConfig = ArgumentCaptor.forClass(SystemConfigEntity.class);
