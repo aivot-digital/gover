@@ -76,6 +76,7 @@ export enum Permission {
     PROCESS_INSTANCE_PAUSE_RESUME = "process_instance.pause_resume",
     PROCESS_INSTANCE_READ = "process_instance.read",
     PROCESS_INSTANCE_REASSIGN = "process_instance.reassign",
+    PROCESS_INSTANCE_RESTART_FAILED = "process_instance.restart_failed",
     PROCESS_INSTANCE_TRIGGER = "process_instance.trigger",
     PROCESS_INSTANCE_UPDATE = "process_instance.update",
     SECRET_CREATE = "secret.create",

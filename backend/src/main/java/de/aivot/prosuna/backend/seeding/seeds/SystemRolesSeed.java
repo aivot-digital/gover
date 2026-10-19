@@ -188,6 +188,7 @@ public class SystemRolesSeed implements SeedProvider {
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_COMMUNICATION_EXTERNAL,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_DATA,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK,
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_MIGRATE,
 
                         StoragePermissionProvider.STORAGE_PROVIDER_READ,

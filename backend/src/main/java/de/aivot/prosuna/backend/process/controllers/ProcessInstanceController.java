@@ -162,7 +162,10 @@ public class ProcessInstanceController {
     @PutMapping("{id}/restart-failed/")
     @Operation(
             summary = "Restart Failed Process Instance",
-            description = "Restart a failed process instance when it has no tasks yet, when the latest task failed, or when it holds pending work."
+            description = "Restart a failed process instance when it has no tasks yet, when the latest task failed, or when it holds pending work. " +
+                    "Requires the permission `" +
+                    ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED +
+                    "` for the affected process instance or at system level."
     )
     public ProcessInstanceEntity restartFailed(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -180,7 +183,7 @@ public class ProcessInstanceController {
                 () -> permissionService.requireProcessInstancePermission(
                         user.getId(),
                         processInstance.getId(),
-                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED
                 ));
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, ProcessInstanceEntity.class, updatedInstance.getId(), "id", Map.of(

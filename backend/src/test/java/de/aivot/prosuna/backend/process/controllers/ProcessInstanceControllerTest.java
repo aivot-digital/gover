@@ -45,7 +45,7 @@ class ProcessInstanceControllerTest {
         // The restart service runs the authorization under the instance lock.
         var order = inOrder(fixture.restarts, fixture.permissions, fixture.scopedAudit);
         order.verify(fixture.restarts).restartFailedInstance(eq(7L), eq("actor"), any());
-        order.verify(fixture.permissions).requireProcessInstancePermission("actor", 7L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE);
+        order.verify(fixture.permissions).requireProcessInstancePermission("actor", 7L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED);
         order.verify(fixture.scopedAudit).create();
     }
 
@@ -53,7 +53,7 @@ class ProcessInstanceControllerTest {
     void deniedRestartIsRejectedAndNotAudited() throws Exception {
         var fixture = new RestartFixture();
         doThrow(ResponseException.forbidden()).when(fixture.permissions)
-                .requireProcessInstancePermission("actor", 7L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_UPDATE);
+                .requireProcessInstancePermission("actor", 7L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED);
         when(fixture.restarts.restartFailedInstance(eq(7L), eq("actor"), any())).thenAnswer(invocation -> {
             invocation.<ProcessTaskExecutionService.Authorization>getArgument(2).run();
             return new ProcessInstanceEntity().setId(7L).setProcessId(1).setStatus(ProcessInstanceStatus.Running);
