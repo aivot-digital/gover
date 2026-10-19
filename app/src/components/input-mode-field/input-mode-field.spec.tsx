@@ -15,6 +15,8 @@ vi.mock('../../hooks/use-api', () => {
     return {useApi: () => api};
 });
 
+vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 vi.mock('../code-editor/code-editor', () => ({
     CodeEditor: ({ariaLabel, value, readOnly, onChange}: {
         ariaLabel: string;
