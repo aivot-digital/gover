@@ -73,6 +73,11 @@ public class SystemRolesSeed implements SeedProvider {
                         CodeListPermissionProvider.CODE_LIST_DELETE,
                         CodeListPermissionProvider.CODE_LIST_EXPORT,
 
+                        CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_CREATE,
+                        CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ,
+                        CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_UPDATE,
+                        CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_DELETE,
+
                         DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE,
                         DataObjectPermissionProvider.OBJECT_SCHEMA_READ,
                         DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE,
@@ -217,6 +222,11 @@ public class SystemRolesSeed implements SeedProvider {
                         CodeListPermissionProvider.CODE_LIST_UPDATE,
                         CodeListPermissionProvider.CODE_LIST_DELETE,
 
+                        CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_CREATE,
+                        CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ,
+                        CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_UPDATE,
+                        CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_DELETE,
+
                         DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE,
                         DataObjectPermissionProvider.OBJECT_SCHEMA_READ,
                         DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE,
@@ -328,6 +338,8 @@ public class SystemRolesSeed implements SeedProvider {
                         AssetPermissionProvider.ASSET_UPDATE,
 
                         CodeListPermissionProvider.CODE_LIST_READ,
+
+                        CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_READ,
 
                         DataObjectPermissionProvider.OBJECT_SCHEMA_READ,
 
