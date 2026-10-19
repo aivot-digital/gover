@@ -54,7 +54,7 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                                 item.taxRate != null &&
                                 item.taxRate > 0 &&
                                 <>
-                                    inkl. {item.taxRate}% Steuern
+                                    inkl. {String(item.taxRate).replace('.', ',')}% Steuern
                                 </>
                             }
                             </li>

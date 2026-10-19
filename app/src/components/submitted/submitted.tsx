@@ -83,7 +83,7 @@ export function Submitted(props: SubmittedProps) {
     const [preparationDelayed, setPreparationDelayed] = useState(false);
     const [preparationAttempt, setPreparationAttempt] = useState(0);
     const [paymentReady, setPaymentReady] = useState(false);
-    const [paymentCompleted, setPaymentCompleted] = useState(false);
+    const [formTaskCompleted, setFormTaskCompleted] = useState(false);
     const SubmittedStatusIcon = processFailed ? ErrorOutlineOutlinedIcon : CheckCircleTwoToneIcon;
 
     useEffect(() => {
@@ -108,7 +108,7 @@ export function Submitted(props: SubmittedProps) {
         setPreparationError(undefined);
         setPreparationDelayed(false);
         setPaymentReady(false);
-        setPaymentCompleted(false);
+        setFormTaskCompleted(false);
 
         if (accessKey.length === 0) {
             setPreparationError('Der Status Ihrer Einreichung konnte nicht abgerufen werden.');
@@ -143,8 +143,9 @@ export function Submitted(props: SubmittedProps) {
                     // Keep the submitted PDF accessible even if later processing has failed.
                     setFormTaskAccessKey(task?.accessKey);
                     setPaymentReady(!failed && task?.status === ProcessTaskStatus.AwaitingPayment);
-                    // A completed form task can have a successful payment even when a later node fails.
-                    setPaymentCompleted(task?.status === ProcessTaskStatus.Completed);
+                    // Completion also covers submissions whose calculated payment has no positive positions.
+                    // It does not prove that money was paid.
+                    setFormTaskCompleted(task?.status === ProcessTaskStatus.Completed);
                     clearTimeout(preparationTimer);
                     return;
                 }
@@ -446,19 +447,21 @@ export function Submitted(props: SubmittedProps) {
                     <Typography variant="body2">
                         {preparationError ?? 'Die Vorbereitung ist noch nicht abgeschlossen. Sie können den Status erneut prüfen. Ihre Einreichung muss dafür nicht erneut abgesendet werden.'}
                     </Typography>
-                    <Button sx={{mt: 2}} onClick={() => setPreparationAttempt((attempt) => attempt + 1)}>
-                        Status erneut prüfen
-                    </Button>
+                    {startedProcessAccessKey.trim().length > 0 && (
+                        <Button sx={{mt: 2}} onClick={() => setPreparationAttempt((attempt) => attempt + 1)}>
+                            Status erneut prüfen
+                        </Button>
+                    )}
                 </AlertComponent>
             )}
             {paymentRequired && (
                 <Box sx={{mt: 4, maxWidth: 800}}>
                     <Typography component="h3" variant="h5">
-                        {paymentCompleted ? 'Zahlung abgeschlossen' : 'Zahlung'}
+                        Zahlung
                     </Typography>
                     <Typography variant="body2" sx={{mt: 1, mb: 2}}>
-                        {paymentCompleted
-                            ? 'Die Zahlung für Ihre Einreichung wurde abgeschlossen.'
+                        {formTaskCompleted
+                            ? 'Für Ihre Einreichung ist keine weitere Zahlung erforderlich.'
                             : processFailed
                                 ? 'Die Zahlung steht wegen des Verarbeitungsfehlers derzeit nicht zur Verfügung.'
                                 : paymentReady
@@ -467,7 +470,7 @@ export function Submitted(props: SubmittedProps) {
                                         ? 'Bitte prüfen Sie den Status, um festzustellen, ob die Zahlung bereitsteht.'
                                         : 'Die Zahlung für Ihre Einreichung wird vorbereitet. Sobald die Schaltfläche aktiv ist, können Sie zur Zahlung wechseln.'}
                     </Typography>
-                    {!paymentCompleted && (paymentTaskPath != null ? (
+                    {!formTaskCompleted && (paymentTaskPath != null ? (
                         <Button component="a" variant="contained" href={paymentTaskPath} startIcon={<PaymentOutlinedIcon/>}>
                             Zur Zahlung
                         </Button>
@@ -476,7 +479,7 @@ export function Submitted(props: SubmittedProps) {
                             variant="contained"
                             disabled
                             startIcon={!processFailed && preparationError == null && !preparationDelayed
-                                ? <CircularProgress color="inherit" size={18} aria-label="Zahlung wird vorbereitet"/>
+                                ? <CircularProgress color="inherit" size={18} aria-hidden="true"/>
                                 : <PaymentOutlinedIcon/>}
                         >
                             {processFailed || preparationError != null || preparationDelayed ? 'Zahlung nicht verfügbar' : 'Zahlung wird vorbereitet'}

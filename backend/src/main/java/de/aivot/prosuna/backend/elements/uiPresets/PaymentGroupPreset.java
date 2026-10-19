@@ -66,7 +66,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                                                 item.getDescription(),
                                                 NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
                                                 item.getTaxRate().compareTo(BigDecimal.ZERO) > 0
-                                                        ? " inkl. %s %% Steuern".formatted(NumberUtils.formatGermanNumber(item.getTaxRate(), 2))
+                                                        ? " inkl. %s%% Steuern".formatted(item.getTaxRate().stripTrailingZeros().toPlainString().replace('.', ','))
                                                         : ""
                                         ))
                                         .collect(Collectors.joining()),
