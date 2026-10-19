@@ -37,10 +37,7 @@ export function ProcessListActions({
         instanceId,
         task ? Permission.PROCESS_INSTANCE_EDIT_TASK : Permission.PROCESS_INSTANCE_REASSIGN,
     );
-    const canRestart = useHasProcessInstancePermission(
-        instanceId,
-        task ? Permission.PROCESS_INSTANCE_EDIT_TASK : Permission.PROCESS_INSTANCE_UPDATE,
-    );
+    const canRestart = useHasProcessInstancePermission(instanceId, Permission.PROCESS_INSTANCE_RESTART_FAILED);
     const canReadModel = useHasProcessPermission(item.processId, Permission.PROCESS_DEFINITION_READ);
     const active =
         task == null

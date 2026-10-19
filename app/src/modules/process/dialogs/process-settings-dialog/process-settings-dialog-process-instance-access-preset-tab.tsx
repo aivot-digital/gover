@@ -48,6 +48,7 @@ const relevantPermissions: string[] = [
     'process_instance.communication.internal',
     'process_instance.communication.external',
     'process_instance.edit_task',
+    'process_instance.restart_failed',
     'process_instance.migrate',
 ];
 

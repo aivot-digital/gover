@@ -13,10 +13,11 @@ import {ProcessFlowEditorProvider, type ProcessFlowEditorContextType} from './pr
 import {type FlowNode} from './utils/layout-utils';
 import {type ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
 import {SnackbarSeverity} from '../../../../../../slices/shell-slice';
+import {Permission} from '../../../../../../data/permissions/permission';
 
 const mocks = vi.hoisted(() => ({
     dispatch: vi.fn(),
-    canEditTask: true,
+    canRestartFailed: true,
 }));
 
 vi.mock('@xyflow/react', async importOriginal => ({
@@ -27,13 +28,14 @@ vi.mock('@xyflow/react', async importOriginal => ({
 vi.mock('../../../../../../providers/confirm-provider', () => ({useConfirm: () => vi.fn()}));
 vi.mock('../../../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => mocks.dispatch}));
 vi.mock('../../../../../permissions/hooks/use-permissions', () => ({
-    useHasProcessInstancePermission: () => mocks.canEditTask,
+    useHasProcessInstancePermission: (_instanceId: number | undefined, permission: Permission) =>
+        permission === Permission.PROCESS_INSTANCE_RESTART_FAILED && mocks.canRestartFailed,
 }));
 
 beforeEach(() => {
     vi.restoreAllMocks();
     mocks.dispatch.mockReset();
-    mocks.canEditTask = true;
+    mocks.canRestartFailed = true;
 });
 
 function renderNode(task: Partial<ProcessInstanceTaskEntity>) {
@@ -123,8 +125,8 @@ it('reports a rerun the server rejects instead of failing silently', async () =>
     expect(onReloadRuntimeData).not.toHaveBeenCalled();
 });
 
-it('offers no rerun without the permission to edit tasks of the instance', () => {
-    mocks.canEditTask = false;
+it('offers no rerun without the permission to restart failed tasks of the instance', () => {
+    mocks.canRestartFailed = false;
     renderNode({status: ProcessTaskStatus.Failed});
 
     expect(screen.getByRole('button', {name: 'Aktionen zur Aufgabe'})).toBeDisabled();

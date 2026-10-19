@@ -180,7 +180,7 @@ public class ProcessInstanceTaskController {
             summary = "Rerun Failed Process Instance Task",
             description = "Rerun a failed process instance task. A failed process instance is set back to running. " +
                     "Tasks of completed or aborted process instances cannot be rerun (409). Requires the permission `" +
-                    ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK +
+                    ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED +
                     "` for the affected process instance or at system level."
     )
     public ProcessInstanceTaskEntity rerunFailedTask(
@@ -203,7 +203,7 @@ public class ProcessInstanceTaskController {
                 () -> permissionService.requireProcessInstancePermission(
                         user.getId(),
                         taskEntity.getProcessInstanceId(),
-                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED
                 ));
     }
 }

@@ -113,7 +113,7 @@ class ProcessInstanceTaskControllerTest {
                 authorization.capture());
         authorization.getValue().run();
         verify(permissionService).requireProcessInstancePermission("user-1", task.getProcessInstanceId(),
-                ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK);
+                ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED);
     }
 
     @Test
@@ -124,7 +124,7 @@ class ProcessInstanceTaskControllerTest {
         when(processInstanceTaskService.retrieve(task.getId())).thenReturn(Optional.of(task));
         when(userService.fromJWT(jwt)).thenReturn(Optional.of(user));
         doThrow(ResponseException.forbidden()).when(permissionService).requireProcessInstancePermission("user-1",
-                task.getProcessInstanceId(), ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK);
+                task.getProcessInstanceId(), ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED);
         when(restartService.rerunFailedTask(eq(task.getProcessInstanceId()), eq(task.getId()), eq(user), any()))
                 .thenAnswer(invocation -> {
                     invocation.<ProcessTaskExecutionService.Authorization>getArgument(3).run();

@@ -76,7 +76,8 @@ public class DomainRolesSeed implements SeedProvider {
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_REASSIGN,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_COMMUNICATION_INTERNAL,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_COMMUNICATION_EXTERNAL,
-                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK,
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED
                 )));
 
         userRoleService.create(new UserRoleEntity()
@@ -95,7 +96,8 @@ public class DomainRolesSeed implements SeedProvider {
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_PAUSE_RESUME,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_COMMUNICATION_INTERNAL,
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_COMMUNICATION_EXTERNAL,
-                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK,
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED
                 )));
 
         userRoleService.create(new UserRoleEntity()
@@ -114,7 +116,9 @@ public class DomainRolesSeed implements SeedProvider {
                         ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST,
 
                         ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ,
-                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_COMMUNICATION_INTERNAL
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_COMMUNICATION_INTERNAL,
+                        // Modelers restart failed test instances and tasks while testing their process definitions.
+                        ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED
                 )));
 
         userRoleService.create(new UserRoleEntity()

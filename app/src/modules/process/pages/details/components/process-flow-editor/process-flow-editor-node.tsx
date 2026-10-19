@@ -310,7 +310,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         ];
     }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onSelectNode, onShowNodeProviderDetails, onStartCloneNode, onStartReplaceNode, provider]);
     const shouldRenderMenuButtonSlot = menuItems.length > 0 && (editable || associatedTask == null);
-    const canRerunTask = useHasProcessInstancePermission(runtimeData?.instance.id, Permission.PROCESS_INSTANCE_EDIT_TASK);
+    const canRerunTask = useHasProcessInstancePermission(runtimeData?.instance.id, Permission.PROCESS_INSTANCE_RESTART_FAILED);
 
     const runtimeMenuItems: ProcessActionMenuItem[] = useMemo(() => {
         const items: ProcessActionMenuItem[] = [];

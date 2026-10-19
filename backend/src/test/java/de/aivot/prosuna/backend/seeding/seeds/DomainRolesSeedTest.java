@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.seeding.seeds;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.userRoles.entities.UserRoleEntity;
 import de.aivot.prosuna.backend.userRoles.repositories.UserRoleRepository;
 import de.aivot.prosuna.backend.userRoles.services.UserRoleService;
@@ -46,6 +47,13 @@ class DomainRolesSeedTest {
         assertEquals(
                 List.of("Domänenadministration", "Sachbearbeitung", "Modellierung", "Prüfung", "Prozessmanagement", "Betrachtung"),
                 roles.getAllValues().stream().map(UserRoleEntity::getName).toList()
+        );
+        assertEquals(
+                List.of("Domänenadministration", "Sachbearbeitung", "Modellierung"),
+                roles.getAllValues().stream()
+                        .filter(role -> role.getPermissions().contains(ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED))
+                        .map(UserRoleEntity::getName)
+                        .toList()
         );
     }
 }
