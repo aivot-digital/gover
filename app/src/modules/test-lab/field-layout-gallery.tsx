@@ -10,6 +10,8 @@ import {
 } from '@mui/material';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
 import {NumberFieldComponent} from '../../components/number-field/number-field-component';
+import {DurationFieldComponent} from '../../components/duration-field/duration-field-component';
+import {DurationLargestUnit, DurationPrecision} from '../../models/elements/form/input/duration-field-element';
 import {SelectFieldComponent} from '../../components/select-field/select-field-component';
 import {DateFieldComponent} from '../../components/date-field/date-field-component';
 import {TimeFieldComponent} from '../../components/time-field/time-field-component';
@@ -442,6 +444,8 @@ export function FieldLayoutGallery() {
     const [date, setDate] = useState<DateValueIso | null>('2026-08-26' as DateValueIso);
     const [time, setTime] = useState<LocalTimeIso | null>('09:30' as LocalTimeIso);
     const [dateTime, setDateTime] = useState<InstantIso | null>('2026-08-26T07:30:00Z' as InstantIso);
+    const [estimatedDuration, setEstimatedDuration] = useState<number | null>(9000);
+    const [measuredDuration, setMeasuredDuration] = useState<number | null>(99015);
     const [dateRange, setDateRange] = useState<DateRangeValue | null>({
         start: '2026-08-01',
         end: '2026-08-31',
@@ -735,6 +739,35 @@ export function FieldLayoutGallery() {
                     onChange={setDateTimeRange}
                     mode={TimeFieldComponentModelMode.Minute}
                     error="Das Ende muss nach dem Beginn liegen."
+                    margin="none"
+                />
+            </Box>
+
+            <Typography
+                component="h3"
+                variant="subtitle1"
+                sx={{mt: 5, mb: 2}}
+            >
+                Zeitdauer
+            </Typography>
+
+            <Box sx={{display: 'grid', gap: 3}}>
+                <DurationFieldComponent
+                    label="Geschätzter Aufwand"
+                    value={estimatedDuration}
+                    onChange={setEstimatedDuration}
+                    hint="Angabe in Stunden und Minuten."
+                    required
+                    margin="none"
+                />
+
+                <DurationFieldComponent
+                    label="Gemessene Zeitdauer"
+                    value={measuredDuration}
+                    onChange={setMeasuredDuration}
+                    precision={DurationPrecision.Second}
+                    largestUnit={DurationLargestUnit.Day}
+                    hint="Angabe mit Tagen und Sekunden. Ein Tag entspricht 24 Stunden."
                     margin="none"
                 />
             </Box>
