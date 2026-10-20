@@ -48,6 +48,7 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.Headline]: 'hd',
     [ElementType.MultiCheckbox]: 'mx',
     [ElementType.Number]: 'nm',
+    [ElementType.Duration]: 'du',
     [ElementType.ReplicatingContainer]: 'rp',
     [ElementType.RichText]: 'rx',
     [ElementType.Radio]: 'rd',

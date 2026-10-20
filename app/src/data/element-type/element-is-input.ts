@@ -11,6 +11,7 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.Headline]: false,
     [ElementType.MultiCheckbox]: true,
     [ElementType.Number]: true,
+    [ElementType.Duration]: true,
     [ElementType.ReplicatingContainer]: true,
     [ElementType.RichText]: false,
     [ElementType.Radio]: true,

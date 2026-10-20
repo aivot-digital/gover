@@ -72,6 +72,7 @@ public enum ElementType implements Identifiable<Integer> {
     SecretSelectInput(52),
     AssetSelectInput(53),
     DepartmentSelectInput(54),
+    Duration(55),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -129,6 +130,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_SecretSelectInput = "52";
     public static final String ID_AssetSelectInput = "53";
     public static final String ID_DepartmentSelectInput = "54";
+    public static final String ID_Duration = "55";
 
     private final Integer key;
 
@@ -174,6 +176,7 @@ public enum ElementType implements Identifiable<Integer> {
             case Table -> new TableInputElement();
             case Text -> new TextInputElement();
             case Time -> new TimeInputElement();
+            case Duration -> new DurationInputElement();
             case IntroductionStep -> new IntroductionStepElement();
             case SubmitStep -> new SubmitStepElement();
             case SummaryStep -> new SummaryStepElement();

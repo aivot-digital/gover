@@ -45,6 +45,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = TableInputElement.class, name = ElementType.ID_Table),
         @JsonSubTypes.Type(value = TextInputElement.class, name = ElementType.ID_Text),
         @JsonSubTypes.Type(value = TimeInputElement.class, name = ElementType.ID_Time),
+        @JsonSubTypes.Type(value = DurationInputElement.class, name = ElementType.ID_Duration),
         @JsonSubTypes.Type(value = IntroductionStepElement.class, name = ElementType.ID_IntroductionStep),
         @JsonSubTypes.Type(value = SubmitStepElement.class, name = ElementType.ID_SubmitStep),
         @JsonSubTypes.Type(value = SummaryStepElement.class, name = ElementType.ID_SummaryStep),

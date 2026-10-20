@@ -1,3 +1,4 @@
+import {DurationFieldSummary} from './duration-field-summary';
 import {ElementType} from '../data/element-type/element-type';
 import {ElementTypesMap} from '../data/element-type/element-types-map';
 import {BaseSummary} from './base-summary';
@@ -47,6 +48,7 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: MultiCheckboxFieldComponentSummary,
     [ElementType.Number]: NumberSummary,
+    [ElementType.Duration]: DurationFieldSummary,
     [ElementType.ReplicatingContainer]: ReplicationContainerSummary,
     [ElementType.RichText]: null,
     [ElementType.Radio]: RadioFieldComponentSummary,

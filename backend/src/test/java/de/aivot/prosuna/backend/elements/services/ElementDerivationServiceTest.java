@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.elements.services;
 
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DurationInputElement;
+import de.aivot.prosuna.backend.enums.DurationPrecision;
+
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
@@ -75,6 +78,28 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ElementDerivationServiceTest {
+    @Test
+    void durationFieldsValidateAuthoredAndDerivedSecondsWithoutRounding() {
+        var field = new DurationInputElement().setMinDuration(60L).setMaxDuration(100000L);
+        field.setId("duration");
+        var root = createRoot(List.of(field));
+        for (Object invalid : List.of("invalid", "", -1, 1.5, 75, 100020)) {
+            var result = derive(root, new AuthoredElementValues().putLiteral("duration", invalid), new ElementDerivationOptions());
+            assertTrue(result.hasAnyError(), String.valueOf(invalid));
+        }
+        var result = derive(root, new AuthoredElementValues().putLiteral("duration", 99000), new ElementDerivationOptions());
+        assertFalse(result.hasAnyError());
+        assertEquals(99000, ((Number) result.getEffectiveValues().get("duration")).intValue());
+        field.setPrecision(DurationPrecision.Second);
+        result = derive(root, new AuthoredElementValues().putLiteral("duration", 75), new ElementDerivationOptions());
+        assertFalse(result.hasAnyError());
+        assertEquals(75, ((Number) result.getEffectiveValues().get("duration")).intValue());
+        field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(1.5)));
+        result = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+        assertTrue(result.hasAnyError());
+        assertEquals(1.5, ((Number) result.getEffectiveValues().get("duration")).doubleValue());
+    }
+
     @Test
     void shouldReturnFieldErrorsWhenClearingAPreviouslyValidPaymentPurpose() {
         var field = new PaymentConfigElement();

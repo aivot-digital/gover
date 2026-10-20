@@ -163,6 +163,7 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: null,
     [ElementType.Number]: null,
+    [ElementType.Duration]: 'Bitte die gesamte Zeitdauer in Sekunden eingeben.',
     [ElementType.ReplicatingContainer]: null,
     [ElementType.RichText]: null,
     [ElementType.Radio]: null,

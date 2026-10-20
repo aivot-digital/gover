@@ -1,3 +1,4 @@
+import {DurationFieldElement} from './duration-field-element';
 import {CheckboxFieldElement} from './checkbox-field-element';
 import {DateFieldElement} from './date-field-element';
 import {MultiCheckboxFieldElement} from './multi-checkbox-field-element';
@@ -42,6 +43,7 @@ export type AnyInputElement = (
     DateFieldElement |
     MultiCheckboxFieldElement |
     NumberFieldElement |
+    DurationFieldElement |
     RadioFieldElement |
     SelectFieldElement |
     TableFieldElement |

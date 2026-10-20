@@ -21,6 +21,7 @@ const supportedRootTypes: ElementType[] = [
     ElementType.Headline,
     ElementType.MultiCheckbox,
     ElementType.Number,
+    ElementType.Duration,
     ElementType.ReplicatingContainer,
     ElementType.RichText,
     ElementType.Radio,

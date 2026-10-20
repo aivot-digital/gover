@@ -1,3 +1,4 @@
+import {DurationFieldElement} from './form/input/duration-field-element';
 import {type FormLayoutElement} from './form-layout-element';
 import {type StepElement} from './steps/step-element';
 import {type IntroductionStepElement} from './steps/introduction-step-element';
@@ -69,55 +70,56 @@ export type AnyElement =
     AnyFormElement;
 
 export type AnyElementType<T extends ElementType> =
-    T extends ElementType.Step ? StepElement :
-        T extends ElementType.Alert ? AlertElement :
-            T extends ElementType.GroupLayout ? GroupLayout :
-                T extends ElementType.Checkbox ? CheckboxFieldElement :
-                    T extends ElementType.Date ? DateFieldElement :
-                        T extends ElementType.Headline ? HeadlineElement :
-                            T extends ElementType.MultiCheckbox ? MultiCheckboxFieldElement :
-                                T extends ElementType.Number ? NumberFieldElement :
-                                    T extends ElementType.ReplicatingContainer ? ReplicatingContainerLayout :
-                                        T extends ElementType.RichText ? RichtextElement :
-                                            T extends ElementType.Radio ? RadioFieldElement :
-                                                T extends ElementType.Select ? SelectFieldElement :
-                                                    T extends ElementType.Spacer ? SpacerElement :
-                                                        T extends ElementType.Table ? TableFieldElement :
-                                                            T extends ElementType.Text ? TextFieldElement :
-                                                                T extends ElementType.Time ? TimeFieldElement :
-                                                                    T extends ElementType.IntroductionStep ? IntroductionStepElement :
-                                                                        T extends ElementType.SubmitStep ? SubmitStepElement :
-                                                                            T extends ElementType.SummaryStep ? SummaryStepElement :
-                                                                                T extends ElementType.Image ? ImageElement :
-                                                                                    T extends ElementType.SubmittedStep ? SubmittedStepElement :
-                                                                                        T extends ElementType.FileUpload ? FileUploadElement :
-                                                                                            T extends ElementType.CodeInput ? CodeInputElement :
-                                                                                                T extends ElementType.RichTextInput ? RichTextInputElement :
-                                                                                                    T extends ElementType.ChipInput ? ChipInputFieldElement :
-                                                                                                        T extends ElementType.DateTime ? DateTimeFieldElement :
-                                                                                                            T extends ElementType.DateRange ? DateRangeFieldElement :
-                                                                                                                T extends ElementType.TimeRange ? TimeRangeFieldElement :
-                                                                                                                    T extends ElementType.DateTimeRange ? DateTimeRangeFieldElement :
-                                                                                                                        T extends ElementType.MapPoint ? MapPointFieldElement :
-                                                                                                                            T extends ElementType.DomainAndUserSelect ? DomainUserSelectFieldElement :
-                                                                                                                                T extends ElementType.AssignmentContext ? AssignmentContextFieldElement :
-                                                                                                                                    T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
-                                                                                                                                        T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
-                                                                                                                                            T extends ElementType.ProcessDataKeyInput ? ProcessDataKeyInputFieldElement :
-                                                                                                                                                T extends ElementType.ProcessInstanceAttachmentSetSelect ? ProcessInstanceAttachmentSetSelectElement :
-                                                                                                                                                    T extends ElementType.ProcessIdentityIdInput ? ProcessIdentityIdInputElement :
-                                                                                                                                                        T extends ElementType.SecretSelectInput ? SecretSelectInputElement :
-                                                                                                                                                            T extends ElementType.HtmlTemplateInput ? HtmlTemplateInputElement :
-                                                                                                                                                            T extends ElementType.StoragePathSelector ? StoragePathSelectorInputElement :
-                                                                                                                                                                T extends ElementType.AssetSelectInput ? AssetSelectInputElement :
-                                                                                                                                                                    T extends ElementType.DepartmentSelectInput ? DepartmentSelectInputElement :
-                                                                                                                                                                T extends ElementType.ProcessAttachmentDisplay ? ProcessAttachmentDisplayElement :
-                                                                                                                                                                    T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
-                                                                                                                                                                        T extends ElementType.IdentityConfigElement ? IdentityConfigElement :
-                                                                                                                                                                            T extends ElementType.PaymentConfigElement ? PaymentConfigElement :
-                                                                                                                                                                                T extends ElementType.LinkButton ? LinkButtonElement :
-                                                                                                                                                                                    T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
-                                                                                                                                                                                T extends ElementType.SummaryLayout ? SummaryLayoutElement :
-                                                                                                                                                                                    T extends ElementType.ConfigLayout ? ConfigLayoutElement :
-                                                                                                                                                                                        T extends ElementType.StepperLayout ? StepperLayoutElement :
-                                                                                                                                                                                            T extends ElementType.TabLayout ? TabLayoutElement : never;
+    T extends ElementType.Duration ? DurationFieldElement :
+        T extends ElementType.Step ? StepElement :
+            T extends ElementType.Alert ? AlertElement :
+                T extends ElementType.GroupLayout ? GroupLayout :
+                    T extends ElementType.Checkbox ? CheckboxFieldElement :
+                        T extends ElementType.Date ? DateFieldElement :
+                            T extends ElementType.Headline ? HeadlineElement :
+                                T extends ElementType.MultiCheckbox ? MultiCheckboxFieldElement :
+                                    T extends ElementType.Number ? NumberFieldElement :
+                                        T extends ElementType.ReplicatingContainer ? ReplicatingContainerLayout :
+                                            T extends ElementType.RichText ? RichtextElement :
+                                                T extends ElementType.Radio ? RadioFieldElement :
+                                                    T extends ElementType.Select ? SelectFieldElement :
+                                                        T extends ElementType.Spacer ? SpacerElement :
+                                                            T extends ElementType.Table ? TableFieldElement :
+                                                                T extends ElementType.Text ? TextFieldElement :
+                                                                    T extends ElementType.Time ? TimeFieldElement :
+                                                                        T extends ElementType.IntroductionStep ? IntroductionStepElement :
+                                                                            T extends ElementType.SubmitStep ? SubmitStepElement :
+                                                                                T extends ElementType.SummaryStep ? SummaryStepElement :
+                                                                                    T extends ElementType.Image ? ImageElement :
+                                                                                        T extends ElementType.SubmittedStep ? SubmittedStepElement :
+                                                                                            T extends ElementType.FileUpload ? FileUploadElement :
+                                                                                                T extends ElementType.CodeInput ? CodeInputElement :
+                                                                                                    T extends ElementType.RichTextInput ? RichTextInputElement :
+                                                                                                        T extends ElementType.ChipInput ? ChipInputFieldElement :
+                                                                                                            T extends ElementType.DateTime ? DateTimeFieldElement :
+                                                                                                                T extends ElementType.DateRange ? DateRangeFieldElement :
+                                                                                                                    T extends ElementType.TimeRange ? TimeRangeFieldElement :
+                                                                                                                        T extends ElementType.DateTimeRange ? DateTimeRangeFieldElement :
+                                                                                                                            T extends ElementType.MapPoint ? MapPointFieldElement :
+                                                                                                                                T extends ElementType.DomainAndUserSelect ? DomainUserSelectFieldElement :
+                                                                                                                                    T extends ElementType.AssignmentContext ? AssignmentContextFieldElement :
+                                                                                                                                        T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
+                                                                                                                                            T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
+                                                                                                                                                T extends ElementType.ProcessDataKeyInput ? ProcessDataKeyInputFieldElement :
+                                                                                                                                                    T extends ElementType.ProcessInstanceAttachmentSetSelect ? ProcessInstanceAttachmentSetSelectElement :
+                                                                                                                                                        T extends ElementType.ProcessIdentityIdInput ? ProcessIdentityIdInputElement :
+                                                                                                                                                            T extends ElementType.SecretSelectInput ? SecretSelectInputElement :
+                                                                                                                                                                T extends ElementType.HtmlTemplateInput ? HtmlTemplateInputElement :
+                                                                                                                                                                    T extends ElementType.StoragePathSelector ? StoragePathSelectorInputElement :
+                                                                                                                                                                        T extends ElementType.AssetSelectInput ? AssetSelectInputElement :
+                                                                                                                                                                            T extends ElementType.DepartmentSelectInput ? DepartmentSelectInputElement :
+                                                                                                                                                                                T extends ElementType.ProcessAttachmentDisplay ? ProcessAttachmentDisplayElement :
+                                                                                                                                                                                    T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
+                                                                                                                                                                                        T extends ElementType.IdentityConfigElement ? IdentityConfigElement :
+                                                                                                                                                                                            T extends ElementType.PaymentConfigElement ? PaymentConfigElement :
+                                                                                                                                                                                                T extends ElementType.LinkButton ? LinkButtonElement :
+                                                                                                                                                                                                    T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
+                                                                                                                                                                                                        T extends ElementType.SummaryLayout ? SummaryLayoutElement :
+                                                                                                                                                                                                            T extends ElementType.ConfigLayout ? ConfigLayoutElement :
+                                                                                                                                                                                                                T extends ElementType.StepperLayout ? StepperLayoutElement :
+                                                                                                                                                                                                                    T extends ElementType.TabLayout ? TabLayoutElement : never;

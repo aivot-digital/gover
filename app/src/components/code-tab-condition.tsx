@@ -182,6 +182,7 @@ export function CodeTabCondition({
                                         referencedElement != null &&
                                         (
                                             referencedElement.element.type === ElementType.Number ||
+                                            referencedElement.element.type === ElementType.Duration ||
                                             referencedElement.element.type === ElementType.ReplicatingContainer ?
                                                 (
                                                     <NumberFieldComponent

@@ -1,3 +1,4 @@
+import TimerOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Timer';
 import {ElementType} from './element-type';
 import MenuOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Menu';
 import ExpandOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Expand';
@@ -53,6 +54,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.Headline]: TitleOutlinedIcon,
     [ElementType.MultiCheckbox]: ChecklistOutlinedIcon,
     [ElementType.Number]: NumbersOutlinedIcon,
+    [ElementType.Duration]: TimerOutlinedIcon,
     [ElementType.ReplicatingContainer]: PlaylistAddOutlinedIcon,
     [ElementType.RichText]: NotesOutlinedIcon,
     [ElementType.Radio]: CheckCircleOutlineOutlinedIcon,

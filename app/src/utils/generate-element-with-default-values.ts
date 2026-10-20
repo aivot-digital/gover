@@ -1,3 +1,4 @@
+import {DurationFieldElement, DurationLargestUnit, DurationPrecision} from '../models/elements/form/input/duration-field-element';
 import {ElementType} from '../data/element-type/element-type';
 import {type IntroductionStepElement} from '../models/elements/steps/introduction-step-element';
 import {type SummaryStepElement} from '../models/elements/steps/summary-step-element';
@@ -112,6 +113,7 @@ const elementConstructors: {
     [ElementType.Headline]: (id: string) => HeadlineElement;
     [ElementType.MultiCheckbox]: (id: string) => MultiCheckboxFieldElement;
     [ElementType.Number]: (id: string) => NumberFieldElement;
+    [ElementType.Duration]: (id: string) => DurationFieldElement;
     [ElementType.ReplicatingContainer]: (id: string) => ReplicatingContainerLayout;
     [ElementType.RichText]: (id: string) => RichtextElement;
     [ElementType.Radio]: (id: string) => RadioFieldElement;
@@ -227,6 +229,14 @@ const elementConstructors: {
         ],
         displayInline: false,
         minimumRequiredOptions: undefined,
+    }),
+    [ElementType.Duration]: (id) => ({
+        ...makeInputBase(ElementType.Duration, id),
+        label: 'Zeitdauer',
+        precision: DurationPrecision.Minute,
+        largestUnit: DurationLargestUnit.Hour,
+        minDuration: undefined,
+        maxDuration: undefined,
     }),
     [ElementType.Number]: (id) => ({
         ...makeInputBase(ElementType.Number, id),

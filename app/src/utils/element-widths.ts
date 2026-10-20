@@ -57,6 +57,7 @@ const minimumElementWeightMap: Partial<Record<ElementType, number>> = {
     [ElementType.DateTimeRange]: 6,
     [ElementType.DateRange]: 6,
     [ElementType.TimeRange]: 6,
+    [ElementType.Duration]: 6,
     [ElementType.MapPoint]: 6,
     [ElementType.ReplicatingContainer]: 4,
     [ElementType.Table]: 4,
@@ -65,6 +66,7 @@ const minimumElementWeightMap: Partial<Record<ElementType, number>> = {
 const compactDefaultElementTypes = new Set<ElementType>([
     ElementType.Date,
     ElementType.Number,
+    ElementType.Duration,
     ElementType.Select,
     ElementType.Radio,
     ElementType.Checkbox,

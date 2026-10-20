@@ -65,6 +65,7 @@ const DeniedContextMenuElementTypes = new Set<ElementType>([
 const InputModeCompatibleElementTypes = new Set<ElementType>([
     ElementType.Text,
     ElementType.Number,
+    ElementType.Duration,
     ElementType.Select,
     ElementType.Radio,
     ElementType.RichTextInput,
@@ -324,7 +325,7 @@ function isUnchangedAuthoredValue(previous: AuthoredInputValue<unknown> | undefi
 }
 
 function resolveNoCodeReturnType(elementType: ElementType): NoCodeDataType {
-    if (elementType === ElementType.Number) return NoCodeDataType.Number;
+    if (elementType === ElementType.Number || elementType === ElementType.Duration) return NoCodeDataType.Number;
     if (elementType === ElementType.ReplicatingContainer) return NoCodeDataType.List;
     return NoCodeDataType.String;
 }

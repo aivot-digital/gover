@@ -12,6 +12,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.Headline]: 'Überschrift',
     [ElementType.MultiCheckbox]: 'Mehrfachauswahl',
     [ElementType.Number]: 'Zahl',
+    [ElementType.Duration]: 'Zeitdauer',
     [ElementType.ReplicatingContainer]: 'Feldgruppe für mehrere Einträge',
     [ElementType.RichText]: 'Textanzeige',
     [ElementType.Radio]: 'Einzelauswahl (Optionsfelder)',

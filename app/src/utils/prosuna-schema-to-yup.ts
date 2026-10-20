@@ -1,3 +1,5 @@
+import {DurationFieldElement, DurationPrecision} from '../models/elements/form/input/duration-field-element';
+import {validateDurationSeconds} from '../components/duration-field/duration-value';
 import {isValidProcessDataPath} from './process-data-path';
 import {type ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {InputMode} from '../models/input-mode';
@@ -141,6 +143,7 @@ const YupSchemaMap: {
 } = {
     [ElementType.Text]: textFieldToYup,
     [ElementType.Number]: numberFieldToYup,
+    [ElementType.Duration]: durationFieldToYup,
     [ElementType.Select]: selectFieldToYup,
     [ElementType.Radio]: selectFieldToYup,
     [ElementType.ChipInput]: chipInputFieldToYup,
@@ -241,6 +244,14 @@ function textFieldToYup(elem: TextFieldElement): Schema {
     }
 
     return textFieldSchema;
+}
+
+function durationFieldToYup(elem: DurationFieldElement): Schema {
+    const schema = yup.number().strict().nullable().test('duration', 'Ungültige Zeitdauer.', function (value) {
+        const error = validateDurationSeconds(value, elem.precision ?? DurationPrecision.Minute, elem.minDuration, elem.maxDuration, elem.largestUnit);
+        return error == null || this.createError({message: error});
+    });
+    return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
 }
 
 function numberFieldToYup(elem: AnyInputElement): Schema {

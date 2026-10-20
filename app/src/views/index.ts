@@ -1,3 +1,4 @@
+import {DurationFieldView} from './duration-field-view';
 import {ElementType} from '../data/element-type/element-type';
 import {type BaseView} from './base-view';
 import {TextFieldView} from './text-field-view';
@@ -62,6 +63,7 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.Headline]: HeadlineComponentView,
     [ElementType.MultiCheckbox]: MultiCheckboxFieldComponentView,
     [ElementType.Number]: NumberFieldView,
+    [ElementType.Duration]: DurationFieldView,
     [ElementType.ReplicatingContainer]: ReplicatingContainerView,
     [ElementType.RichText]: RichtextComponentView,
     [ElementType.Radio]: RadioFieldComponentView,

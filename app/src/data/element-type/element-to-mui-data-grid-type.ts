@@ -13,6 +13,7 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColDef['type'] | 
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: 'string',
     [ElementType.Number]: 'number',
+    [ElementType.Duration]: 'number',
     [ElementType.ReplicatingContainer]: null,
     [ElementType.RichText]: null,
     [ElementType.Radio]: 'string',

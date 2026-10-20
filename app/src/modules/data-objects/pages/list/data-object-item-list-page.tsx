@@ -1,3 +1,5 @@
+import {formatDurationSeconds} from '../../../../components/duration-field/duration-value';
+import {DurationPrecision} from '../../../../models/elements/form/input/duration-field-element';
 import {
     GenericListPage,
     type GenericListPagePermissionConfig,
@@ -261,6 +263,9 @@ export function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjec
                 headerName: generateComponentTitle(element),
                 flex: 1,
                 type: ElementToMuiDataGridType[element.type] ?? 'string',
+                valueFormatter: element.type === ElementType.Duration
+                    ? value => formatDurationSeconds(value, element.precision ?? DurationPrecision.Minute, element.largestUnit)
+                    : undefined,
                 valueGetter: (_, row) => {
                     const value: any = row.data[element.id];
 

@@ -34,6 +34,7 @@ export const evaluators: {
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: MultiCheckboxEvaluator,
     [ElementType.Number]: NumberEvaluator,
+    [ElementType.Duration]: NumberEvaluator,
     [ElementType.ReplicatingContainer]: ReplicatingContainerEvaluator,
     [ElementType.RichText]: null,
     [ElementType.Radio]: RadioEvaluator,

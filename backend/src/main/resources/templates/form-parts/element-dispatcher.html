@@ -229,6 +229,13 @@
         <!--/* ***********************************************************************
         TimeInput
         *********************************************************************** */-->
+        <th:block th:case="Duration">
+            <div
+                    th:insert="~{./form-parts/elements/duration-field.html}"
+                    th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
+            ></div>
+        </th:block>
+
         <th:block th:case="Time">
             <div
                     th:insert="./form-parts/elements/time-field.html"

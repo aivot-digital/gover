@@ -14,6 +14,7 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.Headline]: [],
     [ElementType.MultiCheckbox]: [],
     [ElementType.Number]: [],
+    [ElementType.Duration]: [],
     [ElementType.ReplicatingContainer]: [],
     [ElementType.RichText]: [],
     [ElementType.Radio]: [],

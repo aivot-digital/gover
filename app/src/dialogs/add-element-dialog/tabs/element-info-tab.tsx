@@ -1,3 +1,5 @@
+import {DurationFieldComponent} from '../../../components/duration-field/duration-field-component';
+import {DurationLargestUnit, DurationPrecision} from '../../../models/elements/form/input/duration-field-element';
 import React, {type ReactNode} from 'react';
 import {Box, Button, Divider, Typography} from '@mui/material';
 import {DateTime} from 'luxon';
@@ -458,6 +460,44 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     onChange={() => {
                     }}
                     error="Fehlermeldung zur Mehrfachauswahl"
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.Duration]: (
+        <Box>
+            <Typography>
+                Mit dem Zeitdauer-Feld erfassen Sie, wie lange etwas dauert. Typische Beispiele sind der
+                Zeitaufwand für eine Aufgabe und die Betriebsdauer eines Geräts.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Standardmäßig erfolgt die Eingabe in Stunden und Minuten. Für längere Dauern können Sie Tage
+                ergänzen, für genauere Angaben auch Sekunden. Ein Tag entspricht dabei immer 24 Stunden.
+                Mit einer Mindest- und Höchstdauer begrenzen Sie die zulässigen Eingaben.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DurationFieldComponent
+                    label="Zeitaufwand für eine Aufgabe"
+                    value={9000}
+                    onChange={() => {}}
+                    hint="Die Aufgabe benötigt 2 Stunden und 30 Minuten."
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <DurationFieldComponent
+                    label="Betriebsdauer eines Geräts"
+                    value={99015}
+                    largestUnit={DurationLargestUnit.Day}
+                    precision={DurationPrecision.Second}
+                    onChange={() => {}}
+                    hint="Das Gerät war 1 Tag, 3 Stunden, 30 Minuten und 15 Sekunden in Betrieb."
                 />
             </Box>
         </Box>

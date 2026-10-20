@@ -95,6 +95,7 @@ public class OZGCloudDataFormatService {
             case TextInputElement textField -> List.of(buildTextField(textField, context));
             case ChipInputElement chipInputField -> List.of(buildChipInputField(chipInputField, context));
             case TimeInputElement timeField -> List.of(buildTimeField(timeField, context));
+            case DurationInputElement durationField -> List.of(buildDurationField(durationField, context));
             default -> List.of();
         };
     }
@@ -805,6 +806,14 @@ public class OZGCloudDataFormatService {
                 null,
                 null
         );
+    }
+
+    private OZGCloudFormDataItem buildDurationField(
+            @Nonnull DurationInputElement field,
+            @Nonnull FormattingContext context
+    ) {
+        var value = field.formatValue(context.resolve(field).getValue());
+        return new OZGCloudFormDataItem(field.getId(), field.getLabel(), field.toDisplayValue(value), null, null, null, null);
     }
 
     private OZGCloudFormDataItem buildTimeField(

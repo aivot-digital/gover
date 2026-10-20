@@ -1,3 +1,4 @@
+import {DurationFieldEditor} from './duration-field-editor';
 import {ElementType} from '../data/element-type/element-type';
 import {type ElementTypesMap} from '../data/element-type/element-types-map';
 import {TextFieldEditor} from './text-field-editor';
@@ -86,6 +87,7 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.MultiCheckbox]: {
         default: MultiCheckboxFieldComponentEditor,
     },
+    [ElementType.Duration]: {default: DurationFieldEditor},
     [ElementType.Number]: {
         default: NumberFieldEditor,
     },
