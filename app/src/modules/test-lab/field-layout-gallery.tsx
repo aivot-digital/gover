@@ -841,7 +841,8 @@ export function FieldLayoutGallery() {
                     placeholder="Schlagwort ergänzen"
                     suggestions={['Antrag', 'Priorität', 'Rückfrage', 'Frist']}
                     maxItems={5}
-                    hint="Bis zu fünf Schlagwörter können zugeordnet werden."
+                    maxItemLength={30}
+                    hint="Bis zu fünf Schlagwörter mit jeweils höchstens 30 Zeichen. Mehrere Zeilen können auf einmal eingefügt werden."
                     required
                     margin="none"
                 />

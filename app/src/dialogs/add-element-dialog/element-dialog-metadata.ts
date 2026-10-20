@@ -102,7 +102,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.Text]: 'Erfasst freie Texteingaben.',
     [ElementType.Time]: 'Erfasst eine einzelne Uhrzeit.',
     [ElementType.FileUpload]: 'Ermöglicht das Hochladen von Dateien.',
-    [ElementType.ChipInput]: 'Erfasst mehrere Stichworte als Liste.',
+    [ElementType.ChipInput]: 'Erfasst mehrere kurze Texte in einem Feld, jeweils als eigenen Eintrag.',
     [ElementType.DateTime]: 'Erfasst Datum und Uhrzeit gemeinsam.',
     [ElementType.DateRange]: 'Erfasst einen Datumsbereich.',
     [ElementType.TimeRange]: 'Erfasst einen Uhrzeitbereich.',

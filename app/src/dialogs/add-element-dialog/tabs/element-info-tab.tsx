@@ -165,6 +165,39 @@ function DateTimeRangeExample() {
     );
 }
 
+function ChipInputExamples() {
+    const [topics, setTopics] = React.useState<string[] | null>(['Wohnen', 'Familie']);
+    const [references, setReferences] = React.useState<string[] | null>(null);
+
+    return (
+        <>
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Themen"
+                    value={topics}
+                    onChange={setTopics}
+                    placeholder="Thema hinzufügen"
+                    suggestions={['Wohnen', 'Familie', 'Bildung', 'Gesundheit']}
+                    minItems={2}
+                    maxItems={5}
+                    required
+                    hint="Wählen Sie Vorschläge oder ergänzen Sie eigene Themen."
+                />
+            </Box>
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Aktenzeichen"
+                    value={references}
+                    onChange={setReferences}
+                    placeholder="z. B. AZ-2026-001"
+                    maxItemLength={20}
+                    hint="Fügen Sie mehrere Aktenzeichen zeilenweise ein. Höchstens 20 Zeichen je Eintrag."
+                />
+            </Box>
+        </>
+    );
+}
+
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
         <Box>
@@ -937,35 +970,20 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ChipInput]: (
         <Box>
             <Typography>
-                Das Tag-Liste (Schlagwörter)-Element dient zur Erfassung mehrerer kurzer Freitext-Einträge, z. B.
-                Schlagwörter
-                oder Stichpunkte.
+                Die Mehrfach-Texteingabe erfasst mehrere kurze Texte in einem Feld. Jeder Text wird als eigener Eintrag
+                übernommen, zum Beispiel ein Stichwort, Name oder Aktenzeichen.
+                Die Einträge können frei eingegeben oder aus Vorschlägen gewählt werden.
+            </Typography>
+            <Typography sx={{mt: 2}}>
+                Einträge werden mit Enter oder beim Verlassen des Feldes übernommen. Mehrere Einträge lassen sich
+                aus der Zwischenablage einfügen. Anzahl, Zeichenlänge und Trennzeichen können im Editor festgelegt werden.
             </Typography>
 
             <Divider sx={{my: 4}}>
                 Beispiele
             </Divider>
 
-            <Box sx={{mt: 2}}>
-                <ChipInputFieldComponent
-                    label="Schlagwörter"
-                    value={['Wohnen', 'Familie']}
-                    onChange={() => {
-                    }}
-                    placeholder="Eintrag hinzufügen"
-                    hint="Drücken Sie Enter, um einen Eintrag zu übernehmen."
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <ChipInputFieldComponent
-                    label="Schlagwörter"
-                    value={[]}
-                    onChange={() => {
-                    }}
-                    error="Bitte geben Sie mindestens einen Eintrag an."
-                />
-            </Box>
+            <ChipInputExamples/>
         </Box>
     ),
     [ElementType.DateTime]: (

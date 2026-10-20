@@ -35,7 +35,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.UiDefinitionInput]: 'UI-Definition-Editor',
     [ElementType.IdentityConfigElement]: 'Identitätseingabe',
     [ElementType.TabLayout]: 'Tabs',
-    [ElementType.ChipInput]: 'Tag-Liste (Schlagwörter)',
+    [ElementType.ChipInput]: 'Mehrfach-Texteingabe',
     [ElementType.DateTime]: 'Datum und Uhrzeit',
     [ElementType.DateRange]: 'Datumsspanne',
     [ElementType.TimeRange]: 'Zeitspanne',

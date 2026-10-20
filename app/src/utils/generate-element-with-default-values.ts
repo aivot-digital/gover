@@ -429,7 +429,7 @@ const elementConstructors: {
     [ElementType.TabLayout]: (id) => ({}),
     [ElementType.ChipInput]: (id) => ({
         ...makeInputBase(ElementType.ChipInput, id),
-        label: 'Tag-Liste (Schlagwörter)',
+        label: 'Mehrfach-Texteingabe',
         placeholder: 'Eintrag hinzufügen',
         suggestions: undefined,
         optionsSource: OptionsSourceType.Manual,
