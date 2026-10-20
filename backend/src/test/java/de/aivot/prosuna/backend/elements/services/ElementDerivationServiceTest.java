@@ -54,12 +54,17 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.prosuna.backend.nocode.services.NoCodeOperatorProviderService;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
+import de.aivot.prosuna.backend.utils.SpringContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.StaticApplicationContext;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -78,6 +83,33 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ElementDerivationServiceTest {
+    @Test
+    void durationFormattingSupportsAuthoringAndRuntimeInputModes() {
+        var previousContext = (ApplicationContext) ReflectionTestUtils.getField(SpringContext.class, "context");
+        try (var context = new StaticApplicationContext()) {
+            context.getBeanFactory().registerSingleton("noCodeOperatorProviderService",
+                    new NoCodeOperatorProviderService(List.of(new CommonOperatorsV1(null, null, null))));
+            new SpringContext().setApplicationContext(context);
+            var field = dynamicTextField();
+            var root = createRoot(List.of(field));
+            var values = new AuthoredElementValues();
+            values.put("field", new NoCodeAuthoredInputValue(
+                    NoCodeExpression.of("format-duration", NoCodeStaticValue.of(99000), NoCodeStaticValue.of("hours"))));
+
+            var authoring = derive(root, values, new ElementDerivationOptions(),
+                    new ProcessExecutionData(), InputModeEvaluationContext.Authoring);
+            assertFalse(authoring.hasAnyError());
+            assertTrue(authoring.getElementStates().get("field").isInputValueDeferred());
+
+            var runtime = derive(root, values, new ElementDerivationOptions(),
+                    new ProcessExecutionData(), InputModeEvaluationContext.Runtime);
+            assertFalse(runtime.hasAnyError());
+            assertEquals("27 Stunden 30 Minuten", runtime.getEffectiveValues().get("field"));
+        } finally {
+            new SpringContext().setApplicationContext(previousContext);
+        }
+    }
+
     @Test
     void durationFieldsValidateAuthoredAndDerivedSecondsWithoutRounding() {
         var field = new DurationInputElement().setMinDuration(60L).setMaxDuration(100000L);
