@@ -535,7 +535,7 @@ const elementConstructors: {
     }),
     [ElementType.AssetSelectInput]: (id) => ({
         ...makeInputBase(ElementType.AssetSelectInput, id),
-        label: 'Asset',
+        label: 'Datei',
         placeholder: 'Keine Datei ausgewählt',
         dialogTitle: 'Datei auswählen',
         allowedMimeTypes: undefined,

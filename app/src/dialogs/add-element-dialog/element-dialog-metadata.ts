@@ -117,7 +117,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: 'Wählt einen oder mehrere Anlagensätze des Vorgangs aus.',
     [ElementType.ProcessIdentityIdInput]: 'Wählt eine verfügbare Prozessidentität aus.',
     [ElementType.SecretSelectInput]: 'Wählt ein sicher hinterlegtes Geheimnis aus und speichert dessen Schlüssel.',
-    [ElementType.AssetSelectInput]: 'Wählt eine Datei aus den Assets aus und speichert deren stabilen Schlüssel.',
+    [ElementType.AssetSelectInput]: 'Ermöglicht die Auswahl einer vorhandenen Datei aus „Dateien und Medien“.',
     [ElementType.HtmlTemplateInput]: 'Befüllt Slots einer HTML-Vorlage mit Text, Rich-Text oder Bildern.',
     [ElementType.StoragePathSelector]: 'Wählt einen Speicheranbieter und einen Ordner oder Zielpfad aus.',
     [ElementType.CodeInput]: 'Erfasst technischen oder ausführbaren Code.',
