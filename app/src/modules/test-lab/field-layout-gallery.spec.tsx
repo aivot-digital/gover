@@ -271,7 +271,7 @@ describe('FieldLayoutGallery accessibility', () => {
         const tagsLabel = screen.getByTitle('Schlagwörter');
         const tagsInput = document.getElementById(tagsLabel.getAttribute('for')!);
         expect(tagsInput).toHaveAccessibleName('Schlagwörter');
-        expect(tagsInput).toHaveAccessibleDescription(/Bis zu fünf Schlagwörter können zugeordnet werden/);
+        expect(tagsInput).toHaveAccessibleDescription(/Bis zu fünf Schlagwörter mit jeweils höchstens 30 Zeichen/);
         expect(tagsInput).toHaveAttribute('role', 'combobox');
 
         const dataModelLabel = screen.getByTitle('Datenmodell');

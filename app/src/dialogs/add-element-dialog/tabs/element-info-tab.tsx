@@ -1522,9 +1522,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ProcessAttachmentDisplay]: (
         <Box>
             <Typography>
-                Das Element zeigt alle Vorgangsanhänge aus einem Anlagensatz mit dem festgelegten Schlüssel an.
-                Gefundene Anhänge können in einem neuen Tab angesehen und bei Bedarf heruntergeladen werden.
-                Eine optionale Beschriftung und ein Hinweis ergänzen die Darstellung um weitere Informationen.
+                Stellt vorhandene Dateien aus den Anlagensätzen des Vorgangs bereit, die zum gewählten Anlagensatz-Schlüssel gehören.
+                Die Dateien können angesehen und heruntergeladen werden.
+                So lassen sich beispielsweise eingereichte Nachweise in einem späteren Bearbeitungsschritt prüfen oder erstellte Bescheide bereitstellen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1532,12 +1532,19 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Divider>
 
             <ProcessAttachmentDisplayComponent
-                labelText="Bescheide"
+                labelText="Eingereichte Nachweise"
                 items={[
                     {
-                        key: 'example',
-                        fileName: 'Erfolgsbescheid.pdf',
-                        originalFileName: 'Bescheid.pdf',
+                        key: 'income',
+                        fileName: 'Einkommensnachweis.pdf',
+                        originalFileName: 'Einkommensnachweis.pdf',
+                        sizeInBytes: 245000,
+                    },
+                    {
+                        key: 'rental',
+                        fileName: 'Mietvertrag.pdf',
+                        originalFileName: 'Mietvertrag.pdf',
+                        sizeInBytes: 1520000,
                     },
                 ]}
             />

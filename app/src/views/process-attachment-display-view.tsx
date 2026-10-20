@@ -117,6 +117,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
                 key: attachment.key,
                 fileName: attachment.fileName,
                 originalFileName: attachment.originalFileName,
+                sizeInBytes: attachment.sizeInBytes,
                 group: attachment.group,
                 onView: () => {
                     void attachmentContext.viewAttachment(attachment);

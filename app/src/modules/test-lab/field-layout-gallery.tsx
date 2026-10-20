@@ -48,6 +48,7 @@ import {SecretSelectComponent} from '../secrets/components/secret-select-compone
 import {OptionListInput} from '../../components/option-list-input/option-list-input';
 import type {OptionListInputValue} from '../../components/option-list-input/option-list-input-props';
 import {ElementWidthSelector} from '../../components/element-width-selector/element-width-selector';
+import {ProcessAttachmentDisplayComponent} from '../../components/process-attachment-display/process-attachment-display-component';
 import {MapPointFieldComponent} from '../../components/map-point-field/map-point-field-component';
 import {TableFieldComponent2} from '../../components/table-field/table-field-component-2';
 import {
@@ -996,6 +997,16 @@ export function FieldLayoutGallery() {
             </Box>
 
             <Box sx={{...fieldGridSx, mt: 3}}>
+                <ProcessAttachmentDisplayComponent
+                    labelText="Vorhandene Anlagen"
+                    hintText="Dateien aus dem zugeordneten Anlagensatz."
+                    previewText="Vorschau ohne Dateiaktionen."
+                    items={[
+                        {key: 'notice', fileName: 'Bescheid.pdf', originalFileName: 'Bescheid-2026.pdf', sizeInBytes: 245000},
+                        {key: 'evidence', fileName: 'Nachweis.jpg', originalFileName: 'Nachweis.jpg', sizeInBytes: 1520000},
+                    ]}
+                    margin="none"
+                />
                 <ProcessInstanceAttachmentSetSelect
                     label="Anlagensatz"
                     attachmentSets={attachmentSetOptions}

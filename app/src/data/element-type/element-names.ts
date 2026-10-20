@@ -55,7 +55,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.DepartmentSelectInput]: 'Organisationseinheits-Auswahl',
     [ElementType.HtmlTemplateInput]: 'HTML-Vorlage',
     [ElementType.StoragePathSelector]: 'Speicherpfad-Auswahl',
-    [ElementType.ProcessAttachmentDisplay]: 'Anhang zum Vorgang',
+    [ElementType.ProcessAttachmentDisplay]: 'Anlagensatz-Anzeige',
     [ElementType.PaymentConfigElement]: 'Zahlungskonfiguration',
     [ElementType.LinkButton]: 'Link-Button',
 };

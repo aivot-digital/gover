@@ -126,7 +126,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.IdentityConfigElement]: 'Ermöglicht eine Identifizierung über Servicekonten oder alternativ die Eingabe einer E-Mail-Adresse.',
     [ElementType.PaymentConfigElement]: 'Konfiguriert den Zahlungsdienstleister und die Zahlungsposten eines Formulars.',
     [ElementType.SummaryLayout]: 'Fasst mehrere Elemente zu einer Übersicht zusammen.',
-    [ElementType.ProcessAttachmentDisplay]: 'Zeigt Vorgangsanhänge zur Ansicht und zum Download an.',
+    [ElementType.ProcessAttachmentDisplay]: 'Zeigt Dateien aus einem Anlagensatz des Vorgangs zum Ansehen und Herunterladen an.',
     [ElementType.SummaryStep]: 'Optionaler Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind.',
     [ElementType.IntroductionStep]: 'Optionaler Abschnitt am Anfang eines mehrstufigen Formulars, der zur Einführung oder zur Erklärung des weiteren Ablaufs genutzt werden kann.',
     [ElementType.SubmitStep]: 'Optionaler Abschnitt am Ende eines Formulars. Zeigt Hinweise vor der Einreichung an und schützt die Übermittlung mit einer Sicherheitsprüfung vor automatisierten Einreichungen (Captcha).',

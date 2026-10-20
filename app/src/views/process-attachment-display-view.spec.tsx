@@ -52,7 +52,7 @@ describe('ProcessAttachmentDisplayView', () => {
                     createAttachmentSet(3, 'case_documents'),
                 ],
                 attachments: [
-                    createAttachment('1', 'evidence.pdf', 1),
+                    {...createAttachment('1', 'evidence.pdf', 1), sizeInBytes: 245000},
                     createAttachment('2', 'other.pdf', 2),
                     createAttachment('3', 'invoice.pdf', 3),
                 ],
@@ -60,6 +60,7 @@ describe('ProcessAttachmentDisplayView', () => {
         );
 
         expect(screen.getByText('evidence.pdf')).toBeInTheDocument();
+        expect(screen.getByText(/^245 KB · Hochgeladen als /)).toBeInTheDocument();
         expect(screen.getByText('invoice.pdf')).toBeInTheDocument();
         expect(screen.queryByText('other.pdf')).not.toBeInTheDocument();
     });
