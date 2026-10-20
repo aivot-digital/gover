@@ -8,6 +8,8 @@ import {OptionListInput} from '../components/option-list-input/option-list-input
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {CodeListSelectField} from '../modules/code-lists/components/code-list-select-field';
+import {MultiCheckboxComponent} from '../components/multi-checkbox-field/multi-checkbox-component';
+import {ChipInputPasteSeparatorOptions, DefaultChipInputPasteSeparators} from '../data/chip-input-paste-separators';
 
 const optionsSourceOptions = [
     {
@@ -36,7 +38,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
     const usesManualSuggestions = optionsSource === OptionsSourceType.Manual;
     const effectiveMaxItems = element.maxItems != null && element.maxItems > 0 ? element.maxItems : undefined;
 
-    const effectiveMinItems = element.required === true && element.minItems != null && element.minItems > 0
+    const effectiveMinItems = element.minItems != null && element.minItems > 0
         ? element.minItems
         : undefined;
 
@@ -77,43 +79,44 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                             placeholder: value,
                         });
                     }}
-                    hint="Ein Platzhalter zeigt beispielhaft, wie Chips eingegeben werden können."
+                    hint="Ein Platzhalter zeigt ein Beispiel für einen Eintrag."
                     disabled={!editable}
                 />
             </Grid>
 
-            {
-                element.required === true &&
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 3,
-                    }}
-                >
-                    <NumberFieldComponent
-                        label="Minimale Anzahl"
-                        value={element.minItems ?? undefined}
-                        onChange={(value) => {
-                            onPatch({
-                                minItems: value,
-                            });
-                        }}
-                        hint="Geben Sie 0 oder nichts ein, um keine Mindestanzahl zu fordern."
-                        error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
-                        disabled={!editable}
-                    />
-                </Grid>
-            }
+            <Grid size={{xs: 12, lg: 6}}>
+                <NumberFieldComponent
+                    label="Maximale Zeichenanzahl je Eintrag"
+                    value={element.maxItemLength ?? undefined}
+                    onChange={maxItemLength => onPatch({maxItemLength})}
+                    minValue={0}
+                    hint="Geben Sie 0 oder nichts ein, um die Länge nicht zu begrenzen."
+                    disabled={!editable}
+                />
+            </Grid>
+
+            <Grid size={{xs: 12, lg: 6}}>
+                <NumberFieldComponent
+                    label="Minimale Anzahl"
+                    value={element.minItems ?? undefined}
+                    onChange={minItems => onPatch({minItems})}
+                    minValue={0}
+                    hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
+                    error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
+                    disabled={!editable}
+                />
+            </Grid>
 
             <Grid
                 size={{
                     xs: 12,
-                    lg: element.required === true ? 3 : 6,
+                    lg: 6,
                 }}
             >
                 <NumberFieldComponent
                     label="Maximale Anzahl"
                     value={element.maxItems ?? undefined}
+                    minValue={0}
                     onChange={(value) => {
                         onPatch({
                             maxItems: value,
@@ -125,20 +128,32 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                 />
             </Grid>
 
+            <Grid size={{xs: 12}}>
+                <MultiCheckboxComponent
+                    label="Trennzeichen beim Einfügen"
+                    value={element.pasteSeparators ?? DefaultChipInputPasteSeparators}
+                    options={ChipInputPasteSeparatorOptions}
+                    onChange={pasteSeparators => onPatch({pasteSeparators: pasteSeparators ?? []})}
+                    hint="Text aus der Zwischenablage wird an diesen Zeichen in einzelne Einträge aufgeteilt. Ohne Auswahl bleibt der eingefügte Text ein Eintrag."
+                    displayInline
+                    disabled={!editable}
+                />
+            </Grid>
+
             <Grid
                 size={{
                     xs: 12,
                 }}
             >
                 <CheckboxFieldComponent
-                    label="Doppelte Chips erlauben"
+                    label="Doppelte Einträge erlauben"
                     value={element.allowDuplicates ?? undefined}
                     onChange={(checked) => {
                         onPatch({
                             allowDuplicates: checked,
                         });
                     }}
-                    hint="Wenn deaktiviert, wird jeder Chip nur einmal übernommen."
+                    hint="Erlaubt, denselben Text mehrfach manuell einzugeben."
                     disabled={!editable}
                 />
             </Grid>

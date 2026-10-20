@@ -549,6 +549,7 @@ class TemplateLoaderServiceTest {
         chipInputElement.setLabel("Schlagwörter");
         chipInputElement.setMinItems(2);
         chipInputElement.setMaxItems(5);
+        chipInputElement.setMaxItemLength(30);
 
         var mapPointElement = new MapPointInputElement()
                 .setLabel("Position");
@@ -585,6 +586,8 @@ class TemplateLoaderServiceTest {
         assertTrue(chipInputHtml.contains("Mehrere Einträge bitte kommasepariert nacheinander notieren."));
         assertTrue(chipInputHtml.contains("Mindestens"));
         assertTrue(chipInputHtml.contains("Maximal"));
+        assertTrue(chipInputHtml.contains("Zeichen je Eintrag"));
+        assertTrue(chipInputHtml.contains(">30</span>"));
         assertTrue(mapPointHtml.contains("Adresse oder Koordinaten"));
     }
 
