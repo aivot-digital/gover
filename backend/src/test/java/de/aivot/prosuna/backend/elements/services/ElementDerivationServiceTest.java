@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.elements.services;
 
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
+import de.aivot.prosuna.backend.asset.entities.AssetEntity;
+import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DurationInputElement;
 import de.aivot.prosuna.backend.enums.DurationPrecision;
 
@@ -59,6 +62,7 @@ import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.SpringContext;
+import org.mockito.Mockito;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -83,6 +87,31 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ElementDerivationServiceTest {
+    @Test
+    void checksAssetProviderForAuthoredAndDerivedValuesWithoutDiscardingTheKey() {
+        var repository = Mockito.mock(AssetRepository.class);
+        var key = java.util.UUID.randomUUID();
+        Mockito.when(repository.findById(key)).thenReturn(java.util.Optional.of(
+                new AssetEntity().setKey(key).setStorageProviderId(7)));
+        var field = new AssetSelectInputElement()
+                .setStorageProviderId(7);
+        field.setId("asset");
+        var root = createRoot(List.of(field));
+        var values = new AuthoredElementValues().putLiteral("asset", key.toString());
+        var service = createService(repository);
+
+        assertFalse(service.derive(new ElementDerivationRequest(root, values, new ElementDerivationOptions())).hasAnyError());
+        field.setStorageProviderId(8);
+        var rejected = service.derive(new ElementDerivationRequest(root, values, new ElementDerivationOptions()));
+        assertTrue(rejected.hasAnyError());
+        assertEquals(key.toString(), rejected.getEffectiveValues().get("asset"));
+
+        field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(key.toString())));
+        var derived = service.derive(new ElementDerivationRequest(root, new AuthoredElementValues(), new ElementDerivationOptions()));
+        assertTrue(derived.hasAnyError());
+        assertEquals(key.toString(), derived.getEffectiveValues().get("asset"));
+    }
+
     @Test
     void durationFormattingSupportsAuthoringAndRuntimeInputModes() {
         var previousContext = (ApplicationContext) ReflectionTestUtils.getField(SpringContext.class, "context");
@@ -1834,6 +1863,10 @@ class ElementDerivationServiceTest {
     }
 
     private static ElementDerivationService createService() {
+        return createService(Mockito.mock(AssetRepository.class));
+    }
+
+    private static ElementDerivationService createService(AssetRepository assetRepository) {
         return new ElementDerivationService(
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of(new CommonOperatorsV1(
@@ -1847,7 +1880,8 @@ class ElementDerivationServiceTest {
                 new ElementDataTransformService(),
                 new CodeListElementOptionsService(null, null),
                 new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
-                new InputVariableResolver()
+                new InputVariableResolver(),
+                new AssetSelectionValidationService(assetRepository)
         );
     }
 

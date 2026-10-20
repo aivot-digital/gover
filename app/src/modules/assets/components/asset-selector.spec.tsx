@@ -2,14 +2,26 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {AssetSelector} from './asset-selector';
 
+const {dispatch, retrieveByKey, retrieveStorageProvider, dialogSpy} = vi.hoisted(() => ({
+    dispatch: vi.fn(), retrieveByKey: vi.fn(), retrieveStorageProvider: vi.fn(), dialogSpy: vi.fn(),
+}));
 vi.mock('../../../hooks/use-app-dispatch', () => ({
-    useAppDispatch: () => vi.fn(),
+    useAppDispatch: () => dispatch,
 }));
 
 vi.mock('../../../dialogs/select-asset-dialog/select-asset-dialog', () => ({
-    SelectAssetDialog: ({show}: {show: boolean}) => show
+    SelectAssetDialog: (props: {show: boolean}) => {
+        dialogSpy(props);
+        return props.show
         ? <div role="dialog" aria-label="Dateiauswahl"/>
-        : null,
+        : null;
+    },
+}));
+vi.mock('../assets-api-service', () => ({
+    AssetsApiService: class {
+        retrieveByKey = retrieveByKey;
+        retrieveStorageProvider = retrieveStorageProvider;
+    },
 }));
 
 describe('AssetSelector', () => {
@@ -37,5 +49,20 @@ describe('AssetSelector', () => {
         expect(screen.getByRole('dialog', {name: 'Dateiauswahl'})).toBeInTheDocument();
         expect(picker).toHaveAttribute('aria-expanded', 'true');
         expect(picker).toHaveAttribute('aria-controls');
+    });
+
+    it('preserves an existing selection and marks a provider mismatch until it is permitted again', async () => {
+        retrieveByKey.mockResolvedValue({storageProviderId: 3, filename: 'Vorlage.pdf', pathFromRoot: '/Vorlage.pdf'});
+        retrieveStorageProvider.mockResolvedValue({name: 'Vorlagen'});
+        const onChange = vi.fn();
+        const props = {label: 'Datei', selectLabel: 'Datei auswählen', value: 'stored-key', error: '', onChange};
+        const {rerender} = render(<AssetSelector {...props} storageProviderId={7}/>);
+        expect(await screen.findByRole('alert')).toHaveTextContent('Die ausgewählte Datei gehört nicht zum erlaubten Speicheranbieter.');
+        expect(screen.getByText('Vorlage.pdf')).toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+        expect(dialogSpy).toHaveBeenLastCalledWith(expect.objectContaining({storageProviderId: 7}));
+        rerender(<AssetSelector {...props}/>);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
     });
 });

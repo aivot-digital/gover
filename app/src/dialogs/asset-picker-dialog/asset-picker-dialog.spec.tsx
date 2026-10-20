@@ -1,4 +1,4 @@
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {AssetPickerDialog} from './asset-picker-dialog';
 import {AssetVisibility} from '../../modules/assets/models/asset-visibility';
@@ -6,12 +6,14 @@ import {StorageProviderType} from '../../modules/storage/enums/storage-provider-
 import {type StorageIndexItem} from '../../modules/storage/entities/storage-index-item-entity';
 
 const {
+    dispatchSpy,
     assetExplorerSpy,
     confirmSpy,
     listStorageProvidersSpy,
     retrieveAssetSpy,
     updateAssetSpy,
 } = vi.hoisted(() => ({
+    dispatchSpy: vi.fn(),
     assetExplorerSpy: vi.fn(),
     confirmSpy: vi.fn(),
     listStorageProvidersSpy: vi.fn(),
@@ -23,10 +25,7 @@ vi.mock('../../hooks/use-api', () => {
     const api = {};
     return {useApi: () => api};
 });
-vi.mock('../../hooks/use-app-dispatch', () => {
-    const dispatch = vi.fn();
-    return {useAppDispatch: () => dispatch};
-});
+vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => dispatchSpy}));
 vi.mock('../../providers/confirm-provider', () => {
     return {useConfirm: () => confirmSpy};
 });
@@ -204,5 +203,91 @@ describe('AssetPickerDialog', () => {
 
         await waitFor(() => expect(listStorageProvidersSpy).toHaveBeenCalledTimes(2));
         await waitFor(() => expect(assetExplorerSpy.mock.calls.length).toBeGreaterThan(explorerRenderCount));
+    });
+
+    it('fixes the provider and rejects selections from another provider', async () => {
+        listStorageProvidersSpy.mockResolvedValue([
+            {id: 3, name: 'Andere Dateien'}, {id: 7, name: 'Vorlagen'},
+        ]);
+        const onSelectAsset = vi.fn();
+        render(<AssetPickerDialog title="Datei auswählen" show storageProviderId={7}
+                                  onSelectAsset={onSelectAsset} onCancel={vi.fn()}/>);
+        await screen.findByText('Vorlagen');
+        const providerSelect = screen.getByRole('combobox', {name: /Speicheranbieter/});
+        expect(providerSelect).toHaveTextContent('Vorlagen');
+        expect(providerSelect).toHaveAttribute('aria-disabled', 'true');
+        expect(assetExplorerSpy).toHaveBeenLastCalledWith(expect.objectContaining({providerId: 7}));
+        const {onFileSelect} = assetExplorerSpy.mock.lastCall![0];
+        const item = {storageProviderId: 3, assetKey: 'asset-key', pathFromRoot: '/file.pdf', directory: false};
+        await act(() => onFileSelect(item));
+        expect(onSelectAsset).not.toHaveBeenCalled();
+        await act(() => onFileSelect({...item, storageProviderId: 7}));
+        expect(onSelectAsset).toHaveBeenCalledWith('asset-key', '/file.pdf', 7);
+    });
+
+    it('keeps the provider selectable without a restriction', async () => {
+        listStorageProvidersSpy.mockResolvedValue([{id: 3, name: 'Dateien'}, {id: 7, name: 'Vorlagen'}]);
+        render(<AssetPickerDialog title="Datei auswählen" show
+                                  onSelectAsset={vi.fn()} onCancel={vi.fn()}/>);
+        await screen.findByText('Dateien');
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: /Speicheranbieter/}));
+        fireEvent.click(await screen.findByRole('option', {name: 'Vorlagen'}));
+        expect(assetExplorerSpy).toHaveBeenLastCalledWith(expect.objectContaining({providerId: 7}));
+    });
+
+    it('does not fall back to another provider when the configured provider is missing', async () => {
+        render(<AssetPickerDialog title="Datei auswählen" show storageProviderId={99}
+                                  onSelectAsset={vi.fn()} onCancel={vi.fn()}/>);
+        expect(await screen.findByText('Der festgelegte Speicheranbieter ist nicht verfügbar.')).toBeVisible();
+        expect(screen.queryByTestId('asset-explorer')).not.toBeInTheDocument();
+    });
+
+    it('updates the restriction while open and rejects an in-flight selection from the old provider', async () => {
+        listStorageProvidersSpy.mockResolvedValue([{id: 7, name: 'Vorlagen'}, {id: 8, name: 'Logos'}]);
+        let resolveAsset!: (asset: unknown) => void;
+        retrieveAssetSpy.mockReturnValue(new Promise(resolve => { resolveAsset = resolve; }));
+        const onSelectAsset = vi.fn();
+        const props = {title: 'Datei auswählen', show: true, onSelectAsset, onCancel: vi.fn()};
+        const {rerender} = render(<AssetPickerDialog {...props} storageProviderId={7}/>);
+        await screen.findByText('Vorlagen');
+        const {onFileSelect} = assetExplorerSpy.mock.lastCall![0];
+        let pending!: Promise<void>;
+        act(() => { pending = onFileSelect({storageProviderId: 7, pathFromRoot: '/file.pdf', directory: false}); });
+        rerender(<AssetPickerDialog {...props} storageProviderId={8}/>);
+        await screen.findByText('Logos');
+        await act(async () => {
+            resolveAsset({key: 'asset-key', storageProviderId: 7, storagePathFromRoot: '/file.pdf'});
+            await pending;
+        });
+        expect(onSelectAsset).not.toHaveBeenCalled();
+        expect(assetExplorerSpy).toHaveBeenLastCalledWith(expect.objectContaining({providerId: 8}));
+    });
+
+    it('does not report successful selection when the provider changes during publication', async () => {
+        listStorageProvidersSpy.mockResolvedValue([{id: 7, name: 'Vorlagen'}, {id: 8, name: 'Logos'}]);
+        const asset = {key: 'asset-key', storageProviderId: 7, storagePathFromRoot: '/file.pdf', isPrivate: true};
+        retrieveAssetSpy.mockResolvedValue(asset);
+        let resolvePublication!: (asset: unknown) => void;
+        updateAssetSpy.mockReturnValue(new Promise(resolve => { resolvePublication = resolve; }));
+        const onSelectAsset = vi.fn();
+        const props = {title: 'Datei auswählen', show: true, visibility: AssetVisibility.Public, onSelectAsset, onCancel: vi.fn()};
+        const {rerender} = render(<AssetPickerDialog {...props} storageProviderId={7}/>);
+        await screen.findByText('Vorlagen');
+        const {onFileSelect} = assetExplorerSpy.mock.lastCall![0];
+        let pending!: Promise<void>;
+        await act(async () => {
+            pending = onFileSelect({storageProviderId: 7, pathFromRoot: '/file.pdf', directory: false});
+        });
+        expect(updateAssetSpy).toHaveBeenCalledOnce();
+        rerender(<AssetPickerDialog {...props} storageProviderId={8}/>);
+        await screen.findByText('Logos');
+        await act(async () => {
+            resolvePublication({...asset, isPrivate: false});
+            await pending;
+        });
+        expect(onSelectAsset).not.toHaveBeenCalled();
+        expect(dispatchSpy).not.toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({message: 'Die Datei wurde veröffentlicht und ausgewählt.'}),
+        }));
     });
 });

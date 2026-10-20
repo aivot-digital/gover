@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.InputElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
@@ -71,6 +72,7 @@ public class ElementDerivationService {
     private final AuthoredInputValueService authoredInputValueService;
     private final InputVariableResolver inputVariableResolver;
     private final TemplateRenderService templateRenderService;
+    private final AssetSelectionValidationService assetSelectionValidationService;
 
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull BaseElement element, @Nonnull AuthoredElementValues authoredElementValues) {
@@ -97,7 +99,8 @@ public class ElementDerivationService {
             CodeListElementOptionsService codeListElementOptionsService,
             AuthoredInputValueService authoredInputValueService,
             InputVariableResolver inputVariableResolver,
-            TemplateRenderService templateRenderService) {
+            TemplateRenderService templateRenderService,
+            @Nonnull AssetSelectionValidationService assetSelectionValidationService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.noCodeEvaluationService = noCodeEvaluationService;
         this.elementDataTransformService = elementDataTransformService;
@@ -105,6 +108,7 @@ public class ElementDerivationService {
         this.authoredInputValueService = authoredInputValueService;
         this.inputVariableResolver = inputVariableResolver;
         this.templateRenderService = templateRenderService;
+        this.assetSelectionValidationService = assetSelectionValidationService;
     }
 
     /**
@@ -116,7 +120,8 @@ public class ElementDerivationService {
             ElementDataTransformService elementDataTransformService,
             CodeListElementOptionsService codeListElementOptionsService,
             AuthoredInputValueService authoredInputValueService,
-            InputVariableResolver inputVariableResolver) {
+            InputVariableResolver inputVariableResolver,
+            @Nonnull AssetSelectionValidationService assetSelectionValidationService) {
         this(
                 javascriptEngineFactoryService,
                 noCodeEvaluationService,
@@ -124,7 +129,8 @@ public class ElementDerivationService {
                 codeListElementOptionsService,
                 authoredInputValueService,
                 inputVariableResolver,
-                new TemplateRenderService(javascriptEngineFactoryService)
+                new TemplateRenderService(javascriptEngineFactoryService),
+                assetSelectionValidationService
         );
     }
 
@@ -1368,6 +1374,9 @@ public class ElementDerivationService {
 
         try {
             inputElement.validate(effectiveValue);
+            if (inputElement instanceof AssetSelectInputElement assetSelect) {
+                assetSelectionValidationService.validate(assetSelect, effectiveValue);
+            }
         } catch (ValidationException e) {
             return ErrorResult.of(e);
         }
