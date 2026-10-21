@@ -33,6 +33,8 @@ public class CodeListElementOptionsService {
             case SelectInputElement select when select.getOptionsSource() == OptionsSourceType.CodeList -> resolveSelect(select);
             case RadioInputElement radio when radio.getOptionsSource() == OptionsSourceType.CodeList -> resolveRadio(radio);
             case MultiCheckboxInputElement multiCheckbox when multiCheckbox.getOptionsSource() == OptionsSourceType.CodeList -> resolveMultiCheckbox(multiCheckbox);
+            case TextInputElement text when text.getOptionsSource() == OptionsSourceType.CodeList
+                    && !Boolean.TRUE.equals(text.getIsMultiline()) && text.getDynamicTextPolicy() == null -> resolveText(text);
             case ChipInputElement chipInput when chipInput.getOptionsSource() == OptionsSourceType.CodeList -> resolveChipInput(chipInput);
             default -> element;
         };
@@ -44,6 +46,13 @@ public class CodeListElementOptionsService {
         copy
                 .setOptions(listAsSelectItems(requireConfiguredCodeListId(element.getCodeListKey())))
                 .setDependsOnSelectFieldId(null);
+        return copy;
+    }
+
+    @Nonnull
+    private TextInputElement resolveText(@Nonnull TextInputElement element) throws ResponseException {
+        var copy = copy(element, TextInputElement.class);
+        copy.setSuggestions(listAsChipInputSuggestionsItems(requireConfiguredCodeListId(element.getCodeListKey())));
         return copy;
     }
 
@@ -122,7 +131,7 @@ public class CodeListElementOptionsService {
         return vCodeListItemRepository
                 .findAllByCodeListIdOrderByIdAsc(codeListId)
                 .stream()
-                // Chip inputs store plain strings, so codelists can only provide label-based suggestions here.
+                // Free-text inputs store the suggestion text, not the technical codelist value.
                 .map(item -> item.getLabel())
                 .filter(label -> label != null && !label.isBlank())
                 .map(String::trim)

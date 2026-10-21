@@ -1,8 +1,7 @@
 import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import {Box, IconButton, InputAdornment, ListItemText, TextField, Typography} from '@mui/material';
+import {Box, IconButton, InputAdornment, TextField, Typography} from '@mui/material';
 import {type EndAction, type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
-import Autocomplete from '@mui/material/Autocomplete';
 import type {TextFieldOwnerState} from '@mui/material/TextField';
 import {CopyToClipboardButton} from '../copy-to-clipboard-button/copy-to-clipboard-button';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
@@ -121,68 +120,7 @@ function renderEndAdornment(
     );
 }
 
-export function AutocompleteTextField(props: TextFieldComponentProps & {
-    suggestions: string[] | {
-        id: string;
-        label: string;
-        subLabel?: string;
-    }[];
-}) {
-    const {
-        suggestions,
-        ...rest
-    } = props;
-
-    const options = useMemo(() => {
-        return suggestions
-            .map((s) => typeof s === 'string'
-                ? ({
-                    id: s,
-                    label: s,
-                    subLabel: undefined,
-                })
-                : ({
-                    id: s.id,
-                    label: s.label,
-                    subLabel: s.subLabel,
-                }));
-    }, [suggestions]);
-
-    return (
-        <Autocomplete
-            id={rest.id}
-            disablePortal
-            freeSolo
-            fullWidth
-            readOnly={rest.readonly}
-            onChange={(_, value) => {
-                if (rest.disabled || rest.readonly) {
-                    return;
-                }
-
-                if (value == null) {
-                    rest.onChange(null);
-                } else {
-                    rest.onChange(typeof value === 'string' ? value : value.id);
-                }
-            }}
-            value={rest.value ?? null}
-            options={options}
-            renderOption={({key, ...optionProps}, option) => (
-                <Box component="li" key={key} {...optionProps}>
-                    <ListItemText
-                        primary={option.label}
-                        secondary={option.subLabel}
-                    />
-                </Box>
-            )}
-            renderInput={(params) => (
-                <TextFieldComponent {...rest} muiPassTroughProps={params}
-                                    disabled={rest.disabled}/>
-            )}
-        />
-    );
-}
+export {AutocompleteTextField} from './autocomplete-text-field';
 
 export function TextFieldComponent(props: TextFieldComponentProps) {
     const [inputValue, setInputValue] = useState(props.value ?? '');

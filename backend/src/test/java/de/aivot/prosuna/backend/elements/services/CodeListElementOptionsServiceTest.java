@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.codeLists.repositories.VCodeListItemRepository;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.MultiCheckboxInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
@@ -27,6 +28,28 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class CodeListElementOptionsServiceTest {
+    @Test
+    void resolvesTextSuggestionsAsLabelsWithoutRestrictingFreeInput() throws Exception {
+        var repository = mock(VCodeListItemRepository.class);
+        var service = new CodeListElementOptionsService(repository, codeListRepository(7));
+        when(repository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
+                item("BE", "Berlin"), item("B2", " Berlin "), item("HH", "Hamburg")
+        ));
+        var original = new TextInputElement().setOptionsSource(OptionsSourceType.CodeList).setCodeListKey("test");
+        var resolved = assertInstanceOf(TextInputElement.class, service.resolve(original));
+        assertEquals(List.of("Berlin", "Hamburg"), resolved.getSuggestions());
+        assertNull(original.getSuggestions());
+        resolved.validate("Leipzig");
+    }
+
+    @Test
+    void retainsInactiveSuggestionsForMultilineTextWithoutLoadingTheCodeList() throws Exception {
+        var service = new CodeListElementOptionsService(null, null);
+        var element = new TextInputElement().setOptionsSource(OptionsSourceType.CodeList).setCodeListKey("missing");
+        element.setIsMultiline(true);
+        assertSame(element, service.resolve(element));
+    }
+
     @Test
     void leavesManualElementsUnchanged() throws Exception {
         var service = new CodeListElementOptionsService(null, null);

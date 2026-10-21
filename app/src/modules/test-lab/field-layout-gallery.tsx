@@ -1,3 +1,4 @@
+import {AutocompleteTextField} from '../../components/text-field/autocomplete-text-field';
 import {InputMode} from '../../models/input-mode';
 import {ResourceInputGallery} from './resource-input-gallery';
 import {useState} from 'react';
@@ -427,6 +428,7 @@ function InputModeSummary(props: {
 }
 
 export function FieldLayoutGallery() {
+    const [suggestedCity, setSuggestedCity] = useState<string | null>(null);
     const [name, setName] = useState<string | null>('Max Mustermann');
     const [description, setDescription] = useState<string | null>('Kurze Beschreibung');
     const [amount, setAmount] = useState<number | null>(1250.5);
@@ -532,6 +534,9 @@ export function FieldLayoutGallery() {
                     value={name}
                     onChange={setName}
                 />
+
+                <AutocompleteTextField label="Ort (mit Vorschlägen)" value={suggestedCity} onChange={setSuggestedCity}
+                    suggestions={['Berlin', 'Hamburg', 'München']} hint="Eigene Ortsangaben bleiben möglich." margin="none"/>
 
                 <NumberFieldComponent
                     label="Betrag"

@@ -4,12 +4,13 @@ import {Grid} from '@mui/material';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
-import {OptionListInput} from '../components/option-list-input/option-list-input';
+import {ChipInputFieldComponent} from '../components/chip-input-field/chip-input-field-component';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {CodeListSelectField} from '../modules/code-lists/components/code-list-select-field';
 import {MultiCheckboxComponent} from '../components/multi-checkbox-field/multi-checkbox-component';
 import {ChipInputPasteSeparatorOptions, DefaultChipInputPasteSeparators} from '../data/chip-input-paste-separators';
+import {ElementEditorSectionHeader} from '../components/element-editor-section-header/element-editor-section-header';
 
 const optionsSourceOptions = [
     {
@@ -36,6 +37,8 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
 
     const optionsSource = element.optionsSource ?? OptionsSourceType.Manual;
     const usesManualSuggestions = optionsSource === OptionsSourceType.Manual;
+    // Empty rows saved by the former table editor are not actual suggestions.
+    const suggestions = (element.suggestions ?? []).filter((suggestion) => suggestion.trim().length > 0);
     const effectiveMaxItems = element.maxItems != null && element.maxItems > 0 ? element.maxItems : undefined;
 
     const effectiveMinItems = element.minItems != null && element.minItems > 0
@@ -53,11 +56,6 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
         effectiveMinItems != null &&
         effectiveMaxItems < effectiveMinItems
     );
-
-    const suggestions = (element.suggestions ?? []).map((entry) => ({
-        label: entry,
-        value: entry,
-    }));
 
     return (
         <Grid
@@ -158,6 +156,14 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                 />
             </Grid>
 
+            <Grid size={{xs: 12}}>
+                <ElementEditorSectionHeader title="Vorschläge zur Texteingabe" variant="h6">
+                    Hinterlegen Sie häufige Eingaben manuell oder wählen Sie eine System-Codeliste.
+                    Die Vorschläge werden beim Tippen gefiltert und können übernommen werden.
+                    Eigene Texte bleiben möglich.
+                </ElementEditorSectionHeader>
+            </Grid>
+
             <Grid
                 size={{
                     xs: 12,
@@ -208,27 +214,15 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                 <Grid
                     size={{
                         xs: 12,
+                        lg: 6,
                     }}
                 >
-                    <OptionListInput
+                    <ChipInputFieldComponent
                         label="Vorschläge"
-                        addLabel="Vorschlag hinzufügen"
-                        hint="Die Liste unterstützt bei der Eingabe und kann weiterhin frei ergänzt werden. Bei Vorschlägen sind Anzeige und Wert identisch; das Wert-Feld wird automatisch aus der Anzeige übernommen."
-                        noItemsHint="Derzeit sind keine Vorschläge hinterlegt."
+                        hint="Geben Sie Vorschläge einzeln ein oder fügen Sie mehrere Zeilen aus der Zwischenablage ein."
                         value={suggestions}
-                        onChange={(items) => {
-                            const normalizedSuggestions = items?.map((entry) => entry.label.trim());
-
-                            onPatch({
-                                suggestions: normalizedSuggestions,
-                            });
-                        }}
-                        allowEmpty={true}
+                        onChange={(suggestions) => onPatch({suggestions: suggestions ?? []})}
                         disabled={!editable}
-                        variant="outlined"
-                        keyLabel="Wert"
-                        labelLabel="Anzeige"
-                        disableKeyField={true}
                     />
                 </Grid>
             }
