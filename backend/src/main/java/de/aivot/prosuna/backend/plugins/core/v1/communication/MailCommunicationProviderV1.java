@@ -329,7 +329,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         var testMessage = new CommunicationMessage.Builder()
                 .subject("Testnachricht")
                 .body("Dies ist eine Testnachricht.")
-                .htmlBody("<p>Dies ist eine Testnachricht.</p>")
+                .htmlBody("Dies ist eine Testnachricht.")
                 .build();
 
         var result = sendMessage(testContext, testIdentity, testMessage);

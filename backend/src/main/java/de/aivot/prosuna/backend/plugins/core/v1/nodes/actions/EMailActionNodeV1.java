@@ -21,6 +21,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.enums.MailTemplate;
 import de.aivot.prosuna.backend.mail.models.MailSendOptions;
 import de.aivot.prosuna.backend.mail.services.MailService;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -49,9 +50,6 @@ import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.mail.MessagingException;
-import org.commonmark.node.Node;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.mail.MailException;
@@ -456,10 +454,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             attachmentSetDataKeys = new ArrayList<>();
         }
 
-        Parser parser = Parser.builder().build();
-        Node document = parser.parse(contentMarkdown);
-        HtmlRenderer renderer = HtmlRenderer.builder().build();
-        var contentHtml = renderer.render(document);
+        var contentHtml = MarkdownRenderer.renderHtml(contentMarkdown);
 
         if (StringUtils.isNullOrEmpty(contentHtml)) {
             throw new ProcessNodeExecutionExceptionMissingValue(

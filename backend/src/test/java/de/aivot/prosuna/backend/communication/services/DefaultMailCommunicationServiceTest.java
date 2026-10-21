@@ -89,6 +89,33 @@ class DefaultMailCommunicationServiceTest {
     }
 
     @Test
+    void escapesRawHtmlInMarkdownBody() throws Exception {
+        configureSending();
+
+        service.sendMessage("customer@example.test", new CommunicationMessage.Builder()
+                .subject("Status update")
+                .body("Hello customer")
+                .htmlBody("Hello <a href=\"https://phishing.example\">customer</a>")
+                .build());
+
+        verify(mailService).sendMail(
+                same(defaultTheme),
+                eq("customer@example.test"),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq("Status update"),
+                eq(MailTemplate.GenericEmailMessage),
+                org.mockito.ArgumentMatchers.<Map<String, Object>>argThat(context ->
+                        "<p>Hello &lt;a href=&quot;https://phishing.example&quot;&gt;customer&lt;/a&gt;</p>\n"
+                                .equals(context.get("messageHtml"))
+                ),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq(new MailSendOptions(false, null, null, null))
+        );
+    }
+
+    @Test
     void delegatesCustomSenderAndReplyToAddress() throws Exception {
         configureSending();
 

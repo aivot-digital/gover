@@ -3,12 +3,12 @@ package de.aivot.prosuna.backend.elements.models.elements.form.input;
 import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
-import de.aivot.prosuna.backend.services.pdf.MarkdownDialect;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -51,7 +51,6 @@ public class HtmlTemplateInputElementResolver {
             "track",
             "wbr"
     );
-    private static final MarkdownDialect MARKDOWN_DIALECT = new MarkdownDialect();
 
     private final AssetService assetService;
     private final StorageService storageService;
@@ -231,7 +230,7 @@ public class HtmlTemplateInputElementResolver {
                 resolvedHtml.append(templateHtml, cursor, startTag.end() + 1);
                 var slotContent = SLOT_TYPE_TEXT.equals(slotType)
                         ? HtmlUtils.htmlEscape(slotValue)
-                        : MARKDOWN_DIALECT.render(slotValue);
+                        : MarkdownRenderer.renderHtml(slotValue);
                 resolvedHtml.append(protectSlotContent(templateHtml, slotContent, slotContents));
                 cursor = closeTag.start();
                 continue;

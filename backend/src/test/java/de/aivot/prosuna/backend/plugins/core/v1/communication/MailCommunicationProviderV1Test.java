@@ -314,7 +314,7 @@ class MailCommunicationProviderV1Test {
         var message = messageCaptor.getValue();
         assertEquals("Testnachricht", message.subject());
         assertEquals("Dies ist eine Testnachricht.", message.body());
-        assertEquals("<p>Dies ist eine Testnachricht.</p>", message.htmlBody());
+        assertEquals("Dies ist eine Testnachricht.", message.htmlBody());
         assertNotNull(message.timestamp());
         assertEquals(List.of(), message.attachments());
         var alert = result.findChild("mail-testing-result-alert", AlertContentElement.class).orElseThrow();

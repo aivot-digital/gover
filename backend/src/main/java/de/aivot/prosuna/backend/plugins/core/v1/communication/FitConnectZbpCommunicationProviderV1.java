@@ -29,6 +29,7 @@ import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
@@ -308,7 +309,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         var testMessage = new CommunicationMessage.Builder()
                 .subject("Testnachricht")
                 .body("Dies ist eine Testnachricht.")
-                .htmlBody("<p>Dies ist eine Testnachricht.</p>")
+                .htmlBody("Dies ist eine Testnachricht.")
                 .build();
 
         var result = sendMessage(testContext, testIdentity, testMessage);
@@ -460,7 +461,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
     @Nonnull
     static String renderMessageHtml(@Nonnull CommunicationMessage message) throws CommunicationException {
-        var content = new StringBuilder(message.htmlBody());
+        var content = new StringBuilder(MarkdownRenderer.renderHtml(message.htmlBody()).strip());
         for (var callToAction : message.callToActions()) {
             if (callToAction == null) {
                 throw new CommunicationException("Eine Aktion der Nachricht darf nicht leer sein.");

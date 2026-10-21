@@ -14,6 +14,7 @@ public record CommunicationMessage(
         String subject,
         @Nonnull
         String body,
+        // Markdown source despite the name. Providers render it with MarkdownRenderer, which escapes raw HTML.
         @Nonnull
         String htmlBody,
         @Nonnull
