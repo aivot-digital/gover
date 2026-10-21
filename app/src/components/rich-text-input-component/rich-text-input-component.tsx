@@ -110,6 +110,7 @@ export interface RichTextInputComponentProps extends FormFieldLayoutProps {
     readOnly?: boolean | null | undefined;
     busy?: boolean | null | undefined;
     reducedMode?: boolean | null | undefined;
+    maxCharacters?: number | null | undefined;
     dynamicText?: boolean | null | undefined;
     dynamicTextVariableMetadata?: readonly DynamicTextVariableMetadata[] | null | undefined;
     value: string | null | undefined;
@@ -178,6 +179,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
         readOnly,
         busy,
         reducedMode,
+        maxCharacters,
         dynamicText,
         dynamicTextVariableMetadata,
         value,
@@ -189,9 +191,43 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
     const labelId = `${controlId}-label`;
     const helperTextId = `${controlId}-helper-text`;
     const hasLabel = label != null && label.length > 0;
-    const hasError = error != null && error.length > 0;
-    const helperText = hasError ? error : hint;
-    const hasHelperText = helperText != null && helperText.length > 0;
+    // The limit applies to the stored Markdown, as in the backend validation, so formatting characters count too.
+    const characterCount = value?.length ?? 0;
+    const hasMaxCharacters = maxCharacters != null && maxCharacters > 0;
+    // Unlike a native input, the editor cannot stop typing at maxLength, so exceeding the limit is reported instead.
+    const maxCharactersError = hasMaxCharacters && characterCount > maxCharacters
+        ? `Zu viele Zeichen. Maximal ${maxCharacters} Zeichen erlaubt.`
+        : undefined;
+    const effectiveError = error != null && error.length > 0 ? error : maxCharactersError;
+    const hasError = effectiveError != null;
+    const helperText = hasError ? effectiveError : hint;
+    const hasHelperText = (helperText != null && helperText.length > 0) || hasMaxCharacters;
+    const helperContent = hasMaxCharacters ? (
+        <Box
+            sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                flexWrap: {
+                    xs: 'wrap',
+                    sm: 'nowrap',
+                },
+                columnGap: 3,
+                rowGap: .5,
+            }}
+        >
+            <Box>
+                {helperText}
+            </Box>
+            <Box
+                role="text"
+                aria-label={`${characterCount} von ${maxCharacters} Zeichen verwendet`}
+            >
+                <span aria-hidden="true">
+                    {`${characterCount}/${maxCharacters}`}
+                </span>
+            </Box>
+        </Box>
+    ) : helperText;
     const describedBy = mergeAriaIds(
         hasHelperText ? helperTextId : undefined,
         props.ariaDescribedBy,
@@ -345,8 +381,8 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
         <FormField
             id={controlId}
             label={label ?? ''}
-            hint={hint}
-            error={error}
+            hint={hasError ? undefined : helperContent}
+            error={hasError ? helperContent : undefined}
             required={Boolean(required)}
             disabled={Boolean(disabled)}
             readOnly={Boolean(readOnly)}

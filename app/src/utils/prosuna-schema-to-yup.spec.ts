@@ -275,6 +275,23 @@ describe('authored input value validation', () => {
     });
 });
 
+describe('rich text input validation', () => {
+    it('should limit the untrimmed Markdown to the maximum number of characters', async () => {
+        const schema = prosunaSchemaToYup({
+            id: 'description',
+            type: ElementType.RichTextInput,
+            label: 'Beschreibung',
+            required: true,
+            maxCharacters: 8,
+        } as any, {}).description;
+
+        await expect(schema.validate(literalAuthoredValue('**Fett**'))).resolves.toEqual(literalAuthoredValue('**Fett**'));
+        await expect(schema.validate(literalAuthoredValue('**Fett** ')))
+            .rejects.toThrow('Zu viele Zeichen. Maximal 8 Zeichen erlaubt.');
+        await expect(schema.validate(literalAuthoredValue(null))).rejects.toThrow('Beschreibung ist ein Pflichtfeld.');
+    });
+});
+
 describe('process identity ID validation', () => {
     it('should validate a scalar identity ID instead of a list', async () => {
         const schema = prosunaSchemaToYup({

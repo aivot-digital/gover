@@ -28,6 +28,63 @@ describe('RichTextInputComponent', () => {
         expect(getComputedStyle(toolbar!).paddingBlock).toBe('3px');
     });
 
+    it('counts the stored Markdown against the maximum number of characters', async () => {
+        render(
+            <RichTextInputComponent
+                label="Beschreibung"
+                value="Hallo **Welt**"
+                onChange={vi.fn()}
+                hint="Beschreiben Sie Ihr Anliegen."
+                maxCharacters={20}
+                reducedMode
+            />,
+        );
+
+        const editor = await screen.findByRole('textbox', {name: 'Beschreibung – optional'});
+        expect(editor).not.toHaveAttribute('aria-invalid');
+        expect(editor).toHaveAttribute('aria-describedby', expect.stringContaining('helper-text'));
+        expect(screen.getByText('Beschreiben Sie Ihr Anliegen.')).toBeInTheDocument();
+        expect(screen.getByLabelText('14 von 20 Zeichen verwendet')).toHaveTextContent('14/20');
+    });
+
+    it('reports Markdown above the maximum number of characters as an error', async () => {
+        render(
+            <RichTextInputComponent
+                label="Beschreibung"
+                value="Hallo **Welt**"
+                onChange={vi.fn()}
+                hint="Beschreiben Sie Ihr Anliegen."
+                maxCharacters={10}
+                reducedMode
+            />,
+        );
+
+        const editor = await screen.findByRole('textbox', {name: 'Beschreibung – optional'});
+        await waitFor(() => {
+            expect(editor).toHaveAttribute('aria-invalid');
+        });
+        expect(screen.getByText('Zu viele Zeichen. Maximal 10 Zeichen erlaubt.')).toBeInTheDocument();
+        expect(screen.queryByText('Beschreiben Sie Ihr Anliegen.')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('14 von 10 Zeichen verwendet')).toHaveTextContent('14/10');
+    });
+
+    it('prefers a provided error over the length error', async () => {
+        render(
+            <RichTextInputComponent
+                label="Beschreibung"
+                value="Hallo **Welt**"
+                onChange={vi.fn()}
+                error="Bitte prüfen Sie die Eingabe."
+                maxCharacters={10}
+                reducedMode
+            />,
+        );
+
+        await screen.findByRole('textbox', {name: 'Beschreibung – optional'});
+        expect(screen.getByText('Bitte prüfen Sie die Eingabe.')).toBeInTheDocument();
+        expect(screen.queryByText('Zu viele Zeichen. Maximal 10 Zeichen erlaubt.')).not.toBeInTheDocument();
+    });
+
     it('does not expose empty error or helper references', async () => {
         render(
             <RichTextInputComponent

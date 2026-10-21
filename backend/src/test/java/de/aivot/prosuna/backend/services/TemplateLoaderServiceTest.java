@@ -247,6 +247,35 @@ class TemplateLoaderServiceTest {
     }
 
     @Test
+    void richTextFieldTemplate_RendersMaximumLengthOnlyInBlankPrint() {
+        var element = new RichTextInputElement()
+                .setMaxCharacters(2000);
+        element.setLabel("Beschreibung");
+
+        var blankHtml = new TemplateLoaderService().processTemplate(
+                "form-parts/elements/rich-text-field.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "element", element,
+                        "value", ""
+                ),
+                TemplateMode.HTML
+        );
+        var customerHtml = new TemplateLoaderService().processTemplate(
+                "form-parts/elements/rich-text-field.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Customer),
+                        "element", element,
+                        "value", "Text"
+                ),
+                TemplateMode.HTML
+        );
+
+        assertTrue(blankHtml.contains("<span>2000</span>"));
+        assertFalse(customerHtml.contains("<span>2000</span>"));
+    }
+
+    @Test
     void markdownDialect_RendersFrontendGfmFeatures() {
         var html = new MarkdownDialect().render("""
                 ~Einfach~
