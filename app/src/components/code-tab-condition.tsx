@@ -45,7 +45,6 @@ export function CodeTabCondition({
     let availableValueOptions = null;
     if (referencedElement != null && cond.value != null) {
         switch (referencedElement.element.type) {
-            case ElementType.Radio:
             case ElementType.Select:
             case ElementType.MultiCheckbox:
                 if ((referencedElement.element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual) {

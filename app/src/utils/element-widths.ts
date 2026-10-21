@@ -68,7 +68,6 @@ const compactDefaultElementTypes = new Set<ElementType>([
     ElementType.Number,
     ElementType.Duration,
     ElementType.Select,
-    ElementType.Radio,
     ElementType.Checkbox,
     ElementType.MultiCheckbox,
     ElementType.Text,

@@ -17,7 +17,6 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.Duration]: [],
     [ElementType.ReplicatingContainer]: [],
     [ElementType.RichText]: [],
-    [ElementType.Radio]: [],
     [ElementType.Select]: [
         'honorific-prefix',
         'honorific-suffix',

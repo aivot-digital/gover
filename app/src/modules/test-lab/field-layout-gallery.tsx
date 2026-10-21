@@ -1,4 +1,5 @@
 import {AutocompleteTextField} from '../../components/text-field/autocomplete-text-field';
+import {MultiChoiceCombobox} from '../../components/multi-checkbox-field/multi-choice-combobox';
 import {InputMode} from '../../models/input-mode';
 import {ResourceInputGallery} from './resource-input-gallery';
 import {useState} from 'react';
@@ -429,6 +430,7 @@ function InputModeSummary(props: {
 
 export function FieldLayoutGallery() {
     const [suggestedCity, setSuggestedCity] = useState<string | null>(null);
+    const [searchableAreas, setSearchableAreas] = useState<string[] | null>(['bildung']);
     const [name, setName] = useState<string | null>('Max Mustermann');
     const [description, setDescription] = useState<string | null>('Kurze Beschreibung');
     const [amount, setAmount] = useState<number | null>(1250.5);
@@ -537,6 +539,9 @@ export function FieldLayoutGallery() {
 
                 <AutocompleteTextField label="Ort (mit Vorschlägen)" value={suggestedCity} onChange={setSuggestedCity}
                     suggestions={['Berlin', 'Hamburg', 'München']} hint="Eigene Ortsangaben bleiben möglich." margin="none"/>
+                <MultiChoiceCombobox label="Tätigkeitsbereiche" value={searchableAreas} onChange={setSearchableAreas}
+                    options={[{value: 'bildung', label: 'Bildung'}, {value: 'wohnen', label: 'Wohnen'}, {value: 'gesundheit', label: 'Gesundheit'}]}
+                    hint="Wählen Sie einen oder mehrere Bereiche aus." margin="none"/>
 
                 <NumberFieldComponent
                     label="Betrag"

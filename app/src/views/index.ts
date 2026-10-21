@@ -15,7 +15,6 @@ import {HeadlineComponentView} from '../components/headline/headline.component.v
 import {MultiCheckboxFieldComponentView} from '../components/multi-checkbox-field/multi-checkbox-field.component.view';
 import {ReplicatingContainerView} from '../components/replicating-container/replicating-container.view';
 import {RichtextComponentView} from '../components/richtext/richtext.component.view';
-import {RadioFieldComponentView} from '../components/radio-field/radio-field.component.view';
 import {SpacerComponentView} from '../components/spacer/spacer.component.view';
 import {TableFieldComponentView} from '../components/table-field/table-field.component.view';
 import {TimeFieldComponentView} from '../components/time-field/time-field.component.view';
@@ -66,7 +65,6 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.Duration]: DurationFieldView,
     [ElementType.ReplicatingContainer]: ReplicatingContainerView,
     [ElementType.RichText]: RichtextComponentView,
-    [ElementType.Radio]: RadioFieldComponentView,
     [ElementType.Select]: SelectFieldView,
     [ElementType.Spacer]: SpacerComponentView,
     [ElementType.Table]: TableFieldComponentView,

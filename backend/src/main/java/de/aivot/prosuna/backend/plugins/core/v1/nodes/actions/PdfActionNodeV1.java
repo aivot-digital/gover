@@ -175,10 +175,10 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         }
 
         layout
-                .findChild(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, RadioInputElement.class)
+                .findChild(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(element -> element.setOptions(List.of(
-                        RadioInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "Gespeicherte Vorlage verwenden (Dateien & Medien)"),
-                        RadioInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE, "Eigene Dokumentenvorlage als HTML hinterlegen")
+                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "Gespeicherte Vorlage verwenden (Dateien & Medien)"),
+                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE, "Eigene Dokumentenvorlage als HTML hinterlegen")
                 )));
 
         layout
@@ -571,7 +571,8 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         })
         public String fileName;
 
-        @InputElementPOJOBinding(id = CONTENT_HTML_SOURCE_FIELD_ID, type = ElementType.Radio, properties = {
+        @InputElementPOJOBinding(id = CONTENT_HTML_SOURCE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentenvorlage"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, ob eine gespeicherte Dokumentenvorlage aus Dateien & Medien verwendet oder eine eigene Dokumentenvorlage als HTML hinterlegt werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),

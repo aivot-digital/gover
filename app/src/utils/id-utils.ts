@@ -51,7 +51,6 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.Duration]: 'du',
     [ElementType.ReplicatingContainer]: 'rp',
     [ElementType.RichText]: 'rx',
-    [ElementType.Radio]: 'rd',
     [ElementType.Select]: 'sl',
     [ElementType.Spacer]: 'sp',
     [ElementType.Table]: 'tb',

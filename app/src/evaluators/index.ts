@@ -3,7 +3,6 @@ import {CheckboxEvaluator} from './checkbox-evaluator';
 import {BaseEvaluator} from './base-evaluator';
 import {DateEvaluator} from './date-evaluator';
 import {MultiCheckboxEvaluator} from './multi-checkbox-evaluator';
-import {RadioEvaluator} from './radio-evaluator';
 import {SelectEvaluator} from './select-evaluator';
 import {NumberEvaluator} from './number-evaluator';
 import {TimeEvaluator} from './time-evaluator';
@@ -37,7 +36,6 @@ export const evaluators: {
     [ElementType.Duration]: NumberEvaluator,
     [ElementType.ReplicatingContainer]: ReplicatingContainerEvaluator,
     [ElementType.RichText]: null,
-    [ElementType.Radio]: RadioEvaluator,
     [ElementType.Select]: SelectEvaluator,
     [ElementType.Spacer]: null,
     [ElementType.Table]: null,

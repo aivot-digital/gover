@@ -19,7 +19,6 @@ import {MultiCheckboxFieldElement} from '../models/elements/form/input/multi-che
 import {NumberFieldElement} from '../models/elements/form/input/number-field-element';
 import {ReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 import {RichtextElement} from '../models/elements/form/content/richtext-element';
-import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {SpacerElement} from '../models/elements/form/content/spacer-element';
 import {TableFieldElement} from '../models/elements/form/input/table-field-element';
@@ -116,7 +115,6 @@ const elementConstructors: {
     [ElementType.Duration]: (id: string) => DurationFieldElement;
     [ElementType.ReplicatingContainer]: (id: string) => ReplicatingContainerLayout;
     [ElementType.RichText]: (id: string) => RichtextElement;
-    [ElementType.Radio]: (id: string) => RadioFieldElement;
     [ElementType.Select]: (id: string) => SelectFieldElement;
     [ElementType.Spacer]: (id: string) => SpacerElement;
     [ElementType.Table]: (id: string) => TableFieldElement;
@@ -259,27 +257,6 @@ const elementConstructors: {
         ...makeFormBase(ElementType.RichText, id),
         content: 'Textanzeige',
     }),
-    [ElementType.Radio]: (id) => ({
-        ...makeInputBase(ElementType.Radio, id),
-        label: 'Einzelauswahl (Optionsfelder)',
-        optionsSource: OptionsSourceType.Manual,
-        codeListKey: undefined,
-        options: [
-            {
-                value: 'option_1',
-                label: 'Option 1',
-            },
-            {
-                value: 'option_2',
-                label: 'Option 2',
-            },
-            {
-                value: 'option_3',
-                label: 'Option 3',
-            },
-        ],
-        displayInline: false,
-    }),
     [ElementType.Select]: (id) => ({
         ...makeInputBase(ElementType.Select, id),
         label: 'Einzelauswahl',
@@ -300,7 +277,7 @@ const elementConstructors: {
             },
         ],
         autocomplete: undefined,
-        presentation: SelectFieldPresentation.Dropdown,
+        presentation: SelectFieldPresentation.Radio,
         dependsOnSelectFieldId: undefined,
         placeholder: undefined,
     }),

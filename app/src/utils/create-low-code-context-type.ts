@@ -115,7 +115,6 @@ function elementToValueType(element: AnyElement): string {
             return '{start: string | null | undefined; end: string | null | undefined}';
         case ElementType.MapPoint:
             return '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined}';
-        case ElementType.Radio:
         case ElementType.Select:
             if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.CodeList) {
                 return 'string';

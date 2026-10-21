@@ -24,6 +24,7 @@ export interface RadioFieldComponentProps extends FormFieldGroupLayoutProps {
     options: SelectFieldComponentOption[] | undefined | null;
     error?: string | undefined | null;
     hint?: string | undefined | null;
+    readOnly?: boolean;
     disabled?: boolean | undefined | null;
     busy?: boolean | undefined | null;
     required?: boolean | undefined | null;
@@ -45,6 +46,7 @@ export function RadioFieldComponent(props: RadioFieldComponentProps) {
         error,
         hint,
         disabled = false,
+        readOnly = false,
         busy = false,
         required = false,
         displayInline = false,
@@ -54,7 +56,7 @@ export function RadioFieldComponent(props: RadioFieldComponentProps) {
         controlSx,
         showOptionalIndicator,
     } = props;
-    const isInteractionDisabled = Boolean(disabled || busy);
+    const isInteractionDisabled = Boolean(disabled || busy || readOnly);
     const controlSxArray = Array.isArray(controlSx) ? controlSx : [controlSx];
 
     return (
@@ -67,6 +69,7 @@ export function RadioFieldComponent(props: RadioFieldComponentProps) {
             hint={hint}
             error={error}
             disabled={Boolean(disabled)}
+            readOnly={readOnly}
             busy={Boolean(busy)}
             required={Boolean(required)}
             margin={margin}

@@ -1,13 +1,12 @@
 package de.aivot.prosuna.backend.process.models;
 
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -325,12 +324,12 @@ class ProcessNodeDefinitionMetadataTest {
 
     @Test
     void withLayout_ShouldForwardCodeListKeyInsteadOfValueOptions() {
-        var radio = new RadioInputElement();
+        var radio = new SelectInputElement().setPresentation(SelectInputPresentation.Radio);
         radio.setId("rd_status");
         radio.setDestinationKey("status");
         radio.setOptionsSource(OptionsSourceType.CodeList);
         radio.setCodeListKey(" marital_status ");
-        radio.setOptions(List.of(RadioInputElementOption.of("stale", "Veraltet")));
+        radio.setOptions(List.of(SelectInputElementOption.of("stale", "Veraltet")));
 
         var chipInput = new ChipInputElement();
         chipInput.setId("ch_languages");

@@ -43,7 +43,6 @@ export function generateComponentTitle(component: AnyElement | null | undefined,
         case ElementType.TimeRange:
         case ElementType.DateTimeRange:
         case ElementType.Table:
-        case ElementType.Radio:
         case ElementType.MultiCheckbox:
         case ElementType.Checkbox:
         case ElementType.Select:

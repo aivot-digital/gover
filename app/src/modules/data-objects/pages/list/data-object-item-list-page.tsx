@@ -363,7 +363,6 @@ export function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjec
                                 value,
                                 element.mode ?? TimeFieldComponentModelMode.Minute,
                             );
-                        case ElementType.Radio:
                         case ElementType.Select: {
                             if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.CodeList) {
                                 return value;

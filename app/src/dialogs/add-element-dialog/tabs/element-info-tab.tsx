@@ -13,6 +13,7 @@ import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbo
 import {HeadlineComponent} from '../../../components/headline/headline-component';
 import {DateFieldComponent} from '../../../components/date-field/date-field-component';
 import {DateFieldComponentModelMode} from '../../../models/elements/form/input/date-field-element';
+import {MultiChoiceCombobox} from '../../../components/multi-checkbox-field/multi-choice-combobox';
 import {MultiCheckboxComponent} from '../../../components/multi-checkbox-field/multi-checkbox-component';
 import {NumberFieldComponent} from '../../../components/number-field/number-field-component';
 import {RadioFieldComponent} from '../../../components/radio-field/radio-field-component';
@@ -440,14 +441,19 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.MultiCheckbox]: (
         <Box>
             <Typography>
-                Das Mehrfachauswahl-Element dient zur Abfrage einer oder mehrerer Möglichkeiten bei
-                Ihren Nutzer:innen.
+                Mit der Mehrfachauswahl können eine oder mehrere vorgegebene Optionen gewählt werden.
+                Kurze Listen lassen sich als Checkboxen anzeigen, längere Listen durchsuchen.
+                Eigene Texte sind nicht erlaubt; dafür steht die Mehrfach-Texteingabe zur Verfügung.
             </Typography>
 
             <Divider sx={{my: 4}}>
                 Beispiele
             </Divider>
 
+            <Box sx={{mt: 2}}>
+                <MultiChoiceCombobox label="Tätigkeitsbereiche" value={['bildung']} onChange={() => {}}
+                    options={[{value: 'bildung', label: 'Bildung'}, {value: 'wohnen', label: 'Wohnen'}, {value: 'gesundheit', label: 'Gesundheit'}]}/>
+            </Box>
             <Box sx={{mt: 2}}>
                 <MultiCheckboxComponent
                     label="Mehrfachauswahl"
@@ -648,83 +654,23 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             />
         </Box>
     ),
-    [ElementType.Radio]: (
-        <Box>
-            <Typography>
-                Das Einzelauswahl (Optionsfelder)-Element dient zur Abfrage exakt einer Möglichkeit aus
-                mehreren Möglichkeiten, welche durch Optionsfelder dargestellt werden.
-            </Typography>
-
-            <Typography sx={{mt: 2}}>
-                Eine optische Alternative zum Einzelauswahl (Optionsfelder)-Element stellt das
-                Einzelauswahl-Element dar. Es zeigt die Optionen platzsparend als Auswahlmenü oder als durchsuchbare
-                Auswahl an.
-            </Typography>
-
-            <Divider sx={{my: 4}}>
-                Beispiele
-            </Divider>
-
-            <Box sx={{mt: 2}}>
-                <RadioFieldComponent
-                    label="Einzelauswahl mit Optionsfeldern"
-                    value={'Option 2'}
-                    options={[{label: 'Option 1', value: 'option_1'}, {
-                        label: 'Option 2',
-                        value: 'option_2',
-                    }, {label: 'Option 3', value: 'option_3'}]}
-                    onChange={() => {
-                    }}
-                    hint="Hinweis zur Einzelauswahl"
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <RadioFieldComponent
-                    label="Verpflichtende Einzelauswahl mit Optionsfeldern"
-                    value={'Option 3'}
-                    options={[{label: 'Option 1', value: 'option_1'}, {
-                        label: 'Option 2',
-                        value: 'option_2',
-                    }, {label: 'Option 3', value: 'option_3'}]}
-                    onChange={() => {
-                    }}
-                    required
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <RadioFieldComponent
-                    label="Einzelauswahl mit Optionsfeldern"
-                    value={undefined}
-                    options={[{label: 'Option 1', value: 'option_1'}, {
-                        label: 'Option 2',
-                        value: 'option_2',
-                    }, {label: 'Option 3', value: 'option_3'}]}
-                    onChange={() => {
-                    }}
-                    error="Fehlermeldung zur Einzelauswahl"
-                />
-            </Box>
-        </Box>
-    ),
     [ElementType.Select]: (
         <Box>
             <Typography>
-                Das Einzelauswahl-Element dient zur Abfrage exakt einer Möglichkeit aus vorgegebenen Optionen.
-                Kurze Listen können als kompaktes Auswahlmenü dargestellt werden. Bei längeren Listen erleichtert
-                die durchsuchbare Auswahl das Auffinden einer Option, ohne freie Eingaben zuzulassen.
+                Mit der Einzelauswahl kann eine vorgegebene Option gewählt werden. Optionsfelder zeigen alle
+                Möglichkeiten direkt an. Alternativ stehen ein kompaktes Auswahlmenü und eine durchsuchbare
+                Auswahl zur Verfügung. Freie Texte sind nicht erlaubt.
             </Typography>
 
-            <Typography sx={{mt: 2}}>
-                Eine optische Alternative zum Einzelauswahl-Element stellt das
-                Einzelauswahl (Optionsfelder)-Element dar, welches die Optionen mit einzelnen Optionsfeldern darstellt.
-            </Typography>
 
             <Divider sx={{my: 4}}>
                 Beispiele
             </Divider>
 
+            <Box sx={{mt: 2}}>
+                <RadioFieldComponent label="Kontaktweg" value="email" onChange={() => {}}
+                    options={[{value: 'email', label: 'E-Mail'}, {value: 'post', label: 'Post'}]}/>
+            </Box>
             <Box sx={{mt: 2}}>
                 <SelectFieldComponent
                     label="Einzelauswahl mit Auswahlmenü"

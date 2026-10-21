@@ -15,7 +15,6 @@ import {
 } from '../models/elements/form/layout/replicating-container-layout';
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
-import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
 import {
     applyComputedErrors,
     AuthoredElementValues,
@@ -145,7 +144,6 @@ const YupSchemaMap: {
     [ElementType.Number]: numberFieldToYup,
     [ElementType.Duration]: durationFieldToYup,
     [ElementType.Select]: selectFieldToYup,
-    [ElementType.Radio]: selectFieldToYup,
     [ElementType.ChipInput]: chipInputFieldToYup,
     [ElementType.DateRange]: dateRangeFieldToYup,
     [ElementType.TimeRange]: timeRangeFieldToYup,
@@ -286,7 +284,7 @@ function departmentSelectFieldToYup(elem: AnyInputElement): Schema {
     return departmentSchema;
 }
 
-function selectFieldToYup(elem: SelectFieldElement | RadioFieldElement): Schema {
+function selectFieldToYup(elem: SelectFieldElement): Schema {
     let selectFieldSchema: StringSchema<string | undefined | null> = yup
         .string()
         .trim();

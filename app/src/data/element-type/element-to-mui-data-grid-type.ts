@@ -16,7 +16,6 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColDef['type'] | 
     [ElementType.Duration]: 'number',
     [ElementType.ReplicatingContainer]: null,
     [ElementType.RichText]: null,
-    [ElementType.Radio]: 'string',
     [ElementType.Select]: 'string',
     [ElementType.Spacer]: null,
     [ElementType.Table]: null,

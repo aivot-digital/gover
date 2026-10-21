@@ -57,7 +57,6 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.Duration]: TimerOutlinedIcon,
     [ElementType.ReplicatingContainer]: PlaylistAddOutlinedIcon,
     [ElementType.RichText]: NotesOutlinedIcon,
-    [ElementType.Radio]: CheckCircleOutlineOutlinedIcon,
     [ElementType.Select]: ListAltOutlinedIcon,
     [ElementType.Spacer]: ExpandOutlinedIcon,
     [ElementType.Table]: TableChartOutlinedIcon,

@@ -15,7 +15,6 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.Duration]: 'Zeitdauer',
     [ElementType.ReplicatingContainer]: 'Feldgruppe für mehrere Einträge',
     [ElementType.RichText]: 'Textanzeige',
-    [ElementType.Radio]: 'Einzelauswahl (Optionsfelder)',
     [ElementType.Select]: 'Einzelauswahl',
     [ElementType.Spacer]: 'Abstand',
     [ElementType.Table]: 'Tabelle',

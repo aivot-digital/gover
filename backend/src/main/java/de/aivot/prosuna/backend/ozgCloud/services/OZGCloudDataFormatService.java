@@ -90,7 +90,6 @@ public class OZGCloudDataFormatService {
                     List.of(buildMultiCheckboxField(multiCheckboxField, context));
             case NumberInputElement numberField -> List.of(buildNumberField(numberField, context));
             case SelectInputElement selectField -> List.of(buildSelectField(selectField, context));
-            case RadioInputElement radioField -> List.of(buildRadioField(radioField, context));
             case TableInputElement tableField -> List.of(buildTableField(tableField, context));
             case TextInputElement textField -> List.of(buildTextField(textField, context));
             case ChipInputElement chipInputField -> List.of(buildChipInputField(chipInputField, context));
@@ -514,23 +513,6 @@ public class OZGCloudDataFormatService {
                 multiCheckboxField.getId(),
                 multiCheckboxField.getLabel(),
                 displayValue,
-                null,
-                null,
-                null,
-                null
-        );
-    }
-
-    private OZGCloudFormDataItem buildRadioField(
-            @Nonnull RadioInputElement radioField,
-            @Nonnull FormattingContext context
-    ) {
-        var edo = context.resolve(radioField);
-
-        return new OZGCloudFormDataItem(
-                radioField.getId(),
-                radioField.getLabel(),
-                radioField.toDisplayValue(edo.getValue(String.class, null)),
                 null,
                 null,
                 null,

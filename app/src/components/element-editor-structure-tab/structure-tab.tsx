@@ -1,3 +1,4 @@
+import {normalizeElementDefinition} from '../../utils/normalize-element-definition';
 import {MonacoEditor} from '../code-editor/monaco-editor';
 import {type editor} from 'monaco-editor';
 import {Box, Button, FormControlLabel, Switch, useTheme} from '@mui/material';
@@ -73,7 +74,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
             if (struct != null && struct.length > 0) {
                 try {
                     const newStruct = JSON.parse(struct);
-                    props.onChange(newStruct);
+                    props.onChange(normalizeElementDefinition(newStruct));
                     setEditable(false);
                 } catch (e) {
                     console.error(e);

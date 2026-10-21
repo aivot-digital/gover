@@ -9,7 +9,6 @@ import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.MultiCheckboxInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -90,7 +89,8 @@ class CodeListElementOptionsServiceTest {
         var codeListRepository = codeListRepository(7);
         var itemRepository = mock(VCodeListItemRepository.class);
         var service = new CodeListElementOptionsService(itemRepository, codeListRepository);
-        var element = new RadioInputElement()
+        var element = new SelectInputElement()
+                .setPresentation(SelectInputPresentation.Radio)
                 .setOptionsSource(OptionsSourceType.CodeList)
                 .setCodeListKey("test");
 
@@ -98,9 +98,10 @@ class CodeListElementOptionsServiceTest {
                 item("001", "Berlin")
         ));
 
-        var resolved = assertInstanceOf(RadioInputElement.class, service.resolve(element));
+        var resolved = assertInstanceOf(SelectInputElement.class, service.resolve(element));
 
         assertEquals("Berlin", resolved.getOptions().getFirst().getLabel());
+        assertEquals(SelectInputPresentation.Radio, resolved.getPresentation());
     }
 
     @Test

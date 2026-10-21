@@ -67,7 +67,6 @@ const InputModeCompatibleElementTypes = new Set<ElementType>([
     ElementType.Number,
     ElementType.Duration,
     ElementType.Select,
-    ElementType.Radio,
     ElementType.RichTextInput,
     ElementType.ReplicatingContainer,
 ]);

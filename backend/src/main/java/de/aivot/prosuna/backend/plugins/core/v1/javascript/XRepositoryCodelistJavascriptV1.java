@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.javascript;
 
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -105,7 +105,7 @@ public class XRepositoryCodelistJavascriptV1 implements JavascriptFunctionProvid
             return ProxyArray.fromArray();
         }
 
-        List<RadioInputElementOption> codeList;
+        List<SelectInputElementOption> codeList;
         try {
             codeList = codeListService
                     .getRadioFieldOptionCodeList(urn);

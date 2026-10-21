@@ -57,7 +57,7 @@ describe('Data-object display columns', () => {
         expect(displayValue(type as ElementType, value)).toEqual(expected);
     });
 
-    it.each([ElementType.Select, ElementType.Radio, ElementType.MultiCheckbox])('resolves option labels for type %s', (type) => {
+    it.each([ElementType.Select, ElementType.MultiCheckbox])('resolves option labels for type %s', (type) => {
         const value = type === ElementType.MultiCheckbox ? ['kita-1'] : 'kita-1';
         expect(displayValue(type, value, {
             options: [{value: 'kita-1', label: 'Kita Sonnenschein'}],

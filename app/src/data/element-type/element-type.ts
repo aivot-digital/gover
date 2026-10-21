@@ -10,7 +10,7 @@ export enum ElementType {
     Number = 8,
     ReplicatingContainer = 9,
     RichText = 10,
-    Radio = 11,
+    // 11 is reserved for legacy radio definitions; normalize them on input.
     Select = 12,
     Spacer = 13,
     Table = 14,

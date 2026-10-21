@@ -24,7 +24,6 @@ const supportedRootTypes: ElementType[] = [
     ElementType.Duration,
     ElementType.ReplicatingContainer,
     ElementType.RichText,
-    ElementType.Radio,
     ElementType.Select,
     ElementType.Spacer,
     ElementType.Table,

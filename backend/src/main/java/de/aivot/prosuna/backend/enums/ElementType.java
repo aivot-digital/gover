@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.enums;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.*;
@@ -28,7 +29,7 @@ public enum ElementType implements Identifiable<Integer> {
     Number(8),
     ReplicatingContainerLayout(9),
     RichText(10),
-    Radio(11),
+    // 11 is reserved for legacy radio definitions, normalized during deserialization.
     Select(12),
     Spacer(13),
     Table(14),
@@ -86,7 +87,6 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_Number = "8";
     public static final String ID_ReplicatingContainer = "9";
     public static final String ID_RichText = "10";
-    public static final String ID_Radio = "11";
     public static final String ID_Select = "12";
     public static final String ID_Spacer = "13";
     public static final String ID_Table = "14";
@@ -134,6 +134,14 @@ public enum ElementType implements Identifiable<Integer> {
 
     private final Integer key;
 
+    @JsonCreator
+    @Nonnull
+    public static ElementType fromKey(@Nonnull Integer key) {
+        // Type constraints in old UI-definition fields may also reference the retired id.
+        if (key == 11) return Select;
+        return findElement(key).orElseThrow(() -> new IllegalArgumentException("Unknown element type: " + key));
+    }
+
     ElementType(Integer id) {
         this.key = id;
     }
@@ -170,7 +178,6 @@ public enum ElementType implements Identifiable<Integer> {
             case Number -> new NumberInputElement();
             case ReplicatingContainerLayout -> new ReplicatingContainerLayoutElement();
             case RichText -> new RichTextContentElement();
-            case Radio -> new RadioInputElement();
             case Select -> new SelectInputElement();
             case Spacer -> new SpacerContentElement();
             case Table -> new TableInputElement();

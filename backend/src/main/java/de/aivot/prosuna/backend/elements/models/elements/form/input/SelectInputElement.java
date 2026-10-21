@@ -37,6 +37,12 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
     @Nonnull
     private SelectInputPresentation presentation = SelectInputPresentation.Dropdown;
 
+    @Nullable
+    private Boolean displayInline;
+
+    @Nullable
+    private Boolean toggleButtons;
+
     public SelectInputElement() {
         super(ElementType.Select);
     }
@@ -164,6 +170,8 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
         SelectInputElement that = (SelectInputElement) o;
         return Objects.equals(placeholder, that.placeholder)
                 && Objects.equals(autocomplete, that.autocomplete)
+                && Objects.equals(displayInline, that.displayInline)
+                && Objects.equals(toggleButtons, that.toggleButtons)
                 && Objects.equals(options, that.options)
                 && optionsSource == that.optionsSource
                 && Objects.equals(codeListKey, that.codeListKey)
@@ -177,6 +185,8 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
         result = 31 * result + Objects.hashCode(placeholder);
         result = 31 * result + Objects.hashCode(autocomplete);
         result = 31 * result + Objects.hashCode(options);
+        result = 31 * result + Objects.hashCode(displayInline);
+        result = 31 * result + Objects.hashCode(toggleButtons);
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(dependsOnSelectFieldId);
@@ -255,6 +265,28 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
 
     public SelectInputElement setPresentation(@Nullable SelectInputPresentation presentation) {
         this.presentation = presentation == null ? SelectInputPresentation.Dropdown : presentation;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getDisplayInline() {
+        return displayInline;
+    }
+
+    @Nonnull
+    public SelectInputElement setDisplayInline(@Nullable Boolean displayInline) {
+        this.displayInline = displayInline;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getToggleButtons() {
+        return toggleButtons;
+    }
+
+    @Nonnull
+    public SelectInputElement setToggleButtons(@Nullable Boolean toggleButtons) {
+        this.toggleButtons = toggleButtons;
         return this;
     }
 

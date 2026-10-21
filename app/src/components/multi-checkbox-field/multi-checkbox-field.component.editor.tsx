@@ -1,4 +1,5 @@
 import React from 'react';
+import {MultiChoicePresentation} from '../../models/elements/form/input/multi-choice-presentation';
 import {Grid} from '@mui/material';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
@@ -40,6 +41,19 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                 columnSpacing={4}
                 rowSpacing={2}
             >
+                <Grid size={{xs: 12, lg: 6}}>
+                    <SelectFieldComponent
+                        label="Darstellung der Auswahl"
+                        value={props.element.presentation ?? MultiChoicePresentation.Checkboxes}
+                        options={[
+                            {value: MultiChoicePresentation.Checkboxes, label: 'Checkbox-Liste'},
+                            {value: MultiChoicePresentation.Combobox, label: 'Durchsuchbare Auswahl'},
+                        ]}
+                        onChange={(presentation) => props.onPatch({presentation: presentation ?? MultiChoicePresentation.Checkboxes})}
+                        disabled={!props.editable}
+                        required
+                    />
+                </Grid>
                 <Grid size={{xs: 12, lg: 6}}>
                     <SelectFieldComponent
                         label="Optionen definieren über"
@@ -112,6 +126,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
             }
 
             {
+                props.element.presentation !== MultiChoicePresentation.Combobox &&
                 !props.hasSummaryLayoutParent &&
                 <CheckboxFieldComponent
                     label="Optionen nebeneinander anzeigen"

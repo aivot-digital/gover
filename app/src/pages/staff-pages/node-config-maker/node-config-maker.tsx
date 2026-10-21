@@ -22,6 +22,7 @@ import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
 import {ConfigLayoutElement} from '../../../models/elements/form/layout/config-layout-element';
 import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
+import {normalizeElementDefinition} from '../../../utils/normalize-element-definition';
 
 export function NodeConfigMaker() {
     const {
@@ -43,7 +44,7 @@ export function NodeConfigMaker() {
         uploadObjectFile<ConfigLayoutElement>('application/json')
             .then(response => {
                 if (response != null) {
-                    setLayout(response);
+                    setLayout(normalizeElementDefinition(response));
                 }
             });
     };
@@ -146,9 +147,9 @@ function storeConfig(layout: ConfigLayoutElement) {
 function loadConfig(): ConfigLayoutElement {
     const stored = localStorage.getItem('nodeConfigMakerLayout');
     if (stored) {
-        return JSON.parse(stored);
+        return normalizeElementDefinition(JSON.parse(stored) as ConfigLayoutElement);
     }
-    return basis as ConfigLayoutElement;
+    return normalizeElementDefinition(basis as ConfigLayoutElement);
 }
 
 function createPOJO(layout: AnyElementWithChildren, indent: number = 0): string {
@@ -210,7 +211,7 @@ function createPOJO(layout: AnyElementWithChildren, indent: number = 0): string 
                 const lines: string[] = [];
 
                 if (
-                    (child.type === ElementType.Select || child.type === ElementType.Radio || child.type === ElementType.MultiCheckbox) &&
+                    (child.type === ElementType.Select || child.type === ElementType.MultiCheckbox) &&
                     (child.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual &&
                     child.options != null
                 ) {
@@ -306,7 +307,6 @@ const ElementTypeBackendName: Record<ElementType, string> = {
     [ElementType.Number]: 'Number',
     [ElementType.ReplicatingContainer]: 'ReplicatingContainerLayout',
     [ElementType.RichText]: 'RichText',
-    [ElementType.Radio]: 'Radio',
     [ElementType.Select]: 'Select',
     [ElementType.Spacer]: 'Spacer',
     [ElementType.Table]: 'Table',
@@ -365,7 +365,6 @@ const ElementTypeBackendValueClass: Record<ElementType, string | null> = {
     [ElementType.Number]: 'Number',
     [ElementType.ReplicatingContainer]: null,
     [ElementType.RichText]: null,
-    [ElementType.Radio]: 'String',
     [ElementType.Select]: 'String',
     [ElementType.Spacer]: null,
     [ElementType.Table]: 'List<Map<String, Object>>',

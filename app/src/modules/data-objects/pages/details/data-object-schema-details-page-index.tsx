@@ -52,7 +52,6 @@ const AllowedDisplayFieldTypes = [
     ElementType.Date,
     ElementType.Time,
     ElementType.Select,
-    ElementType.Radio,
     ElementType.Checkbox,
     ElementType.MultiCheckbox,
 ];

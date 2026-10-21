@@ -31,7 +31,6 @@ public class CodeListElementOptionsService {
     public BaseElement resolve(@Nonnull BaseElement element) throws ResponseException {
         return switch (element) {
             case SelectInputElement select when select.getOptionsSource() == OptionsSourceType.CodeList -> resolveSelect(select);
-            case RadioInputElement radio when radio.getOptionsSource() == OptionsSourceType.CodeList -> resolveRadio(radio);
             case MultiCheckboxInputElement multiCheckbox when multiCheckbox.getOptionsSource() == OptionsSourceType.CodeList -> resolveMultiCheckbox(multiCheckbox);
             case TextInputElement text when text.getOptionsSource() == OptionsSourceType.CodeList
                     && !Boolean.TRUE.equals(text.getIsMultiline()) && text.getDynamicTextPolicy() == null -> resolveText(text);
@@ -64,13 +63,6 @@ public class CodeListElementOptionsService {
     }
 
     @Nonnull
-    private RadioInputElement resolveRadio(@Nonnull RadioInputElement element) throws ResponseException {
-        var copy = copy(element, RadioInputElement.class);
-        copy.setOptions(listAsRadioItems(requireConfiguredCodeListId(element.getCodeListKey())));
-        return copy;
-    }
-
-    @Nonnull
     private MultiCheckboxInputElement resolveMultiCheckbox(@Nonnull MultiCheckboxInputElement element) throws ResponseException {
         var copy = copy(element, MultiCheckboxInputElement.class);
         copy.setOptions(listAsMultiCheckboxItems(requireConfiguredCodeListId(element.getCodeListKey())));
@@ -88,20 +80,6 @@ public class CodeListElementOptionsService {
                 .findAllByCodeListIdOrderByIdAsc(codeListId)
                 .stream()
                 .map(item -> SelectInputElementOption.of(item.getValue(), item.getLabel()))
-                .toList();
-    }
-
-    @Nonnull
-    public List<RadioInputElementOption> listAsRadio(@Nonnull String codeListKey) throws ResponseException {
-        return listAsRadioItems(requireCodeListId(codeListKey));
-    }
-
-    @Nonnull
-    private List<RadioInputElementOption> listAsRadioItems(@Nonnull Integer codeListId) {
-        return vCodeListItemRepository
-                .findAllByCodeListIdOrderByIdAsc(codeListId)
-                .stream()
-                .map(item -> RadioInputElementOption.of(item.getValue(), item.getLabel()))
                 .toList();
     }
 

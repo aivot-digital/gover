@@ -16,7 +16,6 @@ import {
 import {HeadlineComponentEditor} from '../components/headline/headline.component.editor';
 import {ReplicatingContainerEditor} from '../components/replicating-container/replicating-container.editor';
 import {RichtextComponentEditor} from '../components/richtext/richtext.component.editor';
-import {RadioFieldComponentEditor} from '../components/radio-field/radio-field.component.editor';
 import {SpacerComponentEditor} from '../components/spacer/spacer.component.editor';
 import {TableFieldComponentEditor} from '../components/table-field/table-field.component.editor';
 import {
@@ -96,9 +95,6 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     },
     [ElementType.RichText]: {
         default: RichtextComponentEditor,
-    },
-    [ElementType.Radio]: {
-        default: RadioFieldComponentEditor,
     },
     [ElementType.Select]: {
         default: SelectFieldEditor,

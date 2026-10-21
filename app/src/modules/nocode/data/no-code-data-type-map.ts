@@ -15,7 +15,6 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.Duration]: NoCodeDataType.Number,
     [ElementType.ReplicatingContainer]: NoCodeDataType.List,
     [ElementType.RichText]: NoCodeDataType.Runtime,
-    [ElementType.Radio]: NoCodeDataType.String,
     [ElementType.Select]: NoCodeDataType.String,
     [ElementType.Spacer]: NoCodeDataType.Runtime,
     [ElementType.Table]: NoCodeDataType.List,

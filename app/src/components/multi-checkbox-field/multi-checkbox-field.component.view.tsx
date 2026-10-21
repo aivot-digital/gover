@@ -1,3 +1,5 @@
+import {MultiChoiceCombobox} from './multi-choice-combobox';
+import {MultiChoicePresentation} from '../../models/elements/form/input/multi-choice-presentation';
 import React, {useMemo} from 'react';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseViewProps} from '../../views/base-view';
@@ -27,8 +29,10 @@ export function MultiCheckboxFieldComponentView(props: BaseViewProps<MultiCheckb
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
+    const Component = element.presentation === MultiChoicePresentation.Combobox ? MultiChoiceCombobox : MultiCheckboxComponent;
+
     return (
-        <MultiCheckboxComponent
+        <Component
             label={element.label ?? ''}
             value={value}
             onChange={setValue}

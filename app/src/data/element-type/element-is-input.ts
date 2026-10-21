@@ -14,7 +14,6 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.Duration]: true,
     [ElementType.ReplicatingContainer]: true,
     [ElementType.RichText]: false,
-    [ElementType.Radio]: true,
     [ElementType.Select]: true,
     [ElementType.Spacer]: false,
     [ElementType.Table]: true,

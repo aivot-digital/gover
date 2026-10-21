@@ -11,7 +11,6 @@ import {
 import {NumberSummary} from './number-summary';
 import {SelectFieldSummary} from './select-field-summary';
 import {ReplicationContainerSummary} from '../components/replicating-container/replication-container.summary';
-import {RadioFieldComponentSummary} from '../components/radio-field/radio-field.component.summary';
 import {TableFieldComponentSummary} from '../components/table-field/table-field.component.summary';
 import {TimeFieldComponentSummary} from '../components/time-field/time-field.component.summary';
 import {FileUploadSummary} from '../components/file-upload-field/file-upload.summary';
@@ -51,7 +50,6 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.Duration]: DurationFieldSummary,
     [ElementType.ReplicatingContainer]: ReplicationContainerSummary,
     [ElementType.RichText]: null,
-    [ElementType.Radio]: RadioFieldComponentSummary,
     [ElementType.Select]: SelectFieldSummary,
     [ElementType.Spacer]: null,
     [ElementType.Table]: TableFieldComponentSummary,

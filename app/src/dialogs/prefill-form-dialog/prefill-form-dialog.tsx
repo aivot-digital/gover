@@ -49,7 +49,6 @@ const prefillableElementTypes = [
     ElementType.Date,
     ElementType.Time,
     ElementType.Select,
-    ElementType.Radio,
     ElementType.Checkbox,
     ElementType.MultiCheckbox,
     ElementType.ChipInput,

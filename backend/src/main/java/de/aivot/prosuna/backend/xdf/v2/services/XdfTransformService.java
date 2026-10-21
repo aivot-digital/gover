@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.xdf.v2.services;
 
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
@@ -331,11 +332,11 @@ public class XdfTransformService {
                         fields.add(textField);
                         break;
                     case XdfFieldType.BOOL:
-                        var radioField = new RadioInputElement();
+                        var radioField = new SelectInputElement().setPresentation(SelectInputPresentation.Radio);
 
                         radioField.setOptions(List.of(
-                                RadioInputElementOption.of("Ja", "ja"),
-                                RadioInputElementOption.of("Nein", "nein")
+                                SelectInputElementOption.of("Ja", "ja"),
+                                SelectInputElementOption.of("Nein", "nein")
                         ));
                         radioField.setHint(hint);
                         radioField.setId(id);

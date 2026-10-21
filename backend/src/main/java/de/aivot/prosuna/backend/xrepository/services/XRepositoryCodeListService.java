@@ -2,7 +2,6 @@ package de.aivot.prosuna.backend.xrepository.services;
 
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.xrepository.models.XRepositoryCodeList;
@@ -63,29 +62,9 @@ public class XRepositoryCodeListService {
         }
     }
 
-    public List<RadioInputElementOption> getRadioFieldOptionCodeList(@Nonnull String codeListUrn) throws ResponseException {
-        var codeList = getCodeList(codeListUrn);
-
-        var labelColumnRef = codeList
-                .getColumnSet()
-                .getKey()
-                .getColumnRef()
-                .getRef();
-
-        var options = new LinkedList<RadioInputElementOption>();
-
-        for (var row : codeList.getCodeList().getRow()) {
-            for (var col : row.getValue()) {
-                if (col.getColumnRef().equals(labelColumnRef)) {
-                    options.add(RadioInputElementOption.of(
-                            col.getSimpleValue(),
-                            col.getSimpleValue()
-                    ));
-                }
-            }
-        }
-
-        return options;
+    // Keep the existing JavaScript helper compatible; both presentations use the same options.
+    public List<SelectInputElementOption> getRadioFieldOptionCodeList(@Nonnull String codeListUrn) throws ResponseException {
+        return getSelectFieldOptionCodeList(codeListUrn);
     }
 
     public List<SelectInputElementOption> getSelectFieldOptionCodeList(@Nonnull String codeListUrn) throws ResponseException {

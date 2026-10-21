@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.elements.services;
 
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
@@ -87,6 +88,25 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ElementDerivationServiceTest {
+    @Test
+    void derivesDependentRadioPresentationFromAnotherRadioSelection() {
+        var parent = new SelectInputElement().setPresentation(SelectInputPresentation.Radio);
+        parent.setId("parent");
+        parent.setOptions(List.of(SelectInputElementOption.of("a", "A")));
+        var child = new SelectInputElement().setPresentation(SelectInputPresentation.Radio)
+                .setDependsOnSelectFieldId("parent")
+                .setOptions(List.of(new SelectInputElementOption().setValue("one").setLabel("One").setGroup("a"),
+                        new SelectInputElementOption().setValue("two").setLabel("Two").setGroup("b")));
+        child.setId("child");
+        var authored = new AuthoredElementValues();
+        authored.putLiteral("parent", "a");
+        authored.putLiteral("child", "two");
+        var result = derive(createRoot(List.of(parent, child)), authored, new ElementDerivationOptions());
+        assertNull(result.getEffectiveValues().get("child"));
+        authored.putLiteral("child", "one");
+        assertEquals("one", derive(createRoot(List.of(parent, child)), authored, new ElementDerivationOptions()).getEffectiveValues().get("child"));
+    }
+
     @Test
     void checksAssetProviderForAuthoredAndDerivedValuesWithoutDiscardingTheKey() {
         var repository = Mockito.mock(AssetRepository.class);
