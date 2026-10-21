@@ -1,3 +1,4 @@
+import {createOptionFilter} from '../select-field/option-search';
 import {useMemo, type HTMLAttributes, type Key} from 'react';
 import {Autocomplete, type AutocompleteRenderInputParams, Box, ListItemText, type SxProps, TextField, type Theme} from '@mui/material';
 import type {
@@ -217,11 +218,12 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
                     fullWidth
                     options={options}
                     value={selectedOptions[0] ?? null}
+                    filterOptions={createOptionFilter<AttachmentSetOption>((option) => [option.label, option.subLabel])}
                     getOptionLabel={(option) => option.label}
                     isOptionEqualToValue={(option, selectedOption) => option.dataKey === selectedOption.dataKey}
                     disabled={field.disabled || field.busy}
                     readOnly={field.readOnly || field.busy}
-                    noOptionsText="Keine Anlagensätze verfügbar"
+                    noOptionsText={options.length > 0 ? 'Keine passenden Anlagensätze gefunden' : 'Keine Anlagensätze verfügbar'}
                     onChange={(_, updatedOption) => updateSelectedOptions(updatedOption == null ? [] : [updatedOption])}
                     renderOption={renderOption}
                     renderInput={(params) => renderInput(params, field)}
@@ -236,11 +238,12 @@ export function ProcessInstanceAttachmentSetSelect(props: ProcessInstanceAttachm
                     filterSelectedOptions
                     options={options}
                     value={selectedOptions}
+                    filterOptions={createOptionFilter<AttachmentSetOption>((option) => [option.label, option.subLabel])}
                     getOptionLabel={(option) => option.label}
                     isOptionEqualToValue={(option, selectedOption) => option.dataKey === selectedOption.dataKey}
                     disabled={field.disabled || field.busy}
                     readOnly={field.readOnly || field.busy}
-                    noOptionsText="Keine Anlagensätze verfügbar"
+                    noOptionsText={options.length > 0 ? 'Keine passenden Anlagensätze gefunden' : 'Keine Anlagensätze verfügbar'}
                     getOptionDisabled={(option) => (
                         effectiveMaxItems != null &&
                         selectedOptions.length >= effectiveMaxItems &&
