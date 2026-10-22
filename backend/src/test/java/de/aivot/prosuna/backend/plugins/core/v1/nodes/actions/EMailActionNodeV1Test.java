@@ -260,7 +260,7 @@ class EMailActionNodeV1Test {
                 eq(MailSendOptions.defaults())
         );
         assertEquals("Nachricht für Ada", result.getNodeData().get("subject"));
-        assertTrue(result.getNodeData().get("content").toString().contains("<strong>Ada</strong>"));
+        assertEquals("Hallo **Ada**", result.getNodeData().get("content"));
         assertArrayEquals(
                 new String[]{"customer@example.test"},
                 (String[]) result.getNodeData().get("to")

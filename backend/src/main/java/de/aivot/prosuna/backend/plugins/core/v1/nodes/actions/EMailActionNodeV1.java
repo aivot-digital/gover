@@ -235,7 +235,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONTENT,
                         "Inhalt",
-                        "Der HTML-Inhalt der versendeten E-Mail.",
+                        "Der Inhalt der versendeten E-Mail als Markdown.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -527,7 +527,9 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         metadata.put(OUTPUT_NAME_TO, recipients);
         metadata.put(OUTPUT_NAME_BCC, recipientsBCC);
         metadata.put(OUTPUT_NAME_SUBJECT, subject);
-        metadata.put(OUTPUT_NAME_CONTENT, contentHtml);
+        // Later steps insert the content into templates or pass it on, so it is the Markdown that was written, as for
+        // Postfach messages. The HTML is only the mail's rendering of it.
+        metadata.put(OUTPUT_NAME_CONTENT, contentMarkdown);
         metadata.put(OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS, attachmentSetDataKeys);
 
         return new ProcessNodeExecutionResultTaskCompleted()
