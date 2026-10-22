@@ -1,15 +1,22 @@
 package de.aivot.prosuna.backend.process.controllers;
 
 import static de.aivot.prosuna.backend.process.ProcessTaskExecutionTestSupport.passthrough;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.*;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
+import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
 import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.identity.dtos.EmailIdentityRequestDTO;
@@ -22,8 +29,10 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
 import de.aivot.prosuna.backend.identity.utils.IdentityCookieUtils;
+import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.FormRequestActionNodeV1;
 import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
@@ -54,6 +63,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.process.workers.ProcessNodeExecutionResultHandler;
 import de.aivot.prosuna.backend.services.PdfService;
+import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -133,7 +143,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
     @Test
     void retrieveCompletedFormRequestUsesItsReceiptWithoutExposingSubmittedData() throws ResponseException {
         var provider = new FormRequestActionNodeV1(null, null, null, null, null, null);
-        var fixture = createFixture(provider, new AuthoredElementValues(), new EffectiveElementValues(),
+        var fixture = createFixture(provider, new AuthoredElementValues(), new TestElementDerivationService(new EffectiveElementValues()),
                 new ApplyingProcessNodeExecutionResultHandler(), passthrough(), new FormRequestActionNodeV1.NodeConfig());
         fixture.task().setStatus(ProcessTaskStatus.Completed);
         fixture.task().setProcessData(Map.of("private", "process data"));
@@ -621,6 +631,38 @@ class CustomerProcessInstanceTaskViewControllerTest {
         var requests = fixture.elementDerivationService().requests;
         assertEquals(3, requests.size());
         assertTrue(requests.stream().allMatch(request -> request.processExecutionData() == fixture.processExecutionData()));
+    }
+
+    @Test
+    void update_PassesTemplateTagsTypedByTheCustomerAsText() throws ResponseException {
+        var field = new RichTextInputElement();
+        field.setId("field");
+        // Element definitions can carry a dynamic text policy. The customer's answer must still never be evaluated as
+        // a template, because the derivation sees the process data and the answer could copy it.
+        field.setDynamicTextPolicy(new DynamicTextPolicy());
+        var typed = "Mein Zugang: {{ $.secret }} {! $.secret !}";
+        var provider = new InlineCustomerTaskProcessNodeDefinition(null, null, List.of(field));
+        var fixture = createFixture(
+                provider,
+                new AuthoredElementValues().putLiteral("field", typed),
+                new TestElementDerivationService()
+        );
+        fixture.processExecutionData().addProcessData("secret", "geheim");
+
+        fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                "{\"field\":{\"type\":\"Literal\",\"value\":\"" + typed + "\"}}",
+                null,
+                null,
+                "inline-submit",
+                Map.of(),
+                null,
+                new MockHttpServletResponse()
+        );
+
+        // Providers such as the form request store the derived values of the answer.
+        assertEquals(typed, provider.derivedDataUsedForEvent.getEffectiveValues().get("field"));
     }
 
     @Test
@@ -1156,12 +1198,20 @@ class CustomerProcessInstanceTaskViewControllerTest {
                                                                EffectiveElementValues effectiveValues,
                                                                ProcessNodeExecutionResultHandler resultHandler,
                                                                ProcessTaskExecutionService execution) {
-        return createFixture(provider, normalizedInputs, effectiveValues, resultHandler, execution, new AuthoredElementValues());
+        return createFixture(provider, normalizedInputs, new TestElementDerivationService(effectiveValues), resultHandler,
+                execution, new AuthoredElementValues());
     }
 
     private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
                                                                AuthoredElementValues normalizedInputs,
-                                                               EffectiveElementValues effectiveValues,
+                                                               TestElementDerivationService elementDerivationService) {
+        return createFixture(provider, normalizedInputs, elementDerivationService,
+                new ApplyingProcessNodeExecutionResultHandler(), passthrough(), new AuthoredElementValues());
+    }
+
+    private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
+                                                               AuthoredElementValues normalizedInputs,
+                                                               TestElementDerivationService elementDerivationService,
                                                                ProcessNodeExecutionResultHandler resultHandler,
                                                                ProcessTaskExecutionService execution,
                                                                Object runtimeConfiguration) {
@@ -1235,7 +1285,6 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
         var customerTaskIdentityService = mockCustomerTaskIdentityService();
         var identitySlotService = mock(IdentitySlotService.class);
-        var elementDerivationService = new TestElementDerivationService(effectiveValues);
         var fileUploadMultipartInputService = new TestTaskViewMultipartInputService(normalizedInputs);
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
@@ -1561,9 +1610,25 @@ class CustomerProcessInstanceTaskViewControllerTest {
             this.effectiveValues = effectiveValues;
         }
 
+        /** Derives the inputs for real, for tests about what the derivation makes of them. */
+        private TestElementDerivationService() {
+            super(
+                    new JavascriptEngineFactoryService(List.of()),
+                    new NoCodeEvaluationService(List.of()),
+                    new ElementDataTransformService(),
+                    new CodeListElementOptionsService(null, null),
+                    new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
+                    new InputVariableResolver()
+            );
+            this.effectiveValues = null;
+        }
+
         @Override
         public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
             requests.add(request);
+            if (effectiveValues == null) {
+                return super.derive(request);
+            }
             return new DerivedRuntimeElementData(effectiveValues, elementStates);
         }
     }
@@ -1753,16 +1818,25 @@ class CustomerProcessInstanceTaskViewControllerTest {
     private static final class InlineCustomerTaskProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         private final String href;
         private final ProcessNodeExecutionResult eventResult;
+        private final List<BaseFormElement> fields;
         private String eventInvokedWith;
         private AuthoredElementValues configurationUsedForEvent;
+        private DerivedRuntimeElementData derivedDataUsedForEvent;
 
         private InlineCustomerTaskProcessNodeDefinition(String href) {
             this(href, null);
         }
 
         private InlineCustomerTaskProcessNodeDefinition(String href, ProcessNodeExecutionResult eventResult) {
+            this(href, eventResult, List.of());
+        }
+
+        private InlineCustomerTaskProcessNodeDefinition(String href,
+                                                        ProcessNodeExecutionResult eventResult,
+                                                        List<BaseFormElement> fields) {
             this.href = href;
             this.eventResult = eventResult;
+            this.fields = fields;
         }
 
         @Override
@@ -1828,9 +1902,11 @@ class CustomerProcessInstanceTaskViewControllerTest {
                     .setCustomerTaskEvent("inline-submit");
             linkButton.setId("inline-button");
 
+            var children = new LinkedList<>(fields);
+            children.add(linkButton);
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
-            layout.setChildren(List.of(linkButton));
+            layout.setChildren(children);
             var data = new AuthoredElementValues();
             data.putLiteral("field", context.getThisTask().getRuntimeData().get("field"));
             return new ProcessNodeCustomerView(layout, List.of(), data, null);
@@ -1844,6 +1920,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
                                                                                 @Nonnull String event) {
             eventInvokedWith = event;
             configurationUsedForEvent = context.getConfigurationOfExecutingNode();
+            derivedDataUsedForEvent = derivedData;
             if (eventResult != null) {
                 return eventResult.asOptional();
             }
