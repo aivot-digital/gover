@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElem
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownTemplateValues;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
@@ -52,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
@@ -100,7 +102,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         return "Die KI-Anfrage wurde erfolgreich ausgeführt."
                 + detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL))
                 + detail("Kurzbeschreibung", context.thisNode().getDescription())
-                + section("Antwort der KI", summary.data(OUTPUT_COMPLETION));
+                // The answer can repeat customer input from the prompt, so its links must not hide their target.
+                + section("Antwort der KI", MarkdownTemplateValues.revealLinkTargets(Objects.toString(summary.data(OUTPUT_COMPLETION), null)));
     }
 
     @Nonnull

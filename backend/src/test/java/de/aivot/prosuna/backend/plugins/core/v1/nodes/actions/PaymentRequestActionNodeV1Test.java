@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -448,6 +449,42 @@ class PaymentRequestActionNodeV1Test {
                 .orElseThrow();
 
         assertTrue(paymentInformation.getContent().contains("- Gebühr: 10.712,34 Euro inkl. 7,1234 % Steuern"));
+    }
+
+    @Test
+    void staffTaskView_ShowsPaymentDetailsAsTyped() throws Exception {
+        var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
+        var item = new PaymentItem();
+        item.setDescription("<b>Gebühr</b>");
+        item.setQuantity(1L);
+        item.setNetPrice(new BigDecimal("10.00"));
+        item.setTaxRate(BigDecimal.ZERO);
+        // Purpose and descriptions can come from process data, which includes customer input.
+        var paymentPayload = new PaymentPayload()
+                .setPurpose("[Jetzt zahlen](https://evil.example)")
+                .setDescription("**Dringend**\n# Hinweis")
+                .setTotal(item.getTotalPrice())
+                .setPaymentItems(List.of(item));
+        var context = staffContext(
+                configuration,
+                new ProcessExecutionData(),
+                processInstance(recipientIdentity()),
+                task(Map.of(
+                        PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD,
+                        JsonMapperTestUtils.createMapper().convertValue(paymentPayload, Map.class)
+                ), Map.of(), Map.of())
+        );
+
+        var layout = assertInstanceOf(GroupLayoutElement.class, node.getStaffTaskView(context).layout());
+        var html = MarkdownRenderer.renderHtml(layout
+                .findChild("payment-information", RichTextContentElement.class)
+                .orElseThrow()
+                .getContent());
+
+        assertTrue(html.contains("<strong>Buchungstext:</strong> [Jetzt zahlen](<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)"));
+        assertTrue(html.contains("<strong>Beschreibung:</strong> **Dringend**<br />\n# Hinweis"));
+        assertTrue(html.contains("<li>&lt;b&gt;Gebühr&lt;/b&gt;: 10,00 Euro</li>"));
+        assertFalse(html.contains(">Jetzt zahlen</a>"));
     }
 
     @Test

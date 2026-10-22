@@ -169,6 +169,13 @@ class MarkdownTemplateValuesTest {
     }
 
     @Test
+    void revealLinkTargetsKeepsValuesWithoutHiddenTargetsAsWritten() {
+        var markdown = "Preis: 5 & 6 *Euro*\n\n* Siehe https://example.org\n\n| Feld |\n| --- |\n| Ort |";
+
+        assertEquals(markdown, MarkdownTemplateValues.revealLinkTargets(markdown));
+    }
+
+    @Test
     void revealLinkTargetsReturnsEmptyTextForMissingValues() {
         assertEquals("", MarkdownTemplateValues.revealLinkTargets(null));
         assertEquals("", MarkdownTemplateValues.revealLinkTargets(""));

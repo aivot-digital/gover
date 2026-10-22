@@ -78,6 +78,9 @@ public final class MarkdownTemplateValues {
      *
      * <p>Link reference definitions are removed as well. They apply to the whole document, so a value could otherwise
      * change the target of a reference link in the surrounding template.</p>
+     *
+     * <p>A value with nothing to change is returned as it was written. Otherwise the Markdown writer writes the whole
+     * value again, which can change how its syntax is spelled, but not what it shows.</p>
      */
     @Nonnull
     public static String revealLinkTargets(@Nullable String markdown) {
@@ -89,14 +92,18 @@ public final class MarkdownTemplateValues {
         var collector = new LinkCollector();
         document.accept(collector);
 
+        var linksHidingTheirTarget = collector.links
+                .stream()
+                .filter(link -> !MarkdownRenderer.showsItsTarget(link))
+                .toList();
+        if (linksHidingTheirTarget.isEmpty() && collector.definitions.isEmpty()) {
+            return markdown;
+        }
+
         for (var definition : collector.definitions) {
             definition.unlink();
         }
-        for (var link : collector.links) {
-            if (MarkdownRenderer.showsItsTarget(link)) {
-                continue;
-            }
-
+        for (var link : linksHidingTheirTarget) {
             var child = link.getFirstChild();
             while (child != null) {
                 var next = child.getNext();

@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownTemplateValues;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -927,11 +928,12 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     private static String createPaymentInformationMarkdown(@Nonnull PaymentPayload paymentPayload) {
+        // Purpose and descriptions can come from process data, including customer input, so they are shown as typed.
         var itemMarkdown = paymentPayload
                 .getPaymentItems()
                 .stream()
                 .map(item -> "- %s: %s Euro%s".formatted(
-                        item.getDescription(),
+                        MarkdownTemplateValues.escapeText(item.getDescription()),
                         NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
                         item.getTaxRate().signum() > 0
                                 ? " inkl. %s %% Steuern".formatted(formatTaxRate(item.getTaxRate()))
@@ -956,8 +958,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
                 **Gesamtbetrag:** %s Euro%s
                 """.formatted(
-                paymentPayload.getPurpose(),
-                paymentPayload.getDescription(),
+                MarkdownTemplateValues.escapeText(paymentPayload.getPurpose()),
+                MarkdownTemplateValues.escapeText(paymentPayload.getDescription()),
                 itemMarkdown,
                 NumberUtils.formatGermanNumber(paymentPayload.getTotal(), 2),
                 includesTaxes ? " inkl. Steuern" : ""

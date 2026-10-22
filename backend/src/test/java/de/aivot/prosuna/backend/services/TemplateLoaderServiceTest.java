@@ -481,6 +481,30 @@ class TemplateLoaderServiceTest {
     }
 
     @Test
+    void generalInformationTemplate_RendersDeadlinesAndThePrivacyLinkAsText() {
+        var introductionStep = new IntroductionStepElement()
+                .setExpiring("<b>Bis 31.12.</b>\n<img src=x onerror=alert(1)>");
+        var form = new PrintableFormPdfData()
+                .setSlug("test-form")
+                .setRootElement(new FormLayoutElement().setChildren(List.of(introductionStep)));
+        var html = new TemplateLoaderService().processTemplate(
+                "form-parts/allgemeine-informationen.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "form", form,
+                        "step", new PdfElement(introductionStep, null, List.of())
+                ),
+                TemplateMode.HTML
+        );
+
+        // The form shows deadlines as plain text, so the PDF must neither render nor run HTML from them.
+        assertTrue(html.contains("&lt;b&gt;Bis 31.12.&lt;/b&gt;\n&lt;img src=x onerror=alert(1)&gt;"));
+        assertFalse(html.contains("<b>"));
+        assertFalse(html.contains("<img src=x"));
+        assertTrue(html.contains(">https://prosuna.example/test-form?dialog=privacy</a>"));
+    }
+
+    @Test
     void rangeFieldTemplates_RenderBlankPrintPlaceholders() {
         var dateRangeElement = new DateRangeInputElement();
         dateRangeElement.setLabel("Monatszeitraum");
