@@ -272,7 +272,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
             throw new CommunicationException("Die Testempfängeradresse ist erforderlich.");
         }
         var recipient = rawRecipient.trim();
-        if (!EmailAddressUtils.isValidSingleAddress(recipient)) {
+        if (!EmailAddressUtils.isValidTransportAddress(recipient)) {
             throw new CommunicationException("Die Testempfängeradresse ist ungültig.");
         }
 
@@ -399,7 +399,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
             var mapped = identity.attributes().get(identityBinding.emailAttribute);
             if (mapped != null) {
                 var trimmed = mapped.trim();
-                if (EmailAddressUtils.isValidSingleAddress(trimmed)) {
+                if (EmailAddressUtils.isValidTransportAddress(trimmed)) {
                     return trimmed;
                 }
             }

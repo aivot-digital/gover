@@ -935,7 +935,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private static String requireInvitationEmail(@Nullable String emailAddress)
             throws ProcessNodeExecutionExceptionInvalidConfiguration {
         try {
-            return EmailAddressUtils.normalizeSingleAddress(emailAddress);
+            return EmailAddressUtils.normalizeTransportAddress(emailAddress);
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Die E-Mail-Adresse der Einladung ist ungültig."
