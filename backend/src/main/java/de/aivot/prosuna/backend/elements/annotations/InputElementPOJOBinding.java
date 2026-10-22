@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.elements.annotations;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import jakarta.annotation.Nonnull;
 
 import java.lang.annotation.Retention;
@@ -43,6 +44,13 @@ public @interface InputElementPOJOBinding {
 
     /** Enables template expressions inside Literal values of Text and RichTextInput fields. */
     boolean dynamicText() default false;
+
+    /**
+     * How the field's text is used afterwards, see {@link TemplateOutputFormat}. Leave it empty to use Markdown for
+     * RichTextInput fields and Html for all other fields; set at most one format.
+     */
+    @Nonnull
+    TemplateOutputFormat[] dynamicTextFormat() default {};
 
     /** Variable sources offered by the dynamic-text picker. */
     @Nonnull

@@ -43,6 +43,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
@@ -1039,7 +1040,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .addProcessData(context.getThisTask().getProcessData());
 
         try {
-            return templateRenderService.interpolate(processExecutionData, template);
+            // The message is shown as Markdown on the payment status page.
+            return templateRenderService.interpolate(processExecutionData, template, TemplateOutputFormat.Markdown);
         } catch (RuntimeException e) {
             throw ResponseException.internalServerError(
                     e,

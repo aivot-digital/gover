@@ -24,6 +24,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -197,6 +198,22 @@ class EMailActionNodeV1Test {
         ).orElseThrow();
         assertEquals("Organisationseinheit für die Signatur", manualSignatureDepartment.getLabel());
         assertFalse(manualSignatureDepartment.getRequired());
+
+        // Subjects become mail headers and the content is rendered as Markdown.
+        for (var subjectFieldId : List.of(
+                SemiAutomaticMessageConfig.AutomaticContent.SUBJECT_FIELD_ID,
+                SemiAutomaticMessageConfig.ManualContent.SUBJECT_FIELD_ID
+        )) {
+            assertEquals(TemplateOutputFormat.SingleLineText, layout.findChild(subjectFieldId, TextInputElement.class)
+                    .orElseThrow().getDynamicTextPolicy().outputFormat());
+        }
+        for (var contentFieldId : List.of(
+                SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID,
+                SemiAutomaticMessageConfig.ManualContent.CONTENT_FIELD_ID
+        )) {
+            assertEquals(TemplateOutputFormat.Markdown, layout.findChild(contentFieldId, RichTextInputElement.class)
+                    .orElseThrow().getDynamicTextPolicy().outputFormat());
+        }
     }
 
     @Test

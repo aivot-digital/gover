@@ -45,7 +45,8 @@ public final class MarkdownRenderer {
      */
     public static final List<String> ALLOWED_URL_PROTOCOLS = List.of("http", "https", "mailto", "sms", "tel");
 
-    private static final List<Extension> EXTENSIONS = List.of(
+    // Shared with MarkdownTemplateValues, which has to read values exactly as they are rendered later.
+    static final List<Extension> EXTENSIONS = List.of(
             AutolinkExtension.create(),
             FootnotesExtension.create(),
             TablesExtension.create(),
@@ -54,7 +55,7 @@ public final class MarkdownRenderer {
                     .build(),
             TaskListItemsExtension.create()
     );
-    private static final Parser PARSER = Parser.builder()
+    static final Parser PARSER = Parser.builder()
             .extensions(EXTENSIONS)
             .build();
     private static final HtmlRenderer RENDERER = HtmlRenderer.builder()

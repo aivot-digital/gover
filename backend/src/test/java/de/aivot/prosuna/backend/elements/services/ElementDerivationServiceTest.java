@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
@@ -51,6 +52,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
@@ -347,6 +349,70 @@ class ElementDerivationServiceTest {
         assertEquals(template, result.getEffectiveValues().get("variable"));
         assertEquals(template, result.getEffectiveValues().get("noCode"));
         assertEquals(template, result.getEffectiveValues().get("lowCode"));
+    }
+
+    @Test
+    void shouldInsertPrintedValuesIntoMarkdownTemplatesAsLiteralText() {
+        var field = dynamicTextField(new RichTextInputElement(), "message", TemplateOutputFormat.Markdown);
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("message", "**Nachricht:** {{ $.message }}");
+
+        var result = derive(createRoot(List.of(field)), authoredValues, new ElementDerivationOptions(),
+                new ProcessExecutionData().addProcessData("message", "**Danke** für [Antrag](https://evil.example)"),
+                InputModeEvaluationContext.Runtime);
+
+        assertFalse(result.hasAnyError());
+        assertEquals(
+                "**Nachricht:** \\*\\*Danke\\*\\* für \\[Antrag\\](https://evil.example)",
+                result.getEffectiveValues().get("message")
+        );
+    }
+
+    @Test
+    void shouldRevealLinkTargetsOfWholeMarkdownValuesFromProcessDataAndCode() {
+        var markdown = "**Danke** für [Antrag](https://evil.example)";
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("variable", new VariableAuthoredInputValue(
+                new InputVariableReference(InputVariableSource.ProcessData, "message", null)
+        ));
+        authoredValues.put("noCode", new NoCodeAuthoredInputValue(NoCodeStaticValue.of(markdown)));
+        authoredValues.put("lowCode", new LowCodeAuthoredInputValue("'" + markdown + "'"));
+
+        var result = derive(
+                createRoot(List.of(
+                        dynamicTextField(new RichTextInputElement(), "variable", TemplateOutputFormat.Markdown),
+                        dynamicTextField(new RichTextInputElement(), "noCode", TemplateOutputFormat.Markdown),
+                        dynamicTextField(new RichTextInputElement(), "lowCode", TemplateOutputFormat.Markdown)
+                )),
+                authoredValues,
+                new ElementDerivationOptions(),
+                new ProcessExecutionData().addProcessData("message", markdown),
+                InputModeEvaluationContext.Runtime
+        );
+
+        assertFalse(result.hasAnyError());
+        for (var fieldId : List.of("variable", "noCode", "lowCode")) {
+            assertEquals("**Danke** für Antrag (https://evil.example)", result.getEffectiveValues().get(fieldId));
+        }
+    }
+
+    @Test
+    void shouldKeepWholeSingleLineValuesFromProcessDataOnOneLine() {
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("subject", new VariableAuthoredInputValue(
+                new InputVariableReference(InputVariableSource.ProcessData, "subject", null)
+        ));
+
+        var result = derive(
+                createRoot(List.of(dynamicTextField(new TextInputElement(), "subject", TemplateOutputFormat.SingleLineText))),
+                authoredValues,
+                new ElementDerivationOptions(),
+                new ProcessExecutionData().addProcessData("subject", "Antrag\r\nBcc: someone@example.org"),
+                InputModeEvaluationContext.Runtime
+        );
+
+        assertFalse(result.hasAnyError());
+        assertEquals("Antrag Bcc: someone@example.org", result.getEffectiveValues().get("subject"));
     }
 
     @Test
@@ -1761,6 +1827,21 @@ class ElementDerivationServiceTest {
                 InputMode.Literal,
                 List.of(InputVariableSource.ProcessData)
         ));
+        return field;
+    }
+
+    private static BaseInputElement<?> dynamicTextField(BaseInputElement<?> field,
+                                                        String id,
+                                                        TemplateOutputFormat outputFormat) {
+        field.setId(id);
+        field.setInputModePolicy(new InputModePolicy(
+                List.of(InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode),
+                InputMode.Literal,
+                List.of(InputVariableSource.ProcessData)
+        ));
+        ((DynamicTextElement) field).setDynamicTextPolicy(
+                new DynamicTextPolicy(List.of(InputVariableSource.values()), outputFormat)
+        );
         return field;
     }
 

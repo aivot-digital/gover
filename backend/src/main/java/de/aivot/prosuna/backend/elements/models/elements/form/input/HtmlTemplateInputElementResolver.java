@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
@@ -19,7 +20,6 @@ import org.springframework.web.util.HtmlUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +35,12 @@ public class HtmlTemplateInputElementResolver {
     private static final String SLOT_TYPE_IMAGE = "image";
     private static final String SLOT_TYPE_TEXT = "text";
     private static final String SLOT_TYPE_RICHTEXT = "richtext";
+    // Slot values are rendered for their slot type first; the slot then escapes text or renders Markdown to HTML.
+    private static final Map<String, TemplateOutputFormat> SLOT_OUTPUT_FORMATS = Map.of(
+            SLOT_TYPE_IMAGE, TemplateOutputFormat.Html,
+            SLOT_TYPE_TEXT, TemplateOutputFormat.PlainText,
+            SLOT_TYPE_RICHTEXT, TemplateOutputFormat.Markdown
+    );
     private static final Set<String> VOID_ELEMENTS = Set.of(
             "area",
             "base",
@@ -134,36 +140,20 @@ public class HtmlTemplateInputElementResolver {
             );
         }
 
-        var renderedTemplates = new HashMap<String, String>();
-        if (value.getSlots() != null) {
-            for (var slotValueKey : value.getSlots().keySet()) {
-                var slotValue = value.getSlots().get(slotValueKey);
-                String interpolatedSlotValue;
-                try {
-                    interpolatedSlotValue = templateRenderService
-                            .interpolate(processExecutionData, slotValue);
-                } catch (RuntimeException e) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            e,
-                            "Der Wert für den Slot %s konnte nicht gerendert werden.",
-                            StringUtils.quote(slotValueKey)
-                    );
-                }
-                renderedTemplates.put(slotValueKey, interpolatedSlotValue);
-            }
-        }
+        var slotTemplates = value.getSlots() == null ? Map.<String, String>of() : value.getSlots();
 
         // Replace slot defaults before rendering, but keep the already rendered slot contents out of the parser.
         // Otherwise template delimiters originating in process data would become executable template expressions.
         var slotContents = new LinkedHashMap<String, String>();
-        var preparedTemplate = applySlotValues(templateHtml, renderedTemplates, slotContents);
+        var preparedTemplate = applySlotValues(templateHtml, slotTemplates, processExecutionData, slotContents);
         var renderedHtml = templateRenderService.interpolate(processExecutionData, preparedTemplate);
         return restoreSlotContents(renderedHtml, slotContents);
     }
 
     @Nonnull
     private String applySlotValues(@Nonnull String templateHtml,
-                                   @Nonnull Map<String, String> renderedTemplates,
+                                   @Nonnull Map<String, String> slotTemplates,
+                                   @Nonnull ProcessExecutionData processExecutionData,
                                    @Nonnull Map<String, String> slotContents) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var resolvedHtml = new StringBuilder(templateHtml.length());
         var cursor = 0;
@@ -194,21 +184,28 @@ public class HtmlTemplateInputElementResolver {
                 continue;
             }
 
-            var slotValue = renderedTemplates.get(slotId.trim());
+            var slotTemplate = slotTemplates.get(slotId.trim());
+            if (StringUtils.isNullOrEmpty(slotTemplate)) {
+                resolvedHtml.append(templateHtml, cursor, startTag.end() + 1);
+                cursor = startTag.end() + 1;
+                continue;
+            }
+
+            var slotTypeAttribute = startTag.attributeValue(SLOT_TYPE_ATTRIBUTE);
+            var slotType = slotTypeAttribute == null ? null : slotTypeAttribute.trim().toLowerCase(Locale.ROOT);
+            var slotOutputFormat = slotType == null ? null : SLOT_OUTPUT_FORMATS.get(slotType);
+            if (slotOutputFormat == null) {
+                resolvedHtml.append(templateHtml, cursor, startTag.end() + 1);
+                cursor = startTag.end() + 1;
+                continue;
+            }
+
+            var slotValue = renderSlot(slotId.trim(), slotTemplate, slotOutputFormat, processExecutionData);
             if (StringUtils.isNullOrEmpty(slotValue)) {
                 resolvedHtml.append(templateHtml, cursor, startTag.end() + 1);
                 cursor = startTag.end() + 1;
                 continue;
             }
-
-            var slotType = startTag.attributeValue(SLOT_TYPE_ATTRIBUTE);
-            if (slotType == null) {
-                resolvedHtml.append(templateHtml, cursor, startTag.end() + 1);
-                cursor = startTag.end() + 1;
-                continue;
-            }
-
-            slotType = slotType.trim().toLowerCase(Locale.ROOT);
 
             if (SLOT_TYPE_IMAGE.equals(slotType)) {
                 var imageUrl = HtmlUtils.htmlEscape(createAssetUrl(slotId, slotValue));
@@ -241,6 +238,22 @@ public class HtmlTemplateInputElementResolver {
         }
 
         return resolvedHtml.toString();
+    }
+
+    @Nullable
+    private String renderSlot(@Nonnull String slotId,
+                              @Nonnull String slotTemplate,
+                              @Nonnull TemplateOutputFormat outputFormat,
+                              @Nonnull ProcessExecutionData processExecutionData) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        try {
+            return templateRenderService.interpolate(processExecutionData, slotTemplate, outputFormat);
+        } catch (RuntimeException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Der Wert für den Slot %s konnte nicht gerendert werden.",
+                    StringUtils.quote(slotId)
+            );
+        }
     }
 
     @Nonnull
