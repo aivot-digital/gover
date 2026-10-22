@@ -62,7 +62,7 @@ class DefaultMailCommunicationServiceTest {
         service.sendMessage(" customer@example.test ", new CommunicationMessage.Builder()
                 .subject("Status update")
                 .body("Hello customer")
-                .htmlBody("Hello **customer**")
+                .markdownBody("Hello **customer**")
                 .callToActions(callToActions)
                 .build());
 
@@ -95,7 +95,7 @@ class DefaultMailCommunicationServiceTest {
         service.sendMessage("customer@example.test", new CommunicationMessage.Builder()
                 .subject("Status update")
                 .body("Hello customer")
-                .htmlBody("Hello <a href=\"https://phishing.example\">customer</a>")
+                .markdownBody("Hello <a href=\"https://phishing.example\">customer</a>")
                 .build());
 
         verify(mailService).sendMail(
@@ -173,7 +173,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .sendingDepartment(department)
                         .signatureDepartment(signatureDepartment)
                         .build(),
@@ -216,7 +216,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .sendingUser(user)
                         .build()
         );
@@ -246,7 +246,7 @@ class DefaultMailCommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .attachments(List.of(new ByteArrayCommunicationMessageAttachment("note.txt", "text/plain", bytes)))
                 .build();
 
@@ -316,7 +316,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject(" ")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .build()
         ));
         assertThrows(CommunicationException.class, () -> service.sendMessage(
@@ -324,7 +324,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .callToActions(List.of(new CommunicationMessageCallToAction(" ", "https://example.test")))
                         .build()
         ));
@@ -333,7 +333,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .callToActions(List.of(new CommunicationMessageCallToAction("Open", null)))
                         .build()
         ));
@@ -365,7 +365,7 @@ class DefaultMailCommunicationServiceTest {
         return new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
     }
 }

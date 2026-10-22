@@ -309,7 +309,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         var testMessage = new CommunicationMessage.Builder()
                 .subject("Testnachricht")
                 .body("Dies ist eine Testnachricht.")
-                .htmlBody("Dies ist eine Testnachricht.")
+                .markdownBody("Dies ist eine Testnachricht.")
                 .build();
 
         var result = sendMessage(testContext, testIdentity, testMessage);
@@ -461,7 +461,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
     @Nonnull
     static String renderMessageHtml(@Nonnull CommunicationMessage message) throws CommunicationException {
-        var content = new StringBuilder(MarkdownRenderer.renderHtml(message.htmlBody()).strip());
+        var content = new StringBuilder(MarkdownRenderer.renderHtml(message.markdownBody()).strip());
         for (var callToAction : message.callToActions()) {
             if (callToAction == null) {
                 throw new CommunicationException("Eine Aktion der Nachricht darf nicht leer sein.");

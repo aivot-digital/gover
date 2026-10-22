@@ -630,7 +630,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var message = new CommunicationMessage.Builder()
                 .subject(subject)
                 .body(MarkdownRenderer.renderPlainText(content))
-                .htmlBody(content)
+                .markdownBody(content)
                 .callToActions(List.of(new CommunicationMessageCallToAction("Daten einreichen", customerLink)))
                 .signatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
                         configuration.messageConfig,

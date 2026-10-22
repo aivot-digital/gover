@@ -96,7 +96,7 @@ public class DefaultMailCommunicationService {
         if (message.body() == null || message.body().isBlank()) {
             throw new CommunicationException("Der Inhalt der E-Mail darf nicht leer sein.");
         }
-        if (message.htmlBody() == null || message.htmlBody().isBlank()) {
+        if (message.markdownBody() == null || message.markdownBody().isBlank()) {
             throw new CommunicationException("Der HTML-Inhalt der E-Mail darf nicht leer sein.");
         }
 
@@ -110,7 +110,7 @@ public class DefaultMailCommunicationService {
             var templateContext = new HashMap<String, Object>();
             templateContext.put("title", message.subject());
             templateContext.put("messageText", message.body());
-            templateContext.put("messageHtml", MarkdownRenderer.renderHtml(message.htmlBody()));
+            templateContext.put("messageHtml", MarkdownRenderer.renderHtml(message.markdownBody()));
             templateContext.put("callToActions", callToActions);
 
             var theme = systemService.retrieveDefaultTheme();

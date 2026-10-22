@@ -448,7 +448,7 @@ public class ProcessNodeExecutionResultHandler {
         var message = new CommunicationMessage.Builder()
                 .subject(originalMessage.subject())
                 .body(originalMessage.body())
-                .htmlBody(originalMessage.htmlBody())
+                .markdownBody(originalMessage.markdownBody())
                 .callToActions(originalMessage.callToActions())
                 .timestamp(originalMessage.timestamp())
                 .attachments(originalMessage.attachments())
@@ -514,7 +514,7 @@ public class ProcessNodeExecutionResultHandler {
         var messageDetails = new LinkedHashMap<String, Object>();
         messageDetails.put("subject", message.subject());
         messageDetails.put("body", message.body());
-        messageDetails.put("htmlBody", message.htmlBody());
+        messageDetails.put("markdownBody", message.markdownBody());
         messageDetails.put("referenceId", message.referenceId());
         messageDetails.put("sendingUser", createSendingUserDetails(message.sendingUser()));
         messageDetails.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));

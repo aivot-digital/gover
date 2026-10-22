@@ -280,7 +280,7 @@ class PaymentRequestActionNodeV1Test {
         assertEquals("communicationResult", communicationRequest.nodeDataOutputKey());
         assertEquals("Zahlung für Ada", communicationRequest.message().subject());
         assertEquals("Hallo Ada", communicationRequest.message().body());
-        assertEquals("Hallo **Ada**", communicationRequest.message().htmlBody());
+        assertEquals("Hallo **Ada**", communicationRequest.message().markdownBody());
         assertSame(signatureDepartment, communicationRequest.message().signatureDepartment());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(

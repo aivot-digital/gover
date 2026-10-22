@@ -314,7 +314,7 @@ class MailCommunicationProviderV1Test {
         var message = messageCaptor.getValue();
         assertEquals("Testnachricht", message.subject());
         assertEquals("Dies ist eine Testnachricht.", message.body());
-        assertEquals("Dies ist eine Testnachricht.", message.htmlBody());
+        assertEquals("Dies ist eine Testnachricht.", message.markdownBody());
         assertNotNull(message.timestamp());
         assertEquals(List.of(), message.attachments());
         var alert = result.findChild("mail-testing-result-alert", AlertContentElement.class).orElseThrow();
@@ -393,7 +393,7 @@ class MailCommunicationProviderV1Test {
         return new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
     }
 

@@ -878,7 +878,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         new CommunicationMessage.Builder()
                                 .subject(subject)
                                 .body(MarkdownRenderer.renderPlainText(content))
-                                .htmlBody(content)
+                                .markdownBody(content)
                                 .callToActions(List.of(new CommunicationMessageCallToAction(
                                         "Zahlung durchführen",
                                         paymentUrl

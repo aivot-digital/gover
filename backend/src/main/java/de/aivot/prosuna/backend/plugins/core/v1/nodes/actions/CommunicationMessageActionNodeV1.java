@@ -451,7 +451,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                         new CommunicationMessage.Builder()
                                 .subject(subject)
                                 .body(MarkdownRenderer.renderPlainText(content))
-                                .htmlBody(content)
+                                .markdownBody(content)
                                 .timestamp(sentAt)
                                 .attachments(attachments)
                                 .signatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(

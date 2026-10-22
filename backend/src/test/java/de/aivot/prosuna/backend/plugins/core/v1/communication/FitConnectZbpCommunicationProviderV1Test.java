@@ -72,7 +72,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .callToActions(List.of(
                         new CommunicationMessageCallToAction(
                                 "Open <portal>",
@@ -98,7 +98,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("**Hallo** <img src=x onerror=alert(1)> [Portal](javascript:alert(1))")
+                .markdownBody("**Hallo** <img src=x onerror=alert(1)> [Portal](javascript:alert(1))")
                 .build();
 
         var html = FitConnectZbpCommunicationProviderV1.renderMessageHtml(message);
@@ -115,7 +115,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .callToActions(List.of(new CommunicationMessageCallToAction("Open", "https://example.test")))
                 .signatureDepartment(new VDepartmentShadowedEntity()
                         .setId(17)
@@ -138,7 +138,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .callToActions(List.of(new CommunicationMessageCallToAction("Open", " ")))
                 .build();
 
@@ -156,7 +156,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .sendingDepartment(department)
                 .build();
         var mailboxId = UUID.randomUUID();
@@ -182,7 +182,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .sendingUser(user)
                 .build();
 
@@ -306,7 +306,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel(context, identity));
         assertEquals("Testnachricht", message.subject());
         assertEquals("Dies ist eine Testnachricht.", message.body());
-        assertEquals("Dies ist eine Testnachricht.", message.htmlBody());
+        assertEquals("Dies ist eine Testnachricht.", message.markdownBody());
         assertNotNull(message.timestamp());
         assertEquals(List.of(), message.attachments());
         var alert = result
