@@ -302,12 +302,11 @@ describe('IdentityConfigView', () => {
         fireEvent.click(viewButton);
 
         expect(screen.getByText('Identität ansehen')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Variable referenzieren'})).toBeDisabled();
         expect(screen.getAllByRole('button', {name: 'Schließen'})).toHaveLength(2);
         expect(screen.queryByRole('button', {name: 'Übernehmen'})).not.toBeInTheDocument();
     });
 
-    it('inserts a variable reference into an identity description', async () => {
+    it('offers no variables in identity descriptions', async () => {
         const setValue = vi.fn();
         const user = userEvent.setup();
         const element = {
@@ -352,20 +351,10 @@ describe('IdentityConfigView', () => {
         const editButton = screen.getByText('Antragstellende Person').closest('button')!;
         await waitFor(() => expect(editButton).toBeEnabled());
         await user.click(editButton);
-        await user.click(await screen.findByRole('button', {name: 'Variable referenzieren'}));
-        await user.click(await screen.findByText('Name der Person'));
-        await user.click(screen.getByTestId('use-variable-reference'));
-        await waitFor(() => {
-            expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
-        });
-        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
 
-        expect(setValue).toHaveBeenCalledWith([
-            expect.objectContaining({
-                id: 'applicant',
-                description: expect.stringContaining('{{ $.person.name }}'),
-            }),
-        ]);
+        // Customers see the description as written, so it must not offer variables that are never filled in.
+        expect(await screen.findByRole('textbox', {name: 'Beschreibung – optional'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
     });
 });
 
