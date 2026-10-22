@@ -292,8 +292,8 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
             savedSelection.editor.setEditorState(savedSelection.editorState);
             savedSelection.editor.focus(() => editorRef.current?.insertMarkdown(markdown));
         },
-        insertVariableReference: (reference) => {
-            const placeholder = `{{ ${reference} }}`;
+        insertVariableReference: (reference, insertion = 'text') => {
+            const placeholder = insertion === 'markdown' ? `{! ${reference} !}` : `{{ ${reference} }}`;
             const savedSelection = savedSelectionRef.current;
             savedSelectionRef.current = null;
 

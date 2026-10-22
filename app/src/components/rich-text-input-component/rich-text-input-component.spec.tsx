@@ -184,6 +184,26 @@ describe('RichTextInputComponent', () => {
         expect(editor.querySelector('pre, code')).toBeNull();
     });
 
+    it('inserts a formatted variable reference as a raw tag', async () => {
+        const ref = createRef<RichTextInputComponentMethods>();
+        const {container} = render(
+            <RichTextInputComponent
+                ref={ref}
+                label="Nachricht"
+                value="Antwort: "
+                onChange={vi.fn()}
+                dynamicText
+                reducedMode
+            />,
+        );
+
+        act(() => ref.current?.insertVariableReference('$.nachricht', 'markdown'));
+
+        await waitFor(() => {
+            expect(container.querySelector('.dynamic-text-token')).toHaveTextContent('{! $.nachricht !}');
+        });
+    });
+
     it('inserts a variable reference through the shared dynamic-text contract', async () => {
         const ref = createRef<RichTextInputComponentMethods>();
         const {container} = render(
