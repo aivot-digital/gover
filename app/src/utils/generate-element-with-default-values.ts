@@ -402,7 +402,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.RichTextInput, id),
         label: 'Markdown-Eingabe',
         reducedMode: false,
-        maxCharacters: undefined,
+        maxCharacters: 5000,
     }),
     [ElementType.UiDefinitionInput]: (id) => ({
         ...makeInputBase(ElementType.UiDefinitionInput, id),

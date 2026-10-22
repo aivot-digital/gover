@@ -243,8 +243,9 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
 
     const isReadOnly = Boolean(disabled) || Boolean(readOnly) || Boolean(busy);
     const isReducedMode = reducedMode === true || isAutoReducedMode;
-    // Customers edit with the toolbar only, so they cannot enter Markdown the editor shows only as protected parts.
-    const isSourceModeAvailable = AppInfo.mode !== 'customer';
+    // Customers get a short toolbar that fits on phones, without source mode and links. They cannot enter Markdown the
+    // editor shows only as protected parts, and no link text of theirs can hide its address from staff.
+    const isCustomerApp = AppInfo.mode === 'customer';
     const controlSxArray = Array.isArray(controlSx) ? controlSx : [controlSx];
     // Browsers otherwise mark expression tokens as misspellings. Revisit this once token-level spellchecking is
     // reliable across the browsers supported by the authoring UI.
@@ -808,18 +809,29 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                         dynamicText ? dynamicTextPlugin({highlight: true}) : placeholderPlugin(),
                         rawHtmlAsTextPlugin(),
                         supportedTextFormatsPlugin(),
-                        protectedMarkdownPlugin({sourceModeAvailable: isSourceModeAvailable}),
+                        protectedMarkdownPlugin({sourceModeAvailable: !isCustomerApp}),
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
-                        linkPlugin({
-                            disableAutoLink: true,
-                        }),
-                        linkDialogPlugin(),
-                        linkDialogInteractionPlugin(),
+                        // Without these plugins, pasted links become plain text and stored links protected parts.
+                        ...(isCustomerApp ? [] : [
+                            linkPlugin({
+                                disableAutoLink: true,
+                            }),
+                            linkDialogPlugin(),
+                            linkDialogInteractionPlugin(),
+                        ]),
                         toolbarPlugin({
                             toolbarContents: () => {
-                                const toolbarItems = isReducedMode ?
+                                const toolbarItems = isCustomerApp ?
+                                    <>
+                                        <UndoRedo/>
+                                        <Separator/>
+                                        <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
+                                        <Separator/>
+                                        <ListsToggle options={['bullet', 'number']}/>
+                                    </> :
+                                    isReducedMode ?
                                     <>
                                         <UndoRedo/>
                                         <BlockTypeSelect/>
@@ -862,19 +874,19 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                                         )}
                                     </>;
 
-                                return isSourceModeAvailable ? (
+                                return isCustomerApp ? toolbarItems : (
                                     <DiffSourceToggleWrapper options={['rich-text', 'source']}>
                                         {toolbarItems}
                                     </DiffSourceToggleWrapper>
-                                ) : toolbarItems;
+                                );
                             },
                         }),
-                        ...(isSourceModeAvailable ? [
+                        ...(isCustomerApp ? [] : [
                             diffSourcePlugin({
                                 viewMode: 'rich-text',
                                 readOnlyDiff: isReadOnly,
                             }),
-                        ] : []),
+                        ]),
                     ]}
                 />
             </Box>

@@ -348,14 +348,57 @@ describe('RichTextInputComponent', () => {
         await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(markdown.replace('Bitte prüfen', '**Bitte prüfen**')));
     });
 
-    it('offers no source mode in the customer app', async () => {
+    it('offers customers a short toolbar without source mode, headings or links', async () => {
         appInfo.mode = 'customer';
         render(<RichTextInputComponent label="Nachricht" value={PROTECTED_MARKDOWN} onChange={vi.fn()}/>);
         const editor = await screen.findByRole('textbox', {name: 'Nachricht – optional'});
 
         await waitFor(() => expect(editor).toHaveTextContent('Aktenzeichen 2026-0815'));
         expect(screen.getAllByText('Diesen Abschnitt können Sie hier nicht bearbeiten.')).toHaveLength(3);
+        for (const name of ['Fett', 'Kursiv', 'Aufzählung', 'Nummerierte Liste']) {
+            expect(screen.getByRole('radio', {name})).toBeInTheDocument();
+        }
         expect(screen.queryByRole('radio', {name: 'Markdown-Quelle'})).toBeNull();
+        expect(screen.queryByRole('button', {name: 'Link erstellen'})).toBeNull();
+        expect(screen.queryByRole('combobox')).toBeNull();
+    });
+
+    it('shows stored links to customers as protected parts with their address', async () => {
+        appInfo.mode = 'customer';
+        render(<RichTextInputComponent label="Nachricht" value="Siehe [Antrag](https://example.org/antrag)." onChange={vi.fn()}/>);
+        const editor = await screen.findByRole('textbox', {name: 'Nachricht – optional'});
+
+        await waitFor(() => expect(editor).toHaveTextContent('Siehe [Antrag](https://example.org/antrag).'));
+        expect(screen.getByTitle('Diesen Abschnitt können Sie hier nicht bearbeiten.')).toBeInTheDocument();
+        expect(editor.querySelector('a')).toBeNull();
+    });
+
+    it('pastes links as plain text in the customer app', async () => {
+        appInfo.mode = 'customer';
+        vi.stubGlobal('DragEvent', class DragEvent extends Event {});
+        vi.stubGlobal('ClipboardEvent', class ClipboardEvent extends Event {});
+        Range.prototype.getBoundingClientRect = () => new DOMRect();
+        onTestFinished(() => {
+            delete (Range.prototype as Partial<Range>).getBoundingClientRect;
+        });
+        const clipboard: Record<string, string> = {
+            'text/html': 'Bitte <a href="https://evil.example">hier bestätigen</a>',
+            'text/plain': 'Bitte hier bestätigen',
+        };
+        const onChange = vi.fn();
+        render(<RichTextInputComponent label="Nachricht" value="Hinweis" onChange={onChange}/>);
+        const editor = await screen.findByRole('textbox', {name: 'Nachricht – optional'});
+        await selectEditorText(editor, 'Hinweis');
+
+        fireEvent.paste(editor, {
+            clipboardData: {
+                types: Object.keys(clipboard),
+                files: [],
+                getData: (type: string) => clipboard[type] ?? '',
+            },
+        });
+
+        await waitFor(() => expect(onChange).toHaveBeenLastCalledWith('Bitte hier bestätigen'));
     });
 
     it('offers source mode to staff', async () => {

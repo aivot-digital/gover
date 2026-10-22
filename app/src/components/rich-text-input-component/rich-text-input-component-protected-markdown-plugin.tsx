@@ -48,6 +48,8 @@ function describeMarkdown(node: RootContent): string {
             return `![${node.alt ?? ''}](${node.url})`;
         case 'imageReference':
             return `![${node.alt ?? ''}][${node.label ?? node.identifier}]`;
+        case 'link':
+            return `[${getPlainText(node)}](${node.url})`;
         case 'linkReference':
             return `[${getPlainText(node)}][${node.label ?? node.identifier}]`;
         case 'definition':

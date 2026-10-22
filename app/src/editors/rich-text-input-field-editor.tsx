@@ -46,7 +46,7 @@ export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputEle
                     }}
                     variant="switch"
                     disabled={!editable}
-                    hint="Erzwingt eine reduzierte Toolbar. Wenn deaktiviert, schaltet der Editor bei Breiten unter 630px automatisch um."
+                    hint="Erzwingt eine reduzierte Toolbar. Wenn deaktiviert, schaltet der Editor bei Breiten unter 630px automatisch um. Antragstellende Personen sehen immer eine kurze Toolbar mit Fett, Kursiv und Listen."
                 />
                 {
                     !editable &&
