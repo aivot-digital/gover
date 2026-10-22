@@ -55,6 +55,8 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.Spacer]: 'sp',
     [ElementType.Table]: 'tb',
     [ElementType.Text]: 'tx',
+    [ElementType.PhoneNumber]: 'ph',
+    [ElementType.Email]: 'em',
     [ElementType.Time]: 'ti',
     [ElementType.IntroductionStep]: 'in',
     [ElementType.SubmitStep]: 'sb',

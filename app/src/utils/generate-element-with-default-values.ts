@@ -1,3 +1,5 @@
+import {PhoneNumberFieldElement} from '../models/elements/form/input/phone-number-field-element';
+import {EmailFieldElement} from '../models/elements/form/input/email-field-element';
 import {DurationFieldElement, DurationLargestUnit, DurationPrecision} from '../models/elements/form/input/duration-field-element';
 import {ElementType} from '../data/element-type/element-type';
 import {type IntroductionStepElement} from '../models/elements/steps/introduction-step-element';
@@ -112,6 +114,8 @@ const elementConstructors: {
     [ElementType.Headline]: (id: string) => HeadlineElement;
     [ElementType.MultiCheckbox]: (id: string) => MultiCheckboxFieldElement;
     [ElementType.Number]: (id: string) => NumberFieldElement;
+    [ElementType.PhoneNumber]: (id: string) => PhoneNumberFieldElement;
+    [ElementType.Email]: (id: string) => EmailFieldElement;
     [ElementType.Duration]: (id: string) => DurationFieldElement;
     [ElementType.ReplicatingContainer]: (id: string) => ReplicatingContainerLayout;
     [ElementType.RichText]: (id: string) => RichtextElement;
@@ -227,6 +231,16 @@ const elementConstructors: {
         ],
         displayInline: false,
         minimumRequiredOptions: undefined,
+    }),
+    [ElementType.PhoneNumber]: (id) => ({
+        ...makeInputBase(ElementType.PhoneNumber, id),
+        label: 'Telefonnummer',
+        defaultCountry: 'DE', preferredCountries: ['DE', 'AT', 'CH'], autocomplete: 'tel',
+    }),
+    [ElementType.Email]: (id) => ({
+        ...makeInputBase(ElementType.Email, id),
+        label: 'E-Mail-Adresse',
+        allowLocalDomains: false, autocomplete: 'email',
     }),
     [ElementType.Duration]: (id) => ({
         ...makeInputBase(ElementType.Duration, id),

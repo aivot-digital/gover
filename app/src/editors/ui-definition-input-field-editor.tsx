@@ -28,6 +28,8 @@ const supportedRootTypes: ElementType[] = [
     ElementType.Spacer,
     ElementType.Table,
     ElementType.Text,
+    ElementType.PhoneNumber,
+    ElementType.Email,
     ElementType.Time,
     ElementType.Image,
     ElementType.FileUpload,

@@ -20,6 +20,8 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColDef['type'] | 
     [ElementType.Spacer]: null,
     [ElementType.Table]: null,
     [ElementType.Text]: 'string',
+    [ElementType.PhoneNumber]: 'string',
+    [ElementType.Email]: 'string',
     [ElementType.Time]: 'string',
     [ElementType.IntroductionStep]: null,
     [ElementType.SummaryStep]: null,

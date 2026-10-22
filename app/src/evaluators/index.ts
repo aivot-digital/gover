@@ -40,6 +40,8 @@ export const evaluators: {
     [ElementType.Spacer]: null,
     [ElementType.Table]: null,
     [ElementType.Text]: TextEvaluator,
+    [ElementType.PhoneNumber]: TextEvaluator,
+    [ElementType.Email]: TextEvaluator,
     [ElementType.Time]: TimeEvaluator,
     [ElementType.IntroductionStep]: null,
     [ElementType.SubmitStep]: null,

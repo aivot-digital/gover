@@ -71,6 +71,8 @@ const compactDefaultElementTypes = new Set<ElementType>([
     ElementType.Checkbox,
     ElementType.MultiCheckbox,
     ElementType.Text,
+    ElementType.PhoneNumber,
+    ElementType.Email,
     ElementType.Time,
     ElementType.ChipInput,
     ElementType.DateTime,

@@ -98,6 +98,8 @@ function elementToValueType(element: AnyElement): string {
     switch (element.type) {
         case ElementType.Checkbox:
             return 'boolean';
+        case ElementType.PhoneNumber:
+        case ElementType.Email:
         case ElementType.Text:
         case ElementType.Date:
         case ElementType.DateTime:

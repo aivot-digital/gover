@@ -47,6 +47,8 @@ const ID_FIELD_ID = '$id';
 
 const AllowedDisplayFieldTypes = [
     ElementType.Text,
+    ElementType.PhoneNumber,
+    ElementType.Email,
     ElementType.Number,
     ElementType.Duration,
     ElementType.Date,

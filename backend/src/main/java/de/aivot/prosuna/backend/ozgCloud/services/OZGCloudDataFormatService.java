@@ -91,6 +91,7 @@ public class OZGCloudDataFormatService {
             case NumberInputElement numberField -> List.of(buildNumberField(numberField, context));
             case SelectInputElement selectField -> List.of(buildSelectField(selectField, context));
             case TableInputElement tableField -> List.of(buildTableField(tableField, context));
+            case ContactInputElement contactField -> List.of(buildContactField(contactField, context));
             case TextInputElement textField -> List.of(buildTextField(textField, context));
             case ChipInputElement chipInputField -> List.of(buildChipInputField(chipInputField, context));
             case TimeInputElement timeField -> List.of(buildTimeField(timeField, context));
@@ -788,6 +789,11 @@ public class OZGCloudDataFormatService {
                 null,
                 null
         );
+    }
+
+    private OZGCloudFormDataItem buildContactField(@Nonnull ContactInputElement field, @Nonnull FormattingContext context) {
+        var value = field.formatValue(context.resolve(field).getValue());
+        return new OZGCloudFormDataItem(field.getId(), field.getLabel(), field.toDisplayValue(value), null, null, null, null);
     }
 
     private OZGCloudFormDataItem buildDurationField(

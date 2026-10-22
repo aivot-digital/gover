@@ -18,6 +18,8 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.Spacer]: false,
     [ElementType.Table]: true,
     [ElementType.Text]: true,
+    [ElementType.PhoneNumber]: true,
+    [ElementType.Email]: true,
     [ElementType.Time]: true,
     [ElementType.IntroductionStep]: false,
     [ElementType.SummaryStep]: false,

@@ -51,9 +51,11 @@ export const BayernIdAttributes: Record<BayernIdAttribute, ElementType[]> = {
         ElementType.Select,
     ],
     [BayernIdAttribute.Email]: [
+        ElementType.Email,
         ElementType.Text,
     ],
     [BayernIdAttribute.Telephone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [BayernIdAttribute.BPk2]: [
@@ -140,9 +142,11 @@ export const BundIdAttributes: Record<BundIdAttribute, ElementType[]> = {
         ElementType.Select,
     ],
     [BundIdAttribute.Email]: [
+        ElementType.Email,
         ElementType.Text,
     ],
     [BundIdAttribute.Telephone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [BundIdAttribute.BPk2]: [
@@ -332,12 +336,15 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
         ElementType.Select,
     ],
     [ShIdAttribute.Email]: [
+        ElementType.Email,
         ElementType.Text,
     ],
     [ShIdAttribute.Telephone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [ShIdAttribute.Mobilephone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [ShIdAttribute.PreferredLanguage]: [
@@ -361,6 +368,7 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
         ElementType.Text,
     ],
     [ShIdAttribute.OrgContactPhone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [ShIdAttribute.OrgStreetAndBuilding]: [

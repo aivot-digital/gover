@@ -1,3 +1,5 @@
+import {PhoneNumberFieldEditor} from './phone-number-field-editor';
+import {EmailFieldEditor} from './email-field-editor';
 import {DurationFieldEditor} from './duration-field-editor';
 import {ElementType} from '../data/element-type/element-type';
 import {type ElementTypesMap} from '../data/element-type/element-types-map';
@@ -86,6 +88,8 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.MultiCheckbox]: {
         default: MultiCheckboxFieldComponentEditor,
     },
+    [ElementType.PhoneNumber]: {default: PhoneNumberFieldEditor},
+    [ElementType.Email]: {default: EmailFieldEditor},
     [ElementType.Duration]: {default: DurationFieldEditor},
     [ElementType.Number]: {
         default: NumberFieldEditor,

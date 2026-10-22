@@ -49,6 +49,8 @@ export function generateComponentTitle(component: AnyElement | null | undefined,
         case ElementType.Time:
         case ElementType.Number:
         case ElementType.Duration:
+        case ElementType.PhoneNumber:
+        case ElementType.Email:
         case ElementType.Text:
         case ElementType.FileUpload:
         case ElementType.ChipInput:

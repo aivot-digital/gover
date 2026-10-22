@@ -64,6 +64,8 @@ const DeniedContextMenuElementTypes = new Set<ElementType>([
 ]);
 const InputModeCompatibleElementTypes = new Set<ElementType>([
     ElementType.Text,
+    ElementType.PhoneNumber,
+    ElementType.Email,
     ElementType.Number,
     ElementType.Duration,
     ElementType.Select,

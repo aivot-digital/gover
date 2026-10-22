@@ -55,4 +55,6 @@ export enum ElementType {
     AssetSelectInput = 53,
     DepartmentSelectInput = 54,
     Duration = 55,
+    PhoneNumber = 56,
+    Email = 57,
 }

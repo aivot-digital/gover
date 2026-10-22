@@ -44,6 +44,8 @@ interface PrefillFormDialogProps {
 
 const prefillableElementTypes = [
     ElementType.Text,
+    ElementType.PhoneNumber,
+    ElementType.Email,
     ElementType.Number,
     ElementType.Duration,
     ElementType.Date,

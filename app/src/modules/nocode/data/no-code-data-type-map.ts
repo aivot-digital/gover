@@ -19,6 +19,8 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.Spacer]: NoCodeDataType.Runtime,
     [ElementType.Table]: NoCodeDataType.List,
     [ElementType.Text]: NoCodeDataType.String,
+    [ElementType.PhoneNumber]: NoCodeDataType.String,
+    [ElementType.Email]: NoCodeDataType.String,
     [ElementType.Time]: NoCodeDataType.Time,
     [ElementType.IntroductionStep]: NoCodeDataType.Runtime,
     [ElementType.SummaryStep]: NoCodeDataType.Runtime,

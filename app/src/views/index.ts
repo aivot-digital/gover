@@ -1,3 +1,5 @@
+import {PhoneNumberFieldView} from './phone-number-field-view';
+import {EmailFieldView} from './email-field-view';
 import {DurationFieldView} from './duration-field-view';
 import {ElementType} from '../data/element-type/element-type';
 import {type BaseView} from './base-view';
@@ -62,6 +64,8 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.Headline]: HeadlineComponentView,
     [ElementType.MultiCheckbox]: MultiCheckboxFieldComponentView,
     [ElementType.Number]: NumberFieldView,
+    [ElementType.PhoneNumber]: PhoneNumberFieldView,
+    [ElementType.Email]: EmailFieldView,
     [ElementType.Duration]: DurationFieldView,
     [ElementType.ReplicatingContainer]: ReplicatingContainerView,
     [ElementType.RichText]: RichtextComponentView,

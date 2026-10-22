@@ -160,6 +160,31 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void contactFieldsNormalizeAndValidateBothAuthoredAndDerivedValues() {
+        var email = new de.aivot.prosuna.backend.elements.models.elements.form.input.EmailInputElement();
+        email.setId("email");
+        var phone = new de.aivot.prosuna.backend.elements.models.elements.form.input.PhoneNumberInputElement();
+        phone.setId("phone");
+        var root = createRoot(List.of(email, phone));
+        var result = derive(root, new AuthoredElementValues().putLiteral("email", " Person@büro.de ").putLiteral("phone", "+49 30 123456-78"), new ElementDerivationOptions());
+        assertFalse(result.hasAnyError());
+        assertEquals("Person@xn--bro-hoa.de", result.getEffectiveValues().get("email"));
+        assertEquals("+493012345678", result.getEffectiveValues().get("phone"));
+        email.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("name@verwaltung")));
+        phone.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("+49 1234")));
+        result = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+        assertTrue(result.hasAnyError());
+        email.setAllowLocalDomains(true);
+        result = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+        assertFalse(result.hasAnyError());
+        assertEquals("name@verwaltung", result.getEffectiveValues().get("email"));
+        assertEquals("+491234", result.getEffectiveValues().get("phone"));
+        phone.setValidationMode(de.aivot.prosuna.backend.enums.PhoneNumberValidation.Strict);
+        result = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+        assertTrue(result.hasAnyError());
+    }
+
+    @Test
     void durationFieldsValidateAuthoredAndDerivedSecondsWithoutRounding() {
         var field = new DurationInputElement().setMinDuration(60L).setMaxDuration(100000L);
         field.setId("duration");

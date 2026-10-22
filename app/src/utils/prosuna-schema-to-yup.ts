@@ -1,3 +1,7 @@
+import {PhoneNumberFieldElement, PhoneNumberValidation} from '../models/elements/form/input/phone-number-field-element';
+import {EmailFieldElement} from '../models/elements/form/input/email-field-element';
+import {isBlankPhoneNumber, normalizePhoneNumber} from './phone-number-utils';
+import {validateEmailAddress} from './email-address-utils';
 import {DurationFieldElement, DurationPrecision} from '../models/elements/form/input/duration-field-element';
 import {validateDurationSeconds} from '../components/duration-field/duration-value';
 import {isValidProcessDataPath} from './process-data-path';
@@ -141,6 +145,8 @@ const YupSchemaMap: {
     [T in ElementType]?: (elem: any, states: ComputedElementStates) => Schema;
 } = {
     [ElementType.Text]: textFieldToYup,
+    [ElementType.PhoneNumber]: phoneNumberFieldToYup,
+    [ElementType.Email]: emailFieldToYup,
     [ElementType.Number]: numberFieldToYup,
     [ElementType.Duration]: durationFieldToYup,
     [ElementType.Select]: selectFieldToYup,
@@ -242,6 +248,18 @@ function textFieldToYup(elem: TextFieldElement): Schema {
     }
 
     return textFieldSchema;
+}
+
+function phoneNumberFieldToYup(elem: PhoneNumberFieldElement): Schema {
+    const schema = yup.string().trim().nullable().test('phone-number', 'Bitte geben Sie eine gültige Telefonnummer mit Ländervorwahl ein.',
+        value => isBlankPhoneNumber(value) || normalizePhoneNumber(value, elem.validationMode ?? PhoneNumberValidation.Possible) != null);
+    return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
+}
+
+function emailFieldToYup(elem: EmailFieldElement): Schema {
+    const schema = yup.string().trim().nullable().test('email-address', 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+        value => validateEmailAddress(value, elem.allowLocalDomains ?? false) == null);
+    return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
 }
 
 function durationFieldToYup(elem: DurationFieldElement): Schema {

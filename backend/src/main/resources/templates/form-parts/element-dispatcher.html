@@ -229,6 +229,12 @@
         <!--/* ***********************************************************************
         TimeInput
         *********************************************************************** */-->
+        <th:block th:case="PhoneNumber">
+            <div th:insert="~{./form-parts/elements/contact-field.html}" th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"></div>
+        </th:block>
+        <th:block th:case="Email">
+            <div th:insert="~{./form-parts/elements/contact-field.html}" th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"></div>
+        </th:block>
         <th:block th:case="Duration">
             <div
                     th:insert="~{./form-parts/elements/duration-field.html}"

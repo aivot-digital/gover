@@ -19,6 +19,8 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.Spacer]: 'Abstand',
     [ElementType.Table]: 'Tabelle',
     [ElementType.Text]: 'Text',
+    [ElementType.PhoneNumber]: 'Telefonnummer',
+    [ElementType.Email]: 'E-Mail-Adresse',
     [ElementType.Time]: 'Uhrzeit',
     [ElementType.IntroductionStep]: 'Allgemeine Informationen',
     [ElementType.SummaryStep]: 'Zusammenfassung',

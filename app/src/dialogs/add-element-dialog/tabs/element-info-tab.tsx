@@ -1,3 +1,5 @@
+import {PhoneNumberFieldComponent} from '../../../components/phone-number-field/phone-number-field-component';
+import {EmailFieldComponent} from '../../../components/email-field/email-field-component';
 import {DurationFieldComponent} from '../../../components/duration-field/duration-field-component';
 import {DurationLargestUnit, DurationPrecision} from '../../../models/elements/form/input/duration-field-element';
 import React, {type ReactNode} from 'react';
@@ -499,6 +501,75 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     onChange={() => {
                     }}
                     error="Fehlermeldung zur Mehrfachauswahl"
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.PhoneNumber]: (
+        <Box>
+            <Typography>
+                Mit dem Telefonnummer-Element erfassen Sie Rufnummern für Rückfragen oder Terminabsprachen.
+                Die Ländervorwahl wird über eine Länderauswahl festgelegt. Direkt wählbare Durchwahlen gehören zur Telefonnummer.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Standardmäßig prüft das Feld die Plausibilität der Nummer. Optional können Sie zusätzlich bekannte
+                Nummernbereiche prüfen lassen. Ob der Anschluss tatsächlich erreichbar ist, wird nicht geprüft.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <PhoneNumberFieldComponent
+                    label="Telefonnummer für Rückfragen"
+                    value="+4930123456"
+                    onChange={() => {}}
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <PhoneNumberFieldComponent
+                    label="Telefonnummer in Österreich"
+                    value="+436641234567"
+                    onChange={() => {}}
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.Email]: (
+        <Box>
+            <Typography>
+                Mit dem E-Mail-Element erfassen Sie eine einzelne E-Mail-Adresse, zum Beispiel für Benachrichtigungen
+                zu einem Vorgang. Das Feld prüft die Schreibweise. Ob das Postfach existiert oder erreichbar ist,
+                wird nicht geprüft.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Für interne Anwendungen können Sie auch Domains ohne Punkt zulassen, zum Beispiel „name@verwaltung“.
+                Der genutzte Mail-Anbieter muss E-Mails an solche Adressen zustellen können.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <EmailFieldComponent
+                    label="E-Mail-Adresse für Benachrichtigungen"
+                    value="vorname.nachname@example.org"
+                    onChange={() => {}}
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <EmailFieldComponent
+                    label="Interne E-Mail-Adresse"
+                    value="poststelle@verwaltung"
+                    allowLocalDomains
+                    onChange={() => {}}
+                    hint="In diesem Beispiel sind lokale Domains zugelassen."
                 />
             </Box>
         </Box>

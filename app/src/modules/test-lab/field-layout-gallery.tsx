@@ -24,6 +24,7 @@ import {DateTimeRangeFieldComponent} from '../../components/date-time-range-fiel
 import {RadioFieldComponent} from '../../components/radio-field/radio-field-component';
 import {CheckboxFieldComponent} from '../../components/checkbox-field/checkbox-field-component';
 import {MultiCheckboxComponent} from '../../components/multi-checkbox-field/multi-checkbox-component';
+import {EmailFieldComponent} from '../../components/email-field/email-field-component';
 import {PhoneNumberFieldComponent} from '../../components/phone-number-field/phone-number-field-component';
 import {ChipInputFieldComponent} from '../../components/chip-input-field/chip-input-field-component';
 import {DataModelSelectFieldComponent} from '../../components/data-model-select-field/data-model-select-field-component';
@@ -463,6 +464,7 @@ export function FieldLayoutGallery() {
         start: '2026-08-26T10:00:00Z',
         end: '2026-08-26T09:00:00Z',
     });
+    const [emailAddress, setEmailAddress] = useState<string | null>('person@example.org');
     const [phoneNumber, setPhoneNumber] = useState<string | null>('+4915112345678');
     const [tags, setTags] = useState<string[] | null>(['Antrag', 'Priorität']);
     const [dataModelKey, setDataModelKey] = useState<string | null>('persons');
@@ -837,6 +839,7 @@ export function FieldLayoutGallery() {
             </Typography>
 
             <Box sx={fieldGridSx}>
+                <EmailFieldComponent margin="none" label="E-Mail-Adresse" value={emailAddress} onChange={setEmailAddress} />
                 <PhoneNumberFieldComponent
                     label="Telefonnummer"
                     value={phoneNumber}
