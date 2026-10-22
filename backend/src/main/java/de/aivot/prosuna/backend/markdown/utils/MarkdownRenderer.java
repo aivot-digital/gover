@@ -21,6 +21,7 @@ import org.commonmark.node.SoftLineBreak;
 import org.commonmark.node.Text;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.NodeRenderer;
+import org.commonmark.renderer.html.AttributeProvider;
 import org.commonmark.renderer.html.DefaultUrlSanitizer;
 import org.commonmark.renderer.html.HtmlNodeRendererContext;
 import org.commonmark.renderer.html.HtmlRenderer;
@@ -29,6 +30,7 @@ import org.commonmark.renderer.text.TextContentNodeRendererContext;
 import org.commonmark.renderer.text.TextContentRenderer;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -67,6 +69,7 @@ public final class MarkdownRenderer {
     private static final HtmlRenderer RENDERER = HtmlRenderer.builder()
             .extensions(EXTENSIONS)
             .nodeRendererFactory(ImageAltTextRenderer::new)
+            .attributeProviderFactory(context -> new FootnoteBackLinkLabels())
             // The rich text editor and the frontend renderer keep single line breaks as well.
             .softbreak("<br />\n")
             .escapeHtml(true)
@@ -126,6 +129,26 @@ public final class MarkdownRenderer {
                 || target.equals("http://" + label)
                 || target.equals("https://" + label)
                 || target.equals("mailto:" + label);
+    }
+
+    /**
+     * Labels the links from a footnote back to its references in German, as the frontend renderer does. The footnote
+     * extension writes English labels and marks each link with its reference, such as {@code 1} or {@code 1-2} for
+     * the second reference to footnote 1.
+     */
+    private static final class FootnoteBackLinkLabels implements AttributeProvider {
+        @Override
+        public void setAttributes(Node node, String tagName, Map<String, String> attributes) {
+            var reference = attributes.get("data-footnote-backref-idx");
+            if (!"a".equals(tagName) || reference == null || !attributes.containsKey("aria-label")) {
+                return;
+            }
+
+            var parts = reference.split("-", 2);
+            attributes.put("aria-label", parts.length == 1
+                    ? "Zurück zum Verweis auf Fußnote " + parts[0]
+                    : "Zurück zum " + parts[1] + ". Verweis auf Fußnote " + parts[0]);
+        }
     }
 
     private static final class ImageAltTextRenderer implements NodeRenderer {

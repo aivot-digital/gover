@@ -1,4 +1,4 @@
-import ReactMarkdown, {type Components} from 'react-markdown';
+import ReactMarkdown, {type Components, type Options} from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
 
@@ -40,6 +40,15 @@ const defaultComponents: Components = {
     },
 };
 
+// The labels match the backend renderer. Only screen readers announce the heading of the footnotes.
+const remarkRehypeOptions: Options['remarkRehypeOptions'] = {
+    footnoteLabel: 'Fußnoten',
+    footnoteLabelProperties: {className: ['visually-hidden']},
+    footnoteBackLabel: (referenceIndex, rereferenceIndex) => rereferenceIndex > 1
+        ? `Zurück zum ${rereferenceIndex}. Verweis auf Fußnote ${referenceIndex + 1}`
+        : `Zurück zum Verweis auf Fußnote ${referenceIndex + 1}`,
+};
+
 // Applied after caller overrides. Like the backend renderer, images only contribute their alternative text, so
 // rendering Markdown never makes the browser fetch a URL chosen by the author of the text.
 const enforcedComponents: Components = {
@@ -69,6 +78,7 @@ export function MarkdownRenderer(props: MarkdownRendererProps) {
                 remarkGfm,
                 remarkBreaks,
             ]}
+            remarkRehypeOptions={remarkRehypeOptions}
             urlTransform={sanitizeMarkdownUrl}
         >
             {props.markdown ?? ''}

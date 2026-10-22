@@ -38,10 +38,15 @@
       "excludes": ["[ ]", "[x]"]
     },
     {
-      "name": "renders footnotes",
-      "markdown": "Referenz[^1]\n\n[^1]: Fußnote",
-      "contains": ["data-footnote-ref", "Fußnote"],
-      "excludes": ["[^1]"]
+      "name": "renders footnotes with German back link labels",
+      "markdown": "Referenz[^1] und noch einmal[^1]\n\n[^1]: Fußnote",
+      "contains": [
+        "data-footnote-ref",
+        "Fußnote",
+        "aria-label=\"Zurück zum Verweis auf Fußnote 1\"",
+        "aria-label=\"Zurück zum 2. Verweis auf Fußnote 1\""
+      ],
+      "excludes": ["[^1]", "Back to reference", "Footnotes"]
     },
     {
       "name": "links bare URLs, www addresses and e-mail addresses",

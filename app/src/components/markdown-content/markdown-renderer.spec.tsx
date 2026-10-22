@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import {render, screen} from '@testing-library/react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe, expect, it} from 'vitest';
 import {MarkdownRenderer, sanitizeMarkdownUrl} from './markdown-renderer';
@@ -38,6 +39,13 @@ describe('MarkdownRenderer', () => {
         );
 
         expect(html).toBe('<p>Logo</p>');
+    });
+
+    it('names the footnotes for screen readers only', () => {
+        render(<MarkdownRenderer markdown={'Referenz[^1]\n\n[^1]: Fußnote'}/>);
+
+        expect(screen.getByRole('heading', {name: 'Fußnoten'})).toHaveClass('visually-hidden');
+        expect(screen.getByRole('link', {name: 'Zurück zum Verweis auf Fußnote 1'})).toBeInTheDocument();
     });
 });
 
