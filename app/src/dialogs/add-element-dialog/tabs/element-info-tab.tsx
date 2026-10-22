@@ -1360,8 +1360,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.RichTextInput]: (
         <Box>
             <Typography>
-                Das Element „Markdown-Eingabe“ erlaubt die Erfassung formatierter Texte (z. B. mit Überschriften,
-                Listen und Links).
+                Das Element „Markdown-Eingabe“ erlaubt die Erfassung formatierter Texte und speichert sie als
+                Markdown. Antragstellende Personen können Text fett oder kursiv setzen und Listen anlegen, in der
+                Sachbearbeitung stehen zusätzlich unter anderem Überschriften und Links zur Verfügung. E-Mails und
+                PDF-Dokumente zeigen den Text formatiert an.
             </Typography>
 
             <Divider sx={{my: 4}}>

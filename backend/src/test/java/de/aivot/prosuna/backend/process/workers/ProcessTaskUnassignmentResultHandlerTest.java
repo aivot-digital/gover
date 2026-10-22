@@ -229,7 +229,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
                         "person@example.test", new CommunicationMessage.Builder()
                                 .subject("Test")
                                 .body("Testnachricht")
-                                .htmlBody("<p>Testnachricht</p>")
+                                .markdownBody("<p>Testnachricht</p>")
                                 .build()));
         assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handle(result, actor));
         assertEquals("task-owner", task.getAssignedUserId());
@@ -279,7 +279,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
                         "person@example.test", new CommunicationMessage.Builder()
                                 .subject("Test")
                                 .body("Testnachricht")
-                                .htmlBody("<p>Testnachricht</p>")
+                                .markdownBody("<p>Testnachricht</p>")
                                 .build()));
     }
 

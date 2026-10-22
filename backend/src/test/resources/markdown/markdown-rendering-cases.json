@@ -1,0 +1,155 @@
+{
+  "description": "Rendering contract shared by the backend MarkdownRenderer and the frontend MarkdownRenderer. MarkdownRendererTest (backend) and markdown-renderer.spec.tsx (frontend) both run every case. The renderers produce different markup details, so expectations only name fragments that both must contain or must not contain.",
+  "cases": [
+    {
+      "name": "renders headings and inline formatting",
+      "markdown": "# Titel\n\n**Fett**, *kursiv* und `Code`",
+      "contains": ["<h1>Titel</h1>", "<strong>Fett</strong>", "<em>kursiv</em>", "<code>Code</code>"],
+      "excludes": ["**Fett**"]
+    },
+    {
+      "name": "renders lists and quotes",
+      "markdown": "- Erster Punkt\n- Zweiter Punkt\n\n1. Eins\n\n> Zitat",
+      "contains": ["<ul>", "<li>Erster Punkt</li>", "<ol>", "<li>Eins</li>", "<blockquote>", "Zitat"],
+      "excludes": ["- Erster Punkt", "&gt; Zitat"]
+    },
+    {
+      "name": "keeps single line breaks",
+      "markdown": "Zeile 1\nZeile 2",
+      "contains": ["Zeile 1<br", "Zeile 2"],
+      "excludes": []
+    },
+    {
+      "name": "renders strikethrough with one or two tildes",
+      "markdown": "~Einfach~ und ~~doppelt~~",
+      "contains": ["<del>Einfach</del>", "<del>doppelt</del>"],
+      "excludes": ["~"]
+    },
+    {
+      "name": "renders tables",
+      "markdown": "| Spalte A | Spalte B |\n| --- | --- |\n| Wert 1 | Wert 2 |",
+      "contains": ["<table>", "<th>Spalte A</th>", "<td>Wert 1</td>"],
+      "excludes": ["| Spalte A |"]
+    },
+    {
+      "name": "renders task lists as disabled checkboxes",
+      "markdown": "- [ ] Offen\n- [x] Erledigt",
+      "contains": ["type=\"checkbox\"", "disabled=\"\"", "checked=\"\"", "Offen", "Erledigt"],
+      "excludes": ["[ ]", "[x]"]
+    },
+    {
+      "name": "renders footnotes with German back link labels",
+      "markdown": "Referenz[^1] und noch einmal[^1]\n\n[^1]: Fußnote",
+      "contains": [
+        "data-footnote-ref",
+        "Fußnote",
+        "aria-label=\"Zurück zum Verweis auf Fußnote 1\"",
+        "aria-label=\"Zurück zum 2. Verweis auf Fußnote 1\""
+      ],
+      "excludes": ["[^1]", "Back to reference", "Footnotes"]
+    },
+    {
+      "name": "links bare URLs, www addresses and e-mail addresses",
+      "markdown": "https://example.org/pfad und www.example.org und info@example.org",
+      "contains": ["href=\"https://example.org/pfad\"", "href=\"http://www.example.org\"", "href=\"mailto:info@example.org\""],
+      "excludes": []
+    },
+    {
+      "name": "links URLs in angle brackets",
+      "markdown": "<https://example.org>",
+      "contains": ["href=\"https://example.org\"", ">https://example.org</a>"],
+      "excludes": ["&lt;https"]
+    },
+    {
+      "name": "renders fenced code with escaped content",
+      "markdown": "```sh\necho <b>\n```",
+      "contains": ["<pre><code class=\"language-sh\">echo &lt;b&gt;"],
+      "excludes": ["<b>"]
+    },
+    {
+      "name": "renders thematic breaks",
+      "markdown": "Oben\n\n---\n\nUnten",
+      "contains": ["<hr"],
+      "excludes": ["---"]
+    },
+    {
+      "name": "shows block HTML as text",
+      "markdown": "<script>alert(1)</script>",
+      "contains": ["&lt;script&gt;alert(1)&lt;/script&gt;"],
+      "excludes": ["<script"]
+    },
+    {
+      "name": "shows inline HTML as text",
+      "markdown": "Text mit <span onclick=\"alert(1)\">HTML</span>",
+      "contains": ["&lt;span onclick=&quot;alert(1)&quot;&gt;HTML&lt;/span&gt;"],
+      "excludes": ["<span"]
+    },
+    {
+      "name": "shows formatting tags written by the rich text editor as text",
+      "markdown": "<u>Unterstrichen</u> und <sup>hoch</sup>",
+      "contains": ["&lt;u&gt;Unterstrichen&lt;/u&gt;", "&lt;sup&gt;hoch&lt;/sup&gt;"],
+      "excludes": ["<u>", "<sup>"]
+    },
+    {
+      "name": "keeps escaped entities as text",
+      "markdown": "&lt;b&gt; bleibt Text",
+      "contains": ["&lt;b&gt; bleibt Text"],
+      "excludes": ["<b>"]
+    },
+    {
+      "name": "leaves template placeholders untouched",
+      "markdown": "Hallo {{ $.name }}",
+      "contains": ["Hallo {{ $.name }}"],
+      "excludes": []
+    },
+    {
+      "name": "reduces images to their alternative text",
+      "markdown": "Vorher ![Ein Logo](https://example.org/logo.png) nachher",
+      "contains": ["Vorher Ein Logo nachher"],
+      "excludes": ["<img", "logo.png"]
+    },
+    {
+      "name": "reduces data URI images to their alternative text",
+      "markdown": "![Grafik](data:image/png;base64,AAAA)",
+      "contains": ["Grafik"],
+      "excludes": ["<img", "data:"]
+    },
+    {
+      "name": "keeps the link around a linked image",
+      "markdown": "[![Logo](https://example.org/logo.png)](https://example.org)",
+      "contains": ["href=\"https://example.org\"", ">Logo</a>"],
+      "excludes": ["<img", "logo.png"]
+    },
+    {
+      "name": "removes script link targets",
+      "markdown": "[Klick](javascript:alert(1)) [Groß](JAVASCRIPT:alert(1)) [Leer](  javascript:alert(1))",
+      "contains": [">Klick</a>", ">Groß</a>", ">Leer</a>"],
+      "excludes": ["javascript:", "JAVASCRIPT:", "alert"]
+    },
+    {
+      "name": "removes data, file and vbscript link targets",
+      "markdown": "[Daten](data:text/html;base64,PHNjcmlwdD4=) [Datei](file:///etc/passwd) [VB](vbscript:msgbox)",
+      "contains": [">Daten</a>", ">Datei</a>", ">VB</a>"],
+      "excludes": ["data:", "file:", "vbscript:", "passwd"]
+    },
+    {
+      "name": "keeps web, e-mail, phone and relative link targets",
+      "markdown": "[Web](https://example.org/a?b=1&c=2) [Mail](mailto:info@example.org) [Telefon](tel:+4930123456) [SMS](sms:+4930123456) [Hilfe](/hilfe?thema=1#abschnitt) [Anker](#abschnitt)",
+      "contains": [
+        "href=\"https://example.org/a?b=1&amp;c=2\"",
+        "href=\"mailto:info@example.org\"",
+        "href=\"tel:+4930123456\"",
+        "href=\"sms:+4930123456\"",
+        "href=\"/hilfe?thema=1#abschnitt\"",
+        "href=\"#abschnitt\""
+      ],
+      "excludes": []
+    },
+    {
+      "name": "percent-encodes non-ASCII characters in link targets",
+      "markdown": "[Straße](https://example.org/straße)",
+      "contains": ["href=\"https://example.org/stra%C3%9Fe\"", ">Straße</a>"],
+      "excludes": []
+    }
+  ]
+}

@@ -46,6 +46,9 @@ import {dynamicTextPlugin} from './rich-text-input-component-dynamic-text-plugin
 import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import {linkDialogInteractionPlugin} from './rich-text-input-component-link-dialog-plugin';
 import {rawHtmlAsTextPlugin} from './rich-text-input-component-raw-html-plugin';
+import {supportedTextFormatsPlugin} from './rich-text-input-component-text-format-plugin';
+import {protectedMarkdownPlugin} from './rich-text-input-component-protected-markdown-plugin';
+import {AppInfo} from '../../app-info';
 import '@mdxeditor/editor/style.css';
 
 const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
@@ -110,6 +113,7 @@ export interface RichTextInputComponentProps extends FormFieldLayoutProps {
     readOnly?: boolean | null | undefined;
     busy?: boolean | null | undefined;
     reducedMode?: boolean | null | undefined;
+    maxCharacters?: number | null | undefined;
     dynamicText?: boolean | null | undefined;
     dynamicTextVariableMetadata?: readonly DynamicTextVariableMetadata[] | null | undefined;
     value: string | null | undefined;
@@ -178,6 +182,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
         readOnly,
         busy,
         reducedMode,
+        maxCharacters,
         dynamicText,
         dynamicTextVariableMetadata,
         value,
@@ -189,9 +194,43 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
     const labelId = `${controlId}-label`;
     const helperTextId = `${controlId}-helper-text`;
     const hasLabel = label != null && label.length > 0;
-    const hasError = error != null && error.length > 0;
-    const helperText = hasError ? error : hint;
-    const hasHelperText = helperText != null && helperText.length > 0;
+    // The limit applies to the stored Markdown, as in the backend validation, so formatting characters count too.
+    const characterCount = value?.length ?? 0;
+    const hasMaxCharacters = maxCharacters != null && maxCharacters > 0;
+    // Unlike a native input, the editor cannot stop typing at maxLength, so exceeding the limit is reported instead.
+    const maxCharactersError = hasMaxCharacters && characterCount > maxCharacters
+        ? `Zu viele Zeichen. Maximal ${maxCharacters} Zeichen erlaubt.`
+        : undefined;
+    const effectiveError = error != null && error.length > 0 ? error : maxCharactersError;
+    const hasError = effectiveError != null;
+    const helperText = hasError ? effectiveError : hint;
+    const hasHelperText = (helperText != null && helperText.length > 0) || hasMaxCharacters;
+    const helperContent = hasMaxCharacters ? (
+        <Box
+            sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                flexWrap: {
+                    xs: 'wrap',
+                    sm: 'nowrap',
+                },
+                columnGap: 3,
+                rowGap: .5,
+            }}
+        >
+            <Box>
+                {helperText}
+            </Box>
+            <Box
+                role="text"
+                aria-label={`${characterCount} von ${maxCharacters} Zeichen verwendet`}
+            >
+                <span aria-hidden="true">
+                    {`${characterCount}/${maxCharacters}`}
+                </span>
+            </Box>
+        </Box>
+    ) : helperText;
     const describedBy = mergeAriaIds(
         hasHelperText ? helperTextId : undefined,
         props.ariaDescribedBy,
@@ -204,6 +243,9 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
 
     const isReadOnly = Boolean(disabled) || Boolean(readOnly) || Boolean(busy);
     const isReducedMode = reducedMode === true || isAutoReducedMode;
+    // Customers get a short toolbar that fits on phones, without source mode and links. They cannot enter Markdown the
+    // editor shows only as protected parts, and no link text of theirs can hide its address from staff.
+    const isCustomerApp = AppInfo.mode === 'customer';
     const controlSxArray = Array.isArray(controlSx) ? controlSx : [controlSx];
     // Browsers otherwise mark expression tokens as misspellings. Revisit this once token-level spellchecking is
     // reliable across the browsers supported by the authoring UI.
@@ -256,8 +298,8 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
             savedSelection.editor.setEditorState(savedSelection.editorState);
             savedSelection.editor.focus(() => editorRef.current?.insertMarkdown(markdown));
         },
-        insertVariableReference: (reference) => {
-            const placeholder = `{{ ${reference} }}`;
+        insertVariableReference: (reference, insertion = 'text') => {
+            const placeholder = insertion === 'markdown' ? `{! ${reference} !}` : `{{ ${reference} }}`;
             const savedSelection = savedSelectionRef.current;
             savedSelectionRef.current = null;
 
@@ -345,8 +387,8 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
         <FormField
             id={controlId}
             label={label ?? ''}
-            hint={hint}
-            error={error}
+            hint={hasError ? undefined : helperContent}
+            error={hasError ? helperContent : undefined}
             required={Boolean(required)}
             disabled={Boolean(disabled)}
             readOnly={Boolean(readOnly)}
@@ -751,7 +793,12 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                     // their attributes, including scripts and event handlers. See rawHtmlAsTextPlugin.
                     suppressHtmlProcessing
                     spellCheck={enableSpellCheck}
-                    onChange={(val) => {
+                    onChange={(val, initialMarkdownNormalize) => {
+                        // MDXEditor writes loaded Markdown back in its own form. Only edits may change the value,
+                        // so opening a field never changes what is stored.
+                        if (initialMarkdownNormalize) {
+                            return;
+                        }
                         if (isStringNullOrEmpty(val)) {
                             onChange(null);
                             return;
@@ -761,68 +808,85 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                     plugins={[
                         dynamicText ? dynamicTextPlugin({highlight: true}) : placeholderPlugin(),
                         rawHtmlAsTextPlugin(),
+                        supportedTextFormatsPlugin(),
+                        protectedMarkdownPlugin({sourceModeAvailable: !isCustomerApp}),
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
-                        linkPlugin({
-                            disableAutoLink: true,
-                        }),
-                        linkDialogPlugin(),
-                        linkDialogInteractionPlugin(),
+                        // Without these plugins, pasted links become plain text and stored links protected parts.
+                        ...(isCustomerApp ? [] : [
+                            linkPlugin({
+                                disableAutoLink: true,
+                            }),
+                            linkDialogPlugin(),
+                            linkDialogInteractionPlugin(),
+                        ]),
                         toolbarPlugin({
-                            toolbarContents: () => (
-                                <DiffSourceToggleWrapper options={['rich-text', 'source']}>
-                                    {
-                                        isReducedMode ?
+                            toolbarContents: () => {
+                                const toolbarItems = isCustomerApp ?
+                                    <>
+                                        <UndoRedo/>
+                                        <Separator/>
+                                        <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
+                                        <Separator/>
+                                        <ListsToggle options={['bullet', 'number']}/>
+                                    </> :
+                                    isReducedMode ?
+                                    <>
+                                        <UndoRedo/>
+                                        <BlockTypeSelect/>
+                                        <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
+                                        <CreateLink/>
+                                        <ListsToggle options={['bullet', 'number']}/>
+                                        {endAction != null && (
+                                            <RichTextToolbarAction
+                                                action={endAction}
+                                                disabled={isReadOnly}
+                                                onCaptureSelection={(selection) => {
+                                                    savedSelectionRef.current = selection;
+                                                }}
+                                            />
+                                        )}
+                                    </> :
+                                    <>
+                                        <UndoRedo/>
+                                        <Separator/>
+                                        <BlockTypeSelect/>
+                                        <Separator/>
+                                        <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
+                                        <StrikeThroughSupSubToggles options={['Strikethrough']}/>
+                                        <CodeToggle/>
+                                        <Separator/>
+                                        <CreateLink/>
+                                        <Separator/>
+                                        <ListsToggle/>
+                                        {endAction != null && (
                                             <>
-                                                <UndoRedo/>
-                                                <BlockTypeSelect/>
-                                                <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
-                                                <CreateLink/>
-                                                <ListsToggle options={['bullet', 'number']}/>
-                                                {endAction != null && (
-                                                    <RichTextToolbarAction
-                                                        action={endAction}
-                                                        disabled={isReadOnly}
-                                                        onCaptureSelection={(selection) => {
-                                                            savedSelectionRef.current = selection;
-                                                        }}
-                                                    />
-                                                )}
-                                            </> :
-                                            <>
-                                                <UndoRedo/>
                                                 <Separator/>
-                                                <BlockTypeSelect/>
-                                                <Separator/>
-                                                <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
-                                                <StrikeThroughSupSubToggles options={['Strikethrough']}/>
-                                                <CodeToggle/>
-                                                <Separator/>
-                                                <CreateLink/>
-                                                <Separator/>
-                                                <ListsToggle/>
-                                                {endAction != null && (
-                                                    <>
-                                                        <Separator/>
-                                                        <RichTextToolbarAction
-                                                            action={endAction}
-                                                            disabled={isReadOnly}
-                                                            onCaptureSelection={(selection) => {
-                                                                savedSelectionRef.current = selection;
-                                                            }}
-                                                        />
-                                                    </>
-                                                )}
+                                                <RichTextToolbarAction
+                                                    action={endAction}
+                                                    disabled={isReadOnly}
+                                                    onCaptureSelection={(selection) => {
+                                                        savedSelectionRef.current = selection;
+                                                    }}
+                                                />
                                             </>
-                                    }
-                                </DiffSourceToggleWrapper>
-                            ),
+                                        )}
+                                    </>;
+
+                                return isCustomerApp ? toolbarItems : (
+                                    <DiffSourceToggleWrapper options={['rich-text', 'source']}>
+                                        {toolbarItems}
+                                    </DiffSourceToggleWrapper>
+                                );
+                            },
                         }),
-                        diffSourcePlugin({
-                            viewMode: 'rich-text',
-                            readOnlyDiff: isReadOnly,
-                        }),
+                        ...(isCustomerApp ? [] : [
+                            diffSourcePlugin({
+                                viewMode: 'rich-text',
+                                readOnlyDiff: isReadOnly,
+                            }),
+                        ]),
                     ]}
                 />
             </Box>

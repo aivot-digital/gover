@@ -161,6 +161,30 @@ class HtmlTemplateInputElementResolverTest {
     }
 
     @Test
+    void resolveShouldRenderSlotValuesForTheirSlotType() throws Exception {
+        var value = template("<p data-slot=\"text\" data-slot-type=\"text\">Default</p>"
+                + "<section data-slot=\"literal\" data-slot-type=\"richtext\">Default</section>"
+                + "<section data-slot=\"markdown\" data-slot-type=\"richtext\">Default</section>")
+                .setSlots(Map.of(
+                        "text", "{{ $.name }}",
+                        "literal", "Antwort: {{ $.message }}",
+                        "markdown", "{! $.message !}"
+                ));
+        var data = new ProcessExecutionData()
+                .addProcessData("name", "O'Brien\nZeile 2")
+                .addProcessData("message", "**Danke** für [Antrag](https://evil.example)");
+
+        assertEquals(
+                "<p data-slot=\"text\" data-slot-type=\"text\">O&#39;Brien\nZeile 2</p>"
+                        + "<section data-slot=\"literal\" data-slot-type=\"richtext\"><p>Antwort: **Danke** für "
+                        + "[Antrag](<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)</p>\n</section>"
+                        + "<section data-slot=\"markdown\" data-slot-type=\"richtext\"><p><strong>Danke</strong> für Antrag "
+                        + "(<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)</p>\n</section>",
+                resolver.resolve(value, data)
+        );
+    }
+
+    @Test
     void restoreSlotContentsShouldNotReplacePlaceholderTextWithinInsertedValues() {
         var firstPlaceholder = "PROSUNA_SLOT_" + UUID.randomUUID() + "_END";
         var secondPlaceholder = "PROSUNA_SLOT_" + UUID.randomUUID() + "_END";

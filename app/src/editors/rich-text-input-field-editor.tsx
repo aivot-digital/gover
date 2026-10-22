@@ -2,6 +2,7 @@ import {BaseEditorProps} from './base-editor';
 import {RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
 import {Grid, Typography} from '@mui/material';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
+import {NumberFieldComponent} from '../components/number-field/number-field-component';
 
 export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputElement>) {
     const {
@@ -16,6 +17,24 @@ export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputEle
             columnSpacing={4}
             rowSpacing={2}
         >
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 4,
+                }}
+            >
+                <NumberFieldComponent
+                    label="Maximalanzahl an Zeichen"
+                    value={element.maxCharacters ?? undefined}
+                    onChange={(val) => {
+                        onPatch({
+                            maxCharacters: val,
+                        });
+                    }}
+                    hint="Formatierungszeichen und Link-Adressen zählen mit. Geben Sie 0 oder nichts ein, um keine Maximalanzahl zu fordern."
+                    disabled={!editable}
+                />
+            </Grid>
             <Grid size={{xs: 12}}>
                 <CheckboxFieldComponent
                     label="Reduzierte Toolbar erzwingen"
@@ -27,7 +46,7 @@ export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputEle
                     }}
                     variant="switch"
                     disabled={!editable}
-                    hint="Erzwingt eine reduzierte Toolbar. Wenn deaktiviert, schaltet der Editor bei Breiten unter 630px automatisch um."
+                    hint="Erzwingt eine reduzierte Toolbar. Wenn deaktiviert, schaltet der Editor bei Breiten unter 630px automatisch um. Antragstellende Personen sehen immer eine kurze Toolbar mit Fett, Kursiv und Listen."
                 />
                 {
                     !editable &&

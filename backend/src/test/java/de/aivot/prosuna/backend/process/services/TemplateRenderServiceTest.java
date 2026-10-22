@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,38 @@ class TemplateRenderServiceTest {
         );
 
         assertEquals("A<tag>\nB", result);
+    }
+
+    @Test
+    void shouldInsertPrintedValuesAsTextAndRawValuesAsMarkdownInMarkdownTemplates() {
+        var data = new ProcessExecutionData()
+                .addProcessData("message", "**Danke** für [meinen Antrag](https://evil.example)\nZeile 2");
+
+        var result = createService().interpolate(
+                data,
+                "**Nachricht:** {{ $.message }}\n\n{! $.message !}",
+                TemplateOutputFormat.Markdown
+        );
+
+        assertEquals(
+                "**Nachricht:** \\*\\*Danke\\*\\* für \\[meinen Antrag\\](https://evil.example)\nZeile 2\n\n"
+                        + "**Danke** für meinen Antrag (https://evil.example)\nZeile 2",
+                result
+        );
+    }
+
+    @Test
+    void shouldInsertValuesUnchangedInPlainTextAndOnOneLineInSingleLineTemplates() {
+        assertEquals("Prompt: <tag>\n", createService().interpolate(
+                createProcessData(),
+                "Prompt: {{ _unsafe }}",
+                TemplateOutputFormat.PlainText
+        ));
+        assertEquals("Betreff: <tag>  <tag> ", createService().interpolate(
+                createProcessData(),
+                "Betreff: {{ _unsafe }} {! _unsafe !}",
+                TemplateOutputFormat.SingleLineText
+        ));
     }
 
     @Test

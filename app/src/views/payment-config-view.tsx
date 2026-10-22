@@ -542,6 +542,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     disabled={isInteractionDisabled}
                     hint="Diese Meldung wird in der Vorgangsansicht angezeigt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
                     error={getFieldError(errorDetails, 'successMessage')}
+                    offerFormattedInsertion
                 />
             </Box>
 
@@ -559,6 +560,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     disabled={isInteractionDisabled}
                     hint="Diese Meldung wird in der Vorgangsansicht angezeigt, wenn die Zahlung fehlgeschlagen ist oder abgebrochen wurde."
                     error={getFieldError(errorDetails, 'failureMessage')}
+                    offerFormattedInsertion
                 />
             </Box>
         </Box>

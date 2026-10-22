@@ -1,8 +1,7 @@
 import React from 'react';
 import {Box, type SxProps, type Theme} from '@mui/material';
-import ReactMarkdown, {type Components} from 'react-markdown';
-import remarkGfm from 'remark-gfm'
-import remarkBreaks from 'remark-breaks';
+import {type Components} from 'react-markdown';
+import {MarkdownRenderer} from './markdown-renderer';
 
 interface MarkdownContentProps {
     markdown?: string | null;
@@ -10,26 +9,6 @@ interface MarkdownContentProps {
     sx?: SxProps<Theme>;
     components?: Components;
 }
-
-const defaultComponents: Components = {
-    a: ({href, node: _node, ...props}) => {
-        const isExternalLink = href != null && /^(https?:)?\/\//.test(href);
-
-        return (
-            <a
-                href={href}
-                {...props}
-                target={isExternalLink ? '_blank' : undefined}
-                rel={isExternalLink ? 'noopener noreferrer' : undefined}
-            />
-        );
-    },
-    u: ({children, ...props}) => (
-        <span style={{textDecoration: 'underline'}} {...props}>
-            {children}
-        </span>
-    ),
-};
 
 export function MarkdownContent(props: MarkdownContentProps) {
     const {markdown, className, sx, components} = props;
@@ -94,10 +73,6 @@ export function MarkdownContent(props: MarkdownContentProps) {
                         borderColor: 'divider',
                         color: 'text.secondary',
                     },
-                    '& img': {
-                        maxWidth: '100%',
-                        height: 'auto',
-                    },
                     '& table': {
                         width: '100%',
                         borderCollapse: 'collapse',
@@ -117,18 +92,10 @@ export function MarkdownContent(props: MarkdownContentProps) {
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
         >
-            <ReactMarkdown
-                components={{
-                    ...defaultComponents,
-                    ...components,
-                }}
-                remarkPlugins={[
-                    remarkGfm,
-                    remarkBreaks,
-                ]}
-            >
-                {markdown ?? ''}
-            </ReactMarkdown>
+            <MarkdownRenderer
+                markdown={markdown}
+                components={components}
+            />
         </Box>
     );
 }

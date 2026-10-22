@@ -82,6 +82,30 @@ describe('AddElementDialog', () => {
         expect(within(dialog).queryByText('Sonstige')).not.toBeInTheDocument();
     });
 
+    it.each([
+        ['steps', ElementType.Step],
+        ['groups', ElementType.GroupLayout],
+        ['repeating sections', ElementType.ReplicatingContainer],
+        ['the introduction', ElementType.IntroductionStep],
+        ['summaries', ElementType.SummaryLayout],
+    ])('offers the Markdown field in customer forms inside %s', async (_, parentType) => {
+        const user = userEvent.setup();
+        render(
+            <AddElementDialog
+                show
+                parentType={parentType}
+                allParents={[]}
+                displayContext={ElementDisplayContext.CustomerFacing}
+                onClose={vi.fn()}
+                onAddElements={vi.fn()}
+            />,
+        );
+
+        const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
+        await user.type(within(dialog).getByRole('searchbox', {name: 'Element suchen'}), 'Markdown');
+        expect(await within(dialog).findByText('Markdown-Eingabe', {exact: true})).toBeInTheDocument();
+    });
+
     it('focuses search on every opening and restores focus after closing with Escape', async () => {
         const user = userEvent.setup();
         const onAddElements = vi.fn();

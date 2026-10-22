@@ -21,6 +21,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.enums.MailTemplate;
 import de.aivot.prosuna.backend.mail.models.MailSendOptions;
 import de.aivot.prosuna.backend.mail.services.MailService;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -49,9 +50,6 @@ import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.mail.MessagingException;
-import org.commonmark.node.Node;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.mail.MailException;
@@ -237,7 +235,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONTENT,
                         "Inhalt",
-                        "Der HTML-Inhalt der versendeten E-Mail.",
+                        "Der Inhalt der versendeten E-Mail als Markdown.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -456,10 +454,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             attachmentSetDataKeys = new ArrayList<>();
         }
 
-        Parser parser = Parser.builder().build();
-        Node document = parser.parse(contentMarkdown);
-        HtmlRenderer renderer = HtmlRenderer.builder().build();
-        var contentHtml = renderer.render(document);
+        var contentHtml = MarkdownRenderer.renderHtml(contentMarkdown);
 
         if (StringUtils.isNullOrEmpty(contentHtml)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -494,7 +489,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         var mailContext = new HashMap<String, Object>();
         mailContext.put("title", subject);
-        mailContext.put("messageText", contentMarkdown);
+        mailContext.put("messageText", MarkdownRenderer.renderPlainText(contentMarkdown));
         mailContext.put("messageHtml", contentHtml);
         mailContext.put("department", department);
         if (signatureDepartment != null) {
@@ -532,7 +527,9 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         metadata.put(OUTPUT_NAME_TO, recipients);
         metadata.put(OUTPUT_NAME_BCC, recipientsBCC);
         metadata.put(OUTPUT_NAME_SUBJECT, subject);
-        metadata.put(OUTPUT_NAME_CONTENT, contentHtml);
+        // Later steps insert the content into templates or pass it on, so it is the Markdown that was written, as for
+        // Postfach messages. The HTML is only the mail's rendering of it.
+        metadata.put(OUTPUT_NAME_CONTENT, contentMarkdown);
         metadata.put(OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS, attachmentSetDataKeys);
 
         return new ProcessNodeExecutionResultTaskCompleted()

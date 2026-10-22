@@ -23,9 +23,13 @@ const VARIABLE_SOURCES: InputVariableSource[] = [
 export type RichTextInputWithVariablePickerProps = Omit<
     RichTextInputComponentProps,
     'dynamicText' | 'dynamicTextVariableMetadata' | 'endAction'
->;
+> & {
+    /** Set when the backend renders the template as Markdown, so `{! !}` keeps a value's formatting. */
+    offerFormattedInsertion?: boolean;
+};
 
 export function RichTextInputWithVariablePicker(props: RichTextInputWithVariablePickerProps) {
+    const {offerFormattedInsertion, ...inputProps} = props;
     const {inputModeVariables} = useViewDispatcherContext();
     const inputRef = useRef<RichTextInputComponentMethods | null>(null);
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -41,11 +45,11 @@ export function RichTextInputWithVariablePicker(props: RichTextInputWithVariable
         origin: typeof variable.origin === 'string' ? variable.origin : variable.origin?.name ?? undefined,
         description: variable.description ?? undefined,
     })), [variables]);
-    const isReadOnly = Boolean(props.disabled || props.readOnly || props.busy);
+    const isReadOnly = Boolean(inputProps.disabled || inputProps.readOnly || inputProps.busy);
 
     return <>
         <RichTextInputComponent
-            {...props}
+            {...inputProps}
             ref={inputRef}
             dynamicText
             dynamicTextVariableMetadata={variableMetadata}
@@ -62,15 +66,17 @@ export function RichTextInputWithVariablePicker(props: RichTextInputWithVariable
             allowedSources={VARIABLE_SOURCES}
             selectedReference={null}
             allowClear={false}
+            offerFormattedInsertion={offerFormattedInsertion}
             readOnly={isReadOnly}
             title="Variable referenzieren"
             onClose={() => setPickerOpen(false)}
             onClear={() => undefined}
-            onSelect={(reference) => {
+            onSelect={(reference, _suggestion, insertion) => {
                 setPickerOpen(false);
 
                 const insertReference = () => inputRef.current?.insertVariableReference(
                     getInputVariableReference(reference),
+                    insertion,
                 );
                 if (typeof requestAnimationFrame === 'function') {
                     requestAnimationFrame(insertReference);

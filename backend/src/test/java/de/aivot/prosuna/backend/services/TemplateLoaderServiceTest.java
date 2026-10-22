@@ -247,6 +247,35 @@ class TemplateLoaderServiceTest {
     }
 
     @Test
+    void richTextFieldTemplate_RendersMaximumLengthOnlyInBlankPrint() {
+        var element = new RichTextInputElement()
+                .setMaxCharacters(2000);
+        element.setLabel("Beschreibung");
+
+        var blankHtml = new TemplateLoaderService().processTemplate(
+                "form-parts/elements/rich-text-field.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "element", element,
+                        "value", ""
+                ),
+                TemplateMode.HTML
+        );
+        var customerHtml = new TemplateLoaderService().processTemplate(
+                "form-parts/elements/rich-text-field.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Customer),
+                        "element", element,
+                        "value", "Text"
+                ),
+                TemplateMode.HTML
+        );
+
+        assertTrue(blankHtml.contains("<span>2000</span>"));
+        assertFalse(customerHtml.contains("<span>2000</span>"));
+    }
+
+    @Test
     void markdownDialect_RendersFrontendGfmFeatures() {
         var html = new MarkdownDialect().render("""
                 ~Einfach~
@@ -449,6 +478,30 @@ class TemplateLoaderServiceTest {
         assertTrue(html.contains("<strong>Wichtig</strong>"));
         assertTrue(html.contains("<li>Punkt A</li>"));
         assertFalse(html.contains("- Punkt A"));
+    }
+
+    @Test
+    void generalInformationTemplate_RendersDeadlinesAndThePrivacyLinkAsText() {
+        var introductionStep = new IntroductionStepElement()
+                .setExpiring("<b>Bis 31.12.</b>\n<img src=x onerror=alert(1)>");
+        var form = new PrintableFormPdfData()
+                .setSlug("test-form")
+                .setRootElement(new FormLayoutElement().setChildren(List.of(introductionStep)));
+        var html = new TemplateLoaderService().processTemplate(
+                "form-parts/allgemeine-informationen.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "form", form,
+                        "step", new PdfElement(introductionStep, null, List.of())
+                ),
+                TemplateMode.HTML
+        );
+
+        // The form shows deadlines as plain text, so the PDF must neither render nor run HTML from them.
+        assertTrue(html.contains("&lt;b&gt;Bis 31.12.&lt;/b&gt;\n&lt;img src=x onerror=alert(1)&gt;"));
+        assertFalse(html.contains("<b>"));
+        assertFalse(html.contains("<img src=x"));
+        assertTrue(html.contains(">https://prosuna.example/test-form?dialog=privacy</a>"));
     }
 
     @Test

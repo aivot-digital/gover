@@ -12,14 +12,13 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.enums.MailTemplate;
 import de.aivot.prosuna.backend.mail.models.MailSendOptions;
 import de.aivot.prosuna.backend.mail.services.MailService;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.models.lib.MailAttachmentBytes;
 import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
 import org.springframework.http.MediaType;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
@@ -97,7 +96,7 @@ public class DefaultMailCommunicationService {
         if (message.body() == null || message.body().isBlank()) {
             throw new CommunicationException("Der Inhalt der E-Mail darf nicht leer sein.");
         }
-        if (message.htmlBody() == null || message.htmlBody().isBlank()) {
+        if (message.markdownBody() == null || message.markdownBody().isBlank()) {
             throw new CommunicationException("Der HTML-Inhalt der E-Mail darf nicht leer sein.");
         }
 
@@ -108,11 +107,10 @@ public class DefaultMailCommunicationService {
         }
 
         try {
-            var document = Parser.builder().build().parse(message.htmlBody());
             var templateContext = new HashMap<String, Object>();
             templateContext.put("title", message.subject());
             templateContext.put("messageText", message.body());
-            templateContext.put("messageHtml", HtmlRenderer.builder().build().render(document));
+            templateContext.put("messageHtml", MarkdownRenderer.renderHtml(message.markdownBody()));
             templateContext.put("callToActions", callToActions);
 
             var theme = systemService.retrieveDefaultTheme();

@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -278,8 +279,8 @@ class PaymentRequestActionNodeV1Test {
         assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());
         assertEquals("communicationResult", communicationRequest.nodeDataOutputKey());
         assertEquals("Zahlung für Ada", communicationRequest.message().subject());
-        assertEquals("Hallo **Ada**", communicationRequest.message().body());
-        assertEquals("Hallo **Ada**", communicationRequest.message().htmlBody());
+        assertEquals("Hallo Ada", communicationRequest.message().body());
+        assertEquals("Hallo **Ada**", communicationRequest.message().markdownBody());
         assertSame(signatureDepartment, communicationRequest.message().signatureDepartment());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(
@@ -451,6 +452,42 @@ class PaymentRequestActionNodeV1Test {
     }
 
     @Test
+    void staffTaskView_ShowsPaymentDetailsAsTyped() throws Exception {
+        var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
+        var item = new PaymentItem();
+        item.setDescription("<b>Gebühr</b>");
+        item.setQuantity(1L);
+        item.setNetPrice(new BigDecimal("10.00"));
+        item.setTaxRate(BigDecimal.ZERO);
+        // Purpose and descriptions can come from process data, which includes customer input.
+        var paymentPayload = new PaymentPayload()
+                .setPurpose("[Jetzt zahlen](https://evil.example)")
+                .setDescription("**Dringend**\n# Hinweis")
+                .setTotal(item.getTotalPrice())
+                .setPaymentItems(List.of(item));
+        var context = staffContext(
+                configuration,
+                new ProcessExecutionData(),
+                processInstance(recipientIdentity()),
+                task(Map.of(
+                        PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD,
+                        JsonMapperTestUtils.createMapper().convertValue(paymentPayload, Map.class)
+                ), Map.of(), Map.of())
+        );
+
+        var layout = assertInstanceOf(GroupLayoutElement.class, node.getStaffTaskView(context).layout());
+        var html = MarkdownRenderer.renderHtml(layout
+                .findChild("payment-information", RichTextContentElement.class)
+                .orElseThrow()
+                .getContent());
+
+        assertTrue(html.contains("<strong>Buchungstext:</strong> [Jetzt zahlen](<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)"));
+        assertTrue(html.contains("<strong>Beschreibung:</strong> **Dringend**<br />\n# Hinweis"));
+        assertTrue(html.contains("<li>&lt;b&gt;Gebühr&lt;/b&gt;: 10,00 Euro</li>"));
+        assertFalse(html.contains(">Jetzt zahlen</a>"));
+    }
+
+    @Test
     void staffTask_SendCreatesPaymentAndSendsEditedMessageWithoutRenderingAgain() throws Exception {
         var paymentProviderKey = UUID.randomUUID();
         var paymentConfig = paymentConfig(paymentProviderKey);
@@ -492,7 +529,7 @@ class PaymentRequestActionNodeV1Test {
         assertNotNull(communicationRequest);
         assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());
         assertEquals("Bearbeitet {{ $.name }}", communicationRequest.message().subject());
-        assertEquals("Manuell **{{ $.name }}**", communicationRequest.message().body());
+        assertEquals("Manuell {{ $.name }}", communicationRequest.message().body());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(
                         "Zahlung durchführen",

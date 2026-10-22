@@ -202,7 +202,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Daten ergänzen")
                 .body("Bitte ergänzen")
-                .htmlBody("Bitte ergänzen")
+                .markdownBody("Bitte ergänzen")
                 .signatureDepartment(signatureDepartment)
                 .referenceId("stale-reference")
                 .build();
@@ -267,7 +267,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Daten ergänzen")
                                         .body("Bitte ergänzen")
-                                        .htmlBody("Bitte ergänzen")
+                                        .markdownBody("Bitte ergänzen")
                                         .build()
                         ))
         ));
@@ -320,7 +320,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Daten ergänzen")
                                         .body("Bitte ergänzen")
-                                        .htmlBody("Bitte ergänzen")
+                                        .markdownBody("Bitte ergänzen")
                                         .build()
                         ))
         );
@@ -449,7 +449,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .callToActions(List.of(new CommunicationMessageCallToAction("Open", "https://example.test/task")))
                 .timestamp(Instant.parse("2026-01-01T12:00:00Z"))
                 .attachments(List.of(mock(CommunicationMessageAttachment.class)))
@@ -508,7 +508,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var sentMessage = messageCaptor.getValue();
         assertEquals(message.subject(), sentMessage.subject());
         assertEquals(message.body(), sentMessage.body());
-        assertEquals(message.htmlBody(), sentMessage.htmlBody());
+        assertEquals(message.markdownBody(), sentMessage.markdownBody());
         assertEquals(message.callToActions(), sentMessage.callToActions());
         assertEquals(message.timestamp(), sentMessage.timestamp());
         assertEquals(message.attachments(), sentMessage.attachments());
@@ -563,7 +563,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var messageDetails = (Map<String, Object>) event.details().get("message");
         assertEquals("Subject", messageDetails.get("subject"));
         assertEquals("Body", messageDetails.get("body"));
-        assertEquals("Body", messageDetails.get("htmlBody"));
+        assertEquals("Body", messageDetails.get("markdownBody"));
         assertEquals(processInstance.getCaseNumber(), messageDetails.get("referenceId"));
         assertNull(messageDetails.get("sendingUser"));
         assertEquals(
@@ -584,7 +584,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Payment")
                 .body("Please pay")
-                .htmlBody("Please pay")
+                .markdownBody("Please pay")
                 .build();
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class))).thenReturn(Map.of());
         when(communicationService.describeDeliveryChannel(identity)).thenReturn("Servicekonto");
@@ -657,7 +657,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class)))
                 .thenThrow(new CommunicationException("Versand fehlgeschlagen"));
@@ -725,7 +725,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Subject")
                                         .body("Body")
-                                        .htmlBody("Body")
+                                        .markdownBody("Body")
                                         .build(),
                                 null
                         ))
@@ -771,7 +771,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Subject")
                                         .body("Body")
-                                        .htmlBody("Body")
+                                        .markdownBody("Body")
                                         .build(),
                                 null
                         ))
@@ -814,7 +814,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Subject")
                                         .body("Body")
-                                        .htmlBody("Body")
+                                        .markdownBody("Body")
                                         .build(),
                                 null
                         ))
@@ -839,7 +839,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .signatureDepartment(new VDepartmentShadowedEntity().setId(departmentId).setName("Bürgerbüro"))
                 .build();
 
