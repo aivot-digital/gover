@@ -46,6 +46,9 @@ import {dynamicTextPlugin} from './rich-text-input-component-dynamic-text-plugin
 import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import {linkDialogInteractionPlugin} from './rich-text-input-component-link-dialog-plugin';
 import {rawHtmlAsTextPlugin} from './rich-text-input-component-raw-html-plugin';
+import {supportedTextFormatsPlugin} from './rich-text-input-component-text-format-plugin';
+import {protectedMarkdownPlugin} from './rich-text-input-component-protected-markdown-plugin';
+import {AppInfo} from '../../app-info';
 import '@mdxeditor/editor/style.css';
 
 const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
@@ -240,6 +243,8 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
 
     const isReadOnly = Boolean(disabled) || Boolean(readOnly) || Boolean(busy);
     const isReducedMode = reducedMode === true || isAutoReducedMode;
+    // Customers edit with the toolbar only, so they cannot enter Markdown the editor shows only as protected parts.
+    const isSourceModeAvailable = AppInfo.mode !== 'customer';
     const controlSxArray = Array.isArray(controlSx) ? controlSx : [controlSx];
     // Browsers otherwise mark expression tokens as misspellings. Revisit this once token-level spellchecking is
     // reliable across the browsers supported by the authoring UI.
@@ -787,7 +792,12 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                     // their attributes, including scripts and event handlers. See rawHtmlAsTextPlugin.
                     suppressHtmlProcessing
                     spellCheck={enableSpellCheck}
-                    onChange={(val) => {
+                    onChange={(val, initialMarkdownNormalize) => {
+                        // MDXEditor writes loaded Markdown back in its own form. Only edits may change the value,
+                        // so opening a field never changes what is stored.
+                        if (initialMarkdownNormalize) {
+                            return;
+                        }
                         if (isStringNullOrEmpty(val)) {
                             onChange(null);
                             return;
@@ -797,6 +807,8 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                     plugins={[
                         dynamicText ? dynamicTextPlugin({highlight: true}) : placeholderPlugin(),
                         rawHtmlAsTextPlugin(),
+                        supportedTextFormatsPlugin(),
+                        protectedMarkdownPlugin({sourceModeAvailable: isSourceModeAvailable}),
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
@@ -806,59 +818,63 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                         linkDialogPlugin(),
                         linkDialogInteractionPlugin(),
                         toolbarPlugin({
-                            toolbarContents: () => (
-                                <DiffSourceToggleWrapper options={['rich-text', 'source']}>
-                                    {
-                                        isReducedMode ?
+                            toolbarContents: () => {
+                                const toolbarItems = isReducedMode ?
+                                    <>
+                                        <UndoRedo/>
+                                        <BlockTypeSelect/>
+                                        <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
+                                        <CreateLink/>
+                                        <ListsToggle options={['bullet', 'number']}/>
+                                        {endAction != null && (
+                                            <RichTextToolbarAction
+                                                action={endAction}
+                                                disabled={isReadOnly}
+                                                onCaptureSelection={(selection) => {
+                                                    savedSelectionRef.current = selection;
+                                                }}
+                                            />
+                                        )}
+                                    </> :
+                                    <>
+                                        <UndoRedo/>
+                                        <Separator/>
+                                        <BlockTypeSelect/>
+                                        <Separator/>
+                                        <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
+                                        <StrikeThroughSupSubToggles options={['Strikethrough']}/>
+                                        <CodeToggle/>
+                                        <Separator/>
+                                        <CreateLink/>
+                                        <Separator/>
+                                        <ListsToggle/>
+                                        {endAction != null && (
                                             <>
-                                                <UndoRedo/>
-                                                <BlockTypeSelect/>
-                                                <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
-                                                <CreateLink/>
-                                                <ListsToggle options={['bullet', 'number']}/>
-                                                {endAction != null && (
-                                                    <RichTextToolbarAction
-                                                        action={endAction}
-                                                        disabled={isReadOnly}
-                                                        onCaptureSelection={(selection) => {
-                                                            savedSelectionRef.current = selection;
-                                                        }}
-                                                    />
-                                                )}
-                                            </> :
-                                            <>
-                                                <UndoRedo/>
                                                 <Separator/>
-                                                <BlockTypeSelect/>
-                                                <Separator/>
-                                                <BoldItalicUnderlineToggles options={['Bold', 'Italic']}/>
-                                                <StrikeThroughSupSubToggles options={['Strikethrough']}/>
-                                                <CodeToggle/>
-                                                <Separator/>
-                                                <CreateLink/>
-                                                <Separator/>
-                                                <ListsToggle/>
-                                                {endAction != null && (
-                                                    <>
-                                                        <Separator/>
-                                                        <RichTextToolbarAction
-                                                            action={endAction}
-                                                            disabled={isReadOnly}
-                                                            onCaptureSelection={(selection) => {
-                                                                savedSelectionRef.current = selection;
-                                                            }}
-                                                        />
-                                                    </>
-                                                )}
+                                                <RichTextToolbarAction
+                                                    action={endAction}
+                                                    disabled={isReadOnly}
+                                                    onCaptureSelection={(selection) => {
+                                                        savedSelectionRef.current = selection;
+                                                    }}
+                                                />
                                             </>
-                                    }
-                                </DiffSourceToggleWrapper>
-                            ),
+                                        )}
+                                    </>;
+
+                                return isSourceModeAvailable ? (
+                                    <DiffSourceToggleWrapper options={['rich-text', 'source']}>
+                                        {toolbarItems}
+                                    </DiffSourceToggleWrapper>
+                                ) : toolbarItems;
+                            },
                         }),
-                        diffSourcePlugin({
-                            viewMode: 'rich-text',
-                            readOnlyDiff: isReadOnly,
-                        }),
+                        ...(isSourceModeAvailable ? [
+                            diffSourcePlugin({
+                                viewMode: 'rich-text',
+                                readOnlyDiff: isReadOnly,
+                            }),
+                        ] : []),
                     ]}
                 />
             </Box>
