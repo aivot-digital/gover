@@ -202,7 +202,7 @@ class FormRequestActionNodeV1Test {
         );
 
         var message = result.getCommunicationRequest().message();
-        assertEquals("Hallo **Ada**", message.body());
+        assertEquals("Hallo Ada", message.body());
         assertEquals("Hallo **Ada**", message.htmlBody());
         assertSame(signatureDepartment, message.signatureDepartment());
         assertEquals(RECIPIENT_IDENTITY_ID, result.getIdentityId());

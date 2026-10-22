@@ -4,10 +4,8 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.commonmark.node.AbstractVisitor;
-import org.commonmark.node.Code;
 import org.commonmark.node.Link;
 import org.commonmark.node.LinkReferenceDefinition;
-import org.commonmark.node.Node;
 import org.commonmark.node.Text;
 
 import java.util.ArrayList;
@@ -95,9 +93,7 @@ public final class MarkdownTemplateValues {
             definition.unlink();
         }
         for (var link : collector.links) {
-            var label = plainText(link);
-            var target = link.getDestination();
-            if (showsOwnTarget(label, target)) {
+            if (MarkdownRenderer.showsItsTarget(link)) {
                 continue;
             }
 
@@ -107,8 +103,8 @@ public final class MarkdownTemplateValues {
                 link.insertBefore(child);
                 child = next;
             }
-            if (!target.isBlank()) {
-                link.insertBefore(new Text(" (" + target + ")"));
+            if (!link.getDestination().isBlank()) {
+                link.insertBefore(new Text(" (" + link.getDestination() + ")"));
             }
             link.unlink();
         }
@@ -131,30 +127,6 @@ public final class MarkdownTemplateValues {
             }
             escaped.append(character);
         }
-    }
-
-    private static boolean showsOwnTarget(@Nonnull String label, @Nonnull String target) {
-        return target.equals(label)
-                || target.equals("http://" + label)
-                || target.equals("https://" + label)
-                || target.equals("mailto:" + label);
-    }
-
-    @Nonnull
-    private static String plainText(@Nonnull Node node) {
-        var text = new StringBuilder();
-        node.accept(new AbstractVisitor() {
-            @Override
-            public void visit(Text textNode) {
-                text.append(textNode.getLiteral());
-            }
-
-            @Override
-            public void visit(Code code) {
-                text.append(code.getLiteral());
-            }
-        });
-        return text.toString();
     }
 
     private static final class LinkCollector extends AbstractVisitor {

@@ -278,7 +278,7 @@ class PaymentRequestActionNodeV1Test {
         assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());
         assertEquals("communicationResult", communicationRequest.nodeDataOutputKey());
         assertEquals("Zahlung für Ada", communicationRequest.message().subject());
-        assertEquals("Hallo **Ada**", communicationRequest.message().body());
+        assertEquals("Hallo Ada", communicationRequest.message().body());
         assertEquals("Hallo **Ada**", communicationRequest.message().htmlBody());
         assertSame(signatureDepartment, communicationRequest.message().signatureDepartment());
         assertEquals(
@@ -492,7 +492,7 @@ class PaymentRequestActionNodeV1Test {
         assertNotNull(communicationRequest);
         assertEquals(RECIPIENT_IDENTITY_ID, communicationRequest.recipientIdentityId());
         assertEquals("Bearbeitet {{ $.name }}", communicationRequest.message().subject());
-        assertEquals("Manuell **{{ $.name }}**", communicationRequest.message().body());
+        assertEquals("Manuell {{ $.name }}", communicationRequest.message().body());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(
                         "Zahlung durchführen",

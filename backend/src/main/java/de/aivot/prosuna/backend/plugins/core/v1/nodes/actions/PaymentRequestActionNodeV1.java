@@ -25,6 +25,7 @@ import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -875,7 +876,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         resolvedConfiguration.recipientIdentityId(),
                         new CommunicationMessage.Builder()
                                 .subject(subject)
-                                .body(content)
+                                .body(MarkdownRenderer.renderPlainText(content))
                                 .htmlBody(content)
                                 .callToActions(List.of(new CommunicationMessageCallToAction(
                                         "Zahlung durchführen",

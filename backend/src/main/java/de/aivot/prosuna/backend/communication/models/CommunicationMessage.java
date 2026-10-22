@@ -12,6 +12,7 @@ import java.util.List;
 public record CommunicationMessage(
         @Nonnull
         String subject,
+        // Plain text version of htmlBody, for example for the text part of mails.
         @Nonnull
         String body,
         // Markdown source despite the name. Providers render it with MarkdownRenderer, which escapes raw HTML.

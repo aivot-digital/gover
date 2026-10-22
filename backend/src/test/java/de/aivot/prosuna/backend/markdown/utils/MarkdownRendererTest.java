@@ -55,6 +55,58 @@ class MarkdownRendererTest {
         );
     }
 
+    @Test
+    void rendersReadablePlainText() {
+        var markdown = """
+                # Ihr Antrag
+
+                Hallo **Ada**, siehe [Portal](https://portal.example), https://example.org und `AZ-1`.
+                Zeile 2 mit ![Logo](https://example.org/logo.png)\\
+                Zeile 3[^1]
+
+                - eins
+                - zwei
+
+                > Zitat
+
+                [^1]: Fußnote
+                """;
+
+        assertEquals("""
+                Ihr Antrag
+
+                Hallo Ada, siehe Portal (https://portal.example), https://example.org und AZ-1.
+                Zeile 2 mit Logo
+                Zeile 3[1]
+
+                - eins
+                - zwei
+
+                «Zitat»
+
+                [1] Fußnote""", MarkdownRenderer.renderPlainText(markdown));
+    }
+
+    @Test
+    void rendersTemplateValuesAsTheyWereTypedInPlainText() {
+        var value = "**Danke** für [Antrag](https://evil.example)\n\n5 * 3 & snake_case";
+
+        assertEquals(
+                "Danke für Antrag (https://evil.example)\n\n5 * 3 & snake_case",
+                MarkdownRenderer.renderPlainText(value)
+        );
+        assertEquals(
+                "**Danke** für [Antrag](https://evil.example)\n\n5 * 3 & snake_case",
+                MarkdownRenderer.renderPlainText(MarkdownTemplateValues.escapeText(value))
+        );
+    }
+
+    @Test
+    void rendersMissingMarkdownAsEmptyPlainText() {
+        assertEquals("", MarkdownRenderer.renderPlainText(null));
+        assertEquals("", MarkdownRenderer.renderPlainText(""));
+    }
+
     record RenderingCases(String description, List<RenderingCase> cases) {
     }
 

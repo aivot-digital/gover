@@ -489,7 +489,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         var mailContext = new HashMap<String, Object>();
         mailContext.put("title", subject);
-        mailContext.put("messageText", contentMarkdown);
+        mailContext.put("messageText", MarkdownRenderer.renderPlainText(contentMarkdown));
         mailContext.put("messageHtml", contentHtml);
         mailContext.put("department", department);
         if (signatureDepartment != null) {
