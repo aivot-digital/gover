@@ -34,6 +34,7 @@ export function AssetSelectInputView(props: BaseViewProps<AssetSelectInputElemen
             placeholder={element.placeholder ?? undefined}
             mimetype={element.allowedMimeTypes ?? undefined}
             visibility={element.assetVisibility ?? AssetVisibility.All}
+            storageProviderId={element.storageProviderId}
             hint={element.hint ?? undefined}
             error={errors != null ? errors.join(' ') : undefined}
             required={element.required ?? undefined}

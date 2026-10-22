@@ -1,4 +1,8 @@
 import React from 'react';
+import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {SelectFieldComponent} from '../components/select-field/select-field-component';
+import {CodeListSelectField} from '../modules/code-lists/components/code-list-select-field';
+import {ChipInputFieldComponent} from '../components/chip-input-field/chip-input-field-component';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {BaseEditorProps} from './base-editor';
@@ -6,6 +10,7 @@ import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-fiel
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {Grid} from '@mui/material';
 import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
+import {ElementEditorSectionHeader} from '../components/element-editor-section-header/element-editor-section-header';
 
 export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
     const {
@@ -19,6 +24,9 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
     if (hasSummaryLayoutParent) {
         return null;
     }
+
+    // Empty rows saved by the former table editor are not actual suggestions.
+    const suggestions = (element.suggestions ?? []).filter((suggestion) => suggestion.trim().length > 0);
 
     return (
         <>
@@ -144,6 +152,45 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                         hint={'Zeigt am Ende des Eingabefelds eine Schaltfläche zum einfachen Kopieren des aktuellen Wertes in die Zwischenablage ein.'}
                     />
                 </Grid>
+                {!element.isMultiline && element.dynamicTextPolicy == null && <>
+                    <Grid size={{xs: 12}}>
+                        <ElementEditorSectionHeader title="Vorschläge zur Texteingabe" variant="h6">
+                            Hinterlegen Sie häufige Eingaben manuell oder wählen Sie eine System-Codeliste.
+                            Die Vorschläge werden beim Tippen gefiltert und können übernommen werden.
+                            Eigene Texte bleiben möglich.
+                        </ElementEditorSectionHeader>
+                    </Grid>
+                    <Grid size={{xs: 12, lg: 6}}>
+                        <SelectFieldComponent
+                            label="Vorschläge definieren über"
+                            value={element.optionsSource ?? OptionsSourceType.Manual}
+                            options={[
+                                {value: OptionsSourceType.Manual, label: 'Manuelle Eingabe'},
+                                {value: OptionsSourceType.CodeList, label: 'System-Codeliste'},
+                            ]}
+                            onChange={(value) => onPatch({optionsSource: value ?? OptionsSourceType.Manual})}
+                            disabled={!editable}
+                            required
+                        />
+                    </Grid>
+                    {element.optionsSource === OptionsSourceType.CodeList ? <Grid size={{xs: 12, lg: 6}}>
+                        <CodeListSelectField
+                            value={element.codeListKey}
+                            onChange={(codeListKey) => onPatch({codeListKey})}
+                            hint="Die Beschriftungen werden als Text vorgeschlagen. Eigene Eingaben bleiben möglich."
+                            disabled={!editable}
+                            required
+                        />
+                    </Grid> : <Grid size={{xs: 12, lg: 6}}>
+                        <ChipInputFieldComponent
+                            label="Vorschläge"
+                            value={suggestions}
+                            onChange={(suggestions) => onPatch({suggestions: suggestions ?? []})}
+                            disabled={!editable}
+                            hint="Geben Sie Vorschläge einzeln ein oder fügen Sie mehrere Zeilen aus der Zwischenablage ein."
+                        />
+                    </Grid>}
+                </>}
             </Grid>
         </>
     );

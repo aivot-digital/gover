@@ -1,9 +1,9 @@
+import {createOptionFilter} from './option-search';
 import React, {useMemo} from 'react';
 import {
     Autocomplete,
     type AutocompleteRenderInputParams,
     Box,
-    createFilterOptions,
     InputAdornment,
     ListItemIcon,
     ListItemText,
@@ -273,13 +273,11 @@ function ComboboxControl<T extends SelectFieldValue>({props, fieldContext}: Sele
     const selectedOption = findOption(options, value) ?? null;
     const emptyDisplay = getEmptyDisplay(props);
     const passThroughSlotProps = muiPassTroughProps?.slotProps;
-    const filterOptions = useMemo(() => createFilterOptions<SelectFieldComponentOption<T>>({
-        stringify: (option) => [
-            option.label,
-            option.subLabel,
-            normalizeValue(option.value),
-        ].filter(Boolean).join(' '),
-    }), []);
+    const filterOptions = useMemo(() => createOptionFilter<SelectFieldComponentOption<T>>((option) => [
+        option.label,
+        option.subLabel,
+        normalizeValue(option.value),
+    ]), []);
 
     const renderInput = (params: AutocompleteRenderInputParams) => (
         <TextField
@@ -361,7 +359,7 @@ function ComboboxControl<T extends SelectFieldValue>({props, fieldContext}: Sele
             disableClearable={Boolean(required) || !includeEmptyOption}
             readOnly={readOnly || busy}
             disabled={disabled}
-            noOptionsText={emptyStatePlaceholder ?? 'Keine Optionen vorhanden'}
+            noOptionsText={options.length === 0 ? emptyStatePlaceholder ?? 'Keine Optionen vorhanden' : 'Keine passenden Optionen gefunden'}
             fullWidth
             renderOption={({key, ...optionProps}, option, state) => (
                 <Box

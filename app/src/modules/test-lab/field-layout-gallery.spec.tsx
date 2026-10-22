@@ -252,6 +252,17 @@ describe('FieldLayoutGallery accessibility', () => {
         expect(rangeGroup?.querySelectorAll('[data-form-field]')).toHaveLength(2);
         expect(rangeGroup?.textContent).not.toContain('optional');
 
+        const estimatedDuration = screen.getByRole('group', {name: 'Geschätzter Aufwand'});
+        expect(within(estimatedDuration).getByRole('textbox', {name: 'Stunden'})).toHaveValue('2');
+        expect(within(estimatedDuration).getByRole('textbox', {name: 'Minuten'})).toHaveValue('30');
+        expect(within(estimatedDuration).queryByRole('textbox', {name: 'Sekunden'})).not.toBeInTheDocument();
+        expect(estimatedDuration).toHaveAccessibleDescription('Angabe in Stunden und Minuten.');
+
+        const measuredDuration = screen.getByRole('group', {name: 'Gemessene Zeitdauer – optional'});
+        expect(within(measuredDuration).getByRole('textbox', {name: 'Tage'})).toHaveValue('1');
+        expect(within(measuredDuration).getByRole('textbox', {name: 'Stunden'})).toHaveValue('3');
+        expect(within(measuredDuration).getByRole('textbox', {name: 'Sekunden'})).toHaveValue('15');
+
         const phoneLabel = screen.getByTitle('Telefonnummer');
         const phoneInput = document.getElementById(phoneLabel.getAttribute('for')!);
         expect(phoneInput).toHaveAccessibleName('Telefonnummer – optional');
@@ -260,7 +271,7 @@ describe('FieldLayoutGallery accessibility', () => {
         const tagsLabel = screen.getByTitle('Schlagwörter');
         const tagsInput = document.getElementById(tagsLabel.getAttribute('for')!);
         expect(tagsInput).toHaveAccessibleName('Schlagwörter');
-        expect(tagsInput).toHaveAccessibleDescription(/Bis zu fünf Schlagwörter können zugeordnet werden/);
+        expect(tagsInput).toHaveAccessibleDescription(/Bis zu fünf Schlagwörter mit jeweils höchstens 30 Zeichen/);
         expect(tagsInput).toHaveAttribute('role', 'combobox');
 
         const dataModelLabel = screen.getByTitle('Datenmodell');

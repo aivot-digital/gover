@@ -78,7 +78,8 @@ public class ProcessInstanceAttachmentController {
     @GetMapping("")
     @Operation(
             summary = "List Process Instance Attachments",
-            description = "List all process instance attachments with optional filtering and pagination."
+            description = "List all process instance attachments with optional filtering and pagination. " +
+                    "Includes sizeInBytes from the storage index when available."
     )
     public Page<ProcessInstanceAttachmentEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -122,7 +123,7 @@ public class ProcessInstanceAttachmentController {
     @GetMapping("{key}/")
     @Operation(
             summary = "Retrieve Process Instance Attachment",
-            description = "Retrieve a process instance attachment by its key."
+            description = "Retrieve a process instance attachment by its key, including sizeInBytes from the storage index when available."
     )
     public ProcessInstanceAttachmentEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,

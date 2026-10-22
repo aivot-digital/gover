@@ -1,5 +1,10 @@
 package de.aivot.prosuna.backend.services;
 
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DurationInputElement;
+import de.aivot.prosuna.backend.enums.DurationPrecision;
+import de.aivot.prosuna.backend.enums.DurationLargestUnit;
+import java.math.BigDecimal;
+
 import de.aivot.prosuna.backend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DateTimeInputElement;
@@ -55,6 +60,42 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TemplateLoaderServiceTest {
+
+    @Test
+    void durationFieldRendersThroughDispatcherAndSupportsBlankPrint() {
+        var field = new DurationInputElement().setPrecision(DurationPrecision.Second);
+        field.setLabel("Aufwand");
+        field.setRequired(true);
+        var pdfElement = new PdfElement(field, BigDecimal.valueOf(99015), List.of());
+        var html = new TemplateLoaderService().processTemplate(
+                "form-parts/element-dispatcher.html",
+                Map.of("base", createBaseContext(FormPdfScope.Staff), "child", pdfElement),
+                TemplateMode.HTML);
+        assertTrue(html.contains("27 Stunden 30 Minuten 15 Sekunden"));
+        assertTrue(html.contains("Aufwand"));
+        var blank = new TemplateLoaderService().processTemplate(
+                "form-parts/element-dispatcher.html",
+                Map.of("base", createBaseContext(FormPdfScope.Blank), "child", pdfElement),
+                TemplateMode.HTML);
+        assertTrue(blank.contains("Stunden / Minuten / Sekunden"));
+        assertTrue(blank.contains("Pflichtangabe"));
+        assertFalse(blank.contains("27 Stunden"));
+        field.setLargestUnit(DurationLargestUnit.Day);
+        var withDays = new TemplateLoaderService().processTemplate(
+                "form-parts/element-dispatcher.html",
+                Map.of("base", createBaseContext(FormPdfScope.Staff), "child", pdfElement),
+                TemplateMode.HTML);
+        assertTrue(withDays.contains("1 Tag 3 Stunden 30 Minuten 15 Sekunden"));
+        for (var precision : DurationPrecision.values()) {
+            field.setPrecision(precision);
+            var blankDays = new TemplateLoaderService().processTemplate(
+                    "form-parts/element-dispatcher.html",
+                    Map.of("base", createBaseContext(FormPdfScope.Blank), "child", pdfElement),
+                    TemplateMode.HTML);
+            assertTrue(blankDays.contains("Tage / Stunden / Minuten"));
+            assertEquals(precision == DurationPrecision.Second, blankDays.contains(" / Sekunden"));
+        }
+    }
 
     @Test
     void processTemplate_DoesNotResolveTemplatesFromAssetStorage() throws IOException {
@@ -508,6 +549,7 @@ class TemplateLoaderServiceTest {
         chipInputElement.setLabel("Schlagwörter");
         chipInputElement.setMinItems(2);
         chipInputElement.setMaxItems(5);
+        chipInputElement.setMaxItemLength(30);
 
         var mapPointElement = new MapPointInputElement()
                 .setLabel("Position");
@@ -544,6 +586,8 @@ class TemplateLoaderServiceTest {
         assertTrue(chipInputHtml.contains("Mehrere Einträge bitte kommasepariert nacheinander notieren."));
         assertTrue(chipInputHtml.contains("Mindestens"));
         assertTrue(chipInputHtml.contains("Maximal"));
+        assertTrue(chipInputHtml.contains("Zeichen je Eintrag"));
+        assertTrue(chipInputHtml.contains(">30</span>"));
         assertTrue(mapPointHtml.contains("Adresse oder Koordinaten"));
     }
 

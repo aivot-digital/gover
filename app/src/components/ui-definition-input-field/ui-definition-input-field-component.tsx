@@ -64,6 +64,7 @@ import {mergeRecalculatedReferencedIds, normalizeUiDefinitionForStorage} from '.
 import {getSingleUseSectionAddDisabledReason} from '../../data/element-type/single-use-section-types';
 import {FormField, type FormFieldLayoutProps} from '../form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {normalizeElementDefinition} from '../../utils/normalize-element-definition';
 
 export interface UiDefinitionInputFieldComponentProps extends FormFieldLayoutProps {
     label: string;
@@ -120,13 +121,14 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         disabled,
         busy,
         readOnly,
-        value,
+        value: rawValue,
         expectedRootType,
         onChange,
         displayContext,
         openOverride,
         onDerive,
     } = props;
+    const value = useMemo(() => normalizeElementDefinition(rawValue), [rawValue]);
 
     const generatedId = useNormalizedReactId();
     const controlId = props.id ?? `ui-definition-field-${generatedId}`;

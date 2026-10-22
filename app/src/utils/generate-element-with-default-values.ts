@@ -1,3 +1,6 @@
+import {PhoneNumberFieldElement} from '../models/elements/form/input/phone-number-field-element';
+import {EmailFieldElement} from '../models/elements/form/input/email-field-element';
+import {DurationFieldElement, DurationLargestUnit, DurationPrecision} from '../models/elements/form/input/duration-field-element';
 import {ElementType} from '../data/element-type/element-type';
 import {type IntroductionStepElement} from '../models/elements/steps/introduction-step-element';
 import {type SummaryStepElement} from '../models/elements/steps/summary-step-element';
@@ -18,7 +21,6 @@ import {MultiCheckboxFieldElement} from '../models/elements/form/input/multi-che
 import {NumberFieldElement} from '../models/elements/form/input/number-field-element';
 import {ReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 import {RichtextElement} from '../models/elements/form/content/richtext-element';
-import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {SpacerElement} from '../models/elements/form/content/spacer-element';
 import {TableFieldElement} from '../models/elements/form/input/table-field-element';
@@ -112,9 +114,11 @@ const elementConstructors: {
     [ElementType.Headline]: (id: string) => HeadlineElement;
     [ElementType.MultiCheckbox]: (id: string) => MultiCheckboxFieldElement;
     [ElementType.Number]: (id: string) => NumberFieldElement;
+    [ElementType.PhoneNumber]: (id: string) => PhoneNumberFieldElement;
+    [ElementType.Email]: (id: string) => EmailFieldElement;
+    [ElementType.Duration]: (id: string) => DurationFieldElement;
     [ElementType.ReplicatingContainer]: (id: string) => ReplicatingContainerLayout;
     [ElementType.RichText]: (id: string) => RichtextElement;
-    [ElementType.Radio]: (id: string) => RadioFieldElement;
     [ElementType.Select]: (id: string) => SelectFieldElement;
     [ElementType.Spacer]: (id: string) => SpacerElement;
     [ElementType.Table]: (id: string) => TableFieldElement;
@@ -228,6 +232,24 @@ const elementConstructors: {
         displayInline: false,
         minimumRequiredOptions: undefined,
     }),
+    [ElementType.PhoneNumber]: (id) => ({
+        ...makeInputBase(ElementType.PhoneNumber, id),
+        label: 'Telefonnummer',
+        defaultCountry: 'DE', preferredCountries: ['DE', 'AT', 'CH'], autocomplete: 'tel',
+    }),
+    [ElementType.Email]: (id) => ({
+        ...makeInputBase(ElementType.Email, id),
+        label: 'E-Mail-Adresse',
+        allowLocalDomains: false, autocomplete: 'email',
+    }),
+    [ElementType.Duration]: (id) => ({
+        ...makeInputBase(ElementType.Duration, id),
+        label: 'Zeitdauer',
+        precision: DurationPrecision.Minute,
+        largestUnit: DurationLargestUnit.Hour,
+        minDuration: undefined,
+        maxDuration: undefined,
+    }),
     [ElementType.Number]: (id) => ({
         ...makeInputBase(ElementType.Number, id),
         label: 'Zahl',
@@ -249,27 +271,6 @@ const elementConstructors: {
         ...makeFormBase(ElementType.RichText, id),
         content: 'Textanzeige',
     }),
-    [ElementType.Radio]: (id) => ({
-        ...makeInputBase(ElementType.Radio, id),
-        label: 'Einzelauswahl (Optionsfelder)',
-        optionsSource: OptionsSourceType.Manual,
-        codeListKey: undefined,
-        options: [
-            {
-                value: 'option_1',
-                label: 'Option 1',
-            },
-            {
-                value: 'option_2',
-                label: 'Option 2',
-            },
-            {
-                value: 'option_3',
-                label: 'Option 3',
-            },
-        ],
-        displayInline: false,
-    }),
     [ElementType.Select]: (id) => ({
         ...makeInputBase(ElementType.Select, id),
         label: 'Einzelauswahl',
@@ -290,7 +291,7 @@ const elementConstructors: {
             },
         ],
         autocomplete: undefined,
-        presentation: SelectFieldPresentation.Dropdown,
+        presentation: SelectFieldPresentation.Radio,
         dependsOnSelectFieldId: undefined,
         placeholder: undefined,
     }),
@@ -419,7 +420,7 @@ const elementConstructors: {
     [ElementType.TabLayout]: (id) => ({}),
     [ElementType.ChipInput]: (id) => ({
         ...makeInputBase(ElementType.ChipInput, id),
-        label: 'Tag-Liste (Schlagwörter)',
+        label: 'Mehrfach-Texteingabe',
         placeholder: 'Eintrag hinzufügen',
         suggestions: undefined,
         optionsSource: OptionsSourceType.Manual,
@@ -525,7 +526,7 @@ const elementConstructors: {
     }),
     [ElementType.AssetSelectInput]: (id) => ({
         ...makeInputBase(ElementType.AssetSelectInput, id),
-        label: 'Asset',
+        label: 'Datei',
         placeholder: 'Keine Datei ausgewählt',
         dialogTitle: 'Datei auswählen',
         allowedMimeTypes: undefined,

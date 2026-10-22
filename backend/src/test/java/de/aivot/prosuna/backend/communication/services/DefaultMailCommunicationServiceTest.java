@@ -52,6 +52,14 @@ class DefaultMailCommunicationServiceTest {
     );
 
     @Test
+    void forwardsLocalRecipientsToTheConfiguredMailService() throws Exception {
+        configureSending();
+        service.sendMessage(" person@verwaltung ", message());
+        verify(mailService).sendMail(same(defaultTheme), eq("person@verwaltung"), any(), any(),
+                anyString(), eq(MailTemplate.GenericEmailMessage), any(), any(), any(), any());
+    }
+
+    @Test
     void delegatesGenericTemplateRenderingWithMarkdownAndCallToActions() throws Exception {
         configureSending();
         var callToActions = List.of(

@@ -141,7 +141,7 @@ public class IdentityService {
         var sessionId = StringUtils.isNullOrEmpty(preexistingIdentitySessionId)
                 ? generateSessionId()
                 : preexistingIdentitySessionId;
-        var emailAddress = EmailAddressUtils.normalizeSingleAddress(rawEmailAddress);
+        var emailAddress = EmailAddressUtils.normalizeTransportAddress(rawEmailAddress);
         var identity = new IdentityCacheEntity(
                 generateEntityId(),
                 sessionId,

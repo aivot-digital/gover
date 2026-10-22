@@ -1,8 +1,11 @@
+import {MuiTelInputCountry} from 'mui-tel-input';
 import {type SxProps, type TextFieldProps, type Theme} from '@mui/material';
 import {type FormFieldLayoutProps} from '../form-field';
 
 export interface PhoneNumberFieldComponentProps extends FormFieldLayoutProps {
     label: string;
+    defaultCountry?: MuiTelInputCountry;
+    preferredCountries?: MuiTelInputCountry[];
     placeholder?: string;
     required?: boolean;
     disabled?: boolean;

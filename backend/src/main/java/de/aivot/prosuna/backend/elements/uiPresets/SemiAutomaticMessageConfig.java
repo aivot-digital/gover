@@ -27,10 +27,10 @@ public class SemiAutomaticMessageConfig {
                                                @Nonnull final Integer processId,
                                                @Nonnull final Integer processVersion) {
         layout
-                .findChild(LayoutConfig.EXECUTION_TYPE_FIELD_ID, RadioInputElement.class)
+                .findChild(LayoutConfig.EXECUTION_TYPE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(executionType -> executionType.setOptions(List.of(
-                        RadioInputElementOption.of(LayoutConfig.EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
-                        RadioInputElementOption.of(LayoutConfig.EXECUTION_TYPE_MANUAL, "Manuell bearbeiten und versenden")
+                        SelectInputElementOption.of(LayoutConfig.EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
+                        SelectInputElementOption.of(LayoutConfig.EXECUTION_TYPE_MANUAL, "Manuell bearbeiten und versenden")
                 )));
 
         layout
@@ -131,8 +131,9 @@ public class SemiAutomaticMessageConfig {
          */
         @InputElementPOJOBinding(
                 id = EXECUTION_TYPE_FIELD_ID,
-                type = ElementType.Radio,
+                type = ElementType.Select,
                 properties = {
+                        @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                         @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
                         @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob die Nachricht automatisch versendet oder vorher durch eine Mitarbeiter:in bearbeitet wird."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)

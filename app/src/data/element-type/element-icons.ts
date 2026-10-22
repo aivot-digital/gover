@@ -1,3 +1,6 @@
+import PhoneOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Call';
+import EmailOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
+import TimerOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Timer';
 import {ElementType} from './element-type';
 import MenuOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Menu';
 import ExpandOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Expand';
@@ -53,9 +56,11 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.Headline]: TitleOutlinedIcon,
     [ElementType.MultiCheckbox]: ChecklistOutlinedIcon,
     [ElementType.Number]: NumbersOutlinedIcon,
+    [ElementType.Duration]: TimerOutlinedIcon,
+    [ElementType.PhoneNumber]: PhoneOutlinedIcon,
+    [ElementType.Email]: EmailOutlinedIcon,
     [ElementType.ReplicatingContainer]: PlaylistAddOutlinedIcon,
     [ElementType.RichText]: NotesOutlinedIcon,
-    [ElementType.Radio]: CheckCircleOutlineOutlinedIcon,
     [ElementType.Select]: ListAltOutlinedIcon,
     [ElementType.Spacer]: ExpandOutlinedIcon,
     [ElementType.Table]: TableChartOutlinedIcon,

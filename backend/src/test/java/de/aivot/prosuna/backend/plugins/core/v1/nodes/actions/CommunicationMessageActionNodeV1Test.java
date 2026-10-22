@@ -8,8 +8,8 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentCo
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -150,11 +150,11 @@ class CommunicationMessageActionNodeV1Test {
 
         var executionType = layout.findChild(
                 SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_FIELD_ID,
-                RadioInputElement.class
+                SelectInputElement.class
         ).orElseThrow();
         assertEquals(List.of(
-                RadioInputElementOption.of("automatic", "Automatisch versenden"),
-                RadioInputElementOption.of("manual", "Manuell bearbeiten und versenden")
+                SelectInputElementOption.of("automatic", "Automatisch versenden"),
+                SelectInputElementOption.of("manual", "Manuell bearbeiten und versenden")
         ), executionType.getOptions());
 
         assertNotNull(layout.findChild(

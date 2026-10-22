@@ -56,7 +56,7 @@ public record ProcessNodeExecutionResultCommunicationRequest(
         if (recipientIdentityId != null) {
             recipientIdentityId = recipientIdentityId.trim();
         } else {
-            recipientEmailAddress = EmailAddressUtils.normalizeSingleAddress(recipientEmailAddress);
+            recipientEmailAddress = EmailAddressUtils.normalizeTransportAddress(recipientEmailAddress);
         }
         nodeDataOutputKey = nodeDataOutputKey.trim();
     }

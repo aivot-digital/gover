@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.models.ProcessAttachmentSizeProjection;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
@@ -20,6 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -116,6 +120,7 @@ class ProcessInstanceAttachmentServiceTest {
         verify(storageService).storeDocument(eq(5), storedPathCaptor.capture(), any(byte[].class), any(StorageItemMetadata.class));
         assertFalse(storedPathCaptor.getValue().contains(processAccessKey.toString()));
         assertEquals("/proc-7/42/attachments/file.pdf", savedAttachment.getStoragePathFromRoot());
+        assertEquals(4L, savedAttachment.getSizeInBytes());
 
         assertNotNull(savedAttachment.getKey());
         assertNull(event.getId());
@@ -146,6 +151,20 @@ class ProcessInstanceAttachmentServiceTest {
         expectedDetails.put("storagePathFromRoot", "/proc-7/42/attachments/file.pdf");
         expectedDetails.put("uploadedByUserId", userId);
         assertEquals(expectedDetails, event.getDetails());
+    }
+
+    @Test
+    void create_PopulatesSizeOnTheEntityReturnedByPersistence() throws Exception {
+        var savedAttachment = attachment().setKey(UUID.randomUUID());
+        when(attachmentRepository.save(any(ProcessInstanceAttachmentEntity.class))).thenReturn(savedAttachment);
+
+        var result = service.create(attachment());
+
+        assertSame(savedAttachment, result);
+        assertEquals(4L, result.getSizeInBytes());
+        var json = de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper().valueToTree(result);
+        assertEquals(4L, json.get("sizeInBytes").asLong());
+        assertFalse(json.has("fileBytes"));
     }
 
     @Test
@@ -196,5 +215,61 @@ class ProcessInstanceAttachmentServiceTest {
         return ProcessInstanceAttachmentEntity
                 .of("file.pdf", "uploaded-file.pdf", "person-1/dog-2", 1, 42L, 9L, "data".getBytes(StandardCharsets.UTF_8))
                 .setAttachmentSetId(3);
+    }
+
+    @Test
+    void list_PopulatesSizesInOneBatchAndPreservesUnknownSizes() throws Exception {
+        var empty = attachment().setKey(UUID.randomUUID());
+        var large = attachment().setKey(UUID.randomUUID());
+        var missing = attachment().setKey(UUID.randomUUID());
+        var attachments = List.of(empty, large, missing);
+        when(attachmentRepository.findAll((Specification<ProcessInstanceAttachmentEntity>) null, Pageable.unpaged()))
+                .thenReturn(new PageImpl<>(attachments));
+        when(attachmentRepository.findSizesByKeys(List.of(empty.getKey(), large.getKey(), missing.getKey())))
+                .thenReturn(List.of(size(empty.getKey(), 0L), size(large.getKey(), 5_000_000_000L)));
+
+        var page = service.performList(Pageable.unpaged(), null, null);
+
+        assertEquals(attachments, page.getContent());
+        assertEquals(0L, empty.getSizeInBytes());
+        assertEquals(5_000_000_000L, large.getSizeInBytes());
+        assertNull(missing.getSizeInBytes());
+        verify(attachmentRepository).findSizesByKeys(List.of(empty.getKey(), large.getKey(), missing.getKey()));
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
+    void retrieve_PopulatesExistingAttachmentSize() throws Exception {
+        var attachment = attachment().setKey(UUID.randomUUID());
+        when(attachmentRepository.findById(attachment.getKey())).thenReturn(Optional.of(attachment));
+        when(attachmentRepository.findSizesByKeys(List.of(attachment.getKey())))
+                .thenReturn(List.of(size(attachment.getKey(), 1234L)));
+
+        assertEquals(1234L, service.retrieve(attachment.getKey()).orElseThrow().getSizeInBytes());
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
+    void list_DoesNotLookUpSizesForEmptyPages() throws Exception {
+        when(attachmentRepository.findAll((Specification<ProcessInstanceAttachmentEntity>) null, Pageable.unpaged()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        assertTrue(service.performList(Pageable.unpaged(), null, null).isEmpty());
+
+        verify(attachmentRepository, org.mockito.Mockito.never()).findSizesByKeys(any());
+    }
+
+    private ProcessAttachmentSizeProjection size(UUID key, Long bytes) {
+        return new ProcessAttachmentSizeProjection() {
+            @Override
+            public UUID getKey() {
+                return key;
+            }
+
+            @Override
+            public Long getSizeInBytes() {
+                return bytes;
+            }
+        };
     }
 }

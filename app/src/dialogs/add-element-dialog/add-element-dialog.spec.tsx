@@ -3,6 +3,7 @@ import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
+import {SelectFieldPresentation} from '../../models/elements/form/input/select-field-presentation';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
@@ -29,6 +30,21 @@ vi.mock('../../modules/process/pages/details/components/process-node-editor/proc
 }));
 
 describe('AddElementDialog', () => {
+    it('offers one single-choice element and creates it with radio presentation', async () => {
+        const user = userEvent.setup();
+        const onAddElements = vi.fn();
+        render(<AddElementDialog show parentType={ElementType.GroupLayout} allParents={[]}
+            displayContext={ElementDisplayContext.CustomerFacing}
+            limitElementTypes={[ElementType.Select]}
+            onClose={vi.fn()} onAddElements={onAddElements}/>);
+
+        expect(screen.getAllByText('Einzelauswahl', {exact: true})).toHaveLength(1);
+        await user.click(screen.getByRole('button', {name: 'Hinzufügen'}));
+        expect(onAddElements).toHaveBeenCalledWith([expect.objectContaining({
+            type: ElementType.Select, presentation: SelectFieldPresentation.Radio,
+        })]);
+    });
+
     it.each([ElementType.ConfigLayout, ElementType.GroupLayout])(
         'does not offer secret selectors for staff-facing parent type %s',
         async (parentType) => {

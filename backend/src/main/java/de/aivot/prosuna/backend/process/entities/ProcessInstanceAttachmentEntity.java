@@ -31,6 +31,11 @@ public class ProcessInstanceAttachmentEntity {
     @Size(max = 255, message = "Der ursprüngliche Dateiname darf maximal 255 Zeichen lang sein.")
     private String originalFileName;
 
+    // Read from the storage index so existing attachments also expose their current size without duplicating it.
+    @Transient
+    @Nullable
+    private Long sizeInBytes;
+
     @Nullable
     @Column(name = "\"group\"")
     private String group;
@@ -180,6 +185,16 @@ public class ProcessInstanceAttachmentEntity {
 
     public ProcessInstanceAttachmentEntity setOriginalFileName(@Nonnull String originalFileName) {
         this.originalFileName = originalFileName;
+        return this;
+    }
+
+    @Nullable
+    public Long getSizeInBytes() {
+        return sizeInBytes;
+    }
+
+    public ProcessInstanceAttachmentEntity setSizeInBytes(@Nullable Long sizeInBytes) {
+        this.sizeInBytes = sizeInBytes;
         return this;
     }
 

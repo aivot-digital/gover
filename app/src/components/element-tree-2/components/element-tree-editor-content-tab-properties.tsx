@@ -217,7 +217,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                             }}
                         >
                             <ElementWidthSelector
-                                label="Breite des Elements in der Darstellung"
+                                label="Breite (Darstellung)"
                                 elementType={currentElement.type}
                                 value={currentElement.weight}
                                 onChange={(weight) => {

@@ -1557,7 +1557,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final List<ElementDerivationRequest> requests = new LinkedList<>();
 
         private TestElementDerivationService(EffectiveElementValues effectiveValues) {
-            super(null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null);
             this.effectiveValues = effectiveValues;
         }
 

@@ -12,6 +12,7 @@ import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 import {AssetVisibility} from '../models/asset-visibility';
 
 interface AssetSelectorProps extends FormFieldLayoutProps {
+    storageProviderId?: number | null;
     label: string;
     hint?: string;
     selectLabel: string;
@@ -131,7 +132,9 @@ export function AssetSelector(props: AssetSelectorProps) {
                 externalAction={props.externalAction}
                 labelAction={props.labelAction}
                 hint={hint}
-                error={error}
+                error={error || (asset != null && props.storageProviderId != null && asset.storageProviderId !== props.storageProviderId
+                    ? 'Die ausgewählte Datei gehört nicht zum erlaubten Speicheranbieter.'
+                    : undefined)}
                 required={required}
                 disabled={disabled}
                 readOnly={readOnly}
@@ -171,6 +174,7 @@ export function AssetSelector(props: AssetSelectorProps) {
                 }}
                 onCancel={() => setShowSelectAssetDialog(false)}
                 visibility={visibility}
+                storageProviderId={props.storageProviderId}
                 mimetype={mimetype}
             />
         </>

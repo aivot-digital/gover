@@ -177,10 +177,10 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
             throw ResponseException.internalServerError(e, "Die Konfiguration für die Vorgangszuweisung konnte nicht erstellt werden.");
         }
 
-        layout.findChild(Config.MODE_FIELD_ID, RadioInputElement.class)
+        layout.findChild(Config.MODE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(field -> field.setOptions(List.of(
-                        RadioInputElementOption.of(MODE_AUTOMATIC, "Automatisch"),
-                        RadioInputElementOption.of(MODE_MANUAL, "Manuell")
+                        SelectInputElementOption.of(MODE_AUTOMATIC, "Automatisch"),
+                        SelectInputElementOption.of(MODE_MANUAL, "Manuell")
                 )));
 
         layout.findChild(Config.TASK_DESCRIPTION_FIELD_ID, RichTextInputElement.class)
@@ -497,7 +497,8 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         /**
          * Selects the execution mode; an absent value defaults to automatic execution.
          */
-        @InputElementPOJOBinding(id = MODE_FIELD_ID, type = ElementType.Radio, properties = {
+        @InputElementPOJOBinding(id = MODE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Art der Zuweisung"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die zuzuweisende Person automatisch ermittelt oder in einer Aufgabe ausgewählt wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)

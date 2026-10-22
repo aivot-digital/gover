@@ -1,21 +1,16 @@
-import React from 'react';
 import {Grid, Typography, useTheme} from '@mui/material';
-import {type RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
-import {stringOrDefault} from '../../utils/string-utils';
-import {type BaseSummaryProps} from '../../summaries/base-summary';
+import {BaseSummaryProps} from './base-summary';
+import {DurationFieldElement} from '../models/elements/form/input/duration-field-element';
+import {formatDurationSeconds} from '../components/duration-field/duration-value';
+import {DurationPrecision} from '../models/elements/form/input/duration-field-element';
+import React from 'react';
 
-export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldElement, string>) {
-    const options = (props.model.options ?? []).map((option) => {
-        if (typeof option === 'string') {
-            return {
-                label: option,
-                value: option,
-            };
-        } else {
-            return option;
-        }
-    });
-    const value: string | null = props.value != null ? options.find((option) => option.value === props.value)?.label ?? props.value : null;
+export function DurationFieldSummary(props: BaseSummaryProps<DurationFieldElement, number>) {
+    const {
+        model,
+        value,
+    } = props;
+
     const theme = useTheme();
 
     return (
@@ -48,7 +43,7 @@ export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldEle
                         },
                     }}
                 >
-                    {props.model.label}
+                    {model.label}
                 </Typography>
             </Grid>
             <Grid
@@ -56,10 +51,10 @@ export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldEle
                     xs: 12,
                     md: 8
                 }}>
-                <Typography
-                    variant="body2"
-                >
-                    {stringOrDefault(value, 'Keine Angabe')}
+                <Typography variant={"body2"}>
+                    {
+                        formatDurationSeconds(value, model.precision ?? DurationPrecision.Minute, model.largestUnit)
+                    }
                 </Typography>
             </Grid>
         </Grid>

@@ -1,5 +1,6 @@
 import {fireEvent, render, screen, within} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
+import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
 import {ElementType} from '../data/element-type/element-type';
 import {
     type AuthoredElementValues,
@@ -22,6 +23,7 @@ vi.mock('../components/element-tree-2/components/element-tree-inline-editor-cont
 function groupSelect(id: string, label: string): AnyElement {
     return {
         ...generateElementWithDefaultValues(ElementType.Select),
+        presentation: SelectFieldPresentation.Dropdown,
         id,
         label,
         options: [
@@ -34,6 +36,7 @@ function groupSelect(id: string, label: string): AnyElement {
 function optionSelect(id: string, label: string, dependsOnSelectFieldId: string): AnyElement {
     return {
         ...generateElementWithDefaultValues(ElementType.Select),
+        presentation: SelectFieldPresentation.Dropdown,
         id,
         label,
         dependsOnSelectFieldId,
@@ -53,7 +56,7 @@ function rows(id: string, children: AnyElement[]): AnyElement {
     } as AnyElement;
 }
 
-function renderForm(rootDerivedData: DerivedRuntimeElementData = createDerivedRuntimeElementData()) {
+function renderForm(rootDerivedData: DerivedRuntimeElementData = createDerivedRuntimeElementData(), presentation = SelectFieldPresentation.Dropdown) {
     const root = {
         ...generateElementWithDefaultValues(ElementType.GroupLayout),
         id: 'root',
@@ -81,6 +84,10 @@ function renderForm(rootDerivedData: DerivedRuntimeElementData = createDerivedRu
             },
         }]),
     };
+
+    for (const element of flattenElements(root)) {
+        if (element.type === ElementType.Select) element.presentation = presentation;
+    }
 
     render(
         <ViewDispatcherContextProvider value={{
@@ -114,6 +121,16 @@ function openOptions(label: string) {
 }
 
 describe('SelectFieldView in nested rows', () => {
+    it('uses the same dependent options in radio presentation', () => {
+        renderForm(createDerivedRuntimeElementData(), SelectFieldPresentation.Radio);
+        const row = within(screen.getByRole('group', {name: /^Zeilenoption/}));
+        expect(row.getByRole('radio', {name: 'Option A'})).toBeInTheDocument();
+        expect(row.queryByRole('radio', {name: 'Option B'})).not.toBeInTheDocument();
+        const form = within(screen.getByRole('group', {name: /^Formularoption/}));
+        expect(form.getByRole('radio', {name: 'Option B'})).toBeInTheDocument();
+        expect(form.queryByRole('radio', {name: 'Option A'})).not.toBeInTheDocument();
+    });
+
     it('offers the options of the group selected in the surrounding row', () => {
         renderForm();
 

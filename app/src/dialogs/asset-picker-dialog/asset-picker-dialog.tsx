@@ -36,6 +36,7 @@ type ProviderLoadError = 'permission' | 'generic';
 
 export interface AssetPickerDialogProps {
     id?: string;
+    storageProviderId?: number | null;
     title: string;
     show: boolean;
     mimeType?: string | string[];
@@ -47,6 +48,7 @@ export interface AssetPickerDialogProps {
 export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProps>) {
     const {
         id,
+        storageProviderId,
         title,
         show,
         mimeType,
@@ -69,6 +71,8 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
     const [selectionProcessingMessage, setSelectionProcessingMessage] = useState<string>();
     const isProcessingSelectionRef = useRef(false);
     const providerLoadRequestRef = useRef(0);
+    const providerRestrictionRef = useRef(storageProviderId);
+    providerRestrictionRef.current = storageProviderId;
 
     const loadProviders = useCallback(() => {
         const requestId = providerLoadRequestRef.current + 1;
@@ -94,6 +98,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                 }
 
                 const sortedProviders = loadedProviders
+                    .filter(provider => storageProviderId == null || provider.id === storageProviderId)
                     .slice()
                     .sort((a, b) => a.name.localeCompare(b.name, 'de', {sensitivity: 'base'}));
 
@@ -127,7 +132,20 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                     setIsLoadingProviders(false);
                 }
             });
-    }, [canReadAssets, dispatch]);
+    }, [canReadAssets, dispatch, storageProviderId]);
+
+    const isAllowedProvider = useCallback((providerId: number) => {
+        if (providerRestrictionRef.current == null || providerRestrictionRef.current === providerId) return true;
+        dispatch(showErrorSnackbar('Die ausgewählte Datei gehört nicht zum erlaubten Speicheranbieter.'));
+        return false;
+    }, [dispatch]);
+
+    const selectAsset = useCallback((key: string, path: string, providerId: number) => {
+        // Recheck after asynchronous metadata loading or publication, including configuration changes.
+        if (!isAllowedProvider(providerId)) return false;
+        onSelectAsset(key, path, providerId);
+        return true;
+    }, [isAllowedProvider, onSelectAsset]);
 
     useEffect(() => {
         if (!show) {
@@ -207,6 +225,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         if (item.directory || isProcessingSelectionRef.current) {
             return;
         }
+        if (!isAllowedProvider(item.storageProviderId)) return;
 
         if (item.missing) {
             dispatch(showErrorSnackbar('Die ausgewählte Datei fehlt im Speicher und kann nicht ausgewählt werden.'));
@@ -233,6 +252,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
 
                 assetKey = resolvedAsset.key.trim();
                 assetIsPrivate = resolvedAsset.isPrivate;
+                if (!isAllowedProvider(resolvedAsset.storageProviderId)) return;
             }
 
             if (assetKey.length === 0) {
@@ -308,6 +328,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                 if (assetToPublish == null) {
                     return;
                 }
+                if (!isAllowedProvider(assetToPublish.storageProviderId)) return;
 
                 try {
                     const updatedAsset = await new AssetsApiService(api).updateInStorageProvider(
@@ -319,8 +340,9 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                         assetToPublish.storageProviderId,
                     );
 
-                    dispatch(showSuccessSnackbar('Die Datei wurde veröffentlicht und ausgewählt.'));
-                    onSelectAsset(updatedAsset.key, updatedAsset.storagePathFromRoot, updatedAsset.storageProviderId);
+                    if (selectAsset(updatedAsset.key, updatedAsset.storagePathFromRoot, updatedAsset.storageProviderId)) {
+                        dispatch(showSuccessSnackbar('Die Datei wurde veröffentlicht und ausgewählt.'));
+                    }
                     return;
                 } catch (err) {
                     dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht veröffentlicht werden.'));
@@ -334,11 +356,11 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
             }
 
             if (resolvedAsset != null) {
-                onSelectAsset(resolvedAsset.key, resolvedAsset.storagePathFromRoot, resolvedAsset.storageProviderId);
+                selectAsset(resolvedAsset.key, resolvedAsset.storagePathFromRoot, resolvedAsset.storageProviderId);
                 return;
             }
 
-            onSelectAsset(assetKey, item.pathFromRoot, item.storageProviderId);
+            selectAsset(assetKey, item.pathFromRoot, item.storageProviderId);
         } finally {
             stopSelectionProcessing();
         }
@@ -349,7 +371,8 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         dispatch,
         loadAssetForSelection,
         visibility,
-        onSelectAsset,
+        selectAsset,
+        isAllowedProvider,
         providers,
         startSelectionProcessing,
         stopSelectionProcessing,
@@ -404,7 +427,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                                 }))}
                                 includeEmptyOption={false}
                                 emptyStatePlaceholder="Keine Speicheranbieter verfügbar"
-                                disabled={isLoadingProviders || providers.length === 0 || isProcessingSelection}
+                                disabled={storageProviderId != null || isLoadingProviders || providers.length === 0 || isProcessingSelection}
                                 showOptionalIndicator={false}
                                 margin="none"
                             />
@@ -520,12 +543,14 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
 
                     {!isLoadingProviders && providerLoadError == null && providers.length === 0 && (
                         <Alert severity="info">
-                            Es sind keine Speicheranbieter konfiguriert. Gehen Sie zu{' '}
-                            <Link to="/storage-providers"
-                                  style={{color: 'inherit'}}>
-                                Speicheranbieter
-                            </Link>
-                            {' '}und richten Sie einen Speicheranbieter ein.
+                            {storageProviderId != null ? 'Der festgelegte Speicheranbieter ist nicht verfügbar.' : <>
+                                Es sind keine Speicheranbieter konfiguriert. Gehen Sie zu{' '}
+                                <Link to="/storage-providers"
+                                      style={{color: 'inherit'}}>
+                                    Speicheranbieter
+                                </Link>
+                                {' '}und richten Sie einen Speicheranbieter ein.
+                            </>}
                         </Alert>
                     )}
 
@@ -535,7 +560,8 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                         </Alert>
                     )}
 
-                    {!isLoadingProviders && selectedProviderId != null && (
+                    {!isLoadingProviders && selectedProviderId != null &&
+                        (storageProviderId == null || selectedProviderId === storageProviderId) && (
                         <Box sx={{position: 'relative'}}>
                             <AssetExplorer
                                 providerId={selectedProviderId}

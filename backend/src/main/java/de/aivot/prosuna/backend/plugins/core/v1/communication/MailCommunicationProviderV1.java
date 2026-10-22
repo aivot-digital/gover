@@ -18,8 +18,6 @@ import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFuncti
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -138,11 +136,11 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         }
 
         layout
-                .findChild(SENDER_MODE_FIELD_ID, RadioInputElement.class)
+                .findChild(SENDER_MODE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(senderMode -> {
                     senderMode.setOptions(List.of(
-                            RadioInputElementOption.of(SENDER_MODE_DEFAULT, "Standardabsender verwenden"),
-                            RadioInputElementOption.of(SENDER_MODE_CUSTOM, "Eigenen Absender verwenden")
+                            SelectInputElementOption.of(SENDER_MODE_DEFAULT, "Standardabsender verwenden"),
+                            SelectInputElementOption.of(SENDER_MODE_CUSTOM, "Eigenen Absender verwenden")
                     ));
                     senderMode.setValue(new ElementValueFunctions().setNoCode(
                             NoCodeStaticValue.of(SENDER_MODE_DEFAULT)
@@ -274,7 +272,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
             throw new CommunicationException("Die Testempfängeradresse ist erforderlich.");
         }
         var recipient = rawRecipient.trim();
-        if (!EmailAddressUtils.isValidSingleAddress(recipient)) {
+        if (!EmailAddressUtils.isValidTransportAddress(recipient)) {
             throw new CommunicationException("Die Testempfängeradresse ist ungültig.");
         }
 
@@ -401,7 +399,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
             var mapped = identity.attributes().get(identityBinding.emailAttribute);
             if (mapped != null) {
                 var trimmed = mapped.trim();
-                if (EmailAddressUtils.isValidSingleAddress(trimmed)) {
+                if (EmailAddressUtils.isValidTransportAddress(trimmed)) {
                     return trimmed;
                 }
             }
@@ -456,7 +454,8 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
 
     @LayoutElementPOJOBinding(id = CONFIG_LAYOUT_ID, type = ElementType.ConfigLayout)
     public static class Config {
-        @InputElementPOJOBinding(id = SENDER_MODE_FIELD_ID, type = ElementType.Radio, properties = {
+        @InputElementPOJOBinding(id = SENDER_MODE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Absender"),
                 @ElementPOJOBindingProperty(
                         key = "hint",

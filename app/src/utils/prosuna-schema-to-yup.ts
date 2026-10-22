@@ -1,3 +1,9 @@
+import {PhoneNumberFieldElement, PhoneNumberValidation} from '../models/elements/form/input/phone-number-field-element';
+import {EmailFieldElement} from '../models/elements/form/input/email-field-element';
+import {isBlankPhoneNumber, normalizePhoneNumber} from './phone-number-utils';
+import {validateEmailAddress} from './email-address-utils';
+import {DurationFieldElement, DurationPrecision} from '../models/elements/form/input/duration-field-element';
+import {validateDurationSeconds} from '../components/duration-field/duration-value';
 import {isValidProcessDataPath} from './process-data-path';
 import {type ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {InputMode} from '../models/input-mode';
@@ -13,7 +19,6 @@ import {
 } from '../models/elements/form/layout/replicating-container-layout';
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
-import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
 import {
     applyComputedErrors,
     AuthoredElementValues,
@@ -140,9 +145,11 @@ const YupSchemaMap: {
     [T in ElementType]?: (elem: any, states: ComputedElementStates) => Schema;
 } = {
     [ElementType.Text]: textFieldToYup,
+    [ElementType.PhoneNumber]: phoneNumberFieldToYup,
+    [ElementType.Email]: emailFieldToYup,
     [ElementType.Number]: numberFieldToYup,
+    [ElementType.Duration]: durationFieldToYup,
     [ElementType.Select]: selectFieldToYup,
-    [ElementType.Radio]: selectFieldToYup,
     [ElementType.ChipInput]: chipInputFieldToYup,
     [ElementType.DateRange]: dateRangeFieldToYup,
     [ElementType.TimeRange]: timeRangeFieldToYup,
@@ -243,6 +250,26 @@ function textFieldToYup(elem: TextFieldElement): Schema {
     return textFieldSchema;
 }
 
+function phoneNumberFieldToYup(elem: PhoneNumberFieldElement): Schema {
+    const schema = yup.string().trim().nullable().test('phone-number', 'Bitte geben Sie eine gültige Telefonnummer mit Ländervorwahl ein.',
+        value => isBlankPhoneNumber(value) || normalizePhoneNumber(value, elem.validationMode ?? PhoneNumberValidation.Possible) != null);
+    return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
+}
+
+function emailFieldToYup(elem: EmailFieldElement): Schema {
+    const schema = yup.string().trim().nullable().test('email-address', 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+        value => validateEmailAddress(value, elem.allowLocalDomains ?? false) == null);
+    return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
+}
+
+function durationFieldToYup(elem: DurationFieldElement): Schema {
+    const schema = yup.number().strict().nullable().test('duration', 'Ungültige Zeitdauer.', function (value) {
+        const error = validateDurationSeconds(value, elem.precision ?? DurationPrecision.Minute, elem.minDuration, elem.maxDuration, elem.largestUnit);
+        return error == null || this.createError({message: error});
+    });
+    return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
+}
+
 function numberFieldToYup(elem: AnyInputElement): Schema {
     let numberFieldSchema: NumberSchema<number | undefined | null> = yup
         .number();
@@ -275,7 +302,7 @@ function departmentSelectFieldToYup(elem: AnyInputElement): Schema {
     return departmentSchema;
 }
 
-function selectFieldToYup(elem: SelectFieldElement | RadioFieldElement): Schema {
+function selectFieldToYup(elem: SelectFieldElement): Schema {
     let selectFieldSchema: StringSchema<string | undefined | null> = yup
         .string()
         .trim();

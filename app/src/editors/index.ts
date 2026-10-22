@@ -1,3 +1,6 @@
+import {PhoneNumberFieldEditor} from './phone-number-field-editor';
+import {EmailFieldEditor} from './email-field-editor';
+import {DurationFieldEditor} from './duration-field-editor';
 import {ElementType} from '../data/element-type/element-type';
 import {type ElementTypesMap} from '../data/element-type/element-types-map';
 import {TextFieldEditor} from './text-field-editor';
@@ -15,7 +18,6 @@ import {
 import {HeadlineComponentEditor} from '../components/headline/headline.component.editor';
 import {ReplicatingContainerEditor} from '../components/replicating-container/replicating-container.editor';
 import {RichtextComponentEditor} from '../components/richtext/richtext.component.editor';
-import {RadioFieldComponentEditor} from '../components/radio-field/radio-field.component.editor';
 import {SpacerComponentEditor} from '../components/spacer/spacer.component.editor';
 import {TableFieldComponentEditor} from '../components/table-field/table-field.component.editor';
 import {
@@ -86,6 +88,9 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.MultiCheckbox]: {
         default: MultiCheckboxFieldComponentEditor,
     },
+    [ElementType.PhoneNumber]: {default: PhoneNumberFieldEditor},
+    [ElementType.Email]: {default: EmailFieldEditor},
+    [ElementType.Duration]: {default: DurationFieldEditor},
     [ElementType.Number]: {
         default: NumberFieldEditor,
     },
@@ -94,9 +99,6 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     },
     [ElementType.RichText]: {
         default: RichtextComponentEditor,
-    },
-    [ElementType.Radio]: {
-        default: RadioFieldComponentEditor,
     },
     [ElementType.Select]: {
         default: SelectFieldEditor,

@@ -11,6 +11,7 @@ import {type StoragePathSelectorInputElement} from '../models/elements/form/inpu
 import {type AssetSelectInputElement} from '../models/elements/form/input/asset-select-input-element';
 import {type DepartmentSelectInputElement} from '../models/elements/form/input/department-select-input-element';
 import {AssetVisibility} from '../modules/assets/models/asset-visibility';
+import {getElementNameForType} from '../data/element-type/element-names';
 
 describe('generateElementWithDefaultValues', () => {
     it('should default text fields to not being copyable', () => {
@@ -76,6 +77,8 @@ describe('generateElementWithDefaultValues', () => {
     it('should initialize asset selections with a stable scalar reference', () => {
         const element = generateElementWithDefaultValues(ElementType.AssetSelectInput) as AssetSelectInputElement;
 
+        expect(getElementNameForType(ElementType.AssetSelectInput)).toBe('Datei-Auswahl');
+        expect(element.label).toBe('Datei');
         expect(element.placeholder).toBe('Keine Datei ausgewählt');
         expect(element.dialogTitle).toBe('Datei auswählen');
         expect(element.assetVisibility).toBe(AssetVisibility.All);

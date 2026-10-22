@@ -1,3 +1,4 @@
+import {normalizeElementDefinition} from '../../../utils/normalize-element-definition';
 import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
 import {Alert, Box, CircularProgress, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
@@ -159,7 +160,7 @@ function getIdentityDisplayName(identity: Pick<IdentityConfigElementSlot, 'title
 }
 
 function cloneFormLayoutSnapshot<T extends FormLayoutElement>(element: T): T {
-    return JSON.parse(JSON.stringify(element)) as T;
+    return normalizeElementDefinition(JSON.parse(JSON.stringify(element)) as T);
 }
 
 export function FormNodeEditorPage() {
@@ -605,7 +606,7 @@ export function FormNodeEditorPage() {
 
         setNode(updated);
         setFormLayout(
-            getLiteralElementValue<FormLayoutElement>(updated.configuration, FormLayoutFieldKey) ??
+            normalizeElementDefinition(getLiteralElementValue<FormLayoutElement>(updated.configuration, FormLayoutFieldKey)) ??
             generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement,
         );
     };

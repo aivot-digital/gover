@@ -24,6 +24,12 @@
         >Mehrere Einträge bitte kommasepariert nacheinander notieren.</div>
         <div
                 class="hint"
+                th:if="${base.isBlankPrint() && element.maxItemLength != null && element.maxItemLength > 0}"
+        >
+            Höchstens <span th:text="${element.maxItemLength}"></span> Zeichen je Eintrag
+        </div>
+        <div
+                class="hint"
                 th:if="${base.isBlankPrint() && element.minItems != null && element.minItems > 0}"
         >
             Mindestens

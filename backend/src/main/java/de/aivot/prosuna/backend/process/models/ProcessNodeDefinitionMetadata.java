@@ -256,23 +256,6 @@ public record ProcessNodeDefinitionMetadata(
 
     private @Nullable List<ForwardedProcessDataKey.ValueOption> getValueOptions(BaseInputElement<?> i) {
         List<ForwardedProcessDataKey.ValueOption> valueOptions = switch (i) {
-            case RadioInputElement r -> {
-                OptionsSourceType os = r.getOptionsSource();
-                if (os == null) {
-                    os = OptionsSourceType.Manual;
-                }
-
-                yield switch (os) {
-                    case Manual -> r
-                            .getOptions() == null ? null : r
-                            .getOptions()
-                            .stream()
-                            .filter(o -> o.getValue() != null && o.getLabel() != null)
-                            .map(o -> new ForwardedProcessDataKey.ValueOption(o.getValue(), o.getLabel()))
-                            .toList();
-                    case CodeList -> null;
-                };
-            }
             case SelectInputElement s -> {
                 var os = s.getOptionsSource();
                 if (os == null) {
@@ -330,7 +313,6 @@ public record ProcessNodeDefinitionMetadata(
 
     private static @Nullable String getCodeListKey(@Nonnull BaseInputElement<?> i) {
         var codeListKey = switch (i) {
-            case RadioInputElement r when r.getOptionsSource() == OptionsSourceType.CodeList -> r.getCodeListKey();
             case SelectInputElement s when s.getOptionsSource() == OptionsSourceType.CodeList -> s.getCodeListKey();
             case MultiCheckboxInputElement m when m.getOptionsSource() == OptionsSourceType.CodeList -> m.getCodeListKey();
             case ChipInputElement c when c.getOptionsSource() == OptionsSourceType.CodeList -> c.getCodeListKey();

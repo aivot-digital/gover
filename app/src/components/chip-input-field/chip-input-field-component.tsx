@@ -1,4 +1,4 @@
-import {type KeyboardEvent, useEffect, useMemo, useState} from 'react';
+import {type ClipboardEvent, type CompositionEvent, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Autocomplete,
     Box,
@@ -18,6 +18,7 @@ import {
 } from '../form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
+import {DefaultChipInputPasteSeparators} from '../../data/chip-input-paste-separators';
 
 export interface ChipInputFieldComponentProps extends FormFieldLayoutProps {
     label: string;
@@ -32,50 +33,12 @@ export interface ChipInputFieldComponentProps extends FormFieldLayoutProps {
     readOnly?: boolean;
     suggestions?: string[];
     allowDuplicates?: boolean;
+    minItems?: number;
     maxItems?: number;
+    maxItemLength?: number;
+    pasteSeparators?: string[] | null;
     size?: TextFieldProps['size'];
     controlSx?: SxProps<Theme>;
-}
-
-interface NormalizedValuesResult {
-    values: string[] | null;
-    hasRejectedDuplicate: boolean;
-    hasRejectedItem: boolean;
-}
-
-function normalizeValues(values: string[], allowDuplicates: boolean, maxItems?: number): NormalizedValuesResult {
-    const normalizedValues: string[] = [];
-    const knownEntries = new Set<string>();
-    let hasRejectedDuplicate = false;
-    let hasRejectedItem = false;
-
-    for (const rawEntry of values) {
-        const entry = rawEntry.trim();
-
-        if (entry.length === 0) {
-            continue;
-        }
-
-        if (!allowDuplicates && knownEntries.has(entry)) {
-            hasRejectedDuplicate = true;
-            hasRejectedItem = true;
-            continue;
-        }
-
-        if (maxItems != null && normalizedValues.length >= maxItems) {
-            hasRejectedItem = true;
-            continue;
-        }
-
-        normalizedValues.push(entry);
-        knownEntries.add(entry);
-    }
-
-    return {
-        values: normalizedValues.length > 0 ? normalizedValues : null,
-        hasRejectedDuplicate,
-        hasRejectedItem,
-    };
 }
 
 export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
@@ -92,17 +55,42 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
         readOnly,
         suggestions,
         allowDuplicates,
+        minItems,
         maxItems,
+        maxItemLength,
+        pasteSeparators,
         size = 'small',
     } = props;
     const [inputValue, setInputValue] = useState('');
+    const inputValueRef = useRef('');
+    const composingRef = useRef(false);
+    const commitAfterCompositionRef = useRef(false);
+    const highlightedOptionRef = useRef<string | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState<string>();
     const dispatch = useAppDispatch();
     const selectedValues = value ?? [];
+    const isInteractionDisabled = Boolean(disabled || readOnly || busy);
     const effectiveMaxItems = maxItems != null && maxItems > 0 ? maxItems : undefined;
+    const effectiveMinItems = minItems != null && minItems > 0 ? minItems : undefined;
     const hasReachedMaxItems = effectiveMaxItems != null && selectedValues.length >= effectiveMaxItems;
-    const helperText = error ?? hint;
+    const showMinItems = effectiveMinItems != null && selectedValues.length < effectiveMinItems;
+    const showMaxItems = effectiveMaxItems != null && !showMinItems;
+    const remainingItems = (effectiveMinItems ?? 0) - selectedValues.length;
+    const minimumIndicator = selectedValues.length === 0
+        ? `${required ? 'Mindestens' : 'Bei Eingabe mindestens'} ${effectiveMinItems} ${pluralize(effectiveMinItems ?? 0, 'Eintrag', 'Einträge')}`
+        : `Noch mindestens ${remainingItems} ${pluralize(remainingItems, 'Eintrag', 'Einträge')}`;
+    const validationError = effectiveMaxItems != null && selectedValues.length > effectiveMaxItems
+        ? `Maximal ${effectiveMaxItems} Einträge erlaubt.`
+        : minItems != null && minItems > 0 && selectedValues.length > 0 && selectedValues.length < minItems
+            ? `Mindestens ${minItems} Einträge erforderlich.`
+            : maxItemLength != null && maxItemLength > 0 && selectedValues.some(entry => entry.trim().length > maxItemLength)
+                ? `Jeder Eintrag darf höchstens ${maxItemLength} Zeichen enthalten.`
+                : allowDuplicates !== true && new Set(selectedValues.map(entry => entry.trim())).size !== selectedValues.length
+                    ? 'Mehrfach vorhandene Einträge sind nicht erlaubt.'
+                    : undefined;
+    const effectiveError = error || validationError;
+    const helperText = effectiveError || hint;
     const showCommitHint = (isFocused || inputValue.trim().length > 0) &&
         !hasReachedMaxItems && readOnly !== true && disabled !== true && busy !== true;
 
@@ -124,46 +112,67 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
         };
     }, [feedbackMessage]);
 
-    const applyUpdatedValue = (updatedValue: string[]) => {
-        const normalized = normalizeValues(updatedValue, allowDuplicates === true, effectiveMaxItems);
-
-        onChange(normalized.values);
-
-        if (effectiveMaxItems != null && normalized.hasRejectedItem && !normalized.hasRejectedDuplicate) {
-            setFeedbackMessage(`Maximal ${effectiveMaxItems} Einträge möglich.`);
-            return;
-        }
-
-        if (normalized.hasRejectedDuplicate) {
-            setFeedbackMessage(undefined);
-            dispatch(showWarningSnackbar('Der Eintrag wurde nicht übernommen, weil er bereits vorhanden ist.'));
-            return;
-        }
-
-        setFeedbackMessage(undefined);
+    const updateInputValue = (nextValue: string) => {
+        // Blur can follow a selection before React renders the cleared draft.
+        inputValueRef.current = nextValue;
+        setInputValue(nextValue);
     };
 
-    const hasError = error != null && error.length > 0;
+    const addEntries = (entries: string[]): boolean => {
+        if (isInteractionDisabled || composingRef.current) return false;
+        const additions: string[] = [];
+        const knownEntries = new Set(selectedValues.map(entry => entry.trim()));
+        let hasDuplicates = false;
+        for (const entry of entries.map(entry => entry.trim()).filter(Boolean)) {
+            if (allowDuplicates !== true && knownEntries.has(entry)) {
+                hasDuplicates = true;
+            } else {
+                additions.push(entry);
+                knownEntries.add(entry);
+            }
+        }
+        // Check only additions. Existing values must survive stricter rules and removals.
+        // Reject an oversized paste as a whole instead of silently dropping its last entries.
+        if (additions.length > 0 && effectiveMaxItems != null && selectedValues.length + additions.length > effectiveMaxItems) {
+            setFeedbackMessage(`Die Einträge wurden nicht übernommen. Maximal ${effectiveMaxItems} Einträge möglich.`);
+            return false;
+        }
+        if (additions.length > 0) onChange([...selectedValues, ...additions]);
+        if (hasDuplicates) {
+            dispatch(showWarningSnackbar('Bereits vorhandene Einträge wurden nicht erneut übernommen.'));
+        }
+        setFeedbackMessage(undefined);
+        return true;
+    };
+
+    const commitDraft = () => {
+        if (isInteractionDisabled || composingRef.current || inputValueRef.current.length === 0) return;
+        if (addEntries([inputValueRef.current])) updateInputValue('');
+    };
+
+    const hasError = Boolean(effectiveError);
     const hasHelperText = helperText != null && helperText.length > 0;
-    const hasHelperContent = hasHelperText || (feedbackMessage != null && !hasError) || effectiveMaxItems != null;
+    const hasHelperContent = hasHelperText || feedbackMessage != null || showMinItems || showMaxItems;
     const helperContent = hasHelperContent ? (
         <Box
             sx={{
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
-                gap: 2,
+                flexWrap: {xs: 'wrap', sm: 'nowrap'},
+                columnGap: 2,
+                rowGap: 0.5,
                 width: '100%',
             }}
         >
-            <Box sx={{flex: 1, minWidth: 0}}>
+            <Box sx={{minWidth: 0}}>
                 {hasHelperText && (
                     <Box component="span" sx={{display: 'block'}}>
                         {helperText}
                     </Box>
                 )}
 
-                {feedbackMessage != null && !hasError && (
+                {feedbackMessage != null && (
                     <Box
                         component="span"
                         role="status"
@@ -174,12 +183,19 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                 )}
             </Box>
 
-            {effectiveMaxItems != null && (
+            {showMinItems && (
+                <Box component="span" sx={{ml: 'auto', maxWidth: '100%'}}>
+                    {minimumIndicator}
+                </Box>
+            )}
+
+            {showMaxItems && effectiveMaxItems != null && (
                 <Box
                     component="span"
                     sx={{
                         whiteSpace: 'nowrap',
                         fontVariantNumeric: 'tabular-nums',
+                        ml: 'auto',
                     }}
                 >
                     <Box component="span" aria-hidden="true">
@@ -189,7 +205,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                         component="span"
                         className="visually-hidden"
                     >
-                        {`${selectedValues.length} von ${effectiveMaxItems} Einträgen verwendet`}
+                        {`${selectedValues.length} von ${effectiveMaxItems} ${pluralize(effectiveMaxItems, 'Eintrag', 'Einträgen')} verwendet`}
                     </Box>
                 </Box>
             )}
@@ -227,23 +243,45 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                     value={selectedValues}
                     inputValue={inputValue}
                     filterSelectedOptions={allowDuplicates !== true}
-                    onInputChange={(_, updatedValue, reason) => {
-                        if (reason === 'reset') {
-                            setInputValue('');
-                            return;
-                        }
-
-                        if (hasReachedMaxItems) {
-                            setInputValue('');
-                            return;
-                        }
-
-                        setFeedbackMessage(undefined);
-                        setInputValue(updatedValue);
+                    onHighlightChange={(_, option) => {
+                        highlightedOptionRef.current = option;
                     }}
-                    onChange={(_, updatedValue) => {
-                        if (!busy) {
-                            applyUpdatedValue(updatedValue);
+                    onClose={() => {
+                        highlightedOptionRef.current = null;
+                    }}
+                    onKeyDown={(event) => {
+                        if (isInteractionDisabled || composingRef.current || event.nativeEvent.isComposing || event.keyCode === 229) {
+                            event.defaultMuiPrevented = true;
+                            return;
+                        }
+                        // Let MUI handle deliberate suggestion selection. Free text needs its
+                        // own path because MUI does not create duplicate free-solo values.
+                        if (event.key === 'Enter' && highlightedOptionRef.current == null && inputValueRef.current.trim()) {
+                            event.preventDefault();
+                            event.defaultMuiPrevented = true;
+                            commitDraft();
+                        }
+                        // Tab keeps its native focus movement; blur commits the draft once.
+                    }}
+                    onInputChange={(_, updatedValue, reason) => {
+                        if (!isInteractionDisabled && (reason === 'input' || reason === 'clear')) {
+                            highlightedOptionRef.current = null;
+                            setFeedbackMessage(undefined);
+                            updateInputValue(updatedValue);
+                        }
+                    }}
+                    onChange={(event, updatedValue, reason, details) => {
+                        if (isInteractionDisabled || composingRef.current) return;
+                        if ((reason === 'selectOption' || reason === 'createOption') && details != null) {
+                            if (addEntries([details.option])) updateInputValue('');
+                        } else if (reason === 'removeOption' || reason === 'clear') {
+                            onChange(updatedValue.length > 0 ? updatedValue : null);
+                            // A suggestion can toggle off an existing chip. Consume its search
+                            // text as well so blur does not add the search fragment as a new chip.
+                            const toggledSuggestion = event.currentTarget?.getAttribute('role') === 'option' ||
+                                ('key' in event && event.key === 'Enter');
+                            if (reason === 'clear' || toggledSuggestion) updateInputValue('');
+                            setFeedbackMessage(undefined);
                         }
                     }}
                     renderInput={(params) => {
@@ -258,41 +296,25 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                                 id={fieldContext.controlId}
                                 label={undefined}
                                 placeholder={hasReachedMaxItems ? undefined : placeholder}
-                                required={required}
+                                required={required && selectedValues.length === 0}
                                 error={fieldContext.invalid}
                                 fullWidth
                                 margin="none"
                                 onFocus={() => {
                                     setIsFocused(true);
+                                    commitAfterCompositionRef.current = false;
                                 }}
-                                onBlur={() => {
+                                onBlur={(event) => {
+                                    if (event.currentTarget.contains(event.relatedTarget)) return;
                                     setIsFocused(false);
+                                    if (composingRef.current) {
+                                        commitAfterCompositionRef.current = true;
+                                    } else {
+                                        commitDraft();
+                                    }
                                 }}
                                 helperText={undefined}
                                 size={size}
-                                onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-                                    (params.slotProps.htmlInput as any).onKeyDown?.(event);
-
-                                    if (event.defaultPrevented || busy ||
-                                        (event.key !== 'Enter' && event.key !== 'Tab')) {
-                                        return;
-                                    }
-
-                                    const normalizedInput = inputValue.trim();
-                                    if (normalizedInput.length === 0) {
-                                        return;
-                                    }
-
-                                    if (effectiveMaxItems != null && selectedValues.length >= effectiveMaxItems) {
-                                        setFeedbackMessage(`Maximal ${effectiveMaxItems} Einträge möglich.`);
-                                        setInputValue('');
-                                        return;
-                                    }
-
-                                    event.preventDefault();
-                                    applyUpdatedValue([...selectedValues, normalizedInput]);
-                                    setInputValue('');
-                                }}
                                 slotProps={{
                                     ...params.slotProps,
                                     input: {
@@ -347,7 +369,34 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                                     htmlInput: {
                                         ...params.slotProps.htmlInput,
                                         ...nativeAriaProps,
-                                        readOnly: readOnly === true || busy === true || hasReachedMaxItems,
+                                        readOnly: readOnly === true || busy === true || (hasReachedMaxItems && inputValue.length === 0),
+                                        onCompositionStart: () => { composingRef.current = true; },
+                                        onCompositionEnd: (event: CompositionEvent<HTMLInputElement>) => {
+                                            composingRef.current = false;
+                                            if (!isInteractionDisabled) {
+                                                updateInputValue(event.currentTarget.value);
+                                                if (commitAfterCompositionRef.current) commitDraft();
+                                            }
+                                            commitAfterCompositionRef.current = false;
+                                        },
+                                        onPaste: (event: ClipboardEvent<HTMLInputElement>) => {
+                                            if (isInteractionDisabled || composingRef.current) return;
+                                            const pastedText = event.clipboardData.getData('text');
+                                            const separators = (pasteSeparators ?? DefaultChipInputPasteSeparators).filter(Boolean);
+                                            const split = (text: string) => separators.reduce(
+                                                (parts, separator) => parts.flatMap(part => separator === '\n'
+                                                    ? part.split(/\r\n|\r|\n/)
+                                                    : part.split(separator)),
+                                                [text],
+                                            );
+                                            if (split(pastedText).length < 2) return;
+                                            event.preventDefault();
+                                            const input = event.currentTarget;
+                                            const start = input.selectionStart ?? inputValueRef.current.length;
+                                            const end = input.selectionEnd ?? start;
+                                            const combined = inputValueRef.current.slice(0, start) + pastedText + inputValueRef.current.slice(end);
+                                            if (addEntries(split(combined))) updateInputValue('');
+                                        },
                                     },
                                 }}
                             />

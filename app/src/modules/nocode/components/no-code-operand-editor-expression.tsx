@@ -538,7 +538,6 @@ function getReferencedElementOptions(
     switch (element.type) {
         case ElementType.Checkbox:
             return BOOL_DEFAULT_OPTIONS;
-        case ElementType.Radio:
         case ElementType.Select:
             if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
                 return element.options.map((option) => (

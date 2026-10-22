@@ -12,7 +12,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
@@ -62,7 +62,7 @@ class MailCommunicationProviderV1Test {
         when(mailConfigurationService.getConfiguration()).thenReturn(mailConfiguration("Prosuna", "service@example.test"));
 
         var layout = definition.getConfigLayout();
-        var senderMode = layout.findChild(MailCommunicationProviderV1.SENDER_MODE_FIELD_ID, RadioInputElement.class).orElseThrow();
+        var senderMode = layout.findChild(MailCommunicationProviderV1.SENDER_MODE_FIELD_ID, SelectInputElement.class).orElseThrow();
         var defaultSenderName = layout.findChild(MailCommunicationProviderV1.DEFAULT_SENDER_NAME_FIELD_ID, TextInputElement.class).orElseThrow();
         var defaultSenderAddress = layout.findChild(MailCommunicationProviderV1.DEFAULT_SENDER_ADDRESS_FIELD_ID, TextInputElement.class).orElseThrow();
         var customSenderName = layout.findChild(MailCommunicationProviderV1.CUSTOM_SENDER_NAME_FIELD_ID, TextInputElement.class).orElseThrow();
