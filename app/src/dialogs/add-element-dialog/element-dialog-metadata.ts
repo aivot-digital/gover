@@ -91,7 +91,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.Checkbox]: 'Ermöglicht eine einzelne Bestätigung oder das Aktivieren einer Option, zum Beispiel „Abweichende Lieferadresse verwenden“.',
     [ElementType.Date]: 'Erfasst ein einzelnes Datum.',
     [ElementType.Headline]: 'Gliedert Inhalte mit einer Überschrift.',
-    [ElementType.MultiCheckbox]: 'Wählt mehrere vorgegebene Optionen aus einer Checkbox-Liste oder durchsuchbaren Auswahl.',
+    [ElementType.MultiCheckbox]: 'Wählt mehrere vorgegebene Optionen aus einer Auswahlfeld-Liste oder durchsuchbaren Auswahl.',
     [ElementType.Number]: 'Erfasst Zahlenwerte und Mengenangaben.',
     [ElementType.PhoneNumber]: 'Erfasst Telefonnummern mit Ländervorwahl und integrierter Prüfung.',
     [ElementType.Email]: 'Erfasst eine E-Mail-Adresse und prüft ihre Schreibweise.',

@@ -46,7 +46,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                         label="Darstellung der Auswahl"
                         value={props.element.presentation ?? MultiChoicePresentation.Checkboxes}
                         options={[
-                            {value: MultiChoicePresentation.Checkboxes, label: 'Checkbox-Liste'},
+                            {value: MultiChoicePresentation.Checkboxes, label: 'Auswahlfeld-Liste'},
                             {value: MultiChoicePresentation.Combobox, label: 'Durchsuchbare Auswahl'},
                         ]}
                         onChange={(presentation) => props.onPatch({presentation: presentation ?? MultiChoicePresentation.Checkboxes})}
