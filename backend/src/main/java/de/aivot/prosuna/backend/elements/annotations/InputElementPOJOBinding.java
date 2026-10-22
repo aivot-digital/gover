@@ -47,7 +47,7 @@ public @interface InputElementPOJOBinding {
 
     /**
      * How the field's text is used afterwards, see {@link TemplateOutputFormat}. Leave it empty to use Markdown for
-     * RichTextInput fields and Html for all other fields; set at most one format.
+     * RichTextInput fields and SingleLineText for all other fields; set at most one format.
      */
     @Nonnull
     TemplateOutputFormat[] dynamicTextFormat() default {};

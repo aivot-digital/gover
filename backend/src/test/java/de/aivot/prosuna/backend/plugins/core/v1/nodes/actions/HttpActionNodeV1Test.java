@@ -27,6 +27,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
@@ -45,6 +46,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -70,6 +72,7 @@ class HttpActionNodeV1Test {
     private StorageService storageService;
     private SecretService secretService;
     private HttpActionNodeV1 node;
+    private PassthroughTemplateRenderService templateRenderService;
 
     @BeforeEach
     void setUp() {
@@ -79,9 +82,10 @@ class HttpActionNodeV1Test {
         storageService = mock(StorageService.class);
         secretService = mock(SecretService.class);
 
+        templateRenderService = new PassthroughTemplateRenderService();
         node = new HttpActionNodeV1(
                 httpService,
-                new PassthroughTemplateRenderService(),
+                templateRenderService,
                 new JavascriptEngineFactoryService(List.of()),
                 processInstanceAttachmentService,
                 processInstanceAttachmentSetService,
@@ -152,6 +156,7 @@ class HttpActionNodeV1Test {
                     input.getDynamicTextPolicy().variableSuggestionSources(),
                     fieldId
             );
+            assertEquals(TemplateOutputFormat.SingleLineText, input.getDynamicTextPolicy().outputFormat(), fieldId);
         }
 
         var username = layout.findChild("username").orElseThrow();
@@ -197,6 +202,35 @@ class HttpActionNodeV1Test {
         var builtBody = (MultiValueMap<String, Object>) bodyCaptor.getValue().build();
         assertEquals(List.of("Anna"), builtBody.get("firstName"));
         assertEquals(List.of("done"), builtBody.get("status"));
+    }
+
+    @Test
+    void init_ShouldInsertValuesIntoHeadersAsOneLineAndIntoFormFieldsWithTheirLineBreaks() throws Exception {
+        when(httpService.request(
+                eq(HttpMethod.POST),
+                any(),
+                any(MultipartUtils.MultipartBodyPublisher.class),
+                any()
+        )).thenReturn(ResponseEntity.ok("ok".getBytes(StandardCharsets.UTF_8)));
+
+        var configuration = baseConfig("POST", "https://prosuna.test/api", "text", "200");
+        configuration.additionalSettings = new HttpActionNodeV1Config.AdditionalSettings();
+        configuration.additionalSettings.additionalHeaders = List.of(
+                Map.of("field", "X-Antrag-{{ $.typ }}", "value", "{{ $.person.vorname }}")
+        );
+        configuration.requestData = new HttpActionNodeV1Config.RequestData();
+        configuration.requestData.requestContentType = HttpActionNodeV1Config.RequestData.REQUEST_CONTENT_TYPE_OPT_MULTIPARTFORMDATA;
+        configuration.requestData.requestFormFields = List.of(
+                Map.of("name", "feld-{{ $.typ }}", "value", "{{ $.nachricht }}")
+        );
+
+        node.init(context(configuration));
+
+        // Header lines must not be split, while the HTTP client encodes form fields, line breaks included.
+        assertEquals(TemplateOutputFormat.SingleLineText, templateRenderService.outputFormats.get("X-Antrag-{{ $.typ }}"));
+        assertEquals(TemplateOutputFormat.SingleLineText, templateRenderService.outputFormats.get("{{ $.person.vorname }}"));
+        assertEquals(TemplateOutputFormat.SingleLineText, templateRenderService.outputFormats.get("feld-{{ $.typ }}"));
+        assertEquals(TemplateOutputFormat.PlainText, templateRenderService.outputFormats.get("{{ $.nachricht }}"));
     }
 
     @Test
@@ -384,12 +418,15 @@ class HttpActionNodeV1Test {
     }
 
     private static class PassthroughTemplateRenderService extends TemplateRenderService {
+        private final Map<String, TemplateOutputFormat> outputFormats = new HashMap<>();
+
         private PassthroughTemplateRenderService() {
             super(null);
         }
 
         @Override
-        public String interpolate(ProcessExecutionData foldedProcessData, String template) {
+        public String interpolate(ProcessExecutionData foldedProcessData, String template, TemplateOutputFormat outputFormat) {
+            outputFormats.put(template, outputFormat);
             return template;
         }
     }

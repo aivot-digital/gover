@@ -201,8 +201,10 @@ class EMailActionNodeV1Test {
         assertEquals("Organisationseinheit für die Signatur", manualSignatureDepartment.getLabel());
         assertFalse(manualSignatureDepartment.getRequired());
 
-        // Subjects become mail headers and the content is rendered as Markdown.
+        // Recipients and subjects become mail headers and the content is rendered as Markdown.
         for (var subjectFieldId : List.of(
+                EMailActionNodeV1.EMailActionNodeConfig.RECIPIENT_FIELD_ID,
+                EMailActionNodeV1.EMailActionNodeConfig.BCC_RECIPIENT_FIELD_ID,
                 SemiAutomaticMessageConfig.AutomaticContent.SUBJECT_FIELD_ID,
                 SemiAutomaticMessageConfig.ManualContent.SUBJECT_FIELD_ID
         )) {

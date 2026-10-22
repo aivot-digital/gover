@@ -16,18 +16,19 @@ import java.util.List;
  * a source-level execution sandbox. Authorization must therefore happen before process data reaches derivation.</p>
  *
  * <p>The output format describes how the field's text is used afterwards. It decides how values are inserted, also
- * when the whole field value comes from process data or code, so it must match the consumer of the field.</p>
+ * when the whole field value comes from process data or code, so it must match the consumer of the field. Without one,
+ * the field is treated as a single line of text, such as a file name, a mail address or a URL.</p>
  */
 public record DynamicTextPolicy(
         @Nonnull List<InputVariableSource> variableSuggestionSources,
         @Nonnull TemplateOutputFormat outputFormat
 ) implements Serializable {
     public DynamicTextPolicy() {
-        this(List.of(InputVariableSource.values()), TemplateOutputFormat.Html);
+        this(List.of(InputVariableSource.values()), TemplateOutputFormat.SingleLineText);
     }
 
     public DynamicTextPolicy(@Nullable List<InputVariableSource> variableSuggestionSources) {
-        this(variableSuggestionSources, TemplateOutputFormat.Html);
+        this(variableSuggestionSources, TemplateOutputFormat.SingleLineText);
     }
 
     public DynamicTextPolicy {
@@ -43,7 +44,7 @@ public record DynamicTextPolicy(
             throw new IllegalArgumentException("Dynamic text variable suggestion sources must not contain duplicates.");
         }
         if (outputFormat == null) {
-            outputFormat = TemplateOutputFormat.Html;
+            outputFormat = TemplateOutputFormat.SingleLineText;
         }
     }
 }

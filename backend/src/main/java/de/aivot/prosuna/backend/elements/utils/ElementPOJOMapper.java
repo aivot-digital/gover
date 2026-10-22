@@ -434,10 +434,11 @@ public class ElementPOJOMapper {
             );
         }
         try {
-            // Rich text fields are rendered as Markdown, so only exceptions such as AI prompts declare a format.
+            // Rich text fields are rendered as Markdown and text fields hold single lines such as file names or mail
+            // addresses, so only exceptions such as AI prompts declare a format.
             var outputFormat = outputFormats.length == 1
                     ? outputFormats[0]
-                    : element instanceof RichTextInputElement ? TemplateOutputFormat.Markdown : TemplateOutputFormat.Html;
+                    : element instanceof RichTextInputElement ? TemplateOutputFormat.Markdown : TemplateOutputFormat.SingleLineText;
             inputElement.setDynamicTextPolicy(new DynamicTextPolicy(Arrays.asList(variableSuggestionSources), outputFormat));
         } catch (IllegalArgumentException exception) {
             throw new ElementDataConversionException(

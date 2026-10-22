@@ -136,12 +136,12 @@ class ElementPOJOMapperTest {
     void createFromPOJO_ShouldDefaultTheOutputFormatByElementTypeAndKeepDeclaredFormats() throws ElementDataConversionException {
         var layout = ElementPOJOMapper.createFromPOJO(DynamicTextBindingClass.class);
 
-        assertEquals(TemplateOutputFormat.Html,
+        assertEquals(TemplateOutputFormat.SingleLineText,
                 layout.findChild("text", TextInputElement.class).orElseThrow().getDynamicTextPolicy().outputFormat());
         assertEquals(TemplateOutputFormat.Markdown,
                 layout.findChild("rich_text", RichTextInputElement.class).orElseThrow().getDynamicTextPolicy().outputFormat());
-        assertEquals(TemplateOutputFormat.SingleLineText,
-                layout.findChild("subject", TextInputElement.class).orElseThrow().getDynamicTextPolicy().outputFormat());
+        assertEquals(TemplateOutputFormat.PlainText,
+                layout.findChild("multiline_text", TextInputElement.class).orElseThrow().getDynamicTextPolicy().outputFormat());
         assertEquals(TemplateOutputFormat.PlainText,
                 layout.findChild("prompt", RichTextInputElement.class).orElseThrow().getDynamicTextPolicy().outputFormat());
     }
@@ -339,9 +339,9 @@ class ElementPOJOMapperTest {
         @InputElementPOJOBinding(id = "rich_text", type = ElementType.RichTextInput, dynamicText = true)
         private String richText;
 
-        @InputElementPOJOBinding(id = "subject", type = ElementType.Text, dynamicText = true,
-                dynamicTextFormat = TemplateOutputFormat.SingleLineText)
-        private String subject;
+        @InputElementPOJOBinding(id = "multiline_text", type = ElementType.Text, dynamicText = true,
+                dynamicTextFormat = TemplateOutputFormat.PlainText)
+        private String multilineText;
 
         @InputElementPOJOBinding(id = "prompt", type = ElementType.RichTextInput, dynamicText = true,
                 dynamicTextFormat = TemplateOutputFormat.PlainText)
