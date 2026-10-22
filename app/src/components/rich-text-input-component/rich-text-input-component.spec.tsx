@@ -334,6 +334,20 @@ describe('RichTextInputComponent', () => {
             .replace('\n---\n', '\n***\n'));
     });
 
+    it('shows tables as their Markdown lines and keeps them when the text is edited', async () => {
+        const onChange = vi.fn();
+        const markdown = 'Bitte prüfen\n\n| Feld | Wert |\n|---|---|\n| Ort | *Bonn* |\n\nEnde';
+        render(<RichTextInputComponent label="Nachricht" value={markdown} onChange={onChange} reducedMode/>);
+        const editor = await screen.findByRole('textbox', {name: 'Nachricht – optional'});
+
+        // The editor has no table editor, so it reads tables as paragraphs. The renderers still show a table.
+        await waitFor(() => expect(editor).toHaveTextContent('| Feld | Wert |'));
+        await selectEditorText(editor, 'Bitte prüfen');
+        fireEvent.keyDown(editor, {key: 'b', code: 'KeyB', ctrlKey: true});
+
+        await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(markdown.replace('Bitte prüfen', '**Bitte prüfen**')));
+    });
+
     it('offers no source mode in the customer app', async () => {
         appInfo.mode = 'customer';
         render(<RichTextInputComponent label="Nachricht" value={PROTECTED_MARKDOWN} onChange={vi.fn()}/>);
