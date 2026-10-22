@@ -160,6 +160,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodePhoneNumberIsValidOperator(),
                 new NoCodePhoneNumberIsPossibleOperator(),
                 new NoCodePhoneNumberNormalizeOperator(),
+                new NoCodePhoneNumberFormatOperator(),
 
                 // Secrets
                 new NoCodeSecretsGetOperator(secretService),
