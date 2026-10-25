@@ -36,19 +36,19 @@ public class SubmissionNotificationDestinationUserConfigDefinition implements Us
     @Nullable
     @Override
     public String getSubCategory() {
-        return "Anträge";
+        return "Vorgänge";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Fehlermeldungen bei Übertragung eines Antrags an Schnittstelle";
+        return "Fehler bei der Übertragung an eine Schnittstelle";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Sie werden benachrichtigt, wenn bei der Übertragung eines Antrags an eine Schnittstelle in einer Ihrer entwickelnden Organisationseinheiten ein Fehler auftritt.";
+        return "Sie werden benachrichtigt, wenn bei der Übertragung von Vorgangsdaten an eine Schnittstelle in einer Ihrer für die Prozessentwicklung zuständigen Organisationseinheiten ein Fehler auftritt.";
     }
 
     @Override

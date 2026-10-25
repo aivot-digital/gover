@@ -221,7 +221,7 @@ public class DefaultMailCommunicationService {
                 continue;
             }
             var name = attachment.getName() == null || attachment.getName().isBlank()
-                    ? "Anhang"
+                    ? "Anlage"
                     : attachment.getName();
             var contentType = attachment.getContentType() == null || attachment.getContentType().isBlank()
                     ? MediaType.APPLICATION_OCTET_STREAM

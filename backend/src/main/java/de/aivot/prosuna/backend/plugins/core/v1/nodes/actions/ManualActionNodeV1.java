@@ -155,7 +155,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         return """
                 Erstellt eine frei definierbare Aufgabe für eine Mitarbeiter:in, um einen manuellen Arbeitsschritt innerhalb oder außerhalb von Prosuna zu bestätigen.
 
-                Aufgabenbeschreibung, zuständiger Personenkreis und eine optionale Prosuna-Oberfläche werden konfiguriert. Nach der Bestätigung setzt das Element den Prozess fort und stellt erfasste Daten, Vermerk sowie Bearbeitungszeitpunkt und bearbeitende Person als Ausgänge bereit.
+                Aufgabenbeschreibung, zuständiger Personenkreis und eine optionale Prosuna-Oberfläche werden konfiguriert. Nach der Bestätigung setzt das Element den Prozess fort und stellt erfasste Daten, Vermerk sowie Bearbeitungszeitpunkt und bearbeitende Person als Datenausgänge bereit.
                 """;
     }
 
@@ -292,7 +292,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement '%s' konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement '%s' konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         context.getThisNode().getName() != null ? context.getThisNode().getName() : getName()
                 ));
 
@@ -473,7 +473,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 .convertValue(rawElement, BaseElement.class);
 
         if (!(copy instanceof GroupLayoutElement copiedElement)) {
-            throw new IllegalStateException("Configured manual-action UI is not a group layout.");
+            throw new IllegalStateException("Die konfigurierte Oberfläche für die manuelle Aufgabe ist keine Gruppierung.");
         }
 
         return copiedElement;

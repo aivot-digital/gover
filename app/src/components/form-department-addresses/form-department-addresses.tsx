@@ -24,7 +24,7 @@ export function useFormDepartmentAddressSections(formElement?: FormLayoutElement
     );
     const managingDepartment = usePublicDepartment(
         managingDepartmentId,
-        'Fehler beim Laden der bewirtschaftenden Stelle',
+        'Fehler beim Laden der betreuenden Stelle',
     );
 
     return useMemo(() => {
@@ -59,7 +59,7 @@ export function useFormDepartmentAddressSections(formElement?: FormLayoutElement
                         component="h3"
                         variant="h5"
                     >
-                        Bewirtschaftende Stelle
+                        Betreuende Stelle
                     </Typography>
                     <Typography
                         component="pre"

@@ -337,7 +337,7 @@ public class CommunicationService {
             layout = definition.getCustomerLayout(context, identityData);
         } catch (Exception e) {
             throw new CommunicationException(
-                    "Die Kundeneingaben für den Kommunikationsanbieter %s konnten nicht geladen werden."
+                    "Die Eingaben der Beteiligten für den Kommunikationsanbieter %s konnten nicht geladen werden."
                             .formatted(context.communicationProvider().getName()),
                     e
             );

@@ -37,7 +37,7 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
                 Ist der Wert leer (z. B. ein leeres Feld, null oder ein nicht gesetzter Wert), ergibt der Operator den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob ein Benutzer eine Telefonnummer angegeben hat.
+                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person eine Telefonnummer angegeben hat.
                 
                 Mit dem Operator **„Ist Nicht Leer“** wird diese Logik so formuliert: \s
                 `IST NICHT LEER Telefonnummer`
@@ -54,7 +54,7 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
                 
                 # Wann verwenden Sie den Operator „Ist Nicht Leer“?
                 Verwenden Sie **„Ist Nicht Leer“**, um sicherzustellen, dass ein Wert vorhanden ist, bevor Sie damit arbeiten. \s
-                Dieser Operator ist besonders hilfreich bei Formularen, um zu prüfen, ob ein Benutzer Pflichtfelder ausgefüllt hat oder ob wichtige Daten bereitstehen.
+                Dieser Operator ist besonders hilfreich bei Formularen, um zu prüfen, ob eine Person Pflichtfelder ausgefüllt hat oder ob wichtige Daten bereitstehen.
                 """;
     }
 

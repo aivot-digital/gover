@@ -95,7 +95,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         return """
                 Integriert den Zahlungsdienstleister GiroCheckout in die Zahlungsabwicklung von Prosuna.
 
-                Die Komponente erstellt Zahlungsanfragen für die von GiroCheckout unterstützten Zahlarten GiroPay, Sofortüberweisung, PayPal und Kreditkarte. Rückmeldungen des Dienstleisters werden in den Prosuna-Zahlungsstatus übernommen und können im weiteren Prozess verarbeitet werden.
+                Die Komponente erstellt Zahlungsanforderungen für die von GiroCheckout unterstützten Zahlarten GiroPay, Sofortüberweisung, PayPal und Kreditkarte. Rückmeldungen des Dienstleisters werden in den Prosuna-Zahlungsstatus übernommen und können im weiteren Prozess verarbeitet werden.
                 """;
     }
 
@@ -184,7 +184,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
         auditService.create()
                 .withSystem()
-                .setMessage("Eine Zahlungsanfrage wurde an GiroCheckout übermittelt.")
+                .setMessage("Eine Zahlungsanforderung wurde an GiroCheckout übermittelt.")
                 .setMetadata(Map.of(
                         "paymentProviderKey", String.valueOf(paymentProviderEntity.getKey()),
                         "paymentProviderName", paymentProviderEntity.getName(),
@@ -222,7 +222,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
             transaction = objectMapper
                     .readValue(response.body(), GiroPaymentStartResponse.class);
         } catch (JacksonException e) {
-            throw new PaymentSerializationException(e, "Failed to deserialize response body", response.body(), paymentProviderEntity);
+            throw new PaymentSerializationException(e, "Die Antwort des Zahlungsanbieters konnte nicht verarbeitet werden.", response.body(), paymentProviderEntity);
         }
 
         if (transaction.getRc() != 0) {
@@ -269,7 +269,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new PaymentException(
                     e,
-                    "Failed to generate hash for callback response for provider %s (%s)",
+                    "Der Prüfwert für die Callback-Antwort des Zahlungsanbieters %s (%s) konnte nicht erzeugt werden.",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey()
             );
@@ -287,7 +287,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         // signed result to the redirect URL of the payer, so the result of one transaction must not settle another.
         if (!isResultOfTransaction(callbackResponse, paymentTransaction)) {
             throw new PaymentException(
-                    "Callback response for provider %s (%s) does not belong to the payment transaction",
+                    "Die Callback-Antwort des Zahlungsanbieters %s (%s) gehört nicht zu dieser Zahlungstransaktion.",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey()
             );

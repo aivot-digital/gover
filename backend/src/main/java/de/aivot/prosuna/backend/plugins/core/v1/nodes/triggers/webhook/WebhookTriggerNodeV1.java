@@ -150,7 +150,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
         return """
                 Startet einen neuen Prozessvorgang durch eine eingehende HTTP-Anfrage an den bereitgestellten Webhook.
 
-                Übermittelte Nutzdaten und Anlagen werden in die initialen Vorgangsdaten übernommen. Zusätzlich stellt der Auslöser die empfangenen Dateien, Anfragedetails wie Methode, Header und Query-Parameter sowie den Eingangszeitpunkt als Ausgänge bereit.
+                Übermittelte Nutzdaten und Anlagen werden in die initialen Vorgangsdaten übernommen. Zusätzlich stellt der Auslöser die empfangenen Dateien, Anfragedetails wie Methode, Header und Query-Parameter sowie den Eingangszeitpunkt als Datenausgänge bereit.
                 """;
     }
 
@@ -564,7 +564,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
 
         var sb = new FormattedStringBuilder();
 
-        sb.appendLine("Um den Webhook-Trigger zu testen, können Sie einen HTTP-Request an die folgende URL senden:");
+        sb.appendLine("Um den Webhook-Auslöser zu testen, können Sie einen HTTP-Request an die folgende URL senden:");
         sb.appendLine("");
         sb.appendLine("<%s>", triggerUrl);
         sb.appendLine("");
@@ -593,7 +593,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
             if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM.equals(config.authConfig.authMethod)) {
                 sb.appendLine("");
                 sb.appendLine(
-                        "Da in der Knotenkonfiguration die Authentifizierung über einen Query-Parameter aktiviert ist, " +
+                        "Da in der Konfiguration des Prozesselements die Authentifizierung über einen Query-Parameter aktiviert ist, " +
                                 "müssen Sie zusätzlich den Authentifizierungs-Token als Query-Parameter " +
                                 "`%s` hinzufügen.",
                         WebhookTriggerControllerV1.AUTH_TOKEN_QUERY_PARAM
@@ -601,7 +601,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
             } else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC.equals(config.authConfig.authMethod)) {
                 sb.appendLine("");
                 sb.appendLine(
-                        "Da in der Knotenkonfiguration die Authentifizierung über Basic Auth aktiviert ist, " +
+                        "Da in der Konfiguration des Prozesselements die Authentifizierung über Basic Auth aktiviert ist, " +
                                 "müssen Sie zusätzlich den Benutzernamen " +
                                 "`%s` und das Passwort " +
                                 "`%s` verwenden.",
@@ -613,7 +613,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
             else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
                 sb.appendLine("");
                 sb.appendLine(
-                        "Da in der Knotenkonfiguration die Authentifizierung über eine Bearer Token aktiviert ist, " +
+                        "Da in der Konfiguration des Prozesselements die Authentifizierung über ein Bearer-Token aktiviert ist, " +
                                 "müssen Sie zusätzlich den Authentifizierungs-Token `%s` im " +
                                 "Authorization-Header mit dem Präfix `Bearer` hinzufügen.",
                         config.authConfig.authToken
@@ -651,7 +651,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
         }
 
         sb.appendLine("");
-        sb.appendLine("Sie können den folgenden Shell-Befehl verwenden, um den Webhook-Trigger mit einem Test-Request zu testen:");
+        sb.appendLine("Sie können den folgenden Shell-Befehl verwenden, um den Webhook-Auslöser mit einem Test-Request zu testen:");
         sb.appendLine("");
         sb.appendLine("```sh");
         sb.appendLine("curl \\");

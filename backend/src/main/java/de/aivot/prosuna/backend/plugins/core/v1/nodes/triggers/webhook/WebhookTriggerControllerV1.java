@@ -231,7 +231,7 @@ public class WebhookTriggerControllerV1 {
                 .findAll(specBuilder.build());
 
         if (res.isEmpty()) {
-            throw ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden.");
+            throw ResponseException.notFound("Kein Webhook-Auslöser mit dem angegebenen Slug gefunden.");
         }
 
         return res;
@@ -536,7 +536,7 @@ public class WebhookTriggerControllerV1 {
     private WebhookTriggerConfigV1 getWebhookConfig(@Nonnull ProcessNodeEntity nodeEntity) throws ResponseException {
         var provider = processNodeDefinitionService
                 .getProcessNodeDefinition(nodeEntity)
-                .orElseThrow(() -> ResponseException.internalServerError("Die Definition des Webhook-Trigger-Knotens konnte nicht gefunden werden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Die Definition des Webhook-Auslösers konnte nicht gefunden werden."));
 
         var derivedConfiguration = processNodeService
                 .deriveConfiguration(nodeEntity, provider, null, true);
@@ -566,24 +566,24 @@ public class WebhookTriggerControllerV1 {
                     throw incompleteAuthenticationException();
                 }
                 if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                    throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Auslöser.");
                 }
                 var base64Credentials = authHeader.substring("Basic ".length());
                 var credentials = StringUtils.decodeBase64String(base64Credentials).split(":", 2);
                 if (credentials.length != 2 ||
                         !credentials[0].equals(config.authConfig.authUsername) ||
                         !credentials[1].equals(config.authConfig.authPassword)) {
-                    throw ResponseException.unauthorized("Ungültiger Benutzername oder Passwort für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Der Benutzername oder das Passwort ist ungültig für den Webhook-Auslöser.");
                 }
                 break;
             /* Bearer is removed, because it clashed with the default spring boot jwt bearer token handling
             case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER:
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                    throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Auslöser.");
                 }
                 var token = authHeader.substring("Bearer ".length());
                 if (!token.equals(config.authConfig.authToken)) {
-                    throw ResponseException.unauthorized("Ungültiger Token für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Ungültiges Token für den Webhook-Auslöser.");
                 }
                 break;
              */
@@ -592,17 +592,17 @@ public class WebhookTriggerControllerV1 {
                     throw incompleteAuthenticationException();
                 }
                 if (tokenQueryParam == null || !tokenQueryParam.equals(config.authConfig.authToken)) {
-                    throw ResponseException.unauthorized("Ungültiger Token für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Ungültiges Token für den Webhook-Auslöser.");
                 }
                 break;
             default:
-                throw ResponseException.internalServerError("Die Authentifizierungsmethode des Webhook-Trigger-Knotens ist ungültig.");
+                throw ResponseException.internalServerError("Die Authentifizierungsmethode des Webhook-Auslösers ist ungültig.");
         }
     }
 
     @Nonnull
     private static ResponseException incompleteAuthenticationException() {
-        return ResponseException.internalServerError("Die Authentifizierung des Webhook-Trigger-Knotens ist nicht vollständig eingerichtet.");
+        return ResponseException.internalServerError("Die Authentifizierung des Webhook-Auslösers ist nicht vollständig eingerichtet.");
     }
 
     public record Response(String message) {

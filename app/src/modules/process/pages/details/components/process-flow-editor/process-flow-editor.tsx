@@ -411,7 +411,7 @@ function createLayoutErrorState(error: unknown): ProcessFlowEditorLayoutError {
         return {
             message: error.message,
             details: error.details,
-            causeHint: 'Das kann passieren, wenn eine Prozesselementdefinition aktualisiert wurde und bestehende Verbindungen noch auf entfernte Ausgänge oder nicht mehr vorhandene Prozesselemente zeigen.',
+            causeHint: 'Das kann passieren, wenn eine Prozesselementdefinition aktualisiert wurde und bestehende Verbindungen noch auf entfernte Prozesspfade oder nicht mehr vorhandene Prozesselemente zeigen.',
             recoveryHint: 'Bitte wenden Sie sich mit den oben genannten Einträgen an den Support. Der Prozessfluss muss bereinigt oder auf eine passende Version des Prozesselements zurückgeführt werden.',
         };
     }
@@ -419,7 +419,7 @@ function createLayoutErrorState(error: unknown): ProcessFlowEditorLayoutError {
     return {
         message: 'Beim Berechnen der Prozessansicht ist ein Fehler aufgetreten.',
         details: error instanceof Error ? [error.message] : [],
-        causeHint: 'Das kann durch inkonsistente Prozessdaten oder einen technischen Fehler beim Berechnen des Layouts passieren.',
+        causeHint: 'Das kann durch eine inkonsistente Prozessdefinition oder einen technischen Fehler beim Berechnen des Layouts passieren.',
         recoveryHint: 'Bitte wenden Sie sich mit der angezeigten Fehlermeldung an den Support. Der Prozessfluss muss geprüft werden, bevor er wieder dargestellt werden kann.',
     };
 }

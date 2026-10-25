@@ -348,7 +348,7 @@ describe('FieldLayoutGallery accessibility', () => {
         expect(screen.getByRole('button', {name: 'antrag.pdf entfernen'})).toBeInTheDocument();
 
         const attachmentSet = screen.getByRole('combobox', {name: 'Anlagensatz'});
-        expect(attachmentSet).toHaveValue('Formularzusammenfassung');
+        expect(attachmentSet).toHaveValue('Kopie der Angaben');
         expect(attachmentSet).toHaveAccessibleDescription(
             'Wählen Sie den Anlagensatz, der gespeichert werden soll. 1/1',
         );

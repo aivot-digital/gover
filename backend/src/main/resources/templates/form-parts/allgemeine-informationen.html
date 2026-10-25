@@ -15,11 +15,11 @@
             th:utext="${ #markdown.render(form.rootElement?.introductionStep?.teaserText) }"
             class="content-without-margin-on-childs"
     >
-        Allgemeine Informationen für antragstellende Personen
+        Allgemeine Informationen für ausfüllende Personen
     </div>
 
-    <!--/* Die Liste der antragsberechtigten Personen des Formulars. Dient als Fragment, welches später wiederverwendet werden kann. */-->
-    <th:block th:with="list=${ form.rootElement?.introductionStep?.eligiblePersons }, label='Antragsberechtigte'">
+    <!--/* Die Liste der berechtigten Personen und Organisationen des Formulars. Dient als Fragment, welches später wiederverwendet werden kann. */-->
+    <th:block th:with="list=${ form.rootElement?.introductionStep?.eligiblePersons }, label='Berechtigte Personen und Organisationen'">
         <div
                 class="avoid-break-inside"
                 th:fragment="list"
@@ -42,8 +42,8 @@
         <th:block th:replace="~{::list}"></th:block>
     </th:block>
 
-    <!--/* Die Liste der einzureichenden Dokumente */-->
-    <th:block th:with="list=${ form.rootElement?.introductionStep?.documentsToAttach }, label='Einzureichende Dokumente'">
+    <!--/* Die Liste der benötigten Dokumente */-->
+    <th:block th:with="list=${ form.rootElement?.introductionStep?.documentsToAttach }, label='Benötigte Dokumente'">
         <th:block th:replace="~{::list}"></th:block>
     </th:block>
 
@@ -58,14 +58,14 @@
         </div>
     </div>
 
-    <!--/* Informationen über die Gebühren des Antrages */-->
+    <!--/* Informationen über die Kosten */-->
     <div
             class="avoid-break-inside"
             th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.expectedCosts) }"
     >
-        <h4>Gebühren dieses Antrages</h4>
+        <h4>Kosten</h4>
         <div th:utext="${ #markdown.render(form.rootElement?.introductionStep?.expectedCosts) }" class="content-without-margin-on-childs">
-            Gebühren
+            Kosten
         </div>
     </div>
 
@@ -114,7 +114,7 @@
     </div>
 
     <!--/* ***********************************************************************
-    Bereich für Informationen über die Ausfüllbarkeit dieses Antrags online.
+    Bereich für Informationen über die Ausfüllbarkeit dieses Formulars online.
     *********************************************************************** */-->
 
     <!-- Der Bereich für die "Online-Ausfüllbarkeit" wird nur auf ausfüllbaren Formularen angezeigt -->
@@ -124,9 +124,9 @@
             style="margin-top: 2rem"
     >
         <div style="margin-right: 2rem;">
-            <h2>Wussten Sie schon? Sie können dieses Formular <br/>bequem online ausfüllen und einreichen.</h2>
+            <h2>Sie können dieses Formular auch online ausfüllen und Ihre Angaben übermitteln.</h2>
             <p>
-                Besuchen Sie dazu die folgende URL bzw. den Link
+                Öffnen Sie dazu den folgenden Link
                 <a
                         class="do-not-print-link"
                         th:href="${ base.createUrl(form.slug) }"

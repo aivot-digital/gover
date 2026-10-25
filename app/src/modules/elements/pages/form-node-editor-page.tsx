@@ -1084,7 +1084,7 @@ export function FormNodeEditorPage() {
                                 Es können ungültige oder fehlenden Eingaben vorliegen, die zu Fehlern beim Absenden des
                                 Formulars führen können.
                                 Nur wenn alle Felder gültig sind, kann das Formular korrekt abgesendet werden.
-                                Andernfalls wird die Einreichung automatisch abgelehnt.
+                                Andernfalls wird die Übermittlung automatisch abgelehnt.
                             </Typography>
                             <Typography
                                 sx={{
@@ -1207,7 +1207,7 @@ export function FormNodeEditorPage() {
                 }
             }
 
-            errorMessage = 'Die Anhänge konnten nicht für das Absenden vorbereitet werden.';
+            errorMessage = 'Die Anlagen konnten nicht für das Absenden vorbereitet werden.';
             const formData = new FormData();
             formData.append('inputs', JSON.stringify(values));
 

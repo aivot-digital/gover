@@ -115,7 +115,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         return """
                 Integriert den Zahlungsdienstleister ePayBL über den XBezahldienste-Standard in Prosuna.
 
-                Die Komponente übermittelt standardisierte Zahlungsanfragen an eine konfigurierte ePayBL-Schnittstelle und verarbeitet die zurückgegebenen Transaktionsinformationen. So können Zahlungen aus Formularen und Prozessen heraus gestartet und ihr Status weiterverfolgt werden.
+                Die Komponente übermittelt standardisierte Zahlungsanforderungen an eine konfigurierte ePayBL-Schnittstelle und verarbeitet die zurückgegebenen Transaktionsinformationen. So können Zahlungen aus Formularen und Prozessen heraus gestartet und ihr Status weiterverfolgt werden.
                 """;
     }
 
@@ -195,7 +195,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         clientCertificateInput.setDialogTitle("ePayBL Zertifikat auswählen");
         clientCertificateInput.setAllowedMimeTypes(List.of(CERTIFICATE_MIME_TYPE));
         clientCertificateInput.setAssetVisibility(AssetVisibility.All);
-        clientCertificateInput.setHint("Das .p12-Zertifikat wird vom Zahlungsdienstleister bereitgestellt. Es muss zuvor unter \"Dateien & Medien\" hochgeladen werden, um hier auswählbar zu sein.");
+        clientCertificateInput.setHint("Das .p12-Zertifikat wird vom Zahlungsdienstleister bereitgestellt. Es muss zuvor unter \"Dateien und Medien\" hochgeladen werden, um hier auswählbar zu sein.");
         clientCertificateInput.setWeight(6.0d);
         list.add(clientCertificateInput);
 
@@ -255,7 +255,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
             body = objectMapper
                     .writeValueAsString(paymentRequest);
         } catch (JacksonException e) {
-            throw new PaymentException(e, "Failed to serialize payment request for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Die Zahlungsanforderung für den Zahlungsanbieter %s (%s) konnte nicht in das benötigte Datenformat umgewandelt werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         var paymentPath = String
@@ -283,7 +283,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
             client.close();
             throw new PaymentException(
                     e,
-                    "Failed to initiate payment from payment provider %s (%s). Request body was %s",
+                    "Die Zahlung beim Zahlungsanbieter %s (%s) konnte nicht gestartet werden. Anfrage: %s",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey(),
                     body
@@ -293,7 +293,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         if (response.statusCode() != 200) {
             client.close();
             throw new PaymentException(
-                    "Failed to initiate payment from payment provider %s (%s). Status code was %d with body %s",
+                    "Die Zahlung beim Zahlungsanbieter %s (%s) konnte nicht gestartet werden. Statuscode: %d. Antwort: %s",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey(),
                     response.statusCode(),
@@ -306,7 +306,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
             tx = objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JacksonException e) {
             client.close();
-            throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Die Zahlungstransaktion des Zahlungsanbieters %s (%s) konnte nicht verarbeitet werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         client.close();
@@ -346,13 +346,13 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
                     .send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
             client.close();
-            throw new PaymentException(e, "Failed to check payment status for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         if (response.statusCode() != 200) {
             client.close();
             throw new PaymentException(
-                    "Failed to check payment status for payment provider %s (%s). Status code was %d with body %s",
+                    "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.. Status code was %d with body %s",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey(),
                     response.statusCode(),
@@ -367,7 +367,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JacksonException e) {
             client.close();
-            throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Die Zahlungstransaktion des Zahlungsanbieters %s (%s) konnte nicht verarbeitet werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         client.close();
@@ -393,7 +393,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     ) throws PaymentException {
         var originatorID = (String) config.getEffectiveValues().get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
-            throw new PaymentException("Originator ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die Originator-ID für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return originatorID;
     }
@@ -405,7 +405,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     ) throws PaymentException {
         var endpointID = (String) config.getEffectiveValues().get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
-            throw new PaymentException("Endpoint ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die Endpoint-ID für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return endpointID;
     }
@@ -415,7 +415,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
                                                              @Nonnull DerivedRuntimeElementData config) throws PaymentException {
         var paymentTransactionUrl = (String) config.getEffectiveValues().get(PAYMENT_TRANSACTION_URL_FIELD);
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
-            throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die URL der Zahlungstransaktion für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return StringUtils.normalizeUrl(paymentTransactionUrl);
     }
@@ -429,35 +429,35 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         var paymentProviderPasswordSecretKeyStr = (String) effectiveValues.get(CERTIFICATE_PASSWORD_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderPasswordSecretKeyStr)) {
-            throw new PaymentException("Certificate password field is missing for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die Kennung des Zertifikatspassworts für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         UUID paymentProviderPasswordSecretKey;
         try {
             paymentProviderPasswordSecretKey = UUID.fromString(paymentProviderPasswordSecretKeyStr);
         } catch (IllegalArgumentException e) {
-            throw new PaymentException("Certificate password field is not a valid UUID for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die Kennung des Zertifikatspassworts für den Zahlungsanbieter %s (%s) ist keine gültige UUID.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         var paymentProviderClientCertPassSecret = secretService
                 .retrieve(paymentProviderPasswordSecretKey)
-                .orElseThrow(() -> new PaymentException("Certificate password secret for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
+                .orElseThrow(() -> new PaymentException("Das hinterlegte Zertifikatspasswort für den Zahlungsanbieter %s (%s) wurde nicht gefunden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
 
         String paymentProviderClientCertPass;
         try {
             paymentProviderClientCertPass = secretService
                     .decrypt(paymentProviderClientCertPassSecret);
         } catch (Exception e) {
-            throw new PaymentException(e, "Failed to decrypt certificate password for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Das Zertifikatspasswort für den Zahlungsanbieter %s (%s) konnte nicht entschlüsselt werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         if (StringUtils.isNullOrEmpty(paymentProviderClientCertPass)) {
-            throw new PaymentException("Certificate password for payment provider %s (%s) is empty", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Das Zertifikatspasswort für den Zahlungsanbieter %s (%s) ist leer.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         var paymentProviderClientCertificateAssetKey = (String) effectiveValues.get(CERTIFICATE_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderClientCertificateAssetKey)) {
-            throw new PaymentException("Certificate asset key for payment provider %s (%s) is not specified", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Der Dateischlüssel des Zertifikats für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         var key = UUID
@@ -465,7 +465,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         var paymentProviderClientCertAsset = vStorageIndexItemWithAssetRepository
                 .findByAssetKey(key)
-                .orElseThrow(() -> new PaymentException("Certificate for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
+                .orElseThrow(() -> new PaymentException("Das Zertifikat für den Zahlungsanbieter %s (%s) wurde nicht gefunden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
 
         try {
             InputStream paymentProviderClientCertStream = assetStorageService
@@ -488,9 +488,9 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
                 return sslContext;
             }
         } catch (ResponseException e) {
-            throw new PaymentException(e, "Failed to retrieve certificate for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Das Zertifikat für den Zahlungsanbieter %s (%s) konnte nicht geladen werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         } catch (Exception e) {
-            throw new PaymentException(e, "Failed to create SSL context for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Die verschlüsselte Verbindung zum Zahlungsanbieter %s (%s) konnte nicht vorbereitet werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
     }
 }

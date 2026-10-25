@@ -523,8 +523,8 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
     const existingIdentityTitle = existingIdentitySlot?.title?.trim();
     const existingIdentityLabel = existingIdentityTitle || 'Bestehende Identität';
     const accountInstruction = existingIdentityTitle
-        ? `Melden Sie sich mit dem Nutzerkonto an, das Sie für „${existingIdentityTitle}“ in diesem Vorgang verwendet haben.`
-        : 'Melden Sie sich mit dem Nutzerkonto an, das Sie für diese Identität in diesem Vorgang verwendet haben.';
+        ? `Melden Sie sich mit dem Konto an, das Sie für „${existingIdentityTitle}“ in diesem Vorgang verwendet haben.`
+        : 'Melden Sie sich mit dem Konto an, das Sie für diese Identität in diesem Vorgang verwendet haben.';
     let introduction: string;
     if (existingIdentitySlot != null && newIdentitySlot != null) {
         introduction = existingIdentityReady
@@ -535,9 +535,9 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
             ? 'Ihre Identität ist bestätigt. Wählen Sie „Fortfahren“, um zum nächsten Schritt zu gelangen.'
             : 'Um fortzufahren, bestätigen Sie bitte Ihre Identität.';
     } else if (newIdentitySlot?.isRequired) {
-        introduction = 'Um fortzufahren, wählen Sie ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.';
+        introduction = 'Um fortzufahren, wählen Sie ein Konto oder, sofern angeboten, eine E-Mail-Adresse aus.';
     } else {
-        introduction = 'Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie ohne Identitätsangabe fortfahren.';
+        introduction = 'Sie können ein Konto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie ohne Identitätsangabe fortfahren.';
     }
     if (existingIdentitySlot != null && !existingIdentityReady && !wrongExistingAccount) {
         introduction += ` ${accountInstruction}`;
@@ -598,11 +598,11 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                                 wrongExistingAccount &&
                                 <Alert severity="error" sx={{mt: 2}}>
                                     <Typography variant="subtitle2" component="div">
-                                        Anderes Nutzerkonto erforderlich
+                                        Anderes Konto erforderlich
                                     </Typography>
                                     {existingIdentityTitle
-                                        ? `Das verwendete Nutzerkonto gehört nicht zu „${existingIdentityTitle}“. `
-                                        : 'Das verwendete Nutzerkonto gehört nicht zur erforderlichen Identität. '}
+                                        ? `Das verwendete Konto gehört nicht zu „${existingIdentityTitle}“. `
+                                        : 'Das verwendete Konto gehört nicht zur erforderlichen Identität. '}
                                     {accountInstruction}
                                 </Alert>
                             }

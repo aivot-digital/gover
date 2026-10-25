@@ -48,7 +48,7 @@ public class FormNotificationPublishedFormUserConfigDefinition implements UserCo
     @Nonnull
     @Override
     public String getDescription() {
-        return "Lassen Sie sich benachrichtigen, sobald ein Formular in einer Ihrer bewirtschaftenden, zuständigen oder entwickelnden Organisationseinheiten veröffentlicht wird.";
+        return "Lassen Sie sich benachrichtigen, sobald ein Formular in einer Ihrer betreuenden, zuständigen oder entwickelnden Organisationseinheiten veröffentlicht wird.";
     }
 
     @Override

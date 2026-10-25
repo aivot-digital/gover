@@ -222,7 +222,7 @@ export function UserListPage() {
             content: (
                 <>
                     <Typography>
-                        Mitarbeiter:innen sind Benutzer:innen, die Zugriff auf das System haben und die
+                        Mitarbeiter:innen nutzen interne Konten, um auf die Bearbeitungsoberfläche zuzugreifen und die
                         Anwendung nutzen können.
                         In dieser Oberfläche können Sie die im System verfügbaren Mitarbeiter:innen
                         einsehen.
@@ -294,7 +294,7 @@ export function UserListPage() {
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<User>) => (
         <EmptyDataListPlaceholder
             title="Keine Mitarbeiter:innen vorhanden"
-            description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Prosuna verwalten oder Aufgaben in Vorgängen bearbeiten."
+            description="Mitarbeiter:innen nutzen interne Konten, um Prosuna zu verwalten oder Aufgaben in Vorgängen zu bearbeiten."
             addText="Mitarbeiter:in anlegen"
             onAdd={() => navigate('/users/new')}
             addDisabled={!permissions.canCreate}

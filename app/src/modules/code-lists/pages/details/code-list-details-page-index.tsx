@@ -43,7 +43,7 @@ const SourceTypeOptions = Object.values(CodeListSourceType).map((value) => ({
 const DefaultManualCodeListColumns = ['Beschriftung', 'Wert'];
 const DefaultManualCodeListValueColumnIndex = 1;
 const DefaultManualCodeListLabelColumnIndex = 0;
-const CodeListLabelColumnHint = 'Der Anzeigename, der für Benutzer:innen angezeigt wird.';
+const CodeListLabelColumnHint = 'Der Anzeigename, der für ausfüllende Personen angezeigt wird.';
 const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben wird.';
 const XRepositoryMetadataHint = 'Geben Sie die versionsspezifische URN ein und rufen Sie die Metadaten ab, um die Spaltenstruktur der Codeliste zu laden.';
 const CsvMetadataHint = 'Wählen Sie eine CSV-Datei aus. Die Metadaten werden automatisch abgerufen, um die Spaltenstruktur der Codeliste zu laden.';

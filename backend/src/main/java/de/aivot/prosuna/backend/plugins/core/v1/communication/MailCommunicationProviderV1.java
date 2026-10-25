@@ -113,7 +113,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     @Nonnull
     @Override
     public String getDescription() {
-        return "Versendet Nachrichten einschließlich Anhängen an die E-Mail-Adresse einer Identität.";
+        return "Versendet Nachrichten einschließlich Anlagen an die E-Mail-Adresse einer Identität.";
     }
 
     @Nonnull
@@ -234,7 +234,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         if (mappedEmail == null) {
             email.setHint("An diese Adresse werden Nachrichten zu Ihrem Vorgang gesendet.");
         } else {
-            email.setHint("Diese E-Mail-Adresse wurde aus Ihrem Nutzerkonto übernommen und kann hier nicht geändert werden.");
+            email.setHint("Diese E-Mail-Adresse wurde aus Ihrem Konto übernommen und kann hier nicht geändert werden.");
             email.setDisabled(true);
             email.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(mappedEmail)));
         }
@@ -336,7 +336,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         alert.setId("mail-testing-result-alert");
         alert.setAlertType(AlertType.Success);
         alert.setTitle("Testnachricht erfolgreich versendet");
-        alert.setText("Empfänger: %s\nBetreff: %s".formatted(
+        alert.setText("Empfangende Person oder Organisation: %s\nBetreff: %s".formatted(
                 result.get("recipient"),
                 result.get("subject")
         ));

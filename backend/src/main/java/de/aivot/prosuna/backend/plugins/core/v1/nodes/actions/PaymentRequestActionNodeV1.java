@@ -246,7 +246,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Override
     public String getDescription() {
         return """
-                Erstellt eine Online-Zahlung und sendet den Zahlungslink über den für eine Prozessidentität ausgewählten Kommunikationsweg.
+                Erstellt eine Online-Zahlung und sendet den Zahlungslink über den für eine Identität ausgewählten Kommunikationsweg.
 
                 Betreff und Nachricht werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand durch eine Mitarbeiter:in bearbeitet. Anschließend wartet das Prozesselement auf den erfolgreichen Abschluss der Zahlung.
                 """;
@@ -306,7 +306,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 new ProcessNodeOutput(
                         OUTPUT_RECIPIENT_IDENTITY_ID,
                         "Identität",
-                        "Die ID der Prozessidentität, an die die Zahlungsaufforderung gesendet wurde.",
+                        "Die ID der Identität, an die die Zahlungsaufforderung gesendet wurde.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -460,7 +460,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         StringUtils.quote(context.getThisNode().resolveName(this))
                 ));
 

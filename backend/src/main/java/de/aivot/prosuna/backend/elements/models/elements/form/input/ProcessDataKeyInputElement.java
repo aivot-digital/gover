@@ -45,7 +45,7 @@ public class ProcessDataKeyInputElement extends BaseInputElement<String> impleme
 
         if (Boolean.TRUE.equals(disableWildCards)) {
             if (value.contains("*")) {
-                throw new ValidationException(this, "Der Prozessdaten-Schlüssel darf keine Sternchen enthalten, da Wildcards deaktiviert sind.");
+                throw new ValidationException(this, "Der Datenschlüssel darf keine Sternchen enthalten, da Wildcards deaktiviert sind.");
             }
         }
     }

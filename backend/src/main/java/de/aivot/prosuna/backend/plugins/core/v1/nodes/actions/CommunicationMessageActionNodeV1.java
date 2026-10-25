@@ -164,7 +164,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         return """
                 Sendet eine Nachricht über den für die Identität festgelegten Kommunikationsweg.
 
-                Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand durch eine Mitarbeiter:in bearbeitet. Optional können vollständige Anlagensätze angehängt werden. Nach dem synchronen Versand stehen die verwendete Identität, die Kommunikationsanbindung, die Nachrichtendaten und das Ergebnis des Kommunikationsanbieters als Ausgänge bereit.
+                Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand durch eine Mitarbeiter:in bearbeitet. Optional können vollständige Anlagensätze angehängt werden. Nach dem synchronen Versand stehen die verwendete Identität, die Kommunikationsanbindung, die Nachrichtendaten und das Ergebnis des Kommunikationsanbieters als Datenausgänge bereit.
                 """;
     }
 
@@ -222,7 +222,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_IDENTITY_ID, "Identität", "ID der adressierten Prozessidentität.", "string"),
+                new ProcessNodeOutput(OUTPUT_IDENTITY_ID, "Identität", "ID der adressierten Identität.", "string"),
                 new ProcessNodeOutput(OUTPUT_BINDING_ID, "Kommunikationsanbindung", "ID der verwendeten Kommunikationsanbindung.", "number | null"),
                 new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Betreff der versendeten Nachricht.", "string"),
                 new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Inhalt der versendeten Nachricht.", "string"),
@@ -295,7 +295,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         StringUtils.quote(context.getThisNode().resolveName(this))
                 ));
 
@@ -468,7 +468,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var identityId = StringUtils.toNullableTrimmedString(rawIdentityId);
         if (identityId == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den Nachrichtenversand muss eine Prozessidentität konfiguriert sein."
+                    "Für den Nachrichtenversand muss eine Identität konfiguriert sein."
             );
         }
         return identityId;
@@ -563,7 +563,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
             }
             if (entities.isEmpty()) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
-                        "Der konfigurierte Anlagensatz %s enthält keine Anhänge.",
+                        "Der konfigurierte Anlagensatz %s enthält keine Anlagen.",
                         StringUtils.quote(dataKey)
                 );
             }
@@ -581,7 +581,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 } catch (IOException | ResponseException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
                             e,
-                            "Der Anhang %s konnte nicht geladen werden: %s",
+                            "Die Anlage %s konnte nicht geladen werden: %s",
                             StringUtils.quote(entity.getFileName()),
                             e.getMessage()
                     );

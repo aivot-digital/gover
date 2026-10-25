@@ -328,7 +328,7 @@ public class FileUploadMultipartInputService {
 
             if (configuredSubmittedFileName == null) {
                 throw ResponseException.badRequest(
-                        "Für das Anlagen-Feld „%s“ muss ein Dateiname bei Einreichung konfiguriert sein.",
+                        "Für das Anlagen-Feld „%s“ muss ein Dateiname bei Übermittlung konfiguriert sein.",
                         describeUploadElement(element)
                 );
             }

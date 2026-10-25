@@ -81,11 +81,11 @@ describe('ProcessIdentityIdInputFieldView', () => {
         );
 
         expect(screen.getByText('legacy-identity')).toBeInTheDocument();
-        expect(screen.getByText('Die ausgewählte Prozessidentität „legacy-identity“ ist nicht mehr verfügbar.')).toBeInTheDocument();
+        expect(screen.getByText('Die ausgewählte Identität „legacy-identity“ ist nicht mehr verfügbar.')).toBeInTheDocument();
     });
 
     it('should not duplicate an unavailable identity error returned by the backend', () => {
-        const unavailableError = 'Die ausgewählte Prozessidentität „legacy-identity“ ist nicht mehr verfügbar.';
+        const unavailableError = 'Die ausgewählte Identität „legacy-identity“ ist nicht mehr verfügbar.';
 
         renderWithEditorMetadata(
             <ProcessIdentityIdInputFieldView
@@ -121,8 +121,8 @@ describe('ProcessIdentityIdInputFieldView', () => {
         );
 
         expect(screen.getByRole('combobox', {name: /^Prozessidentitaeten/}))
-            .toHaveTextContent('Prozessidentitäten konnten nicht geladen werden');
-        expect(screen.queryByText('Prozessidentitäten werden geladen')).not.toBeInTheDocument();
+            .toHaveTextContent('Identitäten konnten nicht geladen werden');
+        expect(screen.queryByText('Identitäten werden geladen')).not.toBeInTheDocument();
     });
 
     it('preserves saved identity IDs when loading metadata fails', () => {
@@ -152,11 +152,11 @@ describe('ProcessIdentityIdInputFieldView', () => {
         );
 
         const control = screen.getByRole('combobox', {name: /^Prozessidentitaeten/});
-        expect(control).toHaveTextContent('Keine Prozessidentitäten verfügbar');
+        expect(control).toHaveTextContent('Keine Identitäten verfügbar');
         fireEvent.mouseDown(control);
 
         const listbox = await screen.findByRole('listbox');
-        expect(within(listbox).getByRole('option', {name: 'Keine Prozessidentitäten verfügbar'}))
+        expect(within(listbox).getByRole('option', {name: 'Keine Identitäten verfügbar'}))
             .toHaveAttribute('aria-disabled', 'true');
     });
 });

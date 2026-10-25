@@ -43,19 +43,19 @@ public class PaymentGroupPreset extends GroupLayoutElement {
             case XBezahldienstStatus.INITIAL -> {
                 yield """
                         # Zahlung ausstehend
-                        Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung erforderlich.
+                        Für diesen Vorgang ist eine Zahlung erforderlich.
                         Die Zahlung wird durch den Dienstleister **%s** abgewickelt.
-                        Bitte achten Sie darauf, dass Sie die Zahlungs­informationen korrekt eingeben und den Vorgang abschließen.
+                        Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Zahlungsvorgang abschließen.
                         
                         
-                        **Wichtig:** Ihre Einreichung wird erst nach erfolgter Zahlung weiterbearbeitet.
+                        **Wichtig:** Die weitere Verarbeitung wartet auf die Bestätigung der Zahlung.
                         
                         
-                        Für Ihre Einreichung sind folgende Positionen zu begleichen:
+                        Zahlungsübersicht:
                         %s
                         
                         
-                        Insgesamt zu entrichtende Zahlung: %s Euro%s
+                        Gesamtbetrag: %s Euro%s
                         """
                         .formatted(
                                 StringUtils.quote(paymentProviderDefinition.getProviderName()),
@@ -87,7 +87,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                         .formatted(
                                 StringUtils.isNotNullOrEmpty(failureMessage)
                                         ? failureMessage
-                                        : "Die Zahlung wurde abgebrochen. Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen."
+                                        : "Die Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die zuständige Stelle."
                         );
             }
             case XBezahldienstStatus.CANCELED -> {
@@ -98,15 +98,15 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                         .formatted(
                                 StringUtils.isNotNullOrEmpty(failureMessage)
                                         ? failureMessage
-                                        : "Die Zahlung wurde abgebrochen. Bitte wenden Sie sich an den Support, um weitere Informationen zu erhalten und die Zahlung erneut zu versuchen."
+                                        : "Die Zahlung wurde abgebrochen. Bei Fragen wenden Sie sich bitte an die zuständige Stelle."
                         );
             }
             case XBezahldienstStatus.PAYED -> {
                 yield """
-                        # Zahlung erfolgreich
+                        # Zahlung abgeschlossen
                         %s
                         """.formatted(
-                        StringUtils.isNotNullOrEmpty(successMessage) ? successMessage : "Die Zahlung wurde erfolgreich abgeschlossen. Vielen Dank für Ihre Einreichung."
+                        StringUtils.isNotNullOrEmpty(successMessage) ? successMessage : "Die Zahlung wurde erfolgreich abgeschlossen."
                 );
             }
         };

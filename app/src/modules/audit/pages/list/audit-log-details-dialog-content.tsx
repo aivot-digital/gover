@@ -48,7 +48,7 @@ export function AuditLogDetailsDialogContent(props: AuditLogDetailsDialogContent
                 <Typography variant="body2">ID: {props.row.id}</Typography>
                 <Typography variant="body2">Zeitpunkt: {formatDateTime(props.row.timestamp)}</Typography>
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mt: 0.5}}>
-                    <Typography variant="body2">Trigger:</Typography>
+                    <Typography variant="body2">Auslöser:</Typography>
                     <Chip
                         size="small"
                         variant="outlined"

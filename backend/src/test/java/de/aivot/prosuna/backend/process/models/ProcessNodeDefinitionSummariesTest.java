@@ -117,7 +117,7 @@ class ProcessNodeDefinitionSummariesTest {
                 Arguments.of(CounterActionNodeV1.class, "Der Zähler „counter“ wurde um 3 erhöht."), 
                 Arguments.of(CommunicationMessageActionNodeV1.class, "Die Nachricht wurde am 01.10.2026 um 09:00:00 Uhr erfolgreich versendet."),
                 Arguments.of(EMailActionNodeV1.class, "Die E-Mail-Nachricht wurde am 01.10.2026 um 12:00:00 Uhr erfolgreich versendet."),
-                Arguments.of(FormRequestActionNodeV1.class, "Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 Uhr zur Einreichung von Daten aufgefordert und über E\\-Mail informiert. Die angeforderten Daten wurden am 01.10.2026 um 11:00:00 Uhr durch die Identität „customer“ eingereicht."),
+                Arguments.of(FormRequestActionNodeV1.class, "Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 Uhr zur Übermittlung von Angaben aufgefordert und über E\\-Mail informiert. Die angeforderten Angaben wurden am 01.10.2026 um 11:00:00 Uhr durch die Identität „customer“ übermittelt."),
                 Arguments.of(PaymentRequestActionNodeV1.class, "Die Zahlung wurde am 01.10.2026 um 11:00:00 Uhr bestätigt."),
                 Arguments.of(InstanceAssignmentActionNodeV1.class, "Der Vorgang wurde „Ida Beispiel“ durch „Ada Beispiel“ zugewiesen."),
                 Arguments.of(InstanceUnassignmentActionNodeV1.class, "Die Zuweisung des Vorgangs an „Ida Beispiel“ wurde aufgehoben."),

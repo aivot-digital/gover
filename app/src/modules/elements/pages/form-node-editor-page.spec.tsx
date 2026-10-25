@@ -444,7 +444,7 @@ describe('FormNodeEditorPage error handling', () => {
 
         fireEvent.click(screen.getByRole('button', {name: 'Testformular absenden'}));
 
-        await waitFor(() => expectSnackbar('Die Anhänge konnten nicht für das Absenden vorbereitet werden.'));
+        await waitFor(() => expectSnackbar('Die Anlagen konnten nicht für das Absenden vorbereitet werden.'));
         expect(FormTriggerApiService.prototype.submitForm).not.toHaveBeenCalled();
         expectActionTypeNotDispatched('shell/setLoadingMessage');
     });

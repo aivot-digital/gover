@@ -61,7 +61,7 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class AssetController {
-    private static final String MODULE_NAME = "Dateien & Medien";
+    private static final String MODULE_NAME = "Dateien und Medien";
 
     private final ScopedAuditService auditService;
 
@@ -1005,7 +1005,7 @@ public class AssetController {
                 .retrieve(storageProviderId)
                 .orElseThrow(ResponseException::notFound);
         if (storageProvider.getType() != StorageProviderType.Assets) {
-            throw ResponseException.forbidden("Der angegebene Speicheranbieter ist kein Asset-Speicher.");
+            throw ResponseException.forbidden("Der angegebene Speicheranbieter ist kein Speicher für Dateien und Medien.");
         }
         return storageProvider;
     }

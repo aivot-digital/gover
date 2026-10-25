@@ -69,9 +69,9 @@ public class ProcessTaskDeadlineService {
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation("Die aktive Frist wird vom Prozesselement nicht angeboten."));
             var port = resolution.ports().stream()
                     .filter(candidate -> task.getDeadlineKey().equals(candidate.deadlineKey())).findFirst()
-                    .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation("Für die automatische Beendigung bei Fristüberschreitung fehlt der Ausgang."));
+                    .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation("Für die automatische Beendigung bei Fristüberschreitung fehlt der Prozesspfad."));
             var edge = edges.findByFromNodeIdAndViaPort(node.getId(), port.key()).orElseThrow(() ->
-                    new ProcessNodeExecutionExceptionBrokenImplementation("Für den Fristausgang „%s“ fehlt die Verbindung.", port.label()));
+                    new ProcessNodeExecutionExceptionBrokenImplementation("Für den Prozesspfad bei Fristüberschreitung „%s“ fehlt die Verbindung.", port.label()));
             if (nodes.findById(edge.getToNodeId()).isEmpty()) {
                 throw new ProcessNodeExecutionExceptionBrokenImplementation("Das Ziel des Fristausgangs wurde nicht gefunden.");
             }

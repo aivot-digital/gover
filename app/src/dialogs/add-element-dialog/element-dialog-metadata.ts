@@ -115,9 +115,9 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.DataModelSelect]: 'Wählt ein Datenmodell aus.',
     [ElementType.DataObjectSelect]: 'Wählt ein konkretes Datenobjekt aus.',
     [ElementType.NoCodeInput]: 'Erfasst Logik über einen No-Code-Ausdruck.',
-    [ElementType.ProcessDataKeyInput]: 'Erfasst einen Prozessdaten-Schlüssel und schlägt vorhandene Pfade vor.',
+    [ElementType.ProcessDataKeyInput]: 'Erfasst einen Datenschlüssel und schlägt vorhandene Pfade vor.',
     [ElementType.ProcessInstanceAttachmentSetSelect]: 'Wählt einen oder mehrere Anlagensätze des Vorgangs aus.',
-    [ElementType.ProcessIdentityIdInput]: 'Wählt eine verfügbare Prozessidentität aus.',
+    [ElementType.ProcessIdentityIdInput]: 'Wählt eine verfügbare Identität aus.',
     [ElementType.SecretSelectInput]: 'Wählt ein sicher hinterlegtes Geheimnis aus und speichert dessen Schlüssel.',
     [ElementType.AssetSelectInput]: 'Ermöglicht die Auswahl einer vorhandenen Datei aus „Dateien und Medien“.',
     [ElementType.HtmlTemplateInput]: 'Befüllt Slots einer HTML-Vorlage mit Text, Rich-Text oder Bildern.',
@@ -131,7 +131,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.ProcessAttachmentDisplay]: 'Zeigt Dateien aus einem Anlagensatz des Vorgangs zum Ansehen und Herunterladen an.',
     [ElementType.SummaryStep]: 'Optionaler Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind.',
     [ElementType.IntroductionStep]: 'Optionaler Abschnitt am Anfang eines mehrstufigen Formulars, der zur Einführung oder zur Erklärung des weiteren Ablaufs genutzt werden kann.',
-    [ElementType.SubmitStep]: 'Optionaler Abschnitt am Ende eines Formulars. Zeigt Hinweise vor der Einreichung an und schützt die Übermittlung mit einer Sicherheitsprüfung vor automatisierten Einreichungen (Captcha).',
+    [ElementType.SubmitStep]: 'Optionaler Abschnitt am Ende eines Formulars. Zeigt Hinweise vor der Übermittlung an und schützt die Übermittlung mit einer Sicherheitsprüfung vor automatisierten Übermittlungen (Captcha).',
     [ElementType.Step]: 'Ein Abschnitt für mehrstufige Formulare, den Sie mit Eingabefeldern, Texten und weiteren Elementen gestalten können.',
 };
 

@@ -154,7 +154,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         return """
                 Erstellt eine zugewiesene Prosuna-Aufgabe, in der eine Mitarbeiter:in Vorgangsdaten prüfen und bearbeiten kann.
 
-                Die angezeigte Oberfläche und der zulässige Personenkreis werden über die Elementkonfiguration bestimmt. Nach der Bestätigung werden die erfassten Änderungen in die Vorgangsdaten übernommen; erfasste Daten, Vermerk und Bearbeitungsinformationen stehen zusätzlich als Ausgänge zur Verfügung.
+                Die angezeigte Oberfläche und der zulässige Personenkreis werden über die Elementkonfiguration bestimmt. Nach der Bestätigung werden die erfassten Änderungen in die Vorgangsdaten übernommen; erfasste Daten, Vermerk und Bearbeitungsinformationen stehen zusätzlich als Datenausgänge zur Verfügung.
                 """;
     }
 
@@ -167,7 +167,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
             layout = ElementPOJOMapper.createFromPOJO(DataChangeActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für den Datenänderungs-Knoten: %s",
+                    "Fehler beim Erstellen des Konfigurations-Layouts für das Datenänderungselement: %s",
                     e.getMessage()
             );
         }
@@ -285,7 +285,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement '%s' konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement '%s' konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         context.getThisNode().getName() != null ? context.getThisNode().getName() : getName()
                 ));
 
@@ -397,7 +397,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 .convertValue(rawElement, BaseElement.class);
 
         if (!(copy instanceof GroupLayoutElement copiedElement)) {
-            throw new IllegalStateException("Configured data-change UI is not a group layout.");
+            throw new IllegalStateException("Die konfigurierte Oberfläche für die Datenänderung ist keine Gruppierung.");
         }
 
         return copiedElement;

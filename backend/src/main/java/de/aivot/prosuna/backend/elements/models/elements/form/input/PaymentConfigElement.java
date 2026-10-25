@@ -43,7 +43,7 @@ public class PaymentConfigElement extends BaseInputElement<PaymentConfigElementV
 
         if (Boolean.TRUE.equals(value.mapRequestor())) {
             if (value.requestorMapping() == null) {
-                errorDetails.put("requestorMapping", "Es muss eine Zuweisung des Antragstellers angegeben werden.");
+                errorDetails.put("requestorMapping", "Es muss eine Zuordnung der zahlenden Person oder Organisation angegeben werden.");
             } else {
                 var err = value.requestorMapping().performValidation();
                 if (!err.isEmpty()) {

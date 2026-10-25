@@ -384,7 +384,7 @@ class FitConnectZbpCommunicationProviderV1Test {
 
         var exception = assertThrows(CommunicationException.class, () -> resolveSenderClientSecret(config));
 
-        assertEquals("Failed to parse sender client secret key as UUID: not-a-uuid", exception.getMessage());
+        assertEquals("Die Kennung des Client-Geheimnisses des Absenders ist keine gültige UUID: not-a-uuid", exception.getMessage());
         verifyNoInteractions(secretService);
     }
 
@@ -396,7 +396,7 @@ class FitConnectZbpCommunicationProviderV1Test {
 
         var exception = assertThrows(CommunicationException.class, () -> resolveSenderClientSecret(config));
 
-        assertEquals("Sender client secret not found: " + secretKey, exception.getMessage());
+        assertEquals("Das Client-Geheimnis des Absenders wurde nicht gefunden: " + secretKey, exception.getMessage());
         verify(secretService).retrieve(secretKey);
     }
 
@@ -411,7 +411,7 @@ class FitConnectZbpCommunicationProviderV1Test {
 
         var exception = assertThrows(CommunicationException.class, () -> resolveSenderClientSecret(config));
 
-        assertEquals("Failed to decrypt sender client secret: " + secretKey, exception.getMessage());
+        assertEquals("Das Client-Geheimnis des Absenders konnte nicht entschlüsselt werden: " + secretKey, exception.getMessage());
         assertEquals(cause, exception.getCause());
     }
 

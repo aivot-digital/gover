@@ -31,8 +31,8 @@ describe('ProcessNodeEditorOutputsTab', () => {
 
         expect(dataKey).toHaveValue('copy_field');
         expect(dataKey).toBeEnabled();
-        expect(screen.getByRole('heading', {name: 'Ausgangsdaten'})).toBeInTheDocument();
-        expect(screen.getByRole('heading', {name: 'Keine Ausgangsdaten zum Übernehmen'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Datenausgänge'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Keine Datenausgänge zum Übernehmen'})).toBeInTheDocument();
         expect(screen.getByText(/kann Vorgangsdaten auf anderem Weg verändern/)).toBeInTheDocument();
         expect(screen.getByText(/auf die Daten des Prozesselements und Informationen zur Ausführung zu/)).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /Details zu/})).not.toBeInTheDocument();
@@ -59,19 +59,19 @@ describe('ProcessNodeEditorOutputsTab', () => {
         expect(dataKey).toHaveValue('copy_field');
         expect(dataKey).toHaveAccessibleDescription(/muss innerhalb dieser Prozessversion eindeutig sein/);
         expect(dataKey).toHaveAccessibleDescription(/empfehlen wir einen sprechenden Schlüssel/);
-        expect(screen.getByRole('heading', {name: 'Ausgangsdaten'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Datenausgänge'})).toBeInTheDocument();
         expect(within(outputSection).getByRole('heading', {name: 'Ergebnis'})).toBeInTheDocument();
         expect(outputSection).toHaveAccessibleDescription(resultOutput.description);
         expect(target).toHaveValue('');
         expect(target).not.toBeRequired();
         expect(target).not.toHaveAccessibleName(/Details/);
-        expect(target).toHaveAccessibleDescription(/Ergebnis.*Das Ergebnis des Elements.*über die Elementdaten zur Verfügung.*zusätzlich in den Vorgangsdaten bereitstellen.*Zielpfad ein/);
+        expect(target).toHaveAccessibleDescription(/Ergebnis.*Das Ergebnis des Elements.*über die Elementdaten zur Verfügung.*zusätzlich in den Vorgangsdaten bereit.*jeweiligen Zielpfad ein/);
         expect(screen.getByText(resultOutput.description)).toBeInTheDocument();
         expect(within(outputSection).getByText('Pfad in den Elementdaten:')).toBeInTheDocument();
         expect(within(outputSection).getByText('_.copy_field.result')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Pfad in den Elementdaten _.copy_field.result kopieren'})).toBeEnabled();
         expect(screen.getByRole('button', {name: 'Details zu Ergebnis anzeigen'})).toBeEnabled();
-        expect(screen.queryByRole('heading', {name: 'Keine Ausgangsdaten zum Übernehmen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('heading', {name: 'Keine Datenausgänge zum Übernehmen'})).not.toBeInTheDocument();
     });
 
     it('updates and clears one mapping while retaining other mappings', () => {
@@ -131,7 +131,7 @@ describe('ProcessNodeEditorOutputsTab', () => {
         expect(screen.queryByText('_.copy_field.result')).not.toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: 'Details zu Ergebnis anzeigen'}));
-        expect(within(screen.getByRole('dialog', {name: 'Details zu den Ausgangsdaten'}))
+        expect(within(screen.getByRole('dialog', {name: 'Details zu den Datenausgängen'}))
             .getByText('_.new_key.result')).toBeInTheDocument();
     });
 
@@ -142,7 +142,7 @@ describe('ProcessNodeEditorOutputsTab', () => {
         screen.getAllByRole('textbox').forEach((field) => expect(field).toBeDisabled());
         await user.click(screen.getByRole('button', {name: 'Details zu Referenz anzeigen'}));
 
-        const dialog = screen.getByRole('dialog', {name: 'Details zu den Ausgangsdaten'});
+        const dialog = screen.getByRole('dialog', {name: 'Details zu den Datenausgängen'});
         expect(dialog).toHaveAccessibleDescription(referenceOutput.description);
         expect(within(dialog).getByRole('heading', {name: 'Referenz'})).toBeInTheDocument();
         expect(within(dialog).getByText(referenceOutput.description)).toBeInTheDocument();

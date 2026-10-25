@@ -20,7 +20,7 @@ public class XBezahldiensteRequestor implements Serializable {
     @JsonProperty("gender")
     private XBezahldienstGender gender = null;
 
-    // Wahr für Organisationen / juristische Personen, Falsch für 'natürliche' antragstellende Personen
+    // true für Organisationen bzw. juristische Personen, false für natürliche Personen
     @JsonProperty("isOrganization")
     private Boolean isOrganization = null;
 

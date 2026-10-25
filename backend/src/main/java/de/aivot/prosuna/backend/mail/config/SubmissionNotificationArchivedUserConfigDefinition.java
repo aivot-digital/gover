@@ -36,19 +36,19 @@ public class SubmissionNotificationArchivedUserConfigDefinition implements UserC
     @Nullable
     @Override
     public String getSubCategory() {
-        return "Anträge";
+        return "Vorgänge";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Antrag archiviert";
+        return "Archivierung eines Vorgangs (derzeit ohne Funktion)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Sie werden bei der Archivierung eines Antrags informiert, wenn es sich um einen Ihnen zugewiesenen Antrag handelt oder dieser nicht zugewiesen ist und Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (bewirtschaftend, sonst zuständig, sonst entwickelnd).";
+        return "Diese Einstellung ist für Benachrichtigungen bei der Archivierung eines Vorgangs vorgesehen und wird derzeit nicht verwendet. Abschluss, Zurückziehen und Löschen sind eigenständige Vorgänge und keine Archivierung.";
     }
 
     @Override

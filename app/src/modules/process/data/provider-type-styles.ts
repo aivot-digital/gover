@@ -25,7 +25,7 @@ export const ProviderTypeStyles: Record<string, {
     },
     [ProcessNodeType.FlowControl]: {
         Icon: ForkLeft,
-        label: 'Flusselement',
+        label: 'Ablaufsteuerung',
         bgColor: '#FFE1A6',
         textColor: '#674709',
     },

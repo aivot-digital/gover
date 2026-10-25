@@ -6,7 +6,7 @@ und diese Empfängeradresse erreicht wurde.
 
 Was dieser Test nicht vollständig prüft
 
-Der erfolgreiche Empfang ist keine Garantie dafür, dass E-Mails auch alle anderen Empfänger:innen
+Der erfolgreiche Empfang ist keine Garantie dafür, dass E-Mails auch alle weiteren angegebenen Adressen
 erreichen. Spamfilter, Graylisting sowie die Konfiguration der Absenderdomain können die Zustellung
 beeinflussen.
 

@@ -151,7 +151,7 @@ describe('ProcessNodeEditor metadata loading', () => {
         await user.click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
         fireEvent.change(input, {target: {value: 'renamed_node'}});
         await user.click(screen.getByRole('tab', {name: 'Weiteres'}));
-        await user.click(screen.getByRole('tab', {name: 'Ausgangsdaten'}));
+        await user.click(screen.getByRole('tab', {name: 'Datenausgänge'}));
         expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).not.toHaveAttribute('readonly');
         expect(testState.confirm).toHaveBeenCalledOnce();
         testState.save.mockRejectedValueOnce(new Error('Save failed'));
@@ -180,7 +180,7 @@ describe('ProcessNodeEditor metadata loading', () => {
         const user = userEvent.setup();
         const router = renderEditor();
         await screen.findByRole('textbox', {name: 'Name bearbeiten'});
-        await user.click(screen.getByRole('tab', {name: 'Ausgangsdaten'}));
+        await user.click(screen.getByRole('tab', {name: 'Datenausgänge'}));
         await act(() => router.navigate('/processes/10/versions/1/nodes/2/tabs/configuration'));
         await waitFor(() => expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Element 2'));
         const nameInput = screen.getByRole('textbox', {name: 'Name bearbeiten'});
@@ -203,7 +203,7 @@ describe('ProcessNodeEditor metadata loading', () => {
         expect(input).toHaveAttribute('readonly');
         expect(testState.save).not.toHaveBeenCalled();
         await user.click(screen.getByRole('tab', {name: 'Weiteres'}));
-        await user.click(screen.getByRole('tab', {name: 'Ausgangsdaten'}));
+        await user.click(screen.getByRole('tab', {name: 'Datenausgänge'}));
         expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).toHaveAttribute('readonly');
         expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).toHaveValue('renamed_node');
         await user.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));

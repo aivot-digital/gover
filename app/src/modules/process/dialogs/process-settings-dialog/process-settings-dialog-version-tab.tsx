@@ -476,7 +476,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 maxWidth={680}
             >
                 Nach Abschluss eines Vorgangs bleibt dieser für die angegebene Dauer gespeichert.
-                Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anhänge gelöscht.
+                Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anlagen gelöscht.
                 In Abschluss-Elementen kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
                 Vor der Veröffentlichung muss eine Aufbewahrungsfrist festgelegt sein.
             </ElementEditorSectionHeader>
@@ -522,7 +522,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginBottom
                 maxWidth={680}
             >
-                Das ausgewählte Erscheinungsbild gilt für die Formulare und Kundenansichten dieser Prozessversion.
+                Das ausgewählte Erscheinungsbild gilt für die Formulare und Ansichten für Beteiligte dieser Prozessversion.
             </ElementEditorSectionHeader>
 
             <Box
@@ -548,7 +548,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         }}
                         externalAction={
                             <Hint
-                                summary="Sie können ein abweichendes Erscheinungsbild für die Formulare und Kundenansichten dieser Prozessversion auswählen."
+                                summary="Sie können ein abweichendes Erscheinungsbild für die Formulare und Ansichten für Beteiligte dieser Prozessversion auswählen."
                                 detailsTitle="Erscheinungsbild"
                                 details={
                                     <>
@@ -563,14 +563,14 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                                                 Formularen)
                                             </li>
                                             <li>
-                                                Das Erscheinungsbild der bewirtschaftenden Organisationseinheit (Nur in
+                                                Das Erscheinungsbild der betreuenden Organisationseinheit (Nur in
                                                 Formularen)
                                             </li>
                                             <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
                                             <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
                                         </ol>
                                         <p>
-                                            Das Erscheinungsbild legt Farben, Logo und Favicon der Formulare und Kundenansichten dieser
+                                            Das Erscheinungsbild legt Farben, Logo und Favicon der Formulare und Ansichten für Beteiligte dieser
                                             Prozessversion fest.
                                         </p>
                                     </>

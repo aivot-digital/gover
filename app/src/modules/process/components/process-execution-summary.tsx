@@ -14,12 +14,12 @@ export function ProcessExecutionSummary({markdown}: ProcessExecutionSummaryProps
         // Open synchronously so the authenticated request does not lose the browser's user activation.
         const previewWindow = window.open('', '_blank');
         if (previewWindow == null) {
-            dispatch(showErrorSnackbar('Der Anhang konnte nicht geöffnet werden. Bitte erlauben Sie Pop-ups für diese Seite.'));
+            dispatch(showErrorSnackbar('Die Anlage konnte nicht geöffnet werden. Bitte erlauben Sie Pop-ups für diese Seite.'));
             return;
         }
         previewWindow.opener = null;
         previewWindow.document.title = 'Dokumentvorschau';
-        previewWindow.document.body.textContent = 'Anhang wird geladen…';
+        previewWindow.document.body.textContent = 'Anlage wird geladen …';
 
         try {
             const blob = await new ProcessInstanceAttachmentApiService().preview(key);
@@ -28,7 +28,7 @@ export function ProcessExecutionSummary({markdown}: ProcessExecutionSummaryProps
             previewWindow.location.replace(objectUrl);
         } catch (error) {
             previewWindow.close();
-            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht angezeigt werden.'));
+            dispatch(showApiErrorSnackbar(error, 'Die Anlage konnte nicht angezeigt werden.'));
         }
     };
 

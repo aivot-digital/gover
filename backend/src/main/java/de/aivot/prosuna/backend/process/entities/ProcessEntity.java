@@ -22,9 +22,9 @@ public class ProcessEntity {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der interne Titel der Prozessdefinition darf nicht null sein.")
-    @NotBlank(message = "Der interne Titel der Prozessdefinition darf nicht leer sein.")
-    @Length(min=3, max = 96, message = "Der interne Titel der Prozessdefinition muss zwischen 3 und 96 Zeichen lang sein.")
+    @NotNull(message = "Der interne Titel des Prozesses darf nicht null sein.")
+    @NotBlank(message = "Der interne Titel des Prozesses darf nicht leer sein.")
+    @Length(min=3, max = 96, message = "Der interne Titel des Prozesses muss zwischen 3 und 96 Zeichen lang sein.")
     private String internalTitle;
 
     @Nonnull

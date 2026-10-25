@@ -652,7 +652,7 @@ export function UserDetailsPageIndex() {
                                     maxWidth: 900
                                 }}>
                                 Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in Keycloak.
-                                Benutzer-ID:{' '}
+                                Konto-ID:{' '}
                                 <Box
                                     component="span"
                                     sx={{

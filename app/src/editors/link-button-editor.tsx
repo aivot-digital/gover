@@ -26,7 +26,7 @@ const colorOptions = [
 const targetOptions = [
     {label: 'Link', value: 'href'},
     {label: 'Mitarbeitenden-Ereignis', value: 'staffTaskEvent'},
-    {label: 'Kunden-Ereignis', value: 'customerTaskEvent'},
+    {label: 'Ereignis einer Aufgabe für Beteiligte', value: 'customerTaskEvent'},
 ];
 
 export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): React.JSX.Element {
@@ -107,7 +107,7 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                 <Grid size={{xs: 12, lg: 6}}>
                     <TextFieldComponent
                         value={element.customerTaskEvent}
-                        label="Kunden-Ereignis"
+                        label="Ereignis einer Aufgabe für Beteiligte"
                         onChange={(customerTaskEvent) => {
                             onPatch({customerTaskEvent});
                         }}

@@ -36,7 +36,7 @@ public class ProcessInstancePermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PROCESS_INSTANCE_DELETE, "Vorgang löschen", "Erlaubt das Löschen von Vorgängen."),
                 PermissionEntry.of(PROCESS_INSTANCE_PAUSE_RESUME, "Vorgang pausieren/fortsetzen", "Erlaubt das Pausieren und Fortsetzen von Vorgängen."),
                 PermissionEntry.of(PROCESS_INSTANCE_EDIT_DATA, "Vorgangsdaten bearbeiten", "Erlaubt das manuelle Bearbeiten von Daten innerhalb eines Vorgangs."),
-                PermissionEntry.of(PROCESS_INSTANCE_REASSIGN, "Vorgang neu zuweisen", "Erlaubt das Zuweisen eines Vorgangs an andere Benutzer:innen."),
+                PermissionEntry.of(PROCESS_INSTANCE_REASSIGN, "Vorgang neu zuweisen", "Erlaubt das Zuweisen eines Vorgangs an andere Mitarbeiter:innen."),
                 PermissionEntry.of(PROCESS_INSTANCE_COMMUNICATION_INTERNAL, "Interne Kommunikation", "Erlaubt die interne Kommunikation innerhalb eines Vorgangs."),
                 PermissionEntry.of(PROCESS_INSTANCE_COMMUNICATION_EXTERNAL, "Externe Kommunikation", "Erlaubt die externe Kommunikation aus einem Vorgang heraus."),
                 PermissionEntry.of(PROCESS_INSTANCE_EDIT_TASK, "Aufgaben bearbeiten", "Erlaubt das Bearbeiten von Aufgaben innerhalb eines Vorgangs."),

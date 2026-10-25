@@ -113,16 +113,16 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Speichert Dokumente auf einem WebDAV-kompatiblen Speicher.";
+        return "Speichert Dateien auf einem WebDAV-kompatiblen Speicher.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Bindet einen über WebDAV erreichbaren Dokumentenspeicher als Prosuna-Speicheranbieter ein.
+                Bindet einen über WebDAV erreichbaren Dateispeicher als Prosuna-Speicheranbieter ein.
 
-                Nach der Konfiguration von Serveradresse und Zugangsdaten können Dokumente und Ordner über das WebDAV-Protokoll gelesen, geschrieben und verwaltet werden. Dadurch lassen sich bestehende WebDAV-kompatible Dokumentenablagen in Prozesse und Anlagenverwaltung integrieren.
+                Nach der Konfiguration von Serveradresse und Zugangsdaten können Dateien und Ordner über das WebDAV-Protokoll gelesen, geschrieben und verwaltet werden. Dadurch lassen sich bestehende WebDAV-kompatible Dateiablagen in Prozesse und Anlagenverwaltung integrieren.
                 """;
     }
 
@@ -247,7 +247,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         }
 
         if (documentExists(config, trimTrailingSlash(normalizedPath))) {
-            throw new StorageException("Unter %s existiert bereits ein Dokument.", StringUtils.quote(debugPath(config, normalizedPath)));
+            throw new StorageException("Unter %s existiert bereits eine Datei.", StringUtils.quote(debugPath(config, normalizedPath)));
         }
 
         var parentPath = getParentFolderPath(normalizedPath);
@@ -433,7 +433,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         var normalizedPath = normalizeDocumentPath(pathFromRoot);
         var parentPath = getParentFolderPath(normalizedPath);
         if (!folderExists(config, parentPath)) {
-            throw new StorageException("Das übergeordnete WebDAV-Verzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(debugPath(config, normalizedPath)));
+            throw new StorageException("Das übergeordnete WebDAV-Verzeichnis für die Datei %s existiert nicht.", StringUtils.quote(debugPath(config, normalizedPath)));
         }
 
         var mimeType = knownExtensionsService
@@ -697,7 +697,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
                                               @Nonnull String normalizedTargetPath) throws StorageException {
         var targetParentPath = getParentFolderPath(normalizedTargetPath);
         if (!folderExists(config, targetParentPath)) {
-            throw new StorageException("Das Zielverzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(debugPath(config, normalizedTargetPath)));
+            throw new StorageException("Das Zielverzeichnis für die Datei %s existiert nicht.", StringUtils.quote(debugPath(config, normalizedTargetPath)));
         }
     }
 
@@ -1005,7 +1005,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
             if (!overwrite && response.statusCode() == 412) {
                 throw new StorageException("Das temporäre WebDAV-Prüfdokument existiert bereits.");
             }
-            throw unexpectedStatus(response, "Das Dokument konnte nicht im WebDAV-Speicher gespeichert werden.");
+            throw unexpectedStatus(response, "Die Datei konnte nicht im WebDAV-Speicher gespeichert werden.");
         }
 
         @Nonnull
@@ -1035,7 +1035,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
             }
 
             if (response.statusCode() == 404) {
-                throw new StorageException("Das Dokument konnte im WebDAV-Speicher nicht gefunden werden.");
+                throw new StorageException("Die Datei konnte im WebDAV-Speicher nicht gefunden werden.");
             }
             throw new StorageException("WebDAV-Speicher antwortete mit Status %d.", response.statusCode());
         }

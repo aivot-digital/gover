@@ -51,13 +51,13 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getName() {
-        return "Dateien & Medien";
+        return "Dateien und Medien";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Dateien & Medien.";
+        return "Dieses Paket enthält Funktionen für Dateien und Medien.";
     }
 
     @Nonnull
@@ -86,7 +86,7 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
         try {
             assetObj = assetService
                     .retrieve(parseUUID(assetKey))
-                    .orElseThrow(() -> new IllegalArgumentException("Asset not found: " + assetKey));
+                    .orElseThrow(() -> new IllegalArgumentException("Datei nicht gefunden: " + assetKey));
         } catch (ResponseException e) {
             throw new IOException(e);
         }
@@ -121,7 +121,7 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
         try {
             assetObj = assetService
                     .retrieve(parseUUID(assetKey))
-                    .orElseThrow(() -> new IllegalArgumentException("Asset not found: " + assetKey));
+                    .orElseThrow(() -> new IllegalArgumentException("Datei nicht gefunden: " + assetKey));
         } catch (ResponseException e) {
             throw new IOException(e);
         }
@@ -133,7 +133,7 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
         try {
             return UUID.fromString(assetKey);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid asset key: " + assetKey);
+            throw new IllegalArgumentException("Ungültiger Dateischlüssel: " + assetKey);
         }
     }
 }

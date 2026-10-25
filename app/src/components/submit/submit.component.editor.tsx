@@ -23,7 +23,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                 >
                     <RichTextInputComponent
                         value={props.element.textPreSubmit ?? ''}
-                        label="Text vor der Einreichung"
+                        label="Text vor der Übermittlung"
                         onChange={(val) => {
                             props.onPatch({
                                 textPreSubmit: val ?? undefined,
@@ -41,7 +41,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                 >
                     <RichTextInputComponent
                         value={props.element.textPostSubmit ?? ''}
-                        label="Text nach der Einreichung"
+                        label="Text nach der Übermittlung"
                         onChange={(val) => {
                             props.onPatch({
                                 textPostSubmit: val ?? undefined,
@@ -61,7 +61,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                     <TextFieldComponent
                         value={props.element.textProcessingTime ?? ''}
                         label="Bearbeitungszeit"
-                        hint="Ungefähre Bearbeitungszeit der zuständigen und/oder bewirtschaftenden Stelle."
+                        hint="Ungefähre Bearbeitungszeit der zuständigen und/oder betreuenden Stelle."
                         multiline
                         rows={4}
                         onChange={(val) => {
@@ -86,7 +86,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                                 documentsToReceive: val,
                             });
                         }}
-                        hint="Durch die zuständige und/oder bewirtschaftende Stelle auszustellende Dokumente. Bitte geben Sie pro Zeile ein Dokument an."
+                        hint="Durch die zuständige und/oder betreuende Stelle auszustellende Dokumente. Bitte geben Sie pro Zeile ein Dokument an."
                         disabled={!props.editable}
                         allowEmpty
                         addLabel="Dokument hinzufügen"

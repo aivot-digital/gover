@@ -151,7 +151,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         try {
             config = ElementPOJOMapper.createFromPOJO(SendDataFitConnectActionNodeV1Config.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError("Failed to create configuration layout for node: " + NODE_KEY, e);
+            throw ResponseException.internalServerError("Die Konfigurationsoberfläche für das Prozesselement konnte nicht erstellt werden: " + NODE_KEY, e);
         }
 
         config
@@ -334,18 +334,18 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         try {
             senderClientSecretKey = UUID.fromString(config.senderClientSecret);
         } catch (Exception e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Failed to parse sender client secret key as UUID: " + config.senderClientSecret, e);
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Kennung des Client-Geheimnisses des Absenders ist keine gültige UUID: " + config.senderClientSecret, e);
         }
 
         final var senderClientSecretEntity = secretService
                 .retrieve(senderClientSecretKey)
-                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration("Sender client secret not found: " + senderClientSecretKey));
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration("Das Client-Geheimnis des Absenders wurde nicht gefunden: " + senderClientSecretKey));
 
         final String senderClientSecret;
         try {
             senderClientSecret = secretService.decrypt(senderClientSecretEntity);
         } catch (Exception e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Failed to decrypt sender client secret: " + senderClientSecretKey, e);
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Das Client-Geheimnis des Absenders konnte nicht entschlüsselt werden: " + senderClientSecretKey, e);
         }
 
         return senderClientSecret;
@@ -390,7 +390,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
             case SendDataFitConnectActionNodeV1Config.ENVIRONMENT_TEST -> FitConnectEnvironment.TEST;
             case SendDataFitConnectActionNodeV1Config.ENVIRONMENT_STAGE -> FitConnectEnvironment.STAGE;
             case SendDataFitConnectActionNodeV1Config.ENVIRONMENT_PROD -> FitConnectEnvironment.PROD;
-            default -> throw new IllegalArgumentException("Unsupported FIT-Connect environment: " + environment);
+            default -> throw new IllegalArgumentException("Nicht unterstützte FIT-Connect-Umgebung: " + environment);
         };
     }
 
@@ -497,8 +497,8 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** Client ID used to authenticate the sender against FIT-Connect. */
         @InputElementPOJOBinding(id = SENDER_CLIENT_ID_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Sender Client ID"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Client ID für den Sender."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Client-ID des Absenders"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Client-ID des Absenders."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -506,8 +506,8 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** Secret reference whose decrypted value is the FIT-Connect sender client secret. */
         @InputElementPOJOBinding(id = SENDER_CLIENT_SECRET_KEY_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Sender Client Secret"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Client Secret für den Sender."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Client-Geheimnis des Absenders"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Client-Geheimnis des Absenders."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -515,8 +515,8 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** Process-data key from which the JSON submission body is read. */
         @InputElementPOJOBinding(id = JSON_DATASET_PROCESS_KEY_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "JSON-Datensatz Prozessdaten-Schlüssel"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Prozessdaten-Schlüssel, unter dem der JSON-Datensatz für die Nachrichtenübermittlung gespeichert ist."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "JSON-Datensatz Datenschlüssel"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Datenschlüssel, unter dem der JSON-Datensatz für die Nachrichtenübermittlung gespeichert ist."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
         })

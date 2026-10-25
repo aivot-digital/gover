@@ -175,7 +175,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                 {
                     availablePorts.length === 0 &&
                     <Alert severity="info">
-                        Dieses Prozesselement hat keine freien Ausgangsports mehr.
+                        Dieses Prozesselement hat keine freien Prozesspfade mehr.
                     </Alert>
                 }
 
@@ -191,7 +191,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                     <TextField
                         select
                         fullWidth
-                        label="Ausgang"
+                        label="Prozesspfad"
                         value={selectedPortKey}
                         onChange={(event) => {
                             setSelectedPortKey(event.target.value);
@@ -203,7 +203,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                         }}
                     >
                         <option value="" disabled>
-                            Ausgang auswählen
+                            Prozesspfad auswählen
                         </option>
                         {
                             availablePorts.map((port) => (
@@ -221,7 +221,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                         <Typography variant="caption" sx={{
                             color: "text.secondary"
                         }}>
-                            Ausgang
+                            Prozesspfad
                         </Typography>
                         <Typography sx={{
                             fontWeight: 600

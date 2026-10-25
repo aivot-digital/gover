@@ -93,7 +93,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         return """
                 Integriert den Zahlungsdienstleister pmPayment über den XBezahldienste-Standard in Prosuna.
 
-                Die Komponente übermittelt standardisierte Zahlungsanfragen an eine konfigurierte pmPayment-Schnittstelle und verarbeitet die zugehörigen Transaktionsinformationen. Zahlungen können dadurch aus Prosuna heraus initiiert und ihr weiterer Status nachverfolgt werden.
+                Die Komponente übermittelt standardisierte Zahlungsanforderungen an eine konfigurierte pmPayment-Schnittstelle und verarbeitet die zugehörigen Transaktionsinformationen. Zahlungen können dadurch aus Prosuna heraus initiiert und ihr weiterer Status nachverfolgt werden.
                 """;
     }
 
@@ -198,12 +198,12 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
 
         var originatorID = (String) effectiveValues.get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
-            throw new PaymentException("Originator ID for payment provider %s is missing", getProviderName());
+            throw new PaymentException("Die Originator-ID für den Zahlungsanbieter %s fehlt.", getProviderName());
         }
 
         var endpointID = (String) effectiveValues.get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
-            throw new PaymentException("Endpoint ID for payment provider %s is missing", getProviderName());
+            throw new PaymentException("Die Endpoint-ID für den Zahlungsanbieter %s fehlt.", getProviderName());
         }
 
         var paymentTransactionUrl = (String) effectiveValues.get(PAYMENT_TRANSACTION_URL_FIELD);
@@ -217,7 +217,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
             body = objectMapper
                     .writeValueAsString(paymentRequest);
         } catch (JacksonException e) {
-            throw new PaymentException(e, "Failed to serialize payment request");
+            throw new PaymentException(e, "Die Zahlungsanforderung konnte nicht in das benötigte Datenformat umgewandelt werden.");
         }
 
         var paymentPath = String
@@ -238,7 +238,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         } catch (HttpConnectionException e) {
             throw new PaymentException(
                     e,
-                    "Failed to create payment from payment provider %s at %s. Sent body was %s",
+                    "Die Zahlung beim Zahlungsanbieter %s unter %s konnte nicht erstellt werden. Anfrage: %s",
                     getProviderName(),
                     paymentPath,
                     body
@@ -247,7 +247,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
 
         if (response.statusCode() != 200) {
             throw new PaymentException(
-                    "Failed to create payment from payment provider %s at %s. Status code was %d with body %s. Sent body was %s",
+                    "Die Zahlung beim Zahlungsanbieter %s unter %s konnte nicht erstellt werden. Statuscode: %d. Antwort: %s. Anfrage: %s",
                     getProviderName(),
                     paymentPath,
                     response.statusCode(),
@@ -259,7 +259,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         try {
             return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JacksonException e) {
-            throw new PaymentException(e, "Failed to deserialize payment transaction. Body was %s", response.body());
+            throw new PaymentException(e, "Die Zahlungstransaktion konnte nicht verarbeitet werden. Antwort: %s", response.body());
         }
     }
 
@@ -291,12 +291,12 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                                     .withAuthorizationBearer(accessToken)
                     );
         } catch (HttpConnectionException e) {
-            throw new PaymentException(e, "Failed to check payment status for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         if (response.statusCode() != 200) {
             throw new PaymentException(
-                    "Failed to check payment status for payment provider %s (%s). Status code was %d with body %s",
+                    "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.. Status code was %d with body %s",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey(),
                     response.statusCode(),
@@ -310,7 +310,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                     .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JacksonException e) {
-            throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Die Zahlungstransaktion des Zahlungsanbieters %s (%s) konnte nicht verarbeitet werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         return updatedTransaction;
@@ -340,13 +340,13 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
 
         var paymentProviderClientId = (String) effectiveValues.get(CLIENT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderClientId)) {
-            throw new PaymentException("Client ID for payment provider %s is missing", getProviderName());
+            throw new PaymentException("Die Client-ID für den Zahlungsanbieter %s fehlt.", getProviderName());
         }
 
         var paymentProviderClientSecretKey = (String) effectiveValues.get(CLIENT_SECRET_FIELD);
         var paymentProviderClientSecret = getDecryptedClientSecret(paymentProviderClientSecretKey);
         if (StringUtils.isNullOrEmpty(paymentProviderClientSecret)) {
-            throw new PaymentException("Client secret %s is empty", paymentProviderClientSecretKey);
+            throw new PaymentException("Das Client-Geheimnis mit der Kennung %s ist leer.", paymentProviderClientSecretKey);
         }
 
         var formData = String.format("grant_type=client_credentials&client_id=%s&client_secret=%s", paymentProviderClientId, paymentProviderClientSecret);
@@ -380,7 +380,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                     .get("access_token")
                     .asText();
         } catch (JacksonException e) {
-            throw new PaymentSerializationException(e, "Failed to deserialize response body", response.body(), paymentProviderEntity);
+            throw new PaymentSerializationException(e, "Die Antwort des Zahlungsanbieters konnte nicht verarbeitet werden.", response.body(), paymentProviderEntity);
         }
 
         return token;
@@ -393,7 +393,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     ) throws PaymentException {
         var originatorID = (String) config.getEffectiveValues().get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
-            throw new PaymentException("Originator ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die Originator-ID für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return originatorID;
     }
@@ -405,7 +405,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     ) throws PaymentException {
         var endpointID = (String) config.getEffectiveValues().get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
-            throw new PaymentException("Endpoint ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die Endpoint-ID für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return endpointID;
     }
@@ -415,7 +415,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
             var uuid = UUID.fromString(clientSecretKey);
             return getDecryptedClientSecret(uuid);
         } catch (IllegalArgumentException e) {
-            throw new PaymentException(e, "Client secret key %s is not a valid UUID", clientSecretKey);
+            throw new PaymentException(e, "Die Kennung %s des Client-Geheimnisses ist keine gültige UUID.", clientSecretKey);
         }
     }
 
@@ -423,12 +423,12 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     private String getDecryptedClientSecret(@Nonnull UUID clientSecretKey) throws PaymentException {
         var paymentProviderClientSecretEntity = secretService
                 .retrieve(clientSecretKey)
-                .orElseThrow(() -> new PaymentException("Client secret %s not found", clientSecretKey));
+                .orElseThrow(() -> new PaymentException("Das Client-Geheimnis mit der Kennung %s wurde nicht gefunden.", clientSecretKey));
         try {
             return secretService
                     .decrypt(paymentProviderClientSecretEntity);
         } catch (Exception e) {
-            throw new PaymentException(e, "Failed to decrypt client secret %s", clientSecretKey);
+            throw new PaymentException(e, "Das Client-Geheimnis mit der Kennung %s konnte nicht entschlüsselt werden.", clientSecretKey);
         }
     }
 
@@ -437,7 +437,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
                                                              @Nonnull DerivedRuntimeElementData config) throws PaymentException {
         var paymentTransactionUrl = (String) config.getEffectiveValues().get(PAYMENT_TRANSACTION_URL_FIELD);
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
-            throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die URL der Zahlungstransaktion für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return StringUtils.normalizeUrl(paymentTransactionUrl);
     }

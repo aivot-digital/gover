@@ -19,15 +19,15 @@
     >
         <div style="flex: 1">
             <p th:if="${ base.customerPrint }">
-                Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
+                Für diesen Vorgang ist eine Zahlung erforderlich.
                 <br />
                 Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Bezahlvorgang vollständig abschließen.
                 <br />
                 <strong>Wichtig:</strong>
-                Ihr Antrag wird erst nach erfolgter Zahlung bearbeitet. Sollten Sie die Gebühren bereits entrichtet haben, sind keine weiteren Schritte Ihrerseits erforderlich.
+                Die weitere Verarbeitung wartet auf die Bestätigung der Zahlung. Wenn Sie bereits bezahlt haben, ist keine weitere Zahlung erforderlich.
             </p>
             <p th:unless="${ base.customerPrint }">
-                Die Gebühr wurde noch nicht bezahlt.
+                Die Zahlung steht noch aus.
             </p>
 
             <ul>
@@ -54,7 +54,7 @@
                         th:href="${paymentTransaction.paymentInformation.transactionRedirectUrl}"
                         th:text="${paymentTransaction.paymentInformation.transactionRedirectUrl}"
                 >
-                    Link zur Bezahlung
+                    Link zur Zahlung
                 </a>
             </p>
         </div>
@@ -71,7 +71,7 @@
 
     <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'PAYED' }">
         <p>
-            Die Gebühr wurde bereits bezahlt.
+            Die Zahlung wurde bestätigt.
         </p>
 
         <table>
@@ -111,10 +111,10 @@
                 </tr>
                 <tr style="vertical-align: top">
                     <td>
-                        <strong>Gebühr:</strong>
+                        <strong>Betrag:</strong>
                     </td>
                     <td>
-                        Insgesamt entrichtete Gebühr:
+                        Gezahlter Gesamtbetrag:
                         <span th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) }"></span>
                         Euro inkl. Steuern
 
@@ -144,15 +144,15 @@
 
     <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'FAILED' or  paymentTransaction.paymentInformation.getStatus().name() == 'CANCELED' }">
         <p th:if="${ base.isCustomerPrint() }">
-            Die Bezahlung der Gebühren ist fehlgeschlagen.
-            Bitte wenden Sie sich an die zuständige Dienststelle.
-            Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an:
+            Die Zahlung wurde nicht abgeschlossen.
+            Bitte wenden Sie sich an die zuständige Stelle.
+            Bitte geben Sie zur Zuordnung Ihres Vorgangs folgende Kennung an:
             <span th:text="${ submission.getId() }"></span>
             .
         </p>
 
         <p th:if="${ base.isStaffPrint() }">
-            Die Bezahlung der Gebühren ist fehlgeschlagen.
+            Die Zahlung wurde nicht abgeschlossen.
         </p>
 
         <ul>

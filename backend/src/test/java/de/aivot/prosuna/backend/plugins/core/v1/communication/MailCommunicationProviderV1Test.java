@@ -198,7 +198,7 @@ class MailCommunicationProviderV1Test {
 
         assertTrue(email.getDisabled());
         assertEquals("customer@example.test", staticValue(email));
-        assertTrue(email.getHint().contains("Nutzerkonto"));
+        assertTrue(email.getHint().contains("Konto"));
     }
 
     @Test
@@ -321,7 +321,7 @@ class MailCommunicationProviderV1Test {
         assertEquals("mail-testing-result", result.getId());
         assertEquals(AlertType.Success, alert.getAlertType());
         assertEquals("Testnachricht erfolgreich versendet", alert.getTitle());
-        assertEquals("Empfänger: customer@example.test\nBetreff: Testnachricht", alert.getText());
+        assertEquals("Empfangende Person oder Organisation: customer@example.test\nBetreff: Testnachricht", alert.getText());
     }
 
     @Test

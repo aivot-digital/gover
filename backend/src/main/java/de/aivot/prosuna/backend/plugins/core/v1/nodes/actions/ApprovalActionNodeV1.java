@@ -168,7 +168,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         return """
                 Erstellt eine zugewiesene Aufgabe, über die eine Mitarbeiter:in einen Vorgang freigeben oder ablehnen kann.
                 
-                Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Ausgang fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Elementausgänge bereit.
+                Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Prozesspfad fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Datenausgänge bereit.
                 """;
     }
 
@@ -317,7 +317,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         StringUtils.quote(this.resolveNodeName(context.getThisNode()))
                 ));
 

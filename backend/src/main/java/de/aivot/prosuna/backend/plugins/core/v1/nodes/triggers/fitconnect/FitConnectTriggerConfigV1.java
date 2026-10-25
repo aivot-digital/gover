@@ -37,7 +37,7 @@ public class FitConnectTriggerConfigV1 {
     /** FIT-Connect environment used for all organisation API calls. */
     @InputElementPOJOBinding(id = ENVIRONMENT_CONFIG_KEY, type = ElementType.Select, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "FIT-Connect-Umgebung"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Die Umgebung, aus der Einreichungen abgerufen werden."),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Die Umgebung, aus der FIT-Connect-Einreichungen abgerufen werden."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
             @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
     })
@@ -73,7 +73,7 @@ public class FitConnectTriggerConfigV1 {
     /** Asset containing the private signing JWK used for organisation events. */
     @InputElementPOJOBinding(id = PRIVATE_SIGNING_KEY_CONFIG_KEY, type = ElementType.AssetSelectInput, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Privater Signaturschlüssel"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Asset-Datei mit dem privaten Signatur-JWK der Organisation."),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Datei mit dem privaten Signatur-JWK der Organisation."),
             @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Signaturschlüssel auswählen"),
             @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine JWK-Datei ausgewählt"),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
@@ -119,7 +119,7 @@ public class FitConnectTriggerConfigV1 {
         @Nullable
         @InputElementPOJOBinding(id = KEY_FILE_CONFIG_KEY, type = ElementType.AssetSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "JWK-Datei"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Asset-Datei mit einem privaten Entschlüsselungs-JWK."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Datei mit einem privaten Entschlüsselungs-JWK."),
                 @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Entschlüsselungsschlüssel auswählen"),
                 @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine JWK-Datei ausgewählt"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),

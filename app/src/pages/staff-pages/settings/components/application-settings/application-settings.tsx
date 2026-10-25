@@ -195,9 +195,9 @@ export function ApplicationSettings() {
     const assetStorageProviderError =
         canReadStorageProviders && !isLoadingSystemConfigs && !hasSystemConfigsLoadingError && !isLoadingAssetStorageProviders
             ? assetStorageProviders.length === 0
-                ? 'Es ist kein Speicheranbieter für Assets vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
+                ? 'Es ist kein Speicheranbieter für Dateien und Medien vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
                 : isStringNullOrEmpty(assetStorageProviderValue)
-                    ? 'Bitte wählen Sie einen Speicheranbieter für Assets aus.'
+                    ? 'Bitte wählen Sie einen Speicheranbieter für Dateien und Medien aus.'
                     : undefined
             : undefined;
     const attachmentStorageProviderError =
@@ -321,7 +321,7 @@ export function ApplicationSettings() {
             })
             .catch((err) => {
                 if (isActive) {
-                    dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Assets konnte nicht geladen werden'));
+                    dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Dateien und Medien konnte nicht geladen werden.'));
                 }
             })
             .finally(() => {
@@ -460,7 +460,7 @@ export function ApplicationSettings() {
                     key: SystemConfigKeys.storage.assets.default_storage_provider,
                     options: assetStorageProviders,
                     canRead: canReadStorageProviders,
-                    errorMessage: 'Für Assets muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
+                    errorMessage: 'Für Dateien und Medien muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
                 },
             ];
 
@@ -565,7 +565,7 @@ export function ApplicationSettings() {
                                     </Typography>
                                     <Typography sx={{mb: 1}}>
                                         Durch den Wechsel können Datenstrukturen auf mehrere Speicheranbieter aufgeteilt
-                                        werden. Außerdem kann der Zugriff auf bereits bestehende Anhänge innerhalb
+                                        werden. Außerdem kann der Zugriff auf bereits bestehende Anlagen innerhalb
                                         aktiver Vorgänge verloren gehen.
                                     </Typography>
                                     <Typography>
@@ -1104,7 +1104,7 @@ export function ApplicationSettings() {
                         mt: 4,
                     }}
                 >
-                    Zentraler Speicheranbieter für Assets
+                    Zentraler Speicheranbieter für Dateien und Medien
                 </Typography>
                 <Typography
                     sx={{
@@ -1114,7 +1114,7 @@ export function ApplicationSettings() {
                 >
                     Dieser Speicheranbieter wird verwendet, um Assets zu speichern, wenn kein spezifischer
                     Speicheranbieter
-                    für ein Asset konfiguriert ist.
+                    für eine Datei konfiguriert ist.
                     Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den
                     zentralen Speicheranbieter verwenden.
                 </Typography>
@@ -1129,8 +1129,8 @@ export function ApplicationSettings() {
                         }}
                     >
                         <SelectFieldComponent
-                            label="Zentraler Speicheranbieter für Assets"
-                            hint={!canReadStorageProviders ? storageProviderReadHint : 'Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll.'}
+                            label="Zentraler Speicheranbieter für Dateien und Medien"
+                            hint={!canReadStorageProviders ? storageProviderReadHint : 'Geben Sie den Speicheranbieter an, der standardmäßig für Dateien und Medien verwendet werden soll.'}
                             value={assetStorageProviderValue}
                             onChange={(val) => {
                                 setEditedConfig({
@@ -1146,7 +1146,7 @@ export function ApplicationSettings() {
                                 isLoadingAssetStorageProviders
                             }
                             options={assetStorageProviders}
-                            emptyStatePlaceholder={!canReadStorageProviders ? 'Keine Berechtigung zur Einsicht' : 'Keine Speicheranbieter für Assets vorhanden'}
+                            emptyStatePlaceholder={!canReadStorageProviders ? 'Keine Berechtigung zur Einsicht' : 'Keine Speicheranbieter für Dateien und Medien vorhanden'}
                             startIcon={ModuleIcons.storage}
                         />
                     </Grid>

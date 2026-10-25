@@ -22,9 +22,9 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                     mt: 1,
                 }}
             >
-                Um Ihre Einreichung bearbeiten zu können, ist eine Zahlung erforderlich.
+                Für diesen Vorgang ist eine Zahlung erforderlich.
                 Die Zahlung wird durch den Dienstleister <strong>{request.paymentProviderName}</strong> abgewickelt.
-                Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den Vorgang abschließen.
+                Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den Zahlungsvorgang abschließen.
             </Typography>
 
             <Typography
@@ -35,7 +35,7 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                 }}
             >
                 <strong>Wichtig:</strong>
-                &nbsp;Ihre Einreichung wird erst nach erfolgter Zahlung bearbeitet.
+                &nbsp;Die weitere Verarbeitung wartet auf die Bestätigung der Zahlung.
             </Typography>
 
             <AlertComponent
@@ -44,7 +44,7 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                     maxWidth: '660px',
                     mt: 3,
                 }}
-                title="Für Ihre Einreichung sind folgende Positionen zu begleichen"
+                title="Zahlungsübersicht"
             >
                 <ul style={{paddingLeft: '20px'}}>
                     {
@@ -62,7 +62,7 @@ export function PaymentRequestOverview(props: PaymentRequestOverviewProps) {
                     }
                 </ul>
 
-                Insgesamt zu entrichtende Zahlung: {formatNumToGermanNum(request.totalCost, 2)} Euro
+                Gesamtbetrag: {formatNumToGermanNum(request.totalCost, 2)} Euro
                 { request.hasTaxes ? ' inkl. Steuern' : '' }
             </AlertComponent>
         </>

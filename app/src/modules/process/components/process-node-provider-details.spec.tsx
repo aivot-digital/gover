@@ -35,12 +35,12 @@ describe('ProcessNodeProviderDetails', () => {
 
     it('shows configuration-dependent guidance without a node and concrete ports for a saved node', () => {
         const {rerender} = render(<ProcessNodeProviderDetailsContent provider={createProvider()}/>);
-        expect(screen.getByText('Die Ausgänge hängen von der Konfiguration des Prozesselements ab.')).toBeInTheDocument();
+        expect(screen.getByText('Die Prozesspfade hängen von der Konfiguration des Prozesselements ab.')).toBeInTheDocument();
         rerender(<ProcessNodeProviderDetailsContent provider={createProvider()} ports={[
             {key: 'phase_overdue', deadlineKey: 'phase', label: 'Fristüberschreitung', description: 'Fristablauf'},
         ]}/>);
         expect(screen.getByText('Fristüberschreitung')).toBeInTheDocument();
-        expect(screen.queryByText('Die Ausgänge hängen von der Konfiguration des Prozesselements ab.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Die Prozesspfade hängen von der Konfiguration des Prozesselements ab.')).not.toBeInTheDocument();
     });
 
     it('renders the detailed description, type and documentation link', () => {
@@ -106,7 +106,7 @@ describe('ProcessNodeProviderDetails', () => {
 
         render(<ProcessNodeProviderDetailsContent provider={createProvider()}/>);
 
-        expect(screen.getByText('Plugin')).toBeInTheDocument();
+        expect(screen.getByText('Erweiterung')).toBeInTheDocument();
         expect(screen.getByText('de.aivot.test')).toBeInTheDocument();
         expect(screen.queryByText('Aivot Test-Plugin')).not.toBeInTheDocument();
         expect(getPlugin).not.toHaveBeenCalled();
@@ -134,10 +134,10 @@ describe('ProcessNodeProviderDetails', () => {
         expect(screen.getByText('Aivot Test GmbH')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {
-            name: 'Plugin-Informationen zu Aivot Test-Plugin anzeigen',
+            name: 'Informationen zur Erweiterung Aivot Test-Plugin anzeigen',
         }));
 
-        expect(screen.getByRole('dialog', {name: 'Plugin-Informationen'})).toBeInTheDocument();
+        expect(screen.getByRole('dialog', {name: 'Informationen zur Erweiterung'})).toBeInTheDocument();
         expect(screen.getByText('Pluginbeschreibung').tagName).toBe('STRONG');
         expect(screen.getByText('Version 2.3.4')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: 'https://example.com'})).toHaveAttribute(
@@ -156,7 +156,7 @@ describe('ProcessNodeProviderDetails', () => {
 
         render(<ProcessNodeProviderDetailsContent provider={createProvider()}/>);
 
-        await screen.findByText('Die Plugin-Informationen konnten nicht geladen werden.');
+        await screen.findByText('Die Informationen zur Erweiterung konnten nicht geladen werden.');
         await user.click(screen.getByRole('button', {name: 'Erneut versuchen'}));
 
         expect(await screen.findByText('Aivot Test-Plugin')).toBeInTheDocument();
@@ -184,7 +184,7 @@ describe('ProcessNodeProviderDetails', () => {
             name: 'Details zu Ergebnis anzeigen',
         }));
 
-        const dialog = screen.getByRole('dialog', {name: 'Details zu den Ausgangsdaten'});
+        const dialog = screen.getByRole('dialog', {name: 'Details zu den Datenausgängen'});
         expect(dialog).toHaveAccessibleDescription('Das berechnete Ergebnis.');
         const accessSection = within(dialog).getByRole('region', {name: 'Zugriff auf die Daten'});
         expect(within(accessSection).getByText(/mit dem Datenschlüssel des Prozesselements kombiniert/)).toBeInTheDocument();

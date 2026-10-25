@@ -83,7 +83,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             sections.push(
                 <ExpandableList
                     key="eligible"
-                    title="Antragsberechtigte"
+                    title="Berechtigte Personen und Organisationen"
                     items={eligiblePersons}
                     initialVisible={initialDisplayCount}
                     singularLabel="Person"
@@ -113,7 +113,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             sections.push(
                 <ExpandableList
                     key="attachments"
-                    title="Einzureichende Dokumente"
+                    title="Benötigte Dokumente"
                     items={documentsToAttach}
                     initialVisible={initialDisplayCount}
                     singularLabel="Dokument"
@@ -151,7 +151,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         component={'h3'}
                         variant="h5"
                     >
-                        Gebühren dieses Antrages
+                        Kosten
                     </Typography>
 
                     <MarkdownContent

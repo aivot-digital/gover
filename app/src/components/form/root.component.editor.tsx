@@ -92,7 +92,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         value={form.publicTitle}
                         label="Öffentlicher Titel & Überschrift des Formulars"
                         multiline
-                        hint="Dieser Titel wird öffentlich für das Formular verwendet und ggü. Anstragstellenden angezeigt."
+                        hint="Dieser Titel wird öffentlich für das Formular verwendet und ausfüllenden Personen angezeigt."
                         onChange={(val) => {
                             onPatch({
                                 publicTitle: val ?? '',
@@ -132,9 +132,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 title="Zuständige Stellen im Formular"
                 variant="h5"
             >
-                Wählen Sie bei Bedarf die zuständige und die bewirtschaftende Organisationseinheit aus.
+                Wählen Sie bei Bedarf die zuständige und die betreuende Organisationseinheit aus.
                 Ihre Anschriften werden in den optionalen Abschnitten „Allgemeine Informationen“ und
-                „Abschluss und Einreichung“ angezeigt.
+                „Prüfen und absenden“ angezeigt.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -184,8 +184,8 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     {
                         departments != null &&
                         <DepartmentSelectField
-                            label="Bewirtschaftende Organisationseinheit"
-                            hint="Die hinterlegte Anschrift wird als „Bewirtschaftende Stelle“ angezeigt."
+                            label="Betreuende Organisationseinheit"
+                            hint="Die hinterlegte Anschrift wird als „Betreuende Stelle“ angezeigt."
                             value={managingDepartment}
                             onChange={(department) => {
                                 onPatch({
@@ -201,7 +201,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 title="PDF-Generierung"
                 variant="h5"
             >
-                Wählen Sie bei Bedarf eine PDF-Vorlage für eingereichte Anträge und Formulare zur Offline-Einreichung.
+                Wählen Sie bei Bedarf eine PDF-Vorlage für die Kopie der übermittelten Angaben und den Formularvordruck.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -235,14 +235,12 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                             auswählen.
                                         </p>
                                         <p>
-                                            Die Vorlage wird für das PDF des eingereichten Antrags (welches antragstellende
-                                            Personen und
-                                            Mitarbeiter:innen der Verwaltung erhalten) verwendet.
+                                            Die Vorlage wird für die Kopie der Angaben verwendet, die Beteiligte und
+                                            Mitarbeiter:innen als PDF erhalten.
                                             Auch der Vordruck des Formulars verwendet die ausgewählte Vorlage.
                                         </p>
                                         <p>
-                                            Vorlagen können im Bereich <Link to="/assets">Dokumente &
-                                                                                          Medieninhalte</Link> hochgeladen
+                                            Vorlagen können im Bereich <Link to="/assets">Dateien und Medien</Link> hochgeladen
                                             werden.
                                         </p>
                                     </>
@@ -253,11 +251,11 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Hinweise zur Offline-Einreichung"
+                title="Hinweise zur Abgabe des Formularvordrucks"
                 variant="h5"
             >
                 Diese Angaben werden für den PDF-Vordruck des Formulars genutzt. Sie sind nicht relevant, wenn
-                ausschließlich eine Online-Einreichung zugelassen wird.
+                ausschließlich eine Onlineübermittlung zugelassen wird.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -270,7 +268,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     }}
                 >
                     <RichTextInputComponent
-                        hint="Wenn Sie dieses Formular als Vordruck z.B. zum Ausfüllen auf Papier, bereitstellen möchten, sollten Sie hier die Adresse und/oder E-Mail etc. nennen, an welche das Formular einzureichen ist."
+                        hint="Wenn Sie dieses Formular als Vordruck bereitstellen, geben Sie hier an, wie und an welche Post- oder E-Mail-Adresse das ausgefüllte Formular übermittelt werden kann."
                         value={props.element.offlineSubmissionText ?? ''}
                         onChange={val => {
                             props.onPatch({

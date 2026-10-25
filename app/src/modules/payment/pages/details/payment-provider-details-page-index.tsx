@@ -380,7 +380,7 @@ export function PaymentProviderDetailsPageIndex() {
                                 }))}
                                 disabled={isBusy || !isEditable}
                                 error={errors.providerKey}
-                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist für zahlende Personen oder Organisationen sichtbar."
                             /> :
                             <SelectFieldComponent
                                 label="Zahlungsanbieter"
@@ -394,7 +394,7 @@ export function PaymentProviderDetailsPageIndex() {
                                 }))}
                                 disabled={true}
                                 error={errors.providerKey}
-                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist für zahlende Personen oder Organisationen sichtbar."
                             />
                     }
                 </Grid>

@@ -17,17 +17,17 @@ export const assignmentContextGeneralAssigneePreferenceOptions: Array<Assignment
     },
     {
         value: 'previousProcessStepAssignee',
-        label: 'Bevorzuge Bearbeiter:in des vorherigen Prozessschritts',
+        label: 'Zuständige Person des vorherigen Prozessschritts bevorzugen',
         subLabel: 'Nutzt die Person aus dem vorherigen Prozessschritt, sofern sie weiterhin berechtigt ist.',
     },
     {
         value: 'uninvolvedUser',
-        label: 'Bevorzuge eine neue, unbeteiligte Mitarbeiter:in',
+        label: 'Bisher unbeteiligte Mitarbeiter:in bevorzugen',
         subLabel: 'Wählt möglichst eine Person, die in diesem Vorgang noch nicht beteiligt war.',
     },
     {
         value: 'processInstanceAssignee',
-        label: 'Bevorzuge die dem Vorgang zugewiesene Mitarbeiter:in',
+        label: 'Zuständige Person des Vorgangs bevorzugen',
         subLabel: 'Nutzt die zentrale Vorgangszuweisung, sofern diese Person zum Personenkreis gehört.',
     },
 ];
@@ -40,12 +40,12 @@ export const assignmentContextRepeatExecutionAssigneePreferenceOptions: Array<As
     },
     {
         value: 'previousIterationAssignee',
-        label: 'Bevorzuge zuletzt zuständige Mitarbeiter:in',
+        label: 'Zuletzt zuständige Mitarbeiter:in bevorzugen',
         subLabel: 'Nutzt die Person aus der vorherigen Ausführung dieser Aufgabe, sofern sie weiterhin berechtigt ist.',
     },
     {
         value: 'differentFromPreviousIterationAssignee',
-        label: 'Bevorzuge eine andere Mitarbeiter:in',
+        label: 'Andere Mitarbeiter:in bevorzugen',
         subLabel: 'Vermeidet nach Möglichkeit die Person aus der vorherigen Ausführung dieser Aufgabe.',
     },
 ];

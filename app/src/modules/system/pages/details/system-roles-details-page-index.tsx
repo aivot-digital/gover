@@ -447,7 +447,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 Systemrolle konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Systemrollen definieren Berechtigungen für Benutzer:innen auf Systemebene.
+                Systemrollen definieren Berechtigungen für Mitarbeiter:innen auf Kontoebene.
                 Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf
                 sensible Daten oder kritische Funktionen ermöglichen.
             </Typography>

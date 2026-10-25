@@ -7,17 +7,17 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record ProcessNodePort (
-        @NotNull(message = "Der Schlüssel des Ports darf nicht null sein.")
-        @NotBlank(message = "Der Schlüssel des Ports darf nicht leer sein.")
-        @Size(max = 32, message = "Der Schlüssel des Ports darf maximal 32 Zeichen lang sein.")
+        @NotNull(message = "Der Schlüssel des Prozesspfads darf nicht null sein.")
+        @NotBlank(message = "Der Schlüssel des Prozesspfads darf nicht leer sein.")
+        @Size(max = 32, message = "Der Schlüssel des Prozesspfads darf maximal 32 Zeichen lang sein.")
         @Nonnull String key,
-        @NotNull(message = "Die Beschriftung des Ports darf nicht null sein.")
-        @NotBlank(message = "Die Beschriftung des Ports darf nicht leer sein.")
-        @Size(max = 64, message = "Die Beschriftung des Ports darf maximal 64 Zeichen lang sein.")
+        @NotNull(message = "Die Beschriftung des Prozesspfads darf nicht null sein.")
+        @NotBlank(message = "Die Beschriftung des Prozesspfads darf nicht leer sein.")
+        @Size(max = 64, message = "Die Beschriftung des Prozesspfads darf maximal 64 Zeichen lang sein.")
         @Nonnull String label,
-        @NotNull(message = "Die Beschreibung des Ports darf nicht null sein.")
-        @NotBlank(message = "Die Beschreibung des Ports darf nicht leer sein.")
-        @Size(max = 512, message = "Die Beschreibung des Ports darf maximal 512 Zeichen lang sein.")
+        @NotNull(message = "Die Beschreibung des Prozesspfads darf nicht null sein.")
+        @NotBlank(message = "Die Beschreibung des Prozesspfads darf nicht leer sein.")
+        @Size(max = 512, message = "Die Beschreibung des Prozesspfads darf maximal 512 Zeichen lang sein.")
         @Nonnull String description,
         @Nullable @Size(max = 32, message = "Der Schlüssel der Frist darf maximal 32 Zeichen lang sein.") String deadlineKey
 ) {

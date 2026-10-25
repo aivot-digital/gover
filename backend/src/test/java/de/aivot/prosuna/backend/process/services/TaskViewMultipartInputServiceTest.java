@@ -502,7 +502,7 @@ class FileUploadMultipartInputServiceTest {
                 "staff-user"
         ));
 
-        assertTrue(exception.getMessage().contains("Dateiname bei Einreichung"));
+        assertTrue(exception.getMessage().contains("Dateiname bei Übermittlung"));
     }
 
     @Test

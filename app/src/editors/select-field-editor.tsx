@@ -197,8 +197,8 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                         label="Optionen"
                         addLabel="Option hinzufügen"
                         hint={hasDependency
-                            ? 'Die antragstellende Person kann genau eine dieser Optionen auswählen. Der Gruppenwert verknüpft eine Option mit dem Wert des abhängigen Auswahlfelds; leere Gruppen bleiben weiterhin immer sichtbar.'
-                            : 'Die antragstellende Person kann genau eine dieser Optionen auswählen.'}
+                            ? 'Die ausfüllende Person kann genau eine dieser Optionen auswählen. Der Gruppenwert verknüpft eine Option mit dem Wert des abhängigen Auswahlfelds; leere Gruppen bleiben weiterhin immer sichtbar.'
+                            : 'Die ausfüllende Person kann genau eine dieser Optionen auswählen.'}
                         noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
                         value={options}
                         onChange={(options) => {
