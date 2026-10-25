@@ -378,7 +378,7 @@ export const FormIdentitySelectionControls = forwardRef<
 
             {slot.identityType === 'IdentityProvider' && communication == null &&
                 <Alert severity="warning">
-                    Für dieses Nutzerkonto steht derzeit kein Kommunikationsweg zur Verfügung.
+                    Für dieses Konto steht derzeit kein Kommunikationsweg zur Verfügung.
                 </Alert>}
 
             {

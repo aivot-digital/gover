@@ -333,11 +333,11 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                 sx={{alignSelf: 'flex-start'}}
             />
 
-            <ProcessNodeProviderDetailsSection title="Ausgänge">
+            <ProcessNodeProviderDetailsSection title="Prozesspfade">
                 {
                     ports == null ?
                         <Typography variant="body2" color="text.secondary">
-                            Die Ausgänge hängen von der Konfiguration des Prozesselements ab.
+                            Die Prozesspfade hängen von der Konfiguration des Prozesselements ab.
                         </Typography> : ports.length > 0 ?
                         ports.map((port) => (
                             <ProcessNodeProviderDetailsListRow
@@ -349,12 +349,12 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                         <Typography variant="body2" sx={{
                             color: "text.secondary"
                         }}>
-                            Dieses Prozesselement besitzt keine Ausgangsports.
+                            Dieses Prozesselement besitzt keine Prozesspfade.
                         </Typography>
                 }
             </ProcessNodeProviderDetailsSection>
 
-            <ProcessNodeProviderDetailsSection title="Ausgangsdaten">
+            <ProcessNodeProviderDetailsSection title="Datenausgänge">
                 {
                     provider.outputs.length > 0 ?
                         provider.outputs.map((output) => (
@@ -371,7 +371,7 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                         <Typography variant="body2" sx={{
                             color: "text.secondary"
                         }}>
-                            Dieses Prozesselement erzeugt keine zusätzlichen Ausgangsdaten.
+                            Dieses Prozesselement erzeugt keine zusätzlichen Datenausgänge.
                         </Typography>
                 }
             </ProcessNodeProviderDetailsSection>
@@ -483,7 +483,7 @@ interface ProcessNodePluginReferenceProps {
 }
 
 function ProcessNodePluginReference(props: ProcessNodePluginReferenceProps): ReactNode {
-    const originLabel = props.pluginKey === CORE_PLUGIN_KEY ? 'Standardumfang' : 'Plugin';
+    const originLabel = props.pluginKey === CORE_PLUGIN_KEY ? 'Standardumfang' : 'Erweiterung';
 
     return (
         <Box
@@ -526,7 +526,7 @@ function ProcessNodePluginReference(props: ProcessNodePluginReferenceProps): Rea
                 <ButtonBase
                     focusRipple
                     onClick={props.onOpen}
-                    aria-label={`Plugin-Informationen zu ${props.plugin.name} anzeigen`}
+                    aria-label={`Informationen zur Erweiterung ${props.plugin.name} anzeigen`}
                     aria-haspopup="dialog"
                     sx={{
                         display: 'block',
@@ -561,9 +561,9 @@ function ProcessNodePluginReference(props: ProcessNodePluginReferenceProps): Rea
                         color: 'text.secondary',
                     }}
                 >
-                    <CircularProgress size={16} aria-label="Plugin-Informationen werden geladen"/>
+                    <CircularProgress size={16} aria-label="Informationen zur Erweiterung werden geladen"/>
                     <Typography variant="caption">
-                        Plugin-Informationen werden geladen …
+                        Informationen zur Erweiterung werden geladen …
                     </Typography>
                 </Stack>
             }
@@ -572,7 +572,7 @@ function ProcessNodePluginReference(props: ProcessNodePluginReferenceProps): Rea
                 props.canReadPlugins && props.loadState.status === 'error' &&
                 <Box sx={{mt: 1.25}}>
                     <Typography variant="caption" sx={{color: 'text.secondary'}}>
-                        Die Plugin-Informationen konnten nicht geladen werden.
+                        Die Informationen zur Erweiterung konnten nicht geladen werden.
                     </Typography>
                     <Button
                         size="small"

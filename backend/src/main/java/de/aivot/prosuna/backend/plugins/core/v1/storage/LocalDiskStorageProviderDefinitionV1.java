@@ -58,7 +58,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Speichert Dokumente auf dem lokalen Dateisystem des Servers.";
+        return "Speichert Dateien auf dem lokalen Dateisystem des Servers.";
     }
 
     @Nonnull
@@ -67,7 +67,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         return """
                 Bindet ein Verzeichnis im lokalen Dateisystem des Prosuna-Servers als Speicheranbieter ein.
 
-                Dokumente und Ordner werden direkt unterhalb des konfigurierten Speicherpfads gelesen, geschrieben und verwaltet. Der Anbieter eignet sich für Installationen, bei denen der Anwendung ein dauerhaftes lokales oder eingebundenes Dateisystem zur Verfügung steht.
+                Dateien und Ordner werden direkt unterhalb des konfigurierten Speicherpfads gelesen, geschrieben und verwaltet. Der Anbieter eignet sich für Installationen, bei denen der Anwendung ein dauerhaftes lokales oder eingebundenes Dateisystem zur Verfügung steht.
                 """;
     }
 
@@ -554,7 +554,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             for (var file : filesToDelete) {
                 if (!file.delete()) {
                     throw new StorageException(
-                            "Fehler beim Löschen der Datei/Verzeichnis %s.",
+                            "Fehler beim Löschen der Datei oder des Verzeichnisses %s.",
                             StringUtils.quote(file.getAbsolutePath())
                     );
                 }
@@ -577,7 +577,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         var documentPathReal = getSecurePath(config.getRealRootPath(), path);
         var parentDirectoryReal = documentPathReal.getParent();
         if (parentDirectoryReal == null || !Files.exists(parentDirectoryReal) || !Files.isDirectory(parentDirectoryReal)) {
-            throw new StorageException("Das übergeordnete Verzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(path));
+            throw new StorageException("Das übergeordnete Verzeichnis für die Datei %s existiert nicht.", StringUtils.quote(path));
         }
 
         // Sanitize the filename
@@ -593,7 +593,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             return withFileAttributes(new StorageDocument(relativePathFromRoot, sanitizedFilename, attributes.size(), StorageItemMetadata.empty()), attributes);
         } catch (IOException e) {
             throw new StorageException(e,
-                    "Fehler beim Speichern des Dokuments %s: %s.",
+                    "Fehler beim Speichern der Datei %s: %s.",
                     StringUtils.quote(path),
                     e.getMessage());
         }
@@ -623,7 +623,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             return Files.newInputStream(documentPathReal);
         } catch (IOException e) {
             throw new StorageException(e,
-                    "Fehler beim Lesen des Dokuments %s: %s.",
+                    "Fehler beim Lesen der Datei %s: %s.",
                     StringUtils.quote(pathFromRoot),
                     e.getMessage());
         }
@@ -649,7 +649,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
         var targetParentDirectoryReal = targetPathReal.getParent();
         if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
-            throw new StorageException("Das Zielverzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+            throw new StorageException("Das Zielverzeichnis für die Datei %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
         }
 
         var sanitizedTargetFilename = sanitizeFilename(targetPathReal.getFileName().toString());
@@ -663,7 +663,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             return withFileAttributes(new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, attributes.size(), StorageItemMetadata.empty()), attributes);
         } catch (IOException e) {
             throw new StorageException(e,
-                    "Fehler beim Verschieben des Dokuments von %s nach %s: %s.",
+                    "Fehler beim Verschieben der Datei von %s nach %s: %s.",
                     StringUtils.quote(sourcePathFromRoot),
                     StringUtils.quote(targetPathFromRoot),
                     e.getMessage());
@@ -684,7 +684,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
         var targetParentDirectoryReal = targetPathReal.getParent();
         if (targetParentDirectoryReal == null || !Files.exists(targetParentDirectoryReal) || !Files.isDirectory(targetParentDirectoryReal)) {
-            throw new StorageException("Das Zielverzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
+            throw new StorageException("Das Zielverzeichnis für die Datei %s existiert nicht.", StringUtils.quote(targetPathFromRoot));
         }
 
         var sanitizedTargetFilename = sanitizeFilename(targetPathReal.getFileName().toString());
@@ -698,7 +698,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             return withFileAttributes(new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, attributes.size(), StorageItemMetadata.empty()), attributes);
         } catch (IOException e) {
             throw new StorageException(e,
-                    "Fehler beim Kopieren des Dokuments von %s nach %s: %s.",
+                    "Fehler beim Kopieren der Datei von %s nach %s: %s.",
                     StringUtils.quote(sourcePathFromRoot),
                     StringUtils.quote(targetPathFromRoot),
                     e.getMessage());
@@ -717,7 +717,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             }
 
             throw new StorageException(e,
-                    "Fehler beim Löschen des Dokuments %s: %s.",
+                    "Fehler beim Löschen der Datei %s: %s.",
                     StringUtils.quote(path),
                     e.getMessage());
         }
@@ -812,7 +812,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     public static class Config {
         @InputElementPOJOBinding(id = "root", type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Stammverzeichnis"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Das Verzeichnis auf dem Server, in dem die Dokumente gespeichert werden."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Das Verzeichnis auf dem Server, in dem die Dateien gespeichert werden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String root;

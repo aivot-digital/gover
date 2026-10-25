@@ -472,7 +472,7 @@
               "override": null,
               "metadata": null,
               "weight": 12,
-              "label": "Prozessdaten-Schlüssel",
+              "label": "Datenschlüssel",
               "hint": null,
               "required": true,
               "disabled": false,

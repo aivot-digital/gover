@@ -441,7 +441,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         onChange={(purpose) => updateValue({purpose})}
                         required={true}
                         disabled={isInteractionDisabled}
-                        hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte)."
+                        hint="Der Buchungstext erscheint auf der Abrechnung der zahlenden Person oder Organisation, zum Beispiel auf dem Kontoauszug oder der Kreditkartenabrechnung."
                         error={getFieldError(errorDetails, 'purpose')}
                     />
                 </Grid>
@@ -455,7 +455,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         disabled={isInteractionDisabled}
                         multiline
                         rows={2}
-                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren."
+                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die Zahlung."
                         error={getFieldError(errorDetails, 'description')}
                     />
                 </Grid>
@@ -603,7 +603,7 @@ function RequestorMappingEditor(props: {
                             value: 'fixOrg',
                         },
                         {
-                            label: 'Die Art der Antragsteller:in wird aus den Prozessdaten abgeleitet',
+                            label: 'Die Art der zahlenden Person oder Organisation wird aus den Vorgangsdaten abgeleitet',
                             value: 'processDataKey',
                         },
                     ]}
@@ -615,7 +615,7 @@ function RequestorMappingEditor(props: {
                 <>
                     <RequestorMappingField
                         label="Datenfeld zur Kennzeichnung als Organisation"
-                        hint="Dieses Prozessdatenfeld muss einen Wahrheitswert enthalten, der angibt, ob es sich um eine Organisation handelt."
+                        hint="Dieser Wert in den Vorgangsdaten muss einen Wahrheitswert enthalten, der angibt, ob es sich um eine Organisation handelt."
                         value={value.isOrganizationDestinationKey}
                         onChange={(next) => onChange('isOrganizationDestinationKey', next)}
                         disabled={disabled}
@@ -660,7 +660,7 @@ function RequestorMappingEditor(props: {
                         value={value.genderDestinationKey}
                         onChange={(next) => onChange('genderDestinationKey', next)}
                         disabled={disabled}
-                        hint="Dieses Prozessdatenfeld muss einen der folgenden Werte enthalten: M, W oder D."
+                        hint="Dieser Wert in den Vorgangsdaten muss einen der folgenden Werte enthalten: M, W oder D."
                         error={getFieldError(errorDetails, 'genderDestinationKey')}
                     />
                 </>
@@ -819,7 +819,7 @@ function PaymentConfigItemEditor(props: {
                 <Grid size={{xs: 12, md: 6}}>
                     <TextFieldComponent
                         label="Beschreibung"
-                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der das Formular einreichenden Person angezeigt."
+                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der zahlenden Person oder Organisation angezeigt."
                         value={item.description}
                         onChange={(description) => onChange({...item, description})}
                         required={true}

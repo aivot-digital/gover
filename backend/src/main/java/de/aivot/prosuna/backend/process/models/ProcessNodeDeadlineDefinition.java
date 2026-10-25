@@ -20,6 +20,6 @@ public record ProcessNodeDeadlineDefinition(
         @NotBlank(message = "Die Beschreibung der Frist darf nicht leer sein.")
         @Size(max = 512, message = "Die Beschreibung der Frist darf maximal 512 Zeichen lang sein.")
         String description,
-        @Nonnull @NotNull(message = "Der Ausgang für die Fristüberschreitung darf nicht leer sein.") @Valid ProcessNodePort port
+        @Nonnull @NotNull(message = "Der Prozesspfad für die Fristüberschreitung darf nicht leer sein.") @Valid ProcessNodePort port
 ) {
 }

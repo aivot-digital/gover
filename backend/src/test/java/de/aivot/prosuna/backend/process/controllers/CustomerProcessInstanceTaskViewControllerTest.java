@@ -143,7 +143,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         var response = fixture.controller().retrieve(fixture.procAccess(), fixture.taskAccess(), null, null);
 
         var confirmation = response.layout().findChild("form-request-completed-9", AlertContentElement.class).orElseThrow();
-        assertEquals("Daten eingereicht", confirmation.getTitle());
+        assertEquals("Angaben übermittelt", confirmation.getTitle());
         assertEquals(AlertType.Success, confirmation.getAlertType());
         assertEquals(1, response.layout().getChildren().size());
         assertTrue(response.data().isEmpty());

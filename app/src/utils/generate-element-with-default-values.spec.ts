@@ -50,8 +50,8 @@ describe('generateElementWithDefaultValues', () => {
     it('should initialize process identity ID inputs as scalar selections', () => {
         const element = generateElementWithDefaultValues(ElementType.ProcessIdentityIdInput) as ProcessIdentityIdInputElement;
 
-        expect(element.label).toBe('Prozessidentität');
-        expect(element.placeholder).toBe('Prozessidentität auswählen');
+        expect(element.label).toBe('Identität');
+        expect(element.placeholder).toBe('Identität auswählen');
         expect(element.requiresCommunication).toBe(false);
         expect(element).not.toHaveProperty('minItems');
         expect(element).not.toHaveProperty('maxItems');

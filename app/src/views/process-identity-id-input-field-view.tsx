@@ -70,7 +70,7 @@ export function ProcessIdentityIdInputFieldView(props: BaseViewProps<ProcessIden
         );
 
         if (selectedIdentityIsUnavailable && selectedIdentityId != null) {
-            const unavailableError = `Die ausgewählte Prozessidentität „${selectedIdentityId}“ ist nicht mehr verfügbar.`;
+            const unavailableError = `Die ausgewählte Identität „${selectedIdentityId}“ ist nicht mehr verfügbar.`;
             if (!Array.from(messages).some((message) => message.includes(unavailableError))) {
                 messages.add(unavailableError);
             }
@@ -100,10 +100,10 @@ export function ProcessIdentityIdInputFieldView(props: BaseViewProps<ProcessIden
             readOnly={isBusy}
             options={options}
             emptyStatePlaceholder={processNodeEditorContext?.incomingMetadataLoadFailed
-                ? 'Prozessidentitäten konnten nicht geladen werden'
+                ? 'Identitäten konnten nicht geladen werden'
                 : incomingMetadata == null && processNodeEditorContext != null
-                    ? 'Prozessidentitäten werden geladen'
-                    : 'Keine Prozessidentitäten verfügbar'}
+                    ? 'Identitäten werden geladen'
+                    : 'Keine Identitäten verfügbar'}
         />
     );
 }

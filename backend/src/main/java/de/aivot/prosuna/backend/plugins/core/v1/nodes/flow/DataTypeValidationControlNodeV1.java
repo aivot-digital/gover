@@ -142,7 +142,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         return """
                 Validiert ausgewählte Pfade der Vorgangsdaten anhand konfigurierter erwarteter Datentypen.
 
-                Das Element prüft sowohl das Vorhandensein der Werte als auch deren Typ und verzweigt den Prozess abhängig vom Gesamtergebnis in einen gültigen oder ungültigen Pfad. Prüfergebnis und erkannte Validierungsabweichungen stehen als Ausgänge für nachfolgende Schritte bereit.
+                Das Element prüft sowohl das Vorhandensein der Werte als auch deren Typ und verzweigt den Prozess abhängig vom Gesamtergebnis in einen gültigen oder ungültigen Pfad. Prüfergebnis und erkannte Validierungsabweichungen stehen als Datenausgänge für nachfolgende Schritte bereit.
                 """;
     }
 

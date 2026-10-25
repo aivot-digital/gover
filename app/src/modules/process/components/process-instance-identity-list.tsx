@@ -302,7 +302,7 @@ function IdentityItem(props: IdentityItemProps): React.JSX.Element {
 
             <Box component="dl" sx={{m: 0, mt: 0.5}}>
                 <DetailRow label="Typ">
-                    {isEmailIdentity ? 'E-Mail' : 'Nutzerkonto'}
+                    {isEmailIdentity ? 'E-Mail' : 'Konto'}
                 </DetailRow>
                 {
                     isEmailIdentity &&

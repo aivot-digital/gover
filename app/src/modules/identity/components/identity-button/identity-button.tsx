@@ -56,7 +56,7 @@ export function IdentityButton(props: IdentityButtonProps) {
                         color: "text.secondary"
                     }}
                 >
-                    Nutzerkonto
+                    Konto
                 </Typography>
                 <Typography
                     sx={{

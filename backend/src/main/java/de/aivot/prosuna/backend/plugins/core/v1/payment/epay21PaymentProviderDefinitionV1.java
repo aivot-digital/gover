@@ -90,7 +90,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         return """
                 Integriert den Zahlungsdienstleister ePay21 über eine XBezahldienste-kompatible Schnittstelle in Prosuna.
 
-                Die Komponente erzeugt standardisierte Zahlungsanfragen, übermittelt sie an den konfigurierten Dienst und verarbeitet die zurückgegebenen Transaktionsinformationen. Dadurch können Zahlungen in Prosuna gestartet und ihr Status im weiteren Ablauf berücksichtigt werden.
+                Die Komponente erzeugt standardisierte Zahlungsanforderungen, übermittelt sie an den konfigurierten Dienst und verarbeitet die zurückgegebenen Transaktionsinformationen. Dadurch können Zahlungen in Prosuna gestartet und ihr Status im weiteren Ablauf berücksichtigt werden.
                 """;
     }
 
@@ -190,12 +190,12 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         var originatorID = (String) effectiveValues.get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
-            throw new PaymentException("Originator ID for payment provider %s is missing", getProviderName());
+            throw new PaymentException("Die Originator-ID für den Zahlungsanbieter %s fehlt.", getProviderName());
         }
 
         var endpointID = (String) effectiveValues.get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
-            throw new PaymentException("Endpoint ID for payment provider %s is missing", getProviderName());
+            throw new PaymentException("Die Endpoint-ID für den Zahlungsanbieter %s fehlt.", getProviderName());
         }
 
         var username = getUsername(paymentProviderEntity, config);
@@ -229,12 +229,12 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
             response = client
                     .send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
-            throw new PaymentException(e, "Failed to poll payment from payment provider %s", getProviderName());
+            throw new PaymentException(e, "Der Zahlungsstatus konnte beim Zahlungsanbieter %s nicht abgerufen werden.", getProviderName());
         }
 
         if (response.statusCode() != 200) {
             throw new PaymentException(
-                    "Failed to poll payment from payment provider %s. Status code was %d with body %s",
+                    "Der Zahlungsstatus konnte beim Zahlungsanbieter %s nicht abgerufen werden.. Status code was %d with body %s",
                     getProviderName(),
                     response.statusCode(),
                     response.body()
@@ -244,7 +244,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         try {
             return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JacksonException e) {
-            throw new PaymentException(e, "Failed to deserialize payment transaction");
+            throw new PaymentException(e, "Die Zahlungstransaktion konnte nicht verarbeitet werden.");
         } finally {
             client.close();
         }
@@ -272,7 +272,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
             return objectMapper
                     .writeValueAsString(paymentRequest);
         } catch (JacksonException e) {
-            throw new PaymentException(e, "Failed to serialize payment request");
+            throw new PaymentException(e, "Die Zahlungsanforderung konnte nicht in das benötigte Datenformat umgewandelt werden.");
         }
     }
 
@@ -310,12 +310,12 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
             response = client
                     .send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
-            throw new PaymentException(e, "Failed to check payment status for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         if (response.statusCode() != 200) {
             throw new PaymentException(
-                    "Failed to check payment status for payment provider %s (%s). Status code was %d with body %s",
+                    "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.. Status code was %d with body %s",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey(),
                     response.statusCode(),
@@ -328,7 +328,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
             updatedTransaction = JsonMapperFactory.getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JacksonException e) {
-            throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException(e, "Die Zahlungstransaktion des Zahlungsanbieters %s (%s) konnte nicht verarbeitet werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         client.close();
@@ -360,7 +360,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     ) throws PaymentException {
         var originatorID = (String) config.getEffectiveValues().get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
-            throw new PaymentException("Originator ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die Originator-ID für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return originatorID;
     }
@@ -372,7 +372,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     ) throws PaymentException {
         var endpointID = (String) config.getEffectiveValues().get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
-            throw new PaymentException("Endpoint ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die Endpoint-ID für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return endpointID;
     }
@@ -384,7 +384,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     ) throws PaymentException {
         var username = (String) config.getEffectiveValues().get(USERNAME_FIELD);
         if (StringUtils.isNullOrEmpty(username)) {
-            throw new PaymentException("Username for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Der Benutzername für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return username;
     }
@@ -394,7 +394,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
                                                              @Nonnull DerivedRuntimeElementData config) throws PaymentException {
         var paymentTransactionUrl = (String) config.getEffectiveValues().get(PAYMENT_TRANSACTION_URL_FIELD);
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
-            throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+            throw new PaymentException("Die URL der Zahlungstransaktion für den Zahlungsanbieter %s (%s) fehlt.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
         return StringUtils.normalizeUrl(paymentTransactionUrl);
     }

@@ -83,7 +83,7 @@ public class FitConnectTriggerCallbackAuthenticationServiceV1 {
         var normalizedSecretKey = StringUtils.toNullableTrimmedString(rawSecretKey);
         if (normalizedSecretKey == null) {
             throw ResponseException.internalServerError(
-                    "Das Callback-Geheimnis des FIT-Connect-Trigger-Knotens ist nicht konfiguriert."
+                    "Das Callback-Geheimnis des FIT-Connect-Auslösers ist nicht konfiguriert."
             );
         }
 
@@ -92,14 +92,14 @@ public class FitConnectTriggerCallbackAuthenticationServiceV1 {
             secretKey = UUID.fromString(normalizedSecretKey);
         } catch (IllegalArgumentException e) {
             throw ResponseException.internalServerError(
-                    "Das Callback-Geheimnis des FIT-Connect-Trigger-Knotens ist ungültig konfiguriert."
+                    "Das Callback-Geheimnis des FIT-Connect-Auslösers ist ungültig konfiguriert."
             );
         }
 
         var secret = secretService
                 .retrieve(secretKey)
                 .orElseThrow(() -> ResponseException.internalServerError(
-                        "Das Callback-Geheimnis des FIT-Connect-Trigger-Knotens wurde nicht gefunden."
+                        "Das Callback-Geheimnis des FIT-Connect-Auslösers wurde nicht gefunden."
                 ));
 
         final String decryptedSecret;
@@ -107,14 +107,14 @@ public class FitConnectTriggerCallbackAuthenticationServiceV1 {
             decryptedSecret = secretService.decrypt(secret);
         } catch (Exception e) {
             throw ResponseException.internalServerError(
-                    "Das Callback-Geheimnis des FIT-Connect-Trigger-Knotens konnte nicht entschlüsselt werden.",
+                    "Das Callback-Geheimnis des FIT-Connect-Auslösers konnte nicht entschlüsselt werden.",
                     e
             );
         }
 
         if (decryptedSecret.isEmpty()) {
             throw ResponseException.internalServerError(
-                    "Das Callback-Geheimnis des FIT-Connect-Trigger-Knotens darf nicht leer sein."
+                    "Das Callback-Geheimnis des FIT-Connect-Auslösers darf nicht leer sein."
             );
         }
         return decryptedSecret;

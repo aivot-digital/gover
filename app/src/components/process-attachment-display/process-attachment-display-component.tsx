@@ -51,7 +51,7 @@ export function ProcessAttachmentDisplayComponent(props: ProcessAttachmentDispla
                         <AttachmentItems items={items}/>
                     ) : (
                         <AttachmentStatus loading={props.loading}>
-                            {props.statusText ?? 'Keine Anhänge vorhanden.'}
+                            {props.statusText ?? 'Keine Anlagen vorhanden.'}
                         </AttachmentStatus>
                     )}
                 </Box>

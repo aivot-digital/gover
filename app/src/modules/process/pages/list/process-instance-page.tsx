@@ -125,7 +125,7 @@ export function ProcessInstanceListPage() {
                                     sx={{mb: 2}}
                                 >
                                     Ein Vorgang ist die konkrete Ausführung eines Prozesses, zum Beispiel die
-                                    Bearbeitung eines eingereichten Antrags. Der Prozess legt fest, welche Schritte
+                                    Bearbeitung übermittelter Angaben. Der Prozess legt fest, welche Schritte
                                     erforderlich sind und wie sie zusammenhängen. In einem Vorgang können mehrere
                                     Aufgaben entstehen, die unterschiedlichen Personen zugewiesen sind.
                                 </Typography>

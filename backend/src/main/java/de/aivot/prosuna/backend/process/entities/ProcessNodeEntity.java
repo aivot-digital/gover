@@ -46,20 +46,20 @@ public class ProcessNodeEntity {
     private String description;
 
     @Nonnull
-    @NotBlank(message = "Der Data-Key darf nicht leer sein.")
-    @NotNull(message = "Der Data-Key darf nicht null sein.")
-    @Size(min = 1, max = 32, message = "Der Data-Key muss zwischen 1 und 32 Zeichen lang sein.")
+    @NotBlank(message = "Der Datenschlüssel darf nicht leer sein.")
+    @NotNull(message = "Der Datenschlüssel darf nicht null sein.")
+    @Size(min = 1, max = 32, message = "Der Datenschlüssel muss zwischen 1 und 32 Zeichen lang sein.")
     @Pattern(regexp = ProcessNodeDataKeyUtils.REGEX, message = ProcessNodeDataKeyUtils.FORMAT_ERROR)
     private String dataKey;
 
     @Nonnull
-    @NotBlank(message = "Der Schlüssel der Prozessknoten-Definition darf nicht leer sein.")
-    @NotNull(message = "Der Schlüssel der Prozessknoten-Definition darf nicht null sein.")
-    @Size(min = 1, max = 128, message = "Der Schlüssel der Prozessknoten-Definition muss zwischen 1 und 128 Zeichen lang sein.")
+    @NotBlank(message = "Der Schlüssel der Prozesselement-Definition darf nicht leer sein.")
+    @NotNull(message = "Der Schlüssel der Prozesselement-Definition darf nicht null sein.")
+    @Size(min = 1, max = 128, message = "Der Schlüssel der Prozesselement-Definition muss zwischen 1 und 128 Zeichen lang sein.")
     private String processNodeDefinitionKey;
 
     @Nonnull
-    @NotNull(message = "Die Version  der Prozessknoten-Definition darf nicht null sein.")
+    @NotNull(message = "Die Version der Prozesselement-Definition darf nicht null sein.")
     private Integer processNodeDefinitionVersion;
 
     @Nonnull

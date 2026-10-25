@@ -50,7 +50,7 @@ export function ProcessNodeOutputTypeDialog(props: ProcessNodeOutputTypeDialogPr
             aria-describedby={descriptionId}
         >
             <DialogTitleWithClose onClose={props.onClose}>
-                Details zu den Ausgangsdaten
+                Details zu den Datenausgängen
             </DialogTitleWithClose>
 
             {
@@ -73,7 +73,7 @@ export function ProcessNodeOutputTypeDialog(props: ProcessNodeOutputTypeDialogPr
                             <Typography variant="body2" color="text.secondary" sx={{mt: 1}}>
                                 {renderDataPath != null
                                     ? 'Über diesen Pfad greifen Sie in weiteren Prozessschritten direkt auf den Wert in den Elementdaten zu. Bei einer Zuordnung zu den Vorgangsdaten steht der Wert zusätzlich unter dem eingetragenen Zielpfad bereit.'
-                                    : 'Der Schlüssel bezeichnet diesen Wert innerhalb der Ausgangsdaten. Für den vollständigen Datenpfad wird er mit dem Datenschlüssel des Prozesselements kombiniert.'}
+                                    : 'Der Schlüssel bezeichnet diesen Wert innerhalb der Elementdaten. Für den vollständigen Datenpfad wird er mit dem Datenschlüssel des Prozesselements kombiniert.'}
                             </Typography>
                             <Box sx={{mt: 1.5, px: 1, py: 0.5, bgcolor: 'action.hover', borderRadius: 1}}>
                                 <ProcessNodeOutputReference

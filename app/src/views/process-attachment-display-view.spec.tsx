@@ -18,7 +18,7 @@ describe('ProcessAttachmentDisplayView', () => {
             />,
         );
 
-        expect(screen.getByText('Konfigurieren Sie einen Anlagensatz-Schlüssel, um Vorgangsanhänge anzuzeigen.')).toBeInTheDocument();
+        expect(screen.getByText('Konfigurieren Sie einen Anlagensatz-Schlüssel, um Vorgangsanlagen anzuzeigen.')).toBeInTheDocument();
     });
 
     it('should render an editor placeholder without task attachment context', () => {
@@ -34,7 +34,7 @@ describe('ProcessAttachmentDisplayView', () => {
 
         expect(screen.getAllByText('Fallunterlagen').length).toBeGreaterThan(0);
         expect(screen.getByText('Bitte prüfen Sie den Anhang sorgfältig.')).toBeInTheDocument();
-        expect(screen.getByText('Dies ist eine Vorschau. Anhänge können im Modellierungsmodus nicht angesehen oder heruntergeladen werden.')).toBeInTheDocument();
+        expect(screen.getByText('Dies ist eine Vorschau. Anlagen können im Modellierungsmodus nicht angesehen oder heruntergeladen werden.')).toBeInTheDocument();
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
 
@@ -150,7 +150,7 @@ describe('ProcessAttachmentDisplayView', () => {
             },
         );
 
-        expect(screen.getByText('Der konfigurierte Anlagensatz enthält keine Anhänge.')).toBeInTheDocument();
+        expect(screen.getByText('Der konfigurierte Anlagensatz enthält keine Anlagen.')).toBeInTheDocument();
     });
 });
 

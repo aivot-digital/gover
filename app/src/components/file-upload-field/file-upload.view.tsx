@@ -91,7 +91,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
 
             URL.revokeObjectURL(objectUrl);
         } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
+            dispatch(showApiErrorSnackbar(error, 'Die Anlage konnte nicht heruntergeladen werden.'));
         }
     };
 

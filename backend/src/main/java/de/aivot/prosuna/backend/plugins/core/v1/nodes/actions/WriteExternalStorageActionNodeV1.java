@@ -179,7 +179,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Speichert die Anhänge eines Anlagensatzes in einem ausgewählten Speicheranbieter.";
+        return "Speichert die Anlagen eines Anlagensatzes in einem ausgewählten Speicheranbieter.";
     }
 
     @Nonnull
@@ -188,7 +188,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         return """
                 Überträgt Dateien aus Vorgangsanlagensätzen in konfigurierte externe Speicheranbieter.
 
-                Für jeden Anlagensatz werden Zielanbieter, Zielpfad und optional angepasste Dateinamen festgelegt. Das Element kann mehrere Anlagensätze in einem Schritt verarbeiten und stellt Ablageergebnisse, gespeicherte Pfade, Dateinamen und Anzahl der geschriebenen Dateien als Ausgänge bereit.
+                Für jeden Anlagensatz werden Zielanbieter, Zielpfad und optional angepasste Dateinamen festgelegt. Das Element kann mehrere Anlagensätze in einem Schritt verarbeiten und stellt Ablageergebnisse, gespeicherte Pfade, Dateinamen und Anzahl der geschriebenen Dateien als Datenausgänge bereit.
                 """;
     }
 
@@ -293,7 +293,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 new ProcessNodePort(
                         PORT_NAME,
                         "Anlagensatz gespeichert",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Anhänge gespeichert wurden."
+                        "Der Prozess wird hier fortgesetzt, nachdem die Anlagen gespeichert wurden."
                 )
         );
     }
@@ -491,7 +491,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 } catch (IOException | ResponseException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
                             e,
-                            "Der Prozess-Anhang %s konnte nicht im Speicheranbieter %d gespeichert werden: %s",
+                            "Die Anlage %s konnte nicht im Speicheranbieter %d gespeichert werden: %s",
                             StringUtils.quote(attachment.getFileName()),
                             storageProviderId,
                             e.getMessage()
@@ -605,7 +605,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             }
 
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anhänge.",
+                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anlagen.",
                     StringUtils.quote(attachmentSetDataKey)
             );
         }
@@ -753,7 +753,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         if (normalizedGroupPath.contains("\\") || normalizedGroupPath.contains("\r") || normalizedGroupPath.contains("\n")) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Eintrag %d: Der Gruppenname des Anhangs ist als Ordnername ungültig.",
+                    "Eintrag %d: Der Gruppenname der Anlage ist als Ordnername ungültig.",
                     rowIndex
             );
         }
@@ -764,7 +764,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             var segment = StringUtils.toNullableTrimmedString(rawSegment);
             if (segment == null || ".".equals(segment) || "..".equals(segment)) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Eintrag %d: Der Gruppenname des Anhangs ist als Ordnername ungültig.",
+                        "Eintrag %d: Der Gruppenname der Anlage ist als Ordnername ungültig.",
                         rowIndex
                 );
             }
@@ -1064,7 +1064,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensatz"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensatz des Vorgangs, dessen Anhänge gespeichert werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensatz des Vorgangs, dessen Anlagen gespeichert werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "minItems", intValue = 1),
                 @ElementPOJOBindingProperty(key = "maxItems", intValue = 1),

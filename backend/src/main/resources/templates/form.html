@@ -29,7 +29,7 @@
     <body>
         <!--/* ***********************************************************************
         Bereich für den Briefkopf des Formulars.
-        Der Briefkopf wird nur auf ausfüllbaren Formularen und von Bürger:innen ausgefüllten Formularen angezeigt
+        Der Briefkopf wird nur auf ausfüllbaren Formularen und ausgefüllten Formularen angezeigt
         *********************************************************************** */-->
         <header
                 th:insert="./form-parts/briefkopf.html"
@@ -50,7 +50,7 @@
         Bereich für die "Zahlungsinformationen".
 
         Wird nur angezeigt, wenn Zahlungsinformationen sowie ein Zahlungslink im
-        Antrag vorhanden sind.
+        Formular vorhanden sind.
         *********************************************************************** */-->
         <section
                 th:insert="./form-parts/zahlungsinformationen.html"
@@ -59,7 +59,7 @@
         ></section>
 
         <!--/* ***********************************************************************
-        Bereich für die "Nutzerkonteninformationen".
+        Bereich für die "Kontoinformationen".
 
         Wird nur angezeigt, wenn eine Authentifizierung erfolgt ist
         *********************************************************************** */-->
@@ -82,7 +82,7 @@
                 <!--/* ***********************************************************************
                 Bereich für die "Allgemeinen Informationen".
 
-                Der Bereich für die "Allgemeinen Informationen" wird nur auf ausfüllbaren Formularen und von Bürger:innen ausgefüllten Formularen angezeigt
+                Der Bereich für die "Allgemeinen Informationen" wird nur auf ausfüllbaren Formularen und ausgefüllten Formularen angezeigt
                 *********************************************************************** */-->
                 <th:block
                         th:insert="./form-parts/allgemeine-informationen.html"

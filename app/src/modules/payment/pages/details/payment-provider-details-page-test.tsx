@@ -95,7 +95,7 @@ export function PaymentProviderDetailsPageTest() {
                             purpose: value ?? '',
                         })}
                         disabled={isBusy}
-                        hint="Der Buchungstext (oder auch Verwendungszweck) wird bei der antragstellenden Person auf der Abrechnung (z.B. Bank, Kreditkarte etc.) erscheinen."
+                        hint="Der Buchungstext erscheint auf der Abrechnung der zahlenden Person oder Organisation, zum Beispiel auf dem Kontoauszug oder der Kreditkartenabrechnung."
                         error={validationErrors.purpose}
                     />
                 </Grid>
@@ -109,7 +109,7 @@ export function PaymentProviderDetailsPageTest() {
                             description: value ?? '',
                         })}
                         disabled={isBusy}
-                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der antragstellenden Person angezeigt."
+                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der zahlenden Person oder Organisation angezeigt."
                         error={validationErrors.description}
                     />
                 </Grid>

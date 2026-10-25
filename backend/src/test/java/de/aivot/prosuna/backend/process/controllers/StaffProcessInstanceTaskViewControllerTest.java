@@ -368,7 +368,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
-        assertEquals("Invalid event: unknown", ex.getMessage());
+        assertEquals("Ungültige Aktion: unknown", ex.getMessage());
         assertFalse(provider.eventInvoked);
         assertNull(elementDerivationService.lastRequest);
         assertFalse(fixture.task().getRuntimeData().containsKey(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));

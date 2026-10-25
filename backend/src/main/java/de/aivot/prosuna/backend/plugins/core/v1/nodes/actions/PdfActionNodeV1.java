@@ -155,7 +155,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         return """
                 Erzeugt während der Prozessausführung ein PDF-Dokument aus einer HTML-Vorlage.
 
-                Der HTML-Inhalt kann direkt in der Konfiguration oder über ein hinterlegtes Template-Asset bereitgestellt werden und wird mit den aktuellen Laufzeitdaten gerendert. Das fertige PDF wird als Vorgangsanlage gespeichert; Dateiname, Größe, Speicherort und Dateiwerte stehen als Ausgänge zur Verfügung.
+                Der HTML-Inhalt kann direkt in der Konfiguration oder über eine hinterlegte Vorlagendatei bereitgestellt werden und wird mit den aktuellen Laufzeitdaten gerendert. Das fertige PDF wird als Vorgangsanlage gespeichert; Dateiname, Größe, Speicherort und Dateiwerte stehen als Datenausgänge zur Verfügung.
                 """;
     }
 
@@ -177,7 +177,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         layout
                 .findChild(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(element -> element.setOptions(List.of(
-                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "Gespeicherte Vorlage verwenden (Dateien & Medien)"),
+                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "Gespeicherte Vorlage verwenden (Dateien und Medien)"),
                         SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE, "Eigene Dokumentenvorlage als HTML hinterlegen")
                 )));
 
@@ -247,20 +247,20 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ATTACHMENT_KEY,
-                        "Anhangs-Schlüssel",
-                        "Der Schlüssel des erzeugten Prozess-Anhangs.",
+                        "Anlagenschlüssel",
+                        "Der Schlüssel der erzeugten Anlage.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_STORAGE_PROVIDER_ID,
                         "Speicheranbieter-ID",
-                        "Die ID des Speicheranbieters des erzeugten Prozess-Anhangs.",
+                        "Die ID des Speicheranbieters der erzeugten Anlage.",
                         "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_STORAGE_PATH_FROM_ROOT,
                         "Speicherpfad",
-                        "Der Pfad zum erzeugten Prozess-Anhang im Speicheranbieter.",
+                        "Der Pfad zur erzeugten Anlage im Speicheranbieter.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -366,7 +366,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Speichern des erzeugten PDFs als Prozess-Anhang: %s",
+                    "Fehler beim Speichern des erzeugten PDFs als Anlage: %s",
                     e.getMessage()
             );
         }
@@ -574,7 +574,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         @InputElementPOJOBinding(id = CONTENT_HTML_SOURCE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentenvorlage"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, ob eine gespeicherte Dokumentenvorlage aus Dateien & Medien verwendet oder eine eigene Dokumentenvorlage als HTML hinterlegt werden soll."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, ob eine gespeicherte Dokumentenvorlage aus Dateien und Medien verwendet oder eine eigene Dokumentenvorlage als HTML hinterlegt werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String contentHtmlSource;
@@ -589,7 +589,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
         @InputElementPOJOBinding(id = CONTENT_HTML_ASSET_KEY_FIELD_ID, type = ElementType.HtmlTemplateInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentenvorlage"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine gespeicherte HTML-Dokumentenvorlage aus Dateien & Medien aus."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine gespeicherte HTML-Dokumentenvorlage aus Dateien und Medien aus."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public HtmlTemplateInputElementValue contentHtmlTemplate;

@@ -130,8 +130,8 @@ class ProcessInstanceAttachmentServiceTest {
         assertEquals(!hasUser, event.getTechnical());
         assertTrue(event.getAudit());
         assertFalse(event.getHistoryRelevant());
-        assertEquals("Anhang erstellt", event.getTitle());
-        assertEquals("Der Anhang %s wurde erstellt.".formatted(StringUtils.quote("file.pdf")), event.getMessage());
+        assertEquals("Anlage erstellt", event.getTitle());
+        assertEquals("Die Anlage %s wurde erstellt.".formatted(StringUtils.quote("file.pdf")), event.getMessage());
         assertEquals(userId, event.getTriggeringUserId());
         assertNull(event.getConcernedUserId());
         assertNull(event.getConcernedIdentityId());

@@ -29,8 +29,8 @@ public class ProcessChangeEntity {
     private Instant timestamp;
 
     @Nonnull
-    @NotNull(message = "Die Benutzer-ID darf nicht null sein.")
-    @Length(min = 36, max = 36, message = "Die Benutzer-ID muss genau 36 Zeichen lang sein.")
+    @NotNull(message = "Die Konto-ID darf nicht null sein.")
+    @Length(min = 36, max = 36, message = "Die Konto-ID muss genau 36 Zeichen lang sein.")
     private String userId;
 
     @Nonnull

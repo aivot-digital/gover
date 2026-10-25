@@ -34,7 +34,7 @@ public class UserSyncService {
                            UserRepository userRepository,
                            KeyCloakApiService keycloakApiService,
                            ImportedUserSystemRoleService importedUserSystemRoleService) {
-        this.auditService = auditService.createScopedAuditService(UserSyncService.class, "Benutzer");
+        this.auditService = auditService.createScopedAuditService(UserSyncService.class, "Mitarbeiter:innen");
 
         this.userRepository = userRepository;
         this.keycloakApiService = keycloakApiService;
@@ -193,14 +193,14 @@ public class UserSyncService {
                         .setTriggerType("UserSync")
                         .setMessage(success
                                 ? String.format(
-                                "Die Benutzersynchronisierung wurde erfolgreich abgeschlossen: %d von %d Benutzer:innen importiert oder aktualisiert, %d als im IdP gelöscht markiert, %d zur Systemrolle mit höchster Berechtigungsstufe befördert.",
+                                "Die Synchronisierung der Konten wurde abgeschlossen: %d von %d Konten importiert oder aktualisiert, %d im Identitätsanbieter gelöschte Konten markiert und %d Konten der Systemrolle mit der höchsten Berechtigungsstufe zugeordnet.",
                                 importedOrUpdatedCount,
                                 totalUsersFromIdp,
                                 deletedInIdpCount,
                                 promotedToMostPrivilegedRoleCount
                         )
                                 : String.format(
-                                "Die Benutzersynchronisierung ist fehlgeschlagen: %s",
+                                "Die Synchronisierung der Konten ist fehlgeschlagen: %s",
                                 failureMessage != null ? failureMessage : "Unbekannter Fehler"
                         ))
                         .setMetadata(metadata).log();

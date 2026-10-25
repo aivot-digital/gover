@@ -85,7 +85,7 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                 .orElse(null);
 
         if (defaultStorageProviderId == null) {
-            throw ResponseException.internalServerError("Es wurde kein Standard-Speicheranbieter für Prozess-Anhänge konfiguriert.");
+            throw ResponseException.internalServerError("Es wurde kein Standard-Speicheranbieter für Vorgangsanlagen konfiguriert.");
         }
 
         var processInstance = processInstanceRepository
@@ -161,8 +161,8 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                     attachment.getUploadedByUserId() == null,
                     true,
                     false,
-                    "Anhang erstellt",
-                    String.format("Der Anhang %s wurde erstellt.", StringUtils.quote(attachment.getFileName())),
+                    "Anlage erstellt",
+                    String.format("Die Anlage %s wurde erstellt.", StringUtils.quote(attachment.getFileName())),
                     details,
                     Instant.now(),
                     null,

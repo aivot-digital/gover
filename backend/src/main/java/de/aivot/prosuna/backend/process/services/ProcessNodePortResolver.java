@@ -88,21 +88,21 @@ public class ProcessNodePortResolver {
 
     private void validatePort(@Nullable ProcessNodePort port, @Nonnull HashSet<String> keys, @Nonnull List<String> problems) {
         if (port == null) {
-            problems.add("Die Ausgangsports enthalten einen leeren Eintrag.");
+            problems.add("Die Prozesspfade enthalten einen leeren Eintrag.");
             return;
         }
         validator.validate(port).stream()
                 .map(violation -> violation.getMessage()).sorted().forEach(problems::add);
         if (!keys.add(port.key())) {
-            problems.add("Der Ausgangsschlüssel „%s“ wird mehrfach verwendet.".formatted(port.key()));
+            problems.add("Der Prozesspfadschlüssel „%s“ wird mehrfach verwendet.".formatted(port.key()));
         }
         if (port.deadlineKey() != null) {
-            problems.add("Die Zuordnung eines Ausgangs zu einer Frist wird automatisch ermittelt.");
+            problems.add("Die Zuordnung eines Prozesspfads zu einer Frist wird automatisch ermittelt.");
         }
     }
 
     @Nonnull
     public static ProcessNodePortResolution failed() {
-        return new ProcessNodePortResolution(List.of(), List.of("Die Ausgänge und Fristen konnten nicht ermittelt werden. Prüfen Sie die Konfiguration des Prozesselements."));
+        return new ProcessNodePortResolution(List.of(), List.of("Die Prozesspfade und Fristen konnten nicht ermittelt werden. Prüfen Sie die Konfiguration des Prozesselements."));
     }
 }

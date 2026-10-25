@@ -404,7 +404,7 @@ class PaymentConfigElementValueValidationTest {
     @Test
     void shouldRejectInvalidRequestorMappings() {
         assertEquals(
-                Map.of("requestorSourceType", "Es muss eine Quelle für die Antragsteller-Zuweisung ausgewählt werden."),
+                Map.of("requestorSourceType", "Es muss eine Quelle für die Zuordnung der zahlenden Person oder Organisation ausgewählt werden."),
                 new PaymentConfigElementValueRequestorMapping(
                         null,
                         "requestor.lastName",
@@ -441,7 +441,7 @@ class PaymentConfigElementValueValidationTest {
 
         assertEquals(
                 Map.ofEntries(
-                        Map.entry("lastNameDestinationKey", "Nachname muss ein gültiger Prozessdaten-Schlüssel sein."),
+                        Map.entry("lastNameDestinationKey", "Nachname muss ein gültiger Datenschlüssel sein."),
                         Map.entry("isOrganizationDestinationKey", "Ist Organisation muss zugewiesen werden.")
                 ),
                 new PaymentConfigElementValueRequestorMapping(

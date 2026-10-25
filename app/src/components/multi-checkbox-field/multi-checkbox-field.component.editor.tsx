@@ -94,7 +94,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                 <OptionListInput
                     label="Optionen"
                     addLabel="Option hinzufügen"
-                    hint="Die antragstellende Person kann eine oder mehrere dieser Optionen auswählen."
+                    hint="Die ausfüllende Person kann eine oder mehrere dieser Optionen auswählen."
                     noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
                     value={options as any}
                     onChange={(options) => {

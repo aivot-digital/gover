@@ -53,11 +53,11 @@ public class ProcessInstanceEntity {
     private ProcessInstanceStatus status;
 
     @Nullable
-    @Size(max = 96, message = "Die Status-Überschreibung darf maximal 96 Zeichen lang sein.")
+    @Size(max = 96, message = "Die angezeigte Statusbezeichnung darf maximal 96 Zeichen lang sein.")
     private String statusOverride;
 
     @Nullable
-    @Size(min = 36, max = 36, message = "Die Benutzer-ID des Zuständigen muss 36 Zeichen lang sein.")
+    @Size(min = 36, max = 36, message = "Die Konto-ID der zuständigen Person muss 36 Zeichen lang sein.")
     private String assignedUserId;
 
     // Arrays and JSON fields can be mapped as String or custom types
@@ -91,13 +91,13 @@ public class ProcessInstanceEntity {
     private Duration runtime;
 
     @Nonnull
-    @NotNull(message = "Die Initial-Payload darf nicht null sein.")
+    @NotNull(message = "Die Startdaten dürfen nicht null sein.")
     @Convert(converter = JsonObjectConverter.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> initialPayload;
 
     @Nonnull
-    @NotNull(message = "Die Initial-Knoten-ID darf nicht null sein.")
+    @NotNull(message = "Die ID des Auslösers darf nicht null sein.")
     private Integer initialNodeId;
 
     /**

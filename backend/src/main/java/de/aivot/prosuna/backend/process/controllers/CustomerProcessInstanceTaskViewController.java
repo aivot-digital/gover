@@ -552,7 +552,7 @@ public class CustomerProcessInstanceTaskViewController {
         var cleanEvent = resolveValidCustomerEvent(layout, customerView.events(), rawEvent);
 
         if (rawEvent != null && cleanEvent == null) {
-            throw ResponseException.badRequest("Invalid event: " + rawEvent);
+            throw ResponseException.badRequest("Ungültige Aktion: " + rawEvent);
         }
 
         AuthoredElementValues inputs;
@@ -972,7 +972,7 @@ public class CustomerProcessInstanceTaskViewController {
                 node, provider, null, false, processExecutionData
         );
         if (cfgRes.derivedRuntimeElementData().hasAnyError()) {
-            throw ResponseException.internalServerError("Die dynamische Knotenkonfiguration konnte nicht aufgelöst werden.");
+            throw ResponseException.internalServerError("Die dynamische Konfiguration des Prozesselements konnte nicht aufgelöst werden.");
         }
 
         return new TaskViewData<>(

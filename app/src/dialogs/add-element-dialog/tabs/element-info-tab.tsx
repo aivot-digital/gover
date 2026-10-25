@@ -1541,7 +1541,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography>
                 Stellt vorhandene Dateien aus den Anlagensätzen des Vorgangs bereit, die zum gewählten Anlagensatz-Schlüssel gehören.
                 Die Dateien können angesehen und heruntergeladen werden.
-                So lassen sich beispielsweise eingereichte Nachweise in einem späteren Bearbeitungsschritt prüfen oder erstellte Bescheide bereitstellen.
+                So lassen sich beispielsweise übermittelte Anlagen in einem späteren Bearbeitungsschritt prüfen oder erstellte Bescheide bereitstellen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1549,7 +1549,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Divider>
 
             <ProcessAttachmentDisplayComponent
-                labelText="Eingereichte Nachweise"
+                labelText="Übermittelte Anlagen"
                 items={[
                     {
                         key: 'income',

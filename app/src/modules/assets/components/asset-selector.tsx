@@ -91,7 +91,7 @@ export function AssetSelector(props: AssetSelectorProps) {
             .catch((err) => {
                 if (active) {
                     setAssetLoadFailed(true);
-                    dispatch(showApiErrorSnackbar(err, 'Asset konnte nicht geladen werden'));
+                    dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht geladen werden.'));
                 }
             });
 

@@ -180,7 +180,7 @@ public class StorageSyncService {
                                 storageProvider.getStorageProviderDefinitionKey() +
                                 " und der Version " +
                                 storageProvider.getStorageProviderDefinitionVersion() +
-                                " konnte nicht gefunden werden. Bitte stellen Sie sicher, dass das entsprechende Plugin installiert ist und Sie die Anwendung neu gestartet haben."
+                                " konnte nicht gefunden werden. Bitte stellen Sie sicher, dass die entsprechende Erweiterung installiert ist und Sie die Anwendung neu gestartet haben."
                 ));
 
         var root = getRoot(storageProvider, storageDefinition);

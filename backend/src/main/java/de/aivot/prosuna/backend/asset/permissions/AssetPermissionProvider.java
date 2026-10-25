@@ -16,7 +16,7 @@ public class AssetPermissionProvider implements PermissionProvider {
 
     @Override
     public String getContextLabel() {
-        return "Dateien & Medien";
+        return "Dateien und Medien";
     }
 
     @Override
@@ -24,22 +24,22 @@ public class AssetPermissionProvider implements PermissionProvider {
         return new PermissionEntry[]{
                 PermissionEntry.of(
                         ASSET_CREATE,
-                        "Dateien & Medien erstellen",
+                        "Dateien und Medien erstellen",
                         "Erlaubt das Erstellen neuer Dateien und Medien."
                 ),
                 PermissionEntry.of(
                         ASSET_READ,
-                        "Dateien & Medien anzeigen",
+                        "Dateien und Medien anzeigen",
                         "Erlaubt das Anzeigen und Auflisten von Dateien und Medien."
                 ),
                 PermissionEntry.of(
                         ASSET_UPDATE,
-                        "Dateien & Medien bearbeiten",
+                        "Dateien und Medien bearbeiten",
                         "Erlaubt das Bearbeiten bestehender Dateien und Medien."
                 ),
                 PermissionEntry.of(
                         ASSET_DELETE,
-                        "Dateien & Medien löschen",
+                        "Dateien und Medien löschen",
                         "Erlaubt das Löschen von Dateien und Medien."
                 )
         };

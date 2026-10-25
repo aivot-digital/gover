@@ -249,14 +249,14 @@ export function HelpDialog(props: HelpDialogProps) {
                     </Typography>
                     <ul>
                         <li>Füllen Sie alle mit Stern (*) gekennzeichneten Pflichtfelder aus.</li>
-                        <li>Nutzen Sie die Schaltflächen <b>„Weiter“</b> und <b>„Zum vorherigen Abschnitt“</b>, zum
-                            Navigieren durch die Schritte und um Ihre Eingaben zu prüfen.
+                        <li>Nutzen Sie die Schaltflächen <b>„Weiter“</b> und <b>„Zum vorherigen Abschnitt“</b>, um
+                            durch die Abschnitte zu navigieren und Ihre Angaben zu prüfen.
                         </li>
-                        <li>Klicken Sie abschließend auf <b>„Verbindlich einreichen“</b>.</li>
+                        <li>Klicken Sie abschließend auf <b>„Angaben übermitteln“</b>.</li>
                         <li>Falls Fehler vorliegen, werden diese rot markiert. Bitte korrigieren Sie sie und versuchen
                             Sie erneut, das Formular abzusenden.
                         </li>
-                        <li>Nach erfolgreicher Übermittlung werden Ihre Angaben direkt an die zuständige Behörde
+                        <li>Nach erfolgreicher Übermittlung werden Ihre Angaben direkt an die zuständige Stelle
                             weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte
                             durch, indem Sie den im Formular angezeigten
                             Anweisungen folgen.
@@ -401,7 +401,7 @@ export function HelpDialog(props: HelpDialogProps) {
                             Daten verloren.
                         </li>
                         <li>Wie lange die Daten in Ihrem Browser gespeichert bleiben, hängt von vielen Faktoren wie den
-                            spezifischen Benutzer-Einstellungen ab. Wir haben hierauf keinen Einfluss.
+                            persönlichen Einstellungen ab. Wir haben hierauf keinen Einfluss.
                         </li>
                         <li>Falls Sie ein öffentliches oder gemeinsam genutztes Gerät verwenden, löschen Sie Ihre Daten
                             am besten nach der Nutzung, um Missbrauch zu vermeiden.

@@ -176,7 +176,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Informationen für antragstellende Personen"
+                title="Informationen für ausfüllende Personen"
                 variant={"h5"}
             />
             <Grid
@@ -198,7 +198,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                             sx={{
                                 mb: 1,
                             }}
-                        >Antragsberechtigte</InputLabel>
+                        >Berechtigte Personen und Organisationen</InputLabel>
                         <CheckboxTree
                             options={eligibleEntities}
                             value={props.element.eligiblePersons ?? []}
@@ -213,7 +213,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
 
                     <RichTextInputComponent
                         value={props.element.expectedCosts ?? ''}
-                        label="Gebühren des Antrages"
+                        label="Kosten"
                         onChange={(val) => {
                             props.onPatch({
                                 expectedCosts: val ?? undefined,
@@ -253,12 +253,12 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Dokumente des Antrages"
+                title="Dokumente zum Formular"
                 variant={"h5"}
             />
             <StringListInput
                 label="Relevante Dokumente"
-                hint="Geben Sie hier Dokumente an, welche Antragsberechtigte vor Antragstellung lesen sollten."
+                hint="Geben Sie hier Dokumente an, die ausfüllende Personen vor dem Ausfüllen lesen sollten."
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine relevanten Dokumente angegeben"
                 value={props.element.supportingDocuments ?? undefined}
@@ -271,10 +271,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 disabled={!props.editable}
             />
             <StringListInput
-                label="Einzureichende Dokumente"
-                hint="Geben Sie hier Dokumente an, welche Antragsberechtigte einzureichen haben."
+                label="Benötigte Dokumente"
+                hint="Geben Sie hier Dokumente an, die ausfüllende Personen übermitteln müssen."
                 addLabel="Dokument hinzufügen"
-                noItemsHint="Keine einzureichenden Dokumente angegeben"
+                noItemsHint="Keine benötigten Dokumente angegeben"
                 value={props.element.documentsToAttach ?? undefined}
                 onChange={(supportingDocuments) => {
                     props.onPatch({

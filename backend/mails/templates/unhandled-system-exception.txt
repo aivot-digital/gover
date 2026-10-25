@@ -1,6 +1,6 @@
 Hallo,
 
-es ist ein Fehler aufgetreten am Host [(${base.config.prosunaHostname})].
+auf dem folgenden Host ist ein Fehler aufgetreten: [(${base.config.prosunaHostname})].
 
 [# th:if="${additionalContext != null}"]
 Weitere Informationen:
@@ -14,7 +14,7 @@ Weitere Informationen:
 Die Fehlernachricht lautet:
 [(${message})]
 
-Der StackTrace zum Fehler:
+Stacktrace:
 [(${stackTrace})]
 
 [# th:if="${mailSignature != null}"]

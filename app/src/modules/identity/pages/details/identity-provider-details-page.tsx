@@ -40,7 +40,7 @@ export function IdentityProviderDetailsPage() {
                                         }}
                                     >
                                         Konfigurieren Sie hier die Identitätsanbieter, die in Ihrer Prosuna-Instanz global verfügbar sein sollen.
-                                        Die angebundenen Nutzerkonten können in Formularen als Authentifizierungsoptionen verwendet werden.
+                                        Die angebundenen Konten können in Formularen als Authentifizierungsoptionen verwendet werden.
                                         Unterstützt werden alle Anbieter, die eine OpenID Connect (OIDC) kompatible Schnittstelle bereitstellen.
                                     </Typography>
                                     <Typography
@@ -89,7 +89,7 @@ export function IdentityProviderDetailsPage() {
                                                 <br />
                                                 → Nutzung der User Federation im Staff Realm des Prosuna-Keycloaks.
                                                 <br />
-                                                Diese Nutzerkonten werden nicht über die Funktion "Identitätsanbieter" verwaltet.
+                                                Diese Konten werden nicht über die Funktion "Identitätsanbieter" verwaltet.
                                             </Typography>
                                         </li>
                                     </ul>

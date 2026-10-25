@@ -4,7 +4,7 @@ import React from 'react';
 import {Chip} from '../../../components/chip/chip';
 import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
 
-const DEFAULT_USER_SYSTEM_ROLE_HINT = 'Diese Systemrolle ist die Standardrolle für neue Benutzer:innen, wenn keine andere Rolle angegeben wurde. Sie kann in den Allgemeinen Systemeinstellungen geändert werden.';
+const DEFAULT_USER_SYSTEM_ROLE_HINT = 'Diese Systemrolle ist die Standardrolle für neue Konten, wenn keine andere Rolle angegeben wurde. Sie kann in den Allgemeinen Systemeinstellungen geändert werden.';
 
 interface DefaultUserSystemRoleBadgeProps {
     showHintIcon?: boolean;

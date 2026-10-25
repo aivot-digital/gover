@@ -55,8 +55,8 @@ public class XBezahldienstePaymentInformation {
     private XBezahldienstStatus status = null;
 
     // Optionale ergänzende Erläuterungen zum Status.
-    // Diese Informationen werden Teil des Antrages und bieten dem Bezahldienst die Möglichkeit Informationen an das Fachverfahren / Sachbearbeitung zu schicken.
-    // Grundsätzlich ist dieses Feld nicht notwendig - Inhalte sind zwischen Bezahldienst und Fachverfahren abzustimmen.
+    // Diese Informationen werden Teil des Antrages und bieten dem Bezahldienst die Möglichkeit Informationen an das Fachsystem / Sachbearbeitung zu schicken.
+    // Grundsätzlich ist dieses Feld nicht notwendig - Inhalte sind zwischen Bezahldienst und Fachsystem abzustimmen.
     @JsonProperty("statusDetail")
     private String statusDetail = null;
 

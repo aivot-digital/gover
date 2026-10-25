@@ -163,7 +163,7 @@ function AttachmentSetItem(props: AttachmentSetItemProps): React.JSX.Element {
                                 color: "text.secondary",
                                 fontSize: '0.875rem'
                             }}>
-                            Keine Anhänge
+                            Keine Anlagen
                         </Typography> :
                         <AttachmentItems
                             attachments={props.item.attachments}

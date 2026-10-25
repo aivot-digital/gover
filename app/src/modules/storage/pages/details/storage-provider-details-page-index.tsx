@@ -377,7 +377,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         : editedStorageProvider.systemProvider
             ? 'Systemanbieter können nicht gelöscht werden.'
             : defaultStorageDeleteDisabled
-                ? 'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.'
+                ? 'Dieser Speicheranbieter ist als Standardanbieter für Anlagen von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.'
                 : 'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dokumente des Speicheranbieters nicht gelöscht werden.';
     const attributesError = getIndexedFieldError(
         errors,
@@ -397,9 +397,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
     if (isDefaultAttachmentStorage) {
         statusTableItems.push({
-            label: 'Standardanbieter für Anhänge von Vorgängen',
+            label: 'Standardanbieter für Anlagen von Vorgängen',
             icon: <HelpIconOutlined color="primary"/>,
-            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Anhänge von Vorgängen konfiguriert und kann nicht gelöscht werden.',
+            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Anlagen von Vorgängen konfiguriert und kann nicht gelöscht werden.',
         });
     }
 
@@ -672,7 +672,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                                             Die maximale Dateigröße wird unter Anderem an den folgenden Stellen
                                             berücksichtigt:
                                             <ul>
-                                                <li>Das Hochladen von Dateien &amp; Medien</li>
+                                                <li>Das Hochladen von Dateien und Medien</li>
                                                 <li>Das Übertragen von Anlagen an einen Prozess</li>
                                                 <li>Das Erstellen von Anlagen in einem Vorgang z.B. durch eine
                                                     PDF-Generierung

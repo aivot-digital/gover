@@ -316,8 +316,9 @@ export function ProcessListPage() {
                     <Typography sx={{
                         mb: 2
                     }}>
-                        Prozesse sind digitale Abläufe, die verschiedene Aufgaben und Genehmigungsschritte innerhalb
-                        Ihrer Organisation abbilden.
+                        Ein Prozess bündelt alle Prozessversionen eines Ablaufs innerhalb Ihrer Organisation.
+                        Jede Prozessversion enthält einen festen Stand der Prozessdefinition mit ihren Prozesselementen,
+                        Verbindungen und Einstellungen.
                         In dieser Übersicht sehen Sie alle Prozesse, an deren Entwicklung Sie beteiligt sind oder die
                         Ihrer Organisationseinheit zugeordnet wurden.
                     </Typography>
@@ -326,11 +327,11 @@ export function ProcessListPage() {
                     }}>
                         Sie können neue Prozesse anlegen, bestehende Prozesse bearbeiten oder veröffentlichte Versionen
                         einsehen.
-                        Der Status eines Prozesses zeigt an, ob er sich noch im Entwurf befindet, bereits veröffentlicht
-                        oder zurückgezogen wurde.
+                        Der Status einer Prozessversion zeigt an, ob sie sich im Entwurf befindet, veröffentlicht
+                        oder zurückgezogen ist. Ein konkreter Durchlauf einer Prozessversion heißt Vorgang.
                     </Typography>
                     <Typography>
-                        Um einen neuen Prozess zu starten, klicken Sie auf „Neuer Prozess“. Weitere Optionen finden Sie
+                        Um einen neuen Prozess anzulegen, klicken Sie auf „Neuer Prozess“. Weitere Optionen finden Sie
                         in den Aktionen neben jedem Prozess.
                         Sollten Sie keiner Organisationseinheit zugeordnet sein, wenden Sie sich bitte an eine
                         Administrator:in.

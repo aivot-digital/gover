@@ -133,9 +133,9 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
     @Override
     public String getDescription() {
         return """
-                Wertet eine Bedingung aus und führt den Prozess abhängig vom Ergebnis über den Dann- oder Sonst-Ausgang fort.
+                Wertet eine Bedingung aus und führt den Prozess abhängig vom Ergebnis über den Dann- oder Sonst-Prozesspfad fort.
 
-                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die aktuellen Laufzeitdaten zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Elementausgänge bereitgestellt.
+                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die aktuellen Laufzeitdaten zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Datenausgänge bereitgestellt.
                 """;
     }
 
@@ -303,7 +303,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                                                                String lowCodeCondition) throws ProcessNodeExecutionException {
         if (StringUtils.isNullOrEmpty(lowCodeCondition)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die Low-Code-Bedingung für den If-Knoten wurde nicht angegeben."
+                    "Die Low-Code-Bedingung für das Bedingungselement wurde nicht angegeben."
             );
         }
 
@@ -326,7 +326,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
             } catch (Exception e) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                         e,
-                        "Die Bedingung des If-Knotens konnte nicht als JavaScript ausgeführt werden: %s",
+                        "Die Bedingung des Bedingungselements konnte nicht als JavaScript ausgeführt werden: %s",
                         e.getMessage()
                 );
             }
@@ -335,14 +335,14 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Initialisieren der JavaScript-Engine für den If-Knoten: %s",
+                    "Fehler beim Initialisieren der JavaScript-Engine für das Bedingungselement: %s",
                     e.getMessage()
             );
         }
 
         if (conditionValue == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Bedingung des If-Knotens muss einen booleschen JavaScript-Wert ergeben. Übergeben wurde: %s",
+                    "Die Bedingung des Bedingungselements muss einen booleschen JavaScript-Wert ergeben. Übergeben wurde: %s",
                     StringUtils.quote(conditionEvaluated)
             );
         }
@@ -359,7 +359,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                                                               NoCodeOperand noCodeCondition) throws ProcessNodeExecutionException {
         if (noCodeCondition == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die No-Code-Bedingung für den If-Knoten wurde nicht angegeben."
+                    "Die No-Code-Bedingung für das Bedingungselement wurde nicht angegeben."
             );
         }
 
@@ -377,7 +377,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         } catch (RuntimeException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die No-Code-Bedingung des If-Knotens konnte nicht ausgewertet werden: %s",
+                    "Die No-Code-Bedingung des Bedingungselements konnte nicht ausgewertet werden: %s",
                     e.getMessage()
             );
         }

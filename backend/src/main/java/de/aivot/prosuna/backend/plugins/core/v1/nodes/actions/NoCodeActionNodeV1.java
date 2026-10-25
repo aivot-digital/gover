@@ -145,7 +145,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         return """
                 Wertet eine Liste konfigurierter No-Code-Ausdrücke aus und schreibt deren Ergebnisse in die Vorgangsdaten.
 
-                Für jedes Ergebnis werden Zielpfad, erwarteter Datentyp und Ausdruck festgelegt. Dadurch können Vorgangsdaten ohne eigenen JavaScript-Code berechnet, umgewandelt oder ergänzt werden; die ausgeführten Zuweisungen stehen zusätzlich als Elementausgänge bereit.
+                Für jedes Ergebnis werden Zielpfad, erwarteter Datentyp und Ausdruck festgelegt. Dadurch können Vorgangsdaten ohne eigenen JavaScript-Code berechnet, umgewandelt oder ergänzt werden; die ausgeführten Zuweisungen stehen zusätzlich als Datenausgänge bereit.
                 """;
     }
 
@@ -852,7 +852,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
         @InputElementPOJOBinding(id = VARIABLE_EXPRESSION_FIELD_ID, type = ElementType.NoCodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "No-Code-Ausdruck"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausdruck wird beim Ausführen des Knotens ausgewertet."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausdruck wird beim Ausführen des Prozesselements ausgewertet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })

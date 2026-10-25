@@ -421,7 +421,7 @@ export function IdentityProviderDetailsPageIndex() {
     };
 
     const handleStatusChange = async (newValue: boolean) => {
-        // Bei Aktivierung und wenn es sich um ein offizielles Nutzerkonto handelt
+        // Bei Aktivierung und wenn es sich um ein offizielles Konto handelt
         if (newValue === true && identityProvider.type !== IdentityProviderType.Custom) {
             const confirmed = await showConfirm({
                 title: 'Hinweis zur Einrichtung',
@@ -429,7 +429,7 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Nutzerkontos
+                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Kontos
                             gelesen und umgesetzt haben.
                         </Typography>
                         <Typography gutterBottom>
@@ -452,7 +452,7 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Wenn Sie den Identitätsanbieter deaktivieren, wird das Nutzerkonto automatisch aus
+                            Wenn Sie den Identitätsanbieter deaktivieren, wird das Konto automatisch aus
                             Formularen mit dem Status "In Bearbeitung" entfernt.
                         </Typography>
                         <Typography gutterBottom>
@@ -537,7 +537,7 @@ export function IdentityProviderDetailsPageIndex() {
                 Identitätsanbieter konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Konfigurieren Sie den Identitätsanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in
+                Konfigurieren Sie den Identitätsanbieter, um Konten dieses Anbieters zur Authentifizierung in
                 Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die
                 Konfiguration bereits für
                 Formulare verwendet wird.
@@ -561,7 +561,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('name')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.name}
-                        hint="Name des Identitätsanbieters. Sichtbar auch für Antragsteller:innen im Formular."
+                        hint="Name des Identitätsanbieters. Wird auch ausfüllenden Personen im Formular angezeigt."
                     />
                 </Grid>
 
@@ -638,7 +638,7 @@ export function IdentityProviderDetailsPageIndex() {
                             sx={{width: '100%'}}
                         >
                             <strong>Hinweis:</strong>{' '}
-                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Prosuna
+                            Die Konfigurationen für die offiziellen Konten von Bund und Ländern werden von Prosuna
                             bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
@@ -935,7 +935,7 @@ export function IdentityProviderDetailsPageIndex() {
                                 <li>
                                     <strong>Anzeigeattribut</strong>
                                     – Steuert, ob der Wert später
-                                    zur Identifikation in Übersichten von Prosuna (z. B. in Anträgen) angezeigt wird.
+                                    zur Identifikation in Übersichten von Prosuna (z. B. in Vorgängen) angezeigt wird.
                                 </li>
                             </ul>
                         </Box>
@@ -1044,7 +1044,7 @@ export function IdentityProviderDetailsPageIndex() {
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
                 message="Dieser Identitätsanbieter kann nicht gelöscht werden, da er noch in Formularen verwendet wird."
-                solutionText="Bitte ändern Sie die Einstellungen zur Einbindung von Nutzerkonten in diesen Formularen und versuchen Sie es erneut:"
+                solutionText="Bitte ändern Sie die Einstellungen zur Einbindung von Konten in diesen Formularen und versuchen Sie es erneut:"
                 links={relatedEntities ?? undefined}
             />
         </Box>

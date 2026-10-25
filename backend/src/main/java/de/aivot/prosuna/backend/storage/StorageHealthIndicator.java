@@ -88,7 +88,7 @@ public class StorageHealthIndicator implements HealthIndicator {
             // If a storage provider definition is missing, the health check should be down, because this is a misconfiguration and the sysadmin needs to add the corresponding plugin again.
             if (def == null) {
                 var msg = String.format(
-                        "Der Speicheranbieter %s referenziert eine nicht vorhandene Anbieterdefinition %s Version %d. Bitte stellen Sie sicher, dass das entsprechende Plugin wieder installiert wird.",
+                        "Der Speicheranbieter %s referenziert eine nicht vorhandene Anbieterdefinition %s Version %d. Bitte stellen Sie sicher, dass die entsprechende Erweiterung wieder installiert wird.",
                         StringUtils.quote(provider.getName()),
                         StringUtils.quote(provider.getStorageProviderDefinitionKey()),
                         provider.getStorageProviderDefinitionVersion()
@@ -117,7 +117,7 @@ public class StorageHealthIndicator implements HealthIndicator {
                 // If so, the health check should fail because this is a critical component and the system cannot function properly if the process attachments cannot be stored.
                 // For all non default attachment storages just drop a hint
                 if (defaultAttachmentStorage != null && defaultAttachmentStorage.equals(provider.getId().toString())) {
-                    msg += " Dieser Speicheranbieter ist als Standard-Speicheranbieter für Anhänge von Vorgängen konfiguriert. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.";
+                    msg += " Dieser Speicheranbieter ist als Standard-Speicheranbieter für Anlagen von Vorgängen konfiguriert. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.";
 
                     providerDetail.put("error", msg);
                     hasErrors = true;
@@ -146,10 +146,10 @@ public class StorageHealthIndicator implements HealthIndicator {
         }
 
         if (defaultAttachmentStorage == null) {
-            builder.withDetail("error", "Der Standard-Speicheranbieter für Anhänge von Vorgängen ist nicht konfiguriert. Bitte konfigurieren Sie einen Speicheranbieter als Standard-Speicheranbieter für Anhänge von Vorgängen.");
+            builder.withDetail("error", "Der Standard-Speicheranbieter für Anlagen von Vorgängen ist nicht konfiguriert. Bitte konfigurieren Sie einen Speicheranbieter als Standard-Speicheranbieter für Anlagen von Vorgängen.");
         } else if (!defaultAttachmentsProviderIsPresent) {
             builder.withDetail("error", String.format(
-                    "Der Standard-Speicheranbieter für Anhänge von Vorgängen (ID: %s) ist nicht vorhanden. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.",
+                    "Der Standard-Speicheranbieter für Anlagen von Vorgängen (ID: %s) ist nicht vorhanden. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.",
                     defaultAttachmentStorage
             ));
         }

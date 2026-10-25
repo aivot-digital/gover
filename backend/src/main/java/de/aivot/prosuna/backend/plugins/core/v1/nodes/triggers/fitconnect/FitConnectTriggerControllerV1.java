@@ -175,11 +175,11 @@ public class FitConnectTriggerControllerV1 {
 
         var matches = processNodeRepository.findAll(specBuilder.build());
         if (matches.isEmpty()) {
-            throw ResponseException.notFound("Kein FIT-Connect-Trigger mit dem angegebenen URL-Segment gefunden.");
+            throw ResponseException.notFound("Kein FIT-Connect-Auslöser mit dem angegebenen URL-Segment gefunden.");
         }
         if (matches.size() > 1) {
             throw ResponseException.internalServerError(
-                    "Das URL-Segment ist mehreren FIT-Connect-Triggern in derselben Prozessversion zugeordnet."
+                    "Das URL-Segment ist mehreren FIT-Connect-Auslösern in derselben Prozessversion zugeordnet."
             );
         }
         return matches.getFirst();
@@ -197,14 +197,14 @@ public class FitConnectTriggerControllerV1 {
         var destinationId = StringUtils.toNullableTrimmedString(rawDestinationId);
         if (destinationId == null) {
             throw ResponseException.internalServerError(
-                    "Die Zustellpunkt-ID des FIT-Connect-Trigger-Knotens ist nicht konfiguriert."
+                    "Die Zustellpunkt-ID des FIT-Connect-Auslösers ist nicht konfiguriert."
             );
         }
         try {
             return UUID.fromString(destinationId);
         } catch (IllegalArgumentException e) {
             throw ResponseException.internalServerError(
-                    "Die Zustellpunkt-ID des FIT-Connect-Trigger-Knotens ist ungültig konfiguriert.",
+                    "Die Zustellpunkt-ID des FIT-Connect-Auslösers ist ungültig konfiguriert.",
                     e
             );
         }

@@ -156,7 +156,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet automatisiert oder manuell E-Mails an ausgewählte Empfänger:innen.";
+        return "Sendet automatisiert oder manuell E-Mails an ausgewählte Personen und Organisationen.";
     }
 
     @Nonnull
@@ -165,7 +165,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return """
                 Versendet E-Mails innerhalb eines Prozesses entweder automatisch oder nach manueller Bearbeitung durch eine Mitarbeiter:in.
 
-                Empfänger:innen und Anhänge werden am Prozesselement konfiguriert. Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand in einer Aufgabe bearbeitet. Nach dem Versand stellt das Element die verwendeten Nachrichtendaten als Ausgänge bereit.
+                Am Prozesselement konfigurieren Sie die empfangenden Personen und Organisationen sowie die Anlagen. Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand in einer Aufgabe bearbeitet. Nach dem Versand stellt das Element die verwendeten Nachrichtendaten als Datenausgänge bereit.
                 """;
     }
 
@@ -218,14 +218,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_NAME_TO,
-                        "Empfänger:innen",
-                        "Die Empfänger:innen der versendeten E-Mail.",
+                        "Empfangende Personen und Organisationen",
+                        "Die Adressen der Personen und Organisationen, an die die E-Mail versendet wurde.",
                         "Array<string>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_BCC,
-                        "BCC-Empfänger:innen",
-                        "Die BCC-Empfänger:innen der versendeten E-Mail.",
+                        "Empfangende Personen und Organisationen (BCC)",
+                        "Die Adressen der Personen und Organisationen, die eine Blindkopie der E-Mail erhalten haben.",
                         "Array<string> | null"
                 ),
                 new ProcessNodeOutput(
@@ -243,7 +243,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS,
                         "Anlagensätze",
-                        "Die Datenschlüssel der als E-Mail-Anhang versendeten Anlagensätze.",
+                        "Die Datenschlüssel der als E-Mail-Anlagen versendeten Anlagensätze.",
                         "Array<string>"
                 )
         );
@@ -299,7 +299,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         StringUtils.quote(context.getThisNode().getName() != null ? context.getThisNode().getName() : getName())
                 ));
 
@@ -443,7 +443,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         if (recipientsStr == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die Empfänger:in für die E-Mail wurde nicht angegeben."
+                    "Geben Sie eine E-Mail-Adresse für die empfangende Person oder Organisation an."
             );
         }
         var recipients = recipientsStr.split(",");
@@ -584,7 +584,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 } catch (IOException | ResponseException exception) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             exception,
-                            "Der Inhalt des Prozess-Anhangs %s konnte nicht geladen werden: %s",
+                            "Der Inhalt der Anlage %s konnte nicht geladen werden: %s",
                             StringUtils.quote(attachment.getFileName()),
                             exception.getMessage()
                     );
@@ -629,7 +629,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         if (attachments.isEmpty()) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anhänge.",
+                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anlagen.",
                     StringUtils.quote(normalizedDataKey)
             );
         }
@@ -652,8 +652,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         @InputElementPOJOBinding(id = RECIPIENT_FIELD_ID, type = ElementType.Text,
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger:innen"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Kommaseparierte Angabe der Empfänger:innen"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Personen und Organisationen"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Kommagetrennte E-Mail-Adressen der empfangenden Personen und Organisationen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String to;
@@ -661,15 +661,15 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         @InputElementPOJOBinding(id = BCC_RECIPIENT_FIELD_ID, type = ElementType.Text,
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "BCC-Empfänger:innen"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Angabe weiterer Empfänger:innen als Blind Carbon Copy (BCC)"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Personen und Organisationen (BCC)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "E-Mail-Adressen der Personen und Organisationen, die eine Blindkopie (BCC) erhalten sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public String bcc;
 
         @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze des Vorgangs, deren Anhänge später als E-Mail-Anhänge hinzugefügt werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze des Vorgangs, deren Anlagen später als E-Mail-Anlagen hinzugefügt werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public List<String> attachmentSetDataKeys;

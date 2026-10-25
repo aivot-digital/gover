@@ -40,8 +40,8 @@ public class AuditLogEntity {
     private String origin;
 
     @Nonnull
-    @NotNull(message = "Der Trigger-Typ darf nicht null sein.")
-    @Length(max = 64, message = "Der Trigger-Typ darf maximal 64 Zeichen lang sein.")
+    @NotNull(message = "Der Auslösertyp darf nicht null sein.")
+    @Length(max = 64, message = "Der Auslösertyp darf maximal 64 Zeichen lang sein.")
     private String triggerType;
 
     @Nullable

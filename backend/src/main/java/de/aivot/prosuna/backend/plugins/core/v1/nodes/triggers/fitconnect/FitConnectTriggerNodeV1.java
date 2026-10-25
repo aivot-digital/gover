@@ -132,9 +132,9 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
     @Override
     public String getDescription() {
         return """
-                Empfängt neue Einreichungen eines FIT-Connect-Zustellpunkts und startet für jede Einreichung einen Vorgang.
+                Empfängt neue Übermittlungen eines FIT-Connect-Zustellpunkts und startet für jede Übermittlung einen Vorgang.
 
-                Die Fach- und Metadaten werden über die FIT-Connect-API abgerufen und entschlüsselt. Übermittelte Anhänge werden als Vorgangsanhänge gespeichert; JSON-Daten, Metadaten, Anhänge und Einreichungsinformationen stehen als Ausgänge zur Verfügung.
+                Die Fach- und Metadaten werden über die FIT-Connect-API abgerufen und entschlüsselt. Übermittelte Anlagen werden als Vorgangsanlagen gespeichert; JSON-Daten, Metadaten, Anlagen und Übermittlungsinformationen stehen als Datenausgänge zur Verfügung.
                 """;
     }
 
@@ -158,7 +158,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Einreichung empfangen",
+                        "Übermittlung empfangen",
                         "Der Prozess wird mit den importierten FIT-Connect-Daten fortgesetzt."
                 )
         );
@@ -168,11 +168,11 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(INITIAL_DATA_KEY_PAYLOAD, "JSON-Daten", "Die entschlüsselten Fach- oder Antragsdaten.", "unknown"),
-                new ProcessNodeOutput(INITIAL_DATA_KEY_SUBMISSION, "Einreichung", "Technische Informationen zur FIT-Connect-Einreichung.", SUBMISSION_OUTPUT_TYPE),
+                new ProcessNodeOutput(INITIAL_DATA_KEY_PAYLOAD, "JSON-Daten", "Die entschlüsselten Fachdaten.", "unknown"),
+                new ProcessNodeOutput(INITIAL_DATA_KEY_SUBMISSION, "Übermittlung", "Technische Informationen zur FIT-Connect-Einreichung.", SUBMISSION_OUTPUT_TYPE),
                 new ProcessNodeOutput(INITIAL_DATA_KEY_METADATA, "Metadaten", "Die entschlüsselten FIT-Connect-Metadaten.", "Record<string, unknown>"),
-                new ProcessNodeOutput(INITIAL_DATA_KEY_ATTACHMENTS, "Anhänge", "Die gespeicherten FIT-Connect-Anhänge.", ATTACHMENTS_OUTPUT_TYPE),
-                new ProcessNodeOutput(INITIAL_DATA_KEY_FILES, "Dateien", "Die Anhänge im Format eines Datei-Anlagen-Feldes.", FILES_OUTPUT_TYPE),
+                new ProcessNodeOutput(INITIAL_DATA_KEY_ATTACHMENTS, "Anlagen", "Die gespeicherten FIT-Connect-Anlagen.", ATTACHMENTS_OUTPUT_TYPE),
+                new ProcessNodeOutput(INITIAL_DATA_KEY_FILES, "Dateien", "Die Anlagen im Format eines Datei-Anlagen-Feldes.", FILES_OUTPUT_TYPE),
                 new ProcessNodeOutput(INITIAL_DATA_KEY_STARTED, "Eingangszeitstempel", "Der Zeitpunkt, an dem der Callback empfangen wurde.", "string")
         );
     }
@@ -186,7 +186,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
             layout = ElementPOJOMapper.createFromPOJO(FitConnectTriggerConfigV1.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Das Konfigurationslayout des FIT-Connect-Triggers konnte nicht erstellt werden.",
+                    "Das Konfigurationslayout des FIT-Connect-Auslösers konnte nicht erstellt werden.",
                     e
             );
         }
@@ -252,7 +252,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
                 addValidationError(
                         errors,
                         FitConnectTriggerConfigV1.SLUG_CONFIG_KEY,
-                        "Das URL-Segment wird in dieser Prozessversion bereits von einem anderen FIT-Connect-Trigger verwendet."
+                        "Das URL-Segment wird in dieser Prozessversion bereits von einem anderen FIT-Connect-Auslöser verwendet."
                 );
             }
         }
@@ -283,8 +283,8 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
                 .reuse(previousMetadata)
                 .addForwardedAttachmentSet(
                         processNodeEntity.getDataKey(),
-                        "FIT-Connect-Anhänge",
-                        "Alle mit der Einreichung empfangenen Anhänge.",
+                        "FIT-Connect-Anlagen",
+                        "Alle mit der Übermittlung empfangenen Anlagen.",
                         true,
                         processNodeEntity
                 );

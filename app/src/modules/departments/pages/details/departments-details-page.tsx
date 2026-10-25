@@ -113,11 +113,12 @@ const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
     content: (
         <>
             <Typography>
-                Eine Organisationseinheit ist eine zentrale Verwaltungseinheit in Prosuna und essenziell für den Betrieb der Anwendung. Sie speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
-                B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden können.
+                Organisationseinheiten bilden die Organisationsstruktur und ihre Hierarchie ab. Sie enthalten Stammdaten wie
+                Adress- und Kontaktdaten sowie rechtliche Informationen, die in Formularen wiederverwendet werden können.
             </Typography>
             <Typography sx={{mt: 2}}>
-                Einer Organisationseinheit sind Mitarbeiter:innen mit einer spezifischen Rolle zugeordnet, die deren Berechtigungen innerhalb der Organisationseinheit definiert.
+                Mitarbeiter:innen werden über Mitgliedschaften zugeordnet. Domänenrollen bestimmen ihre Berechtigungen
+                innerhalb der Organisationseinheit. Systemrollen gelten auf Ebene des Kontos.
             </Typography>
         </>
     ),

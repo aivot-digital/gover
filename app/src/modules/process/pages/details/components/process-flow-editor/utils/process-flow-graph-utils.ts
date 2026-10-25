@@ -62,7 +62,7 @@ export function buildProcessFlowGraph(
                 ...Array.from(missingPortKeys).sort().map((key) => ({
                     key,
                     label: `Nicht verfügbar: ${key}`,
-                    description: 'Dieser Ausgang ist nicht mehr verfügbar. Entfernen Sie die Verbindung oder stellen Sie die Konfiguration wieder her.',
+                    description: 'Dieser Prozesspfad ist nicht mehr verfügbar. Entfernen Sie die Verbindung oder stellen Sie die Konfiguration wieder her.',
                     unavailable: true,
                     deadlineKey: null,
                 })),

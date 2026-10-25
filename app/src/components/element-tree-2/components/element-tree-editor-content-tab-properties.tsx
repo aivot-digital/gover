@@ -249,7 +249,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         hint: val,
                                     });
                                 }}
-                                hint="Geben Sie hier zusätzliche Hinweise zur Eingabe für Antragstellende an (optional, wird unter dem Eingabefeld angezeigt)."
+                                hint="Geben Sie bei Bedarf Hinweise für ausfüllende Personen an. Sie werden unter dem Formularelement angezeigt."
                                 disabled={!editable}
                             />
                         </Grid>
@@ -282,7 +282,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                     technical: false,
                                 });
                             }}
-                            hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
+                            hint="Pflichtangaben müssen von den ausfüllenden Personen ausgefüllt werden."
                             disabled={!editable || Boolean(currentElement.disabled) || Boolean(currentElement.technical)}
                         />
                     </Grid>
@@ -451,19 +451,19 @@ function getTabDescription(type: ElementType) {
         case ElementType.IntroductionStep:
             return {
                 title: 'Eigenschaften für den Abschnitt „Allgemeine Informationen“',
-                description: 'Dieser Abschnitt dient der Einführung des Antragstellers in das Formular – z. B. mit einleitenden Informationen und einem Überblick über wichtige Eckdaten wie mögliche Gebühren.',
+                description: 'Dieser Abschnitt führt ausfüllende Personen in das Formular ein, zum Beispiel mit Informationen zu benötigten Dokumenten und möglichen Kosten.',
                 isElement: false,
             };
         case ElementType.SummaryStep:
             return {
                 title: 'Eigenschaften für den Abschnitt „Zusammenfassung“',
-                description: 'Hier wird dem Antragstellenden eine Übersicht der bisherigen Eingaben angezeigt.',
+                description: 'Hier erhalten ausfüllende Personen eine Übersicht ihrer bisherigen Angaben.',
                 isElement: false,
             };
         case ElementType.SubmitStep:
             return {
-                title: 'Eigenschaften für den Abschnitt „Absenden des Antrages“',
-                description: 'In diesem Schritt wird der Antrag final geprüft und abgesendet. Darüber hinaus können hier weitere Informationen angegeben werden, z. B. zur Bearbeitung des Antrages.',
+                title: 'Eigenschaften für den Abschnitt „Prüfen und absenden“',
+                description: 'In diesem Abschnitt prüfen und übermitteln ausfüllende Personen ihre Angaben. Hier können Sie zusätzliche Hinweise zur Übermittlung und zum weiteren Ablauf angeben.',
                 isElement: false,
             };
         case ElementType.Step:

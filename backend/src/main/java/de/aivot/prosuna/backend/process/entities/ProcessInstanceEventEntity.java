@@ -76,7 +76,7 @@ public class ProcessInstanceEventEntity {
     private Instant timestamp;
 
     @Nullable
-    @Size(min = 36, max = 36, message = "Die ID des auslösenden Benutzers muss genau 36 Zeichen lang sein.")
+    @Size(min = 36, max = 36, message = "Die Konto-ID der auslösenden Person muss genau 36 Zeichen lang sein.")
     private String triggeringUserId;
 
     @Nullable

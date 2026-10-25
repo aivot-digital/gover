@@ -30,7 +30,7 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class KeyBasedAssetController {
-    private static final String MODULE_NAME = "Dateien & Medien";
+    private static final String MODULE_NAME = "Dateien und Medien";
 
     private final PermissionService permissionService;
     private final VStorageIndexItemWithAssetRepository storageIndexItemWithAssetRepository;

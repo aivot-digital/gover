@@ -76,7 +76,7 @@ const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
     content: (
         <>
             <Typography>
-                Teams bündeln Mitarbeiter:innen für gemeinsame Aufgaben und Zuständigkeiten innerhalb
+                Teams bündeln Mitarbeiter:innen für die crossfunktionale Zusammenarbeit innerhalb
                 von Prosuna.
             </Typography>
             <Typography sx={{mt: 2}}>

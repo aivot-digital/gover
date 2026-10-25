@@ -84,10 +84,10 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.se
 public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormRequestActionNodeV1.NodeConfig> {
     private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
     private static final ProcessNodeDeadlineDefinition FORM_SUBMISSION_DEADLINE = new ProcessNodeDeadlineDefinition(
-            "formSubmission", "Einreichung des Formulars",
-            "Zeit zum Ausfüllen und Einreichen des Formulars ab Versand der Nachricht.",
-            new ProcessNodePort("form_submission_overdue", "Fristüberschreitung: Formulareinreichung",
-                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Formulareinreichung beendet wurde."));
+            "formSubmission", "Übermittlung der Angaben",
+            "Zeit zum Ausfüllen des Formulars und Übermitteln der Angaben ab Versand der Nachricht.",
+            new ProcessNodePort("form_submission_overdue", "Fristüberschreitung: Übermittlung der Angaben",
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Übermittlung der Angaben beendet wurde."));
 
     public static final String NODE_KEY = "form_request";
     private static final String RECIPIENT_MODE_EXISTING = "existing";
@@ -139,8 +139,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var summary = new ExecutionSummaryMarkdown(context);
         var recipient = summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID));
         return "Es wurde " + recipient + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
-                + " zur Einreichung von Daten aufgefordert und" + summary.delivery() + " informiert."
-                + " Die angeforderten Daten wurden" + summary.eventAt("started") + " durch " + recipient + " eingereicht.";
+                + " zur Übermittlung von Angaben aufgefordert und" + summary.delivery() + " informiert."
+                + " Die angeforderten Angaben wurden" + summary.eventAt("started") + " durch " + recipient + " übermittelt.";
     }
 
     @Nonnull
@@ -179,13 +179,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Nonnull
     @Override
     public String getName() {
-        return "Daten anfordern";
+        return "Angaben anfordern";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Fordert Daten von einer dritten Person mittels eines Formulars an.";
+        return "Fordert Angaben von einer beteiligten Person oder Organisation über ein Formular an.";
     }
 
     @Nonnull
@@ -194,7 +194,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         return """
                 Fordert zusätzliche Angaben von einer bestehenden oder neu eingeladenen Person an.
 
-                Die Person erhält einen Link zum konfigurierten Formular. Das Prozesselement wartet auf die Einreichung der Daten oder den Ablauf einer konfigurierten Bearbeitungsfrist.
+                Die Person erhält einen Link zum konfigurierten Formular. Das Prozesselement wartet auf die Übermittlung der Angaben oder den Ablauf einer konfigurierten Bearbeitungsfrist.
                 """;
     }
 
@@ -258,9 +258,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                             context.thisNode().getProcessVersion()
                     );
                     group.findChild(SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID, RichTextInputElement.class)
-                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Ein Link zum Einreichen der angeforderten Daten wird automatisch ergänzt."));
+                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Ein Link zum Übermitteln der angeforderten Angaben wird automatisch ergänzt."));
                     group.findChild(SemiAutomaticMessageConfig.ManualContent.CONTENT_FIELD_ID, RichTextInputElement.class)
-                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Ein Link zum Einreichen der angeforderten Daten wird automatisch ergänzt."));
+                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Ein Link zum Übermitteln der angeforderten Angaben wird automatisch ergänzt."));
                 });
 
         return layout;
@@ -279,8 +279,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         return List.of(
                 new ProcessNodePort(
                         PORT_SUBMITTED,
-                        "Daten eingereicht",
-                        "Der Prozess wird fortgesetzt, nachdem die Daten erfolgreich eingereicht wurden."
+                        "Angaben übermittelt",
+                        "Der Prozess wird fortgesetzt, nachdem die Angaben erfolgreich übermittelt wurden."
                 )
         );
     }
@@ -292,13 +292,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 new ProcessNodeOutput(
                         OUTPUT_RECIPIENT_IDENTITY_ID,
                         "Identität",
-                        "Die ID der bestehenden oder beim Einreichen neu angegebenen Prozessidentität.",
+                        "Die ID der bestehenden oder bei der Übermittlung neu angegebenen Identität.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYLOAD,
                         "Zugeordnete Formulardaten",
-                        "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden.",
+                        "Enthält alle Formulardaten, die über einen Datenschlüssel zugeordnet wurden.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
@@ -316,7 +316,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 new ProcessNodeOutput(
                         OUTPUT_STARTED,
                         "Eingangszeitstempel",
-                        "Der Zeitstempel des Dateneingangs an den Auslöser",
+                        "Der Zeitpunkt der Übermittlung der Angaben",
                         "string"
                 )
         );
@@ -405,7 +405,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 ? null
                 : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültige Ausführungsart für die Formularanforderung. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
+                "Ungültige Ausführungsart für die Angabenanforderung. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
                 StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
                 StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
                 StringUtils.quote(executionType)
@@ -458,7 +458,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         StringUtils.quote(context.getThisNode().resolveName(this))
                 ));
 
@@ -485,7 +485,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var contentField = new RichTextInputElement();
         contentField.setId(STAFF_TASK_CONTENT_FIELD_ID);
         contentField.setLabel("Nachricht der Aufforderung");
-        contentField.setHint("Der Text der Nachricht. Ein Link zum Einreichen der angeforderten Daten wird automatisch ergänzt.");
+        contentField.setHint("Der Text der Nachricht. Ein Link zum Übermitteln der angeforderten Angaben wird automatisch ergänzt.");
         contentField.setRequired(true);
 
         var root = new GroupLayoutElement();
@@ -630,7 +630,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 .subject(subject)
                 .body(content)
                 .htmlBody(content)
-                .callToActions(List.of(new CommunicationMessageCallToAction("Daten einreichen", customerLink)))
+                .callToActions(List.of(new CommunicationMessageCallToAction("Angaben übermitteln", customerLink)))
                 .signatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
                         configuration.messageConfig,
                         vDepartmentShadowedService
@@ -685,12 +685,12 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var canSubmit = context.getThisTask().getStatus() == ProcessTaskStatus.AwaitingCustomer;
         var headline = new HeadlineContentElement();
         headline.setId("form-request-headline-" + context.getThisTask().getId());
-        headline.setContent(canSubmit ? "Daten einreichen" : "Angeforderte Angaben");
+        headline.setContent(canSubmit ? "Angaben übermitteln" : "Angeforderte Angaben");
         var introduction = new RichTextContentElement();
         introduction.setId("form-request-introduction-" + context.getThisTask().getId());
         introduction.setContent(canSubmit
                 ? "Bitte ergänzen Sie die angeforderten Angaben und reichen Sie diese anschließend ein."
-                : "Hier sehen Sie die Angaben zu dieser Datenanforderung.");
+                : "Hier sehen Sie die Angaben zu dieser Aufgabe.");
         var layout = new GroupLayoutElement();
         layout.setId("form-request-view-" + context.getThisTask().getId());
         // Add orientation without changing the authored UI definition or requiring another configuration field.
@@ -700,7 +700,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         return ProcessNodeCustomerView.of(
                 context,
                 layout,
-                canSubmit ? List.of(new TaskViewEvent("Daten einreichen", CUSTOMER_TASK_SUBMIT_EVENT)) : List.of(),
+                canSubmit ? List.of(new TaskViewEvent("Angaben übermitteln", CUSTOMER_TASK_SUBMIT_EVENT)) : List.of(),
                 initialData,
                 existingIdentityId,
                 newIdentitySlot
@@ -712,8 +712,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     public ProcessNodeCustomerView getCompletedCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<NodeConfig> context) {
         // Completed views are available without another identity check, so only expose a receipt, not submitted data.
         var confirmation = new AlertContentElement()
-                .setTitle("Daten eingereicht")
-                .setText("Sie haben die angeforderten Daten erfolgreich eingereicht.")
+                .setTitle("Angaben übermittelt")
+                .setText("Sie haben die angeforderten Angaben erfolgreich übermittelt.")
                 .setAlertType(AlertType.Success);
         confirmation.setId("form-request-completed-" + context.getThisTask().getId());
         var layout = new GroupLayoutElement();
@@ -771,9 +771,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 null,
                 recipientId,
                 recipientTitle,
-                "Daten eingereicht",
+                "Angaben übermittelt",
                 Map.of(),
-                "Die angeforderten Daten wurden durch die Identität %s eingereicht.",
+                "Die angeforderten Angaben wurden durch die Identität %s übermittelt.",
                 StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientId, recipientTitle))
         );
 
@@ -887,7 +887,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private String requireRecipientIdentity(@Nullable String recipientIdentity) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedIdentity = StringUtils.toNullableTrimmedString(recipientIdentity);
         if (normalizedIdentity == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Formularanforderung muss eine Empfängeridentität konfiguriert sein.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Angabenanforderung muss eine Empfängeridentität konfiguriert sein.");
         }
         return normalizedIdentity;
     }
@@ -1026,13 +1026,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         if (subject == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_SUBJECT_FIELD_ID,
-                    new ComputedElementState().setError("Der Betreff der Formularanforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Der Betreff der Angabenanforderung darf nicht leer sein.")
             );
         }
         if (content == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_CONTENT_FIELD_ID,
-                    new ComputedElementState().setError("Die Nachricht der Formularanforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Die Nachricht der Angabenanforderung darf nicht leer sein.")
             );
         }
         if (derivedRuntimeData.hasAnyError()) {
@@ -1056,8 +1056,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
          */
         @InputElementPOJOBinding(id = RECIPIENT_MODE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
-                @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger:in"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Datenanforderung an eine existierende Identität oder per E-Mail an eine neue Identität gesendet wird."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Person oder Organisation"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Angabenanforderung an eine existierende Identität oder per E-Mail an eine neue Identität gesendet wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String recipientMode;
@@ -1082,7 +1082,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode},
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "E-Mail-Adresse"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Die E-Mail-Adresse der Empfänger:in, welche Ihre Identität nachweisen und anschließend die Aufgabe bearbeiten soll."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "E-Mail-Adresse der empfangenden Person oder Organisation. Über diese Adresse wird die Identität bestätigt und der Zugang zur Aufgabe bereitgestellt."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 })
         public String recipientEmailAddress;

@@ -346,12 +346,12 @@ export function AssetDetailsPage() {
                     icon: <InsertDriveFileOutlinedIcon/>,
                     title: storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten',
                     helpDialog: {
-                        title: 'Hilfe zu Dokumenten & Medieninhalten',
+                        title: 'Hilfe zu Dateien und Medien',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography>
-                                    Dateien und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
+                                    Dateien und Medien sind Inhalte, die in der Anwendung hochgeladen und
                                     verwaltet werden können.
                                     In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und
                                     bearbeiten.

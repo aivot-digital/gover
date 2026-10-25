@@ -38,7 +38,7 @@ export function ProcessAttachmentDisplayEditor(props: BaseEditorProps<ProcessAtt
                                 attachmentSetKey: attachmentSetKeys?.[0] ?? null,
                             });
                         }}
-                        hint="Alle Vorgangsanhänge aus Anlagensätzen mit diesem Schlüssel werden angezeigt."
+                        hint="Alle Vorgangsanlagen aus Anlagensätzen mit diesem Schlüssel werden angezeigt."
                         disabled={!editable}
                         maxItems={1}
                     />

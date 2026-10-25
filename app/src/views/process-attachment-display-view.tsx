@@ -47,7 +47,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
                 <ProcessAttachmentDisplayComponent
                     labelText={element.label}
                     hintText={element.hint}
-                    statusText="Konfigurieren Sie einen Anlagensatz-Schlüssel, um Vorgangsanhänge anzuzeigen."
+                    statusText="Konfigurieren Sie einen Anlagensatz-Schlüssel, um Vorgangsanlagen anzuzeigen."
                 />
             );
         }
@@ -63,7 +63,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
                         originalFileName: element.label ?? configuredAttachmentSetKey,
                     },
                 ]}
-                previewText="Dies ist eine Vorschau. Anhänge können im Modellierungsmodus nicht angesehen oder heruntergeladen werden."
+                previewText="Dies ist eine Vorschau. Anlagen können im Modellierungsmodus nicht angesehen oder heruntergeladen werden."
             />
         );
     }
@@ -74,7 +74,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
                 labelText={element.label}
                 hintText={element.hint}
                 loading
-                statusText="Anhänge werden geladen..."
+                statusText="Anlagen werden geladen..."
             />
         );
     }
@@ -84,7 +84,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
             <ProcessAttachmentDisplayComponent
                 labelText={element.label}
                 hintText={element.hint}
-                statusText="Es ist kein Anlagensatz-Schlüssel für die anzuzeigenden Anhänge konfiguriert."
+                statusText="Es ist kein Anlagensatz-Schlüssel für die anzuzeigenden Anlagen konfiguriert."
             />
         );
     }
@@ -104,7 +104,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
             <ProcessAttachmentDisplayComponent
                 labelText={element.label}
                 hintText={element.hint}
-                statusText="Der konfigurierte Anlagensatz enthält keine Anhänge."
+                statusText="Der konfigurierte Anlagensatz enthält keine Anlagen."
             />
         );
     }

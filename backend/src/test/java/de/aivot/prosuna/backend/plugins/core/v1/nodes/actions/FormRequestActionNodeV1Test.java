@@ -170,7 +170,7 @@ class FormRequestActionNodeV1Test {
                 RichTextInputElement.class
         ).orElseThrow();
         assertEquals(
-                "Der Text der Nachricht. Ein Link zum Einreichen der angeforderten Daten wird automatisch ergänzt.",
+                "Der Text der Nachricht. Ein Link zum Übermitteln der angeforderten Angaben wird automatisch ergänzt.",
                 automaticContent.getHint()
         );
     }
@@ -209,7 +209,7 @@ class FormRequestActionNodeV1Test {
         assertEquals(RECIPIENT_IDENTITY_ID, result.getCommunicationRequest().recipientIdentityId());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(
-                        "Daten einreichen",
+                        "Angaben übermitteln",
                         "https://example.test/process/instance-access/tasks/task-access"
                 )),
                 message.callToActions()
@@ -246,7 +246,7 @@ class FormRequestActionNodeV1Test {
         assertNull(result.getCommunicationRequest().recipientIdentityId());
         assertEquals("invitee@example.test", result.getCommunicationRequest().recipientEmailAddress());
         assertEquals(List.of(new CommunicationMessageCallToAction(
-                "Daten einreichen", "https://example.test/process/instance-access/tasks/task-access"
+                "Angaben übermitteln", "https://example.test/process/instance-access/tasks/task-access"
         )), result.getCommunicationRequest().message().callToActions());
         assertEquals(1, instance.getIdentities().size());
 
@@ -315,9 +315,9 @@ class FormRequestActionNodeV1Test {
         var headline = assertInstanceOf(HeadlineContentElement.class, view.layout().getChildren().getFirst());
         var introduction = assertInstanceOf(RichTextContentElement.class, view.layout().getChildren().get(1));
         if (status == ProcessTaskStatus.AwaitingCustomer) {
-            assertEquals("Daten einreichen", headline.getContent());
+            assertEquals("Angaben übermitteln", headline.getContent());
             assertTrue(introduction.getContent().contains("Bitte ergänzen Sie"));
-            assertEquals(List.of(new TaskViewEvent("Daten einreichen", "submit")), view.events());
+            assertEquals(List.of(new TaskViewEvent("Angaben übermitteln", "submit")), view.events());
         } else {
             assertEquals("Angeforderte Angaben", headline.getContent());
             assertFalse(introduction.getContent().contains("Bitte ergänzen Sie"));
@@ -335,8 +335,8 @@ class FormRequestActionNodeV1Test {
 
         assertEquals(1, view.layout().getChildren().size());
         var confirmation = assertInstanceOf(AlertContentElement.class, view.layout().getChildren().getFirst());
-        assertEquals("Daten eingereicht", confirmation.getTitle());
-        assertEquals("Sie haben die angeforderten Daten erfolgreich eingereicht.", confirmation.getText());
+        assertEquals("Angaben übermittelt", confirmation.getTitle());
+        assertEquals("Sie haben die angeforderten Angaben erfolgreich übermittelt.", confirmation.getText());
         assertTrue(view.data().isEmpty());
         assertTrue(view.trustedData().isEmpty());
         assertTrue(view.events().isEmpty());
@@ -645,13 +645,13 @@ class FormRequestActionNodeV1Test {
                         new ProcessNodeOutput(
                                 "recipientIdentityId",
                                 "Identität",
-                                "Die ID der bestehenden oder beim Einreichen neu angegebenen Prozessidentität.",
+                                "Die ID der bestehenden oder bei der Übermittlung neu angegebenen Identität.",
                                 "string"
                         ),
                         new ProcessNodeOutput(
                                 "payload",
                                 "Zugeordnete Formulardaten",
-                                "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden.",
+                                "Enthält alle Formulardaten, die über einen Datenschlüssel zugeordnet wurden.",
                                 "Record<string, unknown>"
                         ),
                         new ProcessNodeOutput(
@@ -670,7 +670,7 @@ class FormRequestActionNodeV1Test {
                         new ProcessNodeOutput(
                                 "started",
                                 "Eingangszeitstempel",
-                                "Der Zeitstempel des Dateneingangs an den Auslöser",
+                                "Der Zeitpunkt der Übermittlung der Angaben",
                                 "string"
                         )
                 ),
@@ -873,8 +873,8 @@ class FormRequestActionNodeV1Test {
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
         assertEquals("submitted", completed.getViaPort());
         var event = captureHistoryEvent();
-        assertEquals("Daten eingereicht", event.getTitle());
-        assertEquals("Die angeforderten Daten wurden durch die Identität „" + expectedDisplayName + "“ eingereicht.", event.getMessage());
+        assertEquals("Angaben übermittelt", event.getTitle());
+        assertEquals("Die angeforderten Angaben wurden durch die Identität „" + expectedDisplayName + "“ übermittelt.", event.getMessage());
         assertNull(event.getTriggeringUserId());
         assertNull(event.getConcernedUserId());
         assertEquals(RECIPIENT_IDENTITY_ID, event.getConcernedIdentityId());

@@ -39,7 +39,7 @@ public class UserDeputyController extends GenericCrudController<UserDeputyEntity
                                 UserService userService,
                                 UserDeputyService service,
                                 PermissionService permissionService) {
-        super(auditService.createScopedAuditService(UserDeputyController.class, "Benutzer"),
+        super(auditService.createScopedAuditService(UserDeputyController.class, "Mitarbeiter:innen"),
                 userService,
                 service);
         this.permissionService = permissionService;

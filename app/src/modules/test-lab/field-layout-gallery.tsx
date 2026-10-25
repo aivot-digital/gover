@@ -112,8 +112,8 @@ const fieldGridSx = {
 const attachmentSetOptions: ProcessNodeDefinitionMetadataForwardedAttachmentSet[] = [
     {
         dataKey: 'summary',
-        label: 'Formularzusammenfassung',
-        subLabel: 'PDF des eingereichten Formulars',
+        label: 'Kopie der Angaben',
+        subLabel: 'PDF der übermittelten Angaben',
         isMultifile: false,
     },
     {
@@ -182,7 +182,7 @@ const domainAndUserOptions: DomainAndUserSelectOption[] = [
 
 const inputModeSummaries: Record<Exclude<InputMode, InputMode.Literal>, {primary: string; secondary: string}> = {
     Variable: {
-        primary: 'Nachname der antragstellenden Person',
+        primary: 'Nachname der ausfüllenden Person',
         secondary: 'Vorgangsdaten - $.applicant.lastName',
     },
     NoCode: {

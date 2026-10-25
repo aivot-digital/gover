@@ -155,7 +155,7 @@ const validateOptionalContactPhone = (legacyValue?: string | null) => optionalSh
 const validateThemeId = () => yup.number()
     .optional()
     .nullable()
-    .test('valid-theme', 'Bitte wählen Sie ein Standard-Theme aus oder übernehmen Sie den geerbten Wert.', (value) => {
+    .test('valid-theme', 'Bitte wählen Sie ein Standard-Erscheinungsbild aus oder übernehmen Sie den geerbten Wert.', (value) => {
         return value == null || value > 0;
     });
 
@@ -753,7 +753,7 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Kontaktinformationen für antragstellende Personen
+                Kontaktinformationen für ausfüllende Personen
             </Typography>
             <Typography sx={{mb: 2}}>
                 Die hier hinterlegten Kontaktinformationen werden Nutzer:innen zum Beispiel im Hilfe-Dialog zur Verfügung gestellt.

@@ -384,7 +384,7 @@ public class ProcessNodeExecutionResultHandler {
         if (!(executionResult instanceof ProcessNodeExecutionResultTaskCompleted)
                 && !(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    "Neue Prozessidentitäten dürfen nur beim Abschluss einer Aufgabe oder eines Vorgangs übernommen werden."
+                    "Neue Identitäten dürfen nur beim Abschluss einer Aufgabe oder eines Vorgangs übernommen werden."
             );
         }
 
@@ -394,12 +394,12 @@ public class ProcessNodeExecutionResultHandler {
             var identity = entry.getValue();
             if (identity == null || !Objects.equals(entry.getKey(), identity.identityId())) {
                 throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Eine neue Prozessidentität besitzt keine konsistente Identitäts-ID."
+                        "Eine neue Identität besitzt keine konsistente Identitäts-ID."
                 );
             }
             if (processIdentities != null && processIdentities.containsKey(entry.getKey())) {
                 throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Die neue Prozessidentität %s existiert bereits im Vorgang.",
+                        "Die neue Identität %s existiert bereits im Vorgang.",
                         StringUtils.quote(entry.getKey())
                 );
             }
@@ -1050,7 +1050,7 @@ public class ProcessNodeExecutionResultHandler {
             var communicationRequest = context.result.getCommunicationRequest();
             if (communicationRequest == null || communicationRequest.recipientEmailAddress() == null) {
                 throw new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Eine Kundenaufgabe ohne Prozessidentität benötigt eine Einladung per E-Mail."
+                        "Eine Aufgabe für Beteiligte ohne Identität benötigt eine Einladung per E-Mail."
                 );
             }
 
@@ -1186,7 +1186,7 @@ public class ProcessNodeExecutionResultHandler {
                     "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde durch die Mitarbeiter:in %s abgeschlossen.
-                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Als ausgehende Verbindung wird der Prozesspfad %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
@@ -1202,7 +1202,7 @@ public class ProcessNodeExecutionResultHandler {
                     "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde abgeschlossen.
-                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Als ausgehende Verbindung wird der Prozesspfad %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
@@ -1241,7 +1241,7 @@ public class ProcessNodeExecutionResultHandler {
         if (port.deadlineKey() != null
                 && (task.getDeadline() == null || !port.deadlineKey().equals(task.getDeadlineKey()))) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    "Der Ausgang „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
+                    "Der Prozesspfad „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
         }
         var edge = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(currentNode.getId(), viaPort)
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
@@ -1410,7 +1410,7 @@ public class ProcessNodeExecutionResultHandler {
                 }
             } catch (IllegalArgumentException | IllegalStateException e) {
                 throw new IllegalStateException(
-                        "Das Ausgabe-Mapping '%s' fuer den Knotenausgang '%s' ist ungueltig: %s"
+                        "Die Datenzuordnung „%s“ für den Datenausgang „%s“ ist ungültig: %s"
                                 .formatted(targetFieldPath, nodeProviderOutput.key(), e.getMessage()),
                         e
                 );

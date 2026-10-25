@@ -66,7 +66,7 @@ public class PaymentPayloadCreationService {
         }
 
         if (payload.getTotal().compareTo(BigDecimal.ZERO) < 0) {
-            throw new PaymentException("Die Zahlungsanfrage darf keine negativen Gesamtkosten enthalten.");
+            throw new PaymentException("Die Zahlungsanforderung darf keine negativen Gesamtkosten enthalten.");
         }
 
         return Optional.of(payload);
@@ -80,7 +80,7 @@ public class PaymentPayloadCreationService {
     ) throws PaymentException {
         var configItems = paymentConfigElementValue.items();
         if (configItems == null || configItems.isEmpty()) {
-            throw new PaymentException("Die Zahlungsanfrage muss mindestens eine Zahlungsposition enthalten.");
+            throw new PaymentException("Die Zahlungsanforderung muss mindestens eine Zahlungsposition enthalten.");
         }
 
         var items = new LinkedList<PaymentItem>();
@@ -92,7 +92,7 @@ public class PaymentPayloadCreationService {
         }
 
         if (items.isEmpty()) {
-            throw new PaymentException("Die Zahlungsanfrage enthält keine zahlbaren Positionen.");
+            throw new PaymentException("Die Zahlungsanforderung enthält keine zahlbaren Positionen.");
         }
 
         return items;
@@ -291,14 +291,14 @@ public class PaymentPayloadCreationService {
 
         var mapping = paymentConfigElementValue.requestorMapping();
         if (mapping == null) {
-            throw new PaymentException("Für die Zahlungsanfrage muss eine Antragsteller-Zuweisung konfiguriert sein.");
+            throw new PaymentException("Für die Zahlungsanforderung muss eine Zuordnung der zahlenden Person oder Organisation konfiguriert sein.");
         }
 
         return switch (mapping.requestorSourceType()) {
             case FixPerson -> createPersonRequestor(mapping, processExecutionData);
             case FixOrg -> createOrganizationRequestor(mapping, processExecutionData);
             case ProcessDataKey -> createDynamicRequestor(mapping, processExecutionData);
-            case null -> throw new PaymentException("Für die Zahlungsanfrage muss eine Quelle für die Antragsteller-Zuweisung konfiguriert sein.");
+            case null -> throw new PaymentException("Für die Zahlungsanforderung muss eine Quelle für die Zuordnung der zahlenden Person oder Organisation konfiguriert sein.");
         };
     }
 
@@ -345,7 +345,7 @@ public class PaymentPayloadCreationService {
     ) throws PaymentException {
         var isOrganization = readBoolean(processExecutionData, mapping.isOrganizationDestinationKey());
         if (isOrganization == null) {
-            throw new PaymentException("Der Wert für %s muss angeben, ob die Antragsteller-Zuweisung eine Organisation ist.", mapping.isOrganizationDestinationKey());
+            throw new PaymentException("Der Wert für %s muss angeben, ob der Zahlung eine Organisation zugeordnet ist.", mapping.isOrganizationDestinationKey());
         }
 
         return isOrganization

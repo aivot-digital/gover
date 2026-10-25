@@ -145,7 +145,7 @@ public class CommunicationProviderManagementService {
         var existing = bindingRepository.findByIdForUpdate(id).orElseThrow(ResponseException::notFound);
         if (!Objects.equals(existing.getIdentityProviderKey(), update.getIdentityProviderKey())
                 || !Objects.equals(existing.getCommunicationProviderId(), update.getCommunicationProviderId())) {
-            throw ResponseException.badRequest("Nutzerkonto- und Kommunikationsanbieter einer Anbindung können nach der Erstellung nicht geändert werden.");
+            throw ResponseException.badRequest("Identitäts- und Kommunikationsanbieter einer Anbindung können nach der Erstellung nicht geändert werden.");
         }
         existing.setName(update.getName());
         existing.setDescription(update.getDescription());

@@ -53,13 +53,13 @@ public class DefaultStorageAssetsSystemConfigDefinition implements SystemConfigD
     @Nonnull
     @Override
     public String getLabel() {
-        return "Standard Speicheranbieter für Assets";
+        return "Standard-Speicheranbieter für Dateien und Medien";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Legt den Standard Speicheranbieter fest, der für das Speichern von Assets verwendet wird.";
+        return "Legt den Standard-Speicheranbieter fest, der für das Speichern von Dateien und Medien verwendet wird.";
     }
 
     @Nonnull

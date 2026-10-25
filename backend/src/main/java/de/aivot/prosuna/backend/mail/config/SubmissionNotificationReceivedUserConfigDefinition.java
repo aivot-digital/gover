@@ -36,19 +36,19 @@ public class SubmissionNotificationReceivedUserConfigDefinition implements UserC
     @Nullable
     @Override
     public String getSubCategory() {
-        return "Anträge";
+        return "Vorgänge";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Neuer Antrag eingegangen";
+        return "Neuer Vorgang gestartet";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, sobald ein neuer Antrag eingeht, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (bewirtschaftend, sonst zuständig, sonst entwickelnd).";
+        return "Erhalten Sie eine Benachrichtigung, sobald ein neuer Vorgang gestartet wird, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (betreuend, sonst zuständig, sonst entwickelnd).";
     }
 
     @Override

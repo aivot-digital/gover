@@ -342,7 +342,7 @@ class TemplateLoaderServiceTest {
         );
 
         assertTrue(html.contains("Zuständige Stelle"));
-        assertTrue(html.contains("Bewirtschaftende Stelle"));
+        assertTrue(html.contains("Betreuende Stelle"));
         assertTrue(html.contains("Responsible Street 1"));
         assertTrue(html.contains("Managing Street 2"));
         assertFalse(html.contains("Responsible Department Name"));
@@ -465,7 +465,7 @@ class TemplateLoaderServiceTest {
 
         var html = renderBlankForm(rootElement);
 
-        assertTrue(html.contains("Hinweise zur Einreichung des ausgefüllten Antrages"));
+        assertTrue(html.contains("Hinweise zur Übermittlung des ausgefüllten Formulars"));
         assertTrue(html.contains("<strong>postalisch</strong>"));
         assertFalse(html.contains("Unterschrift"));
     }

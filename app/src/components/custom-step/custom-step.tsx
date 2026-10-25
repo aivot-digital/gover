@@ -290,7 +290,7 @@ export function CustomStep(props: CustomStepProps & StepProps) {
                                 isDeriving && 'Berechne…'
                             }
                             {
-                                isLastStep && !isDeriving && 'Verbindlich einreichen'
+                                isLastStep && !isDeriving && 'Angaben übermitteln'
                             }
                         </Button>
                     }
