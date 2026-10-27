@@ -136,17 +136,19 @@ public class StorageHealthIndicator implements HealthIndicator {
 
         // Create the builder for the health check result based on the errors and hints collected during the checks.
         // If errors exist, the component is down. If hints exist the component is afflicted. If no errors and no hints exist, the component is simply up.
+        // A missing default attachment storage is only a hint: without seeded local storage providers, administrators
+        // select it after the first start, which a down health check would prevent by keeping the application from starting.
         Health.Builder builder;
-        if (hasErrors || defaultAttachmentStorage == null || !defaultAttachmentsProviderIsPresent) {
+        if (hasErrors || (defaultAttachmentStorage != null && !defaultAttachmentsProviderIsPresent)) {
             builder = Health.down();
-        } else if (hasHints) {
+        } else if (hasHints || defaultAttachmentStorage == null) {
             builder = Health.unknown();
         } else {
             builder = Health.up();
         }
 
         if (defaultAttachmentStorage == null) {
-            builder.withDetail("error", "Der Standard-Speicheranbieter für Anhänge von Vorgängen ist nicht konfiguriert. Bitte konfigurieren Sie einen Speicheranbieter als Standard-Speicheranbieter für Anhänge von Vorgängen.");
+            builder.withDetail("hint", "Der Standard-Speicheranbieter für Anhänge von Vorgängen ist nicht konfiguriert. Bis Sie einen Speicheranbieter als Standard-Speicheranbieter für Anhänge von Vorgängen auswählen, können Vorgänge keine Anhänge speichern.");
         } else if (!defaultAttachmentsProviderIsPresent) {
             builder.withDetail("error", String.format(
                     "Der Standard-Speicheranbieter für Anhänge von Vorgängen (ID: %s) ist nicht vorhanden. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.",
