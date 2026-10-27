@@ -6,7 +6,8 @@ import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {Permission} from '../../../../data/permissions/permission';
-import {getLiteralElementValue, literalAuthoredValue} from '../../../../models/element-data';
+import {createDerivedRuntimeElementData, getLiteralElementValue, literalAuthoredValue} from '../../../../models/element-data';
+import type {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {setPermissions, setUser, userReducer} from '../../../../slices/user-slice';
 import {generateElementWithDefaultValues} from '../../../../utils/generate-element-with-default-values';
 import type {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
@@ -36,6 +37,7 @@ vi.mock('../../../elements/components/element-derivation-context', () => ({
             aria-label="Betreff"
             value={getLiteralElementValue<string>(props.authoredElementValues, 'subject') ?? ''}
             onChange={(event) => props.onAuthoredElementValuesChange({
+                ...props.authoredElementValues,
                 subject: literalAuthoredValue(event.target.value),
             })}
         />
@@ -45,7 +47,7 @@ vi.mock('../../../elements/components/element-derivation-context', () => ({
 const firstSave = '2026-10-07T06:25:00Z';
 const secondSave = '2026-10-07T06:27:00Z';
 
-async function renderPage(initialStatus = ProcessTaskStatus.AwaitingStaff) {
+async function renderPage(initialStatus = ProcessTaskStatus.AwaitingStaff, initialView: Partial<TaskView> = {}) {
     const permissions: PermissionSet = {
         departmentPermissions: [],
         teamPermissions: [],
@@ -89,6 +91,7 @@ async function renderPage(initialStatus = ProcessTaskStatus.AwaitingStaff) {
         layout: generateElementWithDefaultValues(ElementType.GroupLayout),
         data: {},
         events: [],
+        ...initialView,
     };
     const getView = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getStaffTaskView').mockResolvedValue(view);
     const getDetails = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'retrieveDetails')
@@ -188,5 +191,35 @@ describe('Task timestamps after autosave', () => {
         expect(putView).toHaveBeenLastCalledWith(10, 20, {subject: literalAuthoredValue('Second draft')}, []);
         await showGeneralInformation();
         expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 um 08:27 Uhr');
+    });
+
+    it('references the stored attachments after a save stored the uploaded files', async () => {
+        const layout = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
+        layout.children = [{...generateElementWithDefaultValues(ElementType.FileUpload), id: 'upload'}];
+        const uploadedFile = {name: 'nachweis.pdf', size: 3, uri: 'blob:nachweis'};
+        const storedFile = {name: 'nachweis.pdf', size: 3, uri: 'process-instance-attachment:stored'};
+        const {putView} = await renderPage(ProcessTaskStatus.InProgress, {
+            layout,
+            data: {upload: literalAuthoredValue([uploadedFile])},
+        });
+        vi.spyOn(ProcessInstanceTaskApiService.prototype, 'deriveStaffTaskView')
+            .mockResolvedValue(createDerivedRuntimeElementData());
+        putView.mockImplementation(async (_, __, data) => ({
+            layout,
+            data: {...data, upload: literalAuthoredValue([storedFile])},
+            events: [],
+        }));
+
+        await changeAndSave('First draft');
+        await changeAndSave('Second draft');
+
+        expect(putView).toHaveBeenNthCalledWith(1, 10, 20, {
+            upload: literalAuthoredValue([uploadedFile]),
+            subject: literalAuthoredValue('First draft'),
+        }, [uploadedFile]);
+        expect(putView).toHaveBeenNthCalledWith(2, 10, 20, {
+            upload: literalAuthoredValue([storedFile]),
+            subject: literalAuthoredValue('Second draft'),
+        }, []);
     });
 });

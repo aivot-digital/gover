@@ -47,7 +47,11 @@ import {ProcessTaskViewAttachmentProvider} from './process-task-view-attachment-
 import {BaseApiService} from '../../../../services/base-api-service';
 import {TaskViewEventButtons} from '../../components/task-view-event-buttons';
 import {isTaskDeadlineExceededError} from '../../utils/task-deadline-error';
-import {collectTaskViewFileUploads} from '../../utils/task-view-file-uploads';
+import {
+    collectStoredTaskViewFileUploadItems,
+    collectTaskViewFileUploads,
+    replaceStoredTaskViewFileUploadItems,
+} from '../../utils/task-view-file-uploads';
 import type {FileUploadElementItem} from '../../../../models/elements/form/input/file-upload-element';
 
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
@@ -182,17 +186,33 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 )),
                 TASK_INPUT_DATA_MIN_SAVE_DURATION_MS,
             )
-                .then(() => {
+                .then((updatedTaskView) => {
                     if (currentTaskSession !== taskSessionRef.current) {
                         return false;
                     }
 
+                    // Each update stores its sent files in a new attachment set, so later updates must reference the
+                    // stored attachments. Inputs changed during the save keep their other values.
+                    let persistedPayload = payload;
+                    if (taskView != null) {
+                        const storedFileItems = collectStoredTaskViewFileUploadItems(taskView.layout, payload, updatedTaskView.data);
+                        if (storedFileItems.size > 0) {
+                            persistedPayload = replaceStoredTaskViewFileUploadItems(taskView.layout, payload, storedFileItems);
+                            latestTaskInputDataRef.current = replaceStoredTaskViewFileUploadItems(
+                                taskView.layout,
+                                latestTaskInputDataRef.current,
+                                storedFileItems,
+                            );
+                            setTaskInputData(latestTaskInputDataRef.current);
+                        }
+                    }
+
                     pendingOfflineRetryRef.current = false;
-                    lastPersistedTaskInputDataRef.current = payload;
-                    setLastPersistedTaskInputData(payload);
+                    lastPersistedTaskInputDataRef.current = persistedPayload;
+                    setLastPersistedTaskInputData(persistedPayload);
                     setLastSavedAt(new Date());
 
-                    const hasNewerUnsavedChanges = !deepEquals(latestTaskInputDataRef.current, payload);
+                    const hasNewerUnsavedChanges = !deepEquals(latestTaskInputDataRef.current, persistedPayload);
                     setTaskInputDataSaveState(
                         hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved,
                     );
@@ -231,7 +251,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             return await savePromise;
         },
-        [collectFileUploads, dispatch, handleDeadlineExceeded, item, refresh],
+        [collectFileUploads, dispatch, handleDeadlineExceeded, item, refresh, taskView],
     );
 
     const flushCurrentTaskInputData = useCallback(async (): Promise<boolean> => {
