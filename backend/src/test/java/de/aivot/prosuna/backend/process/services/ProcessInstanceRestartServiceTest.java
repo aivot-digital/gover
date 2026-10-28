@@ -39,6 +39,7 @@ class ProcessInstanceRestartServiceTest {
     private final ProcessNodeExecutionLoggerFactory loggers = mock(ProcessNodeExecutionLoggerFactory.class);
     private final ProcessNodeExecutionLogger logger = mock(ProcessNodeExecutionLogger.class);
     private final EntityManager entityManager = mock(EntityManager.class);
+    private final ProcessInstanceAttachmentService attachments = mock(ProcessInstanceAttachmentService.class);
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(7L).setProcessId(1).setInitialNodeId(11)
             .setInitialPayload(Map.of("input", "test")).setStatus(ProcessInstanceStatus.Failed);
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(34L).setProcessInstanceId(7L)
@@ -54,7 +55,7 @@ class ProcessInstanceRestartServiceTest {
         when(auditService.createScopedAuditService(ProcessInstanceRestartService.class, "Vorgänge")).thenReturn(audit);
         when(audit.create()).thenAnswer(invocation -> AuditLogPayload.create(audit));
         service = new ProcessInstanceRestartService(instances, tasks, requests, workRequests, execution, loggers,
-                entityManager, auditService);
+                entityManager, auditService, attachments);
         when(instances.findById(7L)).thenReturn(Optional.of(instance));
         when(instances.save(instance)).thenReturn(instance);
         when(tasks.findById(34L)).thenReturn(Optional.of(task));
@@ -75,6 +76,7 @@ class ProcessInstanceRestartServiceTest {
         verify(tasks).save(task);
         verify(workRequests).enqueueRestart(7L, 34L);
         verify(workRequests, never()).enqueueStart(any());
+        verify(attachments).deleteRemovedUploadsOfTask(task, "actor");
         verify(loggers).create(7L, 34L, "actor", null);
         verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Vorgang neu gestartet",
                 "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.");
@@ -193,6 +195,7 @@ class ProcessInstanceRestartServiceTest {
         verify(instances, never()).save(any());
         verify(workRequests, never()).redispatchAfterCommit(any());
         verify(workRequests).enqueueRestart(7L, 34L);
+        verify(attachments).deleteRemovedUploadsOfTask(task, "actor");
         verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Aufgabe neu gestartet",
                 "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet.");
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
@@ -210,7 +213,7 @@ class ProcessInstanceRestartServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
-        verifyNoInteractions(workRequests, loggers, audit);
+        verifyNoInteractions(workRequests, loggers, audit, attachments);
     }
 
     @Test

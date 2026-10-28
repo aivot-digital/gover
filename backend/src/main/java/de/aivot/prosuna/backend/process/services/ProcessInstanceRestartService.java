@@ -38,6 +38,7 @@ public class ProcessInstanceRestartService {
     private final ProcessNodeExecutionLoggerFactory loggers;
     private final EntityManager entityManager;
     private final ScopedAuditService audit;
+    private final ProcessInstanceAttachmentService attachments;
 
     public ProcessInstanceRestartService(@Nonnull ProcessInstanceRepository instances,
                                          @Nonnull ProcessInstanceTaskRepository tasks,
@@ -46,7 +47,8 @@ public class ProcessInstanceRestartService {
                                          @Nonnull ProcessTaskExecutionService execution,
                                          @Nonnull ProcessNodeExecutionLoggerFactory loggers,
                                          @Nonnull EntityManager entityManager,
-                                         @Nonnull AuditService auditService) {
+                                         @Nonnull AuditService auditService,
+                                         @Nonnull ProcessInstanceAttachmentService attachments) {
         this.instances = instances;
         this.tasks = tasks;
         this.requests = requests;
@@ -55,6 +57,7 @@ public class ProcessInstanceRestartService {
         this.loggers = loggers;
         this.entityManager = entityManager;
         this.audit = auditService.createScopedAuditService(ProcessInstanceRestartService.class, "Vorgänge");
+        this.attachments = attachments;
     }
 
     /**
@@ -88,6 +91,7 @@ public class ProcessInstanceRestartService {
                 message = "Der fehlgeschlagene Vorgang wurde manuell neu gestartet, bevor eine erste Aufgabe angelegt wurde.";
             } else if (latestTask.getStatus() == ProcessTaskStatus.Failed) {
                 tasks.save(latestTask.setStatus(ProcessTaskStatus.Restarted).setUpdated(now));
+                attachments.deleteRemovedUploadsOfTask(latestTask, userId);
                 workRequests.enqueueRestart(instanceId, latestTask.getId());
                 restartedTaskId = latestTask.getId();
                 message = "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.";
@@ -149,6 +153,7 @@ public class ProcessInstanceRestartService {
                 newState.put("processInstanceStatus", ProcessInstanceStatus.Running);
             }
             var restarted = tasks.save(task.setStatus(ProcessTaskStatus.Restarted).setUpdated(now));
+            attachments.deleteRemovedUploadsOfTask(task, actor.getId());
             workRequests.enqueueRestart(instanceId, taskId);
             oldState.put("status", ProcessTaskStatus.Failed);
             newState.put("status", ProcessTaskStatus.Restarted);

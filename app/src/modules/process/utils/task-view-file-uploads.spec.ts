@@ -5,6 +5,7 @@ import type {AnyElement} from '../../../models/elements/any-element';
 import {
     collectStoredTaskViewFileUploadItems,
     collectTaskViewFileUploads,
+    haveTaskViewFileUploadItemsChanged,
     replaceStoredTaskViewFileUploadItems,
 } from './task-view-file-uploads';
 
@@ -127,5 +128,22 @@ describe('stored task view file upload items', () => {
                 {id: 'row-3', values: {rowUpload: literalAuthoredValue([firstRowFile])}},
             ]),
         });
+    });
+
+    it('should detect stored, removed and reordered file items but ignore other values', () => {
+        const values = {
+            upload: literalAuthoredValue([keptFile, storedFirstRowFile]),
+            subject: literalAuthoredValue('Betreff'),
+        };
+
+        expect(haveTaskViewFileUploadItemsChanged(layout, values, {...values, subject: literalAuthoredValue('Neu')})).toBe(false);
+        expect(haveTaskViewFileUploadItemsChanged(layout, values, {...values, upload: literalAuthoredValue([keptFile])})).toBe(true);
+        expect(haveTaskViewFileUploadItemsChanged(layout, values, {
+            ...values,
+            upload: literalAuthoredValue([storedFirstRowFile, keptFile]),
+        })).toBe(true);
+        expect(haveTaskViewFileUploadItemsChanged(layout, {
+            upload: literalAuthoredValue([keptFile, firstRowFile]),
+        }, values)).toBe(true);
     });
 });

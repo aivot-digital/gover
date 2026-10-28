@@ -12,6 +12,9 @@ import {setPermissions, setUser, userReducer} from '../../../../slices/user-slic
 import {generateElementWithDefaultValues} from '../../../../utils/generate-element-with-default-values';
 import type {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {PermissionApiService} from '../../../permissions/permission-api-service';
+import type {ProcessInstanceEntity} from '../../entities/process-instance-entity';
+import {ProcessInstanceAttachmentApiService} from '../../services/process-instance-attachment-api-service';
+import {ProcessInstanceAttachmentSetApiService} from '../../services/process-instance-attachment-set-api-service';
 import type {PermissionSet} from '../../../permissions/models/permission-set';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
 import {ProcessInstanceTaskApiService, type TaskView} from '../../services/process-instance-task-api-service';
@@ -47,7 +50,11 @@ vi.mock('../../../elements/components/element-derivation-context', () => ({
 const firstSave = '2026-10-07T06:25:00Z';
 const secondSave = '2026-10-07T06:27:00Z';
 
-async function renderPage(initialStatus = ProcessTaskStatus.AwaitingStaff, initialView: Partial<TaskView> = {}) {
+async function renderPage(
+    initialStatus = ProcessTaskStatus.AwaitingStaff,
+    initialView: Partial<TaskView> = {},
+    instance: ProcessInstanceEntity | null = null,
+) {
     const permissions: PermissionSet = {
         departmentPermissions: [],
         teamPermissions: [],
@@ -82,7 +89,7 @@ async function renderPage(initialStatus = ProcessTaskStatus.AwaitingStaff, initi
             status: initialStatus,
             updated: '2026-10-07T06:20:00Z',
         },
-        instance: null,
+        instance,
         process: null,
         node: {name: 'Prüfung', description: null},
         provider: null,
@@ -221,5 +228,34 @@ describe('Task timestamps after autosave', () => {
             upload: literalAuthoredValue([storedFile]),
             subject: literalAuthoredValue('Second draft'),
         }, []);
+    });
+
+    it('reloads the attachments of the instance only after saves that change the files', async () => {
+        const layout = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
+        layout.children = [{...generateElementWithDefaultValues(ElementType.FileUpload), id: 'upload'}];
+        const uploadedFile = {name: 'nachweis.pdf', size: 3, uri: 'blob:nachweis'};
+        const storedFile = {name: 'nachweis.pdf', size: 3, uri: 'process-instance-attachment:stored'};
+        const emptyPage = {content: [], totalElements: 0, totalPages: 0, number: 0, size: 0};
+        const listAttachments = vi.spyOn(ProcessInstanceAttachmentApiService.prototype, 'listAll')
+            .mockResolvedValue(emptyPage as never);
+        vi.spyOn(ProcessInstanceAttachmentSetApiService.prototype, 'listAll').mockResolvedValue(emptyPage as never);
+        const {putView} = await renderPage(ProcessTaskStatus.InProgress, {
+            layout,
+            data: {upload: literalAuthoredValue([uploadedFile])},
+        }, {id: 10} as ProcessInstanceEntity);
+        vi.spyOn(ProcessInstanceTaskApiService.prototype, 'deriveStaffTaskView')
+            .mockResolvedValue(createDerivedRuntimeElementData());
+        putView.mockImplementation(async (_, __, data) => ({
+            layout,
+            data: {...data, upload: literalAuthoredValue([storedFile])},
+            events: [],
+        }));
+        expect(listAttachments).toHaveBeenCalledTimes(1);
+
+        await changeAndSave('First draft');
+        expect(listAttachments).toHaveBeenCalledTimes(2);
+
+        await changeAndSave('Second draft');
+        expect(listAttachments).toHaveBeenCalledTimes(2);
     });
 });

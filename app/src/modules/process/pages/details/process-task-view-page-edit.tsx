@@ -50,6 +50,7 @@ import {isTaskDeadlineExceededError} from '../../utils/task-deadline-error';
 import {
     collectStoredTaskViewFileUploadItems,
     collectTaskViewFileUploads,
+    haveTaskViewFileUploadItemsChanged,
     replaceStoredTaskViewFileUploadItems,
 } from '../../utils/task-view-file-uploads';
 import type {FileUploadElementItem} from '../../../../models/elements/form/input/file-upload-element';
@@ -88,6 +89,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const [taskAttachments, setTaskAttachments] = useState<ProcessInstanceAttachmentEntity[]>([]);
     const [taskAttachmentSets, setTaskAttachmentSets] = useState<ProcessInstanceAttachmentSetEntity[]>([]);
     const [isLoadingTaskAttachments, setIsLoadingTaskAttachments] = useState(false);
+    const [taskAttachmentsReloadCount, setTaskAttachmentsReloadCount] = useState(0);
+    const loadedTaskAttachmentsInstanceIdRef = useRef<number | null>(null);
 
     const hasUnsavedChanges = useMemo(() => {
         return !deepEquals(taskInputData, lastPersistedTaskInputData);
@@ -205,6 +208,15 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                             );
                             setTaskInputData(latestTaskInputDataRef.current);
                         }
+                    }
+
+                    // Stored and removed files change the attachments of the instance, e.g. for attachment displays.
+                    if (taskView != null && haveTaskViewFileUploadItemsChanged(
+                        taskView.layout,
+                        lastPersistedTaskInputDataRef.current,
+                        persistedPayload,
+                    )) {
+                        setTaskAttachmentsReloadCount((count) => count + 1);
                     }
 
                     pendingOfflineRetryRef.current = false;
@@ -399,6 +411,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         let cancelled = false;
 
         if (item?.instance == null) {
+            loadedTaskAttachmentsInstanceIdRef.current = null;
             setTaskAttachments([]);
             setTaskAttachmentSets([]);
             setIsLoadingTaskAttachments(false);
@@ -407,9 +420,14 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             };
         }
 
-        setTaskAttachments([]);
-        setTaskAttachmentSets([]);
-        setIsLoadingTaskAttachments(true);
+        const instanceId = item.instance.id;
+        // A reload after an update keeps showing the loaded attachments until the new ones arrive.
+        const isReload = loadedTaskAttachmentsInstanceIdRef.current === instanceId;
+        if (!isReload) {
+            setTaskAttachments([]);
+            setTaskAttachmentSets([]);
+            setIsLoadingTaskAttachments(true);
+        }
 
         Promise.all([
             new ProcessInstanceAttachmentApiService().listAll({
@@ -424,6 +442,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     return;
                 }
 
+                loadedTaskAttachmentsInstanceIdRef.current = instanceId;
                 setTaskAttachments(attachmentPage.content);
                 setTaskAttachmentSets(attachmentSetPage.content);
             })
@@ -433,8 +452,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
 
                 dispatch(showApiErrorSnackbar(err, 'Die Vorgangsanhänge konnten nicht geladen werden.'));
-                setTaskAttachments([]);
-                setTaskAttachmentSets([]);
+                if (!isReload) {
+                    setTaskAttachments([]);
+                    setTaskAttachmentSets([]);
+                }
             })
             .finally(() => {
                 if (cancelled) {
@@ -447,7 +468,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, item?.instance?.id]);
+    }, [dispatch, item?.instance?.id, taskAttachmentsReloadCount]);
 
     const introItems = useMemo<StatusTablePropsItem[]>(() => {
         if (item == null) {
@@ -599,6 +620,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     updatedTask.status === ProcessTaskStatus.AwaitingStaff) {
                     refresh();
                     setTaskView(updatedTaskView);
+                    setTaskAttachmentsReloadCount((count) => count + 1);
                     setTaskInputData(updatedTaskView.data);
                     setLastPersistedTaskInputData(updatedTaskView.data);
                     latestTaskInputDataRef.current = updatedTaskView.data;

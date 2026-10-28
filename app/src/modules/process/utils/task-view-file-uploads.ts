@@ -84,6 +84,23 @@ export function replaceStoredTaskViewFileUploadItems(
     ));
 }
 
+/**
+ * Whether the file items of the upload fields differ, e.g. because an update stored files or removed stored ones.
+ */
+export function haveTaskViewFileUploadItemsChanged(
+    layout: AnyElement,
+    previousValues: AuthoredElementValues,
+    values: AuthoredElementValues,
+): boolean {
+    const collectUris = (fileValues: AuthoredElementValues) => [...collectFileUploadItemsByPath(layout, fileValues).values()]
+        .flat()
+        .map((item) => (isFileUploadElementItem(item) ? item.uri : null));
+    const previousUris = collectUris(previousValues);
+    const uris = collectUris(values);
+
+    return previousUris.length !== uris.length || previousUris.some((uri, index) => uri !== uris[index]);
+}
+
 function collectFileUploadItemsByPath(layout: AnyElement, values: AuthoredElementValues): Map<string, unknown[]> {
     const itemsByPath = new Map<string, unknown[]>();
 

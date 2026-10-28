@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -62,6 +63,13 @@ public class ProcessInstanceAttachmentEntity {
 
     @Nullable
     private String uploadedByUserId;
+
+    /**
+     * When the upload field of a task view stopped referencing this attachment. Flagged attachments are hidden from
+     * lists, process data and steps, and they are deleted when their task ends.
+     */
+    @Nullable
+    private Instant removedAt;
 
     /**
      * Ignore this field in database mapping and JSON serialization. This is only used when creating the file and saving it to the database.
@@ -260,6 +268,16 @@ public class ProcessInstanceAttachmentEntity {
 
     public ProcessInstanceAttachmentEntity setUploadedByUserId(@Nullable String uploadedByUserId) {
         this.uploadedByUserId = uploadedByUserId;
+        return this;
+    }
+
+    @Nullable
+    public Instant getRemovedAt() {
+        return removedAt;
+    }
+
+    public ProcessInstanceAttachmentEntity setRemovedAt(@Nullable Instant removedAt) {
+        this.removedAt = removedAt;
         return this;
     }
 
