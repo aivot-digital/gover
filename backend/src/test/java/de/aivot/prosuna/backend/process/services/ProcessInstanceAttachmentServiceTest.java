@@ -322,6 +322,7 @@ class ProcessInstanceAttachmentServiceTest {
         assertEquals("staff-user", event.getTriggeringUserId());
         assertFalse(event.getTechnical());
         assertTrue(event.getAudit());
+        assertTrue(event.getHistoryRelevant());
     }
 
     @Test

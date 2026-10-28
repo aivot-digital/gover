@@ -371,7 +371,7 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                         ProcessNodeExecutionLogLevel.Info,
                         userId == null,
                         true,
-                        false,
+                        true,
                         "Anhang gelöscht",
                         String.format(
                                 "Der Anhang %s wurde gelöscht, weil er vor dem Ende der Aufgabe aus dem Anlagen-Feld entfernt wurde.",
