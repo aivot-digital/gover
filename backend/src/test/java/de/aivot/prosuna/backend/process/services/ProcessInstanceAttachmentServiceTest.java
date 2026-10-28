@@ -240,6 +240,17 @@ class ProcessInstanceAttachmentServiceTest {
     }
 
     @Test
+    void findAllUploadsOfTask_LeavesOutFlaggedUploads() {
+        var kept = uploadedAttachment(1, 1);
+        var flagged = uploadedAttachment(2, 2).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(9L, List.of(3)))
+                .thenReturn(List.of(kept, flagged));
+
+        assertEquals(List.of(kept), service.findAllUploadsOfTask(9L, List.of(3)));
+        assertEquals(List.of(), service.findAllUploadsOfTask(9L, List.of()));
+    }
+
+    @Test
     void updateRemovedUploadsOfTask_SkipsTasksWithoutUploadSets() {
         service.updateRemovedUploadsOfTask(9L, List.of(), Set.of(), Map.of());
 

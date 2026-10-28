@@ -447,25 +447,46 @@ public class FileUploadMultipartInputService {
                                       @Nonnull Long processInstanceTaskId,
                                       @Nonnull Set<UUID> referencedAttachmentKeys,
                                       @Nonnull Map<UUID, Integer> attachmentPositions) throws ResponseException {
+        processInstanceAttachmentService.updateRemovedUploadsOfTask(
+                processInstanceTaskId,
+                findUploadAttachmentSetIds(layout, processInstanceId, processInstanceTaskId),
+                referencedAttachmentKeys,
+                attachmentPositions
+        );
+    }
+
+    /**
+     * Returns the keys of the stored attachments that the upload fields of the task view may remove. These are the
+     * task's own uploads, which are flagged once its inputs no longer reference them. Documents of other tasks stay
+     * protected.
+     */
+    @Nonnull
+    public List<UUID> findRemovableAttachmentKeys(@Nonnull BaseElement layout,
+                                                  @Nonnull Long processInstanceId,
+                                                  @Nonnull Long processInstanceTaskId) throws ResponseException {
+        return processInstanceAttachmentService
+                .findAllUploadsOfTask(processInstanceTaskId, findUploadAttachmentSetIds(layout, processInstanceId, processInstanceTaskId))
+                .stream()
+                .map(ProcessInstanceAttachmentEntity::getKey)
+                .toList();
+    }
+
+    @Nonnull
+    private List<Integer> findUploadAttachmentSetIds(@Nonnull BaseElement layout,
+                                                     @Nonnull Long processInstanceId,
+                                                     @Nonnull Long processInstanceTaskId) throws ResponseException {
         var dataKeys = new HashSet<String>();
         collectAttachmentSetDataKeys(layout, dataKeys);
         if (dataKeys.isEmpty()) {
-            return;
+            return List.of();
         }
 
-        var attachmentSetIds = processInstanceAttachmentSetService
+        return processInstanceAttachmentSetService
                 .findAllByProcessInstanceIdAndTaskId(processInstanceId, processInstanceTaskId)
                 .stream()
                 .filter(attachmentSet -> dataKeys.contains(attachmentSet.getDataKey()))
                 .map(ProcessInstanceAttachmentSetEntity::getId)
                 .toList();
-
-        processInstanceAttachmentService.updateRemovedUploadsOfTask(
-                processInstanceTaskId,
-                attachmentSetIds,
-                referencedAttachmentKeys,
-                attachmentPositions
-        );
     }
 
     private void collectAttachmentSetDataKeys(@Nonnull BaseElement element,

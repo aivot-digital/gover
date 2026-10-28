@@ -34,18 +34,29 @@ vi.mock('../../../../hooks/use-api', () => {
 vi.mock('../../../../utils/with-delay', () => ({
     withDelay: <T,>(promise: Promise<T>) => promise,
 }));
-vi.mock('../../../elements/components/element-derivation-context', () => ({
-    ElementDerivationContext: (props: ComponentProps<typeof ElementDerivationContext>) => (
-        <input
-            aria-label="Betreff"
-            value={getLiteralElementValue<string>(props.authoredElementValues, 'subject') ?? ''}
-            onChange={(event) => props.onAuthoredElementValuesChange({
-                ...props.authoredElementValues,
-                subject: literalAuthoredValue(event.target.value),
-            })}
-        />
-    ),
+const mocks = vi.hoisted(() => ({
+    removableAttachmentKeys: undefined as ReadonlySet<string> | undefined,
 }));
+vi.mock('../../../elements/components/element-derivation-context', async () => {
+    const {useRemovableFileUploadAttachments} = await import('../../../../components/file-upload-field/removable-file-upload-attachments-context');
+
+    return {
+        ElementDerivationContext: function ElementDerivationContextMock(props: ComponentProps<typeof ElementDerivationContext>) {
+            mocks.removableAttachmentKeys = useRemovableFileUploadAttachments();
+
+            return (
+                <input
+                    aria-label="Betreff"
+                    value={getLiteralElementValue<string>(props.authoredElementValues, 'subject') ?? ''}
+                    onChange={(event) => props.onAuthoredElementValuesChange({
+                        ...props.authoredElementValues,
+                        subject: literalAuthoredValue(event.target.value),
+                    })}
+                />
+            );
+        },
+    };
+});
 
 const firstSave = '2026-10-07T06:25:00Z';
 const secondSave = '2026-10-07T06:27:00Z';
@@ -98,6 +109,7 @@ async function renderPage(
         layout: generateElementWithDefaultValues(ElementType.GroupLayout),
         data: {},
         events: [],
+        removableAttachmentKeys: [],
         ...initialView,
     };
     const getView = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getStaffTaskView').mockResolvedValue(view);
@@ -215,6 +227,7 @@ describe('Task timestamps after autosave', () => {
             layout,
             data: {...data, upload: literalAuthoredValue([storedFile])},
             events: [],
+            removableAttachmentKeys: ['stored'],
         }));
 
         await changeAndSave('First draft');
@@ -249,6 +262,7 @@ describe('Task timestamps after autosave', () => {
             layout,
             data: {...data, upload: literalAuthoredValue([storedFile])},
             events: [],
+            removableAttachmentKeys: ['stored'],
         }));
         expect(listAttachments).toHaveBeenCalledTimes(1);
 
@@ -257,5 +271,90 @@ describe('Task timestamps after autosave', () => {
 
         await changeAndSave('Second draft');
         expect(listAttachments).toHaveBeenCalledTimes(2);
+    });
+
+    describe('while a save stores files', () => {
+        const layout = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
+        layout.children = [{...generateElementWithDefaultValues(ElementType.FileUpload), id: 'upload'}];
+        const uploadedFile = {name: 'nachweis.pdf', size: 3, uri: 'blob:nachweis'};
+        const storedFile = {name: 'nachweis.pdf', size: 3, uri: 'process-instance-attachment:stored'};
+
+        async function renderPageWithPendingFileSave() {
+            const rendered = await renderPage(ProcessTaskStatus.InProgress, {
+                layout,
+                data: {upload: literalAuthoredValue([uploadedFile])},
+                events: [{label: 'Abschließen', event: 'complete'}],
+                removableAttachmentKeys: ['earlier'],
+            });
+            vi.spyOn(ProcessInstanceTaskApiService.prototype, 'deriveStaffTaskView')
+                .mockResolvedValue(createDerivedRuntimeElementData());
+            const pendingFileSave = Promise.withResolvers<TaskView>();
+            rendered.putView
+                .mockImplementationOnce(() => pendingFileSave.promise)
+                .mockImplementation(async (_, __, data) => ({layout, data, events: [], removableAttachmentKeys: ['stored']}));
+
+            fireEvent.change(screen.getByRole('textbox', {name: 'Betreff'}), {target: {value: 'First draft'}});
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(2000);
+            });
+            expect(rendered.putView).toHaveBeenCalledOnce();
+
+            const finishFileSave = async () => {
+                await act(async () => {
+                    pendingFileSave.resolve({
+                        layout,
+                        data: {upload: literalAuthoredValue([storedFile]), subject: literalAuthoredValue('First draft')},
+                        events: [],
+                        removableAttachmentKeys: ['stored'],
+                    });
+                    await vi.advanceTimersByTimeAsync(0);
+                });
+            };
+
+            return {...rendered, finishFileSave};
+        }
+
+        it('lets a queued save reference the stored files instead of uploading them again', async () => {
+            const {putView, finishFileSave} = await renderPageWithPendingFileSave();
+            fireEvent.change(screen.getByRole('textbox', {name: 'Betreff'}), {target: {value: 'Second draft'}});
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(2000);
+            });
+
+            await finishFileSave();
+
+            expect(putView).toHaveBeenCalledTimes(2);
+            expect(putView).toHaveBeenLastCalledWith(10, 20, {
+                upload: literalAuthoredValue([storedFile]),
+                subject: literalAuthoredValue('Second draft'),
+            }, []);
+            expect(screen.getByText('Eingaben wurden zwischengespeichert')).toBeInTheDocument();
+        });
+
+        it('lets the upload fields remove the stored uploads that the task view and its saves name', async () => {
+            const {finishFileSave} = await renderPageWithPendingFileSave();
+            expect(mocks.removableAttachmentKeys).toEqual(new Set(['earlier']));
+
+            await finishFileSave();
+
+            expect(mocks.removableAttachmentKeys).toEqual(new Set(['stored']));
+        });
+
+        it('lets a queued event reference the stored files instead of uploading them again', async () => {
+            const {putView, finishFileSave} = await renderPageWithPendingFileSave();
+            vi.spyOn(ProcessInstanceTaskApiService.prototype, 'retrieve')
+                .mockResolvedValue({status: ProcessTaskStatus.InProgress} as never);
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', {name: 'Abschließen'}));
+            });
+
+            await finishFileSave();
+
+            expect(putView).toHaveBeenCalledTimes(2);
+            expect(putView).toHaveBeenLastCalledWith(10, 20, {
+                upload: literalAuthoredValue([storedFile]),
+                subject: literalAuthoredValue('First draft'),
+            }, [], 'complete');
+        });
     });
 });

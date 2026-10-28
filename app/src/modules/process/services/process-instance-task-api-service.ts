@@ -23,6 +23,8 @@ export interface TaskView {
     layout: GroupLayout;
     data: AuthoredElementValues;
     events: TaskViewEvent[];
+    // The stored uploads of the task, which its upload fields may remove.
+    removableAttachmentKeys: string[];
 }
 
 export type TaskViewEventVariant = 'contained' | 'outlined' | 'text';

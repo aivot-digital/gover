@@ -44,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK;
@@ -139,7 +140,8 @@ public class StaffProcessInstanceTaskViewController {
         return new TaskViewResponse(
                 layout,
                 staffView.data(),
-                staffView.events()
+                staffView.events(),
+                findRemovableAttachmentKeys(layout, taskViewData)
         );
     }
 
@@ -313,7 +315,22 @@ public class StaffProcessInstanceTaskViewController {
         return new TaskViewResponse(
                 updatedView.layout(),
                 updatedView.data(),
-                updatedView.events()
+                updatedView.events(),
+                findRemovableAttachmentKeys(updatedView.layout(), taskViewData)
+        );
+    }
+
+    @Nonnull
+    private List<UUID> findRemovableAttachmentKeys(@Nonnull LayoutElement<?> layout,
+                                                   @Nonnull TaskViewData<?> taskViewData) throws ResponseException {
+        if (!(layout instanceof BaseElement rootLayout)) {
+            return List.of();
+        }
+
+        return fileUploadMultipartInputService.findRemovableAttachmentKeys(
+                rootLayout,
+                taskViewData.instance().getId(),
+                taskViewData.task().getId()
         );
     }
 
@@ -476,7 +493,10 @@ public class StaffProcessInstanceTaskViewController {
             @Nonnull
             AuthoredElementValues data,
             @Nonnull
-            List<TaskViewEvent> events
+            List<TaskViewEvent> events,
+            // The task's own stored uploads, which its upload fields may remove. Other attachments stay protected.
+            @Nonnull
+            List<UUID> removableAttachmentKeys
     ) {
 
     }

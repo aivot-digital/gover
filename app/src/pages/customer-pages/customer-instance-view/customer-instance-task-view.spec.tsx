@@ -19,6 +19,7 @@ import {CustomerTaskViewApiService, type TaskViewResponse} from './customer-task
 const mocks = vi.hoisted(() => ({
     dispatch: vi.fn(),
     elementDerivationProps: undefined as any,
+    removableAttachmentKeys: undefined as ReadonlySet<string> | undefined,
     invalidateInstanceTasks: vi.fn(),
     navigate: vi.fn(),
     refreshInstanceStatus: vi.fn(),
@@ -47,9 +48,12 @@ vi.mock('../../../utils/with-delay', () => ({
     withDelay: (promise: Promise<unknown>) => promise,
 }));
 
-vi.mock('../../../modules/elements/components/element-derivation-context', () => ({
-    ElementDerivationContext: function ElementDerivationContextMock(props: any) {
+vi.mock('../../../modules/elements/components/element-derivation-context', async () => {
+    const {useRemovableFileUploadAttachments} = await import('../../../components/file-upload-field/removable-file-upload-attachments-context');
+
+    return {ElementDerivationContext: function ElementDerivationContextMock(props: any) {
         mocks.elementDerivationProps = props;
+        mocks.removableAttachmentKeys = useRemovableFileUploadAttachments();
 
         return (
             <div>
@@ -81,8 +85,8 @@ vi.mock('../../../modules/elements/components/element-derivation-context', () =>
                 </output>
             </div>
         );
-    },
-}));
+    }};
+});
 
 describe('CustomerInstanceTaskView', () => {
     beforeEach(() => {
@@ -90,6 +94,7 @@ describe('CustomerInstanceTaskView', () => {
         window.history.replaceState({}, '', '/process/instance-key/tasks/task-key');
         mocks.dispatch.mockReset();
         mocks.elementDerivationProps = undefined;
+        mocks.removableAttachmentKeys = undefined;
         mocks.invalidateInstanceTasks.mockReset();
         mocks.navigate.mockReset();
         mocks.refreshInstanceStatus.mockReset().mockResolvedValue(createInstanceStatus());
@@ -462,6 +467,17 @@ describe('CustomerInstanceTaskView', () => {
         });
     });
 
+    it('lets the upload fields remove the stored uploads of the task after an event keeps it open', async () => {
+        const user = userEvent.setup();
+        vi.mocked(ProcessInstanceTaskApiService.prototype.putCustomerTaskView)
+            .mockResolvedValue(createTaskView({removableAttachmentKeys: ['own']}));
+
+        render(<CustomerInstanceTaskView/>);
+        await user.click(await screen.findByRole('button', {name: 'Daten einreichen'}));
+
+        await waitFor(() => expect(mocks.removableAttachmentKeys).toEqual(new Set(['own'])));
+    });
+
     it('uses the same event metadata and handler for inline events', async () => {
         const user = userEvent.setup();
 
@@ -654,6 +670,7 @@ function createTaskView(overrides?: Partial<ReadyCustomerTaskView>): ReadyCustom
         layout: {} as GroupLayout,
         data: {field: literalAuthoredValue('initial')},
         events: [createEvent('submit', 'Daten einreichen')],
+        removableAttachmentKeys: [],
         newIdentitySlot: null,
         existingIdentitySlot: null,
         ...overrides,

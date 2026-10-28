@@ -1043,6 +1043,25 @@ class FileUploadMultipartInputServiceTest {
         )), attachmentService.removedUploadUpdates());
     }
 
+    @Test
+    void findRemovableAttachmentKeys_NamesTheUploadsOfTheTaskInTheSetsOfItsUploadFields() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(attachmentService, attachmentSetService, new TestAVService());
+        var layout = createLayout(createUpload("documents", "document"));
+        normalizeSingleUpload(service, layout, List.of(), "own.pdf", 9L);
+        normalizeSingleUpload(service, layout, List.of(), "other-task.pdf", 3L);
+        var otherFieldSet = attachmentSetService.create(new ProcessInstanceAttachmentSetEntity()
+                .setName("Bescheid").setDataKey("decision").setProcessInstanceId(42L).setProcessInstanceTaskId(9L));
+        attachmentService.create(new ProcessInstanceAttachmentEntity()
+                .setFileName("decision.pdf").setAttachmentSetId(otherFieldSet.getId()).setProcessInstanceTaskId(9L));
+
+        assertEquals(
+                List.of(attachmentService.createdAttachments().getFirst().getKey()),
+                service.findRemovableAttachmentKeys(layout, 42L, 9L)
+        );
+    }
+
     private static void normalizeSingleUpload(FileUploadMultipartInputService service,
                                               GroupLayoutElement layout,
                                               List<Map<String, Object>> storedItems,
@@ -1179,6 +1198,16 @@ class FileUploadMultipartInputServiceTest {
 
         private List<RemovedUploadUpdate> removedUploadUpdates() {
             return removedUploadUpdates;
+        }
+
+        @Override
+        public List<ProcessInstanceAttachmentEntity> findAllUploadsOfTask(Long processInstanceTaskId,
+                                                                          Collection<Integer> attachmentSetIds) {
+            return createdAttachments
+                    .stream()
+                    .filter(attachment -> processInstanceTaskId.equals(attachment.getProcessInstanceTaskId())
+                            && attachmentSetIds.contains(attachment.getAttachmentSetId()))
+                    .toList();
         }
     }
 

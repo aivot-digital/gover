@@ -231,6 +231,23 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
     }
 
     /**
+     * Returns the attachments that a task uploaded into the given attachment sets and that are not flagged as removed.
+     */
+    @Nonnull
+    public List<ProcessInstanceAttachmentEntity> findAllUploadsOfTask(@Nonnull Long processInstanceTaskId,
+                                                                      @Nonnull Collection<Integer> attachmentSetIds) {
+        if (attachmentSetIds.isEmpty()) {
+            return List.of();
+        }
+
+        return processInstanceAttachmentRepository
+                .findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(processInstanceTaskId, attachmentSetIds)
+                .stream()
+                .filter(attachment -> attachment.getRemovedAt() == null)
+                .toList();
+    }
+
+    /**
      * Flags the attachments that a task uploaded into the given attachment sets once its upload fields no longer
      * reference them, and clears the flag when they reference them again. Referenced attachments take the position of
      * their item, so the order of a set follows the upload fields. The flagged attachments are deleted when the task

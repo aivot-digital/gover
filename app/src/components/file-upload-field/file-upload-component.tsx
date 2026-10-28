@@ -132,10 +132,12 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                 name: file.name,
                 size: humanizeFileSize(file.size),
                 contentType: file.type,
-                actionLabel: `${file.name} entfernen`,
-                actionIcon: <Delete fontSize="small" />,
-                actionDisabled: isInteractionDisabled,
-                onAction: () => handleRemove(file),
+                actions: [{
+                    label: `${file.name} entfernen`,
+                    icon: <Delete fontSize="small" />,
+                    disabled: isInteractionDisabled,
+                    onAction: () => handleRemove(file),
+                }],
             }))}
             showInput={!fileMaximumReached}
             inputAreaProps={{

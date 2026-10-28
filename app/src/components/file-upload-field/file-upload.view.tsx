@@ -8,7 +8,8 @@ import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {BaseApiService} from '../../services/base-api-service';
-import {FileUploadFieldLayout} from './file-upload-field-layout';
+import {FileUploadFieldLayout, type FileUploadListItemAction} from './file-upload-field-layout';
+import {useRemovableFileUploadAttachments} from './removable-file-upload-attachments-context';
 
 const PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX = 'process-instance-attachment:';
 
@@ -36,6 +37,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
     }, [isDeriving, element]);
 
     const dispatch = useAppDispatch();
+    const removableAttachmentKeys = useRemovableFileUploadAttachments();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isDraggedOver, setIsDraggedOver] = useState(false);
@@ -51,9 +53,18 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         }
     };
 
+    const isRemovable = (file: FileUploadElementItem): boolean => {
+        if (!isProcessInstanceAttachment(file)) {
+            return true;
+        }
+
+        const attachmentKey = resolveProcessInstanceAttachmentKey(file);
+        return attachmentKey != null && removableAttachmentKeys.has(attachmentKey);
+    };
+
     const handleRemove = (file: FileUploadElementItem) => {
-        // Persisted process attachments are backend-owned; removing them here would only corrupt the form value.
-        if (isProcessInstanceAttachment(file)) {
+        // Other persisted process attachments are backend-owned; removing them here would only corrupt the form value.
+        if (!isRemovable(file)) {
             return;
         }
 
@@ -168,9 +179,22 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
             maxFiles={element.maxFiles}
             items={(value ?? []).map(file => {
                 const isPersistedAttachment = isProcessInstanceAttachment(file);
-                const actionLabel = isPersistedAttachment
-                    ? `${file.name} herunterladen`
-                    : `${file.name} entfernen`;
+                const actions: FileUploadListItemAction[] = [];
+                if (isPersistedAttachment) {
+                    actions.push({
+                        label: `${file.name} herunterladen`,
+                        icon: <Download fontSize="small" />,
+                        onAction: () => void handleDownload(file),
+                    });
+                }
+                if (isRemovable(file)) {
+                    actions.push({
+                        label: `${file.name} entfernen`,
+                        icon: <Delete fontSize="small" />,
+                        disabled: isDisabled || isBusy,
+                        onAction: () => handleRemove(file),
+                    });
+                }
 
                 return {
                     key: file.uri,
@@ -179,14 +203,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                     detail: isPersistedAttachment && file.originalFileName != null
                         ? `Hochgeladen als ${file.originalFileName}`
                         : undefined,
-                    actionLabel,
-                    actionIcon: isPersistedAttachment
-                        ? <Download fontSize="small" />
-                        : <Delete fontSize="small" />,
-                    actionDisabled: !isPersistedAttachment && (isDisabled || isBusy),
-                    onAction: () => isPersistedAttachment
-                        ? void handleDownload(file)
-                        : handleRemove(file),
+                    actions,
                 };
             })}
             showInput={!fileMaximumReached}
