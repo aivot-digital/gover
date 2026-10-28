@@ -194,8 +194,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         return false;
                     }
 
-                    // Each update stores its sent files in a new attachment set, so later updates must reference the
-                    // stored attachments. Inputs changed during the save keep their other values.
+                    // Each update stores the files it sends, so later updates must reference the stored attachments
+                    // instead of sending the files again. Inputs changed during the save keep their other values.
                     let persistedPayload = payload;
                     if (taskView != null) {
                         const storedFileItems = collectStoredTaskViewFileUploadItems(taskView.layout, payload, updatedTaskView.data);
