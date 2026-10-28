@@ -359,6 +359,7 @@ export function ProcessNodeEditor(): ReactNode {
         }
 
         confirm({
+            confirmButtonColor: 'error',
             title: 'Prozesselement löschen',
             children: (
                 <>

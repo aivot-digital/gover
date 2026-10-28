@@ -193,7 +193,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                 }}
                                             >
                                                 <Button
-                                                    color="inherit"
+                                                    color="error"
                                                     variant="text"
                                                     size="small"
                                                     startIcon={<Delete sx={{fontSize: 16}}/>}
@@ -205,15 +205,10 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                         minHeight: 24,
                                                         px: 0.75,
                                                         py: 0.25,
-                                                        color: 'text.secondary',
                                                         fontSize: '0.75rem',
                                                         lineHeight: 1.2,
                                                         '& .MuiButton-startIcon': {
                                                             mr: 0.5,
-                                                        },
-                                                        '&:hover': {
-                                                            color: 'error.main',
-                                                            backgroundColor: 'action.hover',
                                                         },
                                                     }}
                                                 >
@@ -301,6 +296,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
             </FormFieldGroup>
 
             <ConfirmDialog
+                confirmButtonColor="error"
                 title="Möchten Sie diesen Datensatz wirklich löschen?"
                 onConfirm={confirmDelete}
                 onCancel={() => setConfirmDelete(undefined)}

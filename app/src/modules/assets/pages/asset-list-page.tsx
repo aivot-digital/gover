@@ -384,6 +384,7 @@ export function AssetListPage() {
 
         return [
             {
+                color: 'error' as const,
                 icon: <Delete/>,
                 tooltip: 'Ordner löschen',
                 disabled: !canDeleteAsset || storageProviderReadOnly,
@@ -395,6 +396,7 @@ export function AssetListPage() {
                     }
 
                     confirm({
+                        confirmButtonColor: 'error',
                         title: `Ordner ${item.filename} löschen`,
                         children: (
                             <Typography>

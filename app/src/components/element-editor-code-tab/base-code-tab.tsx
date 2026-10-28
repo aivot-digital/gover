@@ -145,9 +145,9 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                     }}
                 >
                     <ListItemIcon>
-                        <Delete />
+                        <Delete color="error" />
                     </ListItemIcon>
-                    <ListItemText>
+                    <ListItemText sx={{color: 'error.main'}}>
                         Funktion löschen
                     </ListItemText>
                 </MenuItem>
@@ -217,6 +217,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                 </DialogContent>
             </Dialog>
             <ConfirmDialog
+                confirmButtonColor="error"
                 title="Funktion löschen"
                 onConfirm={confirmDelete}
                 onCancel={() => {

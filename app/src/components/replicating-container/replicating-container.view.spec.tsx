@@ -101,7 +101,7 @@ describe('ReplicatingContainerView', () => {
         expect(screen.getByRole('button', {name: 'Datensatz löschen'})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Datensatz hinzufügen'})).toBeInTheDocument();
         expect(screen.getByText('Adresse 1').closest('.MuiChip-root')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Datensatz löschen'})).toHaveClass('MuiButton-colorInherit');
+        expect(screen.getByRole('button', {name: 'Datensatz löschen'})).toHaveClass('MuiButton-colorError');
         const listSurface = collection.querySelector('[data-replicating-container-list]');
         expect(listSurface).toContainElement(screen.getByRole('group', {name: 'Adresse 1'}));
         expect(listSurface).toContainElement(screen.getByRole('button', {name: 'Datensatz hinzufügen'}));

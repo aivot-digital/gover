@@ -1,5 +1,5 @@
 import {type ReactNode} from 'react';
-import {type SxProps, type TextFieldProps, type Theme} from '@mui/material';
+import {type IconButtonProps, type SxProps, type TextFieldProps, type Theme} from '@mui/material';
 import {type FormFieldLayoutProps} from '../form-field';
 
 export interface TextFieldComponentProps extends FormFieldLayoutProps {
@@ -45,6 +45,7 @@ export interface TextFieldComponentProps extends FormFieldLayoutProps {
 
 export type EndAction = {
     icon: ReactNode;
+    color?: IconButtonProps['color'];
     tooltip?: string;
     ariaLabel?: string;
     onClick: () => void;

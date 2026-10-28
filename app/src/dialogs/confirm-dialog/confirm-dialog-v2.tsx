@@ -73,6 +73,7 @@ export function ConfirmDialogV2<T>(props: ConfirmDialogV2Props<T>) {
                 <Button
                     onClick={handleConfirm}
                     variant="contained"
+                    color={props.options?.confirmButtonColor ?? 'primary'}
                 >
                     Bestätigen
                 </Button>
