@@ -33,6 +33,7 @@ class ProcessTaskDeadlineServiceTest {
     private final ProcessInstanceRepository instances = mock(ProcessInstanceRepository.class);
     private final ProcessInstanceTaskRepository tasks = mock(ProcessInstanceTaskRepository.class);
     private final ProcessWorkRequestService workRequests = mock(ProcessWorkRequestService.class);
+    private final ProcessInstanceAttachmentService attachments = mock(ProcessInstanceAttachmentService.class);
     private final ProcessInstanceHistoryEventRepository events = mock(ProcessInstanceHistoryEventRepository.class);
     private final ProcessNodeExecutionLoggerFactory loggers = mock(ProcessNodeExecutionLoggerFactory.class);
     private final Clock clock = mock(Clock.class);
@@ -47,7 +48,7 @@ class ProcessTaskDeadlineServiceTest {
     private final ProcessNodeDeadlineDefinition definition = new ProcessNodeDeadlineDefinition("customer", "Antwort der Kund:in",
             "Zeit für die Antwort", new ProcessNodePort("customer_overdue", "Antwort überfällig", "Fortsetzung"));
     private final ProcessTaskDeadlineService service = new ProcessTaskDeadlineService(nodes, nodeService, edges, instances,
-            tasks, loggers, new ProcessTaskDeadlineResultHandler(tasks, workRequests), time);
+            tasks, loggers, new ProcessTaskDeadlineResultHandler(tasks, workRequests, attachments), time);
 
     @BeforeEach
     void setup() {
@@ -89,6 +90,7 @@ class ProcessTaskDeadlineServiceTest {
         assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
 
         verify(workRequests).enqueueTransition(1L, 2L, "customer_overdue", 4);
+        verify(attachments).deleteRemovedUploadsOfTask(task, null);
         var event = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
         verify(events).save(event.capture());
         assertTrue(event.getValue().getHistoryRelevant());

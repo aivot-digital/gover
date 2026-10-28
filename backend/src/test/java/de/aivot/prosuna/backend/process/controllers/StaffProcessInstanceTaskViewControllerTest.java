@@ -399,6 +399,21 @@ class StaffProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void retrieveAndUpdateResponsesNameTheStoredUploadsOfTheTaskThatItsUploadFieldsMayRemove() throws ResponseException {
+        var fixture = createFixture(new InlineStaffTaskProcessNodeDefinition(null), new TestElementDerivationService());
+        var upload = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        fixture.fileUploadMultipartInputService().removableAttachmentKeys = List.of(upload);
+
+        var retrieved = fixture.controller().retrieve(fixture.jwt(), fixture.instance().getId(), fixture.task().getId());
+        var updated = fixture.controller().update(fixture.jwt(), fixture.instance().getId(), fixture.task().getId(),
+                "{}", null, null, null, null);
+
+        assertEquals(List.of(upload), retrieved.removableAttachmentKeys());
+        assertEquals(List.of(upload), updated.removableAttachmentKeys());
+        assertEquals(fixture.task().getId(), fixture.fileUploadMultipartInputService().removableAttachmentsTaskId);
+    }
+
+    @Test
     void retrieveAndEventResponsesResolveProcessDataReferencesToTheInputsWritingThem() throws ResponseException {
         var fixture = createFixture(new InlineStaffTaskProcessNodeDefinition(null), new TestElementDerivationService());
 
@@ -702,7 +717,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -812,6 +827,8 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class PassthroughTaskViewMultipartInputService extends FileUploadMultipartInputService {
         private ComputedElementStates receivedElementStates;
+        private List<UUID> removableAttachmentKeys = List.of();
+        private Long removableAttachmentsTaskId;
 
         private PassthroughTaskViewMultipartInputService() {
             super(null, null, null);
@@ -828,6 +845,14 @@ class StaffProcessInstanceTaskViewControllerTest {
                                                    String uploadedByUserId) {
             receivedElementStates = elementStates;
             return new NormalizationResult(inputs, List.of());
+        }
+
+        @Override
+        public List<UUID> findRemovableAttachmentKeys(BaseElement layout,
+                                                      Long processInstanceId,
+                                                      Long processInstanceTaskId) {
+            removableAttachmentsTaskId = processInstanceTaskId;
+            return removableAttachmentKeys;
         }
     }
 

@@ -3,6 +3,7 @@ import {Alert, Box, Button, Grid, Paper, Typography} from '@mui/material';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
 import {Chip} from '../../../components/chip/chip';
+import {RemovableFileUploadAttachmentsProvider} from '../../../components/file-upload-field/removable-file-upload-attachments-context';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {isApiError} from '../../../models/api-error';
@@ -321,6 +322,10 @@ export function CustomerInstanceTaskView() {
         setEditedAuthoredValues(values);
     }, []);
 
+    const removableAttachmentKeys = useMemo<ReadonlySet<string>>(() => new Set(
+        taskView != null && taskView !== 'failed' ? taskView.removableAttachmentKeys ?? [] : [],
+    ), [taskView]);
+
     if (deadlineExceeded) {
         return <Alert severity="error">Die Bearbeitungsfrist ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
     }
@@ -362,17 +367,19 @@ export function CustomerInstanceTaskView() {
 
     return (
         <Box>
-            <ElementDerivationContext
-                element={taskView.layout}
-                authoredElementValues={authoredValues}
-                onAuthoredElementValuesChange={handleAuthoredValuesChange}
-                computedErrors={derivedErrors?.elementStates}
-                onDerive={(values, derivationOptions) => handleDerive(values, derivationOptions.skipErrorsForElementIds)}
-                onEvent={taskIsActive ? handleInlineEvent : undefined}
-                taskViewMode="customer"
-                showErrorSummary
-                readOnly={!taskIsActive}
-            />
+            <RemovableFileUploadAttachmentsProvider value={removableAttachmentKeys}>
+                <ElementDerivationContext
+                    element={taskView.layout}
+                    authoredElementValues={authoredValues}
+                    onAuthoredElementValuesChange={handleAuthoredValuesChange}
+                    computedErrors={derivedErrors?.elementStates}
+                    onDerive={(values, derivationOptions) => handleDerive(values, derivationOptions.skipErrorsForElementIds)}
+                    onEvent={taskIsActive ? handleInlineEvent : undefined}
+                    taskViewMode="customer"
+                    showErrorSummary
+                    readOnly={!taskIsActive}
+                />
+            </RemovableFileUploadAttachmentsProvider>
 
             {
                 taskIsActive &&

@@ -95,6 +95,7 @@ function createTaskView(data: AuthoredElementValues): TaskView {
         layout,
         data,
         events: [],
+        removableAttachmentKeys: [],
     };
 }
 

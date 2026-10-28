@@ -47,8 +47,14 @@ import {ProcessTaskViewAttachmentProvider} from './process-task-view-attachment-
 import {BaseApiService} from '../../../../services/base-api-service';
 import {TaskViewEventButtons} from '../../components/task-view-event-buttons';
 import {isTaskDeadlineExceededError} from '../../utils/task-deadline-error';
-import {collectTaskViewFileUploads} from '../../utils/task-view-file-uploads';
+import {
+    collectStoredTaskViewFileUploadItems,
+    collectTaskViewFileUploads,
+    haveTaskViewFileUploadItemsChanged,
+    replaceStoredTaskViewFileUploadItems,
+} from '../../utils/task-view-file-uploads';
 import type {FileUploadElementItem} from '../../../../models/elements/form/input/file-upload-element';
+import {RemovableFileUploadAttachmentsProvider} from '../../../../components/file-upload-field/removable-file-upload-attachments-context';
 
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
 const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
@@ -84,6 +90,11 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const [taskAttachments, setTaskAttachments] = useState<ProcessInstanceAttachmentEntity[]>([]);
     const [taskAttachmentSets, setTaskAttachmentSets] = useState<ProcessInstanceAttachmentSetEntity[]>([]);
     const [isLoadingTaskAttachments, setIsLoadingTaskAttachments] = useState(false);
+    const [taskAttachmentsReloadCount, setTaskAttachmentsReloadCount] = useState(0);
+    const loadedTaskAttachmentsInstanceIdRef = useRef<number | null>(null);
+    // Blob URIs are unique, so the stored item of every file that a save of this page sent replaces its transient item.
+    const storedFileItemsRef = useRef(new Map<string, FileUploadElementItem>());
+    const [removableAttachmentKeys, setRemovableAttachmentKeys] = useState<ReadonlySet<string>>(new Set());
 
     const hasUnsavedChanges = useMemo(() => {
         return !deepEquals(taskInputData, lastPersistedTaskInputData);
@@ -137,11 +148,22 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         ));
     }, [item, taskView]);
 
+    // Saves and events queued during a save still hold the transient items of the files that it stored.
+    const adoptStoredFileItems = useCallback((values: AuthoredElementValues): AuthoredElementValues => {
+        if (taskView == null) {
+            return values;
+        }
+
+        return replaceStoredTaskViewFileUploadItems(taskView.layout, values, storedFileItemsRef.current);
+    }, [taskView]);
+
     const saveTaskInputData = useCallback(
-        async (payload: AuthoredElementValues): Promise<boolean> => {
+        async (requestedPayload: AuthoredElementValues): Promise<boolean> => {
             if (item == null || deadlineExceededRef.current) {
                 return false;
             }
+
+            let payload = adoptStoredFileItems(requestedPayload);
 
             if (deepEquals(payload, lastPersistedTaskInputDataRef.current)) {
                 const hasNewerUnsavedChanges = !deepEquals(
@@ -159,6 +181,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                 if (deadlineExceededRef.current) return false;
 
+                payload = adoptStoredFileItems(payload);
                 if (deepEquals(payload, lastPersistedTaskInputDataRef.current)) {
                     return true;
                 }
@@ -182,17 +205,44 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 )),
                 TASK_INPUT_DATA_MIN_SAVE_DURATION_MS,
             )
-                .then(() => {
+                .then((updatedTaskView) => {
                     if (currentTaskSession !== taskSessionRef.current) {
                         return false;
                     }
 
+                    // Each update stores the files it sends, so later updates must reference the stored attachments
+                    // instead of sending the files again. Inputs changed during the save keep their other values.
+                    let persistedPayload = payload;
+                    if (taskView != null) {
+                        const storedFileItems = collectStoredTaskViewFileUploadItems(taskView.layout, payload, updatedTaskView.data);
+                        storedFileItems.forEach((storedItem, uri) => storedFileItemsRef.current.set(uri, storedItem));
+                        if (storedFileItems.size > 0) {
+                            persistedPayload = replaceStoredTaskViewFileUploadItems(taskView.layout, payload, storedFileItems);
+                            latestTaskInputDataRef.current = replaceStoredTaskViewFileUploadItems(
+                                taskView.layout,
+                                latestTaskInputDataRef.current,
+                                storedFileItems,
+                            );
+                            setTaskInputData(latestTaskInputDataRef.current);
+                        }
+                    }
+
+                    // Stored and removed files change the attachments of the instance, e.g. for attachment displays.
+                    if (taskView != null && haveTaskViewFileUploadItemsChanged(
+                        taskView.layout,
+                        lastPersistedTaskInputDataRef.current,
+                        persistedPayload,
+                    )) {
+                        setTaskAttachmentsReloadCount((count) => count + 1);
+                    }
+
+                    setRemovableAttachmentKeys(new Set(updatedTaskView.removableAttachmentKeys));
                     pendingOfflineRetryRef.current = false;
-                    lastPersistedTaskInputDataRef.current = payload;
-                    setLastPersistedTaskInputData(payload);
+                    lastPersistedTaskInputDataRef.current = persistedPayload;
+                    setLastPersistedTaskInputData(persistedPayload);
                     setLastSavedAt(new Date());
 
-                    const hasNewerUnsavedChanges = !deepEquals(latestTaskInputDataRef.current, payload);
+                    const hasNewerUnsavedChanges = !deepEquals(latestTaskInputDataRef.current, persistedPayload);
                     setTaskInputDataSaveState(
                         hasNewerUnsavedChanges ? ProcessTaskInputSaveState.Waiting : ProcessTaskInputSaveState.Saved,
                     );
@@ -231,7 +281,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             return await savePromise;
         },
-        [collectFileUploads, dispatch, handleDeadlineExceeded, item, refresh],
+        [adoptStoredFileItems, collectFileUploads, dispatch, handleDeadlineExceeded, item, refresh, taskView],
     );
 
     const flushCurrentTaskInputData = useCallback(async (): Promise<boolean> => {
@@ -278,6 +328,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
         pendingOfflineRetryRef.current = false;
         inFlightSavePromiseRef.current = null;
+        storedFileItemsRef.current = new Map();
         isResolvingBlockedNavigationRef.current = false;
         ignoreAuthoredValuesChangeRef.current = false;
         skipChangeBlockerRef.current = false;
@@ -331,6 +382,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
 
                 setTaskView(view);
+                setRemovableAttachmentKeys(new Set(view.removableAttachmentKeys));
                 setTaskInputData(view.data);
                 setLastPersistedTaskInputData(view.data);
                 latestTaskInputDataRef.current = view.data;
@@ -379,6 +431,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         let cancelled = false;
 
         if (item?.instance == null) {
+            loadedTaskAttachmentsInstanceIdRef.current = null;
             setTaskAttachments([]);
             setTaskAttachmentSets([]);
             setIsLoadingTaskAttachments(false);
@@ -387,9 +440,14 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             };
         }
 
-        setTaskAttachments([]);
-        setTaskAttachmentSets([]);
-        setIsLoadingTaskAttachments(true);
+        const instanceId = item.instance.id;
+        // A reload after an update keeps showing the loaded attachments until the new ones arrive.
+        const isReload = loadedTaskAttachmentsInstanceIdRef.current === instanceId;
+        if (!isReload) {
+            setTaskAttachments([]);
+            setTaskAttachmentSets([]);
+            setIsLoadingTaskAttachments(true);
+        }
 
         Promise.all([
             new ProcessInstanceAttachmentApiService().listAll({
@@ -404,6 +462,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     return;
                 }
 
+                loadedTaskAttachmentsInstanceIdRef.current = instanceId;
                 setTaskAttachments(attachmentPage.content);
                 setTaskAttachmentSets(attachmentSetPage.content);
             })
@@ -413,8 +472,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
 
                 dispatch(showApiErrorSnackbar(err, 'Die Vorgangsanhänge konnten nicht geladen werden.'));
-                setTaskAttachments([]);
-                setTaskAttachmentSets([]);
+                if (!isReload) {
+                    setTaskAttachments([]);
+                    setTaskAttachmentSets([]);
+                }
             })
             .finally(() => {
                 if (cancelled) {
@@ -427,7 +488,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, item?.instance?.id]);
+    }, [dispatch, item?.instance?.id, taskAttachmentsReloadCount]);
 
     const introItems = useMemo<StatusTablePropsItem[]>(() => {
         if (item == null) {
@@ -531,7 +592,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         [handleDownloadAttachment, handleViewAttachment, isLoadingTaskAttachments, taskAttachmentSets, taskAttachments],
     );
 
-    const handleTaskViewEvent = async (evt: TaskViewEvent, eventPayload: AuthoredElementValues) => {
+    const handleTaskViewEvent = async (evt: TaskViewEvent, requestedEventPayload: AuthoredElementValues) => {
         if (item == null || taskView == null || deadlineExceededRef.current) {
             return;
         }
@@ -549,6 +610,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         }
 
         if (deadlineExceededRef.current) return;
+
+        const eventPayload = adoptStoredFileItems(requestedEventPayload);
 
         dispatch(
             setLoadingMessage({
@@ -579,6 +642,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     updatedTask.status === ProcessTaskStatus.AwaitingStaff) {
                     refresh();
                     setTaskView(updatedTaskView);
+                    setRemovableAttachmentKeys(new Set(updatedTaskView.removableAttachmentKeys));
+                    setTaskAttachmentsReloadCount((count) => count + 1);
                     setTaskInputData(updatedTaskView.data);
                     setLastPersistedTaskInputData(updatedTaskView.data);
                     latestTaskInputDataRef.current = updatedTaskView.data;
@@ -797,30 +862,32 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                             mt: 4,
                         }}
                     >
-                        <ElementDerivationContext
-                            element={taskView.layout}
-                            authoredElementValues={taskInputData}
-                            onAuthoredElementValuesChange={handleAuthoredValuesChange}
-                            computedErrors={derivedErrors?.elementStates}
-                            onEvent={handleInlineEvent}
-                            taskViewMode="staff"
-                            showErrorSummary
-                            onDerive={(aev, derivationOptions) => {
-                                if (item == null || item.instance == null || item.task == null) {
-                                    return Promise.resolve({
-                                        effectiveValues: {},
-                                        elementStates: {},
-                                    });
-                                }
+                        <RemovableFileUploadAttachmentsProvider value={removableAttachmentKeys}>
+                            <ElementDerivationContext
+                                element={taskView.layout}
+                                authoredElementValues={taskInputData}
+                                onAuthoredElementValuesChange={handleAuthoredValuesChange}
+                                computedErrors={derivedErrors?.elementStates}
+                                onEvent={handleInlineEvent}
+                                taskViewMode="staff"
+                                showErrorSummary
+                                onDerive={(aev, derivationOptions) => {
+                                    if (item == null || item.instance == null || item.task == null) {
+                                        return Promise.resolve({
+                                            effectiveValues: {},
+                                            elementStates: {},
+                                        });
+                                    }
 
-                                return new ProcessInstanceTaskApiService().deriveStaffTaskView(
-                                    item.instance.id,
-                                    item.task.id,
-                                    aev,
-                                    derivationOptions.skipErrorsForElementIds,
-                                );
-                            }}
-                        />
+                                    return new ProcessInstanceTaskApiService().deriveStaffTaskView(
+                                        item.instance.id,
+                                        item.task.id,
+                                        aev,
+                                        derivationOptions.skipErrorsForElementIds,
+                                    );
+                                }}
+                            />
+                        </RemovableFileUploadAttachmentsProvider>
                     </Box>
 
                     <Stack

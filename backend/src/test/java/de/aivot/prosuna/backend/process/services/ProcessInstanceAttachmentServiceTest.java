@@ -6,8 +6,10 @@ import de.aivot.prosuna.backend.process.configs.DefaultStorageProcessAttachments
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.storage.models.StorageDocument;
@@ -20,12 +22,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,9 +45,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -50,10 +60,12 @@ class ProcessInstanceAttachmentServiceTest {
     private final StorageService storageService = mock(StorageService.class);
     private final SystemConfigRepository systemConfigRepository = mock(SystemConfigRepository.class);
     private final ProcessInstanceRepository processInstanceRepository = mock(ProcessInstanceRepository.class);
+    private final ProcessInstanceAttachmentSetRepository attachmentSetRepository = mock(ProcessInstanceAttachmentSetRepository.class);
+    private final PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
     private final UUID processAccessKey = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private final ProcessInstanceAttachmentService service = new ProcessInstanceAttachmentService(
             attachmentRepository, storageService, systemConfigRepository, processInstanceRepository,
-            new ProcessNodeExecutionLoggerFactory(eventRepository)
+            new ProcessNodeExecutionLoggerFactory(eventRepository), attachmentSetRepository, transactionManager
     );
 
     @Test
@@ -196,5 +208,149 @@ class ProcessInstanceAttachmentServiceTest {
         return ProcessInstanceAttachmentEntity
                 .of("file.pdf", "uploaded-file.pdf", "person-1/dog-2", 1, 42L, 9L, "data".getBytes(StandardCharsets.UTF_8))
                 .setAttachmentSetId(3);
+    }
+
+    @Test
+    void updateRemovedUploadsOfTask_FlagsUnreferencedUploadsAndRestoresReferencedOnes() {
+        var removedAt = Instant.parse("2026-10-28T08:00:00Z");
+        var unreferenced = uploadedAttachment(1, 1);
+        var referencedAgain = uploadedAttachment(2, 2).setRemovedAt(removedAt);
+        var unchanged = uploadedAttachment(3, 3);
+        var alreadyFlagged = uploadedAttachment(4, 4).setRemovedAt(removedAt);
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(9L, List.of(3)))
+                .thenReturn(List.of(unreferenced, referencedAgain, unchanged, alreadyFlagged));
+
+        var before = Instant.now();
+        service.updateRemovedUploadsOfTask(
+                9L,
+                List.of(3),
+                Set.of(referencedAgain.getKey(), unchanged.getKey()),
+                Map.of(referencedAgain.getKey(), 1, unchanged.getKey(), 3)
+        );
+
+        verify(attachmentRepository).save(unreferenced);
+        assertNotNull(unreferenced.getRemovedAt());
+        assertFalse(unreferenced.getRemovedAt().isBefore(before));
+        verify(attachmentRepository).save(referencedAgain);
+        assertNull(referencedAgain.getRemovedAt());
+        assertEquals(1, referencedAgain.getPosition());
+        verify(attachmentRepository, never()).save(unchanged);
+        verify(attachmentRepository, never()).save(alreadyFlagged);
+        assertEquals(removedAt, alreadyFlagged.getRemovedAt());
+    }
+
+    @Test
+    void findAllUploadsOfTask_LeavesOutFlaggedUploads() {
+        var kept = uploadedAttachment(1, 1);
+        var flagged = uploadedAttachment(2, 2).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(9L, List.of(3)))
+                .thenReturn(List.of(kept, flagged));
+
+        assertEquals(List.of(kept), service.findAllUploadsOfTask(9L, List.of(3)));
+        assertEquals(List.of(), service.findAllUploadsOfTask(9L, List.of()));
+    }
+
+    @Test
+    void updateRemovedUploadsOfTask_SkipsTasksWithoutUploadSets() {
+        service.updateRemovedUploadsOfTask(9L, List.of(), Set.of(), Map.of());
+
+        verifyNoInteractions(attachmentRepository);
+    }
+
+    @Test
+    void deleteRemovedUploadsOfTask_DeletesFilesOnlyAfterCommit() throws Exception {
+        var removed = uploadedAttachment(1, 1).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of(removed));
+        when(attachmentRepository.existsByAttachmentSetId(3)).thenReturn(false);
+
+        var synchronizations = deleteRemovedUploadsInTransaction("staff-user");
+
+        var order = inOrder(attachmentRepository, attachmentSetRepository);
+        order.verify(attachmentRepository).deleteAll(List.of(removed));
+        order.verify(attachmentRepository).flush();
+        order.verify(attachmentSetRepository).deleteById(3);
+        verifyNoInteractions(storageService);
+
+        synchronizations.forEach(TransactionSynchronization::afterCommit);
+
+        verify(storageService).deleteDocument(5, "/proc-7/42/attachments/uploaded-1.pdf");
+        verify(transactionManager).getTransaction(argThat(definition ->
+                definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW));
+    }
+
+    @Test
+    void deleteRemovedUploadsOfTask_KeepsFilesWhenTheTransactionRollsBack() {
+        var removed = uploadedAttachment(1, 1).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of(removed));
+
+        var synchronizations = deleteRemovedUploadsInTransaction("staff-user");
+        synchronizations.forEach(synchronization ->
+                synchronization.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
+    void deleteRemovedUploadsOfTask_KeepsAttachmentSetsWithRemainingAttachments() {
+        var removed = uploadedAttachment(1, 1).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of(removed));
+        when(attachmentRepository.existsByAttachmentSetId(3)).thenReturn(true);
+
+        deleteRemovedUploadsInTransaction(null);
+
+        verify(attachmentSetRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteRemovedUploadsOfTask_LogsDeletionEvent() {
+        var removed = uploadedAttachment(1, 1).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of(removed));
+
+        deleteRemovedUploadsInTransaction("staff-user");
+
+        var eventCaptor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(eventRepository).save(eventCaptor.capture());
+        var event = eventCaptor.getValue();
+        assertEquals(42L, event.getProcessInstanceId());
+        assertEquals(9L, event.getProcessInstanceTaskId());
+        assertEquals("Anhang gelöscht", event.getTitle());
+        assertEquals(
+                "Der Anhang %s wurde gelöscht, weil er vor dem Ende der Aufgabe aus dem Anlagen-Feld entfernt wurde."
+                        .formatted(StringUtils.quote("uploaded-1.pdf")),
+                event.getMessage()
+        );
+        assertEquals("staff-user", event.getTriggeringUserId());
+        assertFalse(event.getTechnical());
+        assertTrue(event.getAudit());
+        assertTrue(event.getHistoryRelevant());
+    }
+
+    @Test
+    void deleteRemovedUploadsOfTask_DoesNothingWithoutRemovedUploads() {
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of());
+
+        service.deleteRemovedUploadsOfTask(new ProcessInstanceTaskEntity().setId(9L), "staff-user");
+
+        verify(attachmentRepository, never()).deleteAll(any());
+        verifyNoInteractions(attachmentSetRepository, storageService, eventRepository);
+    }
+
+    private List<TransactionSynchronization> deleteRemovedUploadsInTransaction(String userId) {
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.deleteRemovedUploadsOfTask(new ProcessInstanceTaskEntity().setId(9L).setProcessInstanceId(42L), userId);
+            return TransactionSynchronizationManager.getSynchronizations();
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    private static ProcessInstanceAttachmentEntity uploadedAttachment(int index, int position) {
+        return ProcessInstanceAttachmentEntity
+                .of("uploaded-%d.pdf".formatted(index), position, 42L, 9L, new byte[0])
+                .setKey(UUID.nameUUIDFromBytes(("uploaded-" + index).getBytes(StandardCharsets.UTF_8)))
+                .setAttachmentSetId(3)
+                .setStorageProviderId(5)
+                .setStoragePathFromRoot("/proc-7/42/attachments/uploaded-%d.pdf".formatted(index));
     }
 }

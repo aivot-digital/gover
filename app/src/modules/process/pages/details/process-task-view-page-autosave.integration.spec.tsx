@@ -6,11 +6,15 @@ import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {Permission} from '../../../../data/permissions/permission';
-import {getLiteralElementValue, literalAuthoredValue} from '../../../../models/element-data';
+import {createDerivedRuntimeElementData, getLiteralElementValue, literalAuthoredValue} from '../../../../models/element-data';
+import type {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {setPermissions, setUser, userReducer} from '../../../../slices/user-slice';
 import {generateElementWithDefaultValues} from '../../../../utils/generate-element-with-default-values';
 import type {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {PermissionApiService} from '../../../permissions/permission-api-service';
+import type {ProcessInstanceEntity} from '../../entities/process-instance-entity';
+import {ProcessInstanceAttachmentApiService} from '../../services/process-instance-attachment-api-service';
+import {ProcessInstanceAttachmentSetApiService} from '../../services/process-instance-attachment-set-api-service';
 import type {PermissionSet} from '../../../permissions/models/permission-set';
 import {ProcessTaskStatus} from '../../enums/process-task-status';
 import {ProcessInstanceTaskApiService, type TaskView} from '../../services/process-instance-task-api-service';
@@ -30,22 +34,38 @@ vi.mock('../../../../hooks/use-api', () => {
 vi.mock('../../../../utils/with-delay', () => ({
     withDelay: <T,>(promise: Promise<T>) => promise,
 }));
-vi.mock('../../../elements/components/element-derivation-context', () => ({
-    ElementDerivationContext: (props: ComponentProps<typeof ElementDerivationContext>) => (
-        <input
-            aria-label="Betreff"
-            value={getLiteralElementValue<string>(props.authoredElementValues, 'subject') ?? ''}
-            onChange={(event) => props.onAuthoredElementValuesChange({
-                subject: literalAuthoredValue(event.target.value),
-            })}
-        />
-    ),
+const mocks = vi.hoisted(() => ({
+    removableAttachmentKeys: undefined as ReadonlySet<string> | undefined,
 }));
+vi.mock('../../../elements/components/element-derivation-context', async () => {
+    const {useRemovableFileUploadAttachments} = await import('../../../../components/file-upload-field/removable-file-upload-attachments-context');
+
+    return {
+        ElementDerivationContext: function ElementDerivationContextMock(props: ComponentProps<typeof ElementDerivationContext>) {
+            mocks.removableAttachmentKeys = useRemovableFileUploadAttachments();
+
+            return (
+                <input
+                    aria-label="Betreff"
+                    value={getLiteralElementValue<string>(props.authoredElementValues, 'subject') ?? ''}
+                    onChange={(event) => props.onAuthoredElementValuesChange({
+                        ...props.authoredElementValues,
+                        subject: literalAuthoredValue(event.target.value),
+                    })}
+                />
+            );
+        },
+    };
+});
 
 const firstSave = '2026-10-07T06:25:00Z';
 const secondSave = '2026-10-07T06:27:00Z';
 
-async function renderPage(initialStatus = ProcessTaskStatus.AwaitingStaff) {
+async function renderPage(
+    initialStatus = ProcessTaskStatus.AwaitingStaff,
+    initialView: Partial<TaskView> = {},
+    instance: ProcessInstanceEntity | null = null,
+) {
     const permissions: PermissionSet = {
         departmentPermissions: [],
         teamPermissions: [],
@@ -80,7 +100,7 @@ async function renderPage(initialStatus = ProcessTaskStatus.AwaitingStaff) {
             status: initialStatus,
             updated: '2026-10-07T06:20:00Z',
         },
-        instance: null,
+        instance,
         process: null,
         node: {name: 'Prüfung', description: null},
         provider: null,
@@ -89,6 +109,8 @@ async function renderPage(initialStatus = ProcessTaskStatus.AwaitingStaff) {
         layout: generateElementWithDefaultValues(ElementType.GroupLayout),
         data: {},
         events: [],
+        removableAttachmentKeys: [],
+        ...initialView,
     };
     const getView = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getStaffTaskView').mockResolvedValue(view);
     const getDetails = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'retrieveDetails')
@@ -188,5 +210,151 @@ describe('Task timestamps after autosave', () => {
         expect(putView).toHaveBeenLastCalledWith(10, 20, {subject: literalAuthoredValue('Second draft')}, []);
         await showGeneralInformation();
         expect(screen.getByRole('row', {name: /Zuletzt aktualisiert/})).toHaveTextContent('07.10.2026 um 08:27 Uhr');
+    });
+
+    it('references the stored attachments after a save stored the uploaded files', async () => {
+        const layout = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
+        layout.children = [{...generateElementWithDefaultValues(ElementType.FileUpload), id: 'upload'}];
+        const uploadedFile = {name: 'nachweis.pdf', size: 3, uri: 'blob:nachweis'};
+        const storedFile = {name: 'nachweis.pdf', size: 3, uri: 'process-instance-attachment:stored'};
+        const {putView} = await renderPage(ProcessTaskStatus.InProgress, {
+            layout,
+            data: {upload: literalAuthoredValue([uploadedFile])},
+        });
+        vi.spyOn(ProcessInstanceTaskApiService.prototype, 'deriveStaffTaskView')
+            .mockResolvedValue(createDerivedRuntimeElementData());
+        putView.mockImplementation(async (_, __, data) => ({
+            layout,
+            data: {...data, upload: literalAuthoredValue([storedFile])},
+            events: [],
+            removableAttachmentKeys: ['stored'],
+        }));
+
+        await changeAndSave('First draft');
+        await changeAndSave('Second draft');
+
+        expect(putView).toHaveBeenNthCalledWith(1, 10, 20, {
+            upload: literalAuthoredValue([uploadedFile]),
+            subject: literalAuthoredValue('First draft'),
+        }, [uploadedFile]);
+        expect(putView).toHaveBeenNthCalledWith(2, 10, 20, {
+            upload: literalAuthoredValue([storedFile]),
+            subject: literalAuthoredValue('Second draft'),
+        }, []);
+    });
+
+    it('reloads the attachments of the instance only after saves that change the files', async () => {
+        const layout = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
+        layout.children = [{...generateElementWithDefaultValues(ElementType.FileUpload), id: 'upload'}];
+        const uploadedFile = {name: 'nachweis.pdf', size: 3, uri: 'blob:nachweis'};
+        const storedFile = {name: 'nachweis.pdf', size: 3, uri: 'process-instance-attachment:stored'};
+        const emptyPage = {content: [], totalElements: 0, totalPages: 0, number: 0, size: 0};
+        const listAttachments = vi.spyOn(ProcessInstanceAttachmentApiService.prototype, 'listAll')
+            .mockResolvedValue(emptyPage as never);
+        vi.spyOn(ProcessInstanceAttachmentSetApiService.prototype, 'listAll').mockResolvedValue(emptyPage as never);
+        const {putView} = await renderPage(ProcessTaskStatus.InProgress, {
+            layout,
+            data: {upload: literalAuthoredValue([uploadedFile])},
+        }, {id: 10} as ProcessInstanceEntity);
+        vi.spyOn(ProcessInstanceTaskApiService.prototype, 'deriveStaffTaskView')
+            .mockResolvedValue(createDerivedRuntimeElementData());
+        putView.mockImplementation(async (_, __, data) => ({
+            layout,
+            data: {...data, upload: literalAuthoredValue([storedFile])},
+            events: [],
+            removableAttachmentKeys: ['stored'],
+        }));
+        expect(listAttachments).toHaveBeenCalledTimes(1);
+
+        await changeAndSave('First draft');
+        expect(listAttachments).toHaveBeenCalledTimes(2);
+
+        await changeAndSave('Second draft');
+        expect(listAttachments).toHaveBeenCalledTimes(2);
+    });
+
+    describe('while a save stores files', () => {
+        const layout = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
+        layout.children = [{...generateElementWithDefaultValues(ElementType.FileUpload), id: 'upload'}];
+        const uploadedFile = {name: 'nachweis.pdf', size: 3, uri: 'blob:nachweis'};
+        const storedFile = {name: 'nachweis.pdf', size: 3, uri: 'process-instance-attachment:stored'};
+
+        async function renderPageWithPendingFileSave() {
+            const rendered = await renderPage(ProcessTaskStatus.InProgress, {
+                layout,
+                data: {upload: literalAuthoredValue([uploadedFile])},
+                events: [{label: 'Abschließen', event: 'complete'}],
+                removableAttachmentKeys: ['earlier'],
+            });
+            vi.spyOn(ProcessInstanceTaskApiService.prototype, 'deriveStaffTaskView')
+                .mockResolvedValue(createDerivedRuntimeElementData());
+            const pendingFileSave = Promise.withResolvers<TaskView>();
+            rendered.putView
+                .mockImplementationOnce(() => pendingFileSave.promise)
+                .mockImplementation(async (_, __, data) => ({layout, data, events: [], removableAttachmentKeys: ['stored']}));
+
+            fireEvent.change(screen.getByRole('textbox', {name: 'Betreff'}), {target: {value: 'First draft'}});
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(2000);
+            });
+            expect(rendered.putView).toHaveBeenCalledOnce();
+
+            const finishFileSave = async () => {
+                await act(async () => {
+                    pendingFileSave.resolve({
+                        layout,
+                        data: {upload: literalAuthoredValue([storedFile]), subject: literalAuthoredValue('First draft')},
+                        events: [],
+                        removableAttachmentKeys: ['stored'],
+                    });
+                    await vi.advanceTimersByTimeAsync(0);
+                });
+            };
+
+            return {...rendered, finishFileSave};
+        }
+
+        it('lets a queued save reference the stored files instead of uploading them again', async () => {
+            const {putView, finishFileSave} = await renderPageWithPendingFileSave();
+            fireEvent.change(screen.getByRole('textbox', {name: 'Betreff'}), {target: {value: 'Second draft'}});
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(2000);
+            });
+
+            await finishFileSave();
+
+            expect(putView).toHaveBeenCalledTimes(2);
+            expect(putView).toHaveBeenLastCalledWith(10, 20, {
+                upload: literalAuthoredValue([storedFile]),
+                subject: literalAuthoredValue('Second draft'),
+            }, []);
+            expect(screen.getByText('Eingaben wurden zwischengespeichert')).toBeInTheDocument();
+        });
+
+        it('lets the upload fields remove the stored uploads that the task view and its saves name', async () => {
+            const {finishFileSave} = await renderPageWithPendingFileSave();
+            expect(mocks.removableAttachmentKeys).toEqual(new Set(['earlier']));
+
+            await finishFileSave();
+
+            expect(mocks.removableAttachmentKeys).toEqual(new Set(['stored']));
+        });
+
+        it('lets a queued event reference the stored files instead of uploading them again', async () => {
+            const {putView, finishFileSave} = await renderPageWithPendingFileSave();
+            vi.spyOn(ProcessInstanceTaskApiService.prototype, 'retrieve')
+                .mockResolvedValue({status: ProcessTaskStatus.InProgress} as never);
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', {name: 'Abschließen'}));
+            });
+
+            await finishFileSave();
+
+            expect(putView).toHaveBeenCalledTimes(2);
+            expect(putView).toHaveBeenLastCalledWith(10, 20, {
+                upload: literalAuthoredValue([storedFile]),
+                subject: literalAuthoredValue('First draft'),
+            }, [], 'complete');
+        });
     });
 });
