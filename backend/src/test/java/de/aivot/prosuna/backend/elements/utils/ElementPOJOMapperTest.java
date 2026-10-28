@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.annotations.ReplicatingContainerRowIdPOJOBinding;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
@@ -19,10 +20,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ElementPOJOMapperTest {
@@ -37,7 +40,7 @@ class ElementPOJOMapperTest {
         var replicatingChildData = new EffectiveElementValues();
         replicatingChildData.put("text_field", "Replicating Value 1");
         testElementData.put("replicating_container", List.of(
-                new EffectiveReplicatingContainerLayoutElementValue().setValues(replicatingChildData)
+                new EffectiveReplicatingContainerLayoutElementValue().setId("row-1").setValues(replicatingChildData)
         ));
     }
 
@@ -55,6 +58,23 @@ class ElementPOJOMapperTest {
         assertEquals(true, example.subGroup.exampleSwitch);
         assertEquals(1, example.replicatingContainer.size());
         assertEquals("Replicating Value 1", example.replicatingContainer.getFirst().replicatingTextField);
+        assertEquals("row-1", example.replicatingContainer.getFirst().rowId);
+    }
+
+    @Test
+    void mapToPOJO_ShouldMapRowIdsOnlyFromWrappedRowMaps() throws ElementDataConversionException {
+        var values = new EffectiveElementValues();
+        values.put("replicating_container", List.of(
+                Map.of("id", "row-2", "values", Map.of("text_field", "Wrapped")),
+                Map.of("id", "field-value", "text_field", "Flat")
+        ));
+
+        var rows = ElementPOJOMapper.mapToPOJO(values, ExampleBindingClass.class).replicatingContainer;
+
+        assertEquals("row-2", rows.get(0).rowId);
+        assertEquals("Wrapped", rows.get(0).replicatingTextField);
+        assertNull(rows.get(1).rowId);
+        assertEquals("Flat", rows.get(1).replicatingTextField);
     }
 
     @Test
@@ -214,7 +234,15 @@ class ElementPOJOMapperTest {
         })
         private String replicatingTextField;
 
+        @ReplicatingContainerRowIdPOJOBinding
+        private String rowId;
+
         public ExampleBindingReplicatingClass() {
+        }
+
+        public ExampleBindingReplicatingClass setRowId(String rowId) {
+            this.rowId = rowId;
+            return this;
         }
 
         public String getReplicatingTextField() {
