@@ -979,6 +979,31 @@ class FileUploadMultipartInputServiceTest {
     }
 
     @Test
+    void normalizeInputs_SkipsFileNamesThatRemainingUploadsKeepAfterARemoval() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var service = new FileUploadMultipartInputService(attachmentService, new TestProcessInstanceAttachmentSetService(), new TestAVService());
+        var upload = createUpload("documents", "document");
+        upload.setIsMultifile(true);
+        var layout = createLayout(upload);
+
+        normalizeSingleUpload(service, layout, List.of(), "a.pdf", 9L);
+        var first = storedItemOf(attachmentService.createdAttachments().getFirst());
+        normalizeSingleUpload(service, layout, List.of(first), "b.pdf", 9L);
+        var second = storedItemOf(attachmentService.createdAttachments().get(1));
+        // The first upload was removed, so the new upload takes the position whose number the second one keeps.
+        normalizeSingleUpload(service, layout, List.of(second), "c.pdf", 9L);
+
+        assertEquals(List.of("document-1.pdf", "document-2.pdf", "document-3.pdf"), attachmentService.createdAttachments()
+                .stream()
+                .map(ProcessInstanceAttachmentEntity::getFileName)
+                .toList());
+    }
+
+    private static Map<String, Object> storedItemOf(ProcessInstanceAttachmentEntity attachment) {
+        return createFileItem(attachment.getFileName(), FileUploadMultipartInputService.buildAttachmentUri(attachment.getKey()), 3);
+    }
+
+    @Test
     void normalizeInputs_CreatesNewAttachmentSetsWithoutTask() throws Exception {
         var attachmentService = new TestProcessInstanceAttachmentService();
         var attachmentSetService = new TestProcessInstanceAttachmentSetService();

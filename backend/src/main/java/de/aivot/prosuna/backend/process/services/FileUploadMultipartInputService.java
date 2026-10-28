@@ -332,6 +332,12 @@ public class FileUploadMultipartInputService {
         var attachmentSetDataKey = resolveAttachmentSetDataKey(element);
         var normalizedItems = new ArrayList<Map<String, Object>>(items.size());
         var configuredSubmittedFileName = StringUtils.toNullableTrimmedString(element.getSubmittedFileName());
+        var usedFileNames = new HashSet<String>();
+        for (var item : items) {
+            if (!requiresUpload(item)) {
+                usedFileNames.add(item.getName());
+            }
+        }
 
         for (var itemIndex = 0; itemIndex < items.size(); itemIndex++) {
             var item = items.get(itemIndex);
@@ -372,12 +378,25 @@ public class FileUploadMultipartInputService {
                 );
             }
 
+            var fileNumber = itemIndex + 1;
             var finalFileName = resolveConfiguredSubmittedFileName(
                     element,
                     configuredSubmittedFileName,
                     originalFileName,
-                    resolveFileNameIndices(element, itemIndex)
+                    resolveFileNameIndices(element, fileNumber)
             );
+            // Stored uploads keep their names, so after a removal the number of the position can already be taken.
+            // Exports without own file names would otherwise overwrite the stored upload with the new one.
+            while (Boolean.TRUE.equals(element.getIsMultifile()) && usedFileNames.contains(finalFileName)) {
+                fileNumber++;
+                finalFileName = resolveConfiguredSubmittedFileName(
+                        element,
+                        configuredSubmittedFileName,
+                        originalFileName,
+                        resolveFileNameIndices(element, fileNumber)
+                );
+            }
+            usedFileNames.add(finalFileName);
 
             byte[] fileBytes;
             try {
@@ -662,12 +681,12 @@ public class FileUploadMultipartInputService {
 
     @Nonnull
     private List<Integer> resolveFileNameIndices(@Nonnull FileUploadInputElement element,
-                                                 int itemIndex) {
+                                                 int fileNumber) {
         if (!Boolean.TRUE.equals(element.getIsMultifile())) {
             return List.of();
         }
 
-        return List.of(itemIndex + 1);
+        return List.of(fileNumber);
     }
 
     @Nonnull
