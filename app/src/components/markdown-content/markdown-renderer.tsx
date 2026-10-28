@@ -1,3 +1,4 @@
+import type {Link, LinkReference, Nodes, Parent, Root} from 'mdast';
 import ReactMarkdown, {type Components, type Options} from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
@@ -23,6 +24,59 @@ export function sanitizeMarkdownUrl(url: string): string {
 
     const protocol = trimmedUrl.slice(0, delimiterIndex).toLowerCase();
     return MarkdownAllowedUrlProtocols.includes(protocol) ? trimmedUrl : '';
+}
+
+function getLinkLabel(node: Nodes): string {
+    if (node.type === 'text' || node.type === 'inlineCode') {
+        return node.value;
+    }
+    if (node.type === 'image') {
+        return node.alt ?? '';
+    }
+    return 'children' in node ? node.children.map(getLinkLabel).join('') : '';
+}
+
+/** Mirrors `MarkdownRenderer.showsItsTarget` of the backend: bare web and e-mail addresses already show their target. */
+function showsItsTarget(link: Link | LinkReference, target: string): boolean {
+    const label = getLinkLabel(link);
+    return [label, `http://${label}`, `https://${label}`, `mailto:${label}`].includes(target);
+}
+
+function collectDefinitions(node: Nodes, definitions: Map<string, string>) {
+    if (node.type === 'definition' && !definitions.has(node.identifier)) {
+        definitions.set(node.identifier, node.url);
+    } else if ('children' in node) {
+        node.children.forEach((child) => collectDefinitions(child, definitions));
+    }
+}
+
+function rewriteLinks(parent: Parent, definitions: Map<string, string>, revealTargets: boolean) {
+    parent.children = parent.children.flatMap((child): Parent['children'] => {
+        if ('children' in child) {
+            rewriteLinks(child, definitions, revealTargets);
+        }
+        if (child.type !== 'link' && child.type !== 'linkReference') {
+            return [child];
+        }
+
+        const target = child.type === 'link' ? child.url : definitions.get(child.identifier) ?? '';
+        if (!revealTargets || showsItsTarget(child, target)) {
+            return [child];
+        }
+        return target === '' ? child.children : [...child.children, {type: 'text', value: ` (${target})`}];
+    });
+}
+
+/**
+ * With `revealTargets`, every link that hides its target becomes its text followed by its target, as
+ * `MarkdownTemplateValues.revealLinkTargets` does in the backend for formatted template values.
+ */
+function remarkLinkTargets({revealTargets}: {revealTargets: boolean}) {
+    return (tree: Root) => {
+        const definitions = new Map<string, string>();
+        collectDefinitions(tree, definitions);
+        rewriteLinks(tree, definitions, revealTargets);
+    };
 }
 
 const defaultComponents: Components = {
@@ -58,6 +112,8 @@ const enforcedComponents: Components = {
 interface MarkdownRendererProps {
     markdown?: string | null;
     components?: Components;
+    /** Writes link targets next to their text. Use it for Markdown entered by customers, so links cannot hide their target. */
+    revealLinkTargets?: boolean;
 }
 
 /**
@@ -77,6 +133,7 @@ export function MarkdownRenderer(props: MarkdownRendererProps) {
             remarkPlugins={[
                 remarkGfm,
                 remarkBreaks,
+                [remarkLinkTargets, {revealTargets: props.revealLinkTargets === true}],
             ]}
             remarkRehypeOptions={remarkRehypeOptions}
             urlTransform={sanitizeMarkdownUrl}

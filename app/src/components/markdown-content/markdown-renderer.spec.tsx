@@ -41,6 +41,36 @@ describe('MarkdownRenderer', () => {
         expect(html).toBe('<p>Logo</p>');
     });
 
+    it('writes link targets next to their text when revealing link targets', () => {
+        const html = renderToStaticMarkup(
+            <MarkdownRenderer
+                markdown={'Bitte bestätigen Sie hier: [Zum Antrag](https://example.org/gefaelscht)\n[Datei](file:///etc/passwd)\n[Referenz][1]\n\n[1]: https://example.org/referenz'}
+                revealLinkTargets
+            />,
+        );
+
+        expect(html).toContain('Bitte bestätigen Sie hier: Zum Antrag (https://example.org/gefaelscht)');
+        expect(html).toContain('Datei (file:///etc/passwd)');
+        expect(html).toContain('Referenz (https://example.org/referenz)');
+        expect(html).not.toContain('<a');
+    });
+
+    it('keeps links that show their target when revealing link targets', () => {
+        const html = renderToStaticMarkup(
+            <MarkdownRenderer
+                markdown={'https://example.org/a <https://example.org/b> [https://example.org/c](https://example.org/c) [www.example.org](http://www.example.org) info@example.org'}
+                revealLinkTargets
+            />,
+        );
+
+        expect(html).toContain('href="https://example.org/a"');
+        expect(html).toContain('href="https://example.org/b"');
+        expect(html).toContain('href="https://example.org/c"');
+        expect(html).toContain('href="http://www.example.org"');
+        expect(html).toContain('href="mailto:info@example.org"');
+        expect(html).not.toContain(' (');
+    });
+
     it('names the footnotes for screen readers only', () => {
         render(<MarkdownRenderer markdown={'Referenz[^1]\n\n[^1]: Fußnote'}/>);
 

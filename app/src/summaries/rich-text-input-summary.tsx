@@ -53,10 +53,11 @@ export function RichTextInputSummary(props: BaseSummaryProps<RichTextInputElemen
                         Keine Angabe
                     </Typography>
                 ) : (
-                    // Rendered like the PDF of the submission. Headings keep the size of the summary text, so a
-                    // heading in an answer does not look like a heading of the summary.
+                    // Rendered like the PDF of the submission, which prints link targets as well. Headings keep the
+                    // size of the summary text, so a heading in an answer does not look like a heading of the summary.
                     <MarkdownContent
                         markdown={markdown}
+                        revealLinkTargets
                         sx={{
                             typography: 'body2',
                             '& h1, & h2, & h3, & h4, & h5, & h6': {

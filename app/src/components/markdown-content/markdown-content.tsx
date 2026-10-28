@@ -8,10 +8,11 @@ interface MarkdownContentProps {
     className?: string;
     sx?: SxProps<Theme>;
     components?: Components;
+    revealLinkTargets?: boolean;
 }
 
 export function MarkdownContent(props: MarkdownContentProps) {
-    const {markdown, className, sx, components} = props;
+    const {markdown, className, sx, components, revealLinkTargets} = props;
 
     return (
         <Box
@@ -95,6 +96,7 @@ export function MarkdownContent(props: MarkdownContentProps) {
             <MarkdownRenderer
                 markdown={markdown}
                 components={components}
+                revealLinkTargets={revealLinkTargets}
             />
         </Box>
     );

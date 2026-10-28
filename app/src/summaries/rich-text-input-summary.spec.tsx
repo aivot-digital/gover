@@ -43,11 +43,19 @@ describe('RichTextInputSummary', () => {
 
         expect(screen.getByRole('heading', {name: 'Anliegen'})).toBeInTheDocument();
         expect(screen.getByText('prüfen').tagName).toBe('STRONG');
-        expect(screen.getByRole('link', {name: 'Antrag'})).toHaveAttribute('href', 'https://example.org/antrag');
         expect(screen.getAllByRole('listitem')).toHaveLength(2);
         // Raw HTML stays text, as in every other channel.
         expect(screen.getByText('<u>Anlage</u>')).toBeInTheDocument();
         expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument();
+    });
+
+    // Answers may be shown to other people, so a link must not hide its target behind its text.
+    it('shows the target of every link in the answer', () => {
+        renderSummary('Bitte bestätigen Sie hier: [Zum Antrag](https://example.org/gefaelscht)\n[Datei](file:///etc/passwd)');
+
+        expect(screen.getByText(/Zum Antrag \(https:\/\/example\.org\/gefaelscht\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Datei \(file:\/\/\/etc\/passwd\)/)).toBeInTheDocument();
+        expect(screen.queryByRole('link')).not.toBeInTheDocument();
     });
 
     it.each([null, '', ' \n '])('shows that no answer was given: %j', (value) => {
