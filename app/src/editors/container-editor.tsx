@@ -125,6 +125,7 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout>) {
                     variant="outlined"
                     startIcon={<LinkOffOutlinedIcon/>}
                     onClick={handleRemoveMarketplaceInformation}
+                    color="error"
                 >
                     Verknüpfung auflösen
                 </Button>
@@ -141,6 +142,7 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout>) {
                 />
             </Paper>
             <ConfirmDialog
+                confirmButtonColor="error"
                 title="Verknüpfung auflösen"
                 onConfirm={confirmRemoveMarketplace}
                 onCancel={() => {

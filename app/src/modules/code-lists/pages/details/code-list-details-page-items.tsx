@@ -167,6 +167,7 @@ export function CodeListDetailsPageItems() {
         }
 
         showConfirm({
+            confirmButtonColor: 'error',
             title: 'Eintrag löschen',
             children: (
                 <Typography>
@@ -274,6 +275,7 @@ export function CodeListDetailsPageItems() {
                 disabledTooltip: updateDisabledTooltip,
             },
             {
+                color: 'error' as const,
                 icon: <Delete/>,
                 onClick: () => handleDeleteItem(item),
                 tooltip: 'Eintrag löschen',

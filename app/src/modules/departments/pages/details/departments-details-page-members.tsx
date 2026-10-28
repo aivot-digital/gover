@@ -129,9 +129,11 @@ export function DepartmentsDetailsPageMembers() {
                         : undefined,
             },
             {
+                color: 'error' as const,
                 icon: <Delete/>,
                 onClick: () => {
                     showConfirm({
+                        confirmButtonColor: 'error',
                         title: 'Mitarbeiter:in entfernen',
                         children: (
                             <>

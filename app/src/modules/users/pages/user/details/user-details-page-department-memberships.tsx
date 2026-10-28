@@ -264,6 +264,7 @@ export function UserDetailsPageDepartmentMemberships() {
         }
 
         confirm({
+            confirmButtonColor: 'error',
             title: 'Mitgliedschaft löschen',
             children: (
                 <>
@@ -388,6 +389,7 @@ export function UserDetailsPageDepartmentMemberships() {
                                 disabled: !canReadDepartment,
                                 disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_READ),
                             }, {
+                                color: 'error',
                                 icon: <Delete/>,
                                 tooltip: 'Mitgliedschaft löschen',
                                 disabled: !canDeleteMembership,

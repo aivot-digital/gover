@@ -298,6 +298,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
             </TableFieldLayout>
 
             <ConfirmDialog
+                confirmButtonColor="error"
                 title="Möchten Sie die ausgewählten Einträge wirklich löschen?"
                 onConfirm={confirmDelete}
                 onCancel={() => setConfirmDelete(undefined)}

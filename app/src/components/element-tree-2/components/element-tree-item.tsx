@@ -352,6 +352,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
 
         const confirmed = await showConfirm({
             theme: confirmTheme,
+            confirmButtonColor: 'error',
             title: `${treeItemLabel} löschen`,
             confirmButtonText: 'Löschen',
             children: (

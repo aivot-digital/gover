@@ -243,6 +243,7 @@ export function DataObjectItemDetailsPageIndex() {
         }
 
         showConfirmDeleteDialog({
+            confirmButtonColor: 'error',
             title: 'Datenobjekt löschen',
             state: {},
             onRender: (state, updateState) => {

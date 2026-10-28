@@ -9,6 +9,7 @@ interface ConfirmDialogOptions {
     inputPlaceholder?: string;
     isDestructive?: boolean;
     confirmButtonText?: string;
+    confirmButtonColor?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
     cancelButtonText?: string;
     hideCancelButton?: boolean;
     children?: React.ReactNode;

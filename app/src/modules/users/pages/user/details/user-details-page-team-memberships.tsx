@@ -277,6 +277,7 @@ export function UserDetailsPageTeamMemberships() {
         }
 
         confirm({
+            confirmButtonColor: 'error',
             title: 'Mitgliedschaft löschen',
             children: (
                 <>
@@ -401,6 +402,7 @@ export function UserDetailsPageTeamMemberships() {
                                 disabled: !canReadTeam,
                                 disabledTooltip: formatMissingPermissionTooltip(Permission.TEAM_READ),
                             }, {
+                                color: 'error',
                                 icon: <Delete/>,
                                 tooltip: 'Mitgliedschaft löschen',
                                 disabled: !canDeleteMembership,

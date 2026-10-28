@@ -239,6 +239,7 @@ export const ProcessSettingsDialogProcessInstanceAccessPresetTab = forwardRef<Pr
         }
 
         const confirmed = await confirm({
+            confirmButtonColor: 'error',
             title: 'Berechtigung entfernen',
             confirmButtonText: 'Entfernen',
             children: (

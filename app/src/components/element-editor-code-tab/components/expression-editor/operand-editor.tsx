@@ -116,6 +116,7 @@ export function OperandEditor(props: OperandEditorProps) {
                                 disabled={disabled}
                                 startIcon={OperandTypeIcon.value}
                                 endAction={disabled ? undefined : [{
+                                    color: 'error',
                                     tooltip: 'Löschen',
                                     icon: <Close />,
                                     onClick: () => {
@@ -140,6 +141,7 @@ export function OperandEditor(props: OperandEditorProps) {
                                 disabled={disabled}
                                 startIcon={OperandTypeIcon.value}
                                 endAction={disabled ? undefined : [{
+                                    color: 'error',
                                     tooltip: 'Löschen',
                                     icon: <Close />,
                                     onClick: () => {
@@ -162,6 +164,7 @@ export function OperandEditor(props: OperandEditorProps) {
                                     startIcon={OperandTypeIcon.reference}
                                     endAction={disabled ? undefined : [
                                         {
+                                            color: 'error',
                                             tooltip: 'Löschen',
                                             icon: <Close />,
                                             onClick: () => {

@@ -2,6 +2,7 @@ import {ReactNode, useCallback, useState} from 'react';
 
 export interface ConfirmDialogOptions<T> {
     title: string;
+    confirmButtonColor?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
     state: T;
     onRender: (state: T, updateState: (update: Partial<T>) => void) => ReactNode;
     onConfirm: (state: T) => void;

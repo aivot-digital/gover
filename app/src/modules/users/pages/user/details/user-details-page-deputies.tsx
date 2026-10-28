@@ -274,6 +274,7 @@ export function UserDetailsPageDeputies() {
         }
 
         confirm({
+            confirmButtonColor: 'error',
             title: 'Stellvertreter:in löschen',
             children: (
                 <>
@@ -384,6 +385,7 @@ export function UserDetailsPageDeputies() {
                                 },
                             },
                             {
+                                color: 'error',
                                 tooltip: 'Stellvertreter:in löschen',
                                 disabled: !canDeleteDeputy,
                                 disabledTooltip: formatMissingPermissionTooltip(Permission.DEPUTY_DELETE),

@@ -583,6 +583,7 @@ export function PresetEditPage() {
             </Box>
 
             <ConfirmDialog
+                confirmButtonColor="error"
                 title="Vorlage wirklich löschen"
                 onConfirm={confirmDelete}
                 onCancel={() => {
