@@ -60,7 +60,11 @@ function rewriteLinks(parent: Parent, definitions: Map<string, string>, revealTa
         }
 
         const target = child.type === 'link' ? child.url : definitions.get(child.identifier) ?? '';
-        if (!revealTargets || showsItsTarget(child, target)) {
+        if (showsItsTarget(child, target)) {
+            // As in the backend, text instead of a link whose target the sanitizer would empty.
+            return target !== '' && sanitizeMarkdownUrl(target) === '' ? child.children : [child];
+        }
+        if (!revealTargets) {
             return [child];
         }
         return target === '' ? child.children : [...child.children, {type: 'text', value: ` (${target})`}];
@@ -68,8 +72,9 @@ function rewriteLinks(parent: Parent, definitions: Map<string, string>, revealTa
 }
 
 /**
- * With `revealTargets`, every link that hides its target becomes its text followed by its target, as
- * `MarkdownTemplateValues.revealLinkTargets` does in the backend for formatted template values.
+ * Keeps URLs with a protocol that is not allowed as text when they would be linked as their own text. With
+ * `revealTargets`, every other link becomes its text followed by its target, as `MarkdownTemplateValues.revealLinkTargets`
+ * does in the backend for formatted template values.
  */
 function remarkLinkTargets({revealTargets}: {revealTargets: boolean}) {
     return (tree: Root) => {

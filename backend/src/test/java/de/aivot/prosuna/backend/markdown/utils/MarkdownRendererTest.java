@@ -102,6 +102,14 @@ class MarkdownRendererTest {
     }
 
     @Test
+    void keepsTemplateValuesWithOtherLinkProtocolsAsText() {
+        assertEquals(
+                "<p>[Datei](file:///etc/passwd)</p>\n",
+                MarkdownRenderer.renderHtml(MarkdownTemplateValues.escapeText("[Datei](file:///etc/passwd)"))
+        );
+    }
+
+    @Test
     void rendersMissingMarkdownAsEmptyPlainText() {
         assertEquals("", MarkdownRenderer.renderPlainText(null));
         assertEquals("", MarkdownRenderer.renderPlainText(""));

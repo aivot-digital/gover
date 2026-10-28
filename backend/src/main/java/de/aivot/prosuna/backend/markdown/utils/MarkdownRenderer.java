@@ -20,6 +20,7 @@ import org.commonmark.node.Node;
 import org.commonmark.node.SoftLineBreak;
 import org.commonmark.node.Text;
 import org.commonmark.parser.Parser;
+import org.commonmark.parser.PostProcessor;
 import org.commonmark.renderer.NodeRenderer;
 import org.commonmark.renderer.html.AttributeProvider;
 import org.commonmark.renderer.html.DefaultUrlSanitizer;
@@ -63,8 +64,11 @@ public final class MarkdownRenderer {
                     .build(),
             TaskListItemsExtension.create()
     );
+    private static final DefaultUrlSanitizer URL_SANITIZER = new DefaultUrlSanitizer(ALLOWED_URL_PROTOCOLS);
     static final Parser PARSER = Parser.builder()
             .extensions(EXTENSIONS)
+            // Runs after the autolink extension, which links URLs with any protocol.
+            .postProcessor(new DisallowedAutolinksAsText())
             .build();
     private static final HtmlRenderer RENDERER = HtmlRenderer.builder()
             .extensions(EXTENSIONS)
@@ -74,7 +78,7 @@ public final class MarkdownRenderer {
             .softbreak("<br />\n")
             .escapeHtml(true)
             .sanitizeUrls(true)
-            .urlSanitizer(new DefaultUrlSanitizer(ALLOWED_URL_PROTOCOLS))
+            .urlSanitizer(URL_SANITIZER)
             // Matches the URL normalization of the frontend renderer, for example for umlauts in link targets.
             .percentEncodeUrls(true)
             .build();
@@ -129,6 +133,34 @@ public final class MarkdownRenderer {
                 || target.equals("http://" + label)
                 || target.equals("https://" + label)
                 || target.equals("mailto:" + label);
+    }
+
+    /**
+     * Turns links that show their target back into text when that target has a protocol that is not allowed, such as
+     * {@code file:///etc/passwd}. Sanitizing would otherwise render them as links with an empty target.
+     */
+    private static final class DisallowedAutolinksAsText extends AbstractVisitor implements PostProcessor {
+        @Override
+        public Node process(Node node) {
+            node.accept(this);
+            return node;
+        }
+
+        @Override
+        public void visit(Link link) {
+            var target = link.getDestination();
+            if (target.isEmpty() || !showsItsTarget(link) || !URL_SANITIZER.sanitizeLinkUrl(target).isEmpty()) {
+                return;
+            }
+
+            var child = link.getFirstChild();
+            while (child != null) {
+                var next = child.getNext();
+                link.insertBefore(child);
+                child = next;
+            }
+            link.unlink();
+        }
     }
 
     /**

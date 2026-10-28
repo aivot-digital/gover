@@ -61,6 +61,12 @@
       "excludes": ["&lt;https"]
     },
     {
+      "name": "keeps URLs with other protocols as text",
+      "markdown": "file:///etc/passwd und ftp://example.org und <file:///etc/hosts>",
+      "contains": ["file:///etc/passwd und ftp://example.org und file:///etc/hosts"],
+      "excludes": ["<a", "href"]
+    },
+    {
       "name": "renders fenced code with escaped content",
       "markdown": "```sh\necho <b>\n```",
       "contains": ["<pre><code class=\"language-sh\">echo &lt;b&gt;"],
