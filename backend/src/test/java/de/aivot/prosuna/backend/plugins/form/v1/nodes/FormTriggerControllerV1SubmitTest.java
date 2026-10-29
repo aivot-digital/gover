@@ -47,6 +47,7 @@ import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.util.*;
@@ -98,7 +99,7 @@ class FormTriggerControllerV1SubmitTest {
         var createdInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
         verify(fixture.processInstanceService()).create(createdInstanceCaptor.capture());
         var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
-        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        verify(fixture.processInstanceService()).save(updatedInstanceCaptor.capture());
         assertEquals(
                 Map.of("mapped", "payload"),
                 updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_PAYLOAD)
@@ -107,6 +108,9 @@ class FormTriggerControllerV1SubmitTest {
                 createdInstanceCaptor.getValue().getStarted(),
                 updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_STARTED)
         );
+        var releasedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), releasedInstanceCaptor.capture());
+        assertEquals(ProcessInstanceStatus.Created, releasedInstanceCaptor.getValue().getStatus());
     }
 
     @Test
@@ -200,6 +204,36 @@ class FormTriggerControllerV1SubmitTest {
         ));
 
         // The instance must never be released to the process worker, so submitting again cannot create a duplicate.
+        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        assertEquals(ProcessInstanceStatus.Failed, updatedInstanceCaptor.getValue().getStatus());
+        assertEquals(0, response.getCookies().length);
+        // The identities stay in the session, so the customer can submit again without identifying again.
+        verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
+    }
+
+    @Test
+    void submitShouldFailTheInstanceWhenTheDatabaseRejectsThePayload() throws Exception {
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), UUID.randomUUID().toString());
+        // PostgreSQL rejects e.g. a NUL character in a jsonb value.
+        doThrow(new DataIntegrityViolationException("unsupported Unicode escape sequence"))
+                .when(fixture.processInstanceService())
+                .save(any(ProcessInstanceEntity.class));
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        ));
+
+        // Only the status is written, so the rejected payload cannot keep the instance paused.
         var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
         verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
         assertEquals(ProcessInstanceStatus.Failed, updatedInstanceCaptor.getValue().getStatus());

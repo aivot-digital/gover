@@ -102,7 +102,7 @@ class ProcessTaskExecutionServiceTest {
         when(loggers.create(1L, 2L, null, null)).thenReturn(logger);
         var deadlines = new ProcessTaskDeadlineService(nodes, nodeService, edges, instances, tasks, loggers,
                 new ProcessTaskDeadlineResultHandler(tasks, new ProcessWorkRequestService(workRequests, new StoredWorkSignals(rabbit), time)), time);
-        execution = new ProcessTaskExecutionService(instances, tasks, deadlines, new DataSourceTransactionManager(source), mock(jakarta.persistence.EntityManager.class));
+        execution = new ProcessTaskExecutionService(instances, tasks, deadlines, new DataSourceTransactionManager(source));
     }
 
     @Test

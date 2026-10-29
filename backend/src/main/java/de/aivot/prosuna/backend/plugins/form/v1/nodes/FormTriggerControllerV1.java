@@ -811,14 +811,16 @@ public class FormTriggerControllerV1 {
             // submitter can submit again without creating a duplicate.
             submissionSecret = processSubmissionBindingService.bind(createdInstance.getId());
 
+            // Store the payload while the instance is still paused, so a payload the database rejects marks the instance
+            // as failed below. update() copies only selected fields and would drop the payload.
+            processInstanceService.save(createdInstance.setInitialPayload(initialPayload));
+
             // The instance holds the identities now. Remove them from the session as the last step before the instance
             // is released, so the session ID cannot be used to submit the form again with the same identities. If any
             // step fails before, the identities stay in the session for another attempt.
             identityService.clearIdentitySession(identitySessionId, nodeEntity.getId());
 
-            createdInstance
-                    .setInitialPayload(initialPayload)
-                    .setStatus(ProcessInstanceStatus.Created);
+            createdInstance.setStatus(ProcessInstanceStatus.Created);
         } catch (Exception e) {
             createdInstance.setStatus(ProcessInstanceStatus.Failed);
 

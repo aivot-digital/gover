@@ -15,7 +15,6 @@ import de.aivot.prosuna.backend.process.repositories.ProcessWorkRequestRepositor
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -36,7 +35,6 @@ public class ProcessInstanceRestartService {
     private final ProcessWorkRequestService workRequests;
     private final ProcessTaskExecutionService execution;
     private final ProcessNodeExecutionLoggerFactory loggers;
-    private final EntityManager entityManager;
     private final ScopedAuditService audit;
 
     public ProcessInstanceRestartService(@Nonnull ProcessInstanceRepository instances,
@@ -45,7 +43,6 @@ public class ProcessInstanceRestartService {
                                          @Nonnull ProcessWorkRequestService workRequests,
                                          @Nonnull ProcessTaskExecutionService execution,
                                          @Nonnull ProcessNodeExecutionLoggerFactory loggers,
-                                         @Nonnull EntityManager entityManager,
                                          @Nonnull AuditService auditService) {
         this.instances = instances;
         this.tasks = tasks;
@@ -53,7 +50,6 @@ public class ProcessInstanceRestartService {
         this.workRequests = workRequests;
         this.execution = execution;
         this.loggers = loggers;
-        this.entityManager = entityManager;
         this.audit = auditService.createScopedAuditService(ProcessInstanceRestartService.class, "Vorgänge");
     }
 
@@ -67,14 +63,11 @@ public class ProcessInstanceRestartService {
             throws ResponseException {
         return Objects.requireNonNull(execution.inInstance(instanceId, () -> {
             var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
-            // Open EntityManager in View can retain entities loaded before the instance lock was acquired.
-            entityManager.refresh(instance);
             authorization.run();
             if (instance.getStatus() != ProcessInstanceStatus.Failed) {
                 throw ResponseException.badRequest("Nur Vorgänge im Status 'Fehlgeschlagen' können neu gestartet werden.");
             }
             var latestTask = tasks.findFirstByProcessInstanceIdOrderByStartedDescIdDesc(instanceId).orElse(null);
-            if (latestTask != null) entityManager.refresh(latestTask);
             // Requests of a failed instance are held until it runs again.
             var heldRequests = requests.findIdsByProcessInstanceId(instanceId);
             var now = Instant.now();
@@ -121,9 +114,6 @@ public class ProcessInstanceRestartService {
         return Objects.requireNonNull(execution.inInstance(instanceId, () -> {
             var task = tasks.findById(taskId).orElseThrow(ResponseException::notFound);
             var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
-            // Open EntityManager in View can retain entities loaded before the instance lock was acquired.
-            entityManager.refresh(task);
-            entityManager.refresh(instance);
             if (!instanceId.equals(task.getProcessInstanceId())) {
                 throw ResponseException.notFound();
             }

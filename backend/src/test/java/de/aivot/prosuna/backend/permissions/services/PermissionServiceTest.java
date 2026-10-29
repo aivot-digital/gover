@@ -60,8 +60,7 @@ class PermissionServiceTest {
 
     @Test
     void permissionChecksShouldCommitTheirQueriesInReadOnlyTransactions() throws ResponseException {
-        // Uncommitted queries would keep the request's connection in a transaction under open-in-view, so the
-        // instance lock could no longer set its isolation level.
+        // The declared repository queries get no transaction of their own, so the checks must provide one.
         var transactionManager = mock(PlatformTransactionManager.class);
         var transaction = new SimpleTransactionStatus();
         when(transactionManager.getTransaction(any())).thenReturn(transaction);

@@ -364,7 +364,9 @@ public class WebhookTriggerControllerV1 {
                     .setInitialPayload(initialPayload)
                     .setStatus(ProcessInstanceStatus.Created);
 
-            processInstanceService.update(createdInstance.getId(), createdInstance);
+            // Save the whole instance: update() copies only selected fields and would drop the initial payload. The
+            // failure path below keeps update(), so a payload the database rejects cannot block marking it as failed.
+            processInstanceService.save(createdInstance);
         } catch (Exception e) {
             // TODO: Log the exception
             createdInstance.setStatus(ProcessInstanceStatus.Failed);
