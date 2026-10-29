@@ -435,6 +435,7 @@
     }
 
     .input-element.number-element .input .content .suffix,
+    .input-element.duration-element .input .content .suffix,
     .input-element.date-element .input .content .suffix,
     .input-element.date-time-element .input .content .suffix,
     .input-element.time-element .input .content .suffix,
@@ -518,11 +519,22 @@
 
     .input-element.file-upload-element .file-list {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
+        min-width: 0;
         gap: 0.5rem;
         list-style: none;
         margin: 0;
         padding: 0;
+    }
+
+    .input-element.file-upload-element .file-list li {
+        overflow-wrap: anywhere;
+    }
+
+    .input-element.file-upload-element .original-file-name {
+        display: block;
+        font-size: 0.85rem;
+        color: #555;
     }
 
     .input-element .hint-wrapper:has(.hint) {

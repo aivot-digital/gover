@@ -128,7 +128,7 @@ class TemplateLoaderServiceTest {
     void processTemplateContent_RendersContentWithTemplateDataAndBundledFragments() {
         var html = new TemplateLoaderService().processTemplateContent(
                 """
-                        <style th:insert="./form-parts/style.html"></style>
+                        <style th:replace="~{./form-parts/style.html}"></style>
                         <h1 th:text="${title}">Titel</h1>
                         """,
                 Map.of(
@@ -140,6 +140,8 @@ class TemplateLoaderServiceTest {
 
         assertTrue(html.contains("<h1>Antrag auf Beispielleistung</h1>"));
         assertFalse(html.contains("<style></style>"));
+        assertEquals(1, html.split("<style\\b", -1).length - 1);
+        assertEquals(1, html.split("</style>", -1).length - 1);
     }
 
     @Test
