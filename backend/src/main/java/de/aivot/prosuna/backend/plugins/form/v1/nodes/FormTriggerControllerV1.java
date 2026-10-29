@@ -812,7 +812,8 @@ public class FormTriggerControllerV1 {
             submissionSecret = processSubmissionBindingService.bind(createdInstance.getId());
 
             // Store the payload while the instance is still paused, so a payload the database rejects marks the instance
-            // as failed below. update() copies only selected fields and would drop the payload.
+            // as failed below while the identities stay in the session. update() copies only selected fields and would
+            // drop the payload.
             processInstanceService.save(createdInstance.setInitialPayload(initialPayload));
 
             // The instance holds the identities now. Remove them from the session as the last step before the instance
@@ -822,7 +823,13 @@ public class FormTriggerControllerV1 {
 
             createdInstance.setStatus(ProcessInstanceStatus.Created);
         } catch (Exception e) {
-            createdInstance.setStatus(ProcessInstanceStatus.Failed);
+            // Drop a payload that was already stored when marking the instance as failed. The submitter did not receive
+            // the access key and submits again, so restarting this instance would duplicate the case; a restart refuses
+            // an instance without initial data. update() would keep the stored payload, so the full state is saved, and
+            // a payload the database rejected is not sent again.
+            createdInstance
+                    .setInitialPayload(new HashMap<>())
+                    .setStatus(ProcessInstanceStatus.Failed);
 
             var logger = processNodeExecutionLoggerFactory
                     .create(
@@ -833,7 +840,7 @@ public class FormTriggerControllerV1 {
                     );
             logger.logException(e);
 
-            processInstanceService.update(createdInstance.getId(), createdInstance);
+            processInstanceService.save(createdInstance);
 
             if (e instanceof ResponseException responseException) {
                 throw responseException;
