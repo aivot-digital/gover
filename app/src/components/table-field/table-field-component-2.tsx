@@ -198,7 +198,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
             tooltip: addTooltip ?? addLabel ?? 'Eintrag hinzufügen',
             ariaLabel: addTooltip ?? addLabel ?? 'Eintrag hinzufügen',
             onClick: handleAddRow,
-            disabled: isInteractionDisabled || (maximumRows != null && rows.length >= maximumRows),
+            disabled: isInteractionDisabled || (maximumRows != null && maximumRows > 0 && rows.length >= maximumRows),
         },
         {
             icon: <Delete/>,

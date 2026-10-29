@@ -1,4 +1,4 @@
-import {describe, expect, it, vi, type Mock} from 'vitest';
+import {beforeEach, describe, expect, it, vi, type Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ProcessAttachmentDisplayView} from './process-attachment-display-view';
@@ -9,8 +9,46 @@ import type {BaseViewProps} from './base-view';
 import type {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import type {ProcessInstanceAttachmentEntity} from '../modules/process/entities/process-instance-attachment-entity';
 import type {ProcessInstanceAttachmentSetEntity} from '../modules/process/entities/process-instance-attachment-set-entity';
+import {useOptionalProcessNodeEditorContext} from '../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
+
+vi.mock('../modules/process/pages/details/components/process-node-editor/process-node-editor-context', () => ({
+    useOptionalProcessNodeEditorContext: vi.fn(() => null),
+}));
 
 describe('ProcessAttachmentDisplayView', () => {
+    beforeEach(() => {
+        vi.mocked(useOptionalProcessNodeEditorContext).mockReturnValue(null);
+    });
+
+    it('uses the current attachment set title in the preview instead of its technical key', () => {
+        const editorContext = {
+            incomingMetadata: {
+                forwardedAttachmentSets: [{dataKey: 'n7w4vd', label: 'Formularzusammenfassung'}],
+            },
+        } as NonNullable<ReturnType<typeof useOptionalProcessNodeEditorContext>>;
+        vi.mocked(useOptionalProcessNodeEditorContext).mockReturnValue(editorContext);
+        const props = createBaseProps({attachmentSetKey: 'n7w4vd', label: '  '});
+        const {rerender} = render(<ProcessAttachmentDisplayView {...props}/>);
+        expect(screen.getByText('Formularzusammenfassung', {exact: true})).toBeVisible();
+        expect(screen.getByText('Anlagensatz-Schlüssel: n7w4vd')).toBeVisible();
+        expect(screen.queryByText(/Hochgeladen als/)).not.toBeInTheDocument();
+
+        editorContext.incomingMetadata!.forwardedAttachmentSets[0].label = 'Aktualisierte Zusammenfassung';
+        rerender(<ProcessAttachmentDisplayView {...props}/>);
+        expect(screen.getByText('Aktualisierte Zusammenfassung', {exact: true})).toBeVisible();
+
+        rerender(<ProcessAttachmentDisplayView {...createBaseProps({attachmentSetKey: 'n7w4vd', label: 'Eigene Beschriftung'})}/>);
+        expect(screen.getAllByText('Eigene Beschriftung', {exact: true}).length).toBeGreaterThan(0);
+        expect(screen.queryByText('Aktualisierte Zusammenfassung', {exact: true})).not.toBeInTheDocument();
+    });
+
+    it('uses a neutral preview when metadata is unavailable', () => {
+        render(<ProcessAttachmentDisplayView {...createBaseProps({attachmentSetKey: 'n7w4vd'})}/>);
+        expect(screen.getByText('Vorschau des Anlagensatzes', {exact: true})).toBeVisible();
+        expect(screen.getByText('Anlagensatz-Schlüssel: n7w4vd')).toBeVisible();
+        expect(screen.queryByText(/Hochgeladen als/)).not.toBeInTheDocument();
+    });
+
     it('should render a configuration prompt in the editor', () => {
         render(
             <ProcessAttachmentDisplayView

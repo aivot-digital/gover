@@ -21,12 +21,14 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
 
     const minItemsError = (
         element.maxItems != null &&
+        element.maxItems > 0 &&
         element.minItems != null &&
         element.minItems > element.maxItems
     );
 
     const maxItemsError = (
         element.maxItems != null &&
+        element.maxItems > 0 &&
         element.minItems != null &&
         element.maxItems < element.minItems
     );
@@ -85,7 +87,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                             minItems: value,
                         });
                     }}
-                    hint="Geben Sie 0 oder nichts ein, um keine Mindestanzahl zu fordern."
+                    hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
                     error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
                     disabled={!editable}
                 />

@@ -58,7 +58,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.StoragePathSelector]: 'Speicherpfad-Auswahl',
     [ElementType.ProcessAttachmentDisplay]: 'Anlagensatz-Anzeige',
     [ElementType.PaymentConfigElement]: 'Zahlungskonfiguration',
-    [ElementType.LinkButton]: 'Link-Button',
+    [ElementType.LinkButton]: 'Schaltfläche (Button)',
 };
 
 export function getElementName(element: AnyElement): string {

@@ -108,22 +108,18 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                 />
             }
 
-            {
-                props.element.required === true &&
-                <NumberFieldComponent
-                    label="Erforderliche Mindestanzahl"
-                    value={props.element.minimumRequiredOptions ?? 1}
-                    onChange={(val) => {
-                        props.onPatch({
-                            required: val === 0 ? false : props.element.required,
-                            minimumRequiredOptions: val === 0 ? undefined : val,
-                        });
-                    }}
-                    error={minRequiredError ? 'Sie fordern mehr Optionen als Sie definiert haben.' : undefined}
-                    hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
-                    disabled={!props.editable}
-                />
-            }
+            <NumberFieldComponent
+                label="Mindestanzahl"
+                value={props.element.minimumRequiredOptions ?? undefined}
+                onChange={(val) => {
+                    props.onPatch({
+                        minimumRequiredOptions: val === 0 ? undefined : val,
+                    });
+                }}
+                error={minRequiredError ? 'Sie fordern mehr Optionen als Sie definiert haben.' : undefined}
+                hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
+                disabled={!props.editable}
+            />
 
             {
                 props.element.presentation !== MultiChoicePresentation.Combobox &&

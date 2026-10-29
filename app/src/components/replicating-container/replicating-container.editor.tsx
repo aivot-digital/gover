@@ -72,28 +72,24 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     disabled={!props.editable}
                 />
             </Grid>
-            {
-                (props.element.required === true) &&
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}>
-                    <NumberFieldComponent
-                        value={props.element.minimumRequiredSets ?? 1}
-                        label="Mindestanzahl der hinzuzufügenden Datensätze"
-                        hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
-                        onChange={(val) => {
-                            props.onPatch({
-                                minimumRequiredSets: (val ?? 0) > 0 ? val : undefined,
-                                required: (val ?? 0) > 0,
-                            });
-                        }}
-                        error={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : undefined}
-                        disabled={!props.editable}
-                    />
-                </Grid>
-            }
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
+                <NumberFieldComponent
+                    value={props.element.minimumRequiredSets ?? undefined}
+                    label="Mindestanzahl der hinzuzufügenden Datensätze"
+                    hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
+                    onChange={(val) => {
+                        props.onPatch({
+                            minimumRequiredSets: (val ?? 0) > 0 ? val : undefined,
+                        });
+                    }}
+                    error={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : undefined}
+                    disabled={!props.editable}
+                />
+            </Grid>
             <Grid
                 size={{
                     xs: 12,

@@ -9,6 +9,7 @@ import type {
     LinkButtonElementVariant,
 } from '../models/elements/form/content/link-button-element';
 import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
+import {StepIconsMap} from '../data/step-icons';
 
 const DefaultLabel = 'Link öffnen';
 
@@ -26,6 +27,8 @@ export function LinkButtonView(props: BaseViewProps<LinkButtonElement, void>): R
     const variant = resolveVariant(element.variant);
     const color = resolveColor(element.color);
     const openInNewTab = element.openInNewTab !== false;
+    const IconComponent = element.icon ? StepIconsMap[element.icon]?.def : undefined;
+    const startIcon = IconComponent ? <IconComponent/> : undefined;
 
     if (href != null) {
         return (
@@ -35,7 +38,8 @@ export function LinkButtonView(props: BaseViewProps<LinkButtonElement, void>): R
                 href={href}
                 target={openInNewTab ? '_blank' : undefined}
                 rel={openInNewTab ? 'noopener noreferrer' : undefined}
-                endIcon={openInNewTab ? <OpenInNew/> : <LinkIcon/>}
+                startIcon={startIcon}
+                endIcon={openInNewTab ? <OpenInNew sx={{opacity: 0.65}}/> : <LinkIcon sx={{opacity: 0.65}}/>}
                 disabled={isBusy}
             >
                 {label}
@@ -43,13 +47,16 @@ export function LinkButtonView(props: BaseViewProps<LinkButtonElement, void>): R
         );
     }
 
-    const event = resolveTaskEvent(element, taskViewMode);
+    // A configured link takes precedence, even if its URL is invalid. Do not fall back to a
+    // different action from a legacy mixed configuration, matching the backend's inline-event discovery.
+    const event = element.href?.trim() ? null : resolveTaskEvent(element, taskViewMode);
     const disabled = isBusy || readOnly === true || event == null;
 
     return (
         <Button
             variant={variant}
             color={color}
+            startIcon={startIcon}
             onClick={() => {
                 if (event != null) {
                     void onEvent(authoredElementValues, event);
@@ -112,7 +119,7 @@ function resolveVariant(variant: string | null | undefined): LinkButtonElementVa
 }
 
 function resolveColor(color: string | null | undefined): LinkButtonElementColor {
-    if (color === 'secondary') {
+    if (color === 'secondary' || color === 'success' || color === 'info' || color === 'warning' || color === 'error') {
         return color;
     }
 

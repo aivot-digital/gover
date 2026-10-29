@@ -1,5 +1,5 @@
-import React from 'react';
-import {Grid} from '@mui/material';
+import React, {useState} from 'react';
+import {Box, Button, Grid, Typography} from '@mui/material';
 import type {BaseEditorProps} from './base-editor';
 import type {
     LinkButtonElement,
@@ -9,6 +9,9 @@ import type {
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
+import {FormFieldGroup} from '../components/form-field';
+import {StepIconsMap} from '../data/step-icons';
+import {IconPickerDialog} from '../dialogs/icon-picker-dialog/icon-picker-dialog';
 
 type LinkButtonTarget = 'href' | 'staffTaskEvent' | 'customerTaskEvent';
 
@@ -21,12 +24,25 @@ const variantOptions = [
 const colorOptions = [
     {label: 'Primär', value: 'primary'},
     {label: 'Sekundär', value: 'secondary'},
+    {label: 'Erfolg', value: 'success'},
+    {label: 'Information', value: 'info'},
+    {label: 'Warnung', value: 'warning'},
+    {label: 'Fehler', value: 'error'},
 ];
 
 const targetOptions = [
-    {label: 'Link', value: 'href'},
-    {label: 'Mitarbeitenden-Ereignis', value: 'staffTaskEvent'},
-    {label: 'Ereignis einer Aufgabe für Beteiligte', value: 'customerTaskEvent'},
+    {
+        label: 'Link öffnen', value: 'href',
+        subLabel: 'Öffnet den angegebenen Link, zum Beispiel eine Website oder einen Download.',
+    },
+    {
+        label: 'Aufgabenaktion für Mitarbeitende', value: 'staffTaskEvent',
+        subLabel: 'Löst eine Aktion in der Aufgabenansicht für Mitarbeitende aus. Außerhalb dieser Ansicht ist die Schaltfläche deaktiviert. Vor dem Ausführen werden die Formulareingaben geprüft.',
+    },
+    {
+        label: 'Aufgabenaktion für externe Beteiligte', value: 'customerTaskEvent',
+        subLabel: 'Löst eine Aktion in der Aufgabenansicht für externe Beteiligte aus. Außerhalb dieser Ansicht ist die Schaltfläche deaktiviert. Vor dem Ausführen werden die Formulareingaben geprüft.',
+    },
 ];
 
 export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): React.JSX.Element {
@@ -36,6 +52,9 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
         editable,
     } = props;
     const target = resolveTarget(element);
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const selectedIcon = element.icon ? StepIconsMap[element.icon] : undefined;
+    const IconComponent = selectedIcon?.def;
 
     return (
         <Grid
@@ -54,12 +73,25 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
             </Grid>
             <Grid size={{xs: 12, lg: 6}}>
                 <SelectFieldComponent
-                    label="Ziel"
+                    label="Aktion"
                     value={target}
                     onChange={(value) => {
-                        onPatch(resolveTargetPatch(value as LinkButtonTarget | null));
+                        onPatch(resolveTargetPatch(value as LinkButtonTarget | null, element));
                     }}
                     options={targetOptions}
+                    muiPassTroughProps={{
+                        slotProps: {
+                            select: {
+                                MenuProps: {
+                                    sx: {
+                                        '& .MuiListItemText-primary, & .MuiListItemText-secondary': {
+                                            whiteSpace: 'normal',
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    }}
                     includeEmptyOption={false}
                     disabled={!editable}
                 />
@@ -85,31 +117,22 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                                 onPatch({openInNewTab});
                             }}
                             disabled={!editable}
+                            sx={{mt: 4}}
                         />
                     </Grid>
                 </>
             }
             {
-                target === 'staffTaskEvent' &&
+                target !== 'href' &&
                 <Grid size={{xs: 12, lg: 6}}>
                     <TextFieldComponent
-                        value={element.staffTaskEvent}
-                        label="Mitarbeitenden-Ereignis"
-                        onChange={(staffTaskEvent) => {
-                            onPatch({staffTaskEvent});
-                        }}
-                        disabled={!editable}
-                    />
-                </Grid>
-            }
-            {
-                target === 'customerTaskEvent' &&
-                <Grid size={{xs: 12, lg: 6}}>
-                    <TextFieldComponent
-                        value={element.customerTaskEvent}
-                        label="Ereignis einer Aufgabe für Beteiligte"
-                        onChange={(customerTaskEvent) => {
-                            onPatch({customerTaskEvent});
+                        value={element[target]}
+                        label="Ereigniskennung"
+                        hint={'Geben Sie die technische Kennung einer Aktion an, die der jeweilige Prozessknoten unterstützt. Eine frei gewählte Kennung legt keine neue Aktion an.' + (target === 'staffTaskEvent'
+                            ? ' Beispiel: „complete“ schließt beim Knoten „Manuelle Aktion ausführen“ die Aufgabe ab.'
+                            : ' Die gültigen Kennungen erhalten Sie von den Entwickler:innen des Prozessknotens.')}
+                        onChange={(event) => {
+                            onPatch({[target]: event ?? ''});
                         }}
                         disabled={!editable}
                     />
@@ -135,8 +158,44 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                         onPatch({color: color as LinkButtonElementColor | null});
                     }}
                     options={colorOptions}
+                    hint="Primär und Sekundär verwenden die entsprechenden Farben des Erscheinungsbilds. Die weiteren Farben sind Signalfarben."
                     includeEmptyOption={false}
                     disabled={!editable}
+                />
+            </Grid>
+            <Grid size={12}>
+                <FormFieldGroup
+                    label="Symbol (Icon)"
+                    hint="Wird vor der Beschriftung angezeigt."
+                    disabled={!editable}
+                >
+                    <Box sx={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2}}>
+                        {IconComponent && (
+                            <Box sx={{display: 'flex', p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'action.selected', color: 'text.secondary'}}>
+                                <IconComponent/>
+                            </Box>
+                        )}
+                        <Typography variant="body2" color={selectedIcon ? 'text.primary' : 'text.secondary'}>
+                            {selectedIcon?.label ?? (element.icon ? 'Symbol nicht verfügbar' : 'Kein Symbol ausgewählt')}
+                        </Typography>
+                        <Button variant="outlined" disabled={!editable} onClick={() => setPickerOpen(true)}>
+                            {element.icon ? 'Symbol ändern' : 'Symbol auswählen'}
+                        </Button>
+                        {element.icon && (
+                            <Button disabled={!editable} onClick={() => onPatch({icon: null})}>
+                                Symbol entfernen
+                            </Button>
+                        )}
+                    </Box>
+                </FormFieldGroup>
+                <IconPickerDialog
+                    open={pickerOpen && editable}
+                    onClose={() => setPickerOpen(false)}
+                    onSelect={(icon) => onPatch({icon})}
+                    selectedIconId={element.icon ?? undefined}
+                    title="Symbol (Icon) für Schaltfläche auswählen"
+                    showLabels
+                    autoSelect
                 />
             </Grid>
         </Grid>
@@ -144,6 +203,11 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
 }
 
 function resolveTarget(element: LinkButtonElement): LinkButtonTarget {
+    // Existing definitions may contain multiple targets. A link takes precedence at runtime.
+    if (element.href != null && element.href.trim().length > 0) {
+        return 'href';
+    }
+
     if (element.staffTaskEvent != null && element.staffTaskEvent.trim().length > 0) {
         return 'staffTaskEvent';
     }
@@ -152,20 +216,31 @@ function resolveTarget(element: LinkButtonElement): LinkButtonTarget {
         return 'customerTaskEvent';
     }
 
+    // An empty string preserves a selected, unfinished action across edits and save/reload.
+    // Null/undefined means unselected; execution still requires a non-blank event name.
+    if (element.staffTaskEvent != null) {
+        return 'staffTaskEvent';
+    }
+    if (element.customerTaskEvent != null) {
+        return 'customerTaskEvent';
+    }
+
     return 'href';
 }
 
-function resolveTargetPatch(target: LinkButtonTarget | null): Partial<LinkButtonElement> {
+function resolveTargetPatch(target: LinkButtonTarget | null, element: LinkButtonElement): Partial<LinkButtonElement> {
     switch (target ?? 'href') {
         case 'staffTaskEvent':
             return {
                 href: null,
+                staffTaskEvent: element.staffTaskEvent ?? '',
                 customerTaskEvent: null,
             };
         case 'customerTaskEvent':
             return {
                 href: null,
                 staffTaskEvent: null,
+                customerTaskEvent: element.customerTaskEvent ?? '',
             };
         case 'href':
         default:

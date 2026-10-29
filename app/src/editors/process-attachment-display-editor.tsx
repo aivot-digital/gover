@@ -39,6 +39,7 @@ export function ProcessAttachmentDisplayEditor(props: BaseEditorProps<ProcessAtt
                             });
                         }}
                         hint="Alle Vorgangsanlagen aus Anlagensätzen mit diesem Schlüssel werden angezeigt."
+                        required
                         disabled={!editable}
                         maxItems={1}
                     />

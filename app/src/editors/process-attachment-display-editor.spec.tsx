@@ -1,6 +1,9 @@
 import {describe, expect, it, vi} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {ThemeProvider} from '@mui/material';
+import {BaseTheme} from '../theming/base-theme';
 import {ElementType} from '../data/element-type/element-type';
 import type {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import {ProcessAttachmentDisplayEditor} from './process-attachment-display-editor';
@@ -8,55 +11,37 @@ import {ProcessNodeEditorProvider} from '../modules/process/pages/details/compon
 import type {ProcessNodeDefinitionMetadata} from '../modules/process/entities/process-node-definition-metadata';
 import type {ProcessNodeEntity} from '../modules/process/entities/process-node-entity';
 
-// This spec verifies the editor patch wiring. Mock the nested input controls so the
-// test does not depend on MUI Autocomplete/Popper behavior in jsdom.
-vi.mock('../components/process-instance-attachment-set-select/process-instance-attachment-set-select', () => ({
-    ProcessInstanceAttachmentSetSelect: (props: {
-        label: string;
-        onChange: (value: string[] | null) => void;
-    }) => (
-        <button
-            type="button"
-            onClick={() => props.onChange(['case_documents'])}
-        >
-            {props.label}
-        </button>
-    ),
-}));
-
-vi.mock('../components/text-field/text-field-component', () => ({
-    TextFieldComponent: (props: {
-        label: string;
-        value?: string | null;
-        onChange: (value: string | null) => void;
-    }) => (
-        <input
-            aria-label={props.label}
-            value={props.value ?? ''}
-            onChange={(event) => props.onChange(event.target.value.length > 0 ? event.target.value : null)}
-        />
-    ),
-}));
-
 describe('ProcessAttachmentDisplayEditor', () => {
-    it('should suggest and patch the configured attachment set key', () => {
+    it('requires an attachment set and stores its key while displaying its title', async () => {
         const onPatch = vi.fn();
+        const user = userEvent.setup();
 
-        renderWithEditorMetadata(
-            <ProcessAttachmentDisplayEditor
-                element={createElement()}
-                onPatch={onPatch}
-                editable
-                hasSummaryLayoutParent={false}
-                scope="application"
-            />,
-        );
-
-        fireEvent.click(screen.getByText('Schlüssel des Anlagensatzes'));
+        function Editor() {
+            const [element, setElement] = React.useState<ProcessAttachmentDisplayElement>({...createElement(), attachmentSetKey: null});
+            return <ProcessAttachmentDisplayEditor element={element} onPatch={patch => {
+                onPatch(patch);
+                setElement(current => ({...current, ...patch}));
+            }} editable hasSummaryLayoutParent={false} scope="application"/>;
+        }
+        renderWithEditorMetadata(<Editor/>);
+        const input = screen.getByRole('combobox', {name: 'Schlüssel des Anlagensatzes'});
+        expect(input).toBeRequired();
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription(/Alle Vorgangsanhänge aus Anlagensätzen mit diesem Schlüssel werden angezeigt/);
+        fireEvent.mouseDown(input);
+        fireEvent.click(await screen.findByRole('option', {name: /^Fallunterlagen/}));
+        expect(input).toHaveValue('Fallunterlagen');
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
 
         expect(onPatch).toHaveBeenCalledWith({
             attachmentSetKey: 'case_documents',
         });
+
+        await user.click(input);
+        await user.click(screen.getByRole('button', {name: 'Leeren'}));
+        expect(onPatch).toHaveBeenLastCalledWith({attachmentSetKey: null});
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription(/Alle Vorgangsanhänge aus Anlagensätzen mit diesem Schlüssel werden angezeigt/);
     });
 
     it('should patch the configured label and hint', () => {
@@ -72,16 +57,19 @@ describe('ProcessAttachmentDisplayEditor', () => {
             />,
         );
 
-        fireEvent.change(screen.getByLabelText('Beschriftung'), {
+        fireEvent.change(screen.getByRole('textbox', {name: /^Beschriftung/}), {
             target: {
                 value: 'Neue Fallunterlagen',
             },
         });
-        fireEvent.change(screen.getByLabelText('Hinweis'), {
+        fireEvent.blur(screen.getByRole('textbox', {name: /^Beschriftung/}));
+        fireEvent.change(screen.getByRole('textbox', {name: /^Hinweis/}), {
             target: {
                 value: 'Bitte prüfen Sie den Anhang sorgfältig.',
             },
         });
+
+        fireEvent.blur(screen.getByRole('textbox', {name: /^Hinweis/}));
 
         expect(onPatch).toHaveBeenCalledWith({
             label: 'Neue Fallunterlagen',
@@ -107,7 +95,7 @@ function renderWithEditorMetadata(children: React.ReactElement, metadata: Proces
                 incomingMetadata: metadata,
             }}
         >
-            {children}
+            <ThemeProvider theme={BaseTheme}>{children}</ThemeProvider>
         </ProcessNodeEditorProvider>,
     );
 }

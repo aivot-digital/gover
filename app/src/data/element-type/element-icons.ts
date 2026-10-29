@@ -36,7 +36,7 @@ import {NoCodeIcon} from '../../modules/nocode/data/no-code-icon';
 import AttachFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import PaymentsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Payments';
 import FolderOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
-import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import TouchAppOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/TouchApp';
 import KeyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Key';
 
 import {type AnyElement} from '../../models/elements/any-element';
@@ -102,7 +102,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.StoragePathSelector]: FolderOutlinedIcon,
     [ElementType.ProcessAttachmentDisplay]: AttachFileOutlinedIcon,
     [ElementType.PaymentConfigElement]: PaymentsOutlinedIcon,
-    [ElementType.LinkButton]: LinkOutlinedIcon,
+    [ElementType.LinkButton]: TouchAppOutlinedIcon,
 };
 
 export function getElementIcon(element: AnyElement): SvgIconComponent {

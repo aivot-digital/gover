@@ -95,19 +95,20 @@ public class TableInputElement extends BaseInputElement<List<Map<String, Object>
             throw new RequiredValidationException(this);
         }
 
-        if (minimumRequiredRows != null && (value == null || value.size() < minimumRequiredRows)) {
-            int actualRows = value == null ? 0 : value.size();
+        if (value == null || value.isEmpty()) {
+            return;
+        }
+
+        // Optional empty tables are handled above; a minimum must not implicitly make them required.
+        if (minimumRequiredRows != null && minimumRequiredRows > 0 && value.size() < minimumRequiredRows) {
+            int actualRows = value.size();
             String actualLabel = actualRows == 1 ? "Zeile" : "Zeilen";
             String minLabel = minimumRequiredRows == 1 ? "Zeile" : "Zeilen";
 
             throw new ValidationException(this, "Es müssen mindestens " + minimumRequiredRows + " " + minLabel + " hinzugefügt werden (derzeit nur " + actualRows + " " + actualLabel + ").");
         }
 
-        if (value == null || value.isEmpty()) {
-            return;
-        }
-
-        if (maximumRows != null && value.size() > maximumRows) {
+        if (maximumRows != null && maximumRows > 0 && value.size() > maximumRows) {
             String maxLabel = maximumRows == 1 ? "Zeile" : "Zeilen";
             String actualLabel = value.size() == 1 ? "Zeile" : "Zeilen";
 
