@@ -23,6 +23,7 @@ import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigat
 import {IdentityConfigElementSlotWithProviders} from '../../models/elements/form/input/identity-config-element';
 import {ElementType} from '../../data/element-type/element-type';
 import {isSectionElementType} from '../../models/elements/steps/step-element';
+import {useElementConfigurationErrors} from '../../modules/elements/hooks/use-element-configuration-errors';
 
 export interface ElementTreeProps<T extends AnyElement> {
     value: T;
@@ -85,6 +86,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
     const allElements = useMemo(() => {
         return flattenElementsWithParents(value, [], false);
     }, [value]);
+
+    const configurationErrors = useElementConfigurationErrors(value, editable);
 
     const typeLabel = useMemo(() => {
         return getElementNameForType(type);
@@ -525,6 +528,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             displayContext: displayContext,
                             allowElementIdEditing: allowElementIdEditing,
                             identityMappingInformation: identityMappingInformation,
+                            configurationErrors: configurationErrors,
                         }}
                     >
                         <ElementTreeChildList

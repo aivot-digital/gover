@@ -13,4 +13,6 @@ export interface EditorDispatcherProps<T extends AnyElement> {
 
     hasSummaryLayoutParent: boolean;
     hasReplicatingContainerParent?: boolean;
+
+    configurationErrors?: Record<string, string[]>;
 }

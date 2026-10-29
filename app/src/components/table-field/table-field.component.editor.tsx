@@ -12,13 +12,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
     } = props;
 
     const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
-    const columnKeyErrors = makeColumnKeyErrors(props.element.fields);
-    const minRequiredError = (
-        props.element.minimumRequiredRows != null &&
-        props.element.maximumRows != null &&
-        props.element.maximumRows > 0 &&
-        props.element.minimumRequiredRows > props.element.maximumRows
-    );
+    const columnKeyWarnings = makeColumnKeyWarnings(props.element.fields);
 
     return (
         <>
@@ -37,7 +31,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             value={props.element.minimumRequiredRows ?? undefined}
                             label="Mindestanzahl der hinzuzufügenden Zeilen"
                             hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern"
-                            error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                            error={props.configurationErrors?.minimumRequiredRows?.join(' ')}
                             onChange={(val) => {
                                 props.onPatch({
                                     minimumRequiredRows: val,
@@ -59,7 +53,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             value={props.element.maximumRows ?? undefined}
                             label="Maximalanzahl der hinzuzufügenden Zeilen"
                             hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                            error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                            error={props.configurationErrors?.maximumRows?.join(' ')}
                             onChange={(val) => {
                                 props.onPatch({
                                     maximumRows: val,
@@ -77,6 +71,16 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 Spalten
             </Typography>
             {
+                props.configurationErrors?.fields != null &&
+                <Typography
+                    variant="body2"
+                    color="error"
+                    role="alert"
+                >
+                    {props.configurationErrors.fields.join(' ')}
+                </Typography>
+            }
+            {
                 (props.element.fields ?? []).map((column, index) => {
                     const onChange = (patch: Partial<TableFieldComponentColumnModel>) => {
                         const patchedList = [...(props.element.fields ?? [])];
@@ -88,6 +92,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             fields: patchedList,
                         });
                     };
+                    const keyError = props.configurationErrors?.[`fields.${index}.key`]?.join(' ') ?? columnKeyWarnings[index];
                     return (
                         <Box
                             sx={{mt: 2}}
@@ -108,8 +113,8 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         onBlur={() => onChange({
                                             key: (column.key ?? '').trim(),
                                         })}
-                                        error={columnKeyErrors[index] != null}
-                                        helperText={columnKeyErrors[index] ?? undefined}
+                                        error={keyError != null}
+                                        helperText={keyError ?? undefined}
                                         disabled={!props.editable}
                                     />
                                 </Grid>
@@ -291,22 +296,10 @@ function makeColumnLabelErrors(fields?: TableFieldComponentColumnModel[] | null 
     return errors;
 }
 
-function makeColumnKeyErrors(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
-    if (fields == null) {
-        return [];
-    }
-    const errors: (string | null)[] = [];
-    const keySet = new Set<string>();
-    for (const field of fields) {
+// Missing and repeated keys lose row data and are reported by the server. A short key still works, so it only gets a hint.
+function makeColumnKeyWarnings(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
+    return (fields ?? []).map((field) => {
         const key = (field.key ?? '').trim();
-        if (isStringNullOrEmpty(key) || key.length < 3) {
-            errors.push('Bitte geben Sie einen Schlüssel mit mindestens drei Zeichen ein.');
-        } else if (keySet.has(key)) {
-            errors.push('Eine Spalte mit diesem Schlüssel existiert bereits. Bitte geben Sie einen einzigartigen Schlüssel ein.');
-        } else {
-            errors.push(null);
-        }
-        keySet.add(key);
-    }
-    return errors;
+        return key.length > 0 && key.length < 3 ? 'Bitte geben Sie einen Schlüssel mit mindestens drei Zeichen ein.' : null;
+    });
 }

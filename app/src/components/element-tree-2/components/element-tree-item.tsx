@@ -33,6 +33,7 @@ import {createTheme, useTheme} from '@mui/material/styles';
 import {getMetadataMapping} from '../../../utils/prefill-elements';
 import AccountCircleOutlined from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import {IdentityConfigElementSlotWithProviders} from '../../../models/elements/form/input/identity-config-element';
+import {type ElementConfigurationErrors} from '../../../modules/elements/elements-api-service';
 
 interface ElementTreeItemProps<T extends AnyElement> {
     parents: Array<AnyElement>;
@@ -76,6 +77,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         onHoveredElementIdChange,
         allElements,
         identityMappingInformation,
+        configurationErrors: treeConfigurationErrors,
     } = useElementTreeContext();
 
     const {
@@ -129,6 +131,10 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     const path = useMemo(() => {
         return pathParts.join('.');
     }, [pathParts]);
+
+    const configurationErrors = useMemo(() => {
+        return findConfigurationErrors(treeConfigurationErrors, pathParts);
+    }, [treeConfigurationErrors, pathParts]);
 
     const referencingElements = useMemo(() => {
         return findReferencesToElement(value, allElements);
@@ -233,7 +239,15 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     }, [onHoveredElementIdChange]);
 
     const icons: Action[] = useMemo(() => {
-        const leadingIcons: Action[] = getIcons(root, value, referencingElementLabels, navigateToElementEditor, identityMappingInformation);
+        const leadingIcons: Action[] = getIcons(
+            root,
+            value,
+            referencingElementLabels,
+            navigateToElementEditor,
+            identityMappingInformation,
+            configurationErrors,
+            () => setIsCollapsed(false),
+        );
         const trailingIcons: Action[] = isAnyElementWithChildren(value) ? [
             {
                 icon: (
@@ -260,7 +274,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             ...(leadingIcons.length > 0 && trailingIcons.length > 0 ? ['separator'] : []) as Action[],
             ...trailingIcons,
         ];
-    }, [isCollapsed, navigateToElementEditor, referencingElementLabels, root, value, identityMappingInformation]);
+    }, [isCollapsed, navigateToElementEditor, referencingElementLabels, root, value, identityMappingInformation, configurationErrors]);
 
     const backgroundColor = isActiveSearchResult ?
         'action.focus' :
@@ -597,7 +611,9 @@ function getIcons<T extends AnyElement>(root: AnyElement,
                                         element: T,
                                         referencingElementLabels: string[],
                                         navigateToElementEditor: (elementId: string, tab?: (string | null)) => void,
-                                        identityMappingInformation: IdentityConfigElementSlotWithProviders[] | undefined): Action[] {
+                                        identityMappingInformation: IdentityConfigElementSlotWithProviders[] | undefined,
+                                        configurationErrors: ElementConfigurationErrors | undefined,
+                                        onExpand: () => void): Action[] {
     const actions: Action[] = [];
     const createNavigateToTabHandler = (tab?: string | null) => (event: React.MouseEvent) => {
         event.stopPropagation();
@@ -619,6 +635,24 @@ function getIcons<T extends AnyElement>(root: AnyElement,
             icon: <ReportOutlinedIcon color="error"/>,
             tooltip: msg,
             onClick: createNavigateToTabHandler(DefaultTabs.properties),
+        });
+    }
+
+    if (configurationErrors != null) {
+        const messages = [...new Set(Object.values(configurationErrors.properties).flat())];
+        actions.push({
+            icon: <ReportOutlinedIcon color="error"/>,
+            tooltip: messages.length > 0 ?
+                'Fehlerhafte Konfiguration: ' + messages.join(' ') :
+                'Enthält Elemente mit fehlerhafter Konfiguration',
+            // Without own errors, only descendants need fixing, so reveal them instead of opening this element.
+            onClick: messages.length > 0 ?
+                createNavigateToTabHandler(DefaultTabs.properties) :
+                (event: React.MouseEvent) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    onExpand();
+                },
         });
     }
 
@@ -689,6 +723,16 @@ function getIcons<T extends AnyElement>(root: AnyElement,
     }
 
     return actions;
+}
+
+function findConfigurationErrors(rootErrors: ElementConfigurationErrors | null | undefined,
+                                 path: string[]): ElementConfigurationErrors | undefined {
+    // The first path entry is the tree root, which the root errors themselves describe.
+    let current = rootErrors ?? undefined;
+    for (const id of path.slice(1)) {
+        current = current?.children[id];
+    }
+    return current;
 }
 
 function findReferencesToElement(targetElement: AnyElement, allElements: ElementWithParents[]): ElementWithParents[] {

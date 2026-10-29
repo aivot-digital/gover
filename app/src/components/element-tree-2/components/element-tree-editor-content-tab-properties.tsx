@@ -23,6 +23,7 @@ import {ElementDisplayContext} from '../../../data/element-type/element-child-op
 import {DataKeyDefinitionField} from '../../data-key-definition-field/data-key-definition-field';
 import {isGroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {collectHttpMappingProblems, suggestDestinationKey} from './element-tree-editor-content-tab-properties-utils';
+import {useElementConfigurationErrors} from '../../../modules/elements/hooks/use-element-configuration-errors';
 
 const summaryLayoutHiddenElementSpecificPropertyTypes = new Set<ElementType>([
     ElementType.ChipInput,
@@ -58,6 +59,9 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     } = currentElement;
 
     const isRoot = root.id === currentElement.id;
+
+    // Validate the unapplied draft so errors follow each edit, not only the state applied to the tree.
+    const configurationErrors = useElementConfigurationErrors(currentElement, editable);
 
     const hasSummaryLayoutParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
@@ -357,6 +361,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     scope={'application' /* TODO: remove this */}
                     hasSummaryLayoutParent={hasSummaryLayoutParent}
                     hasReplicatingContainerParent={replicatingParents.length > 0}
+                    configurationErrors={configurationErrors?.properties}
                 />
             }
 

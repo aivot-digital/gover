@@ -1,7 +1,7 @@
 import React, {type PropsWithChildren, StrictMode, useState} from 'react';
 import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {MemoryRouter} from 'react-router-dom';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {ElementType} from '../../data/element-type/element-type';
@@ -14,6 +14,7 @@ import {type StepElement} from '../../models/elements/steps/step-element';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {DragAndDropProvider} from '../../providers/drag-and-drop-provider';
 import {ElementTree} from './element-tree';
+import {ElementsApiService} from '../../modules/elements/elements-api-service';
 
 vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
 vi.mock('../../providers/confirm-provider', () => ({useConfirm: () => vi.fn()}));
@@ -202,6 +203,48 @@ describe('ElementTree section expansion', () => {
             expect(screen.queryByRole('button', {name: 'Neues Element hinzufügen'})).not.toBeInTheDocument();
         },
     );
+});
+
+describe('ElementTree configuration errors', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('marks sections containing erroneous elements and reveals them on request', async () => {
+        const message = 'Sie fordern mehr Zeichen, als Sie maximal zulassen.';
+        vi.spyOn(ElementsApiService.prototype, 'validateConfiguration').mockResolvedValue({
+            properties: {},
+            children: {
+                section: {
+                    properties: {},
+                    children: {
+                        field: {properties: {minCharacters: [message], maxCharacters: [message]}, children: {}},
+                    },
+                },
+            },
+        });
+        const user = userEvent.setup();
+        render(<TestTree value={createForm([
+            createSection('section', [createField('field', 'Vornamen')]),
+        ])}/>, {wrapper: TreeTestWrapper});
+        const fieldMarker = {name: `Fehlerhafte Konfiguration: ${message}`};
+
+        const sectionMarker = await screen.findByRole('button', {name: 'Enthält Elemente mit fehlerhafter Konfiguration'});
+        expect(screen.queryByRole('button', fieldMarker)).not.toBeInTheDocument();
+
+        await user.click(sectionMarker);
+
+        expect(await screen.findByRole('button', fieldMarker)).toBeInTheDocument();
+    });
+
+    it('does not validate a read-only tree', async () => {
+        const validate = vi.spyOn(ElementsApiService.prototype, 'validateConfiguration');
+        render(<TestTree value={createForm([createSection('section')])} editable={false}/>, {wrapper: TreeTestWrapper});
+
+        await act(() => new Promise((resolve) => setTimeout(resolve, 500)));
+
+        expect(validate).not.toHaveBeenCalled();
+    });
 });
 
 describe('ElementTree drag and drop', () => {
