@@ -11,7 +11,9 @@ import {humanizeFileSize} from '../../utils/humanization-utils';
 export interface ProcessAttachmentDisplayItem {
     key: string;
     fileName: string;
-    originalFileName: string;
+    originalFileName?: string;
+    /** Preview rows describe their attachment set instead of an uploaded file. */
+    secondaryText?: string;
     sizeInBytes?: number | null;
     group?: string | undefined | null;
     onView?: () => void;
@@ -120,7 +122,7 @@ function AttachmentItems({items}: {items: ProcessAttachmentDisplayItem[]}) {
                         return {
                             key: item.key,
                             name: item.fileName,
-                            secondaryText: [
+                            secondaryText: item.secondaryText ?? [
                                 item.sizeInBytes != null ? humanizeFileSize(item.sizeInBytes) : undefined,
                                 item.originalFileName ? `Hochgeladen als ${item.originalFileName}` : undefined,
                             ].filter(Boolean).join(' · '),
