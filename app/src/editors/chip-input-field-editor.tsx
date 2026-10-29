@@ -26,6 +26,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
         editable,
         onPatch,
         hasSummaryLayoutParent,
+        configurationErrors,
     } = props;
 
     if (hasSummaryLayoutParent) {
@@ -34,24 +35,6 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
 
     const optionsSource = element.optionsSource ?? OptionsSourceType.Manual;
     const usesManualSuggestions = optionsSource === OptionsSourceType.Manual;
-    const effectiveMaxItems = element.maxItems != null && element.maxItems > 0 ? element.maxItems : undefined;
-
-    const effectiveMinItems = element.required === true && element.minItems != null && element.minItems > 0
-        ? element.minItems
-        : undefined;
-
-    const minItemsError = (
-        effectiveMaxItems != null &&
-        effectiveMinItems != null &&
-        effectiveMinItems > effectiveMaxItems
-    );
-
-    const maxItemsError = (
-        effectiveMaxItems != null &&
-        effectiveMinItems != null &&
-        effectiveMaxItems < effectiveMinItems
-    );
-
     const suggestions = (element.suggestions ?? []).map((entry) => ({
         label: entry,
         value: entry,
@@ -99,7 +82,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                             });
                         }}
                         hint="Geben Sie 0 oder nichts ein, um keine Mindestanzahl zu fordern."
-                        error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
+                        error={configurationErrors?.minItems?.join(' ')}
                         disabled={!editable}
                     />
                 </Grid>
@@ -120,7 +103,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                         });
                     }}
                     hint="Geben Sie 0 oder nichts ein, um keine Maximalanzahl zu fordern."
-                    error={maxItemsError ? 'Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.' : undefined}
+                    error={configurationErrors?.maxItems?.join(' ')}
                     disabled={!editable}
                 />
             </Grid>

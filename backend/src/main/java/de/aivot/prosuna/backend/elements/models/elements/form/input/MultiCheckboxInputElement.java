@@ -13,6 +13,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class MultiCheckboxInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
@@ -33,6 +34,20 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
     public MultiCheckboxInputElement() {
         super(ElementType.MultiCheckbox);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // Only manually defined options are known while authoring; code lists are resolved at runtime.
+        var usesManualOptions = optionsSource == null || optionsSource == OptionsSourceType.Manual;
+        var optionCount = options == null ? 0 : options.size();
+        // The editor only offers the minimum for required fields, so a hidden leftover value must not be reported.
+        if (getRequired() && usesManualOptions && minimumRequiredOptions != null && minimumRequiredOptions > optionCount) {
+            addConfigurationError(errors, "minimumRequiredOptions", "Sie fordern mehr Optionen, als Sie definiert haben.");
+        }
+        return errors;
     }
 
     @Nullable

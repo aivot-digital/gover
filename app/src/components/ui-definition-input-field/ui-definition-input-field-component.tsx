@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+    Badge,
     Box,
     Button,
     Dialog,
@@ -50,6 +51,7 @@ import Undo from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
 import Redo from '@aivot/mui-material-symbols-400-n25-outlined/Redo';
 import DoneAll from '@aivot/mui-material-symbols-400-n25-outlined/DoneAll';
 import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
+import {useElementConfigurationErrors} from '../../modules/elements/hooks/use-element-configuration-errors';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import VisibilityOff from '@aivot/mui-material-symbols-400-n25-outlined/VisibilityOff';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
@@ -169,6 +171,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         return generateElementWithDefaultValues(expectedRootType ?? ElementType.GroupLayout) as UiDefinitionInputFieldElementItem;
     }, [expectedRootType]);
     const effectiveValue = draftValue ?? value ?? defaultValue;
+    // Validated here, not only in the tree, because the settings button in the dialog title also shows the errors.
+    const configurationErrors = useElementConfigurationErrors(effectiveValue, showDraftDialog && !disabled);
+    const hasRootConfigurationErrors = Object.keys(configurationErrors?.properties ?? {}).length > 0;
 
     const hasUnsavedChanges = useMemo(() => {
         if (!showDraftDialog || draftValue == null || initialDraftValue == null) {
@@ -668,8 +673,19 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         },
                         'separator',
                         {
-                            tooltip: 'Einstellungen des Wurzelelements öffnen',
-                            icon: <Settings/>,
+                            tooltip: hasRootConfigurationErrors ?
+                                'Einstellungen des Wurzelelements öffnen (fehlerhafte Konfiguration)' :
+                                'Einstellungen des Wurzelelements öffnen',
+                            icon: (
+                                <Badge
+                                    color="error"
+                                    variant="dot"
+                                    overlap="circular"
+                                    invisible={!hasRootConfigurationErrors}
+                                >
+                                    <Settings/>
+                                </Badge>
+                            ),
                             onClick: () => {
                                 if (draftValue != null) {
                                     navigateToElementEditor(draftValue.id);
@@ -766,6 +782,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     highlightElementSignal={highlightElementSignal}
                                     onHoveredElementIdChange={setHoveredTreeElementId}
                                     openRootAddElementSignal={openRootAddElementSignal}
+                                    configurationErrors={configurationErrors}
                                 />
                             </Allotment.Pane>
                         </Allotment>

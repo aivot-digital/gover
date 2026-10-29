@@ -23,6 +23,7 @@ import {ElementDisplayContext} from '../../../data/element-type/element-child-op
 import {DataKeyDefinitionField} from '../../data-key-definition-field/data-key-definition-field';
 import {isGroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {collectHttpMappingProblems, suggestDestinationKey} from './element-tree-editor-content-tab-properties-utils';
+import {useElementConfigurationErrors} from '../../../modules/elements/hooks/use-element-configuration-errors';
 
 const summaryLayoutHiddenElementSpecificPropertyTypes = new Set<ElementType>([
     ElementType.ChipInput,
@@ -62,6 +63,10 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const hasSummaryLayoutParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
     }, [parents]);
+
+    // Validate the unapplied draft so errors follow each edit, not only the state applied to the tree. Like the
+    // server, skip elements of summaries: they only display values.
+    const configurationErrors = useElementConfigurationErrors(currentElement, editable && !hasSummaryLayoutParent);
 
     const replicatingParents = useMemo(() => {
         return parents.filter((p) => p.type === ElementType.ReplicatingContainer);
@@ -357,6 +362,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     scope={'application' /* TODO: remove this */}
                     hasSummaryLayoutParent={hasSummaryLayoutParent}
                     hasReplicatingContainerParent={replicatingParents.length > 0}
+                    configurationErrors={configurationErrors?.properties}
                 />
             }
 

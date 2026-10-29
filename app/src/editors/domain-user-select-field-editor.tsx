@@ -17,19 +17,8 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
         element,
         editable,
         onPatch,
+        configurationErrors,
     } = props;
-
-    const minItemsError = (
-        element.maxItems != null &&
-        element.minItems != null &&
-        element.minItems > element.maxItems
-    );
-
-    const maxItemsError = (
-        element.maxItems != null &&
-        element.minItems != null &&
-        element.maxItems < element.minItems
-    );
 
     const allowedTypes = element.allowedTypes ?? DomainAndUserSelectItemTypes;
     const noTypeEnabled = allowedTypes.length === 0;
@@ -86,7 +75,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                         });
                     }}
                     hint="Geben Sie 0 oder nichts ein, um keine Mindestanzahl zu fordern."
-                    error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
+                    error={configurationErrors?.minItems?.join(' ')}
                     disabled={!editable}
                 />
             </Grid>
@@ -106,7 +95,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                         });
                     }}
                     hint="Lassen Sie das Feld leer, wenn keine Obergrenze gelten soll."
-                    error={maxItemsError ? 'Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.' : undefined}
+                    error={configurationErrors?.maxItems?.join(' ')}
                     disabled={!editable}
                 />
             </Grid>

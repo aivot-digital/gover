@@ -36,6 +36,15 @@ public class DomainAndUserSelectInputElement extends BaseInputElement<List<Domai
         super(ElementType.DomainAndUserSelect);
     }
 
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minItems", minItems, "maxItems", maxItems,
+                "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        return errors;
+    }
+
     @Nullable
     @Override
     public List<DomainAndUserSelectInputElementValue> formatValue(@Nullable Object value) {

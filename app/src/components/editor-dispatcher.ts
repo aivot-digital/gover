@@ -24,6 +24,7 @@ export function EditorDispatcher<T extends AnyElement>(props: EditorDispatcherPr
         hasSummaryLayoutParent: props.hasSummaryLayoutParent,
         hasReplicatingContainerParent: props.hasReplicatingContainerParent,
         scope: props.scope,
+        configurationErrors: props.configurationErrors,
     };
 
     return React.createElement(Component, editorProps);

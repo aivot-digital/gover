@@ -13,10 +13,12 @@ import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type TextFieldElement} from '../../models/elements/form/input/text-field-element';
 
 const recalculateReferencedIds = vi.hoisted(() => vi.fn(async (element: unknown) => element));
+const validateConfiguration = vi.hoisted(() => vi.fn(async (): Promise<unknown> => ({properties: {}, children: {}})));
 
 vi.mock('../../modules/elements/elements-api-service', () => ({
     ElementsApiService: class {
         recalculateReferencedIds = recalculateReferencedIds;
+        validateConfiguration = validateConfiguration;
     },
 }));
 
@@ -304,6 +306,29 @@ describe('UiDefinitionInputFieldComponent', () => {
         await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
 
         expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('marks the root settings button when the root element has configuration errors', async () => {
+        const user = userEvent.setup();
+        validateConfiguration.mockResolvedValueOnce({
+            properties: {title: ['Geben Sie einen Titel ein.']},
+            children: {},
+        });
+
+        render(<UiDefinitionInputFieldComponent
+            label="Testoberfläche"
+            value={null}
+            onChange={vi.fn()}
+            displayContext={ElementDisplayContext.StaffFacing}
+        />);
+        await user.click(screen.getByRole('button', {name: 'Bearbeiten'}));
+
+        expect(screen.getByRole('button', {name: 'Einstellungen des Wurzelelements öffnen'})).toBeInTheDocument();
+        expect(await screen.findByRole(
+            'button',
+            {name: 'Einstellungen des Wurzelelements öffnen (fehlerhafte Konfiguration)'},
+            {timeout: 2000},
+        )).toBeInTheDocument();
     });
 
     it('keeps the summary and editor action separate from the field name', () => {
