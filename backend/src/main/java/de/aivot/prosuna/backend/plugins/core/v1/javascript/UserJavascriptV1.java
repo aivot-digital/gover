@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.javascript;
 
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -67,6 +68,12 @@ public class UserJavascriptV1 implements JavascriptFunctionProvider {
 
                 Mitarbeiter:innen können anhand ihrer ID geladen und als strukturiertes Objekt weiterverarbeitet werden. Das Ergebnis enthält Identitäts-, Status- und Rollendaten, die sich in Skripten und Prozesslogik verwenden lassen.
                 """;
+    }
+
+    @Override
+    public boolean isAvailableIn(@Nonnull JavascriptExecutionContext context) {
+        // Only reads the names and account details of staff members.
+        return context == JavascriptExecutionContext.Default || context == JavascriptExecutionContext.AssetTemplate;
     }
 
     @Override

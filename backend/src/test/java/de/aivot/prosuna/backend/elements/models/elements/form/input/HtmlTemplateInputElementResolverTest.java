@@ -3,9 +3,13 @@ package de.aivot.prosuna.backend.elements.models.elements.form.input;
 import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.plugins.core.v1.javascript.NumberJavascriptV1;
+import de.aivot.prosuna.backend.plugins.core.v1.javascript.SecretJavascriptV1;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
+import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
+import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class HtmlTemplateInputElementResolverTest {
@@ -191,7 +198,49 @@ class HtmlTemplateInputElementResolverTest {
     void resolveShouldStillRejectInvalidAuthoredTemplateSyntax() throws Exception {
         var value = template("{{ unclosed");
 
-        assertThrows(IllegalArgumentException.class, () -> resolver.resolve(value, new ProcessExecutionData()));
+        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> resolver.resolve(value, new ProcessExecutionData()));
+    }
+
+    @Test
+    void resolveShouldOnlyProvideFunctionProvidersThatOptedInToAssetTemplates() throws Exception {
+        var secretService = mock(SecretService.class);
+        var secretKey = UUID.randomUUID();
+        var secret = new SecretEntity();
+        secret.setKey(secretKey);
+        when(secretService.retrieve(secretKey)).thenReturn(Optional.of(secret));
+        when(secretService.decrypt(secret)).thenReturn("decrypted-secret");
+        var providerResolver = new HtmlTemplateInputElementResolver(
+                assetService,
+                storageService,
+                new TemplateRenderService(new JavascriptEngineFactoryService(List.of(
+                        new SecretJavascriptV1(secretService),
+                        new NumberJavascriptV1()
+                )))
+        );
+
+        assertEquals(
+                "<p>1.234,50</p>",
+                providerResolver.resolve(template("<p>{{ _number_v1.formatGermanNumber(1234.5) }}</p>"), new ProcessExecutionData())
+        );
+
+        var blockedTemplate = template("<p>{{ _secrets_v1.get('" + secretKey + "') }}</p>");
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> providerResolver.resolve(blockedTemplate, new ProcessExecutionData())
+        );
+        assertTrue(exception.getMessage().contains(
+                "Die Funktionen „Geheimnisse“ (_secrets_v1) sind in HTML-Vorlagen aus Dateien & Medien nicht verfügbar."
+        ));
+        verify(secretService, never()).retrieve(any(UUID.class));
+
+        // Slot values are part of the process configuration and keep all function providers.
+        var slotTemplate = template("<p data-slot=\"text\" data-slot-type=\"text\">Default</p>")
+                .setSlots(Map.of("text", "{{ _secrets_v1.get('" + secretKey + "') }}"));
+        assertEquals(
+                "<p data-slot=\"text\" data-slot-type=\"text\">decrypted-secret</p>",
+                providerResolver.resolve(slotTemplate, new ProcessExecutionData())
+        );
     }
 
     @Test

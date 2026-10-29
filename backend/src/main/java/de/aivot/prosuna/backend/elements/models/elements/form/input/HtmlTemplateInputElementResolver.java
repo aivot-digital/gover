@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.services.AssetService;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -158,7 +159,28 @@ public class HtmlTemplateInputElementResolver {
         // Otherwise template delimiters originating in process data would become executable template expressions.
         var slotContents = new LinkedHashMap<String, String>();
         var preparedTemplate = applySlotValues(templateHtml, renderedTemplates, slotContents);
-        var renderedHtml = templateRenderService.interpolate(processExecutionData, preparedTemplate);
+
+        // Unlike the slot values, which are part of the process configuration, the template content can be changed with
+        // the asset permissions alone. Only function providers that opted in to asset templates are available to it.
+        String renderedHtml;
+        try {
+            renderedHtml = templateRenderService.interpolate(
+                    processExecutionData,
+                    preparedTemplate,
+                    JavascriptExecutionContext.AssetTemplate
+            );
+        } catch (RuntimeException e) {
+            Throwable rootCause = e;
+            while (rootCause.getCause() != null) {
+                rootCause = rootCause.getCause();
+            }
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Die HTML-Vorlage %s konnte nicht gerendert werden: %s",
+                    StringUtils.quote(htmlTemplateAssetKeyStr),
+                    rootCause.getMessage()
+            );
+        }
         return restoreSlotContents(renderedHtml, slotContents);
     }
 

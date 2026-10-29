@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.javascript.services;
 
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,16 @@ public class JavascriptEngineFactoryService {
      * @return A new instance of the {@link JavascriptEngine} class.
      */
     public JavascriptEngine getEngine() {
-        return new JavascriptEngine(functionProviders);
+        return getEngine(JavascriptExecutionContext.Default);
+    }
+
+    /**
+     * Creates a new instance of the {@link JavascriptEngine} class that only provides the function providers available in the given context.
+     *
+     * @param context The context in which the code is executed.
+     * @return A new instance of the {@link JavascriptEngine} class.
+     */
+    public JavascriptEngine getEngine(JavascriptExecutionContext context) {
+        return new JavascriptEngine(functionProviders, context);
     }
 }

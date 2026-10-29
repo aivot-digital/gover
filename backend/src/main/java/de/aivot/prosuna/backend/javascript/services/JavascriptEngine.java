@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.javascript.services;
 
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.exceptions.JavascriptException;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
@@ -53,6 +54,16 @@ public class JavascriptEngine implements AutoCloseable {
      * @param functionProviders the function providers to add to the javascript context.
      */
     public JavascriptEngine(List<JavascriptFunctionProvider> functionProviders) {
+        this(functionProviders, JavascriptExecutionContext.Default);
+    }
+
+    /**
+     * Creates a new javascript executioner that only provides the function providers available in the given context.
+     *
+     * @param functionProviders the function providers to add to the javascript context if they are available in the given context.
+     * @param context           the context in which the code is executed.
+     */
+    public JavascriptEngine(List<JavascriptFunctionProvider> functionProviders, JavascriptExecutionContext context) {
         graalContext = Context
                 // Create a new context builder for the javascript engine.
                 .newBuilder(JS_ENGINE_NAME)
@@ -90,10 +101,30 @@ public class JavascriptEngine implements AutoCloseable {
                 .build();
 
         // Add the function providers to the javascript context.
+        var bindings = graalContext.getBindings(JS_ENGINE_NAME);
+        Value defineUnavailableProvider = null;
         for (var fp : functionProviders) {
-            graalContext
-                    .getBindings(JS_ENGINE_NAME)
-                    .putMember(fp.getObjectName(), fp);
+            if (fp.isAvailableIn(context)) {
+                bindings.putMember(fp.getObjectName(), fp);
+                continue;
+            }
+
+            // The provider itself is never bound. The placeholder only names it in the error instead of an unspecific reference error.
+            if (defineUnavailableProvider == null) {
+                defineUnavailableProvider = graalContext.eval(
+                        JS_ENGINE_NAME,
+                        "(name, message) => Object.defineProperty(globalThis, name, { get() { throw new Error(message); } })"
+                );
+            }
+            defineUnavailableProvider.execute(
+                    fp.getObjectName(),
+                    String.format(
+                            "Die Funktionen „%s“ (%s) sind %s nicht verfügbar.",
+                            fp.getName(),
+                            fp.getObjectName(),
+                            context.getDescription()
+                    )
+            );
         }
     }
 

@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.javascript.services;
 
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
+import de.aivot.prosuna.backend.javascript.exceptions.JavascriptException;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
@@ -128,6 +130,50 @@ class JavascriptEngineTest {
         }
     }
 
+    @Test
+    void assetTemplateContext_OnlyProvidesFunctionProvidersThatOptedIn() throws Exception {
+        List<JavascriptFunctionProvider> providers = List.of(
+                new TestJavascriptFunctionProvider(),
+                new AssetTemplateTestJavascriptFunctionProvider()
+        );
+
+        try (var engine = new JavascriptEngine(providers, JavascriptExecutionContext.AssetTemplate)) {
+            var res = engine.evaluateCode(new JavascriptCode().setCode("de_aivot_prosuna_asset_template_test.getValue();"));
+            assertEquals("value", res.asString());
+
+            var exception = assertThrows(
+                    JavascriptException.class,
+                    () -> engine.evaluateCode(new JavascriptCode().setCode("de_aivot_prosuna_test.getValue();"))
+            );
+            assertTrue(exception.getMessage().contains(
+                    "Die Funktionen „Test“ (de_aivot_prosuna_test) sind in HTML-Vorlagen aus Dateien & Medien nicht verfügbar."
+            ));
+
+            // Other lookups of the global name must not reach the provider either.
+            var lookup = engine.evaluateCode(new JavascriptCode().setCode(
+                    "try { globalThis['de_aivot_prosuna_test'].getValue(); } catch (e) { 'blocked'; }"
+            ));
+            assertEquals("blocked", lookup.asString());
+        }
+
+        try (var engine = new JavascriptEngine(providers, JavascriptExecutionContext.Default)) {
+            var res = engine.evaluateCode(new JavascriptCode().setCode("de_aivot_prosuna_test.getValue();"));
+            assertEquals("value", res.asString());
+        }
+    }
+
+    public static class AssetTemplateTestJavascriptFunctionProvider extends TestJavascriptFunctionProvider {
+        @Override
+        public String getObjectName() {
+            return "de_aivot_prosuna_asset_template_test";
+        }
+
+        @Override
+        public boolean isAvailableIn(@Nonnull JavascriptExecutionContext context) {
+            return context == JavascriptExecutionContext.Default || context == JavascriptExecutionContext.AssetTemplate;
+        }
+    }
+
     public static class TestJavascriptFunctionProvider implements JavascriptFunctionProvider {
         @HostAccess.Export
         public String getValue() {
@@ -170,7 +216,7 @@ class JavascriptEngineTest {
         @Nonnull
         @Override
         public String getName() {
-            return "";
+            return "Test";
         }
 
         @Nonnull
