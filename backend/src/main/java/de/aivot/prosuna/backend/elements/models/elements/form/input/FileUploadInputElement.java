@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import tools.jackson.core.JacksonException;
@@ -47,6 +48,10 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
         // An empty list rejects every upload. A missing list allows every extension, so the editor only warns about it.
         if (extensions != null && extensions.isEmpty()) {
             addConfigurationError(errors, "extensions", "Wählen Sie mindestens eine erlaubte Dateiendung aus.");
+        }
+        // Uploads are stored under this name; FileUploadMultipartInputService rejects every upload without it.
+        if (StringUtils.isNullOrEmpty(submittedFileName)) {
+            addConfigurationError(errors, "submittedFileName", "Geben Sie einen Dateinamen bei Einreichung an.");
         }
         return errors;
     }

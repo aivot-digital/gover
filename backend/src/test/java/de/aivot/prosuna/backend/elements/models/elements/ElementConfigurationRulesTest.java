@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.MultiCheckbo
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TableInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TableInputElementColumn;
+import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import org.junit.jupiter.api.Test;
 
@@ -94,6 +95,27 @@ class ElementConfigurationRulesTest {
     }
 
     @Test
+    void shouldRequireASubmittedFileName() {
+        var upload = fileUpload(List.of("pdf"));
+        upload.setSubmittedFileName(" ");
+
+        assertEquals(
+                Map.of("submittedFileName", List.of("Geben Sie einen Dateinamen bei Einreichung an.")),
+                upload.validateConfiguration()
+        );
+    }
+
+    @Test
+    void shouldRequireAPublicFormTitle() {
+        var expected = Map.of("publicTitle", List.of("Geben Sie einen öffentlichen Titel für das Formular an."));
+        var withTitle = new FormLayoutElement();
+        withTitle.setPublicTitle("Anmeldung zur Hundesteuer");
+
+        assertEquals(expected, new FormLayoutElement().validateConfiguration());
+        assertEquals(Map.of(), withTitle.validateConfiguration());
+    }
+
+    @Test
     void shouldRequireAtLeastOneTableColumn() {
         var expected = Map.of("fields", List.of("Fügen Sie mindestens eine Spalte hinzu."));
 
@@ -119,7 +141,9 @@ class ElementConfigurationRulesTest {
     }
 
     private static FileUploadInputElement fileUpload(List<String> extensions) {
-        return new FileUploadInputElement().setExtensions(extensions);
+        var upload = new FileUploadInputElement().setExtensions(extensions);
+        upload.setSubmittedFileName("Anlage");
+        return upload;
     }
 
     private static MultiCheckboxInputElement multiCheckbox(Integer minimumRequiredOptions, String... values) {

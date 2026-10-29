@@ -45,12 +45,17 @@ public record ElementConfigurationErrors(
     /**
      * Creates readable messages for error lists that cannot show the tree, e.g. the problems of a process node.
      *
-     * @param element The element these errors were created for.
+     * @param element The element these errors were created for. Its own messages are not prefixed, because callers
+     *                already name it, e.g. by the label of the field holding the element tree.
      */
     @Nonnull
     public List<String> describe(@Nonnull BaseElement element) {
+        return describe(element, "");
+    }
+
+    @Nonnull
+    private List<String> describe(@Nonnull BaseElement element, @Nonnull String prefix) {
         var messages = new LinkedList<String>();
-        var prefix = "Element " + StringUtils.quote(describeElement(element)) + ": ";
         // The same message is reported for every property involved in a rule, but should only be listed once.
         properties.values().stream()
                 .flatMap(List::stream)
@@ -61,7 +66,7 @@ public record ElementConfigurationErrors(
             for (var child : layoutElement.getChildren()) {
                 var childErrors = children.get(child.getId());
                 if (childErrors != null) {
-                    messages.addAll(childErrors.describe(child));
+                    messages.addAll(childErrors.describe(child, "Element " + StringUtils.quote(describeElement(child)) + ": "));
                 }
             }
         }

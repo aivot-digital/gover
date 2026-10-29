@@ -29,9 +29,6 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
     }, []);
 
     const requiresSubmittedFileNameIndex = props.element.isMultifile === true || hasReplicatingContainerParent;
-    const submittedFileNameError = props.element.submittedFileName == null || props.element.submittedFileName.trim().length === 0 ?
-        'Bitte geben Sie einen Dateinamen bei Einreichung an.' :
-        undefined;
     const submittedFileNameHint = !requiresSubmittedFileNameIndex
         ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei.'
         : hasReplicatingContainerParent
@@ -128,7 +125,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                         });
                     }}
                     hint={submittedFileNameHint}
-                    error={submittedFileNameError}
+                    error={props.configurationErrors?.submittedFileName?.join(' ')}
                     required
                     disabled={!props.editable}
                 />

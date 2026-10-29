@@ -73,6 +73,13 @@ class ElementConfigurationErrorsTest {
     }
 
     @Test
+    void shouldNotPrefixMessagesOfTheDescribedElementItself() {
+        var root = text("root", 6, 5);
+
+        assertEquals(List.of(TEXT_ERROR), ElementConfigurationErrors.of(root).describe(root));
+    }
+
+    @Test
     void shouldSerializeOnlyPropertiesAndChildren() {
         var root = group("root", text("text", 6, 5));
 
