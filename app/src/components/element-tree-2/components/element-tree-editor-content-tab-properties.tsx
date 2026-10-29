@@ -60,12 +60,13 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
 
     const isRoot = root.id === currentElement.id;
 
-    // Validate the unapplied draft so errors follow each edit, not only the state applied to the tree.
-    const configurationErrors = useElementConfigurationErrors(currentElement, editable);
-
     const hasSummaryLayoutParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
     }, [parents]);
+
+    // Validate the unapplied draft so errors follow each edit, not only the state applied to the tree. Like the
+    // server, skip elements of summaries: they only display values.
+    const configurationErrors = useElementConfigurationErrors(currentElement, editable && !hasSummaryLayoutParent);
 
     const replicatingParents = useMemo(() => {
         return parents.filter((p) => p.type === ElementType.ReplicatingContainer);

@@ -5,7 +5,9 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TableInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TableInputElementColumn;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.DialogLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.SummaryLayoutElement;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
@@ -88,6 +90,27 @@ class ElementConfigurationErrorsTest {
                 .convertValue(ElementConfigurationErrors.of(root), Map.class);
 
         assertEquals(Set.of("properties", "children"), json.keySet());
+    }
+
+    @Test
+    void shouldSkipChildrenOfSummaries() {
+        var summary = new SummaryLayoutElement();
+        summary.setId("summary");
+        summary.setChildren(new LinkedList<>(List.of(text("copy", 6, 5))));
+
+        assertTrue(ElementConfigurationErrors.of(group("root", summary)).isEmpty());
+    }
+
+    @Test
+    void shouldTreatMissingChildrenAsEmpty() {
+        var dialog = new DialogLayoutElement();
+        dialog.setId("dialog");
+        dialog.setChildren(null);
+
+        var errors = ElementConfigurationErrors.of(dialog);
+
+        assertTrue(errors.isEmpty());
+        assertEquals(List.of(), errors.describe(dialog));
     }
 
     @Test
