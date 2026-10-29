@@ -89,9 +89,9 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                         }}
                     >
                         <NumberFieldComponent
-                            value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles ?? undefined}
+                            value={props.element.minFiles ?? undefined}
                             label="Mindestanzahl an Anlagen"
-                            hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
+                            hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
                             onChange={(val) => {
                                 props.onPatch({
                                     minFiles: val,

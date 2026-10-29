@@ -220,7 +220,7 @@ export interface FileUploadFieldLayoutProps extends FormFieldLayoutProps {
 
 export function FileUploadFieldLayout(props: FileUploadFieldLayoutProps) {
     const hasError = props.error != null && props.error.length > 0;
-    const countHint = getFileCountHint(props.fileCount, props.minFiles, props.maxFiles);
+    const countHint = getFileCountHint(props.fileCount, props.minFiles, props.maxFiles, props.required);
     const hasHint = props.hint != null && props.hint.length > 0;
     const hasHelperContent = hasError || hasHint || countHint != null;
     const helperContent = hasHelperContent ? (
@@ -228,6 +228,7 @@ export function FileUploadFieldLayout(props: FileUploadFieldLayoutProps) {
             error={hasError ? props.error : undefined}
             hint={!hasError ? props.hint : undefined}
             fileCount={props.fileCount}
+            required={props.required}
             minFiles={props.minFiles}
             maxFiles={props.maxFiles}
         />
@@ -278,6 +279,7 @@ export function FileUploadFieldLayout(props: FileUploadFieldLayoutProps) {
 }
 
 interface FileUploadHelperProps {
+    required?: boolean;
     error?: string;
     hint?: string | null;
     fileCount: number;
@@ -286,7 +288,7 @@ interface FileUploadHelperProps {
 }
 
 export function FileUploadHelper(props: FileUploadHelperProps) {
-    const countHint = getFileCountHint(props.fileCount, props.minFiles, props.maxFiles);
+    const countHint = getFileCountHint(props.fileCount, props.minFiles, props.maxFiles, props.required);
 
     if (props.error == null && props.hint == null && countHint == null) {
         return null;
@@ -330,7 +332,12 @@ export function getFileCountHint(
     fileCount: number,
     minFiles?: number | null,
     maxFiles?: number | null,
+    required = false,
 ): string | null {
+    if (!required && fileCount === 0 && minFiles != null && minFiles > 0) {
+        return `Bei Eingabe mindestens ${minFiles} ${pluralize(minFiles, 'Datei', 'Dateien')}`;
+    }
+
     if (maxFiles != null && maxFiles > 0) {
         const qualifier = minFiles === maxFiles ? '' : 'max. ';
         return `${fileCount} von ${qualifier}${maxFiles} ${pluralize(maxFiles, 'Datei', 'Dateien')}`;

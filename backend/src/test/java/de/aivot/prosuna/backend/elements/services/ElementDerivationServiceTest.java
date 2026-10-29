@@ -708,6 +708,7 @@ class ElementDerivationServiceTest {
     void shouldValidateEmptyDynamicRowsAsAnEmptyListRatherThanATypeMismatch() {
         var rows = new ReplicatingContainerLayoutElement();
         rows.setId("rows");
+        rows.setMinimumRequiredSets(3);
         rows.setChildren(List.of());
         rows.setInputModePolicy(new InputModePolicy(List.of(InputMode.Literal, InputMode.NoCode), null));
         var values = new AuthoredElementValues();
@@ -723,6 +724,27 @@ class ElementDerivationServiceTest {
                 new ProcessExecutionData(), InputModeEvaluationContext.Runtime);
         assertTrue(required.hasAnyError());
         assertFalse(required.getElementStates().get("rows").getError().contains("nicht in den Typ"));
+    }
+
+    @Test
+    void validatesMinimumCountsForAuthoredAndComputedOptionalCollections() {
+        var table = new de.aivot.prosuna.backend.elements.models.elements.form.input.TableInputElement()
+                .setMinimumRequiredRows(3).setFields(List.of());
+        var rows = new ReplicatingContainerLayoutElement().setMinimumRequiredSets(3);
+        for (var field : List.of(table, rows)) {
+            field.setId("entries");
+            var root = createRoot(List.of(field));
+            for (int count : new int[]{0, 1, 3}) {
+                var entries = java.util.stream.IntStream.range(0, count)
+                        .mapToObj(i -> Map.of("id", "row-" + i, "values", Map.of())).toList();
+                field.setValue(null);
+                var authored = derive(root, new AuthoredElementValues().putLiteral("entries", entries), new ElementDerivationOptions());
+                assertEquals(count == 1, authored.hasAnyError());
+                field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(entries)));
+                var computed = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+                assertEquals(count == 1, computed.hasAnyError());
+            }
+        }
     }
 
     @Test

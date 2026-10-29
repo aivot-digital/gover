@@ -21,12 +21,14 @@ export function AssignmentContextFieldEditor(props: BaseEditorProps<AssignmentCo
 
     const minItemsError = (
         element.maxItems != null &&
+        element.maxItems > 0 &&
         element.minItems != null &&
         element.minItems > element.maxItems
     );
 
     const maxItemsError = (
         element.maxItems != null &&
+        element.maxItems > 0 &&
         element.minItems != null &&
         element.maxItems < element.minItems
     );
@@ -114,7 +116,7 @@ export function AssignmentContextFieldEditor(props: BaseEditorProps<AssignmentCo
                             minItems: value,
                         });
                     }}
-                    hint="Geben Sie 0 oder nichts ein, um keine Mindestanzahl zu fordern."
+                    hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
                     error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
                     disabled={!editable}
                 />
