@@ -115,13 +115,7 @@ class ElementConfigurationErrorsTest {
 
     @Test
     void shouldTreatNonPositiveMaximumAsNoLimit() {
-        var table = new TableInputElement()
-                .setFields(List.of(new TableInputElementColumn().setKey("name")))
-                .setMinimumRequiredRows(3)
-                .setMaximumRows(0);
-
         assertEquals(Map.of(), text("text", 6, 0).validateConfiguration());
-        assertEquals(Map.of(), table.validateConfiguration());
     }
 
     private static TextInputElement text(String id, Integer minCharacters, Integer maxCharacters) {

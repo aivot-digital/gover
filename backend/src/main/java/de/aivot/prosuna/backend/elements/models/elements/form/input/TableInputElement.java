@@ -198,6 +198,11 @@ public class TableInputElement extends BaseInputElement<List<Map<String, Object>
             addMinimumExceedsMaximumError(errors, "minimumRequiredRows", minimumRequiredRows, "maximumRows", maximumRows,
                     "Sie fordern mehr Zeilen, als Sie maximal zulassen.");
         }
+        // Unlike other elements, tables treat a maximum of 0 or less as a limit (see performValidation), so such a
+        // table rejects every row.
+        if (maximumRows != null && maximumRows < 1) {
+            addConfigurationError(errors, "maximumRows", "Lassen Sie mindestens eine Zeile zu oder entfernen Sie die Maximalanzahl der Zeilen.");
+        }
         // formatValue fails without columns, and a table without columns cannot take any input.
         if (fields == null || fields.isEmpty()) {
             addConfigurationError(errors, "fields", "Fügen Sie mindestens eine Spalte hinzu.");

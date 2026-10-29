@@ -123,6 +123,15 @@ class ElementConfigurationRulesTest {
         assertEquals(expected, new TableInputElement().setFields(List.of()).validateConfiguration());
     }
 
+    @Test
+    void shouldReportTableMaximumsThatRejectEveryRow() {
+        var expected = Map.of("maximumRows", List.of("Lassen Sie mindestens eine Zeile zu oder entfernen Sie die Maximalanzahl der Zeilen."));
+
+        assertEquals(expected, required(new TableInputElement().setFields(List.of(column("name"))).setMinimumRequiredRows(3).setMaximumRows(0)).validateConfiguration());
+        assertEquals(expected, new TableInputElement().setFields(List.of(column("name"))).setMaximumRows(-1).validateConfiguration());
+        assertEquals(Map.of(), new TableInputElement().setFields(List.of(column("name"))).setMaximumRows(1).validateConfiguration());
+    }
+
     private static TableInputElementColumn column(String key) {
         return new TableInputElementColumn().setKey(key).setLabel("Spalte " + key);
     }

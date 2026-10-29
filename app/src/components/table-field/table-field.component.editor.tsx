@@ -52,7 +52,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                         <NumberFieldComponent
                             value={props.element.maximumRows ?? undefined}
                             label="Maximalanzahl der hinzuzufügenden Zeilen"
-                            hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                            hint="Lassen Sie das Feld leer, um keine Maximalanzahl zu fordern."
                             error={props.configurationErrors?.maximumRows?.join(' ')}
                             onChange={(val) => {
                                 props.onPatch({
