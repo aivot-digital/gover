@@ -35,6 +35,22 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
         super(ElementType.FileUpload);
     }
 
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // The editor only offers the file limits for multiple files.
+        if (Boolean.TRUE.equals(isMultifile)) {
+            addMinimumExceedsMaximumError(errors, "minFiles", minFiles, "maxFiles", maxFiles,
+                    "Sie fordern mehr Anlagen, als Sie maximal zulassen.");
+        }
+        // An empty list rejects every upload. A missing list allows every extension, so the editor only warns about it.
+        if (extensions != null && extensions.isEmpty()) {
+            addConfigurationError(errors, "extensions", "Wählen Sie mindestens eine erlaubte Dateiendung aus.");
+        }
+        return errors;
+    }
+
     @Nullable
     @Override
     public List<FileUploadInputElementItem> formatValue(@Nullable Object value) {

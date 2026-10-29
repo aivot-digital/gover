@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.elements.controllers;
 
+import de.aivot.prosuna.backend.elements.models.ElementConfigurationErrors;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.utils.ElementReferenceUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -38,5 +39,17 @@ public class ElementDerivationController {
         ElementReferenceUtils.recalculateReferencedIds(element);
 
         return element;
+    }
+
+    @PostMapping("validate-configuration/")
+    @Operation(
+            summary = "Validate Element Configuration",
+            description = "Validates the configuration of the provided element and all its children. " +
+                    "Only erroneous properties and children with errors are included in the result."
+    )
+    public ElementConfigurationErrors validateConfiguration(
+            @Nonnull @RequestBody @Valid BaseElement element
+    ) {
+        return ElementConfigurationErrors.of(element);
     }
 }

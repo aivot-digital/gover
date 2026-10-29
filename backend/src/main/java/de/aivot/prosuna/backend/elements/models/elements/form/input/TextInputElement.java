@@ -16,6 +16,7 @@ import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAccessor;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -86,6 +87,15 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         if (minCharacters != null && minCharacters > 0 && value.length() < minCharacters) {
             throw new ValidationException(this, "Zu wenige Zeichen. Mindestens " + minCharacters + " Zeichen erforderlich.");
         }
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minCharacters", minCharacters, "maxCharacters", maxCharacters,
+                "Sie fordern mehr Zeichen, als Sie maximal zulassen.");
+        return errors;
     }
 
     @Nonnull
