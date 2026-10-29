@@ -60,6 +60,18 @@ describe('useElementConfigurationErrors', () => {
         expect(result.current).toBeNull();
     });
 
+    it('does not validate without an element', async () => {
+        const validate = vi.spyOn(ElementsApiService.prototype, 'validateConfiguration').mockResolvedValue(errors);
+
+        const {result} = renderHook(() => useElementConfigurationErrors(null, true));
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(ELEMENT_CONFIGURATION_VALIDATION_DELAY_MS);
+        });
+
+        expect(validate).not.toHaveBeenCalled();
+        expect(result.current).toBeNull();
+    });
+
     it('ignores a response for a tree that has been replaced in the meantime', async () => {
         const responses: Array<(value: ElementConfigurationErrors) => void> = [];
         vi.spyOn(ElementsApiService.prototype, 'validateConfiguration').mockImplementation(() => new Promise((resolve) => {

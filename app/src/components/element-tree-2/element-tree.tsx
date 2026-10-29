@@ -24,6 +24,7 @@ import {IdentityConfigElementSlotWithProviders} from '../../models/elements/form
 import {ElementType} from '../../data/element-type/element-type';
 import {isSectionElementType} from '../../models/elements/steps/step-element';
 import {useElementConfigurationErrors} from '../../modules/elements/hooks/use-element-configuration-errors';
+import {type ElementConfigurationErrors} from '../../modules/elements/elements-api-service';
 
 export interface ElementTreeProps<T extends AnyElement> {
     value: T;
@@ -37,6 +38,8 @@ export interface ElementTreeProps<T extends AnyElement> {
     onHoveredElementIdChange?: (elementId: string | null) => void;
     openRootAddElementSignal?: number;
     identityMappingInformation?: IdentityConfigElementSlotWithProviders[];
+    /** Configuration errors validated by a host that also needs them outside the tree. The tree then skips its own validation. */
+    configurationErrors?: ElementConfigurationErrors | null;
 }
 
 interface ElementTreeSearchResult {
@@ -58,6 +61,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         onHoveredElementIdChange,
         openRootAddElementSignal,
         identityMappingInformation,
+        configurationErrors: hostConfigurationErrors,
     } = props;
 
     const {
@@ -87,7 +91,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         return flattenElementsWithParents(value, [], false);
     }, [value]);
 
-    const configurationErrors = useElementConfigurationErrors(value, editable);
+    const ownConfigurationErrors = useElementConfigurationErrors(value, editable && hostConfigurationErrors === undefined);
+    const configurationErrors = hostConfigurationErrors === undefined ? ownConfigurationErrors : hostConfigurationErrors;
 
     const typeLabel = useMemo(() => {
         return getElementNameForType(type);

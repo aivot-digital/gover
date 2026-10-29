@@ -245,6 +245,22 @@ describe('ElementTree configuration errors', () => {
 
         expect(validate).not.toHaveBeenCalled();
     });
+
+    it('shows errors validated by the host without validating the tree again', async () => {
+        const validate = vi.spyOn(ElementsApiService.prototype, 'validateConfiguration');
+        render(<ElementTree
+            value={createForm([createSection('section')])}
+            onChange={vi.fn()}
+            editable={true}
+            displayContext={ElementDisplayContext.CustomerFacing}
+            allowElementIdEditing={false}
+            configurationErrors={{properties: {}, children: {section: {properties: {title: ['Fehler']}, children: {}}}}}
+        />, {wrapper: TreeTestWrapper});
+
+        expect(screen.getByRole('button', {name: 'Fehlerhafte Konfiguration: Fehler'})).toBeInTheDocument();
+        await act(() => new Promise((resolve) => setTimeout(resolve, 500)));
+        expect(validate).not.toHaveBeenCalled();
+    });
 });
 
 describe('ElementTree drag and drop', () => {

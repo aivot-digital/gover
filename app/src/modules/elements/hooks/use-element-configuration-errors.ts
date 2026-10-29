@@ -7,13 +7,13 @@ export const ELEMENT_CONFIGURATION_VALIDATION_DELAY_MS = 400;
 /**
  * Validates the configuration of an element tree on the server while it is being edited, including unsaved changes.
  *
- * @returns The errors of the latest validated tree, or null before the first result and while disabled.
+ * @returns The errors of the latest validated tree, or null before the first result, while disabled and without element.
  */
-export function useElementConfigurationErrors(element: AnyElement, enabled: boolean): ElementConfigurationErrors | null {
+export function useElementConfigurationErrors(element: AnyElement | null | undefined, enabled: boolean): ElementConfigurationErrors | null {
     const [errors, setErrors] = useState<ElementConfigurationErrors | null>(null);
 
     useEffect(() => {
-        if (!enabled) {
+        if (!enabled || element == null) {
             setErrors(null);
             return;
         }
