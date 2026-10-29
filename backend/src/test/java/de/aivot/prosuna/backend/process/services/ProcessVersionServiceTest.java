@@ -14,7 +14,14 @@ import de.aivot.prosuna.backend.process.services.ProcessVersionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -146,6 +153,34 @@ class ProcessVersionServiceTest {
         assertEquals(6, result.getRetentionTimeValue());
         assertEquals(ProcessRetentionTimeUnit.Months, result.getRetentionTimeUnit());
         assertEquals(30, result.getInstanceDeadlineDays());
+    }
+
+    @Test
+    void validate_ShouldValidateAllNodesInOneReadOnlyTransaction() throws ResponseException {
+        // The node validations share the persistence context of this transaction, so the process and version load once.
+        var processNodeService = mock(ProcessNodeService.class);
+        when(processNodeService.findAllByProcessIdAndProcessVersion(12, 5)).thenReturn(List.of());
+        var transactionManager = mock(PlatformTransactionManager.class);
+        var transaction = new SimpleTransactionStatus();
+        when(transactionManager.getTransaction(any())).thenReturn(transaction);
+        var proxyFactory = new ProxyFactory(new ProcessVersionService(
+                mock(ProcessVersionRepository.class),
+                processNodeService,
+                mock(ProcessNodeDefinitionService.class),
+                mock(CaseNumberGeneratorService.class)
+        ));
+        proxyFactory.setProxyTargetClass(true);
+        proxyFactory.addAdvice(new TransactionInterceptor(transactionManager, new AnnotationTransactionAttributeSource()));
+        var service = (ProcessVersionService) proxyFactory.getProxy();
+
+        service.validate(new ProcessVersionEntity()
+                .setProcessId(12)
+                .setProcessVersion(5));
+
+        var definition = ArgumentCaptor.forClass(TransactionDefinition.class);
+        verify(transactionManager).getTransaction(definition.capture());
+        assertTrue(definition.getValue().isReadOnly());
+        verify(transactionManager).commit(transaction);
     }
 
     @Test

@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DateTimeException;
 import java.time.Instant;
@@ -143,6 +144,9 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         processDefinitionVersionRepository.delete(entity);
     }
 
+    // Each node validation loads the process and version for every configuration layout it derives. One transaction
+    // for all nodes loads them once; it is read-only because validating must not write.
+    @Transactional(readOnly = true)
     public ProcessVersionProblems validate(@Nonnull ProcessVersionEntity entity) throws ResponseException {
         var nodes = processNodeService
                 .findAllByProcessIdAndProcessVersion(entity.getProcessId(), entity.getProcessVersion());
