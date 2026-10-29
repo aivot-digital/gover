@@ -23,9 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 @DataJpaTest(properties = {"spring.flyway.enabled=false", "spring.jpa.hibernate.ddl-auto=none",
         "spring.data.jpa.repositories.enabled=false",
-        "spring.jpa.properties.hibernate.connection.url=jdbc:h2:mem:code-list-sync;NON_KEYWORDS=KEY,VALUE",
-        "spring.jpa.properties.hibernate.connection.username=sa", "spring.jpa.properties.hibernate.connection.password=",
-        "spring.jpa.properties.hibernate.connection.driver_class=org.h2.Driver"})
+        "spring.test.database.replace=none",
+        "spring.datasource.url=jdbc:h2:mem:code-list-sync;NON_KEYWORDS=KEY,VALUE",
+        "spring.datasource.username=sa", "spring.datasource.password=",
+        "spring.datasource.driver-class-name=org.h2.Driver"})
 @ContextConfiguration(classes = CodeListRepositoryTest.Config.class)
 class CodeListRepositoryTest {
     private static final Instant NOW = Instant.parse("2030-05-01T12:00:00Z");
