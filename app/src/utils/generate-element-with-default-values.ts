@@ -563,6 +563,7 @@ const elementConstructors: {
     [ElementType.LinkButton]: (id) => ({
         ...makeFormBase(ElementType.LinkButton, id),
         label: 'Link öffnen',
+        icon: undefined,
         href: undefined,
         openInNewTab: true,
         staffTaskEvent: undefined,

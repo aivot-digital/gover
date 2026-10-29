@@ -107,7 +107,7 @@ describe('LinkButtonEditor', () => {
             customerTaskEvent: 'submit',
         }), onPatch);
 
-        fireEvent.change(screen.getByLabelText('Ziel'), {
+        fireEvent.change(screen.getByLabelText('Aktion'), {
             target: {
                 value: 'staffTaskEvent',
             },
@@ -115,6 +115,7 @@ describe('LinkButtonEditor', () => {
 
         expect(onPatch).toHaveBeenCalledWith({
             href: null,
+            staffTaskEvent: '',
             customerTaskEvent: null,
         });
     });
@@ -127,7 +128,7 @@ describe('LinkButtonEditor', () => {
             staffTaskEvent: 'approve',
         }), onPatch);
 
-        fireEvent.change(screen.getByLabelText('Mitarbeitenden-Ereignis'), {
+        fireEvent.change(screen.getByLabelText('Ereigniskennung'), {
             target: {
                 value: 'reject',
             },

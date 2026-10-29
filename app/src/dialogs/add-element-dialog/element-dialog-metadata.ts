@@ -86,7 +86,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
 export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.Alert]: 'Zeigt hervorgehobene Hinweise im Formular an.',
     [ElementType.Image]: 'Bindet ein Bild in den Formularfluss ein.',
-    [ElementType.LinkButton]: 'Zeigt einen Button an, der einen Link öffnet oder in Aufgabenansichten ein Ereignis auslöst.',
+    [ElementType.LinkButton]: 'Öffnet einen Link oder löst eine Aktion in einer Aufgabenansicht aus.',
     [ElementType.GroupLayout]: 'Fasst inhaltlich zusammengehörige Elemente zusammen.',
     [ElementType.Checkbox]: 'Ermöglicht eine einzelne Bestätigung oder das Aktivieren einer Option, zum Beispiel „Abweichende Lieferadresse verwenden“.',
     [ElementType.Date]: 'Erfasst ein einzelnes Datum.',

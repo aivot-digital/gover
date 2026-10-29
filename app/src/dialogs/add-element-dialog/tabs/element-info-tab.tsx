@@ -7,6 +7,8 @@ import {Box, Button, Divider, Typography} from '@mui/material';
 import {DateTime} from 'luxon';
 import PersonOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Person';
 import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import CheckCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -292,21 +294,46 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.LinkButton]: (
         <Box>
             <Typography>
-                Das Link-Button-Element stellt einen Button dar, der entweder einen Link öffnet oder in
-                Aufgabenansichten ein definiertes Ereignis auslöst.
+                Mit einer Schaltfläche können Sie einen Link öffnen oder eine vom Prozessknoten unterstützte
+                Aufgabenaktion auslösen. Aufgabenaktionen stehen nur in der passenden Ansicht für Mitarbeitende
+                oder externe Beteiligte zur Verfügung und benötigen eine technische Ereigniskennung.
             </Typography>
 
             <Divider sx={{my: 4}}>
-                Beispiel
+                Beispiele
             </Divider>
 
-            <Button
-                variant="contained"
-                color="primary"
-                endIcon={<OpenInNewIcon/>}
-            >
-                Link öffnen
-            </Button>
+            <Box sx={{display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 3}}>
+                <Box>
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<InfoOutlinedIcon/>}
+                        endIcon={<OpenInNewIcon sx={{opacity: 0.65}}/>}
+                    >
+                        Website öffnen
+                    </Button>
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+                        Link mit eigenem Symbol
+                    </Typography>
+                </Box>
+                <Box>
+                    <Button variant="contained" color="success" startIcon={<CheckCircleOutlinedIcon/>}>
+                        Aufgabe abschließen
+                    </Button>
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+                        Aufgabenaktion mit Symbol
+                    </Typography>
+                </Box>
+                <Box>
+                    <Button variant="text" color="error">
+                        Ablehnen
+                    </Button>
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+                        Aufgabenaktion ohne Symbol
+                    </Typography>
+                </Box>
+            </Box>
         </Box>
     ),
     [ElementType.GroupLayout]: (
