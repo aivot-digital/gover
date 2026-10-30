@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
@@ -71,6 +72,17 @@ public class TemplateRenderService {
     @Nullable
     public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
                               @Nullable String template) {
+        return interpolate(foldedProcessData, template, JavascriptExecutionContext.Default);
+    }
+
+    /**
+     * Renders the given template like {@link #interpolate(ProcessExecutionData, String)}, but only provides the
+     * JavaScript function providers that are available in the given context to its expressions.
+     */
+    @Nullable
+    public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
+                              @Nullable String template,
+                              @Nonnull JavascriptExecutionContext context) {
         if (template == null) {
             return null;
         }
@@ -80,7 +92,7 @@ public class TemplateRenderService {
             throw new IllegalArgumentException(formatDiagnostics(parseResult.diagnostics()));
         }
 
-        try (var engine = javascriptEngineFactoryService.getEngine()) {
+        try (var engine = javascriptEngineFactoryService.getEngine(context)) {
             var renderer = new TemplateRenderer(
                     new TemplateExpressionEvaluator(engine, parseResult.source()),
                     new TemplateRenderContext(foldedProcessData),

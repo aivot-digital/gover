@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.javascript;
 import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
 import de.aivot.prosuna.backend.codeLists.entities.VCodeListItemEntity;
 import de.aivot.prosuna.backend.codeLists.services.CodeListService;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -70,6 +71,12 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
 
                 Eine Codeliste kann entweder als vollständige Liste ihrer Einträge oder als Auswahloptionen mit Schlüssel und Bezeichnung geladen werden. Dadurch lassen sich dieselben gepflegten Werte in Skripten, Ausdrücken und Oberflächen wiederverwenden.
                 """;
+    }
+
+    @Override
+    public boolean isAvailableIn(@Nonnull JavascriptExecutionContext context) {
+        // Only reads code lists.
+        return context == JavascriptExecutionContext.Default || context == JavascriptExecutionContext.AssetTemplate;
     }
 
     @Override
