@@ -229,7 +229,7 @@ class CommunicationMessageActionNodeV1Test {
         assertEquals("sendResult", communicationRequest.nodeDataOutputKey());
         assertEquals("Subject 123", communicationRequest.message().subject());
         assertEquals("Hello", communicationRequest.message().body());
-        assertEquals("Hello", communicationRequest.message().htmlBody());
+        assertEquals("Hello", communicationRequest.message().markdownBody());
         assertEquals(result.getNodeData().get("sentAt"), communicationRequest.message().timestamp());
         assertSame(signatureDepartment, communicationRequest.message().signatureDepartment());
         assertEquals(5, result.getNodeData().get("communicationProviderBindingId"));

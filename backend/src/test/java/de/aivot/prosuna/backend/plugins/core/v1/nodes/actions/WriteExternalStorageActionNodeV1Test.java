@@ -37,6 +37,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.enums.StorageProviderStatus;
@@ -60,6 +61,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +101,7 @@ class WriteExternalStorageActionNodeV1Test {
     private StorageProviderRepository storageProviderRepository;
     private StorageProviderDefinitionService storageProviderDefinitionService;
     private WriteExternalStorageActionNodeV1 node;
+    private CaseIdTemplateRenderService templateRenderService;
     private List<StoredDocument> storedDocuments;
     private List<StorageItemMetadata> storedDocumentMetadata;
 
@@ -148,8 +151,9 @@ class WriteExternalStorageActionNodeV1Test {
             );
         });
 
+        templateRenderService = new CaseIdTemplateRenderService();
         node = new WriteExternalStorageActionNodeV1(
-                new CaseIdTemplateRenderService(),
+                templateRenderService,
                 processInstanceAttachmentService,
                 processInstanceAttachmentSetService,
                 storageService,
@@ -304,6 +308,9 @@ class WriteExternalStorageActionNodeV1Test {
         assertEquals("case-123", metadata.get("x-amz-meta-case-id"));
         assertEquals("static value", metadata.get("x-amz-meta-static"));
         assertEquals(2, metadata.size());
+        // Paths and metadata values are single lines of text, not HTML.
+        assertEquals(TemplateOutputFormat.SingleLineText, templateRenderService.outputFormats.get("/case/{{caseId}}/documents"));
+        assertEquals(TemplateOutputFormat.SingleLineText, templateRenderService.outputFormats.get("case-{{caseId}}"));
     }
 
     @Test
@@ -855,12 +862,15 @@ class WriteExternalStorageActionNodeV1Test {
     }
 
     private static class CaseIdTemplateRenderService extends TemplateRenderService {
+        private final Map<String, TemplateOutputFormat> outputFormats = new HashMap<>();
+
         private CaseIdTemplateRenderService() {
             super(null);
         }
 
         @Override
-        public String interpolate(ProcessExecutionData foldedProcessData, String template) {
+        public String interpolate(ProcessExecutionData foldedProcessData, String template, TemplateOutputFormat outputFormat) {
+            outputFormats.put(template, outputFormat);
             return template == null ? null : template.replace("{{caseId}}", "123");
         }
     }

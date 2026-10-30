@@ -12,6 +12,7 @@ import {
     ReplicatingContainerLayout,
 } from '../models/elements/form/layout/replicating-container-layout';
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
+import {type RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
 import {
@@ -140,6 +141,7 @@ const YupSchemaMap: {
     [T in ElementType]?: (elem: any, states: ComputedElementStates) => Schema;
 } = {
     [ElementType.Text]: textFieldToYup,
+    [ElementType.RichTextInput]: richTextInputFieldToYup,
     [ElementType.Number]: numberFieldToYup,
     [ElementType.Select]: selectFieldToYup,
     [ElementType.Radio]: selectFieldToYup,
@@ -241,6 +243,25 @@ function textFieldToYup(elem: TextFieldElement): Schema {
     }
 
     return textFieldSchema;
+}
+
+function richTextInputFieldToYup(elem: RichTextInputElement): Schema {
+    // Not trimmed: the backend limits the stored Markdown as it is.
+    let richTextSchema: StringSchema<string | undefined | null> = yup
+        .string();
+
+    if (elem.maxCharacters) {
+        richTextSchema = richTextSchema
+            .max(elem.maxCharacters, `Zu viele Zeichen. Maximal ${elem.maxCharacters} Zeichen erlaubt.`);
+    }
+
+    if (elem.required) {
+        return richTextSchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    }
+
+    return richTextSchema
+        .nullable();
 }
 
 function numberFieldToYup(elem: AnyInputElement): Schema {

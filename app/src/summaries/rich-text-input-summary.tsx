@@ -1,19 +1,11 @@
 import {Grid, Typography, useTheme} from '@mui/material';
-import {useMemo} from 'react';
 import {BaseSummaryProps} from './base-summary';
 import {RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
-
-function normalizeValue(value: string | null | undefined): string {
-    if (value == null || value.trim().length === 0) {
-        return 'Keine Angabe';
-    }
-
-    return value.trim();
-}
+import {MarkdownContent} from '../components/markdown-content/markdown-content';
 
 export function RichTextInputSummary(props: BaseSummaryProps<RichTextInputElement, string>) {
     const theme = useTheme();
-    const value = useMemo(() => normalizeValue(props.value), [props.value]);
+    const markdown = props.value?.trim() ?? '';
 
     return (
         <Grid
@@ -56,14 +48,26 @@ export function RichTextInputSummary(props: BaseSummaryProps<RichTextInputElemen
                     md: 8,
                 }}
             >
-                <Typography
-                    variant="body2"
-                    sx={{
-                        whiteSpace: 'pre-wrap',
-                    }}
-                >
-                    {value}
-                </Typography>
+                {markdown.length === 0 ? (
+                    <Typography variant="body2">
+                        Keine Angabe
+                    </Typography>
+                ) : (
+                    // Rendered like the PDF of the submission, which prints link targets as well. Headings keep the
+                    // size of the summary text, so a heading in an answer does not look like a heading of the summary.
+                    <MarkdownContent
+                        markdown={markdown}
+                        revealLinkTargets
+                        sx={{
+                            typography: 'body2',
+                            '& h1, & h2, & h3, & h4, & h5, & h6': {
+                                fontSize: 'inherit',
+                                fontWeight: 'bold',
+                                my: 1.5,
+                            },
+                        }}
+                    />
+                )}
             </Grid>
         </Grid>
     );

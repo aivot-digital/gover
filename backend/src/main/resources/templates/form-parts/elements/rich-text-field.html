@@ -20,5 +20,14 @@
 
     <div class="hint-wrapper">
         <div th:insert="~{./form-parts/elements/_hint.html}"></div>
+
+        <div
+                class="hint"
+                th:if="${ base.isBlankPrint && element.maxCharacters != null && element.maxCharacters > 0 }"
+        >
+            Maximal
+            <span th:text="${ element.maxCharacters }"></span>
+            Zeichen
+        </div>
     </div>
 </div>

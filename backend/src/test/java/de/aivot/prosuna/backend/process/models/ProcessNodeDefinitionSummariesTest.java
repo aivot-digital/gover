@@ -348,6 +348,14 @@ class ProcessNodeDefinitionSummariesTest {
         assertFalse(markdown.contains("Nicht Teil der Antwort"));
     }
 
+    @Test
+    void aiSummaryShowsTheTargetOfLinksInTheResponse() throws Exception {
+        // A prompt that includes customer input can make the model repeat a link whose text hides its target.
+        task.getNodeData().put("completion", "Bitte **jetzt** [bestätigen](https://evil.example).");
+        var markdown = summary(new AiCompletionActionNodeV1(null, null, null), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
+        assertTrue(markdown.endsWith("\n\n**Antwort der KI**\n\nBitte **jetzt** bestätigen (https://evil.example)."));
+    }
+
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {" \n\t"})

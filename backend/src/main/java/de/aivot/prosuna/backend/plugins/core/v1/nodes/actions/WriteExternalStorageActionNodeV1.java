@@ -33,6 +33,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
@@ -642,7 +643,11 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                                          @Nullable String targetPath,
                                          int rowIndex) throws ProcessNodeExecutionException {
         try {
-            var renderedTargetPath = templateRenderService.interpolate(context.getCurrentProcessExecutionData(), targetPath);
+            var renderedTargetPath = templateRenderService.interpolate(
+                    context.getCurrentProcessExecutionData(),
+                    targetPath,
+                    TemplateOutputFormat.SingleLineText
+            );
             if (renderedTargetPath == null) {
                 throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Zielpfad wurde nicht angegeben.".formatted(rowIndex));
             }
@@ -945,7 +950,11 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                                             int rowIndex,
                                             @Nonnull String metadataKey) throws ProcessNodeExecutionException {
         try {
-            var renderedValue = templateRenderService.interpolate(context.getCurrentProcessExecutionData(), metadataValue);
+            var renderedValue = templateRenderService.interpolate(
+                    context.getCurrentProcessExecutionData(),
+                    metadataValue,
+                    TemplateOutputFormat.SingleLineText
+            );
             return renderedValue == null ? "" : renderedValue;
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(

@@ -373,6 +373,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                                         setEditedSlotValue(val);
                                     }}
                                     readOnly={readOnly}
+                                    offerFormattedInsertion
                                 />
                             }
 

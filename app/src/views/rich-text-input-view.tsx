@@ -45,6 +45,7 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
             disabled={inputModeFieldProps?.disabled ?? isDisabled}
             readOnly={inputModeFieldProps?.readOnly ?? isBusy}
             reducedMode={isProcessConfigRoot ? true : element.reducedMode}
+            maxCharacters={element.maxCharacters}
             value={value}
             onChange={setValue}
             endAction={props.inputModeLiteralContext?.variableInsertAction}

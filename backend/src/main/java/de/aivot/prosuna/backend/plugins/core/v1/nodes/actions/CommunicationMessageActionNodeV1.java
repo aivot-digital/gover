@@ -20,6 +20,7 @@ import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -449,8 +450,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                         identityId,
                         new CommunicationMessage.Builder()
                                 .subject(subject)
-                                .body(content)
-                                .htmlBody(content)
+                                .body(MarkdownRenderer.renderPlainText(content))
+                                .markdownBody(content)
                                 .timestamp(sentAt)
                                 .attachments(attachments)
                                 .signatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(

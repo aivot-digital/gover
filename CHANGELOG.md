@@ -21,6 +21,14 @@
 * **System:** Add new prototype for processes.
 * **System:** Improve plugin system for better extensibility and maintainability.
 * **System:** Add generic storage provider functionality.
+* **System:** Render Markdown with one shared policy in the app, mails and PDFs. Raw HTML is shown as text, link targets are limited to web, e-mail, phone and SMS addresses and relative URLs, images are reduced to their alternative text. Tables and footnotes are not supported and appear as text.
+* **System:** Insert process data into templates according to how each field is used. In Markdown fields, `{{ }}` shows values as typed and `{! !}` keeps their formatting but shows link targets. Text fields insert values as single lines, AI prompts and payment descriptions as plain text, so names such as `O'Brien & Söhne` are no longer HTML-escaped.
+* **System:** Send readable plain text in the text part of mails and to OZG-Cloud instead of Markdown. The mail element outputs its content as Markdown instead of HTML.
+* **System:** Escape untrusted text in form PDFs, staff payment tasks, AI answers in execution summaries and the HTML error page.
+* **System:** Fill only the slots of an HTML template that the template uses.
+* **App:** Let customers enter formatted text in forms and form requests with the Markdown field. Customers get a short toolbar with bold, italic and lists and cannot create links. New Markdown fields are limited to 5,000 characters.
+* **App:** Limit the rich text editor to what mails, PDFs and the app can show. Underline, superscript, subscript and highlight are no longer available, Markdown the editor cannot edit is shown as a protected part, and opening a field no longer changes its value.
+* **App:** Let authors choose whether a variable is inserted into a Markdown field as text or with its formatting. Identity descriptions no longer offer variables, as they were never filled in.
 
 ## [4.6.2](https://github.com/aivot-digital/gover/compare/v4.6.1...v4.6.2) (2026-05-05)
 

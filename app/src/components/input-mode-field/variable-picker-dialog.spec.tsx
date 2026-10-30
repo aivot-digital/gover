@@ -8,12 +8,13 @@ import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
 vi.mock('../../utils/copy-to-clipboard', () => ({copyToClipboardText: vi.fn().mockResolvedValue(true)}));
 
-function renderPicker(reference: InputVariableReference | null = null, readOnly = false) {
+function renderPicker(reference: InputVariableReference | null = null, readOnly = false, offerFormattedInsertion = false) {
     const onSelect = vi.fn();
     render(<VariablePickerDialog
         open title="Variable referenzieren" variables={[]}
         allowedSources={Object.values(InputVariableSource)}
         selectedReference={reference} readOnly={readOnly} allowClear
+        offerFormattedInsertion={offerFormattedInsertion}
         onSelect={onSelect} onClear={vi.fn()} onClose={vi.fn()}
     />);
     return {onSelect};
@@ -35,7 +36,7 @@ describe('custom variable references', () => {
         await user.click(screen.getByRole('button', {name: 'Variablenpfad kopieren'}));
         expect(copyToClipboardText).toHaveBeenCalledWith(prefix + input);
         await user.click(screen.getByRole('button', {name: 'Referenz verwenden'}));
-        expect(onSelect).toHaveBeenCalledWith(reference, undefined);
+        expect(onSelect).toHaveBeenCalledWith(reference, undefined, 'text');
     });
 
     it('validates on blur and while correcting without silently renaming the referenced key', async () => {
@@ -57,7 +58,7 @@ describe('custom variable references', () => {
         fireEvent.change(field, {target: {value: 'personen[0].Name'}});
         expect(field).not.toHaveAttribute('aria-invalid', 'true');
         await user.click(apply);
-        expect(onSelect).toHaveBeenCalledWith({source: InputVariableSource.ProcessData, path: 'personen[0].Name'}, undefined);
+        expect(onSelect).toHaveBeenCalledWith({source: InputVariableSource.ProcessData, path: 'personen[0].Name'}, undefined, 'text');
     });
 
     it.each([InputVariableSource.ElementData, InputVariableSource.ElementMetadata])
@@ -82,5 +83,32 @@ describe('custom variable references', () => {
         expect(screen.queryByRole('button', {name: 'Referenz verwenden'})).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'Variablenpfad kopieren'}));
         expect(copyToClipboardText).toHaveBeenCalledWith('$.person.Name');
+    });
+});
+
+describe('insertion into Markdown fields', () => {
+    const reference = {source: InputVariableSource.ProcessData, path: 'nachricht'};
+
+    it('inserts values as text unless the author chooses formatting', async () => {
+        const user = userEvent.setup();
+        const {onSelect} = renderPicker(reference, false, true);
+        const insertion = screen.getByRole('group', {name: /^Einfügen/});
+
+        expect(screen.getByRole('radio', {name: 'Als Text'})).toBeChecked();
+        expect(insertion).toHaveAccessibleDescription(/zeigt den Wert genau so, wie er eingegeben wurde/);
+        await user.click(screen.getByRole('radio', {name: 'Mit Formatierung'}));
+        await user.click(screen.getByRole('button', {name: 'Referenz verwenden'}));
+
+        expect(onSelect).toHaveBeenCalledWith(reference, undefined, 'markdown');
+    });
+
+    it('does not offer formatting for other fields', async () => {
+        const user = userEvent.setup();
+        const {onSelect} = renderPicker(reference);
+
+        expect(screen.queryByRole('radio', {name: 'Mit Formatierung'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'Referenz verwenden'}));
+
+        expect(onSelect).toHaveBeenCalledWith(reference, undefined, 'text');
     });
 });

@@ -36,6 +36,7 @@ import de.aivot.prosuna.backend.elements.enums.ValueFunctionType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
@@ -628,8 +629,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
         var message = new CommunicationMessage.Builder()
                 .subject(subject)
-                .body(content)
-                .htmlBody(content)
+                .body(MarkdownRenderer.renderPlainText(content))
+                .markdownBody(content)
                 .callToActions(List.of(new CommunicationMessageCallToAction("Daten einreichen", customerLink)))
                 .signatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
                         configuration.messageConfig,
