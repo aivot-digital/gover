@@ -1061,7 +1061,7 @@ export function FieldLayoutGallery() {
                 />
 
                 <DepartmentSelectField
-                    label="Zuständige Organisationseinheit"
+                    label="Verantwortliche Organisationseinheit"
                     value={department}
                     onChange={setDepartment}
                     departments={departmentOptions}

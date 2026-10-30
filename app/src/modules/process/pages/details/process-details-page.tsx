@@ -1218,7 +1218,7 @@ export function ProcessDetailsPage(): ReactNode {
             const ports = await requireCandidatePorts(candidate, true);
             const defaultPort = getDefaultProcessNodePort(ports);
             if (existingEdge != null && defaultPort == null) {
-                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen Prozesspfad besitzt.'));
+                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen Ausgangsport besitzt.'));
                 return;
             }
             const newNode = await new ProcessNodeApiService().createWithGeneratedDataKey(candidate);
@@ -1362,7 +1362,7 @@ export function ProcessDetailsPage(): ReactNode {
             const ports = await requireCandidatePorts(candidate, true);
             const defaultPort = getDefaultProcessNodePort(ports);
             if (defaultPort == null) {
-                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen Prozesspfad besitzt.'));
+                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen Ausgangsport besitzt.'));
                 return;
             }
             const newNode = await new ProcessNodeApiService().createWithGeneratedDataKey(candidate);
@@ -1872,13 +1872,13 @@ export function ProcessDetailsPage(): ReactNode {
                     edge.viaPort === newNodeFor.viaPort
                 ));
                 if (requiresOutgoingPort && getDefaultProcessNodePort(importedPorts) == null) {
-                    dispatch(showErrorSnackbar('Dieser importierte Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Prozesspfad besitzt.'));
+                    dispatch(showErrorSnackbar('Dieser importierte Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
                     return;
                 }
             }
 
             if (context === 'in-between' && getDefaultProcessNodePort(importedPorts) == null) {
-                dispatch(showErrorSnackbar('Dieser importierte Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Prozesspfad besitzt.'));
+                dispatch(showErrorSnackbar('Dieser importierte Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
                 return;
             }
 
@@ -1987,7 +1987,7 @@ export function ProcessDetailsPage(): ReactNode {
                 outputMappings: {},
             });
         } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Die Prozesspfade des Ersatzes konnten nicht ermittelt werden.'));
+            dispatch(showApiErrorSnackbar(error, 'Die Ausgangsports des Ersatzes konnten nicht ermittelt werden.'));
             return;
         }
         const replacementPlan = buildNodeReplacementPlan(processFlow, node, replacementProvider, replacementPorts);

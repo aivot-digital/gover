@@ -87,7 +87,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                         .formatted(
                                 StringUtils.isNotNullOrEmpty(failureMessage)
                                         ? failureMessage
-                                        : "Die Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die zuständige Stelle."
+                                        : "Die Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die verantwortliche Stelle."
                         );
             }
             case XBezahldienstStatus.CANCELED -> {
@@ -98,7 +98,7 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                         .formatted(
                                 StringUtils.isNotNullOrEmpty(failureMessage)
                                         ? failureMessage
-                                        : "Die Zahlung wurde abgebrochen. Bei Fragen wenden Sie sich bitte an die zuständige Stelle."
+                                        : "Die Zahlung wurde abgebrochen. Bei Fragen wenden Sie sich bitte an die verantwortliche Stelle."
                         );
             }
             case XBezahldienstStatus.PAYED -> {

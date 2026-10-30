@@ -133,9 +133,9 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
     @Override
     public String getDescription() {
         return """
-                Wertet eine Bedingung aus und führt den Prozess abhängig vom Ergebnis über den Dann- oder Sonst-Prozesspfad fort.
+                Wertet eine Bedingung aus und führt den Prozess abhängig vom Ergebnis über den Dann- oder Sonst-Ausgangsport fort.
 
-                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die aktuellen Laufzeitdaten zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Datenausgänge bereitgestellt.
+                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die aktuellen Laufzeitdaten zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Ausgangsdaten bereitgestellt.
                 """;
     }
 

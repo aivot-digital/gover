@@ -168,7 +168,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         return """
                 Erstellt eine zugewiesene Aufgabe, über die eine Mitarbeiter:in einen Vorgang freigeben oder ablehnen kann.
                 
-                Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Prozesspfad fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Datenausgänge bereit.
+                Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Ausgangsport fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Ausgangsdaten bereit.
                 """;
     }
 

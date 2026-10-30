@@ -931,7 +931,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         suggestions.put("finished", "Abschlusszeitpunkt");
         suggestions.put("runtime", "Laufzeit");
         suggestions.put("previousProcessNodeId", "Vorherige Element-ID");
-        suggestions.put("previousProcessNodePortKey", "Vorheriger Prozesspfad");
+        suggestions.put("previousProcessNodePortKey", "Vorheriger Ausgangsport");
         suggestions.put("previousProcessInstanceTaskId", "Vorherige Aufgaben-ID");
         suggestions.forEach((path, label) -> metadata.addInputVariable(new InputVariableSuggestion(
                 InputVariableSource.ElementMetadata,
@@ -1034,9 +1034,9 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
                 if (!edgeExists) {
                     problems.add(
-                            "Es gibt keine Verbindung von diesem Prozesselement über den Prozesspfad " +
+                            "Es gibt keine Verbindung von diesem Prozesselement über den Ausgangsport " +
                                     StringUtils.quote(ports.label()) +
-                                    ". Jeder Prozesspfad muss mit einem anderen Prozesselement verbunden sein."
+                                    ". Jeder Ausgangsport muss mit einem anderen Prozesselement verbunden sein."
                     );
                 }
             }
@@ -1046,7 +1046,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             var portKeys = resolvedPorts.ports().stream().map(port -> port.key()).collect(Collectors.toSet());
             for (var edge : processEdgeRepository.findAllByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())) {
                 if (Objects.equals(edge.getFromNodeId(), node.getId()) && !portKeys.contains(edge.getViaPort())) {
-                    problems.add("Die Verbindung über den Prozesspfad „%s“ verweist auf einen nicht mehr verfügbaren Prozesspfad.".formatted(edge.getViaPort()));
+                    problems.add("Die Verbindung über den Ausgangsport „%s“ verweist auf einen nicht mehr verfügbaren Ausgangsport.".formatted(edge.getViaPort()));
                 }
             }
         }

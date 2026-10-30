@@ -128,7 +128,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
         endpointIdInput.setRequired(true);
         endpointIdInput.setLabel("Endpoint ID");
         endpointIdInput.setPlaceholder("Endpoint ID");
-        endpointIdInput.setHint("Diese ID wird vom Zahlungsdienstleister festgelegt. Üblicherweise ist dies eine Kennzeichnung der zuständigen Stelle z.B. der Ortsname, Amtlicher Regionalschlüssel etc.");
+        endpointIdInput.setHint("Diese ID wird vom Zahlungsdienstleister festgelegt. Üblicherweise ist dies eine Kennzeichnung der verantwortlichen Stelle z.B. der Ortsname, Amtlicher Regionalschlüssel etc.");
         endpointIdInput.setWeight(6.0d);
         list.add(endpointIdInput);
 
@@ -296,7 +296,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
 
         if (response.statusCode() != 200) {
             throw new PaymentException(
-                    "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.. Status code was %d with body %s",
+                    "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden. Statuscode: %d. Antwort: %s",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey(),
                     response.statusCode(),

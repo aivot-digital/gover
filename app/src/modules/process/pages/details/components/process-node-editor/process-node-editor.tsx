@@ -545,7 +545,7 @@ export function ProcessNodeEditor(): ReactNode {
                         />
 
                         <Tab
-                            label="Datenausgänge"
+                            label="Ausgangsdaten"
                             value="outputs"
                         />
 

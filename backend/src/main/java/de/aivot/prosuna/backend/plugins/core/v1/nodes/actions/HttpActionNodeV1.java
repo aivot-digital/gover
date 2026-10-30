@@ -206,7 +206,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         return """
                 Führt einen konfigurierten HTTP-Aufruf zu einem externen System aus und bereitet die Antwort für den weiteren Prozess auf.
 
-                Unterstützt werden unterschiedliche HTTP-Methoden, Authentifizierungsarten sowie JSON-, Formular- und Dateiinhalte. Antwortstatus, Header und verarbeiteter Inhalt werden als Datenausgänge bereitgestellt; Dateiantworten können zusätzlich als Vorgangsanlagen gespeichert werden.
+                Unterstützt werden unterschiedliche HTTP-Methoden, Authentifizierungsarten sowie JSON-, Formular- und Dateiinhalte. Antwortstatus, Header und verarbeiteter Inhalt werden als Ausgangsdaten bereitgestellt; Dateiantworten können zusätzlich als Vorgangsanlagen gespeichert werden.
                 """;
     }
 

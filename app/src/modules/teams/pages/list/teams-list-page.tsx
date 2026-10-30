@@ -58,7 +58,7 @@ export function TeamsListPage() {
             content: (
                 <>
                     <Typography>
-                        Teams bündeln Mitarbeiter:innen vor allem für die crossfunktionale Zusammenarbeit.
+                        Teams bündeln Mitarbeiter:innen vor allem für die Zusammenarbeit über Organisationseinheiten hinweg.
                         Sie ergänzen die Hierarchie der Organisationseinheiten und können über deren Grenzen
                         hinweg genutzt werden.
                     </Typography>

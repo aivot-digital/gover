@@ -40,7 +40,7 @@ describe('configurable phase deadlines', () => {
         expect(input).toHaveAccessibleDescription(/Ohne Angabe gilt keine Frist/);
         fireEvent.change(input, {target: {value: '3'}});
         expect(checkbox).not.toHaveAccessibleDescription(/Legen Sie zunächst eine Frist fest/);
-        expect(checkbox).toHaveAccessibleDescription(/Prozesspfad „Fristüberschreitung: Nachrichtenversand“/);
+        expect(checkbox).toHaveAccessibleDescription(/Ausgangsport „Fristüberschreitung: Nachrichtenversand“/);
         const otherPhase = within(screen.getByRole('group', {name: 'Formulareinreichung'}));
         expect(otherPhase.getByRole('checkbox')).toHaveAccessibleDescription('Legen Sie zunächst eine Frist fest, um diese Option zu aktivieren.');
         await userEvent.click(checkbox);

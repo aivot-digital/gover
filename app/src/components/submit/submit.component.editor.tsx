@@ -61,7 +61,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                     <TextFieldComponent
                         value={props.element.textProcessingTime ?? ''}
                         label="Bearbeitungszeit"
-                        hint="Ungefähre Bearbeitungszeit der zuständigen und/oder betreuenden Stelle."
+                        hint="Ungefähre Bearbeitungszeit der verantwortlichen und/oder betreuenden Stelle."
                         multiline
                         rows={4}
                         onChange={(val) => {

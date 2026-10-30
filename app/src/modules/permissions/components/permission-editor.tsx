@@ -545,7 +545,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                     sx={{mb: 2}}
                 >
                     Diese Rolle enthält Berechtigungen, die aktuell nicht mehr vom System bereitgestellt werden.
-                    Das kann zum Beispiel durch entfernte Funktionen oder Erweiterungen (Plugins) entstehen.
+                    Das kann zum Beispiel durch entfernte Funktionen oder Erweiterungen entstehen.
                     Die Berechtigungen werden beim Speichern unverändert übernommen, solange sie ausgewählt bleiben,
                     sollten aber entfernt werden, um die Rolle zu bereinigen.
                 </AlertComponent>
@@ -557,7 +557,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                     sx={{mb: 2}}
                 >
                     Diese Domänenrolle enthält Berechtigungen, die aktuell nicht für Domänenrollen verfügbar sind.
-                    Das kann zum Beispiel durch geänderte Funktionen oder Erweiterungen (Plugins) entstehen.
+                    Das kann zum Beispiel durch geänderte Funktionen oder Erweiterungen entstehen.
                     Die Berechtigungen werden beim Speichern unverändert übernommen, solange sie ausgewählt bleiben,
                     sollten aber entfernt werden, um die Rolle zu bereinigen.
                 </AlertComponent>

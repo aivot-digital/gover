@@ -100,7 +100,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
     it.each([
         ['Prüfung', 'Prüfung'],
         [' Prüfung ', 'Prüfung'],
-        ['Manuelle Aufgabe', '„Prüfung“ · Manuelle Aufgabe'],
+        ['Freie Aufgabe', '„Prüfung“ · Freie Aufgabe'],
         ['', 'Prüfung'],
     ])('shows the task element name and provider label without duplication (%s)', (typeLabel, expected) => {
         const item = createItem();

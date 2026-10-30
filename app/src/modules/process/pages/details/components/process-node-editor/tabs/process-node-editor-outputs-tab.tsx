@@ -59,9 +59,9 @@ export function ProcessNodeEditorOutputsTab() {
                 disabled={!isEditable}
             />
 
-            <ElementEditorSectionHeader title="Datenausgänge" sx={{mt: 2}}>
+            <ElementEditorSectionHeader title="Ausgangsdaten" sx={{mt: 2}}>
                 {hasOutputs && <span id={outputHintId}>
-                    Die Datenausgänge stehen Ihnen in weiteren Prozessschritten über die Elementdaten zur Verfügung.
+                    Die Ausgangsdaten stehen Ihnen in weiteren Prozessschritten über die Elementdaten zur Verfügung.
                     Über die Datenzuordnung stellen Sie einzelne Werte zusätzlich in den Vorgangsdaten bereit.
                     Tragen Sie dazu den jeweiligen Zielpfad ein.
                 </span>}
@@ -154,10 +154,10 @@ export function ProcessNodeEditorOutputsTab() {
                     </Box>
                     <Box sx={{minWidth: 0}}>
                         <Typography variant="body1" component="h5" sx={{fontWeight: 600}}>
-                            Keine Datenausgänge zum Übernehmen
+                            Keine Ausgangsdaten zum Übernehmen
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{mt: 0.75}}>
-                            Dieses Prozesselement stellt keine Datenausgänge zum Übernehmen bereit. Es kann Vorgangsdaten
+                            Dieses Prozesselement stellt keine Ausgangsdaten zum Übernehmen bereit. Es kann Vorgangsdaten
                             auf anderem Weg verändern.
                         </Typography>
                     </Box>

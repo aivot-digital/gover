@@ -1186,7 +1186,7 @@ public class ProcessNodeExecutionResultHandler {
                     "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde durch die Mitarbeiter:in %s abgeschlossen.
-                            Als ausgehende Verbindung wird der Prozesspfad %s verwendet.
+                            Für die ausgehende Verbindung wird der Ausgangsport %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
@@ -1202,7 +1202,7 @@ public class ProcessNodeExecutionResultHandler {
                     "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde abgeschlossen.
-                            Als ausgehende Verbindung wird der Prozesspfad %s verwendet.
+                            Für die ausgehende Verbindung wird der Ausgangsport %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
@@ -1241,11 +1241,11 @@ public class ProcessNodeExecutionResultHandler {
         if (port.deadlineKey() != null
                 && (task.getDeadline() == null || !port.deadlineKey().equals(task.getDeadlineKey()))) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    "Der Prozesspfad „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
+                    "Der Ausgangsport „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
         }
         var edge = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(currentNode.getId(), viaPort)
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Für das Prozesselement %s wurde kein ausgehender Pfad für den Port %s definiert. Bitte prüfen Sie den Aufbau Ihres Prozessmodells.",
+                        "Für das Prozesselement %s wurde keine Verbindung für den Ausgangsport %s definiert. Bitte prüfen Sie den Aufbau Ihres Prozessmodells.",
                         StringUtils.quote(currentNode.resolveName(provider)),
                         StringUtils.quote(port.label())
                 ));
@@ -1410,7 +1410,7 @@ public class ProcessNodeExecutionResultHandler {
                 }
             } catch (IllegalArgumentException | IllegalStateException e) {
                 throw new IllegalStateException(
-                        "Die Datenzuordnung „%s“ für den Datenausgang „%s“ ist ungültig: %s"
+                        "Die Datenzuordnung „%s“ für den Ausgangswert „%s“ ist ungültig: %s"
                                 .formatted(targetFieldPath, nodeProviderOutput.key(), e.getMessage()),
                         e
                 );

@@ -493,11 +493,11 @@ export function ApplicationSettings() {
 
             if (canReadSystemRoles && isStringNullOrEmpty(currentDefaultSystemRole)) {
                 if (systemRoleOptions.length === 0) {
-                    dispatch(showErrorSnackbar('Für automatische Benutzerimporte muss mindestens eine Systemrolle vorhanden sein. Legen Sie zuerst eine Systemrolle an.'));
+                    dispatch(showErrorSnackbar('Für automatische Kontoimporte muss mindestens eine Systemrolle vorhanden sein. Legen Sie zuerst eine Systemrolle an.'));
                     return;
                 }
 
-                dispatch(showErrorSnackbar('Bitte wählen Sie eine Standard-Systemrolle für automatische Benutzerimporte aus.'));
+                dispatch(showErrorSnackbar('Bitte wählen Sie eine Standard-Systemrolle für automatische Kontoimporte aus.'));
                 return;
             }
 
@@ -944,7 +944,7 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Legen Sie fest, welche Systemrollen bei automatischen Benutzerimporten verwendet werden und welche
+                    Legen Sie fest, welche Systemrollen bei automatischen Kontoimporten verwendet werden und welche
                     Rolle systemweit als höchste Berechtigungsstufe gilt.
                 </Typography>
                 <Grid
@@ -958,7 +958,7 @@ export function ApplicationSettings() {
                         }}
                     >
                         <SelectFieldComponent
-                            label="Standard-Systemrolle für automatische Benutzerimporte"
+                            label="Standard-Systemrolle für automatische Kontoimporte"
                             hint={
                                 !canReadSystemRoles
                                     ? systemRoleReadHint
@@ -968,7 +968,7 @@ export function ApplicationSettings() {
                                             ? 'Gespeicherte Systemeinstellungen werden geladen…'
                                             : hasSystemRolesLoadingError
                                                 ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
-                                                : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
+                                                : 'Diese Systemrolle wird bei neuen automatischen Kontoimporten und -synchronisationen verwendet.'
                             }
                             value={defaultSystemRoleValue}
                             onChange={(val) => {
@@ -1112,10 +1112,10 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Dieser Speicheranbieter wird verwendet, um Assets zu speichern, wenn kein spezifischer
+                    Dieser Speicheranbieter wird verwendet, um Dateien zu speichern, wenn kein spezifischer
                     Speicheranbieter
                     für eine Datei konfiguriert ist.
-                    Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den
+                    Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Dateien hat, die den
                     zentralen Speicheranbieter verwenden.
                 </Typography>
                 <Grid

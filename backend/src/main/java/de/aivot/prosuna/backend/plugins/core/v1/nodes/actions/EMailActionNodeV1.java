@@ -165,7 +165,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return """
                 Versendet E-Mails innerhalb eines Prozesses entweder automatisch oder nach manueller Bearbeitung durch eine Mitarbeiter:in.
 
-                Am Prozesselement konfigurieren Sie die empfangenden Personen und Organisationen sowie die Anlagen. Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand in einer Aufgabe bearbeitet. Nach dem Versand stellt das Element die verwendeten Nachrichtendaten als Datenausgänge bereit.
+                Am Prozesselement konfigurieren Sie die empfangenden Personen und Organisationen sowie die Anlagen. Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand in einer Aufgabe bearbeitet. Nach dem Versand stellt das Element die verwendeten Nachrichtendaten als Ausgangsdaten bereit.
                 """;
     }
 

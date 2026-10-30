@@ -27,7 +27,7 @@ describe('ProcessAttachmentDisplayEditor', () => {
         const input = screen.getByRole('combobox', {name: 'Schlüssel des Anlagensatzes'});
         expect(input).toBeRequired();
         expect(input).not.toHaveAttribute('aria-invalid', 'true');
-        expect(input).toHaveAccessibleDescription(/Alle Vorgangsanhänge aus Anlagensätzen mit diesem Schlüssel werden angezeigt/);
+        expect(input).toHaveAccessibleDescription(/Alle Vorgangsanlagen aus Anlagensätzen mit diesem Schlüssel werden angezeigt/);
         fireEvent.mouseDown(input);
         fireEvent.click(await screen.findByRole('option', {name: /^Fallunterlagen/}));
         expect(input).toHaveValue('Fallunterlagen');
@@ -41,7 +41,7 @@ describe('ProcessAttachmentDisplayEditor', () => {
         await user.click(screen.getByRole('button', {name: 'Leeren'}));
         expect(onPatch).toHaveBeenLastCalledWith({attachmentSetKey: null});
         expect(input).not.toHaveAttribute('aria-invalid', 'true');
-        expect(input).toHaveAccessibleDescription(/Alle Vorgangsanhänge aus Anlagensätzen mit diesem Schlüssel werden angezeigt/);
+        expect(input).toHaveAccessibleDescription(/Alle Vorgangsanlagen aus Anlagensätzen mit diesem Schlüssel werden angezeigt/);
     });
 
     it('should patch the configured label and hint', () => {

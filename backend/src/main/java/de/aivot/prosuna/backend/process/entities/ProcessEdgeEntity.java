@@ -34,9 +34,9 @@ public class ProcessEdgeEntity {
     private Integer toNodeId;
 
     @Nonnull
-    @NotNull(message = "Der Prozesspfad darf nicht null sein.")
-    @NotBlank(message = "Der Prozesspfad darf nicht leer sein.")
-    @Length(min = 1, max = 32, message = "Der Prozesspfad muss zwischen 1 und 32 Zeichen lang sein.")
+    @NotNull(message = "Der Ausgangsport darf nicht null sein.")
+    @NotBlank(message = "Der Ausgangsport darf nicht leer sein.")
+    @Length(min = 1, max = 32, message = "Der Ausgangsport muss zwischen 1 und 32 Zeichen lang sein.")
     private String viaPort;
 
     // region Constructors

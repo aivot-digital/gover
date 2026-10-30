@@ -134,7 +134,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
         return """
                 Empfängt neue Übermittlungen eines FIT-Connect-Zustellpunkts und startet für jede Übermittlung einen Vorgang.
 
-                Die Fach- und Metadaten werden über die FIT-Connect-API abgerufen und entschlüsselt. Übermittelte Anlagen werden als Vorgangsanlagen gespeichert; JSON-Daten, Metadaten, Anlagen und Übermittlungsinformationen stehen als Datenausgänge zur Verfügung.
+                Die Fach- und Metadaten werden über die FIT-Connect-API abgerufen und entschlüsselt. Übermittelte Anlagen werden als Vorgangsanlagen gespeichert; JSON-Daten, Metadaten, Anlagen und Übermittlungsinformationen stehen als Ausgangsdaten zur Verfügung.
                 """;
     }
 

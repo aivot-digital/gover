@@ -289,7 +289,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     }
     if (isDefaultSystemRole) {
         deleteImpactTexts.push(
-            'Diese Rolle ist aktuell als Standard-Systemrolle für automatische Benutzerimporte konfiguriert. Beim Löschen wird diese Einstellung ebenfalls auf die ausgewählte Ersatz-Systemrolle geändert.',
+            'Diese Rolle ist aktuell als Standard-Systemrolle für automatische Kontoimporte konfiguriert. Beim Löschen wird diese Einstellung ebenfalls auf die ausgewählte Ersatz-Systemrolle geändert.',
         );
     }
     if (isMostPrivilegedSystemRole) {
@@ -411,7 +411,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 }
                 if (defaultSystemRoleWillBeUpdated && replacementRole != null) {
                     successMessages.push(
-                        `Die Standard-Systemrolle für automatische Benutzerimporte wurde auf „${replacementRole.label}“ gesetzt.`,
+                        `Die Standard-Systemrolle für automatische Kontoimporte wurde auf „${replacementRole.label}“ gesetzt.`,
                     );
                 }
                 if (mostPrivilegedSystemRoleWillBeUpdated && replacementRole != null) {
@@ -447,7 +447,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 Systemrolle konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Systemrollen definieren Berechtigungen für Mitarbeiter:innen auf Kontoebene.
+                Systemrollen werden Konten zugeordnet und gewähren systemweite Berechtigungen.
                 Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf
                 sensible Daten oder kritische Funktionen ermöglichen.
             </Typography>

@@ -48,7 +48,7 @@ public class SubmissionNotificationReceivedUserConfigDefinition implements UserC
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, sobald ein neuer Vorgang gestartet wird, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (betreuend, sonst zuständig, sonst entwickelnd).";
+        return "Erhalten Sie eine Benachrichtigung, sobald ein neuer Vorgang gestartet wird, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (betreuend, sonst verantwortlich, sonst verwaltend).";
     }
 
     @Override

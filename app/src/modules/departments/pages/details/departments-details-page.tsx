@@ -118,7 +118,8 @@ const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
             </Typography>
             <Typography sx={{mt: 2}}>
                 Mitarbeiter:innen werden über Mitgliedschaften zugeordnet. Domänenrollen bestimmen ihre Berechtigungen
-                innerhalb der Organisationseinheit. Systemrollen gelten auf Ebene des Kontos.
+                innerhalb der Organisationseinheit. Systemrollen werden Konten zugeordnet und gewähren systemweite
+                Berechtigungen, unabhängig von der Organisationseinheit oder dem Team.
             </Typography>
         </>
     ),

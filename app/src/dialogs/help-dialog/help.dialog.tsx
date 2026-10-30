@@ -256,7 +256,7 @@ export function HelpDialog(props: HelpDialogProps) {
                         <li>Falls Fehler vorliegen, werden diese rot markiert. Bitte korrigieren Sie sie und versuchen
                             Sie erneut, das Formular abzusenden.
                         </li>
-                        <li>Nach erfolgreicher Übermittlung werden Ihre Angaben direkt an die zuständige Stelle
+                        <li>Nach erfolgreicher Übermittlung werden Ihre Angaben direkt an die verantwortliche Stelle
                             weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte
                             durch, indem Sie den im Formular angezeigten
                             Anweisungen folgen.
@@ -366,7 +366,7 @@ export function HelpDialog(props: HelpDialogProps) {
             question: 'Wer ist für dieses Formular zuständig?',
             answer: (
                 <Typography>
-                    Die Bearbeitung erfolgt durch die im Formular genannten zuständigen Parteien. Die Online-Plattform
+                    Die Bearbeitung erfolgt durch die im Formular genannten verantwortlichen Stellen. Die Online-Plattform
                     dient nur der digitalen Übermittlung der Formulardaten.
                 </Typography>
             ),

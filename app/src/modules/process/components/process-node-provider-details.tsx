@@ -333,11 +333,11 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                 sx={{alignSelf: 'flex-start'}}
             />
 
-            <ProcessNodeProviderDetailsSection title="Prozesspfade">
+            <ProcessNodeProviderDetailsSection title="Ausgangsports">
                 {
                     ports == null ?
                         <Typography variant="body2" color="text.secondary">
-                            Die Prozesspfade hängen von der Konfiguration des Prozesselements ab.
+                            Die Ausgangsports hängen von der Konfiguration des Prozesselements ab.
                         </Typography> : ports.length > 0 ?
                         ports.map((port) => (
                             <ProcessNodeProviderDetailsListRow
@@ -349,12 +349,12 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                         <Typography variant="body2" sx={{
                             color: "text.secondary"
                         }}>
-                            Dieses Prozesselement besitzt keine Prozesspfade.
+                            Dieses Prozesselement besitzt keine Ausgangsports.
                         </Typography>
                 }
             </ProcessNodeProviderDetailsSection>
 
-            <ProcessNodeProviderDetailsSection title="Datenausgänge">
+            <ProcessNodeProviderDetailsSection title="Ausgangsdaten">
                 {
                     provider.outputs.length > 0 ?
                         provider.outputs.map((output) => (
@@ -371,7 +371,7 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
                         <Typography variant="body2" sx={{
                             color: "text.secondary"
                         }}>
-                            Dieses Prozesselement erzeugt keine zusätzlichen Datenausgänge.
+                            Dieses Prozesselement erzeugt keine zusätzlichen Ausgangsdaten.
                         </Typography>
                 }
             </ProcessNodeProviderDetailsSection>

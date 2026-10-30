@@ -411,7 +411,7 @@ function createLayoutErrorState(error: unknown): ProcessFlowEditorLayoutError {
         return {
             message: error.message,
             details: error.details,
-            causeHint: 'Das kann passieren, wenn eine Prozesselementdefinition aktualisiert wurde und bestehende Verbindungen noch auf entfernte Prozesspfade oder nicht mehr vorhandene Prozesselemente zeigen.',
+            causeHint: 'Das kann passieren, wenn eine Prozesselementdefinition aktualisiert wurde und bestehende Verbindungen noch auf entfernte Ausgangsports oder nicht mehr vorhandene Prozesselemente zeigen.',
             recoveryHint: 'Bitte wenden Sie sich mit den oben genannten Einträgen an den Support. Der Prozessfluss muss bereinigt oder auf eine passende Version des Prozesselements zurückgeführt werden.',
         };
     }

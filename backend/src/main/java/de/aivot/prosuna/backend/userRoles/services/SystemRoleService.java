@@ -95,7 +95,7 @@ public class SystemRoleService implements EntityService<SystemRoleEntity, Intege
         var defaultSystemRoleId = defaultSystemRoleConfig
                 .getValueAsInteger()
                 .orElseThrow(() -> ResponseException.internalServerError(
-                        "Die konfigurierte Standard-Systemrolle für automatische Benutzerimporte ist ungültig."
+                        "Die konfigurierte Standard-Systemrolle für automatische Kontoimporte ist ungültig."
                 ));
 
         var mostPrivilegedSystemRoleConfig = systemConfigService

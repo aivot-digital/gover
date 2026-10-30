@@ -28,7 +28,7 @@ public class AiPlugin implements Plugin {
     @Override
     public @Nonnull String getDescription() {
         return """
-                Dieses Plugin enthält AI-Funktionen von Prosuna.
+                Diese Erweiterung enthält KI-Funktionen von Prosuna.
                 """;
     }
 

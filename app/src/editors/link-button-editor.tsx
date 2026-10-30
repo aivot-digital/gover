@@ -128,9 +128,9 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                     <TextFieldComponent
                         value={element[target]}
                         label="Ereigniskennung"
-                        hint={'Geben Sie die technische Kennung einer Aktion an, die der jeweilige Prozessknoten unterstützt. Eine frei gewählte Kennung legt keine neue Aktion an.' + (target === 'staffTaskEvent'
-                            ? ' Beispiel: „complete“ schließt beim Knoten „Manuelle Aktion ausführen“ die Aufgabe ab.'
-                            : ' Die gültigen Kennungen erhalten Sie von den Entwickler:innen des Prozessknotens.')}
+                        hint={'Geben Sie die technische Kennung einer Aktion an, die das jeweilige Prozesselement unterstützt. Eine frei gewählte Kennung legt keine neue Aktion an.' + (target === 'staffTaskEvent'
+                            ? ' Beispiel: „complete“ schließt beim Prozesselement „Freie Aufgabe“ die Aufgabe ab.'
+                            : ' Die gültigen Kennungen erhalten Sie von den Entwickler:innen des Prozesselements.')}
                         onChange={(event) => {
                             onPatch({[target]: event ?? ''});
                         }}

@@ -50,7 +50,7 @@ export function ProcessNodeOutputTypeDialog(props: ProcessNodeOutputTypeDialogPr
             aria-describedby={descriptionId}
         >
             <DialogTitleWithClose onClose={props.onClose}>
-                Details zu den Datenausgängen
+                Details zu den Ausgangsdaten
             </DialogTitleWithClose>
 
             {

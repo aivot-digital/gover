@@ -224,7 +224,7 @@ export function Submitted(props: SubmittedProps) {
                                 setMailErrorWithSnackbar('Es konnte keine E-Mail an diese Adresse verschickt werden.');
                                 setMailSent(false);
                             } else if (err.status === 403) {
-                                setMailErrorWithSnackbar('Die Zugriffsfrist für diesen Vorgang ist bereits abgelaufen. Bitte wenden Sie sich an die zuständige Stelle.');
+                                setMailErrorWithSnackbar('Die Zugriffsfrist für diesen Vorgang ist bereits abgelaufen. Bitte wenden Sie sich an die verantwortliche Stelle.');
                             } else if (err.status === 404) {
                                 setMailErrorWithSnackbar('Der Vorgang konnte nicht gefunden werden.');
                             } else if (err.status === 409) {
@@ -296,7 +296,7 @@ export function Submitted(props: SubmittedProps) {
                     sx={{my: 0, mb: 4}}
                 >
                     Bei der weiteren Verarbeitung Ihrer Angaben ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
-                    zuständige Stelle. Die Kontaktdaten finden Sie unten.
+                    verantwortliche Stelle. Die Kontaktdaten finden Sie unten.
                 </AlertComponent>
             }
 
@@ -411,7 +411,7 @@ export function Submitted(props: SubmittedProps) {
                         mb: 4,
                     }}
                 >
-                    Die Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die zuständige Stelle.
+                    Die Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die verantwortliche Stelle.
                     <br/>
                     Bitte geben Sie zur Zuordnung Ihres Vorgangs folgende Kennung
                     an: {status.submissionId}.

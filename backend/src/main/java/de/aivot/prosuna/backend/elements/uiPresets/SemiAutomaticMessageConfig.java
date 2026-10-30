@@ -135,7 +135,7 @@ public class SemiAutomaticMessageConfig {
                 properties = {
                         @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                         @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob die Nachricht automatisch versendet oder vorher durch eine Mitarbeiter:in bearbeitet wird."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie zwischen automatischem Versand und teilautomatisierter Ausführung. Bei teilautomatisierter Ausführung wird die Nachricht anhand einer Vorlage vorbereitet und vor dem Versand durch eine Mitarbeiter:in geprüft und bei Bedarf bearbeitet."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )

@@ -554,7 +554,7 @@ export function CodeListDetailsPageIndex() {
                         codeList.sourceType === CodeListSourceType.Plugin &&
                         <TextFieldComponent
                             label="Quelle der Einträge"
-                            value="Plugin"
+                            value="Erweiterung"
                             onChange={() => {
                             }}
                             error={errors.sourceType}

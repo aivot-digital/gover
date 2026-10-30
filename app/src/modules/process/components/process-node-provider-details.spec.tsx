@@ -35,12 +35,12 @@ describe('ProcessNodeProviderDetails', () => {
 
     it('shows configuration-dependent guidance without a node and concrete ports for a saved node', () => {
         const {rerender} = render(<ProcessNodeProviderDetailsContent provider={createProvider()}/>);
-        expect(screen.getByText('Die Prozesspfade hängen von der Konfiguration des Prozesselements ab.')).toBeInTheDocument();
+        expect(screen.getByText('Die Ausgangsports hängen von der Konfiguration des Prozesselements ab.')).toBeInTheDocument();
         rerender(<ProcessNodeProviderDetailsContent provider={createProvider()} ports={[
             {key: 'phase_overdue', deadlineKey: 'phase', label: 'Fristüberschreitung', description: 'Fristablauf'},
         ]}/>);
         expect(screen.getByText('Fristüberschreitung')).toBeInTheDocument();
-        expect(screen.queryByText('Die Prozesspfade hängen von der Konfiguration des Prozesselements ab.')).not.toBeInTheDocument();
+        expect(screen.queryByText('Die Ausgangsports hängen von der Konfiguration des Prozesselements ab.')).not.toBeInTheDocument();
     });
 
     it('renders the detailed description, type and documentation link', () => {
@@ -184,7 +184,7 @@ describe('ProcessNodeProviderDetails', () => {
             name: 'Details zu Ergebnis anzeigen',
         }));
 
-        const dialog = screen.getByRole('dialog', {name: 'Details zu den Datenausgängen'});
+        const dialog = screen.getByRole('dialog', {name: 'Details zu den Ausgangsdaten'});
         expect(dialog).toHaveAccessibleDescription('Das berechnete Ergebnis.');
         const accessSection = within(dialog).getByRole('region', {name: 'Zugriff auf die Daten'});
         expect(within(accessSection).getByText(/mit dem Datenschlüssel des Prozesselements kombiniert/)).toBeInTheDocument();

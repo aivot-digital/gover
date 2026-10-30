@@ -3,7 +3,7 @@ import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 
 export const OriginTableLabels: Record<ServerEntityType, string> = {
-    [ServerEntityType.Assets]: 'Datei / Medieninhalt',
+    [ServerEntityType.Assets]: 'Datei',
     [ServerEntityType.Departments]: 'Organisationseinheiten',
     [ServerEntityType.DataObjectItems]: 'Datenobjekt',
     [ServerEntityType.DataObjectSchemas]: 'Datenmodell',

@@ -227,7 +227,7 @@ public class FormTriggerUtilsControllerV1 {
         }
 
         return getDepartment(process.getDepartmentId())
-                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für den PDF-Druck gefunden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Keine Organisationseinheit für den PDF-Druck gefunden."));
     }
 
     @Nonnull

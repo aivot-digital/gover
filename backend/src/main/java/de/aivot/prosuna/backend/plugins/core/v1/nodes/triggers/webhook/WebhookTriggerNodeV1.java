@@ -150,7 +150,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
         return """
                 Startet einen neuen Prozessvorgang durch eine eingehende HTTP-Anfrage an den bereitgestellten Webhook.
 
-                Übermittelte Nutzdaten und Anlagen werden in die initialen Vorgangsdaten übernommen. Zusätzlich stellt der Auslöser die empfangenen Dateien, Anfragedetails wie Methode, Header und Query-Parameter sowie den Eingangszeitpunkt als Datenausgänge bereit.
+                Übermittelte Nutzdaten und Anlagen werden in die initialen Vorgangsdaten übernommen. Zusätzlich stellt der Auslöser die empfangenen Dateien, Anfragedetails wie Methode, Header und Query-Parameter sowie den Eingangszeitpunkt als Ausgangsdaten bereit.
                 """;
     }
 

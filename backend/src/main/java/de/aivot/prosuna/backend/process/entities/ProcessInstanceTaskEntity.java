@@ -60,7 +60,7 @@ public class ProcessInstanceTaskEntity {
     private Integer previousProcessNodeId;
 
     @Nullable
-    @Size(max = 96, message = "Der Schlüssel des vorherigen Prozesspfads darf maximal 96 Zeichen lang sein.")
+    @Size(max = 96, message = "Der Schlüssel des vorherigen Ausgangsports darf maximal 96 Zeichen lang sein.")
     private String previousProcessNodePortKey;
 
     @Nonnull

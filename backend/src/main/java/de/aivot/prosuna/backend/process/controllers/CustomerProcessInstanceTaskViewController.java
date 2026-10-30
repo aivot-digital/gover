@@ -435,7 +435,7 @@ public class CustomerProcessInstanceTaskViewController {
                 .orElseThrow(ResponseException::notFound);
         var department = vDepartmentShadowedService
                 .retrieve(process.getDepartmentId())
-                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für die Zahlungsbestätigung gefunden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Keine Organisationseinheit für die Zahlungsbestätigung gefunden."));
         var logoAssetKey = resolvePaymentConfirmationLogoAssetKey(department);
 
         byte[] pdfBytes;

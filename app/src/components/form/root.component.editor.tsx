@@ -129,12 +129,12 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Zuständige Stellen im Formular"
+                title="Organisationseinheiten im Formular"
                 variant="h5"
             >
-                Wählen Sie bei Bedarf die zuständige und die betreuende Organisationseinheit aus.
+                Wählen Sie bei Bedarf die verantwortliche und die betreuende Organisationseinheit aus.
                 Ihre Anschriften werden in den optionalen Abschnitten „Allgemeine Informationen“ und
-                „Prüfen und absenden“ angezeigt.
+                „Abschließende Informationen und Captcha“ angezeigt.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -156,8 +156,8 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     {
                         departments != null &&
                         <DepartmentSelectField
-                            label="Zuständige Organisationseinheit"
-                            hint="Die hinterlegte Anschrift wird als „Zuständige Stelle“ angezeigt."
+                            label="Verantwortliche Organisationseinheit"
+                            hint="Die hinterlegte Anschrift wird als „Verantwortliche Stelle“ angezeigt."
                             value={responsibleDepartment}
                             onChange={(department) => {
                                 onPatch({

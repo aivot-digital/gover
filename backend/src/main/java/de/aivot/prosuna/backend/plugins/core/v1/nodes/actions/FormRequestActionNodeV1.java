@@ -179,7 +179,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Nonnull
     @Override
     public String getName() {
-        return "Angaben anfordern";
+        return "Daten anfordern";
     }
 
     @Nonnull
@@ -405,7 +405,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 ? null
                 : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültige Ausführungsart für die Angabenanforderung. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
+                "Ungültige Ausführungsart für die Datenanforderung. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
                 StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
                 StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
                 StringUtils.quote(executionType)
@@ -887,7 +887,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private String requireRecipientIdentity(@Nullable String recipientIdentity) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedIdentity = StringUtils.toNullableTrimmedString(recipientIdentity);
         if (normalizedIdentity == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Angabenanforderung muss eine Empfängeridentität konfiguriert sein.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Datenanforderung muss eine Empfängeridentität konfiguriert sein.");
         }
         return normalizedIdentity;
     }
@@ -1026,13 +1026,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         if (subject == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_SUBJECT_FIELD_ID,
-                    new ComputedElementState().setError("Der Betreff der Angabenanforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Der Betreff der Datenanforderung darf nicht leer sein.")
             );
         }
         if (content == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_CONTENT_FIELD_ID,
-                    new ComputedElementState().setError("Die Nachricht der Angabenanforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Die Nachricht der Datenanforderung darf nicht leer sein.")
             );
         }
         if (derivedRuntimeData.hasAnyError()) {
@@ -1057,7 +1057,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         @InputElementPOJOBinding(id = RECIPIENT_MODE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Person oder Organisation"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Angabenanforderung an eine existierende Identität oder per E-Mail an eine neue Identität gesendet wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Datenanforderung an eine existierende Identität oder per E-Mail an eine neue Identität gesendet wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String recipientMode;

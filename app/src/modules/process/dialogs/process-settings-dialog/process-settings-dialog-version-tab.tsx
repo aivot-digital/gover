@@ -559,14 +559,14 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                                         <ol>
                                             <li>Das Erscheinungsbild der Prozessversion</li>
                                             <li>
-                                                Das Erscheinungsbild der zuständigen Organisationseinheit (Nur in
+                                                Das Erscheinungsbild der verantwortlichen Organisationseinheit (Nur in
                                                 Formularen)
                                             </li>
                                             <li>
                                                 Das Erscheinungsbild der betreuenden Organisationseinheit (Nur in
                                                 Formularen)
                                             </li>
-                                            <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
+                                            <li>Das Erscheinungsbild der verwaltenden Organisationseinheit</li>
                                             <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
                                         </ol>
                                         <p>
@@ -664,7 +664,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                     <RichTextInputComponent
                         label="Prozessspezifischer Teil der Datenschutzerklärung"
                         value={draft.processSpecificPrivacyStatement}
-                        hint="Beschreiben Sie hier die prozessspezifischen Datenschutzinformationen nach Art. 13 DSGVO, insbesondere konkret verarbeitete Daten, Zwecke, Rechtsgrundlagen, Empfänger, Speicherdauer und zuständige Stellen."
+                        hint="Beschreiben Sie hier die prozessspezifischen Datenschutzinformationen nach Art. 13 DSGVO, insbesondere konkret verarbeitete Daten, Zwecke, Rechtsgrundlagen, Empfänger, Speicherdauer und verantwortliche Stellen."
                         onChange={(value) => {
                             setDraft({
                                 ...draft,

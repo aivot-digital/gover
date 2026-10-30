@@ -20,7 +20,7 @@ export function useFormDepartmentAddressSections(formElement?: FormLayoutElement
     const managingDepartmentId = formElement?.managingDepartmentId ?? null;
     const responsibleDepartment = usePublicDepartment(
         responsibleDepartmentId,
-        'Fehler beim Laden der zuständigen Stelle',
+        'Fehler beim Laden der verantwortlichen Stelle',
     );
     const managingDepartment = usePublicDepartment(
         managingDepartmentId,
@@ -39,7 +39,7 @@ export function useFormDepartmentAddressSections(formElement?: FormLayoutElement
                         component="h3"
                         variant="h5"
                     >
-                        Zuständige Stelle
+                        Verantwortliche Stelle
                     </Typography>
                     <Typography
                         component="pre"

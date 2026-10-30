@@ -76,8 +76,7 @@ const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
     content: (
         <>
             <Typography>
-                Teams bündeln Mitarbeiter:innen für die crossfunktionale Zusammenarbeit innerhalb
-                von Prosuna.
+                Teams bündeln Mitarbeiter:innen für die Zusammenarbeit über Organisationseinheiten hinweg.
             </Typography>
             <Typography sx={{mt: 2}}>
                 Über Teammitgliedschaften und zugewiesene Domänenrollen steuern Sie, welche

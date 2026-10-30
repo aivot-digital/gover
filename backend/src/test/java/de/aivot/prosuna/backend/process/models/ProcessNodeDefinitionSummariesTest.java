@@ -113,7 +113,7 @@ class ProcessNodeDefinitionSummariesTest {
         return Stream.of(
                 Arguments.of(ApprovalActionNodeV1.class, "Die Freigabe wurde am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ erteilt."),
                 Arguments.of(DataChangeActionNodeV1.class, "Die Vorgangsdaten wurden am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ geändert."),
-                Arguments.of(ManualActionNodeV1.class, "Die manuelle Aufgabe wurde am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ abgeschlossen."),
+                Arguments.of(ManualActionNodeV1.class, "Die freie Aufgabe wurde am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ abgeschlossen."),
                 Arguments.of(CounterActionNodeV1.class, "Der Zähler „counter“ wurde um 3 erhöht."), 
                 Arguments.of(CommunicationMessageActionNodeV1.class, "Die Nachricht wurde am 01.10.2026 um 09:00:00 Uhr erfolgreich versendet."),
                 Arguments.of(EMailActionNodeV1.class, "Die E-Mail-Nachricht wurde am 01.10.2026 um 12:00:00 Uhr erfolgreich versendet."),

@@ -188,7 +188,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         return """
                 Überträgt Dateien aus Vorgangsanlagensätzen in konfigurierte externe Speicheranbieter.
 
-                Für jeden Anlagensatz werden Zielanbieter, Zielpfad und optional angepasste Dateinamen festgelegt. Das Element kann mehrere Anlagensätze in einem Schritt verarbeiten und stellt Ablageergebnisse, gespeicherte Pfade, Dateinamen und Anzahl der geschriebenen Dateien als Datenausgänge bereit.
+                Für jeden Anlagensatz werden Zielanbieter, Zielpfad und optional angepasste Dateinamen festgelegt. Das Element kann mehrere Anlagensätze in einem Schritt verarbeiten und stellt Ablageergebnisse, gespeicherte Pfade, Dateinamen und Anzahl der geschriebenen Dateien als Ausgangsdaten bereit.
                 """;
     }
 

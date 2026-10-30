@@ -28,10 +28,10 @@ public class ConfigPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(SYSTEM_CONFIG_READ, "Systemkonfiguration anzeigen", "Erlaubt das Anzeigen und Auflisten von Systemkonfigurationen."),
                 PermissionEntry.of(SYSTEM_CONFIG_UPDATE, "Systemkonfiguration bearbeiten", "Erlaubt das Bearbeiten von Systemkonfigurationen."),
                 PermissionEntry.of(SYSTEM_CONFIG_DELETE, "Systemkonfiguration löschen", "Erlaubt das Löschen von Systemkonfigurationen."),
-                PermissionEntry.of(USER_CONFIG_CREATE, "Benutzerkonfiguration erstellen", "Erlaubt das Erstellen von Benutzerkonfigurationen."),
-                PermissionEntry.of(USER_CONFIG_READ, "Benutzerkonfiguration anzeigen", "Erlaubt das Anzeigen und Auflisten von Benutzerkonfigurationen."),
-                PermissionEntry.of(USER_CONFIG_UPDATE, "Benutzerkonfiguration bearbeiten", "Erlaubt das Bearbeiten von Benutzerkonfigurationen."),
-                PermissionEntry.of(USER_CONFIG_DELETE, "Benutzerkonfiguration löschen", "Erlaubt das Löschen von Benutzerkonfigurationen."),
+                PermissionEntry.of(USER_CONFIG_CREATE, "Persönliche Einstellungen erstellen", "Erlaubt das Erstellen persönlicher Einstellungen."),
+                PermissionEntry.of(USER_CONFIG_READ, "Persönliche Einstellungen anzeigen", "Erlaubt das Anzeigen und Auflisten persönlicher Einstellungen."),
+                PermissionEntry.of(USER_CONFIG_UPDATE, "Persönliche Einstellungen bearbeiten", "Erlaubt das Bearbeiten persönlicher Einstellungen."),
+                PermissionEntry.of(USER_CONFIG_DELETE, "Persönliche Einstellungen löschen", "Erlaubt das Löschen persönlicher Einstellungen."),
         };
     }
 }

@@ -343,7 +343,7 @@ class TemplateLoaderServiceTest {
                 TemplateMode.HTML
         );
 
-        assertTrue(html.contains("Zuständige Stelle"));
+        assertTrue(html.contains("Verantwortliche Stelle"));
         assertTrue(html.contains("Betreuende Stelle"));
         assertTrue(html.contains("Responsible Street 1"));
         assertTrue(html.contains("Managing Street 2"));

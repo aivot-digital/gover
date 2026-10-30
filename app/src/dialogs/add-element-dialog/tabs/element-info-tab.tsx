@@ -294,7 +294,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.LinkButton]: (
         <Box>
             <Typography>
-                Mit einer Schaltfläche können Sie einen Link öffnen oder eine vom Prozessknoten unterstützte
+                Mit einer Schaltfläche können Sie einen Link öffnen oder eine vom Prozesselement unterstützte
                 Aufgabenaktion auslösen. Aufgabenaktionen stehen nur in der passenden Ansicht für Mitarbeitende
                 oder externe Beteiligte zur Verfügung und benötigen eine technische Ereigniskennung.
             </Typography>

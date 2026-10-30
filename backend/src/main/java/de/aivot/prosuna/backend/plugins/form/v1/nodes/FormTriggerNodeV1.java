@@ -215,7 +215,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         return """
                 Startet einen neuen Vorgang, sobald die Angaben erfolgreich übermittelt wurden. Das Formular ist Bestandteil des Auslösers und wird direkt in dessen Konfiguration definiert.
 
-                Die übermittelten Formulardaten stehen sowohl über die konfigurierten Datenschlüssel als auch als vollständige Formular-Rohdaten für die weitere Prozessausführung zur Verfügung. Zusätzlich stellt der Auslöser hochgeladene Anlagen, den Eingangszeitpunkt, die erzeugte Kopie der Angaben und gegebenenfalls Zahlungsdetails als Datenausgänge bereit.
+                Die übermittelten Formulardaten stehen sowohl über die konfigurierten Datenschlüssel als auch als vollständige Formular-Rohdaten für die weitere Prozessausführung zur Verfügung. Zusätzlich stellt der Auslöser hochgeladene Anlagen, den Eingangszeitpunkt, die erzeugte Kopie der Angaben und gegebenenfalls Zahlungsdetails als Ausgangsdaten bereit.
                 """;
     }
 

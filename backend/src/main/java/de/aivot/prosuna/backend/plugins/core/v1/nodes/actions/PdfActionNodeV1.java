@@ -155,7 +155,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         return """
                 Erzeugt während der Prozessausführung ein PDF-Dokument aus einer HTML-Vorlage.
 
-                Der HTML-Inhalt kann direkt in der Konfiguration oder über eine hinterlegte Vorlagendatei bereitgestellt werden und wird mit den aktuellen Laufzeitdaten gerendert. Das fertige PDF wird als Vorgangsanlage gespeichert; Dateiname, Größe, Speicherort und Dateiwerte stehen als Datenausgänge zur Verfügung.
+                Der HTML-Inhalt kann direkt in der Konfiguration oder über eine hinterlegte Vorlagendatei bereitgestellt werden und wird mit den aktuellen Laufzeitdaten gerendert. Das fertige PDF wird als Vorgangsanlage gespeichert; Dateiname, Größe, Speicherort und Dateiwerte stehen als Ausgangsdaten zur Verfügung.
                 """;
     }
 

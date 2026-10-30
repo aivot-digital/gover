@@ -145,7 +145,7 @@
     <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'FAILED' or  paymentTransaction.paymentInformation.getStatus().name() == 'CANCELED' }">
         <p th:if="${ base.isCustomerPrint() }">
             Die Zahlung wurde nicht abgeschlossen.
-            Bitte wenden Sie sich an die zuständige Stelle.
+            Bitte wenden Sie sich an die verantwortliche Stelle.
             Bitte geben Sie zur Zuordnung Ihres Vorgangs folgende Kennung an:
             <span th:text="${ submission.getId() }"></span>
             .

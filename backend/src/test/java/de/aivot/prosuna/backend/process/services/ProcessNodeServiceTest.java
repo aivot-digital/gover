@@ -181,12 +181,12 @@ class ProcessNodeServiceTest {
 
         node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
-                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Prozesspfad")));
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgangsport")));
         org.mockito.Mockito.verify(processEdgeRepository, org.mockito.Mockito.never()).delete(any(ProcessEdgeEntity.class));
         assertEquals("processing_overdue", edge.getViaPort());
         node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(null, true)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
-                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Prozesspfad")));
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgangsport")));
     }
 
     @Test

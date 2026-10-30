@@ -97,7 +97,7 @@ export function ProcessNodeEditorMoreTab() {
                                     label="Aufgabe bei Fristüberschreitung beenden"
                                     hint={setting.days == null
                                         ? missingDeadlineHint ?? 'Keine Frist festgelegt.'
-                                        : `Die Aufgabe wird beendet und der Prozess über den Prozesspfad „${definition.port.label}“ fortgesetzt. Ohne diese Option bleibt die Aufgabe aktiv; die Fristüberschreitung wird nur angezeigt.`}
+                                        : `Die Aufgabe wird beendet und der Prozess über den Ausgangsport „${definition.port.label}“ fortgesetzt. Ohne diese Option bleibt die Aufgabe aktiv; die Fristüberschreitung wird nur angezeigt.`}
                                     value={setting.strict}
                                     onChange={(value) => setNode({
                                         ...node,

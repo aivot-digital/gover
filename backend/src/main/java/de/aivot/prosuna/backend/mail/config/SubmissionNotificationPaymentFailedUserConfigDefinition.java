@@ -48,7 +48,7 @@ public class SubmissionNotificationPaymentFailedUserConfigDefinition implements 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung bei einer fehlgeschlagenen Onlinezahlung in einem Vorgang, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (betreuend, sonst zuständig, sonst entwickelnd).";
+        return "Erhalten Sie eine Benachrichtigung bei einer fehlgeschlagenen Onlinezahlung in einem Vorgang, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (betreuend, sonst verantwortlich, sonst verwaltend).";
     }
 
     @Override

@@ -24,7 +24,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.Time]: 'Uhrzeit',
     [ElementType.IntroductionStep]: 'Allgemeine Informationen',
     [ElementType.SummaryStep]: 'Zusammenfassung',
-    [ElementType.SubmitStep]: 'Prüfen und absenden',
+    [ElementType.SubmitStep]: 'Abschließende Informationen und Captcha',
     [ElementType.SubmittedStep]: 'Angaben übermittelt',
     [ElementType.FileUpload]: 'Anlage(n)',
     [ElementType.DialogLayout]: 'Dialog',

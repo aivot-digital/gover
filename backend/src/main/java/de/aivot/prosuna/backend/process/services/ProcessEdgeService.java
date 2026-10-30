@@ -118,11 +118,11 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
         }
         var resolution = processNodeService.resolvePorts(source);
         if (!resolution.problems().isEmpty() || resolution.ports().stream().noneMatch(port -> port.key().equals(edge.getViaPort()))) {
-            throw ResponseException.badRequest("Der ausgewählte Prozesspfad ist für dieses Prozesselement nicht verfügbar. Prüfen Sie die Konfiguration.");
+            throw ResponseException.badRequest("Der ausgewählte Ausgangsport ist für dieses Prozesselement nicht verfügbar. Prüfen Sie die Konfiguration.");
         }
         var existing = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(edge.getFromNodeId(), edge.getViaPort());
         if (existing.isPresent() && !Objects.equals(existing.get().getId(), edge.getId())) {
-            throw ResponseException.badRequest("Dieser Prozesspfad ist bereits verbunden.");
+            throw ResponseException.badRequest("Dieser Ausgangsport ist bereits verbunden.");
         }
     }
 

@@ -34,7 +34,7 @@ public class ProcessTaskDeadlineResultHandler {
         var data = new ProcessTaskDeadlineExceededData(definition.key(), definition.label(), task.getDeadline(), now);
         var nodeData = new LinkedHashMap<>(task.getNodeData());
         nodeData.put(ProcessTaskDeadlineExceededData.NODE_DATA_KEY, data.toMap());
-        var summary = "Die Frist „%s“ bis %s wurde überschritten. Die Aufgabe wurde beendet. Der Vorgang wird über den Prozesspfad „%s“ fortgesetzt."
+        var summary = "Die Frist „%s“ bis %s wurde überschritten. Die Aufgabe wurde beendet. Der Vorgang wird über den Ausgangsport „%s“ fortgesetzt."
                 .formatted(ExecutionSummaryMarkdown.text(definition.label()), ExecutionSummaryMarkdown.timestamp(task.getDeadline()),
                         ExecutionSummaryMarkdown.text(definition.port().label()));
         task.setNodeData(nodeData).setStatus(ProcessTaskStatus.DeadlineExceeded).setStatusOverride(null)
