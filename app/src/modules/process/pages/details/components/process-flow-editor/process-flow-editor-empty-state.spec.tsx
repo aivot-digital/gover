@@ -7,6 +7,7 @@ import styles from './process-flow-editor.css?inline';
 
 // JSDOM does not run CSS animations, so visibility must come from the static styles.
 it('keeps the empty state visible and usable without animations', async () => {
+    expect(styles).not.toBe('');
     const onAddTrigger = vi.fn();
     render(
         <ReactFlowProvider>
