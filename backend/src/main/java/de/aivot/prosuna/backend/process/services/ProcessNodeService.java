@@ -335,7 +335,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         return deriveConfiguration(
                 entity,
                 provider,
-                user,
+                getConfigLayoutElement(entity, provider, user),
                 skipErrors,
                 new ProcessExecutionData(),
                 InputModeEvaluationContext.Authoring
@@ -353,7 +353,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         return deriveConfiguration(
                 entity,
                 provider,
-                user,
+                getConfigLayoutElement(entity, provider, user),
                 skipErrors,
                 processExecutionData,
                 InputModeEvaluationContext.Runtime
@@ -453,13 +453,11 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveConfiguration(
             @Nonnull ProcessNodeEntity entity,
             @Nonnull ProcessNodeDefinition<NodeConfig> provider,
-            @Nullable UserEntity user,
+            @Nonnull ConfigLayoutElement layout,
             @Nonnull Boolean skipErrors,
             @Nonnull ProcessExecutionData processExecutionData,
             @Nonnull InputModeEvaluationContext inputModeContext
     ) throws ResponseException {
-        var layout = getConfigLayoutElement(entity, provider, user);
-
         var edo = new ElementDerivationOptions();
 
         if (skipErrors) {
@@ -507,14 +505,6 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Nonnull
     private <NodeConfig> ConfigLayoutElement getConfigLayoutElement(@Nonnull ProcessNodeEntity entity, @Nonnull ProcessNodeDefinition<NodeConfig> provider, @Nullable UserEntity user) throws ResponseException {
-        if (user == null &&
-                SecurityContextHolder.getContext().getAuthentication() != null &&
-                SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
-            user = userService
-                    .fromJWT(jwt)
-                    .orElseThrow(ResponseException::unauthorized);
-        }
-
         var processDefinition = processDefinitionRepository
                 .findById(entity.getProcessId())
                 .orElseThrow(ResponseException::badRequest);
@@ -522,6 +512,23 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var processVersion = processDefinitionVersionRepository
                 .findById(ProcessVersionEntityId.of(processDefinition.getId(), entity.getProcessVersion()))
                 .orElseThrow(ResponseException::badRequest);
+
+        return getConfigLayoutElement(entity, provider, user, processDefinition, processVersion);
+    }
+
+    @Nonnull
+    private <NodeConfig> ConfigLayoutElement getConfigLayoutElement(@Nonnull ProcessNodeEntity entity,
+                                                                    @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                    @Nullable UserEntity user,
+                                                                    @Nonnull ProcessEntity processDefinition,
+                                                                    @Nonnull ProcessVersionEntity processVersion) throws ResponseException {
+        if (user == null &&
+                SecurityContextHolder.getContext().getAuthentication() != null &&
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
+            user = userService
+                    .fromJWT(jwt)
+                    .orElseThrow(ResponseException::unauthorized);
+        }
 
         var context = new ProcessNodeDefinitionConfigurationLayoutContext(
                 user,
@@ -947,6 +954,27 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public <NodeConfig> Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node,
                                                                @Nonnull ProcessNodeDefinition<NodeConfig> provider,
                                                                @Nonnull Boolean checkPorts) throws ResponseException {
+        return validate(node, provider, checkPorts, getConfigLayoutElement(node, provider, null));
+    }
+
+    /**
+     * Validates a node of an already loaded process version, so validating all nodes of a version loads the process
+     * and the version once instead of once per node.
+     */
+    @Nonnull
+    public <NodeConfig> Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node,
+                                                               @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                               @Nonnull Boolean checkPorts,
+                                                               @Nonnull ProcessEntity process,
+                                                               @Nonnull ProcessVersionEntity processVersion) throws ResponseException {
+        return validate(node, provider, checkPorts, getConfigLayoutElement(node, provider, null, process, processVersion));
+    }
+
+    @Nonnull
+    private <NodeConfig> Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node,
+                                                                @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                @Nonnull Boolean checkPorts,
+                                                                @Nonnull ConfigLayoutElement layout) throws ResponseException {
         var commonErrors = new LinkedHashMap<String, List<String>>();
         var problems = new LinkedList<String>();
 
@@ -981,12 +1009,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             }
         }
 
-        var layout = getConfigLayoutElement(node, provider, null);
-
         ProcessConfigurationDetails<NodeConfig> derivedConfiguration;
         try {
             derivedConfiguration = this
-                    .deriveConfiguration(node, provider, null, false);
+                    .deriveConfiguration(node, provider, layout, false, new ProcessExecutionData(), InputModeEvaluationContext.Authoring);
         } catch (ResponseException e) {
             problems.add(e.getMessage());
             derivedConfiguration = null;

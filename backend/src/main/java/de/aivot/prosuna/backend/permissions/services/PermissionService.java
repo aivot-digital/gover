@@ -23,9 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /*
- * The declared repository queries of the checks get no transaction of their own. Within a request, open-in-view shares
- * one connection without autocommit, so a check outside a transaction would leave a database transaction open. A
- * following transaction with its own isolation level, such as the instance lock, then fails on PostgreSQL.
+ * The declared repository queries of the checks get no transaction of their own, so each check runs its queries in
+ * one read-only transaction.
  */
 @Service
 @Transactional(readOnly = true)

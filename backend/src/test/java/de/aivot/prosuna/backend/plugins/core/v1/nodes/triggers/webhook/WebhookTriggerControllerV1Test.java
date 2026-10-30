@@ -13,6 +13,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessTestClaimRepository;
@@ -25,6 +26,7 @@ import de.aivot.prosuna.backend.process.services.ProcessService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -49,6 +51,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -182,7 +185,39 @@ class WebhookTriggerControllerV1Test {
 
         assertEquals("Webhook empfangen und verarbeitet.", response.message());
         verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
-        verify(fixture.processInstanceService()).update(any(Long.class), any(ProcessInstanceEntity.class));
+        verify(fixture.processInstanceService()).save(any(ProcessInstanceEntity.class));
+    }
+
+    @Test
+    void handleJsonShouldFailTheInstanceWhenTheDatabaseRejectsThePayload() throws ResponseException {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON
+        );
+        var request = mock(HttpServletRequest.class);
+        when(request.getMethod()).thenReturn(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST);
+        when(request.getContentType()).thenReturn(MediaType.APPLICATION_JSON_VALUE);
+        when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+        when(request.getParameterMap()).thenReturn(Map.of());
+        // PostgreSQL rejects e.g. a NUL character in a jsonb value.
+        var rejection = new DataIntegrityViolationException("unsupported Unicode escape sequence");
+        when(fixture.processInstanceService().save(any(ProcessInstanceEntity.class))).thenThrow(rejection);
+
+        var exception = assertThrows(DataIntegrityViolationException.class, () -> fixture.controller().handleJson(
+                request,
+                PROCESS_SLUG,
+                "example-slug",
+                Map.<String, Object>of("key", "value\u0000"),
+                null,
+                null,
+                null
+        ));
+
+        // Only the status is written, so the rejected payload cannot keep the instance paused.
+        assertSame(rejection, exception);
+        var failedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), failedInstanceCaptor.capture());
+        assertEquals(ProcessInstanceStatus.Failed, failedInstanceCaptor.getValue().getStatus());
     }
 
     @Test
@@ -209,7 +244,7 @@ class WebhookTriggerControllerV1Test {
 
         assertEquals("Webhook empfangen und verarbeitet.", response.message());
         verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
-        verify(fixture.processInstanceService()).update(any(Long.class), any(ProcessInstanceEntity.class));
+        verify(fixture.processInstanceService()).save(any(ProcessInstanceEntity.class));
     }
 
     @Test
@@ -251,7 +286,7 @@ class WebhookTriggerControllerV1Test {
         assertEquals("other.pdf", fixture.createdAttachments().get(2).getOriginalFileName());
 
         var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
-        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        verify(fixture.processInstanceService()).save(updatedInstanceCaptor.capture());
         @SuppressWarnings("unchecked")
         var attachments = (List<Map<String, Object>>) updatedInstanceCaptor
                 .getValue()
@@ -372,7 +407,7 @@ class WebhookTriggerControllerV1Test {
 
         assertEquals("Webhook empfangen und verarbeitet.", response.message());
         verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
-        verify(fixture.processInstanceService()).update(any(Long.class), any(ProcessInstanceEntity.class));
+        verify(fixture.processInstanceService()).save(any(ProcessInstanceEntity.class));
     }
 
     @Test
@@ -575,7 +610,7 @@ class WebhookTriggerControllerV1Test {
 
     private static Map<String, Object> storedInitialPayload(TestControllerFixture fixture) throws ResponseException {
         var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
-        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        verify(fixture.processInstanceService()).save(updatedInstanceCaptor.capture());
         return updatedInstanceCaptor.getValue().getInitialPayload();
     }
 }

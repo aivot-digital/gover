@@ -47,6 +47,7 @@ import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.util.*;
@@ -98,7 +99,7 @@ class FormTriggerControllerV1SubmitTest {
         var createdInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
         verify(fixture.processInstanceService()).create(createdInstanceCaptor.capture());
         var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
-        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        verify(fixture.processInstanceService()).save(updatedInstanceCaptor.capture());
         assertEquals(
                 Map.of("mapped", "payload"),
                 updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_PAYLOAD)
@@ -107,6 +108,9 @@ class FormTriggerControllerV1SubmitTest {
                 createdInstanceCaptor.getValue().getStarted(),
                 updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_STARTED)
         );
+        var releasedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), releasedInstanceCaptor.capture());
+        assertEquals(ProcessInstanceStatus.Created, releasedInstanceCaptor.getValue().getStatus());
     }
 
     @Test
@@ -185,6 +189,7 @@ class FormTriggerControllerV1SubmitTest {
         doThrow(new IllegalStateException("Redis is unavailable"))
                 .when(fixture.processSubmissionBindingService())
                 .bind(1L);
+        var writes = recordSavedInstances(fixture.processInstanceService(), null);
         var response = new MockHttpServletResponse();
 
         assertThrows(ResponseException.class, () -> fixture.controller().submit(
@@ -200,9 +205,38 @@ class FormTriggerControllerV1SubmitTest {
         ));
 
         // The instance must never be released to the process worker, so submitting again cannot create a duplicate.
-        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
-        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
-        assertEquals(ProcessInstanceStatus.Failed, updatedInstanceCaptor.getValue().getStatus());
+        assertEquals(List.of(new InstanceWrite(ProcessInstanceStatus.Failed, Map.of())), writes);
+        verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));
+        assertEquals(0, response.getCookies().length);
+        // The identities stay in the session, so the customer can submit again without identifying again.
+        verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
+    }
+
+    @Test
+    void submitShouldFailTheInstanceWhenTheDatabaseRejectsThePayload() throws Exception {
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), UUID.randomUUID().toString());
+        // PostgreSQL rejects e.g. a NUL character in a jsonb value.
+        var writes = recordSavedInstances(
+                fixture.processInstanceService(),
+                new DataIntegrityViolationException("unsupported Unicode escape sequence")
+        );
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        ));
+
+        // The failure write carries no payload, so the rejected payload cannot keep the instance paused.
+        assertEquals(List.of(new InstanceWrite(ProcessInstanceStatus.Failed, Map.of())), writes);
+        verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));
         assertEquals(0, response.getCookies().length);
         // The identities stay in the session, so the customer can submit again without identifying again.
         verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
@@ -214,6 +248,7 @@ class FormTriggerControllerV1SubmitTest {
         doThrow(new IllegalStateException("Redis is unavailable"))
                 .when(fixture.identityService())
                 .clearIdentitySession("identity-session-id", fixture.processNodeId());
+        var writes = recordSavedInstances(fixture.processInstanceService(), null);
         var response = new MockHttpServletResponse();
 
         assertThrows(ResponseException.class, () -> fixture.controller().submit(
@@ -228,10 +263,13 @@ class FormTriggerControllerV1SubmitTest {
                 response
         ));
 
-        // The instance must never be released to the process worker, so submitting again cannot create a duplicate.
-        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
-        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
-        assertEquals(ProcessInstanceStatus.Failed, updatedInstanceCaptor.getValue().getStatus());
+        // The payload was already stored when clearing the identities failed. The failure write drops it, so a staff
+        // restart cannot run this instance next to the one the customer starts by submitting again.
+        assertEquals(2, writes.size());
+        assertEquals(ProcessInstanceStatus.Paused, writes.getFirst().status());
+        assertFalse(writes.getFirst().initialPayload().isEmpty());
+        assertEquals(new InstanceWrite(ProcessInstanceStatus.Failed, Map.of()), writes.getLast());
+        verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));
         assertEquals(0, response.getCookies().length);
     }
 
@@ -440,6 +478,25 @@ class FormTriggerControllerV1SubmitTest {
         assertEquals(0, cookie.getMaxAge());
         assertTrue(cookie.getSecure());
         assertTrue(cookie.isHttpOnly());
+    }
+
+    private record InstanceWrite(ProcessInstanceStatus status, Map<String, Object> initialPayload) {
+    }
+
+    // The controller saves the same instance object more than once, so each write is recorded as it happens.
+    // A given rejection is thrown for every write that carries a payload, like a database rejecting it.
+    private static List<InstanceWrite> recordSavedInstances(ProcessInstanceService processInstanceService,
+                                                            RuntimeException payloadRejection) {
+        var writes = new ArrayList<InstanceWrite>();
+        when(processInstanceService.save(any(ProcessInstanceEntity.class))).thenAnswer(invocation -> {
+            var instance = invocation.getArgument(0, ProcessInstanceEntity.class);
+            if (payloadRejection != null && !instance.getInitialPayload().isEmpty()) {
+                throw payloadRejection;
+            }
+            writes.add(new InstanceWrite(instance.getStatus(), new HashMap<>(instance.getInitialPayload())));
+            return instance;
+        });
+        return writes;
     }
 
     private record SubmitFixture(
