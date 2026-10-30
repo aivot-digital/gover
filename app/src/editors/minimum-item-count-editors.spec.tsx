@@ -70,3 +70,22 @@ it.each([ElementType.DomainAndUserSelect, ElementType.AssignmentContext] as cons
     rerender(editor(2));
     expect(screen.getByRole('textbox', {name: /^Minimale Anzahl/})).toHaveAccessibleDescription(/Die Mindestanzahl darf nicht größer/);
 });
+
+
+it('edits the multiple-choice maximum and identifies conflicting limits', () => {
+    const onPatch = vi.fn();
+    const element = {...generateElementWithDefaultValues(ElementType.MultiCheckbox), minimumRequiredOptions: 3};
+    const {rerender} = render(<MultiCheckboxFieldComponentEditor {...common} element={element} onPatch={onPatch}/>);
+    const input = screen.getByRole('textbox', {name: /^Maximalanzahl/});
+    fireEvent.change(input, {target: {value: '4'}});
+    fireEvent.blur(input);
+    expect(onPatch).toHaveBeenLastCalledWith({maximumOptions: 4});
+    fireEvent.change(input, {target: {value: '0'}});
+    fireEvent.blur(input);
+    expect(onPatch).toHaveBeenLastCalledWith({maximumOptions: undefined});
+    rerender(<MultiCheckboxFieldComponentEditor {...common} element={{...element, maximumOptions: 2}} onPatch={onPatch}/>);
+    expect(input).toHaveAccessibleDescription(/Die Maximalanzahl darf nicht kleiner/);
+    expect(screen.getByRole('textbox', {name: /^Mindestanzahl/})).toHaveAccessibleDescription(/Die Mindestanzahl darf nicht größer/);
+    rerender(<MultiCheckboxFieldComponentEditor {...common} editable={false} element={element} onPatch={onPatch}/>);
+    expect(input).toBeDisabled();
+});

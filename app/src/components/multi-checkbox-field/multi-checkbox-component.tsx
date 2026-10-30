@@ -23,6 +23,7 @@ export interface MultiCheckboxComponentProps extends FormFieldGroupLayoutProps {
     disabled?: boolean;
     busy?: boolean;
     required?: boolean;
+    maxItems?: number;
     displayInline?: boolean;
     controlSx?: SxProps<Theme>;
 }
@@ -32,6 +33,9 @@ export function MultiCheckboxComponent(props: MultiCheckboxComponentProps) {
     const options = props.options;
     const displayInline = props.displayInline ?? false;
     const isInteractionDisabled = Boolean(props.disabled || props.busy);
+
+    const maximumReached = (props.maxItems ?? 0) > 0 && (value?.length ?? 0) >= props.maxItems!;
+    const optionDisabled = (option: string) => isInteractionDisabled || (maximumReached && !value?.includes(option));
 
     const handleOptionToggle = (toggledOption: string): void => {
         if (value == null || value.length === 0) {
@@ -80,11 +84,11 @@ export function MultiCheckboxComponent(props: MultiCheckboxComponentProps) {
                                 <Checkbox
                                     checked={(value ?? []).includes(option.value)}
                                     onChange={() => {
-                                        if (!isInteractionDisabled) {
+                                        if (!optionDisabled(option.value)) {
                                             handleOptionToggle(option.value);
                                         }
                                     }}
-                                    disabled={isInteractionDisabled}
+                                    disabled={optionDisabled(option.value)}
                                     sx={{
                                         color: props.busy
                                             ? (theme) => `${theme.palette.action.disabled}!important`

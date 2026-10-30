@@ -231,6 +231,7 @@ const elementConstructors: {
         ],
         displayInline: false,
         minimumRequiredOptions: undefined,
+        maximumOptions: undefined,
     }),
     [ElementType.PhoneNumber]: (id) => ({
         ...makeInputBase(ElementType.PhoneNumber, id),

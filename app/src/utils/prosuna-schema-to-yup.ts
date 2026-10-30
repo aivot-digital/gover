@@ -199,7 +199,7 @@ function countedArraySchema(opts: {
 }
 
 function multiCheckboxFieldToYup(elem: MultiCheckboxFieldElement): Schema {
-    return countedArraySchema({...elem, minItems: elem.minimumRequiredOptions});
+    return countedArraySchema({...elem, minItems: elem.minimumRequiredOptions, maxItems: elem.maximumOptions});
 }
 
 function tableFieldToYup(elem: TableFieldElement): Schema {

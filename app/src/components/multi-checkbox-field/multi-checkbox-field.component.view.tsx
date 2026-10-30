@@ -40,12 +40,19 @@ export function MultiCheckboxFieldComponentView(props: BaseViewProps<MultiCheckb
             ? `${element.required ? 'Mindestens' : 'Bei Auswahl mindestens'} ${minimum} ${minimum === 1 ? 'Option' : 'Optionen'}`
             : `Noch mindestens ${remaining} ${remaining === 1 ? 'Option' : 'Optionen'}`
         : undefined;
-    const error = errors?.filter(Boolean).join(' ');
+    const maximum = (element.maximumOptions ?? 0) > 0 ? element.maximumOptions! : undefined;
+    const indicator = minimumHint ?? (maximum != null
+        ? `${count}/${maximum} ${maximum === 1 ? 'Option' : 'Optionen'} ausgewählt`
+        : undefined);
+    const limitError = maximum != null && count > maximum
+        ? `Maximal ${maximum} ${maximum === 1 ? 'Option erlaubt' : 'Optionen erlaubt'}.`
+        : undefined;
+    const error = errors?.filter(Boolean).join(' ') || limitError;
     const message = error || element.hint;
-    const helperContent = minimumHint ? (
+    const helperContent = indicator ? (
         <Box sx={{display: 'flex', justifyContent: 'space-between', flexWrap: {xs: 'wrap', sm: 'nowrap'}, columnGap: 2, rowGap: 0.5, width: '100%'}}>
             {message && <><Box component="span" sx={{minWidth: 0}}>{message}</Box>{' '}</>}
-            <Box component="span" sx={{ml: 'auto', maxWidth: '100%'}}>{minimumHint}</Box>
+            <Box component="span" sx={{ml: 'auto', maxWidth: '100%'}}>{indicator}</Box>
         </Box>
     ) : message;
 
@@ -55,6 +62,7 @@ export function MultiCheckboxFieldComponentView(props: BaseViewProps<MultiCheckb
             value={value}
             onChange={setValue}
             options={options ?? []}
+            maxItems={maximum}
             disabled={isDisabled}
             required={element.required ?? undefined}
             error={error ? helperContent : undefined}

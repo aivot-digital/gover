@@ -37,6 +37,17 @@ describe.each([MultiChoicePresentation.Combobox, MultiChoicePresentation.Checkbo
         expect(control()).toHaveAttribute('aria-invalid', 'true');
     });
 
+    it('shows the maximum counter, keeps the minimum first and reports existing excess values', () => {
+        const props = {...base, element: {...base.element, maximumOptions: 2}};
+        const {rerender} = render(<MultiCheckboxFieldComponentView {...props}/>);
+        expect(control()).toHaveAccessibleDescription(/Bei Auswahl mindestens 2 Optionen/);
+        rerender(<MultiCheckboxFieldComponentView {...props} value={['a', 'b']}/>);
+        expect(control()).toHaveAccessibleDescription('Wählen Sie passende Bereiche. 2/2 Optionen ausgewählt');
+        rerender(<MultiCheckboxFieldComponentView {...props} value={['a', 'b', 'c']}/>);
+        expect(control()).toHaveAttribute('aria-invalid', 'true');
+        expect(control()).toHaveAccessibleDescription(/Maximal 2 Optionen erlaubt.*3\/2 Optionen ausgewählt/);
+    });
+
     it.each([null, 0, -1])('omits inactive minimum limits (%s)', minimumRequiredOptions => {
         render(<MultiCheckboxFieldComponentView {...base} element={{...base.element, minimumRequiredOptions}}/>);
         expect(control()).toHaveAccessibleDescription('Wählen Sie passende Bereiche.');

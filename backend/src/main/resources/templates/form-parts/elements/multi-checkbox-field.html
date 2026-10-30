@@ -2,7 +2,9 @@
     <div class="input">
         <div class="label">
             <strong th:text="${child.element.label}"></strong>
-            <span th:if="${base.isBlankPrint()}">(<span th:if="${child.element.required != null && child.element.required}">Pflichtangabe, </span>Es können mehrere Optionen ausgewählt werden)</span>
+            <span th:if="${base.isBlankPrint()}">(<span th:if="${child.element.required != null && child.element.required}">Pflichtangabe, </span><span th:if="${child.element.maximumOptions != null && child.element.maximumOptions > 0}"
+                  th:text="${(child.element.maximumOptions == 1 ? 'Es kann höchstens ' : 'Es können höchstens ') + child.element.maximumOptions + (child.element.maximumOptions == 1 ? ' Option' : ' Optionen') + ' ausgewählt werden'}"></span><span
+                  th:unless="${child.element.maximumOptions != null && child.element.maximumOptions > 0}">Es können mehrere Optionen ausgewählt werden</span>)</span>
         </div>
 
         <ul class="content">

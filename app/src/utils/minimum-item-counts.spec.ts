@@ -9,7 +9,7 @@ import {prosunaSchemaToYup} from './prosuna-schema-to-yup';
 const cases = [
     {type: ElementType.ChipInput, minimum: 'minItems', maximum: 'maxItems', options: {}, item: (i: number) => `item-${i}`},
     ...[MultiChoicePresentation.Checkboxes, MultiChoicePresentation.Combobox].map(presentation => ({
-        type: ElementType.MultiCheckbox as const, minimum: 'minimumRequiredOptions', maximum: undefined,
+        type: ElementType.MultiCheckbox as const, minimum: 'minimumRequiredOptions', maximum: 'maximumOptions',
         options: {presentation}, item: (i: number) => `item-${i}`,
     })),
     {type: ElementType.Table, minimum: 'minimumRequiredRows', maximum: 'maximumRows', options: {}, item: (i: number) => ({name: `item-${i}`})},
