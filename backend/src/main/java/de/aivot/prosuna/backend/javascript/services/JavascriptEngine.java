@@ -38,6 +38,7 @@ public class JavascriptEngine implements AutoCloseable {
     private final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     private final ByteArrayOutputStream errStream = new ByteArrayOutputStream();
     private final static String JS_ENGINE_NAME = "js";
+    private final static String MAX_CPU_TIME = "10s";
 
     /**
      * Creates a new javascript executioner with the given function providers.
@@ -92,6 +93,10 @@ public class JavascriptEngine implements AutoCloseable {
                 // Remove warning that the engine is only in interpreter mode.
                 // TODO: Resolve this problem and remove this option.
                 .option("engine.WarnInterpreterOnly", "false")
+
+                // Cancel the code once all evaluations of this engine used this much CPU time, so an endless loop cannot block the thread forever.
+                // Code that catches the stack overflow of a recursion and recurses again, e.g. (function f() { try { f() } catch (e) { f() } })(), is not stopped.
+                .option("sandbox.MaxCPUTime", MAX_CPU_TIME)
 
                 // Redirect the standard output and error streams to the given output streams.
                 .out(outStream)
@@ -283,6 +288,7 @@ public class JavascriptEngine implements AutoCloseable {
     public void close() throws Exception {
         outStream.close();
         errStream.close();
-        graalContext.close();
+        // A context cancelled by the CPU time limit throws the limit error again on close(), but not when closed with cancelIfExecuting.
+        graalContext.close(true);
     }
 }
