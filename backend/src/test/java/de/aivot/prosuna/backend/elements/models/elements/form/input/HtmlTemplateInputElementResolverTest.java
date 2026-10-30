@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
+import org.graalvm.polyglot.HostAccess;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -244,6 +246,22 @@ class HtmlTemplateInputElementResolverTest {
     }
 
     @Test
+    void resolveShouldNotExposeHostExceptionMessagesOfFunctionProviders() throws Exception {
+        var providerResolver = new HtmlTemplateInputElementResolver(
+                assetService,
+                storageService,
+                new TemplateRenderService(new JavascriptEngineFactoryService(List.of(new ThrowingNumberJavascriptV1())))
+        );
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> providerResolver.resolve(template("<p>{{ _number_v1.formatGermanNumber(1) }}</p>"), new ProcessExecutionData())
+        );
+        assertFalse(exception.getMessage().contains("internal detail"));
+        assertTrue(exception.getMessage().contains("_number_v1.formatGermanNumber(1)"));
+    }
+
+    @Test
     void resolveShouldStillRejectInvalidAuthoredSlotSyntax() throws Exception {
         var value = template("<p data-slot=\"text\" data-slot-type=\"text\">Default</p>")
                 .setSlots(Map.of("text", "{{ unclosed"));
@@ -260,5 +278,13 @@ class HtmlTemplateInputElementResolverTest {
         when(storageService.getDocumentContent(11, "templates/test.html"))
                 .thenReturn(new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
         return new HtmlTemplateInputElementValue().setAssetKey(assetKey.toString()).setSlots(Map.of());
+    }
+
+    public static class ThrowingNumberJavascriptV1 extends NumberJavascriptV1 {
+        @Override
+        @HostAccess.Export
+        public String formatGermanNumber(Number number) {
+            throw new IllegalStateException("internal detail");
+        }
     }
 }

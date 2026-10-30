@@ -14,6 +14,8 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.graalvm.polyglot.PolyglotException;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
@@ -170,15 +172,15 @@ public class HtmlTemplateInputElementResolver {
                     JavascriptExecutionContext.AssetTemplate
             );
         } catch (RuntimeException e) {
-            Throwable rootCause = e;
-            while (rootCause.getCause() != null) {
-                rootCause = rootCause.getCause();
-            }
+            // Show the JavaScript error, e.g. of a blocked provider, but not the raw message of a host exception thrown inside a provider.
+            var detail = NestedExceptionUtils.getMostSpecificCause(e) instanceof PolyglotException polyglotException && polyglotException.isGuestException()
+                    ? polyglotException.getMessage()
+                    : e.getMessage();
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
                     "Die HTML-Vorlage %s konnte nicht gerendert werden: %s",
                     StringUtils.quote(htmlTemplateAssetKeyStr),
-                    rootCause.getMessage()
+                    detail
             );
         }
         return restoreSlotContents(renderedHtml, slotContents);
