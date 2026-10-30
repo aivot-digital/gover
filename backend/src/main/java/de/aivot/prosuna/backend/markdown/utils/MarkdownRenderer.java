@@ -5,24 +5,30 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.commonmark.Extension;
 import org.commonmark.ext.autolink.AutolinkExtension;
-import org.commonmark.ext.footnotes.FootnoteDefinition;
-import org.commonmark.ext.footnotes.FootnoteReference;
-import org.commonmark.ext.footnotes.FootnotesExtension;
 import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension;
-import org.commonmark.ext.gfm.tables.TablesExtension;
 import org.commonmark.ext.task.list.items.TaskListItemsExtension;
 import org.commonmark.node.AbstractVisitor;
+import org.commonmark.node.Block;
 import org.commonmark.node.Code;
 import org.commonmark.node.HardLineBreak;
 import org.commonmark.node.Image;
 import org.commonmark.node.Link;
 import org.commonmark.node.Node;
+import org.commonmark.node.Paragraph;
 import org.commonmark.node.SoftLineBreak;
 import org.commonmark.node.Text;
+import org.commonmark.parser.InlineParser;
 import org.commonmark.parser.Parser;
 import org.commonmark.parser.PostProcessor;
+import org.commonmark.parser.SourceLine;
+import org.commonmark.parser.SourceLines;
+import org.commonmark.parser.block.AbstractBlockParser;
+import org.commonmark.parser.block.AbstractBlockParserFactory;
+import org.commonmark.parser.block.BlockContinue;
+import org.commonmark.parser.block.BlockStart;
+import org.commonmark.parser.block.MatchedBlockParser;
+import org.commonmark.parser.block.ParserState;
 import org.commonmark.renderer.NodeRenderer;
-import org.commonmark.renderer.html.AttributeProvider;
 import org.commonmark.renderer.html.DefaultUrlSanitizer;
 import org.commonmark.renderer.html.HtmlNodeRendererContext;
 import org.commonmark.renderer.html.HtmlRenderer;
@@ -31,8 +37,8 @@ import org.commonmark.renderer.text.TextContentNodeRendererContext;
 import org.commonmark.renderer.text.TextContentRenderer;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Renders Markdown to HTML for every backend output channel: PDF documents, HTML template slots, e-mails and
@@ -40,7 +46,8 @@ import java.util.Set;
  *
  * <p>The frontend counterpart is {@code MarkdownContent} in {@code app/src/components/markdown-content/}. Both
  * implementations are checked against the shared cases in {@code markdown/markdown-rendering-cases.json} of the
- * backend test resources, so the supported syntax and the safety rules must be changed on both sides together.</p>
+ * backend test resources, so the supported syntax and the safety rules must be changed on both sides together.
+ * Tables and footnotes are not supported because the rich text editor cannot edit them. Their syntax stays text.</p>
  *
  * <p>Rendered Markdown regularly contains process data entered by customers. The rules are therefore the same for
  * staff-authored and customer-entered text: raw HTML is escaped, link targets are limited to
@@ -57,8 +64,6 @@ public final class MarkdownRenderer {
     // Shared with MarkdownTemplateValues, which has to read values exactly as they are rendered later.
     static final List<Extension> EXTENSIONS = List.of(
             AutolinkExtension.create(),
-            FootnotesExtension.create(),
-            TablesExtension.create(),
             StrikethroughExtension.builder()
                     .requireTwoTildes(false)
                     .build(),
@@ -67,13 +72,13 @@ public final class MarkdownRenderer {
     private static final DefaultUrlSanitizer URL_SANITIZER = new DefaultUrlSanitizer(ALLOWED_URL_PROTOCOLS);
     static final Parser PARSER = Parser.builder()
             .extensions(EXTENSIONS)
+            .customBlockParserFactory(new FootnoteDefinitionsAsText())
             // Runs after the autolink extension, which links URLs with any protocol.
             .postProcessor(new DisallowedAutolinksAsText())
             .build();
     private static final HtmlRenderer RENDERER = HtmlRenderer.builder()
             .extensions(EXTENSIONS)
             .nodeRendererFactory(ImageAltTextRenderer::new)
-            .attributeProviderFactory(context -> new FootnoteBackLinkLabels())
             // The rich text editor and the frontend renderer keep single line breaks as well.
             .softbreak("<br />\n")
             .escapeHtml(true)
@@ -164,22 +169,52 @@ public final class MarkdownRenderer {
     }
 
     /**
-     * Labels the links from a footnote back to its references in German, as the frontend renderer does. The footnote
-     * extension writes English labels and marks each link with its reference, such as {@code 1} or {@code 1-2} for
-     * the second reference to footnote 1.
+     * Keeps lines such as {@code [^1]: Hinweis} as paragraph text. CommonMark would read them as link reference
+     * definitions, which hides the line and links every {@code [^1]} to its text. The line always starts a new
+     * paragraph, so it is not read as a definition after another one either, as in {@code [a]: /a} on the line before.
      */
-    private static final class FootnoteBackLinkLabels implements AttributeProvider {
-        @Override
-        public void setAttributes(Node node, String tagName, Map<String, String> attributes) {
-            var reference = attributes.get("data-footnote-backref-idx");
-            if (!"a".equals(tagName) || reference == null || !attributes.containsKey("aria-label")) {
-                return;
-            }
+    private static final class FootnoteDefinitionsAsText extends AbstractBlockParserFactory {
+        private static final Pattern FOOTNOTE_DEFINITION = Pattern.compile("\\[\\^(?:[^\\]\\\\]|\\\\.)*]:");
 
-            var parts = reference.split("-", 2);
-            attributes.put("aria-label", parts.length == 1
-                    ? "Zurück zum Verweis auf Fußnote " + parts[0]
-                    : "Zurück zum " + parts[1] + ". Verweis auf Fußnote " + parts[0]);
+        @Override
+        public BlockStart tryStart(ParserState state, MatchedBlockParser matchedBlockParser) {
+            var line = state.getLine().getContent();
+            var start = state.getNextNonSpaceIndex();
+            if (state.getIndent() >= 4 || !FOOTNOTE_DEFINITION.matcher(line).region(start, line.length()).lookingAt()) {
+                return BlockStart.none();
+            }
+            return BlockStart.of(new TextParagraphParser()).atIndex(start);
+        }
+    }
+
+    /** A paragraph whose lines are never read as link reference definitions. */
+    private static final class TextParagraphParser extends AbstractBlockParser {
+        private final Paragraph paragraph = new Paragraph();
+        private final SourceLines lines = new SourceLines();
+
+        @Override
+        public Block getBlock() {
+            return paragraph;
+        }
+
+        @Override
+        public boolean canHaveLazyContinuationLines() {
+            return true;
+        }
+
+        @Override
+        public BlockContinue tryContinue(ParserState state) {
+            return state.isBlank() ? BlockContinue.none() : BlockContinue.atIndex(state.getIndex());
+        }
+
+        @Override
+        public void addLine(SourceLine line) {
+            lines.addLine(line);
+        }
+
+        @Override
+        public void parseInlines(InlineParser inlineParser) {
+            inlineParser.parse(lines, paragraph);
         }
     }
 
@@ -212,7 +247,7 @@ public final class MarkdownRenderer {
 
         @Override
         public Set<Class<? extends Node>> getNodeTypes() {
-            return Set.of(Link.class, Image.class, Code.class, FootnoteReference.class, FootnoteDefinition.class);
+            return Set.of(Link.class, Image.class, Code.class);
         }
 
         @Override
@@ -226,11 +261,6 @@ public final class MarkdownRenderer {
                     }
                 }
                 case Code code -> writer.write(code.getLiteral());
-                case FootnoteReference reference -> writer.write("[" + reference.getLabel() + "]");
-                case FootnoteDefinition definition -> {
-                    writer.write("[" + definition.getLabel() + "] ");
-                    renderChildren(definition);
-                }
                 // The alternative text, as in the HTML output.
                 default -> renderChildren(node);
             }

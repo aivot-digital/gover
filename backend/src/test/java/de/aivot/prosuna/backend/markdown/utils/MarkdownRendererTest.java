@@ -69,6 +69,10 @@ class MarkdownRendererTest {
 
                 > Zitat
 
+                | Feld | Wert |
+                | --- | --- |
+                | Ort | Bonn |
+
                 [^1]: Fußnote
                 """;
 
@@ -77,14 +81,18 @@ class MarkdownRendererTest {
 
                 Hallo Ada, siehe Portal (https://portal.example), https://example.org und AZ-1.
                 Zeile 2 mit Logo
-                Zeile 3[1]
+                Zeile 3[^1]
 
                 - eins
                 - zwei
 
                 «Zitat»
 
-                [1] Fußnote""", MarkdownRenderer.renderPlainText(markdown));
+                | Feld | Wert |
+                | --- | --- |
+                | Ort | Bonn |
+
+                [^1]: Fußnote""", MarkdownRenderer.renderPlainText(markdown));
     }
 
     @Test

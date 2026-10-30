@@ -340,7 +340,7 @@ describe('RichTextInputComponent', () => {
         render(<RichTextInputComponent label="Nachricht" value={markdown} onChange={onChange} reducedMode/>);
         const editor = await screen.findByRole('textbox', {name: 'Nachricht – optional'});
 
-        // The editor has no table editor, so it reads tables as paragraphs. The renderers still show a table.
+        // The editor has no table editor, so it reads tables as paragraphs. The renderers show them as text as well.
         await waitFor(() => expect(editor).toHaveTextContent('| Feld | Wert |'));
         await selectEditorText(editor, 'Bitte prüfen');
         fireEvent.keyDown(editor, {key: 'b', code: 'KeyB', ctrlKey: true});

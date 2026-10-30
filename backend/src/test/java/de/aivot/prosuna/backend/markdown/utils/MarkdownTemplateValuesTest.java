@@ -128,18 +128,13 @@ class MarkdownTemplateValuesTest {
                 ## Angaben
 
                 - **Name:** Ada
-                - Web: https://example.org und <https://example.org/kontakt>
-
-                | Feld | Wert |
-                |---|---|
-                | Ort | Bonn |""");
+                - Web: https://example.org und <https://example.org/kontakt>""");
         var html = MarkdownRenderer.renderHtml(markdown);
 
         assertTrue(html.contains("<h2>Angaben</h2>"));
         assertTrue(html.contains("<li><strong>Name:</strong> Ada</li>"));
         assertTrue(html.contains("<a rel=\"nofollow\" href=\"https://example.org\">https://example.org</a>"));
         assertTrue(html.contains("<a rel=\"nofollow\" href=\"https://example.org/kontakt\">https://example.org/kontakt</a>"));
-        assertTrue(html.contains("<td>Bonn</td>"));
     }
 
     @Test

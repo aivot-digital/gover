@@ -1,7 +1,15 @@
 import type {Link, LinkReference, Nodes, Parent, Root} from 'mdast';
-import ReactMarkdown, {type Components, type Options} from 'react-markdown';
+import {gfmAutolinkLiteralFromMarkdown} from 'mdast-util-gfm-autolink-literal';
+import {gfmStrikethroughFromMarkdown} from 'mdast-util-gfm-strikethrough';
+import {gfmTaskListItemFromMarkdown} from 'mdast-util-gfm-task-list-item';
+import {gfmAutolinkLiteral} from 'micromark-extension-gfm-autolink-literal';
+import {gfmStrikethrough} from 'micromark-extension-gfm-strikethrough';
+import {gfmTaskListItem} from 'micromark-extension-gfm-task-list-item';
+import ReactMarkdown, {type Components} from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
-import remarkGfm from 'remark-gfm';
+// Types the micromark and mdast extensions in the processor data.
+import type {} from 'remark-parse';
+import type {Processor} from 'unified';
 
 /**
  * Link protocols kept by the frontend and the backend Markdown renderer. They match the rich text editor, so a link
@@ -40,6 +48,34 @@ function getLinkLabel(node: Nodes): string {
 function showsItsTarget(link: Link | LinkReference, target: string): boolean {
     const label = getLinkLabel(link);
     return [label, `http://${label}`, `https://${label}`, `mailto:${label}`].includes(target);
+}
+
+function footnoteSyntaxAsText(parent: Parent, source: string) {
+    parent.children = parent.children.map((child): Parent['children'][number] => {
+        if ((child.type === 'definition' || child.type === 'linkReference') && child.identifier.startsWith('^')) {
+            const value = source.slice(child.position?.start.offset, child.position?.end.offset);
+            return child.type === 'definition'
+                ? {type: 'paragraph', children: [{type: 'text', value}]}
+                : {type: 'text', value};
+        }
+        if ('children' in child) {
+            footnoteSyntaxAsText(child, source);
+        }
+        return child;
+    });
+}
+
+/**
+ * The GitHub Flavored Markdown of `remark-gfm` without tables and footnotes, which the rich text editor cannot edit.
+ * As in the backend, footnote syntax stays text: CommonMark reads `[^1]: Hinweis` as a link reference definition,
+ * which hides the line and links every `[^1]` to its text.
+ */
+function remarkSupportedGfm(this: Processor) {
+    const data = this.data();
+    (data.micromarkExtensions ??= []).push(gfmAutolinkLiteral(), gfmStrikethrough(), gfmTaskListItem());
+    (data.fromMarkdownExtensions ??= []).push(gfmAutolinkLiteralFromMarkdown(), gfmStrikethroughFromMarkdown(), gfmTaskListItemFromMarkdown());
+
+    return (tree: Root, file: {value: unknown}) => footnoteSyntaxAsText(tree, String(file.value));
 }
 
 function collectDefinitions(node: Nodes, definitions: Map<string, string>) {
@@ -99,15 +135,6 @@ const defaultComponents: Components = {
     },
 };
 
-// The labels match the backend renderer. Only screen readers announce the heading of the footnotes.
-const remarkRehypeOptions: Options['remarkRehypeOptions'] = {
-    footnoteLabel: 'Fußnoten',
-    footnoteLabelProperties: {className: ['visually-hidden']},
-    footnoteBackLabel: (referenceIndex, rereferenceIndex) => rereferenceIndex > 1
-        ? `Zurück zum ${rereferenceIndex}. Verweis auf Fußnote ${referenceIndex + 1}`
-        : `Zurück zum Verweis auf Fußnote ${referenceIndex + 1}`,
-};
-
 // Applied after caller overrides. Like the backend renderer, images only contribute their alternative text, so
 // rendering Markdown never makes the browser fetch a URL chosen by the author of the text.
 const enforcedComponents: Components = {
@@ -136,11 +163,10 @@ export function MarkdownRenderer(props: MarkdownRendererProps) {
                 ...enforcedComponents,
             }}
             remarkPlugins={[
-                remarkGfm,
+                remarkSupportedGfm,
                 remarkBreaks,
                 [remarkLinkTargets, {revealTargets: props.revealLinkTargets === true}],
             ]}
-            remarkRehypeOptions={remarkRehypeOptions}
             urlTransform={sanitizeMarkdownUrl}
         >
             {props.markdown ?? ''}

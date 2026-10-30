@@ -26,10 +26,10 @@
       "excludes": ["~"]
     },
     {
-      "name": "renders tables",
+      "name": "shows tables as text",
       "markdown": "| Spalte A | Spalte B |\n| --- | --- |\n| Wert 1 | Wert 2 |",
-      "contains": ["<table>", "<th>Spalte A</th>", "<td>Wert 1</td>"],
-      "excludes": ["| Spalte A |"]
+      "contains": ["| Spalte A | Spalte B |<br", "| --- | --- |<br", "| Wert 1 | Wert 2 |"],
+      "excludes": ["<table", "<th", "<td"]
     },
     {
       "name": "renders task lists as disabled checkboxes",
@@ -38,15 +38,10 @@
       "excludes": ["[ ]", "[x]"]
     },
     {
-      "name": "renders footnotes with German back link labels",
-      "markdown": "Referenz[^1] und noch einmal[^1]\n\n[^1]: Fußnote",
-      "contains": [
-        "data-footnote-ref",
-        "Fußnote",
-        "aria-label=\"Zurück zum Verweis auf Fußnote 1\"",
-        "aria-label=\"Zurück zum 2. Verweis auf Fußnote 1\""
-      ],
-      "excludes": ["[^1]", "Back to reference", "Footnotes"]
+      "name": "shows footnotes as text, even after a link reference definition",
+      "markdown": "Text[^1] und [Portal][a]\n\n[a]: https://example.org\n[^1]: Hinweis",
+      "contains": ["Text[^1] und <a", "href=\"https://example.org\"", ">Portal</a>", "[^1]: Hinweis"],
+      "excludes": ["data-footnote", "<section", "<sup", "href=\"Hinweis\""]
     },
     {
       "name": "links bare URLs, www addresses and e-mail addresses",

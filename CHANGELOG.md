@@ -21,7 +21,7 @@
 * **System:** Add new prototype for processes.
 * **System:** Improve plugin system for better extensibility and maintainability.
 * **System:** Add generic storage provider functionality.
-* **System:** Render Markdown with one shared policy in the app, mails and PDFs. Raw HTML is shown as text, link targets are limited to web, e-mail, phone and SMS addresses and relative URLs, images are reduced to their alternative text, and footnotes are labelled in German.
+* **System:** Render Markdown with one shared policy in the app, mails and PDFs. Raw HTML is shown as text, link targets are limited to web, e-mail, phone and SMS addresses and relative URLs, images are reduced to their alternative text. Tables and footnotes are not supported and appear as text.
 * **System:** Insert process data into templates according to how each field is used. In Markdown fields, `{{ }}` shows values as typed and `{! !}` keeps their formatting but shows link targets. Text fields insert values as single lines, AI prompts and payment descriptions as plain text, so names such as `O'Brien & Söhne` are no longer HTML-escaped.
 * **System:** Send readable plain text in the text part of mails and to OZG-Cloud instead of Markdown. The mail element outputs its content as Markdown instead of HTML.
 * **System:** Escape untrusted text in form PDFs, staff payment tasks, AI answers in execution summaries and the HTML error page.

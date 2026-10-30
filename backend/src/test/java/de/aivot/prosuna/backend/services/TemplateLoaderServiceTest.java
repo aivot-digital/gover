@@ -294,13 +294,11 @@ class TemplateLoaderServiceTest {
         assertTrue(html.contains("<del>Einfach</del>"));
         assertTrue(html.contains("href=\"https://example.org/path\""));
         assertTrue(html.contains(">https://example.org/path<"));
-        assertTrue(html.contains("<table>"));
-        assertTrue(html.contains("<th>Spalte A</th>"));
-        assertTrue(html.contains("<td>Wert 1</td>"));
-        assertTrue(html.contains("<sup"));
-        assertTrue(html.contains("Fussnote"));
-        assertFalse(html.contains("| Spalte A |"));
-        assertFalse(html.contains("[^1]"));
+        assertTrue(html.contains("| Spalte A | Spalte B |<br />"));
+        assertTrue(html.contains("<p>Referenz[^1]</p>"));
+        assertTrue(html.contains("<p>[^1]: Fussnote</p>"));
+        assertFalse(html.contains("<table"));
+        assertFalse(html.contains("<sup"));
     }
 
     @Test
