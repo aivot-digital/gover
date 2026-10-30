@@ -1,3 +1,4 @@
+import type {ReactNode} from 'react';
 import {
     Checkbox,
     FormControlLabel,
@@ -17,8 +18,8 @@ export interface MultiCheckboxComponentProps extends FormFieldGroupLayoutProps {
     value?: string[] | null;
     onChange: (val: string[] | null) => void;
     options: MultiCheckboxOptions[];
-    error?: string;
-    hint?: string;
+    error?: ReactNode;
+    hint?: ReactNode;
     disabled?: boolean;
     busy?: boolean;
     required?: boolean;
