@@ -21,8 +21,8 @@ import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextCo
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
@@ -222,11 +222,11 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
         }
 
-        layout.findChild(NodeConfig.RECIPIENT_MODE_FIELD_ID, RadioInputElement.class)
+        layout.findChild(NodeConfig.RECIPIENT_MODE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(field -> {
                     field.setOptions(List.of(
-                            RadioInputElementOption.of(RECIPIENT_MODE_EXISTING, "Existierende Identität"),
-                            RadioInputElementOption.of(RECIPIENT_MODE_NEW, "Neue Identität")
+                            SelectInputElementOption.of(RECIPIENT_MODE_EXISTING, "Existierende Identität"),
+                            SelectInputElementOption.of(RECIPIENT_MODE_NEW, "Neue Identität")
                     ));
                     field.setValue(new ElementValueFunctions()
                             .setType(ValueFunctionType.NoCode)
@@ -935,7 +935,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private static String requireInvitationEmail(@Nullable String emailAddress)
             throws ProcessNodeExecutionExceptionInvalidConfiguration {
         try {
-            return EmailAddressUtils.normalizeSingleAddress(emailAddress);
+            return EmailAddressUtils.normalizeTransportAddress(emailAddress);
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Die E-Mail-Adresse der Einladung ist ungültig."
@@ -1054,7 +1054,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         /**
          * Missing mode in older process definitions retains the existing-identity behavior.
          */
-        @InputElementPOJOBinding(id = RECIPIENT_MODE_FIELD_ID, type = ElementType.Radio, properties = {
+        @InputElementPOJOBinding(id = RECIPIENT_MODE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger:in"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Datenanforderung an eine existierende Identität oder per E-Mail an eine neue Identität gesendet wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)

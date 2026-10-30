@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
+
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.enums.ElementType;
@@ -70,7 +72,8 @@ public class HttpActionNodeV1Config {
             public static final String REQUEST_JSON_SOURCE_OPT_VORGANGSDATEN = "processData";
             public static final String REQUEST_JSON_SOURCE_OPT_LOWCODE = "lowCode";
             public static final String REQUEST_JSON_SOURCE_FIELD_ID = "requestJsonSource";
-            @InputElementPOJOBinding(id = REQUEST_JSON_SOURCE_FIELD_ID , type = ElementType.Radio, properties = {})
+            @InputElementPOJOBinding(id = REQUEST_JSON_SOURCE_FIELD_ID , type = ElementType.Select, properties = {
+                    @ElementPOJOBindingProperty(key = "presentation", strValue = "radio")})
             public String requestJsonSource;
             
             public static final String REQUEST_JSON_PROCESS_DATA_KEY_FIELD_ID = "requestJsonProcessDataKey";

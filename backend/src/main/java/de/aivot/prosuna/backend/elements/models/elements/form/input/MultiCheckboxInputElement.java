@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.elements.models.elements.form.input;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
+import de.aivot.prosuna.backend.elements.enums.MultiChoicePresentation;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
@@ -29,7 +30,13 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
     private Integer minimumRequiredOptions;
 
     @Nullable
+    private Integer maximumOptions;
+
+    @Nullable
     private Boolean displayInline;
+
+    @Nullable
+    private MultiChoicePresentation presentation;
 
     public MultiCheckboxInputElement() {
         super(ElementType.MultiCheckbox);
@@ -50,6 +57,10 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         if (value != null) {
             testValuesInOptions(value);
             testRequiredOptionsMet(value);
+            if (maximumOptions != null && maximumOptions > 0 && value.size() > maximumOptions) {
+                throw new ValidationException(this, "Maximal " + maximumOptions + " "
+                        + (maximumOptions == 1 ? "Option darf" : "Optionen dürfen") + " ausgewählt werden.");
+            }
         }
     }
 
@@ -166,10 +177,11 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         if (!super.equals(o)) return false;
 
         MultiCheckboxInputElement that = (MultiCheckboxInputElement) o;
-        return Objects.equals(options, that.options)
+        return Objects.equals(presentation, that.presentation) && Objects.equals(options, that.options)
                 && optionsSource == that.optionsSource
                 && Objects.equals(codeListKey, that.codeListKey)
                 && Objects.equals(minimumRequiredOptions, that.minimumRequiredOptions)
+                && Objects.equals(maximumOptions, that.maximumOptions)
                 && Objects.equals(displayInline, that.displayInline);
     }
 
@@ -177,9 +189,11 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(options);
+        result = 31 * result + Objects.hashCode(presentation);
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(minimumRequiredOptions);
+        result = 31 * result + Objects.hashCode(maximumOptions);
         result = 31 * result + Objects.hashCode(displayInline);
         return result;
     }
@@ -229,12 +243,34 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
     }
 
     @Nullable
+    public Integer getMaximumOptions() {
+        return maximumOptions;
+    }
+
+    @Nonnull
+    public MultiCheckboxInputElement setMaximumOptions(@Nullable Integer maximumOptions) {
+        this.maximumOptions = maximumOptions;
+        return this;
+    }
+
+    @Nullable
     public Boolean getDisplayInline() {
         return displayInline;
     }
 
     public MultiCheckboxInputElement setDisplayInline(@Nullable Boolean displayInline) {
         this.displayInline = displayInline;
+        return this;
+    }
+
+    @Nullable
+    public MultiChoicePresentation getPresentation() {
+        return presentation;
+    }
+
+    @Nonnull
+    public MultiCheckboxInputElement setPresentation(@Nullable MultiChoicePresentation presentation) {
+        this.presentation = presentation;
         return this;
     }
 

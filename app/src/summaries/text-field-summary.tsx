@@ -1,10 +1,12 @@
 import {Box, Button, Grid, Typography, useTheme} from '@mui/material';
 import {useState} from 'react';
 import {stringOrDefault} from '../utils/string-utils';
+import {EmailFieldElement} from '../models/elements/form/input/email-field-element';
+import {PhoneNumberFieldElement} from '../models/elements/form/input/phone-number-field-element';
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {BaseSummaryProps} from './base-summary';
 
-export function TextFieldSummary(props: BaseSummaryProps<TextFieldElement, string>) {
+export function TextFieldSummary(props: BaseSummaryProps<TextFieldElement | EmailFieldElement | PhoneNumberFieldElement, string>) {
     const {
         model,
         value,

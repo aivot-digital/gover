@@ -455,7 +455,9 @@ public class ElementPOJOMapper {
             if (!StringUtils.isNullOrEmpty(property.strValue())) {
                 setterMethod.invoke(
                         target,
-                        property.strValue()
+                        field.getType().isEnum()
+                                ? JsonMapperFactory.getInstance().convertValue(property.strValue(), field.getType())
+                                : property.strValue()
                 );
             } else if (property.doubleValue() != Double.MIN_VALUE) {
                 setterMethod.invoke(

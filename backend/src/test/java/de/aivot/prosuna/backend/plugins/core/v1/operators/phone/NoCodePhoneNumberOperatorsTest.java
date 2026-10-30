@@ -11,6 +11,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NoCodePhoneNumberOperatorsTest {
+    @Test void formatsPlausiblePhoneNumbersInNoCodeAndLowCode() throws NoCodeException {
+        var operator = new NoCodePhoneNumberFormatOperator();
+        var functions = new de.aivot.prosuna.backend.plugins.core.v1.javascript.PhoneNumberJavascriptV1();
+        assertEquals("+49 30 123456", operator.evaluate(runtime(), "+4930123456").getValue());
+        assertEquals("030 123456", operator.evaluate(runtime(), "+4930123456", "national").getValue());
+        assertEquals(functions.format("+491234"), operator.evaluate(runtime(), "+491234", "international").getValue());
+        assertNull(operator.evaluate(runtime(), "+49 30 123456 ext. 7").getValue());
+        assertNull(functions.format(null));
+        assertTrue(functions.isPossible("+491234"));
+        assertFalse(functions.isValid("+491234"));
+        assertEquals("+4930123456", functions.normalize("+49 30 123456"));
+        assertThrows(NoCodeException.class, () -> operator.evaluate(runtime(), "+4930123456", "unknown"));
+    }
+
     @Test
     void validOperatorShouldStrictlyValidatePhoneNumbers() throws NoCodeException {
         var operator = new NoCodePhoneNumberIsValidOperator();

@@ -1,0 +1,20 @@
+<!--/*@thymesVar id="base" type="de.aivot.prosuna.backend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.prosuna.backend.elements.models.elements.form.input.DurationInputElement"*/-->
+<!--/*@thymesVar id="value" type="java.lang.Object"*/-->
+
+<div class="input-element duration-element">
+    <div class="input">
+        <div class="label">
+            <strong th:text="${element.label}"></strong>
+            <span th:if="${base.isBlankPrint() && element.required}">(Pflichtangabe)</span>
+        </div>
+        <div class="content">
+            <span th:if="${base.isNotBlankPrint()}" th:text="${element.toDisplayValue(value)}"></span>
+            <span class="suffix" th:if="${base.isBlankPrint()}"
+                  th:text="${(element.largestUnit != null && element.largestUnit.name() == 'Day' ? 'Tage / ' : '') + (element.precision != null && element.precision.name() == 'Second' ? 'Stunden / Minuten / Sekunden' : 'Stunden / Minuten')}"></span>
+        </div>
+    </div>
+    <div class="hint-wrapper">
+        <div th:insert="~{./form-parts/elements/_hint.html}"></div>
+    </div>
+</div>

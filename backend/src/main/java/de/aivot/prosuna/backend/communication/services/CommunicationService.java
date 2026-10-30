@@ -95,7 +95,7 @@ public class CommunicationService {
                                                   @Nonnull CommunicationMessage message) throws CommunicationException {
         final String emailAddress;
         try {
-            emailAddress = EmailAddressUtils.normalizeSingleAddress(rawEmailAddress);
+            emailAddress = EmailAddressUtils.normalizeTransportAddress(rawEmailAddress);
         } catch (IllegalArgumentException e) {
             throw new CommunicationException("Die E-Mail-Adresse der empfangenden Person ist ungültig.", e);
         }

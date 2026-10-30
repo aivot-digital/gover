@@ -8,7 +8,7 @@ import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 import {FormField, type FormFieldControlContext, getNativeInputAriaProps} from '../form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 
-const preferredCountries: MuiTelInputCountry[] = ['DE', 'AT', 'CH'];
+const defaultPreferredCountries: MuiTelInputCountry[] = ['DE', 'AT', 'CH'];
 
 function cleanPhoneNumberValue(value: string | null | undefined): string | null {
     if (isBlankPhoneNumber(value)) {
@@ -61,6 +61,8 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
         required,
         disabled,
         readonly,
+        defaultCountry = 'DE',
+        preferredCountries = defaultPreferredCountries,
         busy,
         value,
         error,
@@ -72,6 +74,13 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
         muiPassTroughProps,
     } = props;
 
+    const [emptyDefaultCountry, setEmptyDefaultCountry] = useState(defaultCountry);
+    useEffect(() => {
+        // Changing the editor default must not clear an existing number in MuiTelInput.
+        if (isBlankPhoneNumber(value)) setEmptyDefaultCountry(defaultCountry);
+    }, [defaultCountry, value]);
+
+    const [pasteError, setPasteError] = useState<string>();
     const [inputValue, setInputValue] = useState(value ?? '');
     const lastPropagatedValueRef = useRef(value?.trim() || null);
 
@@ -81,17 +90,14 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
         if (nextValue !== lastPropagatedValueRef.current) {
             lastPropagatedValueRef.current = nextValue;
             setInputValue(value ?? '');
+            setPasteError(undefined);
         }
     }, [value]);
 
     const errorMessages = useMemo(() => {
-        if (error == null) {
-            return [];
-        }
-
-        return (Array.isArray(error) ? error : [error])
-            .filter((errorMessage) => errorMessage.length > 0);
-    }, [error]);
+        return [...(Array.isArray(error) ? error : [error]), pasteError]
+            .filter((errorMessage): errorMessage is string => errorMessage != null && errorMessage.length > 0);
+    }, [error, pasteError]);
     const helperText = errorMessages.length > 1 ? (
         <Box
             component="ul"
@@ -116,10 +122,11 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
         : passThroughSlotProps?.htmlInput;
 
     const handleChange = (newValue: string) => {
-        if (readonly || busy) {
+        if (disabled || readonly || busy) {
             return;
         }
 
+        setPasteError(undefined);
         // With disableFormatting, country changes can carry stale number metadata.
         const nextValue = cleanPhoneNumberValue(newValue);
         setInputValue(newValue);
@@ -128,6 +135,7 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
     };
 
     const handleBlur = () => {
+        if (disabled || readonly || busy) return;
         const canonicalValue = getCanonicalPhoneNumber(inputValue);
 
         if (canonicalValue !== cleanPhoneNumberValue(inputValue)) {
@@ -168,14 +176,22 @@ export function PhoneNumberFieldComponent(props: PhoneNumberFieldComponentProps)
                         value={inputValue}
                         onChange={handleChange}
                         onBlur={handleBlur}
+                        onPaste={event => {
+                            muiPassTroughProps?.onPaste?.(event);
+                            if (event.defaultPrevented || disabled || readonly || busy) return;
+                            if (!/^[+0-9\s()./\-]*$/.test(event.clipboardData.getData('text'))) {
+                                event.preventDefault();
+                                setPasteError('Die eingefügte Angabe wurde nicht übernommen. Geben Sie nur die direkt wählbare Telefonnummer ohne Nebenstellenzusatz ein.');
+                            }
+                        }}
                         placeholder={placeholder}
                         required={required}
                         disabled={disabled}
-                        defaultCountry="DE"
+                        defaultCountry={emptyDefaultCountry}
                         preferredCountries={preferredCountries}
                         forceCallingCode
                         disableFormatting
-                        disableDropdown={busy}
+                        disableDropdown={disabled || readonly || busy}
                         focusOnSelectCountry
                         langOfCountryName="de"
                         fullWidth

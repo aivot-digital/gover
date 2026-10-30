@@ -1,8 +1,14 @@
+import {PhoneNumberFieldComponent} from '../../../components/phone-number-field/phone-number-field-component';
+import {EmailFieldComponent} from '../../../components/email-field/email-field-component';
+import {DurationFieldComponent} from '../../../components/duration-field/duration-field-component';
+import {DurationLargestUnit, DurationPrecision} from '../../../models/elements/form/input/duration-field-element';
 import React, {type ReactNode} from 'react';
 import {Box, Button, Divider, Typography} from '@mui/material';
 import {DateTime} from 'luxon';
 import PersonOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Person';
 import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import CheckCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -11,6 +17,7 @@ import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbo
 import {HeadlineComponent} from '../../../components/headline/headline-component';
 import {DateFieldComponent} from '../../../components/date-field/date-field-component';
 import {DateFieldComponentModelMode} from '../../../models/elements/form/input/date-field-element';
+import {MultiChoiceCombobox} from '../../../components/multi-checkbox-field/multi-choice-combobox';
 import {MultiCheckboxComponent} from '../../../components/multi-checkbox-field/multi-checkbox-component';
 import {NumberFieldComponent} from '../../../components/number-field/number-field-component';
 import {RadioFieldComponent} from '../../../components/radio-field/radio-field-component';
@@ -163,6 +170,39 @@ function DateTimeRangeExample() {
     );
 }
 
+function ChipInputExamples() {
+    const [topics, setTopics] = React.useState<string[] | null>(['Wohnen', 'Familie']);
+    const [references, setReferences] = React.useState<string[] | null>(null);
+
+    return (
+        <>
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Themen"
+                    value={topics}
+                    onChange={setTopics}
+                    placeholder="Thema hinzufügen"
+                    suggestions={['Wohnen', 'Familie', 'Bildung', 'Gesundheit']}
+                    minItems={2}
+                    maxItems={5}
+                    required
+                    hint="Wählen Sie Vorschläge oder ergänzen Sie eigene Themen."
+                />
+            </Box>
+            <Box sx={{mt: 2}}>
+                <ChipInputFieldComponent
+                    label="Aktenzeichen"
+                    value={references}
+                    onChange={setReferences}
+                    placeholder="z. B. AZ-2026-001"
+                    maxItemLength={20}
+                    hint="Fügen Sie mehrere Aktenzeichen zeilenweise ein. Höchstens 20 Zeichen je Eintrag."
+                />
+            </Box>
+        </>
+    );
+}
+
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
         <Box>
@@ -254,21 +294,46 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.LinkButton]: (
         <Box>
             <Typography>
-                Das Link-Button-Element stellt einen Button dar, der entweder einen Link öffnet oder in
-                Aufgabenansichten ein definiertes Ereignis auslöst.
+                Mit einer Schaltfläche können Sie einen Link öffnen oder eine vom Prozessknoten unterstützte
+                Aufgabenaktion auslösen. Aufgabenaktionen stehen nur in der passenden Ansicht für Mitarbeitende
+                oder externe Beteiligte zur Verfügung und benötigen eine technische Ereigniskennung.
             </Typography>
 
             <Divider sx={{my: 4}}>
-                Beispiel
+                Beispiele
             </Divider>
 
-            <Button
-                variant="contained"
-                color="primary"
-                endIcon={<OpenInNewIcon/>}
-            >
-                Link öffnen
-            </Button>
+            <Box sx={{display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 3}}>
+                <Box>
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<InfoOutlinedIcon/>}
+                        endIcon={<OpenInNewIcon sx={{opacity: 0.65}}/>}
+                    >
+                        Website öffnen
+                    </Button>
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+                        Link mit eigenem Symbol
+                    </Typography>
+                </Box>
+                <Box>
+                    <Button variant="contained" color="success" startIcon={<CheckCircleOutlinedIcon/>}>
+                        Aufgabe abschließen
+                    </Button>
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+                        Aufgabenaktion mit Symbol
+                    </Typography>
+                </Box>
+                <Box>
+                    <Button variant="text" color="error">
+                        Ablehnen
+                    </Button>
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+                        Aufgabenaktion ohne Symbol
+                    </Typography>
+                </Box>
+            </Box>
         </Box>
     ),
     [ElementType.GroupLayout]: (
@@ -405,14 +470,19 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.MultiCheckbox]: (
         <Box>
             <Typography>
-                Das Mehrfachauswahl-Element dient zur Abfrage einer oder mehrerer Möglichkeiten bei
-                Ihren Nutzer:innen.
+                Mit der Mehrfachauswahl können eine oder mehrere vorgegebene Optionen gewählt werden.
+                Kurze Listen lassen sich als Checkboxen anzeigen, längere Listen durchsuchen.
+                Eigene Texte sind nicht erlaubt; dafür steht die Mehrfach-Texteingabe zur Verfügung.
             </Typography>
 
             <Divider sx={{my: 4}}>
                 Beispiele
             </Divider>
 
+            <Box sx={{mt: 2}}>
+                <MultiChoiceCombobox label="Tätigkeitsbereiche" value={['bildung']} onChange={() => {}}
+                    options={[{value: 'bildung', label: 'Bildung'}, {value: 'wohnen', label: 'Wohnen'}, {value: 'gesundheit', label: 'Gesundheit'}]}/>
+            </Box>
             <Box sx={{mt: 2}}>
                 <MultiCheckboxComponent
                     label="Mehrfachauswahl"
@@ -458,6 +528,113 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     onChange={() => {
                     }}
                     error="Fehlermeldung zur Mehrfachauswahl"
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.PhoneNumber]: (
+        <Box>
+            <Typography>
+                Mit dem Telefonnummer-Element erfassen Sie Rufnummern für Rückfragen oder Terminabsprachen.
+                Die Ländervorwahl wird über eine Länderauswahl festgelegt. Direkt wählbare Durchwahlen gehören zur Telefonnummer.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Standardmäßig prüft das Feld die Plausibilität der Nummer. Optional können Sie zusätzlich bekannte
+                Nummernbereiche prüfen lassen. Ob der Anschluss tatsächlich erreichbar ist, wird nicht geprüft.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <PhoneNumberFieldComponent
+                    label="Telefonnummer für Rückfragen"
+                    value="+4930123456"
+                    onChange={() => {}}
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <PhoneNumberFieldComponent
+                    label="Telefonnummer in Österreich"
+                    value="+436641234567"
+                    onChange={() => {}}
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.Email]: (
+        <Box>
+            <Typography>
+                Mit dem E-Mail-Element erfassen Sie eine einzelne E-Mail-Adresse, zum Beispiel für Benachrichtigungen
+                zu einem Vorgang. Das Feld prüft die Schreibweise. Ob das Postfach existiert oder erreichbar ist,
+                wird nicht geprüft.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Für interne Anwendungen können Sie auch Domains ohne Punkt zulassen, zum Beispiel „name@verwaltung“.
+                Der genutzte Mail-Anbieter muss E-Mails an solche Adressen zustellen können.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <EmailFieldComponent
+                    label="E-Mail-Adresse für Benachrichtigungen"
+                    value="vorname.nachname@example.org"
+                    onChange={() => {}}
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <EmailFieldComponent
+                    label="Interne E-Mail-Adresse"
+                    value="poststelle@verwaltung"
+                    allowLocalDomains
+                    onChange={() => {}}
+                    hint="In diesem Beispiel sind lokale Domains zugelassen."
+                />
+            </Box>
+        </Box>
+    ),
+    [ElementType.Duration]: (
+        <Box>
+            <Typography>
+                Mit dem Zeitdauer-Feld erfassen Sie, wie lange etwas dauert. Typische Beispiele sind der
+                Zeitaufwand für eine Aufgabe und die Betriebsdauer eines Geräts.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Standardmäßig erfolgt die Eingabe in Stunden und Minuten. Für längere Dauern können Sie Tage
+                ergänzen, für genauere Angaben auch Sekunden. Ein Tag entspricht dabei immer 24 Stunden.
+                Mit einer Mindest- und Höchstdauer begrenzen Sie die zulässigen Eingaben.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiele
+            </Divider>
+
+            <Box sx={{mt: 2}}>
+                <DurationFieldComponent
+                    label="Zeitaufwand für eine Aufgabe"
+                    value={9000}
+                    onChange={() => {}}
+                    hint="Die Aufgabe benötigt 2 Stunden und 30 Minuten."
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <DurationFieldComponent
+                    label="Betriebsdauer eines Geräts"
+                    value={99015}
+                    largestUnit={DurationLargestUnit.Day}
+                    precision={DurationPrecision.Second}
+                    onChange={() => {}}
+                    hint="Das Gerät war 1 Tag, 3 Stunden, 30 Minuten und 15 Sekunden in Betrieb."
                 />
             </Box>
         </Box>
@@ -575,83 +752,23 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             />
         </Box>
     ),
-    [ElementType.Radio]: (
-        <Box>
-            <Typography>
-                Das Einzelauswahl (Optionsfelder)-Element dient zur Abfrage exakt einer Möglichkeit aus
-                mehreren Möglichkeiten, welche durch Optionsfelder dargestellt werden.
-            </Typography>
-
-            <Typography sx={{mt: 2}}>
-                Eine optische Alternative zum Einzelauswahl (Optionsfelder)-Element stellt das
-                Einzelauswahl-Element dar. Es zeigt die Optionen platzsparend als Auswahlmenü oder als durchsuchbare
-                Auswahl an.
-            </Typography>
-
-            <Divider sx={{my: 4}}>
-                Beispiele
-            </Divider>
-
-            <Box sx={{mt: 2}}>
-                <RadioFieldComponent
-                    label="Einzelauswahl mit Optionsfeldern"
-                    value={'Option 2'}
-                    options={[{label: 'Option 1', value: 'option_1'}, {
-                        label: 'Option 2',
-                        value: 'option_2',
-                    }, {label: 'Option 3', value: 'option_3'}]}
-                    onChange={() => {
-                    }}
-                    hint="Hinweis zur Einzelauswahl"
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <RadioFieldComponent
-                    label="Verpflichtende Einzelauswahl mit Optionsfeldern"
-                    value={'Option 3'}
-                    options={[{label: 'Option 1', value: 'option_1'}, {
-                        label: 'Option 2',
-                        value: 'option_2',
-                    }, {label: 'Option 3', value: 'option_3'}]}
-                    onChange={() => {
-                    }}
-                    required
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <RadioFieldComponent
-                    label="Einzelauswahl mit Optionsfeldern"
-                    value={undefined}
-                    options={[{label: 'Option 1', value: 'option_1'}, {
-                        label: 'Option 2',
-                        value: 'option_2',
-                    }, {label: 'Option 3', value: 'option_3'}]}
-                    onChange={() => {
-                    }}
-                    error="Fehlermeldung zur Einzelauswahl"
-                />
-            </Box>
-        </Box>
-    ),
     [ElementType.Select]: (
         <Box>
             <Typography>
-                Das Einzelauswahl-Element dient zur Abfrage exakt einer Möglichkeit aus vorgegebenen Optionen.
-                Kurze Listen können als kompaktes Auswahlmenü dargestellt werden. Bei längeren Listen erleichtert
-                die durchsuchbare Auswahl das Auffinden einer Option, ohne freie Eingaben zuzulassen.
+                Mit der Einzelauswahl kann eine vorgegebene Option gewählt werden. Optionsfelder zeigen alle
+                Möglichkeiten direkt an. Alternativ stehen ein kompaktes Auswahlmenü und eine durchsuchbare
+                Auswahl zur Verfügung. Freie Texte sind nicht erlaubt.
             </Typography>
 
-            <Typography sx={{mt: 2}}>
-                Eine optische Alternative zum Einzelauswahl-Element stellt das
-                Einzelauswahl (Optionsfelder)-Element dar, welches die Optionen mit einzelnen Optionsfeldern darstellt.
-            </Typography>
 
             <Divider sx={{my: 4}}>
                 Beispiele
             </Divider>
 
+            <Box sx={{mt: 2}}>
+                <RadioFieldComponent label="Kontaktweg" value="email" onChange={() => {}}
+                    options={[{value: 'email', label: 'E-Mail'}, {value: 'post', label: 'Post'}]}/>
+            </Box>
             <Box sx={{mt: 2}}>
                 <SelectFieldComponent
                     label="Einzelauswahl mit Auswahlmenü"
@@ -897,35 +1014,20 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ChipInput]: (
         <Box>
             <Typography>
-                Das Tag-Liste (Schlagwörter)-Element dient zur Erfassung mehrerer kurzer Freitext-Einträge, z. B.
-                Schlagwörter
-                oder Stichpunkte.
+                Die Mehrfach-Texteingabe erfasst mehrere kurze Texte in einem Feld. Jeder Text wird als eigener Eintrag
+                übernommen, zum Beispiel ein Stichwort, Name oder Aktenzeichen.
+                Die Einträge können frei eingegeben oder aus Vorschlägen gewählt werden.
+            </Typography>
+            <Typography sx={{mt: 2}}>
+                Einträge werden mit Enter oder beim Verlassen des Feldes übernommen. Mehrere Einträge lassen sich
+                aus der Zwischenablage einfügen. Anzahl, Zeichenlänge und Trennzeichen können im Editor festgelegt werden.
             </Typography>
 
             <Divider sx={{my: 4}}>
                 Beispiele
             </Divider>
 
-            <Box sx={{mt: 2}}>
-                <ChipInputFieldComponent
-                    label="Schlagwörter"
-                    value={['Wohnen', 'Familie']}
-                    onChange={() => {
-                    }}
-                    placeholder="Eintrag hinzufügen"
-                    hint="Drücken Sie Enter, um einen Eintrag zu übernehmen."
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <ChipInputFieldComponent
-                    label="Schlagwörter"
-                    value={[]}
-                    onChange={() => {
-                    }}
-                    error="Bitte geben Sie mindestens einen Eintrag an."
-                />
-            </Box>
+            <ChipInputExamples/>
         </Box>
     ),
     [ElementType.DateTime]: (
@@ -1464,9 +1566,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ProcessAttachmentDisplay]: (
         <Box>
             <Typography>
-                Das Element zeigt alle Vorgangsanhänge aus einem Anlagensatz mit dem festgelegten Schlüssel an.
-                Gefundene Anhänge können in einem neuen Tab angesehen und bei Bedarf heruntergeladen werden.
-                Eine optionale Beschriftung und ein Hinweis ergänzen die Darstellung um weitere Informationen.
+                Stellt vorhandene Dateien aus den Anlagensätzen des Vorgangs bereit, die zum gewählten Anlagensatz-Schlüssel gehören.
+                Die Dateien können angesehen und heruntergeladen werden.
+                So lassen sich beispielsweise eingereichte Nachweise in einem späteren Bearbeitungsschritt prüfen oder erstellte Bescheide bereitstellen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1474,12 +1576,19 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Divider>
 
             <ProcessAttachmentDisplayComponent
-                labelText="Bescheide"
+                labelText="Eingereichte Nachweise"
                 items={[
                     {
-                        key: 'example',
-                        fileName: 'Erfolgsbescheid.pdf',
-                        originalFileName: 'Bescheid.pdf',
+                        key: 'income',
+                        fileName: 'Einkommensnachweis.pdf',
+                        originalFileName: 'Einkommensnachweis.pdf',
+                        sizeInBytes: 245000,
+                    },
+                    {
+                        key: 'rental',
+                        fileName: 'Mietvertrag.pdf',
+                        originalFileName: 'Mietvertrag.pdf',
+                        sizeInBytes: 1520000,
                     },
                 ]}
             />

@@ -26,27 +26,24 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 container
                 columnSpacing={4}
             >
-                {
-                    props.element.required &&
-                    <Grid
-                        size={{
-                            xs: 12,
-                            lg: 6,
-                        }}>
-                        <NumberFieldComponent
-                            value={props.element.minimumRequiredRows ?? undefined}
-                            label="Mindestanzahl der hinzuzufügenden Zeilen"
-                            hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern"
-                            error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
-                            onChange={(val) => {
-                                props.onPatch({
-                                    minimumRequiredRows: val,
-                                });
-                            }}
-                            disabled={!props.editable}
-                        />
-                    </Grid>
-                }
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}>
+                    <NumberFieldComponent
+                        value={props.element.minimumRequiredRows ?? undefined}
+                        label="Mindestanzahl der hinzuzufügenden Zeilen"
+                        hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
+                        error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                        onChange={(val) => {
+                            props.onPatch({
+                                minimumRequiredRows: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
 
                 <Grid
                     size={{

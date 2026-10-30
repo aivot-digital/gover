@@ -1,5 +1,9 @@
 package de.aivot.prosuna.backend.plugins.core.v1.operators;
 
+import de.aivot.prosuna.backend.plugins.core.v1.operators.duration.NoCodeCreateDurationOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.duration.NoCodeConvertDurationOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.duration.NoCodeFormatDurationOperator;
+
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
@@ -124,6 +128,11 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.TIME),
                 new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.DATETIME),
 
+                // Duration
+                new NoCodeCreateDurationOperator(),
+                new NoCodeConvertDurationOperator(),
+                new NoCodeFormatDurationOperator(),
+
                 // List
                 new NoCodeListAvgOperator(),
                 new NoCodeListConcatOperator(),
@@ -151,6 +160,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodePhoneNumberIsValidOperator(),
                 new NoCodePhoneNumberIsPossibleOperator(),
                 new NoCodePhoneNumberNormalizeOperator(),
+                new NoCodePhoneNumberFormatOperator(),
 
                 // Secrets
                 new NoCodeSecretsGetOperator(secretService),

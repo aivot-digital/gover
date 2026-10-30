@@ -13,6 +13,8 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInpu
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.enums.InputMode;
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.enums.ElementType;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,6 +84,24 @@ class ElementPOJOMapperTest {
         assertEquals(List.of(InputMode.Literal, InputMode.Variable), input.getInputModePolicy().allowedModes());
         assertEquals(InputMode.Variable, input.getInputModePolicy().defaultMode());
         assertEquals(List.of(InputVariableSource.ProcessData), input.getInputModePolicy().allowedVariableSources());
+    }
+
+    @Test
+    void createFromPOJO_ShouldResolveSerializedEnumProperties() throws ElementDataConversionException {
+        var layout = ElementPOJOMapper.createFromPOJO(RadioPresentationBindingClass.class);
+        var select = layout.findChild("choice", SelectInputElement.class).orElseThrow();
+        assertEquals(ElementType.Select, select.getType());
+        assertEquals(SelectInputPresentation.Radio, select.getPresentation());
+        assertEquals("Kontaktweg", select.getLabel());
+    }
+
+    @LayoutElementPOJOBinding(id = "root", type = ElementType.ConfigLayout)
+    public static class RadioPresentationBindingClass {
+        @InputElementPOJOBinding(id = "choice", type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Kontaktweg")
+        })
+        public String choice;
     }
 
     @Test

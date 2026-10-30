@@ -1,3 +1,9 @@
+import {PhoneNumberFieldElement, PhoneNumberValidation} from '../models/elements/form/input/phone-number-field-element';
+import {EmailFieldElement} from '../models/elements/form/input/email-field-element';
+import {isBlankPhoneNumber, normalizePhoneNumber} from './phone-number-utils';
+import {validateEmailAddress} from './email-address-utils';
+import {DurationFieldElement, DurationPrecision} from '../models/elements/form/input/duration-field-element';
+import {validateDurationSeconds} from '../components/duration-field/duration-value';
 import {isValidProcessDataPath} from './process-data-path';
 import {type ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {InputMode} from '../models/input-mode';
@@ -13,7 +19,6 @@ import {
 } from '../models/elements/form/layout/replicating-container-layout';
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
-import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
 import {
     applyComputedErrors,
     AuthoredElementValues,
@@ -29,6 +34,9 @@ import {
     resolveReplicatingContainerElementValues,
 } from '../models/element-data';
 import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
+import {MultiCheckboxFieldElement} from '../models/elements/form/input/multi-checkbox-field-element';
+import {TableFieldElement} from '../models/elements/form/input/table-field-element';
+import {FileUploadElement} from '../models/elements/form/input/file-upload-element';
 import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
 import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
 import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time-range-field-element';
@@ -140,10 +148,15 @@ const YupSchemaMap: {
     [T in ElementType]?: (elem: any, states: ComputedElementStates) => Schema;
 } = {
     [ElementType.Text]: textFieldToYup,
+    [ElementType.PhoneNumber]: phoneNumberFieldToYup,
+    [ElementType.Email]: emailFieldToYup,
     [ElementType.Number]: numberFieldToYup,
+    [ElementType.Duration]: durationFieldToYup,
     [ElementType.Select]: selectFieldToYup,
-    [ElementType.Radio]: selectFieldToYup,
     [ElementType.ChipInput]: chipInputFieldToYup,
+    [ElementType.MultiCheckbox]: multiCheckboxFieldToYup,
+    [ElementType.Table]: tableFieldToYup,
+    [ElementType.FileUpload]: fileUploadFieldToYup,
     [ElementType.DateRange]: dateRangeFieldToYup,
     [ElementType.TimeRange]: timeRangeFieldToYup,
     [ElementType.DateTimeRange]: dateTimeRangeFieldToYup,
@@ -163,6 +176,43 @@ const YupSchemaMap: {
     [ElementType.AssetSelectInput]: dynamicSelectFieldToYup,
     [ElementType.DepartmentSelectInput]: departmentSelectFieldToYup,
 };
+
+function countedArraySchema(opts: {
+    required?: boolean | null;
+    label?: string | null;
+    minItems?: number | null;
+    maxItems?: number | null;
+}) {
+    const requiredMessage = `${opts.label || 'Dieses Feld'} ist ein Pflichtfeld.`;
+    let schema = yup.array().nullable().test('minimum-items', function (value) {
+        const count = value?.length ?? 0;
+        // Unlike array.min(), this permits an empty optional field with a configured minimum.
+        // Required controls emptiness; the minimum applies once entries exist.
+        if (count === 0) {
+            return !opts.required || this.createError({message: requiredMessage});
+        }
+        return count >= (opts.minItems ?? 0) || this.createError({message: `Mindestens ${opts.minItems} Einträge erforderlich.`});
+    });
+    if (opts.required) schema = schema.required(requiredMessage);
+    if ((opts.maxItems ?? 0) > 0) schema = schema.max(opts.maxItems!, `Maximal ${opts.maxItems} Einträge erlaubt.`);
+    return schema;
+}
+
+function multiCheckboxFieldToYup(elem: MultiCheckboxFieldElement): Schema {
+    return countedArraySchema({...elem, minItems: elem.minimumRequiredOptions, maxItems: elem.maximumOptions});
+}
+
+function tableFieldToYup(elem: TableFieldElement): Schema {
+    return countedArraySchema({...elem, minItems: elem.minimumRequiredRows, maxItems: elem.maximumRows});
+}
+
+function fileUploadFieldToYup(elem: FileUploadElement): Schema {
+    return countedArraySchema({
+        ...elem,
+        minItems: elem.isMultifile ? elem.minFiles : undefined,
+        maxItems: elem.isMultifile ? elem.maxFiles : 1,
+    });
+}
 
 function genericFieldToYup(elem: AnyInputElement): Schema {
     if (elem.required) {
@@ -243,6 +293,26 @@ function textFieldToYup(elem: TextFieldElement): Schema {
     return textFieldSchema;
 }
 
+function phoneNumberFieldToYup(elem: PhoneNumberFieldElement): Schema {
+    const schema = yup.string().trim().nullable().test('phone-number', 'Bitte geben Sie eine gültige Telefonnummer mit Ländervorwahl ein.',
+        value => isBlankPhoneNumber(value) || normalizePhoneNumber(value, elem.validationMode ?? PhoneNumberValidation.Possible) != null);
+    return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
+}
+
+function emailFieldToYup(elem: EmailFieldElement): Schema {
+    const schema = yup.string().trim().nullable().test('email-address', 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+        value => validateEmailAddress(value, elem.allowLocalDomains ?? false) == null);
+    return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
+}
+
+function durationFieldToYup(elem: DurationFieldElement): Schema {
+    const schema = yup.number().strict().nullable().test('duration', 'Ungültige Zeitdauer.', function (value) {
+        const error = validateDurationSeconds(value, elem.precision ?? DurationPrecision.Minute, elem.minDuration, elem.maxDuration, elem.largestUnit);
+        return error == null || this.createError({message: error});
+    });
+    return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
+}
+
 function numberFieldToYup(elem: AnyInputElement): Schema {
     let numberFieldSchema: NumberSchema<number | undefined | null> = yup
         .number();
@@ -275,7 +345,7 @@ function departmentSelectFieldToYup(elem: AnyInputElement): Schema {
     return departmentSchema;
 }
 
-function selectFieldToYup(elem: SelectFieldElement | RadioFieldElement): Schema {
+function selectFieldToYup(elem: SelectFieldElement): Schema {
     let selectFieldSchema: StringSchema<string | undefined | null> = yup
         .string()
         .trim();
@@ -366,17 +436,12 @@ function replicatingContainerToYup(elem: ReplicatingContainerLayout, states: Com
             });
     });
 
-    let elementShema: any = yup
-        .array()
+    return countedArraySchema({
+        ...elem,
+        minItems: elem.minimumRequiredSets,
+        maxItems: elem.maximumSets,
+    })
         .of(rowSchema);
-
-    if (elem.required) {
-        elementShema = elementShema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
-    } else {
-        elementShema = elementShema.nullable();
-    }
-
-    return elementShema;
 }
 
 function parseArrayIndex(path: string): number {
@@ -385,27 +450,8 @@ function parseArrayIndex(path: string): number {
 }
 
 function chipInputFieldToYup(elem: ChipInputFieldElement): Schema {
-    let chipSchema: yup.ArraySchema<(string | undefined)[] | undefined | null, yup.AnyObject, '', ''> = yup
-        .array()
+    let chipSchema = countedArraySchema(elem)
         .of(yup.string().trim());
-
-    if (elem.required) {
-        chipSchema = chipSchema
-            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
-    } else {
-        chipSchema = chipSchema
-            .nullable();
-    }
-
-    if (elem.required === true && (elem.minItems ?? 0) > 0) {
-        chipSchema = chipSchema
-            .min(elem.minItems!, `Mindestens ${elem.minItems} Einträge erforderlich.`);
-    }
-
-    if ((elem.maxItems ?? 0) > 0) {
-        chipSchema = chipSchema
-            .max(elem.maxItems!, `Maximal ${elem.maxItems} Einträge erlaubt.`);
-    }
 
     if (elem.allowDuplicates !== true) {
         chipSchema = chipSchema
@@ -608,8 +654,7 @@ function createDomainAndUserSelectionSchema(
         allowedTypes?: string[] | null;
     },
 ): yup.ArraySchema<(DomainAndUserSelectItem | undefined)[] | undefined | null, yup.AnyObject, '', ''> {
-    let itemSchema: yup.ArraySchema<(DomainAndUserSelectItem | undefined)[] | undefined | null, yup.AnyObject, '', ''> = yup
-        .array()
+    let itemSchema = countedArraySchema(opts)
         .of(
             yup
                 .object({
@@ -623,24 +668,6 @@ function createDomainAndUserSelectionSchema(
                     (value) => normalizeDomainAndUserSelectItem(value) != null,
                 ),
         );
-
-    if (opts.required) {
-        itemSchema = itemSchema
-            .required(`${opts.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
-    } else {
-        itemSchema = itemSchema
-            .nullable();
-    }
-
-    if ((opts.minItems ?? 0) > 0) {
-        itemSchema = itemSchema
-            .min(opts.minItems!, `Mindestens ${opts.minItems} Einträge erforderlich.`);
-    }
-
-    if ((opts.maxItems ?? 0) > 0) {
-        itemSchema = itemSchema
-            .max(opts.maxItems!, `Maximal ${opts.maxItems} Einträge erlaubt.`);
-    }
 
     itemSchema = itemSchema
         .test(
@@ -692,18 +719,13 @@ function domainUserSelectFieldToYup(elem: DomainUserSelectFieldElement): Schema 
 }
 
 function assignmentContextFieldToYup(elem: AssignmentContextFieldElement): Schema {
-    let domainSelectionSchema = createDomainAndUserSelectionSchema({
+    const domainSelectionSchema = createDomainAndUserSelectionSchema({
         required: elem.required === true,
         label: elem.label ?? 'Dieses Feld',
         minItems: elem.minItems,
         maxItems: elem.maxItems,
         allowedTypes: elem.allowedTypes,
     });
-
-    if (elem.required) {
-        domainSelectionSchema = domainSelectionSchema
-            .min(1, `Mindestens 1 Eintrag erforderlich.`);
-    }
 
     let assignmentContextSchema: Schema = yup
         .object()

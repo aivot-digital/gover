@@ -13,6 +13,74 @@ import {
 } from '../components/view-dispatcher/view-dispatcher.context';
 
 describe('LinkButtonView', () => {
+    it.each(['javascript:alert(1)', '//example.org', 'example.org', 'https://', 'mailto:', 'tel:'])('does not fall back to a task action for an invalid link: %s', href => {
+        const onEvent = vi.fn().mockResolvedValue(undefined);
+        renderLinkButton({label: 'Weiter', href, staffTaskEvent: 'complete'}, 'staff', {onEvent});
+        const button = screen.getByRole('button', {name: 'Weiter'});
+        expect(button).toBeDisabled();
+        expect(screen.queryByRole('link')).not.toBeInTheDocument();
+        fireEvent.click(button);
+        expect(onEvent).not.toHaveBeenCalled();
+    });
+
+    it('keeps a valid link authoritative when a legacy event is also configured', () => {
+        renderLinkButton({label: 'Weiter', href: 'https://example.org', staffTaskEvent: 'complete'}, 'staff');
+        expect(screen.getByRole('link', {name: 'Weiter'})).toHaveAttribute('href', 'https://example.org');
+    });
+
+    it('allows a task action when the link contains only whitespace', () => {
+        const onEvent = vi.fn().mockResolvedValue(undefined);
+        renderLinkButton({label: 'Abschließen', href: '  ', staffTaskEvent: 'complete'}, 'staff', {onEvent});
+        fireEvent.click(screen.getByRole('button', {name: 'Abschließen'}));
+        expect(onEvent).toHaveBeenCalledWith({}, 'complete');
+    });
+
+    it.each([true, false])('renders a leading icon independently of the trailing link indicator (new tab=%s)', openInNewTab => {
+        renderLinkButton({label: 'Informationen', href: 'https://example.org', icon: 'info', openInNewTab});
+        const link = screen.getByRole('link', {name: 'Informationen'});
+        expect(link.querySelector('.MuiButton-startIcon svg')).not.toBeNull();
+        expect(link.querySelector('.MuiButton-endIcon svg')).toHaveStyle({opacity: '0.65'});
+    });
+
+    it('renders a leading icon on task actions without adding a link indicator', () => {
+        renderLinkButton({label: 'Abschließen', staffTaskEvent: 'complete', icon: 'check'}, 'staff');
+        const button = screen.getByRole('button', {name: 'Abschließen'});
+        expect(button.querySelector('.MuiButton-startIcon svg')).not.toBeNull();
+        expect(button.querySelector('.MuiButton-endIcon')).toBeNull();
+    });
+
+    it.each([undefined, null, 'unknown-icon'])('omits missing or unavailable leading icons (%s)', icon => {
+        renderLinkButton({label: 'Informationen', href: 'https://example.org', icon});
+        const link = screen.getByRole('link', {name: 'Informationen'});
+        expect(link.querySelector('.MuiButton-startIcon')).toBeNull();
+        expect(link.querySelector('.MuiButton-endIcon svg')).not.toBeNull();
+    });
+
+    describe.each(['success', 'info', 'warning', 'error'] as const)('signal color %s', color => {
+        it.each(['link', 'event'])('applies the color to a %s button', mode => {
+            renderLinkButton({
+                label: 'Aktion', color,
+                ...(mode === 'link' ? {href: 'https://example.org'} : {staffTaskEvent: 'complete'}),
+            }, 'staff');
+            expect(screen.getByRole(mode === 'link' ? 'link' : 'button', {name: 'Aktion'}))
+                .toHaveClass(`MuiButton-color${color.charAt(0).toUpperCase()}${color.slice(1)}`);
+        });
+    });
+
+    it.each(['staff', 'customer'] as const)('keeps an unfinished %s action disabled', taskViewMode => {
+        const onEvent = vi.fn().mockResolvedValue(undefined);
+        renderLinkButton({
+            label: 'Aufgabe abschließen',
+            staffTaskEvent: taskViewMode === 'staff' ? '' : null,
+            customerTaskEvent: taskViewMode === 'customer' ? '' : null,
+        }, taskViewMode, {onEvent});
+
+        const button = screen.getByRole('button', {name: 'Aufgabe abschließen'});
+        expect(button).toBeDisabled();
+        fireEvent.click(button);
+        expect(onEvent).not.toHaveBeenCalled();
+    });
+
     it('should render href buttons as links with a trailing link icon', () => {
         renderLinkButton({
             label: 'Mehr erfahren',

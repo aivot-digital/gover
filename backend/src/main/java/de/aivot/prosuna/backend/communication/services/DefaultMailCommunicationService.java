@@ -57,7 +57,7 @@ public class DefaultMailCommunicationService {
                             @Nonnull MailCommunicationSendOptions options) throws CommunicationException {
         final String recipient;
         try {
-            recipient = EmailAddressUtils.normalizeSingleAddress(rawRecipient);
+            recipient = EmailAddressUtils.normalizeTransportAddress(rawRecipient);
         } catch (IllegalArgumentException e) {
             throw new CommunicationException("Die E-Mail-Adresse der Identität ist ungültig.", e);
         }

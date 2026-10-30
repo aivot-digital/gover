@@ -185,14 +185,14 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
         // Configure the content mode field
         layout
-                .findChild(CONTENT_MODE_FIELD_ID, RadioInputElement.class)
+                .findChild(CONTENT_MODE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(contentModeField -> {
                     contentModeField.setValue(new ElementValueFunctions()
                             .setType(ValueFunctionType.NoCode)
                             .setNoCode(new NoCodeStaticValue(MODE_DATA)));
                     contentModeField.setOptions(List.of(
-                            RadioInputElementOption.of(MODE_DATA, "Daten"),
-                            RadioInputElementOption.of(MODE_CUSTOM_CONTENT, "Eigene Inhalte")
+                            SelectInputElementOption.of(MODE_DATA, "Daten"),
+                            SelectInputElementOption.of(MODE_CUSTOM_CONTENT, "Eigene Inhalte")
                     ));
                 });
 
@@ -513,7 +513,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         public String criteria;
 
         public static final String CONTENT_MODE = CONTENT_MODE_FIELD_ID;
-        @InputElementPOJOBinding(id = CONTENT_MODE, type = ElementType.Radio, properties = {
+        @InputElementPOJOBinding(id = CONTENT_MODE, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Inhalte"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Freigabe auf Basis modellierter Daten oder freier Inhalte erfolgt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),

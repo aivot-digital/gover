@@ -151,14 +151,14 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         }
 
         layout
-                .findChild(CONDITION_TYPE_FIELD_ID, RadioInputElement.class)
+                .findChild(CONDITION_TYPE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(conditionTypeField -> {
                     conditionTypeField.setValue(new ElementValueFunctions()
                             .setType(ValueFunctionType.NoCode)
                             .setNoCode(new NoCodeStaticValue(CONDITION_TYPE_VALUE_NO_CODE)));
                     conditionTypeField.setOptions(List.of(
-                            RadioInputElementOption.of(CONDITION_TYPE_VALUE_NO_CODE, "No-Code"),
-                            RadioInputElementOption.of(CONDITION_TYPE_VALUE_LOW_CODE, "Low-Code (JavaScript)")
+                            SelectInputElementOption.of(CONDITION_TYPE_VALUE_NO_CODE, "No-Code"),
+                            SelectInputElementOption.of(CONDITION_TYPE_VALUE_LOW_CODE, "Low-Code (JavaScript)")
                     ));
                 });
 
@@ -430,7 +430,8 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class IfFlowControlNodeConfig {
-        @InputElementPOJOBinding(id = CONDITION_TYPE_FIELD_ID, type = ElementType.Radio, properties = {
+        @InputElementPOJOBinding(id = CONDITION_TYPE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingungsart"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, mit welchem Typ/Editor die Bedingung definiert wird."),
                 @ElementPOJOBindingProperty(key = "toggleButtons", boolValue = true),

@@ -411,7 +411,8 @@
           "weight": 12,
           "children": [
             {
-              "type": 11,
+              "type": 12,
+              "presentation": "radio",
               "id": "requestJsonSource",
               "name": "requestJsonSource",
               "visibility": null,

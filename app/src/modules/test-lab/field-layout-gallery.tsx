@@ -1,3 +1,5 @@
+import {AutocompleteTextField} from '../../components/text-field/autocomplete-text-field';
+import {MultiChoiceCombobox} from '../../components/multi-checkbox-field/multi-choice-combobox';
 import {InputMode} from '../../models/input-mode';
 import {ResourceInputGallery} from './resource-input-gallery';
 import {useState} from 'react';
@@ -10,6 +12,8 @@ import {
 } from '@mui/material';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
 import {NumberFieldComponent} from '../../components/number-field/number-field-component';
+import {DurationFieldComponent} from '../../components/duration-field/duration-field-component';
+import {DurationLargestUnit, DurationPrecision} from '../../models/elements/form/input/duration-field-element';
 import {SelectFieldComponent} from '../../components/select-field/select-field-component';
 import {DateFieldComponent} from '../../components/date-field/date-field-component';
 import {TimeFieldComponent} from '../../components/time-field/time-field-component';
@@ -20,6 +24,7 @@ import {DateTimeRangeFieldComponent} from '../../components/date-time-range-fiel
 import {RadioFieldComponent} from '../../components/radio-field/radio-field-component';
 import {CheckboxFieldComponent} from '../../components/checkbox-field/checkbox-field-component';
 import {MultiCheckboxComponent} from '../../components/multi-checkbox-field/multi-checkbox-component';
+import {EmailFieldComponent} from '../../components/email-field/email-field-component';
 import {PhoneNumberFieldComponent} from '../../components/phone-number-field/phone-number-field-component';
 import {ChipInputFieldComponent} from '../../components/chip-input-field/chip-input-field-component';
 import {DataModelSelectFieldComponent} from '../../components/data-model-select-field/data-model-select-field-component';
@@ -46,6 +51,7 @@ import {SecretSelectComponent} from '../secrets/components/secret-select-compone
 import {OptionListInput} from '../../components/option-list-input/option-list-input';
 import type {OptionListInputValue} from '../../components/option-list-input/option-list-input-props';
 import {ElementWidthSelector} from '../../components/element-width-selector/element-width-selector';
+import {ProcessAttachmentDisplayComponent} from '../../components/process-attachment-display/process-attachment-display-component';
 import {MapPointFieldComponent} from '../../components/map-point-field/map-point-field-component';
 import {TableFieldComponent2} from '../../components/table-field/table-field-component-2';
 import {
@@ -424,6 +430,8 @@ function InputModeSummary(props: {
 }
 
 export function FieldLayoutGallery() {
+    const [suggestedCity, setSuggestedCity] = useState<string | null>(null);
+    const [searchableAreas, setSearchableAreas] = useState<string[] | null>(['bildung']);
     const [name, setName] = useState<string | null>('Max Mustermann');
     const [description, setDescription] = useState<string | null>('Kurze Beschreibung');
     const [amount, setAmount] = useState<number | null>(1250.5);
@@ -442,6 +450,8 @@ export function FieldLayoutGallery() {
     const [date, setDate] = useState<DateValueIso | null>('2026-08-26' as DateValueIso);
     const [time, setTime] = useState<LocalTimeIso | null>('09:30' as LocalTimeIso);
     const [dateTime, setDateTime] = useState<InstantIso | null>('2026-08-26T07:30:00Z' as InstantIso);
+    const [estimatedDuration, setEstimatedDuration] = useState<number | null>(9000);
+    const [measuredDuration, setMeasuredDuration] = useState<number | null>(99015);
     const [dateRange, setDateRange] = useState<DateRangeValue | null>({
         start: '2026-08-01',
         end: '2026-08-31',
@@ -454,6 +464,7 @@ export function FieldLayoutGallery() {
         start: '2026-08-26T10:00:00Z',
         end: '2026-08-26T09:00:00Z',
     });
+    const [emailAddress, setEmailAddress] = useState<string | null>('person@example.org');
     const [phoneNumber, setPhoneNumber] = useState<string | null>('+4915112345678');
     const [tags, setTags] = useState<string[] | null>(['Antrag', 'Priorität']);
     const [dataModelKey, setDataModelKey] = useState<string | null>('persons');
@@ -527,6 +538,12 @@ export function FieldLayoutGallery() {
                     value={name}
                     onChange={setName}
                 />
+
+                <AutocompleteTextField label="Ort (mit Vorschlägen)" value={suggestedCity} onChange={setSuggestedCity}
+                    suggestions={['Berlin', 'Hamburg', 'München']} hint="Eigene Ortsangaben bleiben möglich." margin="none"/>
+                <MultiChoiceCombobox label="Tätigkeitsbereiche" value={searchableAreas} onChange={setSearchableAreas}
+                    options={[{value: 'bildung', label: 'Bildung'}, {value: 'wohnen', label: 'Wohnen'}, {value: 'gesundheit', label: 'Gesundheit'}]}
+                    hint="Wählen Sie einen oder mehrere Bereiche aus." margin="none"/>
 
                 <NumberFieldComponent
                     label="Betrag"
@@ -744,6 +761,35 @@ export function FieldLayoutGallery() {
                 variant="subtitle1"
                 sx={{mt: 5, mb: 2}}
             >
+                Zeitdauer
+            </Typography>
+
+            <Box sx={{display: 'grid', gap: 3}}>
+                <DurationFieldComponent
+                    label="Geschätzter Aufwand"
+                    value={estimatedDuration}
+                    onChange={setEstimatedDuration}
+                    hint="Angabe in Stunden und Minuten."
+                    required
+                    margin="none"
+                />
+
+                <DurationFieldComponent
+                    label="Gemessene Zeitdauer"
+                    value={measuredDuration}
+                    onChange={setMeasuredDuration}
+                    precision={DurationPrecision.Second}
+                    largestUnit={DurationLargestUnit.Day}
+                    hint="Angabe mit Tagen und Sekunden. Ein Tag entspricht 24 Stunden."
+                    margin="none"
+                />
+            </Box>
+
+            <Typography
+                component="h3"
+                variant="subtitle1"
+                sx={{mt: 5, mb: 2}}
+            >
                 Textfeldvarianten
             </Typography>
 
@@ -793,6 +839,7 @@ export function FieldLayoutGallery() {
             </Typography>
 
             <Box sx={fieldGridSx}>
+                <EmailFieldComponent margin="none" label="E-Mail-Adresse" value={emailAddress} onChange={setEmailAddress} />
                 <PhoneNumberFieldComponent
                     label="Telefonnummer"
                     value={phoneNumber}
@@ -808,7 +855,8 @@ export function FieldLayoutGallery() {
                     placeholder="Schlagwort ergänzen"
                     suggestions={['Antrag', 'Priorität', 'Rückfrage', 'Frist']}
                     maxItems={5}
-                    hint="Bis zu fünf Schlagwörter können zugeordnet werden."
+                    maxItemLength={30}
+                    hint="Bis zu fünf Schlagwörter mit jeweils höchstens 30 Zeichen. Mehrere Zeilen können auf einmal eingefügt werden."
                     required
                     margin="none"
                 />
@@ -962,6 +1010,16 @@ export function FieldLayoutGallery() {
             </Box>
 
             <Box sx={{...fieldGridSx, mt: 3}}>
+                <ProcessAttachmentDisplayComponent
+                    labelText="Vorhandene Anlagen"
+                    hintText="Dateien aus dem zugeordneten Anlagensatz."
+                    previewText="Vorschau ohne Dateiaktionen."
+                    items={[
+                        {key: 'notice', fileName: 'Bescheid.pdf', originalFileName: 'Bescheid-2026.pdf', sizeInBytes: 245000},
+                        {key: 'evidence', fileName: 'Nachweis.jpg', originalFileName: 'Nachweis.jpg', sizeInBytes: 1520000},
+                    ]}
+                    margin="none"
+                />
                 <ProcessInstanceAttachmentSetSelect
                     label="Anlagensatz"
                     attachmentSets={attachmentSetOptions}

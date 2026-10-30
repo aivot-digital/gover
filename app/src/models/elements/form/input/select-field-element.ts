@@ -10,6 +10,8 @@ export interface SelectFieldElementOption {
 }
 
 export interface SelectFieldElement extends BaseInputElement<ElementType.Select> {
+    displayInline?: boolean | null;
+    toggleButtons?: boolean | null;
     autocomplete: string | null | undefined;
     placeholder: string | null | undefined;
     presentation: SelectFieldPresentation | null | undefined;

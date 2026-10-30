@@ -15,7 +15,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadIn
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -154,7 +154,7 @@ class FormRequestActionNodeV1Test {
         assertEquals("existing", node.getInitialConfiguration().getLiteral(FormRequestActionNodeV1.NodeConfig.RECIPIENT_MODE_FIELD_ID));
         assertEquals(2, layout.findChild(
                 FormRequestActionNodeV1.NodeConfig.RECIPIENT_MODE_FIELD_ID,
-                RadioInputElement.class
+                SelectInputElement.class
         ).orElseThrow().getOptions().size());
         var newIdentities = layout.findChild(
                 FormRequestActionNodeV1.NodeConfig.NEW_IDENTITIES_FIELD_ID,
