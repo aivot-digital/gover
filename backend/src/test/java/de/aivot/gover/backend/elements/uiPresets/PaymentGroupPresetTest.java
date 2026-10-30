@@ -52,9 +52,11 @@ class PaymentGroupPresetTest {
         assertTrue(renderMessage(XBezahldienstStatus.PAYED, " ", null)
                 .contains("# Zahlung abgeschlossen\nDie Zahlung wurde erfolgreich abgeschlossen."));
         assertTrue(renderMessage(XBezahldienstStatus.FAILED, null, " ")
-                .contains("# Zahlung fehlgeschlagen\nDie Zahlung ist fehlgeschlagen."));
+                .contains("# Zahlung fehlgeschlagen\nDie Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die verantwortliche Stelle. "
+                        + "Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen."));
         assertTrue(renderMessage(XBezahldienstStatus.CANCELED, null, " ")
-                .contains("# Zahlung abgebrochen\nDie Zahlung wurde abgebrochen."));
+                .contains("# Zahlung abgebrochen\nDie Zahlung wurde abgebrochen. Bei Fragen wenden Sie sich bitte an die verantwortliche Stelle. "
+                        + "Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen."));
     }
 
     @ParameterizedTest

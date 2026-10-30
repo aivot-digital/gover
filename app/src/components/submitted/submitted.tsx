@@ -224,7 +224,7 @@ export function Submitted(props: SubmittedProps) {
                                 setMailErrorWithSnackbar('Es konnte keine E-Mail an diese Adresse verschickt werden.');
                                 setMailSent(false);
                             } else if (err.status === 403) {
-                                setMailErrorWithSnackbar('Die Zugriffsfrist für diesen Vorgang ist bereits abgelaufen. Bitte wenden Sie sich an die verantwortliche Stelle.');
+                                setMailErrorWithSnackbar('Die Zugriffsfrist für diesen Vorgang ist bereits abgelaufen. Bitte wenden Sie sich an die verantwortliche Stelle. Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.');
                             } else if (err.status === 404) {
                                 setMailErrorWithSnackbar('Der Vorgang konnte nicht gefunden werden.');
                             } else if (err.status === 409) {
@@ -296,7 +296,7 @@ export function Submitted(props: SubmittedProps) {
                     sx={{my: 0, mb: 4}}
                 >
                     Bei der weiteren Verarbeitung Ihrer Angaben ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
-                    verantwortliche Stelle. Die Kontaktdaten finden Sie unten.
+                    verantwortliche Stelle. Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.
                 </AlertComponent>
             }
 
@@ -412,6 +412,7 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 >
                     Die Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die verantwortliche Stelle.
+                    Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.
                     <br/>
                     Bitte geben Sie zur Zuordnung Ihres Vorgangs folgende Kennung
                     an: {status.submissionId}.
@@ -615,11 +616,11 @@ export function Submitted(props: SubmittedProps) {
                     >
                         Der Zugriff auf Ihre übermittelten Angaben ist abgelaufen.
                         Wenn Sie eine Kopie Ihrer Angaben oder einen Zahlungsbeleg benötigen, wenden Sie sich bitte
-                        an den fachlichen Support auf der <Link
+                        an den fachlichen Support. Öffnen Sie „<Link
                         onClick={() => {
                             dispatch(showDialog(HelpDialogId));
                         }}
-                    >Hilfe-Seite</Link>.
+                    >Hilfe</Link>“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.
                         <br/>
                         Bitte geben Sie zur Zuordnung Ihres Vorgangs folgende Kennung
                         an: {status.submissionId}.
