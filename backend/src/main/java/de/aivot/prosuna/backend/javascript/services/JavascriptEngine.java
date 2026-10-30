@@ -110,10 +110,11 @@ public class JavascriptEngine implements AutoCloseable {
             }
 
             // The provider itself is never bound. The placeholder only names it in the error instead of an unspecific reference error.
+            // It stays configurable, because providers may share an object name and a non-configurable property cannot be redefined.
             if (defineUnavailableProvider == null) {
                 defineUnavailableProvider = graalContext.eval(
                         JS_ENGINE_NAME,
-                        "(name, message) => Object.defineProperty(globalThis, name, { get() { throw new Error(message); } })"
+                        "(name, message) => Object.defineProperty(globalThis, name, { configurable: true, get() { throw new Error(message); } })"
                 );
             }
             defineUnavailableProvider.execute(

@@ -162,6 +162,22 @@ class JavascriptEngineTest {
         }
     }
 
+    @Test
+    void assetTemplateContext_BlocksProvidersWithTheSameObjectName() throws Exception {
+        List<JavascriptFunctionProvider> providers = List.of(
+                new TestJavascriptFunctionProvider(),
+                new TestJavascriptFunctionProvider()
+        );
+
+        try (var engine = new JavascriptEngine(providers, JavascriptExecutionContext.AssetTemplate)) {
+            var exception = assertThrows(
+                    JavascriptException.class,
+                    () -> engine.evaluateCode(new JavascriptCode().setCode("de_aivot_prosuna_test.getValue();"))
+            );
+            assertTrue(exception.getMessage().contains("nicht verfügbar"));
+        }
+    }
+
     public static class AssetTemplateTestJavascriptFunctionProvider extends TestJavascriptFunctionProvider {
         @Override
         public String getObjectName() {
