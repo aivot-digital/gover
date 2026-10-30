@@ -8,8 +8,9 @@ import jakarta.annotation.Nonnull;
  */
 public enum JavascriptExecutionContext {
     /**
-     * Code that is part of a process or form definition, such as node configurations and form logic. Only staff with
-     * permission to edit the process can change it, so all function providers are available.
+     * Code that is part of a configuration other than an asset, such as a process, form, data object schema or preset,
+     * or that a plugin ships. Only staff with the permission to change that configuration can change the code, so all
+     * function providers are available.
      */
     Default("in diesem Kontext"),
 
