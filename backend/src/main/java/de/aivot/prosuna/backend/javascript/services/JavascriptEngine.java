@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
+import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.SandboxPolicy;
@@ -63,7 +64,7 @@ public class JavascriptEngine implements AutoCloseable {
      * @param functionProviders the function providers to add to the javascript context if they are available in the given context.
      * @param context           the context in which the code is executed.
      */
-    public JavascriptEngine(List<JavascriptFunctionProvider> functionProviders, JavascriptExecutionContext context) {
+    public JavascriptEngine(@Nonnull List<JavascriptFunctionProvider> functionProviders, @Nonnull JavascriptExecutionContext context) {
         graalContext = Context
                 // Create a new context builder for the javascript engine.
                 .newBuilder(JS_ENGINE_NAME)
