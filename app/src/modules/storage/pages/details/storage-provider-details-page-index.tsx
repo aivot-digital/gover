@@ -378,7 +378,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             ? 'Systemanbieter können nicht gelöscht werden.'
             : defaultStorageDeleteDisabled
                 ? 'Dieser Speicheranbieter ist als Standardanbieter für Anlagen von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.'
-                : 'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dokumente des Speicheranbieters nicht gelöscht werden.';
+                : 'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dateien des Speicheranbieters nicht gelöscht werden.';
     const attributesError = getIndexedFieldError(
         errors,
         'metadataAttributes',
@@ -867,7 +867,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
                     </Typography>
                     <Typography>
-                        Bitte beachten Sie außerdem: Die Ordner und Dokumente des Speicheranbieters
+                        Bitte beachten Sie außerdem: Die Ordner und Dateien des Speicheranbieters
                         werden <strong>nicht</strong> gelöscht.
                     </Typography>
                 </AlertComponent>

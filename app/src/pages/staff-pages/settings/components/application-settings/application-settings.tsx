@@ -564,9 +564,10 @@ export function ApplicationSettings() {
                                         Vorgangsanlagen sollte in diesem Zustand nur bewusst geändert werden.
                                     </Typography>
                                     <Typography sx={{mb: 1}}>
-                                        Durch den Wechsel können Datenstrukturen auf mehrere Speicheranbieter aufgeteilt
-                                        werden. Außerdem kann der Zugriff auf bereits bestehende Anlagen innerhalb
-                                        aktiver Vorgänge verloren gehen.
+                                        Nach einem Wechsel können Anlagen desselben Vorgangs auf mehrere Speicheranbieter
+                                        verteilt sein. Bereits gespeicherte Anlagen werden nicht automatisch übertragen.
+                                        Der bisherige Speicheranbieter muss weiterhin verfügbar bleiben, damit diese
+                                        Anlagen abgerufen werden können.
                                     </Typography>
                                     <Typography>
                                         Möchten Sie den Speicheranbieter trotzdem ändern?
@@ -1059,10 +1060,10 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Dieser Speicheranbieter wird verwendet, um Vorgangsanlagen zu speichern, wenn kein spezifischer
-                    Speicheranbieter innerhalb eines Prozesselementes konfiguriert ist.
-                    Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Vorgänge hat, die den
-                    zentralen Speicheranbieter verwenden.
+                    Dieser Speicheranbieter wird für neue Anlagen von Vorgängen verwendet, zum Beispiel hochgeladene
+                    Dateien oder erzeugte PDF-Dokumente. Bereits gespeicherte Anlagen bleiben an ihrem bisherigen
+                    Speicherort. Nach einem Wechsel können weitere Anlagen desselben Vorgangs bei einem anderen
+                    Speicheranbieter gespeichert werden.
                 </Typography>
                 <Grid
                     container
@@ -1112,11 +1113,10 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Dieser Speicheranbieter wird verwendet, um Dateien zu speichern, wenn kein spezifischer
-                    Speicheranbieter
-                    für eine Datei konfiguriert ist.
-                    Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Dateien hat, die den
-                    zentralen Speicheranbieter verwenden.
+                    Wählen Sie den Standard-Speicheranbieter für zentral verwaltete Dateien und Medien, die in Formularen,
+                    Prozessen und Konfigurationen verwendet werden können, zum Beispiel Bilder, Zertifikate oder Vorlagen.
+                    Ein Wechsel überträgt bereits gespeicherte Dateien nicht automatisch; sie bleiben ihrem bisherigen
+                    Speicheranbieter zugeordnet.
                 </Typography>
                 <Grid
                     container

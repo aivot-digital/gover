@@ -178,7 +178,7 @@ export function AssetListPage() {
                 {
                     label: 'Datei hochladen',
                     icon: <AddOutlinedIcon/>,
-                    tooltip: 'Neues Dokument oder Medieninhalt anlegen',
+                    tooltip: 'Datei hochladen',
                     disabledTooltip: createAssetDisabledTooltip,
                     disabled: !canCreateAssetInCurrentProvider,
                     to: uploadRoute,
@@ -440,7 +440,7 @@ export function AssetListPage() {
         return (
             <EmptyDataListPlaceholder
                 title="Keine Dateien vorhanden"
-                description="Dateien sind hochgeladene Anlagen und Medien, die in Formularen, Prozessen oder Konfigurationen verwendet werden können."
+                description="Dateien, die in Formularen, Prozessen und Konfigurationen verwendet werden können."
                 addText={parsedStorageProviderId != null ? "Datei hochladen" : undefined}
                 onAdd={parsedStorageProviderId != null ? () => navigate(uploadRoute) : undefined}
                 addDisabled={!canCreateAssetForCurrentProvider(permissions, parsedStorageProviderId, storageProviderReadOnly)}
