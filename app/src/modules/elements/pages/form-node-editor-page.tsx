@@ -1106,12 +1106,11 @@ export function FormNodeEditorPage() {
             // Check if a slug is configured and break if no slug is present because we cannot submit data without a slug
             if (configuredFormSlug == null || configuredFormSlug === '') {
                 await confirm({
-                    title: 'Keine Formular-URL vergeben',
+                    title: 'URL-Segment fehlt',
                     children: (
                         <Typography>
-                            Sie haben für dieses Formular keine Formular-URL konfiguriert.
-                            Öffnen Sie die Eigenschaften des entsprechenden Formular-Eingangselements und konfigurieren
-                            Sie eine Formular-URL, damit dieses Formular abgesendet werden kann.
+                            Für dieses Formular fehlt ein URL-Segment.
+                            Öffnen Sie die Eigenschaften des Formulareingangs und konfigurieren Sie das URL-Segment des Formulars.
                         </Typography>
                     ),
                     confirmButtonText: 'Ok',
