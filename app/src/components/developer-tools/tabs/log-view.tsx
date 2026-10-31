@@ -22,7 +22,7 @@ export function LogView() {
                         <TableRow>
                             <TableCell>
                                 <em>
-                                    Keine Log-Einträge vorhanden.
+                                    Keine Protokolleinträge vorhanden.
                                 </em>
                             </TableCell>
                         </TableRow>

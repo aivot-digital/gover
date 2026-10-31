@@ -52,7 +52,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
                     });
 
                     if (!isValid) {
-                        dispatch(showErrorSnackbar('Die Datei enthält keine gültigen Nutzereingaben'));
+                        dispatch(showErrorSnackbar('Die Datei enthält keine gültigen Formulareingaben.'));
                         return;
                     }
 
@@ -61,7 +61,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Nutzereingaben konnten nicht geladen werden'));
+                dispatch(showErrorSnackbar('Die Formulareingaben konnten nicht geladen werden.'));
             });
     };
 
