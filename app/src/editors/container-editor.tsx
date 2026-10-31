@@ -147,8 +147,8 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout>) {
                     setConfirmRemoveMarketplace(undefined);
                 }}
             >
-                Soll die Verknüpfung wirklich aufgelöst werden?
-                Bitte beachten Sie, dass die Verknüpfung nicht wiederhergestellt werden kann.
+                Die Verknüpfung zum Marktplatz-Baustein wird entfernt.
+                Das Element kann anschließend lokal bearbeitet werden.
             </ConfirmDialog>
         </>
     );
