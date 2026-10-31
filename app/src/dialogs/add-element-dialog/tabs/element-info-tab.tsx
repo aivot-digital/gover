@@ -250,8 +250,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Das Bild-Element dient Ihnen dazu, ein beliebiges Bild darzustellen.
             </Typography>
             <Typography sx={{mt: 2}}>
-                Bitte beachten Sie, dass Sie Bilder nur via URL einbinden können.
-                Das Bild muss also auf einem Server hochgeladen und über das Internet erreichbar sein.
+                Wählen Sie ein Bild aus Dateien und Medien oder geben Sie eine erreichbare Bild-URL an.
             </Typography>
 
             <Divider sx={{my: 4}}>

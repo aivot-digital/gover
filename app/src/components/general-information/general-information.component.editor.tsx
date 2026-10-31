@@ -167,7 +167,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                                         initiativeName: val,
                                     });
                                 }}
-                                hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
+                                hint="Beschreiben Sie den relevanten Bildinhalt kurz und aussagekräftig. Der Alternativtext unterstützt die Nutzung mit Screenreadern."
                                 error={isStringNullOrEmpty(props.element.initiativeName) && isStringNotNullOrEmpty(props.element.initiativeLogoLink) ? 'Bitte geben Sie einen Alternativtext für das ausgewählte Logo an.' : undefined}
                                 disabled={!props.editable}
                             />
