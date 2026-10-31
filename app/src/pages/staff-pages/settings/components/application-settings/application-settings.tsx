@@ -1059,10 +1059,11 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Dieser Speicheranbieter wird für neue Anlagen von Vorgängen verwendet, zum Beispiel hochgeladene
+                    Dieser Speicheranbieter wird für Anlagen von Vorgängen verwendet, zum Beispiel hochgeladene
                     Dateien oder erzeugte PDF-Dokumente. Bereits gespeicherte Anlagen bleiben an ihrem bisherigen
                     Speicherort. Nach einem Wechsel können weitere Anlagen desselben Vorgangs bei einem anderen
-                    Speicheranbieter gespeichert werden.
+                    Speicheranbieter gespeichert werden. Halten Sie die bisherigen Speicheranbieter weiterhin erreichbar,
+                    damit diese Anlagen abgerufen werden können.
                 </Typography>
                 <Grid
                     container
@@ -1115,7 +1116,8 @@ export function ApplicationSettings() {
                     Wählen Sie den Standard-Speicheranbieter für zentral verwaltete Dateien und Medien, die in Formularen,
                     Prozessen und Konfigurationen verwendet werden können, zum Beispiel Bilder, Zertifikate oder Vorlagen.
                     Ein Wechsel überträgt bereits gespeicherte Dateien nicht automatisch; sie bleiben ihrem bisherigen
-                    Speicheranbieter zugeordnet.
+                    Speicheranbieter zugeordnet. Halten Sie die bisherigen Speicheranbieter weiterhin erreichbar, damit diese
+                    Dateien abgerufen werden können.
                 </Typography>
                 <Grid
                     container
