@@ -27,14 +27,14 @@ public class DataObjectPermissionProvider implements PermissionProvider {
     @Override
     public PermissionEntry[] getPermissions() {
         return new PermissionEntry[]{
-                PermissionEntry.of(OBJECT_SCHEMA_CREATE, "Objektschema erstellen", "Erlaubt das Erstellen von Objektschemata."),
-                PermissionEntry.of(OBJECT_SCHEMA_READ, "Objektschema anzeigen", "Erlaubt das Anzeigen und Auflisten von Objektschemata."),
-                PermissionEntry.of(OBJECT_SCHEMA_UPDATE, "Objektschema bearbeiten", "Erlaubt das Bearbeiten von Objektschemata."),
-                PermissionEntry.of(OBJECT_SCHEMA_DELETE, "Objektschema löschen", "Erlaubt das Löschen von Objektschemata."),
-                PermissionEntry.of(OBJECT_ITEM_CREATE, "Objekt erstellen", "Erlaubt das Erstellen von Objekten."),
-                PermissionEntry.of(OBJECT_ITEM_READ, "Objekt anzeigen", "Erlaubt das Anzeigen und Auflisten von Objekten."),
-                PermissionEntry.of(OBJECT_ITEM_UPDATE, "Objekt bearbeiten", "Erlaubt das Bearbeiten von Objekten."),
-                PermissionEntry.of(OBJECT_ITEM_DELETE, "Objekt löschen", "Erlaubt das Löschen von Objekten."),
+                PermissionEntry.of(OBJECT_SCHEMA_CREATE, "Datenmodell erstellen", "Erlaubt das Erstellen von Datenmodellen."),
+                PermissionEntry.of(OBJECT_SCHEMA_READ, "Datenmodell anzeigen", "Erlaubt das Anzeigen und Auflisten von Datenmodellen."),
+                PermissionEntry.of(OBJECT_SCHEMA_UPDATE, "Datenmodell bearbeiten", "Erlaubt das Bearbeiten von Datenmodellen."),
+                PermissionEntry.of(OBJECT_SCHEMA_DELETE, "Datenmodell löschen", "Erlaubt das Löschen von Datenmodellen."),
+                PermissionEntry.of(OBJECT_ITEM_CREATE, "Datenobjekt erstellen", "Erlaubt das Erstellen von Datenobjekten."),
+                PermissionEntry.of(OBJECT_ITEM_READ, "Datenobjekt anzeigen", "Erlaubt das Anzeigen und Auflisten von Datenobjekten."),
+                PermissionEntry.of(OBJECT_ITEM_UPDATE, "Datenobjekt bearbeiten", "Erlaubt das Bearbeiten von Datenobjekten."),
+                PermissionEntry.of(OBJECT_ITEM_DELETE, "Datenobjekt löschen", "Erlaubt das Löschen von Datenobjekten."),
         };
     }
 
