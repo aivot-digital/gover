@@ -783,7 +783,7 @@ export function ApplicationSettings() {
                 <Typography
                     variant="subtitle1"
                 >
-                    Über den Betreiber
+                    Über die Organisation
                 </Typography>
                 <Typography
                     sx={{
@@ -791,11 +791,10 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems.
-                    Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
-                    Änderungen am Betreiber-Namen werden erst nach dem nächsten Neu-Laden der Anwendung in allen
-                    Bereichen
-                    sichtbar.
+                    Hinterlegen Sie den Namen der Organisation, die diese Prosuna-Instanz einsetzt.
+                    Dieser Name wird in der Anwendung angezeigt und ist auch für externe Beteiligte sichtbar,
+                    beispielsweise im Formularverzeichnis und in Formularen.
+                    Änderungen am Namen werden erst nach dem erneuten Laden der Anwendung in allen Bereichen sichtbar.
                 </Typography>
                 <Grid
                     container
@@ -808,7 +807,7 @@ export function ApplicationSettings() {
                         }}
                     >
                         <TextFieldComponent
-                            label="Name des Betreibers"
+                            label="Name der Organisation"
                             placeholder="Bad Musterstadt"
                             value={editedConfig[SystemConfigKeys.provider.name] ?? config[SystemConfigKeys.provider.name]}
                             onChange={(val) => {
