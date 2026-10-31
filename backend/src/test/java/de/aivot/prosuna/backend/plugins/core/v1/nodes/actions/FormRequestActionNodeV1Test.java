@@ -316,11 +316,11 @@ class FormRequestActionNodeV1Test {
         var introduction = assertInstanceOf(RichTextContentElement.class, view.layout().getChildren().get(1));
         if (status == ProcessTaskStatus.AwaitingCustomer) {
             assertEquals("Angaben übermitteln", headline.getContent());
-            assertTrue(introduction.getContent().contains("Bitte ergänzen Sie"));
+            assertEquals("Ergänzen Sie die angeforderten Angaben und übermitteln Sie diese anschließend.", introduction.getContent());
             assertEquals(List.of(new TaskViewEvent("Angaben übermitteln", "submit")), view.events());
         } else {
             assertEquals("Angeforderte Angaben", headline.getContent());
-            assertFalse(introduction.getContent().contains("Bitte ergänzen Sie"));
+            assertFalse(introduction.getContent().contains("Ergänzen Sie"));
             assertTrue(view.events().isEmpty());
         }
     }

@@ -689,7 +689,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var introduction = new RichTextContentElement();
         introduction.setId("form-request-introduction-" + context.getThisTask().getId());
         introduction.setContent(canSubmit
-                ? "Bitte ergänzen Sie die angeforderten Angaben und reichen Sie diese anschließend ein."
+                ? "Ergänzen Sie die angeforderten Angaben und übermitteln Sie diese anschließend."
                 : "Hier sehen Sie die Angaben zu dieser Aufgabe.");
         var layout = new GroupLayoutElement();
         layout.setId("form-request-view-" + context.getThisTask().getId());
