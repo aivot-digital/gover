@@ -695,7 +695,8 @@ export function DepartmentsDetailsPageIndex() {
                 Hinterlegen Sie das Standard-Erscheinungsbild, das für Formulare dieser Organisationseinheit verwendet werden soll.
                 Dieses überschreibt das Erscheinungsbild der Prosuna-Instanz.
                 Bearbeiter:innen können für Formulare weiterhin ein individuelles Erscheinungsbild auswählen.
-                Wenn Sie kein Erscheinungsbild auswählen, wird das Erscheinungsbild der Prosuna-Instanz verwendet.
+                Ohne eigene Auswahl wird das Erscheinungsbild der übergeordneten Organisationseinheit verwendet.
+                Ist auch dort keines hinterlegt, gilt das Standard-Erscheinungsbild der Prosuna-Instanz.
             </Typography>
             <Grid
                 container
