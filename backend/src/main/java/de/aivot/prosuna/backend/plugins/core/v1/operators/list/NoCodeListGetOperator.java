@@ -47,7 +47,7 @@ public class NoCodeListGetOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** "München"
                 
-                # Wahrheitswerte für den „Listenzugriff“-Operator
+                # Beispiele und Ergebnisse
                 - **Liste ["Apfel", "Banane", "Orange"] Index 1** → **"Banane"** \s
                 - **Liste ["Apfel", "Banane", "Orange"] Index 3** → **null** \s
                 - **Liste ["Apfel", "Banane", "Orange"] Index -1** → **"Orange"** \s

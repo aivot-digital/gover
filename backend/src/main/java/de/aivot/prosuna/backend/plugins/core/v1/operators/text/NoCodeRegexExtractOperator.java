@@ -51,7 +51,7 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** ["test@example.com", "info@example.org"]
                 
-                # Wahrheitswerte für den „Regex-Extraktion“-Operator
+                # Beispiele und Ergebnisse
                 - **Text "abc123 def456" Regulärer Ausdruck "\\d+"** → **["123", "456"]** \s
                 - **Text "keine Übereinstimmung" Regulärer Ausdruck "\\d+"** → **[]**
                 

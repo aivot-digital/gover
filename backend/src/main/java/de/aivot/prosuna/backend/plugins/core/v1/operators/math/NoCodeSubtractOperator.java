@@ -46,7 +46,7 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** 7
                 
-                # Wahrheitswerte für den „Subtrahiere“-Operator
+                # Beispiele und Ergebnisse
                 - **Subtrahiere 10 2** → **8** \s
                 - **Subtrahiere 9 3** → **6** \s
                 - **Subtrahiere 5 10** → **-5**

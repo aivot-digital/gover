@@ -50,7 +50,7 @@ public class NoCodeDivideOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** 5
                 
-                # Wahrheitswerte für den „Dividiere“-Operator
+                # Beispiele und Ergebnisse
                 - **Dividiere 10 2** → **5** \s
                 - **Dividiere 9 3** → **3** \s
                 - **Dividiere 5 0** → **Fehler** (Division durch null)
