@@ -1329,8 +1329,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Time]: (
         <Box>
             <Typography>
-                Das Uhrzeit-Element dient Ihnen dazu, Eingaben der Uhrzeit (0-24 Uhr) von Ihren Nutzer:innen
-                entgegenzunehmen.
+                Das Uhrzeit-Element erfasst Uhrzeiten von 00:00 bis 23:59 Uhr,
+                bei aktivierten Sekunden bis 23:59:59 Uhr.
                 Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
 
