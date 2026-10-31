@@ -1612,7 +1612,7 @@ export function ProcessDetailsPage(): ReactNode {
                             Möchten Sie die Prozessmodellierung testen?
                             Die Prozessversion kann während des Tests nicht veröffentlicht werden.
                             Sie können den Test jederzeit abbrechen.
-                            Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                            Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge gelöscht.
                         </Typography>
                         {
                             (nodeProblems.length > 0 || versionProblems.length > 0) &&
@@ -1676,7 +1676,7 @@ export function ProcessDetailsPage(): ReactNode {
                     Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
                     Test für diesen Prozess sofort beendet und die Bearbeitung des
                     Prozesses wieder freigegeben.
-                    Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                    Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge gelöscht.
                 </Typography>
             ),
             confirmButtonText: 'Testanspruch löschen',
