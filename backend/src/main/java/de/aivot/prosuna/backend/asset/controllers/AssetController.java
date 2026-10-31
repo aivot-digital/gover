@@ -325,7 +325,7 @@ public class AssetController {
                         )
                 )
                 .withMessage(
-                        "Die Datei %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        "Die Datei %s wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(filePath),
                         StringUtils.quote(execUser.getFullName())
                 )
