@@ -4,7 +4,7 @@
 
 ### Features
 
-* **App:** Upgrade all frontend dependencies to the latest versions, including React 19, MUI 7 and MUI X 8.
+* **App:** Upgrade frontend dependencies, including React 19, MUI 9 and MUI X 9.
 * **App:** Introduce Vite as the new build tool for the frontend, replacing CRA, to improve the development experience and build performance.
 * **System:** Decoupled the frontend, backend and oidc-provider by introducing new configuration variables
 * **System:** Added SBOM generation to the build process, providing a Software Bill of Materials for better transparency and security.
