@@ -182,8 +182,8 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
                         variant="body2"
                         gutterBottom
                     >
-                        Bitte beachten Sie, dass hinzugefügte Anlagen/Dateien aus Datenschutzgründen nicht
-                        gespeichert wurden und ggf. <b>erneut hinzugefügt</b> werden müssen.
+                        Anlagen werden aus Datenschutzgründen nicht im lokalen Entwurf gespeichert.
+                        Fügen Sie die benötigten Anlagen <b>erneut hinzu</b>.
                     </Typography>
                 </DialogContentText>
             </DialogContent>
