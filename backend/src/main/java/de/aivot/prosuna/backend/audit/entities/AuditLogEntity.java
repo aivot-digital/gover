@@ -71,7 +71,7 @@ public class AuditLogEntity {
     private Map<String, Object> diff;
 
     @Nonnull
-    @NotNull(message = "Metadata dürfen nicht null sein.")
+    @NotNull(message = "Die Metadaten dürfen nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonObjectConverter.class)
     private Map<String, Object> metadata;

@@ -295,7 +295,7 @@ describe('IdentityProviderDetailsPageIndex', () => {
             'Metadaten-Identifikator',
             'Endpunkt zur Autorisierung',
             'Endpunkt zum Erstellen des Tokens',
-            'Client ID',
+            'Client-ID',
         ]) {
             expect(screen.getByRole('textbox', {name: label})).toBeRequired();
         }

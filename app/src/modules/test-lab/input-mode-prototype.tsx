@@ -541,7 +541,7 @@ export function InputModePrototype() {
                                     <InputModeField
                                         label="Leerer Pflichtwert"
                                         hint="Ein Pflichtfeld mit sichtbarer Validierung."
-                                        error="Bitte gib einen Wert ein."
+                                        error="Bitte geben Sie einen Wert ein."
                                         required
                                         variables={VARIABLES}
                                         value={emptyRequiredTitle}

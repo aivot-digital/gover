@@ -320,7 +320,7 @@ class AuthControllerTest {
                 modelAndView,
                 response,
                 500,
-                "Unerwartete Rückmeldung beim einlösen des Authentifizierungscodes: 500",
+                "Unerwartete Rückmeldung beim Einlösen des Authentifizierungscodes: 500",
                 """
                         Die Antwort des Identitätsanbieters konnte bei der Anmeldung nicht korrekt verarbeitet werden.
                         Deshalb konnte die Anmeldung nicht abgeschlossen werden.

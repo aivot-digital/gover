@@ -57,7 +57,7 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Dateien und Medien.";
+        return "Diese JavaScript-Funktionsbibliothek ermöglicht den Zugriff auf Dateien und Medien.";
     }
 
     @Nonnull

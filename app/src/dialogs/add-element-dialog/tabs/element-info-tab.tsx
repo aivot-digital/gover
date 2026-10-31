@@ -161,7 +161,7 @@ function DateTimeRangeExample() {
 
     return (
         <DateTimeRangeFieldComponent
-            label="Datum- und Zeitspanne"
+            label="Datums- und Zeitspanne"
             value={{start, end}}
             onChange={() => {
             }}
@@ -1032,7 +1032,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.DateTime]: (
         <Box>
             <Typography>
-                Das Datum und Uhrzeit-Element dient Ihnen dazu, einen konkreten Zeitpunkt abzufragen.
+                Das Element „Datum und Uhrzeit“ dient Ihnen dazu, einen konkreten Zeitpunkt abzufragen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1086,7 +1086,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.DateTimeRange]: (
         <Box>
             <Typography>
-                Das Element „Datum- und Zeitspanne“ ermöglicht die Erfassung eines Start- und Endzeitpunkts.
+                Das Element „Datums- und Zeitspanne“ ermöglicht die Erfassung eines Start- und Endzeitpunkts.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1353,7 +1353,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
         <Box>
             <Typography>
                 Das Anlagen-Element ermöglicht es Ihnen, hochzuladende Dokumente von Ihren Nutzer:innen
-                entgegenzunehmen. Welche Art von Anlagen (Dateiendungen) erlaubt sind und in welcher Anzahl,
+                entgegenzunehmen. Welche Arten von Anlagen (Dateiendungen) erlaubt sind und in welcher Anzahl,
                 können Sie festlegen.
             </Typography>
 
@@ -1496,8 +1496,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Attribute aus der Identifizierung können anschließend in andere Formularfelder
-                außerhalb von Wiederholungscontainern übernommen werden.
+                Attribute aus der Identifizierung können anschließend in andere Formularelemente
+                außerhalb von Feldgruppen für mehrere Einträge übernommen werden.
             </Typography>
         </Box>
     ),

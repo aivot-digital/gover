@@ -64,7 +64,7 @@ public class ProcessInstanceTaskEntity {
     private String previousProcessNodePortKey;
 
     @Nonnull
-    @NotNull(message = "Der Aufgaben-Status darf nicht null sein.")
+    @NotNull(message = "Der Aufgabenstatus darf nicht null sein.")
     @Column(columnDefinition = "int2")
     @Convert(converter = ProcessTaskStatusConverter.class)
     private ProcessTaskStatus status;

@@ -167,7 +167,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                 new ProcessNodePort(
                         PORT_NAME,
                         "Datenfelder verarbeitet",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Abbildungsregeln ausgeführt wurden."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Abbildungsregeln ausgeführt wurden."
                 )
         );
     }
@@ -383,7 +383,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
 
             @InputElementPOJOBinding(id = DELETE_ONLY_FIELD_ID, type = ElementType.Checkbox, properties = {
                     @ElementPOJOBindingProperty(key = "label", strValue = "Wert nur löschen"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Löscht den Ausgangswert ohne ihn in einen Zielpfad zu kopieren.")
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Löscht den Ausgangswert, ohne ihn in einen Zielpfad zu kopieren.")
             })
             public Boolean deleteOnly;
 

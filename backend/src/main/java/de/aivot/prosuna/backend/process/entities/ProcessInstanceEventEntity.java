@@ -33,17 +33,17 @@ public class ProcessInstanceEventEntity {
     private Long processInstanceTaskId;
 
     @Nonnull
-    @NotNull(message = "Das Level des Ereignisses muss angegeben werden.")
+    @NotNull(message = "Die Stufe des Ereignisses muss angegeben werden.")
     @Column(columnDefinition = "int2")
     private ProcessNodeExecutionLogLevel level;
 
     @Nonnull
-    @NotNull(message = "Die Flag ob es sich um ein technisches Ereignis handelt muss angegeben werden.")
+    @NotNull(message = "Die Angabe, ob es sich um ein technisches Ereignis handelt, muss gesetzt sein.")
     @ColumnDefault("FALSE")
     private Boolean isTechnical = false;
 
     @Nonnull
-    @NotNull(message = "Die Flag ob es sich um ein Audit-Ereignis handelt muss angegeben werden.")
+    @NotNull(message = "Die Angabe, ob es sich um ein Audit-Ereignis handelt, muss gesetzt sein.")
     @ColumnDefault("FALSE")
     private Boolean isAudit = false;
 

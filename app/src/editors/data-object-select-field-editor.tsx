@@ -38,7 +38,7 @@ export function DataObjectSelectFieldEditor(props: BaseEditorProps<DataObjectSel
                 }}
             >
                 <TextFieldComponent
-                    label="Label-Attribut (Key)"
+                    label="Attribut für die Hauptbezeichnung"
                     value={element.dataLabelAttributeKey}
                     onChange={(value) => {
                         onPatch({

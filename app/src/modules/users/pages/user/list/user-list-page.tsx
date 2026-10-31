@@ -223,7 +223,7 @@ export function UserListPage() {
                 <>
                     <Typography>
                         Mitarbeiter:innen nutzen interne Konten, um auf die Bearbeitungsoberfläche zuzugreifen und die
-                        Anwendung nutzen können.
+                        Anwendung zu nutzen.
                         In dieser Oberfläche können Sie die im System verfügbaren Mitarbeiter:innen
                         einsehen.
                     </Typography>

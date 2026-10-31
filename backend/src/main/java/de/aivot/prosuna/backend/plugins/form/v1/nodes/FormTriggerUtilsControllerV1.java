@@ -185,7 +185,7 @@ public class FormTriggerUtilsControllerV1 {
         }
 
         if (StringUtils.isNullOrEmpty(config.formSlug)) {
-            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält keinen Formular-Slug.");
+            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält kein URL-Segment des Formulars.");
         }
 
         return new ResolvedFormTriggerConfiguration(

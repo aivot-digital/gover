@@ -138,7 +138,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 .existsById(new DataObjectItemEntityId(entity.getSchemaKey(), id));
         if (idCheck) {
             throw ResponseException
-                    .badRequest("Es existiert bereits ein Datenobjekt mit der ID '" + id + "' für das Schema '" + entity.getSchemaKey() + "'");
+                    .badRequest("Es existiert bereits ein Datenobjekt mit der ID '" + id + "' für das Datenmodell '" + entity.getSchemaKey() + "'");
         }
 
         entity.setId(id);

@@ -458,7 +458,7 @@ describe('CustomerInstanceTaskView', () => {
         expectDispatchedAction('shell/setLoadingMessage', {
             blocking: true,
             estimatedTime: 500,
-            message: 'Verarbeite Aktion: Daten einreichen',
+            message: 'Aktion wird verarbeitet: Daten einreichen',
         });
     });
 
@@ -476,7 +476,7 @@ describe('CustomerInstanceTaskView', () => {
             'submit',
         ));
         expectDispatchedAction('shell/setLoadingMessage', expect.objectContaining({
-            message: 'Verarbeite Aktion: Daten einreichen',
+            message: 'Aktion wird verarbeitet: Daten einreichen',
         }));
     });
 

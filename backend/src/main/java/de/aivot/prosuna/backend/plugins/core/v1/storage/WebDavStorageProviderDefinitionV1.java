@@ -107,7 +107,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
     @Nonnull
     @Override
     public String getName() {
-        return "WebDAV Speicheranbieter";
+        return "WebDAV-Speicheranbieter";
     }
 
     @Nonnull
@@ -491,13 +491,13 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         var normalizedTargetPath = normalizeDocumentPath(targetPathFromRoot);
 
         if (!documentExists(config, normalizedSourcePath)) {
-            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(debugPath(config, normalizedSourcePath)));
+            throw new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(debugPath(config, normalizedSourcePath)));
         }
 
         if (normalizedSourcePath.equals(normalizedTargetPath)) {
             var debugSourcePath = debugPath(config, normalizedSourcePath);
             return retrieveDocument(config, normalizedSourcePath)
-                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(debugSourcePath)));
+                    .orElseThrow(() -> new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(debugSourcePath)));
         }
 
         validateDocumentTargetParent(config, normalizedTargetPath);
@@ -529,13 +529,13 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         var normalizedTargetPath = normalizeDocumentPath(targetPathFromRoot);
 
         if (!documentExists(config, normalizedSourcePath)) {
-            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(debugPath(config, normalizedSourcePath)));
+            throw new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(debugPath(config, normalizedSourcePath)));
         }
 
         if (normalizedSourcePath.equals(normalizedTargetPath)) {
             var debugSourcePath = debugPath(config, normalizedSourcePath);
             return retrieveDocument(config, normalizedSourcePath)
-                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(debugSourcePath)));
+                    .orElseThrow(() -> new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(debugSourcePath)));
         }
 
         validateDocumentTargetParent(config, normalizedTargetPath);
@@ -1003,7 +1003,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
                 return;
             }
             if (!overwrite && response.statusCode() == 412) {
-                throw new StorageException("Das temporäre WebDAV-Prüfdokument existiert bereits.");
+                throw new StorageException("Die temporäre WebDAV-Prüfdatei existiert bereits.");
             }
             throw unexpectedStatus(response, "Die Datei konnte nicht im WebDAV-Speicher gespeichert werden.");
         }

@@ -524,7 +524,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                 value={permissionQuery}
                 onChange={setPermissionQuery}
                 label="Berechtigungen suchen"
-                placeholder="Name, Key oder Beschreibung eingeben"
+                placeholder="Name, Berechtigungsschlüssel oder Beschreibung eingeben"
                 ariaLabel="Berechtigungen suchen"
                 clearable
                 disabled={isBusy}

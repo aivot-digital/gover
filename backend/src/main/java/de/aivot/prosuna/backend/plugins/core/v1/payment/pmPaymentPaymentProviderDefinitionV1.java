@@ -78,7 +78,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
     @Nonnull
     @Override
     public String getName() {
-        return "pmPayment Zahlungsdienstleister";
+        return "pmPayment-Zahlungsanbieter";
     }
 
     @Nonnull

@@ -552,7 +552,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
         dispatch(
             setLoadingMessage({
-                message: `Verarbeite Aktion: ${evt.label}`,
+                message: `Aktion wird verarbeitet: ${evt.label}`,
                 blocking: true,
                 estimatedTime: 500,
             }),

@@ -1,4 +1,5 @@
 import {ElementType} from './element-type/element-type';
+import {pluralize} from '../utils/humanization-utils';
 
 export enum ConditionOperator {
     Equals = 0,
@@ -126,18 +127,18 @@ export const ConditionOperatorMessage: Record<ConditionOperator, (valueA: any, v
     [ConditionOperator.NotIncludesPattern]: (valueA, valueB) => `${valueA} darf das Muster ${valueB} nicht enthalten.`,
     [ConditionOperator.Empty]: (valueA, valueB) => `${valueA} muss ausgefüllt sein.`,
     [ConditionOperator.NotEmpty]: (valueA, valueB) => `${valueA} darf nicht ausgefüllt sein.`,
-    [ConditionOperator.YearsInPast]: (valueA, valueB) => `${valueA} muss ${valueB} Jahre in der Vergangenheit liegen.`,
-    [ConditionOperator.MonthsInPast]: (valueA, valueB) => `${valueA} muss ${valueB} Monate in der Vergangenheit liegen.`,
-    [ConditionOperator.DaysInPast]: (valueA, valueB) => `${valueA} muss ${valueB} Tage in der Vergangenheit liegen.`,
-    [ConditionOperator.YearsInFuture]: (valueA, valueB) => `${valueA} muss ${valueB} Jahre in der Zukunft liegen.`,
-    [ConditionOperator.MonthsInFuture]: (valueA, valueB) => `${valueA} muss ${valueB} Monate in der Zukunft liegen.`,
-    [ConditionOperator.DaysInFuture]: (valueA, valueB) => `${valueA} muss ${valueB} Tage in der Zukunft liegen.`,
-    [ConditionOperator.ReplicatingListLengthEquals]: (valueA, valueB) => `${valueA} muss genau ${valueB} Datensätze enthalten.`,
-    [ConditionOperator.ReplicatingListLengthNotEquals]: (valueA, valueB) => `${valueA} darf nicht genau ${valueB} Datensätze enthalten.`,
-    [ConditionOperator.ReplicatingListLengthLessThan]: (valueA, valueB) => `${valueA} muss weniger als ${valueB} Datensätze enthalten.`,
-    [ConditionOperator.ReplicatingListLengthLessThanOrEqual]: (valueA, valueB) => `${valueA} muss weniger oder gleich ${valueB} Datensätze enthalten.`,
-    [ConditionOperator.ReplicatingListLengthGreaterThan]: (valueA, valueB) => `${valueA} muss mehr als ${valueB} Datensätze enthalten.`,
-    [ConditionOperator.ReplicatingListLengthGreaterThanOrEqual]: (valueA, valueB) => `${valueA} muss mehr oder gleich ${valueB} Datensätze enthalten.`,
+    [ConditionOperator.YearsInPast]: (valueA, valueB) => `${valueA} muss ${valueB} ${pluralize(Number(valueB), 'Jahr', 'Jahre')} in der Vergangenheit liegen.`,
+    [ConditionOperator.MonthsInPast]: (valueA, valueB) => `${valueA} muss ${valueB} ${pluralize(Number(valueB), 'Monat', 'Monate')} in der Vergangenheit liegen.`,
+    [ConditionOperator.DaysInPast]: (valueA, valueB) => `${valueA} muss ${valueB} ${pluralize(Number(valueB), 'Tag', 'Tage')} in der Vergangenheit liegen.`,
+    [ConditionOperator.YearsInFuture]: (valueA, valueB) => `${valueA} muss ${valueB} ${pluralize(Number(valueB), 'Jahr', 'Jahre')} in der Zukunft liegen.`,
+    [ConditionOperator.MonthsInFuture]: (valueA, valueB) => `${valueA} muss ${valueB} ${pluralize(Number(valueB), 'Monat', 'Monate')} in der Zukunft liegen.`,
+    [ConditionOperator.DaysInFuture]: (valueA, valueB) => `${valueA} muss ${valueB} ${pluralize(Number(valueB), 'Tag', 'Tage')} in der Zukunft liegen.`,
+    [ConditionOperator.ReplicatingListLengthEquals]: (valueA, valueB) => `${valueA} muss genau ${valueB} ${pluralize(Number(valueB), 'Datensatz', 'Datensätze')} enthalten.`,
+    [ConditionOperator.ReplicatingListLengthNotEquals]: (valueA, valueB) => `${valueA} darf nicht genau ${valueB} ${pluralize(Number(valueB), 'Datensatz', 'Datensätze')} enthalten.`,
+    [ConditionOperator.ReplicatingListLengthLessThan]: (valueA, valueB) => `${valueA} muss weniger als ${valueB} ${pluralize(Number(valueB), 'Datensatz', 'Datensätze')} enthalten.`,
+    [ConditionOperator.ReplicatingListLengthLessThanOrEqual]: (valueA, valueB) => `${valueA} muss weniger als oder genau ${valueB} ${pluralize(Number(valueB), 'Datensatz', 'Datensätze')} enthalten.`,
+    [ConditionOperator.ReplicatingListLengthGreaterThan]: (valueA, valueB) => `${valueA} muss mehr als ${valueB} ${pluralize(Number(valueB), 'Datensatz', 'Datensätze')} enthalten.`,
+    [ConditionOperator.ReplicatingListLengthGreaterThanOrEqual]: (valueA, valueB) => `${valueA} muss mehr als oder genau ${valueB} ${pluralize(Number(valueB), 'Datensatz', 'Datensätze')} enthalten.`,
 };
 
 export const ConditionOperatorHint: Record<ElementType, Partial<Record<ConditionOperator, string>> | string | null> = {

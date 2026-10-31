@@ -26,7 +26,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 <TextFieldComponent
                     value={props.element.headlineTemplate ?? ''}
                     label="Überschrift des einzelnen Datensatzes"
-                    hint='Verwenden Sie "#" um die aktuelle Nummer des Datensatzes in der Überschrift einzusetzen.'
+                    hint='Verwenden Sie "#", um die aktuelle Nummer des Datensatzes in der Überschrift einzusetzen.'
                     onChange={(val) => {
                         props.onPatch({
                             headlineTemplate: val,
@@ -86,7 +86,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                             minimumRequiredSets: (val ?? 0) > 0 ? val : undefined,
                         });
                     }}
-                    error={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : undefined}
+                    error={minRequiredError ? 'Sie fordern mehr Datensätze, als Sie maximal zulassen.' : undefined}
                     disabled={!props.editable}
                 />
             </Grid>
@@ -99,7 +99,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     value={props.element.maximumSets ?? undefined}
                     label="Maximalanzahl der hinzuzufügenden Datensätze"
                     hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                    error={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : undefined}
+                    error={minRequiredError ? 'Sie fordern mehr Datensätze, als Sie maximal zulassen.' : undefined}
                     onChange={(val) => {
                         props.onPatch({
                             maximumSets: val,

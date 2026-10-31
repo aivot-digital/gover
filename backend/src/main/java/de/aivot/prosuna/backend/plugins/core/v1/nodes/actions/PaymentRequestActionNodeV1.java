@@ -294,7 +294,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 new ProcessNodePort(
                         PORT_PAID,
                         "Zahlung erfolgreich",
-                        "Der Prozess wird fortgesetzt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
+                        "Der Vorgang wird fortgesetzt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
                 )
         );
     }
@@ -522,7 +522,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     ) throws ResponseException, ProcessNodeExecutionException {
         if (!STAFF_TASK_SEND_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
+                    "Das Ereignis %s wird von diesem Prozesselement nicht unterstützt.",
                     StringUtils.quote(event)
             );
         }

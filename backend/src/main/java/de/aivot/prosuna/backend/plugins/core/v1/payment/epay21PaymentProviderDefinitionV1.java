@@ -75,7 +75,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     @Override
     public String getName() {
-        return "ePay21 Zahlungsanbieter";
+        return "ePay21-Zahlungsanbieter";
     }
 
     @Nonnull

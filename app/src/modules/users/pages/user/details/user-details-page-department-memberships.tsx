@@ -323,7 +323,7 @@ export function UserDetailsPageDepartmentMemberships() {
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die
+                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und der
                     dazugehörigen
                     Rollen.
                 </Typography>

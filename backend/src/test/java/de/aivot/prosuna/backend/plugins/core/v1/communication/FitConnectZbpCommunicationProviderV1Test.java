@@ -334,11 +334,11 @@ class FitConnectZbpCommunicationProviderV1Test {
                 () -> testDefinition.handleTest(provider, config, testInputs(42))
         );
 
-        assertEquals("Die Postfach-ID des Testnutzers ist erforderlich.", missing.getMessage());
-        assertEquals("Die Postfach-ID des Testnutzers ist erforderlich.", blank.getMessage());
-        assertEquals("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.", invalid.getMessage());
-        assertEquals("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.", nonCanonical.getMessage());
-        assertEquals("Die Postfach-ID des Testnutzers ist erforderlich.", wrongType.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht ist erforderlich.", missing.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht ist erforderlich.", blank.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.", invalid.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.", nonCanonical.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht ist erforderlich.", wrongType.getMessage());
         verify(testDefinition, never()).sendMessage(any(), any(), any());
     }
 

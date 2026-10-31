@@ -335,7 +335,7 @@ export function UserDetailsPageTeamMemberships() {
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Teams, in denen diese Mitarbeiter:in Mitglied ist, und die
+                    Eine Übersicht der Teams, in denen diese Mitarbeiter:in Mitglied ist, und der
                     dazugehörigen
                     Rollen.
                 </Typography>

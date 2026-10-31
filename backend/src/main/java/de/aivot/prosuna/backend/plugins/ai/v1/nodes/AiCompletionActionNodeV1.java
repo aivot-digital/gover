@@ -150,7 +150,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         return """
                 Sendet einen konfigurierten Prompt an eine kompatible KI-Completions-API und stellt die erzeugte Antwort für nachfolgende Prozesselemente bereit.
 
-                Endpoint, API-Schlüssel, Modell und Prompt werden in der Elementkonfiguration festgelegt. Neben dem ersten Antworttext liefert das Element den Abschlussgrund, das tatsächlich verwendete Modell und die von der API gemeldeten Nutzungsinformationen als Ausgangsdaten.
+                Endpunkt, API-Schlüssel, Modell und Prompt werden in der Elementkonfiguration festgelegt. Neben dem ersten Antworttext liefert das Element den Abschlussgrund, das tatsächlich verwendete Modell und die von der API gemeldeten Nutzungsinformationen als Ausgangsdaten.
                 """;
     }
 
@@ -182,7 +182,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                 new ProcessNodePort(
                         SUCCESS_PORT,
                         "KI-Antwort erhalten",
-                        "Der Prozess wird hier fortgesetzt, nachdem die KI-Antwort erfolgreich abgerufen wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die KI-Antwort erfolgreich abgerufen wurde."
                 )
         );
     }
@@ -192,7 +192,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
                 new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der Anfragetext für das KI-Modell.", "string"),
-                new ProcessNodeOutput(OUTPUT_COMPLETION, "Completion", "Die erste erzeugte Completion als Text.", "string"),
+                new ProcessNodeOutput(OUTPUT_COMPLETION, "Completion", "Die erste erzeugte KI-Antwort als Text.", "string"),
                 new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Abschlussgrund", "Der Grund, aus dem die Erzeugung der ersten KI-Antwort beendet wurde.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION)
@@ -209,7 +209,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
         if (!context.isDeferred(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-                errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpoint-URL muss angegeben werden."));
+                errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpunkt-URL muss angegeben werden."));
             } else {
                 try {
                     parseEndpointUri(configuration.endpointUrl);
@@ -240,7 +240,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
         if (!context.isDeferred(AiCompletionActionNodeConfig.PROMPT_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-                errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, List.of("Das Prompt muss angegeben werden."));
+                errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, List.of("Der Prompt muss angegeben werden."));
             }
         }
 
@@ -259,7 +259,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         var configuration = context.getConfigurationOfExecutingNode();
 
         if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Die Endpoint-URL für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Die Endpunkt-URL für den KI-Aufruf wurde nicht angegeben.");
         }
         if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
             throw new ProcessNodeExecutionExceptionMissingValue("Das Geheimnis für den API-Schlüssel wurde nicht angegeben.");
@@ -268,7 +268,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
             throw new ProcessNodeExecutionExceptionMissingValue("Das Modell für den KI-Aufruf wurde nicht angegeben.");
         }
         if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Prompt für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Der Prompt für den KI-Aufruf wurde nicht angegeben.");
         }
 
         var endpointUri = parseEndpointUri(configuration.endpointUrl);
@@ -277,7 +277,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
         if (StringUtils.isNullOrEmpty(renderedPrompt)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Das Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
+                    "Der Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
             );
         }
 
@@ -334,7 +334,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     private URI parseEndpointUri(@Nullable String endpointUrl) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedUrl = StringUtils.toNullableTrimmedString(endpointUrl);
         if (normalizedUrl == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpoint-URL für den KI-Aufruf ist leer.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL für den KI-Aufruf ist leer.");
         }
 
         try {
@@ -345,7 +345,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                     .toUri();
 
             if (!uri.isAbsolute() || StringUtils.isNullOrEmpty(uri.getScheme()) || StringUtils.isNullOrEmpty(uri.getHost())) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpoint-URL muss eine absolute URL sein.");
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL muss eine absolute URL sein.");
             }
 
             return uri;
@@ -354,7 +354,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die Endpoint-URL ist ungültig: %s",
+                    "Die Endpunkt-URL ist ungültig: %s",
                     normalizedUrl
             );
         }
@@ -505,7 +505,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
          * Absolute URL of the AI completions endpoint. The node uses this URL as-is and does not render it as a template.
          */
         @InputElementPOJOBinding(id = ENDPOINT_URL_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpoint"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpunkt"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Absolute URL des KI-Endpunkts für Completions."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)

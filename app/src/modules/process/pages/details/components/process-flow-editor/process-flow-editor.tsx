@@ -363,7 +363,9 @@ function ProcessFlowEditorLayoutErrorPanel(props: {layoutError: ProcessFlowEdito
                         component="p"
                         sx={{mb: 0}}
                     >
-                        {`Weitere ${hiddenDetailsCount} Einträge sind betroffen.`}
+                        {hiddenDetailsCount === 1
+                            ? 'Ein weiterer Eintrag ist betroffen.'
+                            : `Weitere ${hiddenDetailsCount} Einträge sind betroffen.`}
                     </Box>
                 }
                 <Box

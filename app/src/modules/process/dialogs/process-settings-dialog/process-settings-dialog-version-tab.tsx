@@ -477,7 +477,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             >
                 Nach Abschluss eines Vorgangs bleibt dieser für die angegebene Dauer gespeichert.
                 Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anlagen gelöscht.
-                In Abschluss-Elementen kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
+                In Prozesselementen der Kategorie Abschluss kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
                 Vor der Veröffentlichung muss eine Aufbewahrungsfrist festgelegt sein.
             </ElementEditorSectionHeader>
 
@@ -559,11 +559,11 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                                         <ol>
                                             <li>Das Erscheinungsbild der Prozessversion</li>
                                             <li>
-                                                Das Erscheinungsbild der verantwortlichen Organisationseinheit (Nur in
+                                                Das Erscheinungsbild der verantwortlichen Organisationseinheit (nur in
                                                 Formularen)
                                             </li>
                                             <li>
-                                                Das Erscheinungsbild der betreuenden Organisationseinheit (Nur in
+                                                Das Erscheinungsbild der betreuenden Organisationseinheit (nur in
                                                 Formularen)
                                             </li>
                                             <li>Das Erscheinungsbild der verwaltenden Organisationseinheit</li>

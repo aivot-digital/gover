@@ -57,7 +57,7 @@ export function ShellSessionExpiredDialog() {
                     href={loginUrl}
                     disabled={loginUrl.length === 0}
                 >
-                    Erneut Anmelden
+                    Erneut anmelden
                 </Button>
                 <Button
                     sx={{

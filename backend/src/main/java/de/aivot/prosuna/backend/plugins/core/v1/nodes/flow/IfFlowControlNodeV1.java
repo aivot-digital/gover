@@ -133,9 +133,9 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
     @Override
     public String getDescription() {
         return """
-                Wertet eine Bedingung aus und führt den Prozess abhängig vom Ergebnis über den Dann- oder Sonst-Ausgangsport fort.
+                Wertet eine Bedingung aus und führt den Vorgang abhängig vom Ergebnis über den Dann- oder Sonst-Ausgangsport fort.
 
-                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die aktuellen Laufzeitdaten zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Ausgangsdaten bereitgestellt.
+                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die verfügbaren Datenebenen des Vorgangs zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Ausgangsdaten bereitgestellt.
                 """;
     }
 
@@ -212,12 +212,12 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                 new ProcessNodePort(
                         PORT_NAME_TRUE,
                         "Bedingung erfüllt",
-                        "Der Prozessfluss wird hier fortgesetzt, wenn die Bedingung erfüllt ist."
+                        "Der Vorgang wird hier fortgesetzt, wenn die Bedingung erfüllt ist."
                 ),
                 new ProcessNodePort(
                         PORT_NAME_FALSE,
                         "Bedingung nicht erfüllt",
-                        "Der Prozessfluss wird hier fortgesetzt, wenn die Bedingung nicht erfüllt ist."
+                        "Der Vorgang wird hier fortgesetzt, wenn die Bedingung nicht erfüllt ist."
                 )
         );
     }

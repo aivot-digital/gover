@@ -93,7 +93,7 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
                 );
 
         if (hasInvalidOption) {
-            throw new ValidationException(this, "Eine oder mehrere Optionen sind ungültig (leerer Wert oder Label).");
+            throw new ValidationException(this, "Eine oder mehrere Optionen sind ungültig (leerer Wert oder leere Beschriftung).");
         }
 
         if (!containsOptionValue(value)) {

@@ -214,7 +214,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         return List.of(new ProcessNodePort(
                 PORT_OUTPUT,
                 "Nachricht versendet",
-                "Der Prozess wird fortgesetzt, nachdem die Nachricht synchron versendet wurde."
+                "Der Vorgang wird fortgesetzt, nachdem die Nachricht synchron versendet wurde."
         ));
     }
 
@@ -348,7 +348,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     ) throws ResponseException, ProcessNodeExecutionException {
         if (!STAFF_TASK_SEND_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
+                    "Das Ereignis %s wird von diesem Prozesselement nicht unterstützt.",
                     StringUtils.quote(event)
             );
         }

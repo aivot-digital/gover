@@ -714,7 +714,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('metadataIdentifier')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.metadataIdentifier}
-                        hint="Technische ID zur Zuweisung der Metadaten. Wenn Sie eine Produktive und eine Testkonfiguration anlegen, verwenden Sie dieselbe ID, um zwischen beiden Umgebungen umschalten zu können."
+                        hint="Technische ID zur Zuweisung der Metadaten. Wenn Sie eine produktive und eine Testkonfiguration anlegen, verwenden Sie dieselbe ID, um zwischen beiden Umgebungen umschalten zu können."
                     />
                 </Grid>
 
@@ -728,7 +728,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('authorizationEndpoint')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.authorizationEndpoint}
-                        hint="Pfad oder vollständige URL zum Authorization-Endpoint des Identity-Providers."
+                        hint="Pfad oder vollständige URL zum Authorization-Endpoint des Identitätsanbieters."
                     />
                 </Grid>
 
@@ -763,7 +763,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                 <Grid size={12}>
                     <TextFieldComponent
-                        label="Endpunkt zum Beenden der Session"
+                        label="Endpunkt zum Beenden der Sitzung"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
                         value={identityProvider.endSessionEndpoint ?? undefined}
                         onChange={val => {
@@ -783,7 +783,7 @@ export function IdentityProviderDetailsPageIndex() {
                     }}
                 >
                     <TextFieldComponent
-                        label="Client ID"
+                        label="Client-ID"
                         required
                         value={identityProvider.clientId}
                         onChange={handleInputChange('clientId')}

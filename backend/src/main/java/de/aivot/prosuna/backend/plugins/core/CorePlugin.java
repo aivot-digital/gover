@@ -28,8 +28,9 @@ public class CorePlugin implements Plugin {
     @Override
     public @Nonnull String getDescription() {
         return """
-                Diese Erweiterung enthält die Kernfunktionalitäten von Prosuna, einschließlich der standardmäßig verfügbaren Prozesselemente,
-                Zahlungs- und Speicheranbieter, No-Code-Operatoren und JavaScript-Funktionsbibliotheken.
+                Diese Erweiterung enthält die Kernfunktionalitäten von Prosuna. Dazu gehören Prozesselemente,
+                JavaScript-Funktionsbibliotheken, eine Sammlung von No-Code-Operatoren sowie Definitionen für
+                Zahlungsanbieter, Speicheranbieter und Kommunikationsanbieter.
                 Sie bildet die Grundlage für die meisten Funktionen von Prosuna und ist eine Voraussetzung für die Installation anderer Erweiterungen.
                 """;
     }

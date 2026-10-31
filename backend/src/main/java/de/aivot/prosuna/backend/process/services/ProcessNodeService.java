@@ -1336,12 +1336,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     private static String createDisabledFormModuleMessage() {
-        return "Die Formularerweiterung ist auf dieser Instanz nicht aktiviert. Prozesselemente dieser Erweiterung können nicht verwendet werden.";
+        return "Das Formularmodul ist in dieser Instanz nicht aktiviert. Prozesselemente dieses Moduls können nicht verwendet werden.";
     }
 
     private static String createProcessNodeLimitExceededMessage(@Nonnull ProcessNodeType type,
                                                                 int limit) {
-        return "In dieser Prozessversion sind maximal %d Prozesselemente vom Typ %s erlaubt."
+        return "In dieser Prozessversion sind maximal %d Prozesselemente der Kategorie %s erlaubt."
                 .formatted(limit, StringUtils.quote(getProcessNodeTypeLabel(type)));
     }
 

@@ -131,7 +131,7 @@ public class FitConnectTriggerControllerV1 {
     private ProcessEntity getProcess(@Nonnull String processSlug) throws ResponseException {
         return processService
                 .retrieveBySlugOrHistory(processSlug)
-                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen Slug gefunden."));
+                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen URL-Namespace gefunden."));
     }
 
     @Nullable

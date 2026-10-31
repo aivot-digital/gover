@@ -37,7 +37,7 @@ const availableFilter = [
         value: 'systemProvider',
     },
     {
-        label: 'Read-only Speicheranbieter',
+        label: 'Schreibgeschützte Speicheranbieter',
         value: 'readOnlyStorage',
     },
 ];

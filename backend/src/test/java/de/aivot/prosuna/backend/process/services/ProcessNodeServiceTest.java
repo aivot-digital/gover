@@ -1055,7 +1055,7 @@ class ProcessNodeServiceTest {
 
         var exception = assertThrows(ResponseException.class, () -> formService.validateNewProcessNodeBatch(List.of(createFormNode())));
 
-        assertTrue(exception.getMessage().contains("Formularerweiterung"));
+        assertTrue(exception.getMessage().contains("Formularmodul"));
     }
 
     @Test

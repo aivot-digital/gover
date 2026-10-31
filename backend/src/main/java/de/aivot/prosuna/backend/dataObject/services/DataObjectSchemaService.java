@@ -88,10 +88,10 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
 
     private void validateSchemaConfig(@Nonnull String idGen, @Nullable GroupLayoutElement schema) throws ResponseException {
         if (schema == null) {
-            throw ResponseException.badRequest("Bitte legen Sie ein Datenschema mit mindestens einem Datenfeld fest.");
+            throw ResponseException.badRequest("Bitte legen Sie eine UI-Definition mit mindestens einem Eingabefeld fest.");
         }
         if (!containsDataField(schema)) {
-            throw ResponseException.badRequest("Das Datenschema muss mindestens ein Datenfeld enthalten.");
+            throw ResponseException.badRequest("Die UI-Definition muss mindestens ein Eingabefeld enthalten.");
         }
 
         switch (idGen) {

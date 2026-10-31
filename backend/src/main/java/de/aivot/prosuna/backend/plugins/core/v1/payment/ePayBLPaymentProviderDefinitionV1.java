@@ -100,7 +100,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     @Override
     public String getName() {
-        return "ePayBL Zahlungsanbieter";
+        return "ePayBL-Zahlungsanbieter";
     }
 
     @Nonnull

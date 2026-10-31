@@ -51,7 +51,7 @@ public class ProcessChangeEntity {
     private ProcessChangeType changeType;
 
     @Nonnull
-    @NotNull(message = "Der Diff darf nicht null sein.")
+    @NotNull(message = "Die Änderungen dürfen nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = DiffItemsConverter.class)
     private List<DiffItem> diff;

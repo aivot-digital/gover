@@ -146,7 +146,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Generiert ein PDF-Dokument basierend auf einem vordefinierten Template.";
+        return "Generiert ein PDF-Dokument basierend auf einer vordefinierten Vorlage.";
     }
 
     @Nonnull
@@ -155,7 +155,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         return """
                 Erzeugt während der Prozessausführung ein PDF-Dokument aus einer HTML-Vorlage.
 
-                Der HTML-Inhalt kann direkt in der Konfiguration oder über eine hinterlegte Vorlagendatei bereitgestellt werden und wird mit den aktuellen Laufzeitdaten gerendert. Das fertige PDF wird als Vorgangsanlage gespeichert; Dateiname, Größe, Speicherort und Dateiwerte stehen als Ausgangsdaten zur Verfügung.
+                Der HTML-Inhalt kann direkt in der Konfiguration oder über eine hinterlegte Vorlagendatei bereitgestellt werden und wird mit den Daten des aktuellen Vorgangs gerendert. Das fertige PDF wird als Vorgangsanlage gespeichert; Dateiname, Größe, Speicherort und Dateiwerte stehen als Ausgangsdaten zur Verfügung.
                 """;
     }
 
@@ -224,7 +224,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 new ProcessNodePort(
                         PORT_NAME,
                         "Dokument erstellt",
-                        "Der Prozess wird hier fortgesetzt, nachdem das PDF-Dokument erstellt wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem das PDF-Dokument erstellt wurde."
                 )
         );
     }

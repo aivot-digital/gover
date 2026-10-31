@@ -525,7 +525,7 @@ function getExpressionOperandLabel(operand: NoCodeExpression, allOperators: NoCo
         .find(op => op.identifier === operand.operatorIdentifier);
 
     if (operator == null) {
-        return `Der Ausdruck mit dem unbekannten No-Code Operand (ID: ${operand.operatorIdentifier})`;
+        return `Der Ausdruck mit dem unbekannten No-Code-Operator (ID: ${operand.operatorIdentifier})`;
     }
 
     return operator.label;

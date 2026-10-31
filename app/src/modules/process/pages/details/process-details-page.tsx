@@ -364,7 +364,7 @@ function isInbetweenCandidateProvider(provider: ProcessNodeProvider): boolean {
 
 function getUnavailableProcessNodeProviderMessage(provider: ProcessNodeProvider): string {
     if (!isProcessNodeProviderEnabled(provider)) {
-        return 'Die Formularerweiterung ist auf dieser Instanz nicht aktiviert.';
+        return 'Das Formularmodul ist in dieser Instanz nicht aktiviert.';
     }
 
     return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[provider.type]} in dieser Prozessversion ist erreicht.`;
@@ -1009,7 +1009,7 @@ export function ProcessDetailsPage(): ReactNode {
                     return;
                 }
 
-                dispatch(showApiErrorSnackbar(err, 'Die Testansprüche konnten nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Testsitzungen konnten nicht geladen werden.'));
             });
 
         return () => {
@@ -1579,7 +1579,7 @@ export function ProcessDetailsPage(): ReactNode {
                 children: (
                     <Typography>
                         Der Prozess befindet sich bereits im Testmodus.
-                        Sie müssen den aktuellen Testmodus beenden, bevor Sie einen neuen Starten können.
+                        Sie müssen den aktuellen Testmodus beenden, bevor Sie einen neuen starten können.
                     </Typography>
                 ),
                 confirmButtonText: 'Ok',
@@ -2008,7 +2008,7 @@ export function ProcessDetailsPage(): ReactNode {
                     </Typography>
                     <Typography>
                         Name, Kurzbeschreibung und Datenschlüssel bleiben erhalten.
-                        Sämtliche Konfiguration und Zuweisungen werden zurückgesetzt.
+                        Die gesamte Konfiguration und alle Zuweisungen werden zurückgesetzt.
                     </Typography>
                     <Typography>
                         Bestehende eingehende Verbindungen bleiben erhalten. {outgoingConnectionSummary}

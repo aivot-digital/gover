@@ -155,7 +155,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         return """
                 Erstellt eine frei definierbare Aufgabe für eine Mitarbeiter:in, um einen manuellen Arbeitsschritt innerhalb oder außerhalb von Prosuna zu bestätigen.
 
-                Aufgabenbeschreibung, verantwortlicher Personenkreis und eine optionale Prosuna-Oberfläche werden konfiguriert. Nach der Bestätigung setzt das Element den Prozess fort und stellt erfasste Daten, Vermerk sowie Bearbeitungszeitpunkt und bearbeitende Person als Ausgangsdaten bereit.
+                Aufgabenbeschreibung, verantwortlicher Personenkreis und eine optionale Prosuna-Oberfläche werden konfiguriert. Nach der Bestätigung setzt das Element den Vorgang fort und stellt erfasste Daten, Vermerk sowie Bearbeitungszeitpunkt und bearbeitende Person als Ausgangsdaten bereit.
                 """;
     }
 
@@ -222,7 +222,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 new ProcessNodePort(
                         PORT_OUTPUT,
                         "Aktion bestätigt",
-                        "Der Prozess wird hier fortgesetzt, nachdem die freie Aufgabe bestätigt wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die freie Aufgabe bestätigt wurde."
                 )
         );
     }
@@ -234,7 +234,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Erfasste Daten",
-                        "Die über die optionale Prosuna-UI bestätigten oder erfassten Daten im Payload-Format.",
+                        "Die über die optionale Oberfläche bestätigten oder erfassten Daten im Payload-Format.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
@@ -437,14 +437,14 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die konfigurierte Prosuna-UI der freien Aufgabe ist ungültig: %s",
+                    "Die konfigurierte UI-Definition der freien Aufgabe ist ungültig: %s",
                     e.getMessage()
             );
         }
 
         if (!(element instanceof GroupLayoutElement uiDefinition)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die konfigurierte Prosuna-UI der freien Aufgabe muss mit einer Gruppe beginnen."
+                    "Die konfigurierte UI-Definition der freien Aufgabe muss mit einer Gruppe beginnen."
             );
         }
 
@@ -565,7 +565,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
         @InputElementPOJOBinding(id = UI_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Daten zu dieser Aufgabe"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Modellieren Sie eine Prosuna-UI, wenn zur Aufgabe Daten angezeigt oder erfasst werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Modellieren Sie eine UI-Definition, wenn zur Aufgabe Daten angezeigt oder erfasst werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public GroupLayoutElement uiDefinition;

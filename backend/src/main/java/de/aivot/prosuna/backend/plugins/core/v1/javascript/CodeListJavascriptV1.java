@@ -59,7 +59,7 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Codelisten.";
+        return "Diese JavaScript-Funktionsbibliothek ermöglicht den Zugriff auf Codelisten.";
     }
 
     @Nonnull

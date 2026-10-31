@@ -101,7 +101,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                                     minFiles: val,
                                 });
                             }}
-                            error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                            error={invalidMinMax ? 'Die Mindestanzahl an Anlagen darf nicht größer als die Maximalanzahl sein.' : undefined}
                             disabled={!props.editable}
                         />
                     </Grid>
@@ -120,7 +120,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                                     maxFiles: val,
                                 });
                             }}
-                            error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                            error={invalidMinMax ? 'Die Mindestanzahl an Anlagen darf nicht größer als die Maximalanzahl sein.' : undefined}
                             disabled={!props.editable}
                         />
                     </Grid>

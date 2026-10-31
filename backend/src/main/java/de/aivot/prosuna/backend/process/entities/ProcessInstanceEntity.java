@@ -44,7 +44,7 @@ public class ProcessInstanceEntity {
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Initial-Prozessversion darf nicht null sein.")
+    @NotNull(message = "Die ursprüngliche Prozessversion darf nicht null sein.")
     private Integer initialProcessVersion;
 
     @Nonnull

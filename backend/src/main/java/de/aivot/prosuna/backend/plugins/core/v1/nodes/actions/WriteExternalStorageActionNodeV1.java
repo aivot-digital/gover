@@ -173,7 +173,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Nonnull
     @Override
     public String getName() {
-        return "Dokument bei Speicheranbieter schreiben";
+        return "Anlagen bei Speicheranbieter speichern";
     }
 
     @Nonnull
@@ -293,7 +293,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 new ProcessNodePort(
                         PORT_NAME,
                         "Anlagensatz gespeichert",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Anlagen gespeichert wurden."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Anlagen gespeichert wurden."
                 )
         );
     }
@@ -1087,7 +1087,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
          */
         @InputElementPOJOBinding(id = IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, type = ElementType.Checkbox, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Optionaler Anlagensatz"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn aktiviert, schlägt der Prozess nicht fehl, wenn kein Anlagensatz vorhanden ist."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn aktiviert, schlägt der Vorgang nicht fehl, wenn kein Anlagensatz vorhanden ist."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         @Nullable

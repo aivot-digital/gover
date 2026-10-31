@@ -197,7 +197,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 new ProcessNodePort(
                         PORT_NAME,
                         "Variablen berechnet",
-                        "Der Prozess wird hier fortgesetzt, nachdem alle Einträge berechnet wurden."
+                        "Der Vorgang wird hier fortgesetzt, nachdem alle Einträge berechnet wurden."
                 )
         );
     }
@@ -570,14 +570,14 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             var trimmed = s.trim();
             if (trimmed.isEmpty()) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Leere Zeichenkette kann nicht als Zahl umgewandelt werden."
+                        "Leere Zeichenkette kann nicht in eine Zahl umgewandelt werden."
                 );
             }
             return new BigDecimal(trimmed);
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht als Zahl umgewandelt werden.",
+                "Der Typ %s kann nicht in eine Zahl umgewandelt werden.",
                 StringUtils.quote(value.getClass().getSimpleName())
         );
     }
@@ -597,14 +597,14 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 case "true", "1", "ja", "yes", "on" -> true;
                 case "false", "0", "nein", "no", "off", "" -> false;
                 default -> throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Die Zeichenkette %s kann nicht als Ja/Nein-Wert umgewandelt werden.",
+                        "Die Zeichenkette %s kann nicht in einen Ja/Nein-Wert umgewandelt werden.",
                         StringUtils.quote(s)
                 );
             };
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht als Ja/Nein-Wert umgewandelt werden.",
+                "Der Typ %s kann nicht in einen Ja/Nein-Wert umgewandelt werden.",
                 StringUtils.quote(value.getClass().getSimpleName())
         );
     }
@@ -670,7 +670,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht als Uhrzeit umgewandelt werden.",
+                "Der Typ %s kann nicht in eine Uhrzeit umgewandelt werden.",
                 StringUtils.quote(value.getClass().getSimpleName())
         );
     }
@@ -709,7 +709,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             var trimmed = s.trim();
             if (trimmed.isEmpty()) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Leere Zeichenkette kann nicht als Datum umgewandelt werden."
+                        "Leere Zeichenkette kann nicht in ein Datum umgewandelt werden."
                 );
             }
 
@@ -730,7 +730,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                                     .toString();
                         } catch (Exception ignoredInstant) {
                             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                                    "Die Zeichenkette %s kann nicht als Datum umgewandelt werden.",
+                                    "Die Zeichenkette %s kann nicht in ein Datum umgewandelt werden.",
                                     StringUtils.quote(s)
                             );
                         }
@@ -740,7 +740,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht als Datum umgewandelt werden.",
+                "Der Typ %s kann nicht in ein Datum umgewandelt werden.",
                 StringUtils.quote(value.getClass().getSimpleName())
         );
     }
@@ -766,7 +766,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             var trimmed = s.trim();
             if (trimmed.isEmpty()) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Leere Zeichenkette kann nicht als Datum und Uhrzeit umgewandelt werden."
+                        "Leere Zeichenkette kann nicht in Datum und Uhrzeit umgewandelt werden."
                 );
             }
 
@@ -779,7 +779,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                     );
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Die Zeichenkette %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
+                            "Die Zeichenkette %s kann nicht in Datum und Uhrzeit umgewandelt werden.",
                             StringUtils.quote(s)
                     );
                 }
@@ -787,7 +787,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
+                "Der Typ %s kann nicht in Datum und Uhrzeit umgewandelt werden.",
                 StringUtils.quote(value.getClass().getSimpleName())
         );
     }
@@ -826,7 +826,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
     @ReplicatingContainerLayoutElementElementPOJOBinding(id = VARIABLES_FIELD_ID, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "No-Code-Aktion"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Pro Eintrag wird ein Variablenname und der zu berechnende No-Code-Ausdruck definiert."),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Pro Eintrag werden ein Variablenname und der zu berechnende No-Code-Ausdruck definiert."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
             @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Eintrag #"),
             @ElementPOJOBindingProperty(key = "addLabel", strValue = "Eintrag hinzufügen"),

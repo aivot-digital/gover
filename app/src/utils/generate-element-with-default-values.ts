@@ -448,7 +448,7 @@ const elementConstructors: {
     }),
     [ElementType.DateTimeRange]: (id) => ({
         ...makeInputBase(ElementType.DateTimeRange, id),
-        label: 'Datum- und Zeitspanne',
+        label: 'Datums- und Zeitspanne',
         placeholder: undefined,
         mode: TimeFieldComponentModelMode.Minute,
     }),

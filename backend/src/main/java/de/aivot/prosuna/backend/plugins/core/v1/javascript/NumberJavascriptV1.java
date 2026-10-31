@@ -35,7 +35,7 @@ public class NumberJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Modul stellt Funktionen zur Verarbeitung von Zahlenwerten bereit.";
+        return "Diese JavaScript-Funktionsbibliothek unterstützt die Verarbeitung von Zahlenwerten.";
     }
 
     @Nonnull

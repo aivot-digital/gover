@@ -1245,7 +1245,7 @@ public class ProcessNodeExecutionResultHandler {
         }
         var edge = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(currentNode.getId(), viaPort)
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Für das Prozesselement %s wurde keine Verbindung für den Ausgangsport %s definiert. Bitte prüfen Sie den Aufbau Ihres Prozessmodells.",
+                        "Für das Prozesselement %s wurde keine Verbindung für den Ausgangsport %s definiert. Bitte prüfen Sie den Aufbau Ihrer Prozessdefinition.",
                         StringUtils.quote(currentNode.resolveName(provider)),
                         StringUtils.quote(port.label())
                 ));

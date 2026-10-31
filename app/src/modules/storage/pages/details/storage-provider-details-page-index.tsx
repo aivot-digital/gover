@@ -613,7 +613,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     }}
                 >
                     <CheckboxFieldComponent
-                        label="Es handelt sich um einen read-only Speicher, von welchem Dateien nur gelesen, aber nicht geschrieben werden können."
+                        label="Es handelt sich um einen schreibgeschützten Speicher, von welchem Dateien nur gelesen, aber nicht geschrieben werden können."
                         value={editedStorageProvider.readOnlyStorage}
                         onChange={handleInputChange('readOnlyStorage')}
                         variant="switch"
@@ -671,11 +671,11 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                                                 marginBottom: 2
                                             }}
                                         >
-                                            Die maximale Dateigröße wird unter Anderem an den folgenden Stellen
+                                            Die maximale Dateigröße wird unter anderem an den folgenden Stellen
                                             berücksichtigt:
                                             <ul>
                                                 <li>Das Hochladen von Dateien und Medien</li>
-                                                <li>Das Übertragen von Anlagen an einen Prozess</li>
+                                                <li>Das Übertragen von Anlagen an einen Vorgang</li>
                                                 <li>Das Erstellen von Anlagen in einem Vorgang z.B. durch eine
                                                     PDF-Generierung
                                                 </li>
@@ -748,7 +748,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             disabled: inputsDisabled,
                         },
                     ]}
-                    hint="Geben Sie hier die optionale Metadaten-Attribute ein, die für Dateien mitgegeben werden können."
+                    hint="Geben Sie hier die optionalen Metadaten-Attribute ein, die für Dateien mitgegeben werden können."
                     createDefaultRow={() => ({
                         label: '',
                         key: '',
@@ -881,12 +881,12 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         resolveSyncPreparation(false);
                     }}
                     onConfirm={handleSyncWithDiscard}
-                    confirmButtonText="Verwerfen und Synchronisieren"
+                    confirmButtonText="Verwerfen und synchronisieren"
                 >
                     <Typography>
                         Es liegen ungespeicherte Änderungen vor. Wenn Sie jetzt synchronisieren, müssen diese zuerst
                         verworfen werden. Wenn Sie die Änderungen behalten möchten, brechen Sie ab und verwenden Sie
-                        anschließend den regulären Speichern-Button.
+                        anschließend die reguläre Schaltfläche „Speichern“.
                     </Typography>
                 </ConfirmDialog>
             }

@@ -473,13 +473,13 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     @LayoutElementPOJOBinding(id = DEFAULT_SENDER_GROUP_ID, type = ElementType.GroupLayout)
     public static class DefaultSenderConfig {
         @InputElementPOJOBinding(id = DEFAULT_SENDER_NAME_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "From Name"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absendername"),
                 @ElementPOJOBindingProperty(key = "disabled", boolValue = true),
         })
         public String name;
 
         @InputElementPOJOBinding(id = DEFAULT_SENDER_ADDRESS_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "From Adresse"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absenderadresse"),
                 @ElementPOJOBindingProperty(key = "disabled", boolValue = true),
         })
         public String address;
@@ -489,7 +489,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     @LayoutElementPOJOBinding(id = CUSTOM_SENDER_GROUP_ID, type = ElementType.GroupLayout)
     public static class CustomSenderConfig {
         @InputElementPOJOBinding(id = CUSTOM_SENDER_NAME_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "From Name"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absendername"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Anzeigename des Absenders."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 255),
@@ -497,7 +497,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         public String name;
 
         @InputElementPOJOBinding(id = CUSTOM_SENDER_ADDRESS_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "From Adresse"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absenderadresse"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "E-Mail-Adresse des Absenders."),
                 @ElementPOJOBindingProperty(key = "autocomplete", strValue = "email"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
@@ -509,7 +509,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 @ElementPOJOBindingProperty(key = "label", strValue = "Reply-To-Adresse"),
                 @ElementPOJOBindingProperty(
                         key = "hint",
-                        strValue = "Optional. Bleibt das Feld leer, werden Antworten an die From-Adresse gesendet."
+                        strValue = "Optional. Bleibt das Feld leer, werden Antworten an die Absenderadresse gesendet."
                 ),
                 @ElementPOJOBindingProperty(key = "autocomplete", strValue = "email"),
                 @ElementPOJOBindingProperty(key = "required", falseValue = true),

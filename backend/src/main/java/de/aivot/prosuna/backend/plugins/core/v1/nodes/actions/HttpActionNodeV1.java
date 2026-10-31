@@ -191,13 +191,13 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     @Nonnull
     @Override
     public String getName() {
-        return "Externer HTTP Aufruf";
+        return "Externer HTTP-Aufruf";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Führt HTTP-Requests zu externen Systemen durch.";
+        return "Führt HTTP-Anfragen zu externen Systemen durch.";
     }
 
     @Nonnull
@@ -251,7 +251,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                 new ProcessNodePort(
                         SUCCESS_PORT,
                         "HTTP erfolgreich",
-                        "Der Prozess wird hier fortgesetzt, wenn die Antwort einen erlaubten HTTP-Statuscode liefert."
+                        "Der Vorgang wird hier fortgesetzt, wenn die Antwort einen erlaubten HTTP-Statuscode liefert."
                 )
         );
     }
@@ -286,7 +286,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                             processNodeEntity.getDataKey(),
                             StringUtils.isNotNullOrEmpty(configuration.responseConfig.responseFileName)
                                     ? configuration.responseConfig.responseFileName
-                                    : Objects.requireNonNullElse(processNodeEntity.getName(), "Http-Anfrage"),
+                                    : Objects.requireNonNullElse(processNodeEntity.getName(), "HTTP-Anfrage"),
                             null,
                             false,
                             processNodeEntity
@@ -319,7 +319,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Vorbereiten oder Ausführen des HTTP-Requests: %s",
+                    "Fehler beim Vorbereiten oder Ausführen der HTTP-Anfrage: %s",
                     e.getMessage()
             );
         }
@@ -485,7 +485,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                          @Nullable String url) throws ProcessNodeExecutionException {
         var renderedUrl = url;
         if (StringUtils.isNullOrEmpty(renderedUrl)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Die URL für den HTTP-Request wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Die URL für die HTTP-Anfrage wurde nicht angegeben.");
         }
 
         try {
@@ -496,7 +496,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die URL für den HTTP-Request ist ungültig: %s",
+                    "Die URL für die HTTP-Anfrage ist ungültig: %s",
                     renderedUrl
             );
         }

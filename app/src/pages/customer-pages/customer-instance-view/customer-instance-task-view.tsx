@@ -237,7 +237,7 @@ export function CustomerInstanceTaskView() {
 
     const handleTaskViewEvent = useCallback(async (event: TaskViewEvent, values: AuthoredElementValues): Promise<void> => {
         dispatch(setLoadingMessage({
-            message: `Verarbeite Aktion: ${event.label}`,
+            message: `Aktion wird verarbeitet: ${event.label}`,
             blocking: true,
             estimatedTime: 500,
         }));

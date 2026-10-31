@@ -33,7 +33,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                     title="Fachliche Anforderungen"
                     variant={"h5"}
                 >
-                    Definieren Sie hier schriftlich, welche Anforderungen an die Logik gestellt werden. Diese Beschreibung hilft bei der technischen Umsetzung und späteren Nachvollziehbarkeit der entsprechenden No-/Low-Code Funktion.
+                    Definieren Sie hier schriftlich, welche Anforderungen an die Logik gestellt werden. Diese Beschreibung hilft bei der technischen Umsetzung und späteren Nachvollziehbarkeit der entsprechenden No-/Low-Code-Funktion.
                 </ElementEditorSectionHeader>
 
                 <Grid

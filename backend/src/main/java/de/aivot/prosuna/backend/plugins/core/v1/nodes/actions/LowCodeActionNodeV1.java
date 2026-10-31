@@ -154,7 +154,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
                 new ProcessNodePort(
                         PORT_NAME,
                         "JavaScript ausgeführt",
-                        "Der Prozess wird hier fortgesetzt, nachdem der JavaScript-Code ausgeführt wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem der JavaScript-Code ausgeführt wurde."
                 )
         );
     }
@@ -194,7 +194,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Initialisieren der Javascript-Engine."
+                    "Fehler beim Initialisieren der JavaScript-Engine."
             );
         }
     }

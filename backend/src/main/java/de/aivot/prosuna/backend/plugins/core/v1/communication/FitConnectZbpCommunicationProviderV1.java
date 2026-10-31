@@ -244,7 +244,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                                          @Nonnull AuthoredElementValues inputs) throws CommunicationException {
         var input = inputs.getLiteral(TEST_POSTFACH_ID_FIELD_ID);
         if (!(input instanceof String rawPostfachId) || rawPostfachId.isBlank()) {
-            throw new CommunicationException("Die Postfach-ID des Testnutzers ist erforderlich.");
+            throw new CommunicationException("Die Postfach-ID für den Empfang der Testnachricht ist erforderlich.");
         }
 
         var normalizedPostfachId = rawPostfachId.trim();
@@ -252,10 +252,10 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         try {
             postfachId = UUID.fromString(normalizedPostfachId);
         } catch (IllegalArgumentException e) {
-            throw new CommunicationException("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.", e);
+            throw new CommunicationException("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.", e);
         }
         if (!postfachId.toString().equalsIgnoreCase(normalizedPostfachId)) {
-            throw new CommunicationException("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.");
+            throw new CommunicationException("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.");
         }
 
         var identityProviderKey = UUID.randomUUID();

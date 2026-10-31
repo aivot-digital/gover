@@ -145,7 +145,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Erlaubt einer Mitarbeiter:in, Daten in einer Prosuna-UI zu ändern, hinzuzufügen oder zu entfernen.";
+        return "Erlaubt einer Mitarbeiter:in, Daten über eine konfigurierte Oberfläche zu ändern, hinzuzufügen oder zu entfernen.";
     }
 
     @Nonnull
@@ -215,7 +215,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 new ProcessNodePort(
                         PORT_OUTPUT,
                         "Datenänderung übernommen",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Datenänderung übernommen wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Datenänderung übernommen wurde."
                 )
         );
     }
@@ -227,7 +227,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Bearbeitete Daten",
-                        "Die final übernommenen Daten aus der konfigurierten Prosuna-UI im Payload-Format.",
+                        "Die final übernommenen Daten aus der konfigurierten Oberfläche im Payload-Format.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
@@ -447,7 +447,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
         @InputElementPOJOBinding(id = DATA_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bearbeitbare Daten"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Prosuna-UI, mit der die Mitarbeiter:in die Vorgangsdaten bearbeiten kann."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine UI-Definition für die Bearbeitung der Vorgangsdaten."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public GroupLayoutElement dataDefinition;

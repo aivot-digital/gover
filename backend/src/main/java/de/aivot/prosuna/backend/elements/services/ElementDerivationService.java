@@ -532,7 +532,7 @@ public class ElementDerivationService {
                         .registerElementObject(currentElement)
                         .evaluateCode(override.getJavascriptCode());
             } catch (JavascriptException e) {
-                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Override-Ableitung: " + e.getMessage(), e);
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des JavaScript-Codes für die Override-Ableitung: " + e.getMessage(), e);
             }
 
             // Check if the result is null, which indicates no override was generated
@@ -692,7 +692,7 @@ public class ElementDerivationService {
                         .registerElementObject(currentElement)
                         .evaluateCode(vis.getJavascriptCode());
             } catch (JavascriptException e) {
-                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Sichtbarkeits-Ableitung: " + e.getMessage(), e);
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des JavaScript-Codes für die Sichtbarkeits-Ableitung: " + e.getMessage(), e);
             }
 
             logger.log(currentElement, res);

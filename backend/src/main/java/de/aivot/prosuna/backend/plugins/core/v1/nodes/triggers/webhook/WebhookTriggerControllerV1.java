@@ -231,7 +231,7 @@ public class WebhookTriggerControllerV1 {
                 .findAll(specBuilder.build());
 
         if (res.isEmpty()) {
-            throw ResponseException.notFound("Kein Webhook-Auslöser mit dem angegebenen Slug gefunden.");
+            throw ResponseException.notFound("Kein Webhook-Auslöser mit dem angegebenen URL-Segment gefunden.");
         }
 
         return res;
@@ -612,6 +612,6 @@ public class WebhookTriggerControllerV1 {
     private ProcessEntity getProcess(String processSlug) throws ResponseException {
         return processService
                 .retrieveBySlugOrHistory(processSlug)
-                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen Slug gefunden."));
+                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen URL-Namespace gefunden."));
     }
 }

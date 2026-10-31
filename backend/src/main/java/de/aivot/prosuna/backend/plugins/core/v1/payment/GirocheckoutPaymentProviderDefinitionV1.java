@@ -80,7 +80,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
     @Nonnull
     @Override
     public String getName() {
-        return "GiroCheckout Zahlungsanbieter";
+        return "GiroCheckout-Zahlungsanbieter";
     }
 
     @Nonnull

@@ -7,6 +7,7 @@ import {validateDurationSeconds} from '../components/duration-field/duration-val
 import {isValidProcessDataPath} from './process-data-path';
 import {type ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {InputMode} from '../models/input-mode';
+import {pluralize} from './humanization-utils';
 import {AnyElement} from '../models/elements/any-element';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {ElementType} from '../data/element-type/element-type';
@@ -191,10 +192,10 @@ function countedArraySchema(opts: {
         if (count === 0) {
             return !opts.required || this.createError({message: requiredMessage});
         }
-        return count >= (opts.minItems ?? 0) || this.createError({message: `Mindestens ${opts.minItems} Einträge erforderlich.`});
+        return count >= (opts.minItems ?? 0) || this.createError({message: `Mindestens ${opts.minItems} ${pluralize(opts.minItems ?? 0, 'Eintrag', 'Einträge')} erforderlich.`});
     });
     if (opts.required) schema = schema.required(requiredMessage);
-    if ((opts.maxItems ?? 0) > 0) schema = schema.max(opts.maxItems!, `Maximal ${opts.maxItems} Einträge erlaubt.`);
+    if ((opts.maxItems ?? 0) > 0) schema = schema.max(opts.maxItems!, `Maximal ${opts.maxItems} ${pluralize(opts.maxItems!, 'Eintrag', 'Einträge')} erlaubt.`);
     return schema;
 }
 

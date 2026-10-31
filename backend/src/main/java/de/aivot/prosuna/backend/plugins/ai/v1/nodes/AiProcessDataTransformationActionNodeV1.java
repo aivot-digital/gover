@@ -161,16 +161,16 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet die vollständigen Laufzeitdaten eines Vorgangs an eine KI und ersetzt die Vorgangsdaten durch das zurückgegebene JSON-Objekt.";
+        return "Sendet die Vorgangsdaten, Elementdaten und geschützten Vorgangsdaten an eine KI und ersetzt die Vorgangsdaten durch das zurückgegebene JSON-Objekt.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Verwendet eine kompatible KI-Completions-API, um die vollständigen Laufzeitdaten eines Vorgangs in ein neues JSON-Objekt zu transformieren.
+                Verwendet eine kompatible KI-Completions-API, um die Vorgangsdaten, Elementdaten und geschützten Vorgangsdaten in ein neues JSON-Objekt zu transformieren.
 
-                Endpoint, API-Schlüssel, Modell und Prompt werden konfiguriert; der Prompt kann die aktuellen Vorgangsdaten einbeziehen. Das von der KI zurückgegebene JSON-Objekt ersetzt anschließend die bisherigen Vorgangsdaten vollständig. Informationen zu Modell, Abschlussgrund, Nutzung und erzeugten Top-Level-Schlüsseln stehen als Ausgangsdaten zur Verfügung.
+                Endpunkt, API-Schlüssel, Modell und Prompt werden konfiguriert; der Prompt kann die aktuellen Vorgangsdaten einbeziehen. Das von der KI zurückgegebene JSON-Objekt ersetzt anschließend die bisherigen Vorgangsdaten vollständig. Informationen zu Modell, Abschlussgrund, Nutzung und erzeugten Top-Level-Schlüsseln stehen als Ausgangsdaten zur Verfügung.
                 """;
     }
 
@@ -202,7 +202,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                 new ProcessNodePort(
                         SUCCESS_PORT,
                         "Vorgangsdaten transformiert",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Vorgangsdaten erfolgreich transformiert wurden."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Vorgangsdaten erfolgreich transformiert wurden."
                 )
         );
     }
@@ -229,7 +229,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpoint-URL muss angegeben werden."));
+                errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpunkt-URL muss angegeben werden."));
             } else {
                 try {
                     parseEndpointUri(configuration.endpointUrl);
@@ -260,7 +260,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, List.of("Das Prompt muss angegeben werden."));
+                errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, List.of("Der Prompt muss angegeben werden."));
             }
         }
 
@@ -279,7 +279,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var configuration = context.getConfigurationOfExecutingNode();
 
         if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Die Endpoint-URL für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Die Endpunkt-URL für den KI-Aufruf wurde nicht angegeben.");
         }
         if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
             throw new ProcessNodeExecutionExceptionMissingValue("Das Geheimnis für den API-Schlüssel wurde nicht angegeben.");
@@ -288,7 +288,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
             throw new ProcessNodeExecutionExceptionMissingValue("Das Modell für den KI-Aufruf wurde nicht angegeben.");
         }
         if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Prompt für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Der Prompt für den KI-Aufruf wurde nicht angegeben.");
         }
 
         var endpointUri = parseEndpointUri(configuration.endpointUrl);
@@ -296,7 +296,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var renderedPrompt = configuration.prompt;
         if (StringUtils.isNullOrEmpty(renderedPrompt)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Das Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
+                    "Der Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
             );
         }
 
@@ -356,7 +356,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private URI parseEndpointUri(@Nullable String endpointUrl) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedUrl = StringUtils.toNullableTrimmedString(endpointUrl);
         if (normalizedUrl == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpoint-URL für den KI-Aufruf ist leer.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL für den KI-Aufruf ist leer.");
         }
 
         try {
@@ -367,7 +367,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                     .toUri();
 
             if (!uri.isAbsolute() || StringUtils.isNullOrEmpty(uri.getScheme()) || StringUtils.isNullOrEmpty(uri.getHost())) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpoint-URL muss eine absolute URL sein.");
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL muss eine absolute URL sein.");
             }
 
             return uri;
@@ -376,7 +376,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die Endpoint-URL ist ungültig: %s",
+                    "Die Endpunkt-URL ist ungültig: %s",
                     normalizedUrl
             );
         }
@@ -606,7 +606,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
          * Absolute URL of the AI completions endpoint. The node uses this URL as-is and does not render it as a template.
          */
         @InputElementPOJOBinding(id = ENDPOINT_URL_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpoint"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpunkt"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Absolute URL des KI-Endpunkts für Completions."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)

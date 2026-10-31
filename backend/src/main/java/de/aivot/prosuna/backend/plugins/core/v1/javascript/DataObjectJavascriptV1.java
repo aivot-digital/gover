@@ -65,7 +65,7 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Datenmodelle und Datenobjekte.";
+        return "Diese JavaScript-Funktionsbibliothek ermöglicht die Arbeit mit Datenmodellen und Datenobjekten.";
     }
 
     @Nonnull
@@ -74,7 +74,7 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
         return """
                 Bindet Prosuna-Datenmodelle und ihre Datenobjekte in JavaScript-Ausdrücke ein.
 
-                Das Paket stellt Funktionen zum Abrufen der Feldstruktur von Datenmodellen sowie zum Auflisten, Erstellen, Laden und Aktualisieren von Datenobjekten bereit. Mit Feldfiltern können Abfragen auf passende Datenobjekte eingegrenzt werden.
+                Die Funktionsbibliothek stellt Funktionen zum Abrufen der Feldstruktur von Datenmodellen sowie zum Auflisten, Erstellen, Laden und Aktualisieren von Datenobjekten bereit. Mit Feldfiltern können Abfragen auf passende Datenobjekte eingegrenzt werden.
                 """;
     }
 

@@ -125,7 +125,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Empfängt Daten von FIT-Connect und startet den Prozess.";
+        return "Empfängt Daten von FIT-Connect und startet einen Vorgang.";
     }
 
     @Nonnull
@@ -159,7 +159,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
                 new ProcessNodePort(
                         PORT_NAME,
                         "Übermittlung empfangen",
-                        "Der Prozess wird mit den importierten FIT-Connect-Daten fortgesetzt."
+                        "Der Vorgang wird mit den importierten FIT-Connect-Daten fortgesetzt."
                 )
         );
     }

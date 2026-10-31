@@ -270,7 +270,7 @@ public class IdentityService {
                     } catch (NoSuchAlgorithmException e) {
                         throw ResponseException.internalServerError(
                                 e,
-                                "Der SHA-256 Algorithmus wird nicht unterstützt."
+                                "Der SHA-256-Algorithmus wird nicht unterstützt."
                         );
                     }
                     byte[] encodedhash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
@@ -954,7 +954,7 @@ public class IdentityService {
                     .digest(flowBindingSecret.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Der SHA-256 Algorithmus wird nicht unterstützt.", e);
+            throw new IllegalStateException("Der SHA-256-Algorithmus wird nicht unterstützt.", e);
         }
     }
 

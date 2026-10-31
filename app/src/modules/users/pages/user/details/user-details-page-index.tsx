@@ -481,7 +481,7 @@ export function UserDetailsPageIndex() {
                 new UsersApiService()
                     .resetPassword(user.id)
                     .then(() => {
-                        dispatch(showSuccessSnackbar('Der Passwort-Zurücksetzen-Link wurde erfolgreich versendet.'));
+                        dispatch(showSuccessSnackbar('Der Link zum Zurücksetzen des Passworts wurde erfolgreich versendet.'));
                     })
                     .catch((err) => {
                         dispatch(showApiErrorSnackbar(err, 'Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.'));
@@ -515,7 +515,7 @@ export function UserDetailsPageIndex() {
                         }}
                     >
                         Bei dieser Mitarbeiter:in handelt es sich um einen Beispieldatensatz.<br/>
-                        Eine Änderung der Daten, sowie ein Löschen ist nicht möglich.
+                        Eine Änderung der Daten sowie ein Löschen sind nicht möglich.
                     </AlertComponent>
                 }
 
@@ -587,7 +587,7 @@ export function UserDetailsPageIndex() {
                                 !canReadSystemRoles
                                     ? systemRoleReadDisabledTooltip
                                     : hasSystemRolesLoadingError
-                                    ? 'Die Rollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder wenden Sie sich an eine Administrator:in.'
+                                    ? 'Die Rollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder wenden Sie sich an Ihre Administration.'
                                     : undefined
                             }
                             error={errors.systemRoleId}

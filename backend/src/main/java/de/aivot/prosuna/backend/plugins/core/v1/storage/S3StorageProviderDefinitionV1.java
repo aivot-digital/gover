@@ -73,7 +73,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     @Nonnull
     @Override
     public String getName() {
-        return "S3 Speicheranbieter";
+        return "S3-Speicheranbieter";
     }
 
     @Nonnull
@@ -227,7 +227,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 );
             } catch (ErrorResponseException e) {
                 if (ACCESS_DENIED_ERROR_CODE.equals(e.errorResponse().code())) {
-                    throw new StorageException("Der Zugriff auf den S3-kompatiblen Speicher ist nicht schreibbar. Bitte überprüfen Sie die Berechtigungen des Access Keys.");
+                    throw new StorageException("Auf den S3-kompatiblen Speicher kann nicht schreibend zugegriffen werden. Bitte überprüfen Sie die Berechtigungen des Access Keys.");
                 } else {
                     throw new StorageException(e, "Fehler beim Überprüfen der Schreibberechtigung im S3-kompatiblen Speicher.");
                 }
@@ -637,7 +637,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                                         @Nonnull String targetPathFromRoot) throws StorageException {
         if (sourcePathFromRoot.equals(targetPathFromRoot)) {
             return retrieveDocument(config, sourcePathFromRoot)
-                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot)));
+                    .orElseThrow(() -> new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot)));
         }
 
         var copiedDocument = copyDocument(config, sourcePathFromRoot, targetPathFromRoot);
@@ -669,7 +669,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             client.copyObject(copyObjectArgs);
         } catch (ErrorResponseException e) {
             if ("NoSuchKey".equals(e.errorResponse().code())) {
-                throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+                throw new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
             }
             throw new StorageException(e, "Die Datei konnte nicht im S3-kompatiblen Speicher kopiert werden.");
         } catch (MinioException e) {

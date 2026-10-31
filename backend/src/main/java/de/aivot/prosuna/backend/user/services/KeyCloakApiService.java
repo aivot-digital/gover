@@ -353,9 +353,9 @@ public class KeyCloakApiService {
             case "error-person-name-invalid-length" ->
                     String.format("Der eingegebene Wert für „%s“ ist zu kurz oder zu lang.", fieldName);
             case "error-user-attribute-required" ->
-                    String.format("Bitte das Feld „%s“ ausfüllen.", fieldName);
+                    String.format("Bitte füllen Sie das Feld „%s“ aus.", fieldName);
             case "error-invalid-email" ->
-                    "Bitte eine gültige E-Mail-Adresse angeben.";
+                    "Bitte geben Sie eine gültige E-Mail-Adresse an.";
             case "error-email-exists", "error-username-exists", "error-user-attribute-duplicate-email" ->
                     "Es existiert bereits eine Mitarbeiter:in mit dieser E-Mail-Adresse.";
             default ->

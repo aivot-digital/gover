@@ -879,12 +879,12 @@ public class AssetController {
         var marker = "/files/";
         var markerIndex = requestUrl.indexOf(marker);
         if (markerIndex < 0) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         var normalizedPath = requestUrl.substring(markerIndex + marker.length());
         if (normalizedPath.isBlank()) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         if (!normalizedPath.startsWith("/")) {
@@ -907,12 +907,12 @@ public class AssetController {
         var marker = "/files-content/";
         var markerIndex = requestUrl.indexOf(marker);
         if (markerIndex < 0) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         var normalizedPath = requestUrl.substring(markerIndex + marker.length());
         if (normalizedPath.isBlank()) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         if (!normalizedPath.startsWith("/")) {
@@ -935,12 +935,12 @@ public class AssetController {
         var marker = "/files-metadata/";
         var markerIndex = requestUrl.indexOf(marker);
         if (markerIndex < 0) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         var normalizedPath = requestUrl.substring(markerIndex + marker.length());
         if (normalizedPath.isBlank()) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         if (!normalizedPath.startsWith("/")) {

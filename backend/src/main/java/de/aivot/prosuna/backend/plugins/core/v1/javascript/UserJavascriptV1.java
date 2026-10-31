@@ -56,7 +56,7 @@ public class UserJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Mitarbeiter:innen.";
+        return "Diese JavaScript-Funktionsbibliothek stellt Informationen zu Mitarbeiter:innen bereit.";
     }
 
     @Nonnull

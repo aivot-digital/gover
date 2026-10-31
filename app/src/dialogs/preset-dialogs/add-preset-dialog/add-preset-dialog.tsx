@@ -173,7 +173,7 @@ export function AddPresetDialog(props: AddPresetDialogProps) {
                         severity="error"
                         sx={{mt: 2}}
                     >
-                        Bitte beheben Sie die markierten Fehler um fortzufahren.
+                        Bitte beheben Sie die markierten Fehler, um fortzufahren.
                     </Alert>
                 }
             </DialogContent>

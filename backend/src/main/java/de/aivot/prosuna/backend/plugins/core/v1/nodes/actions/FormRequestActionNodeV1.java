@@ -179,7 +179,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Nonnull
     @Override
     public String getName() {
-        return "Daten anfordern";
+        return "Angaben anfordern";
     }
 
     @Nonnull
@@ -280,7 +280,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 new ProcessNodePort(
                         PORT_SUBMITTED,
                         "Angaben übermittelt",
-                        "Der Prozess wird fortgesetzt, nachdem die Angaben erfolgreich übermittelt wurden."
+                        "Der Vorgang wird fortgesetzt, nachdem die Angaben erfolgreich übermittelt wurden."
                 )
         );
     }
@@ -531,7 +531,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     ) throws ResponseException, ProcessNodeExecutionException {
         if (!STAFF_TASK_SEND_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
+                    "Das Ereignis %s wird von diesem Prozesselement nicht unterstützt.",
                     StringUtils.quote(event)
             );
         }
@@ -730,7 +730,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                                                                             @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         if (!CUSTOMER_TASK_SUBMIT_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
+                    "Das Ereignis %s wird von diesem Prozesselement nicht unterstützt.",
                     StringUtils.quote(event)
             );
         }

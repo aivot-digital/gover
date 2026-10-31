@@ -162,7 +162,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                 new ProcessNodePort(
                         PORT_NAME,
                         "Zähler aktualisiert",
-                        "Der Prozess wird fortgesetzt, nachdem der Zählerstand aktualisiert wurde."
+                        "Der Vorgang wird fortgesetzt, nachdem der Zählerstand aktualisiert wurde."
                 )
         );
     }

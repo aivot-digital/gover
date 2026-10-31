@@ -207,7 +207,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 new ProcessNodePort(
                         PORT_NAME,
                         "E-Mail versendet",
-                        "Der Prozess wird hier fortgesetzt, nachdem die E-Mail versendet wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die E-Mail versendet wurde."
                 )
         );
     }
@@ -354,7 +354,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                                                                          @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         if (!STAFF_TASK_SEND_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
+                    "Das Ereignis %s wird von diesem Prozesselement nicht unterstützt.",
                     StringUtils.quote(event)
             );
         }

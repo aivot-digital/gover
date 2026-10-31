@@ -648,7 +648,7 @@ public class AuthController {
         try {
             digest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
-            throw ResponseException.internalServerError(e, "Der SHA-256 Algorithmus wird nicht unterstützt.");
+            throw ResponseException.internalServerError(e, "Der SHA-256-Algorithmus wird nicht unterstützt.");
         }
         var hash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
         return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);

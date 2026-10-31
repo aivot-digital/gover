@@ -329,7 +329,7 @@ export function UserDetailsPageDeputies() {
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Stellvertreter:innen, die für diese Nutzer:in eingerichtet sind.
+                    Eine Übersicht der Stellvertreter:innen, die für diese Mitarbeiter:in eingerichtet sind.
                 </Typography>
 
                 <GenericList<VUserDeputyWithDetailsEntity>

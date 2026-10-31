@@ -99,7 +99,7 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
                 );
 
         if (hasInvalidOption) {
-            throw new ValidationException(this, "Eine oder mehrere Optionen sind ungültig (leerer Wert oder Label).");
+            throw new ValidationException(this, "Eine oder mehrere Optionen sind ungültig (leerer Wert oder leere Beschriftung).");
         }
 
         for (String val : values) {

@@ -56,7 +56,7 @@ class FileUploadFieldRenderingTest {
     void blankPrintShowsTheUploadInstruction() {
         var html = render(FormPdfScope.Blank, null);
 
-        assertTrue(html.contains("Die Anlage ist angehangen"));
+        assertTrue(html.contains("Die Anlage ist angehängt"));
         assertFalse(html.contains("Keine Anlagen hinzugefügt"));
         assertFalse(html.contains("Hochgeladen als:"));
     }

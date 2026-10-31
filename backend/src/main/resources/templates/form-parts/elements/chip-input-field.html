@@ -21,7 +21,7 @@
         <div
                 class="hint"
                 th:if="${base.isBlankPrint()}"
-        >Mehrere Einträge bitte kommasepariert nacheinander notieren.</div>
+        >Trennen Sie mehrere Einträge durch Kommas.</div>
         <div
                 class="hint"
                 th:if="${base.isBlankPrint() && element.maxItemLength != null && element.maxItemLength > 0}"
@@ -34,7 +34,7 @@
         >
             Mindestens
             <span th:text="${element.minItems}"></span>
-            Einträge
+            <span th:text="${element.minItems == 1 ? 'Eintrag' : 'Einträge'}"></span>
         </div>
         <div
                 class="hint"
@@ -42,7 +42,7 @@
         >
             Maximal
             <span th:text="${element.maxItems}"></span>
-            Einträge
+            <span th:text="${element.maxItems == 1 ? 'Eintrag' : 'Einträge'}"></span>
         </div>
     </div>
 </div>

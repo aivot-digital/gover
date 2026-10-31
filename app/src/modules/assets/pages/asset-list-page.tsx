@@ -197,9 +197,9 @@ export function AssetListPage() {
                             bearbeiten.
                         </Typography>
                         <Typography sx={{mt: 2}}>
-                            Sie können die hochgeladenen Dateien u.A. in Formularen verwenden, um z.B. Bilder
+                            Sie können die hochgeladenen Dateien u. a. in Formularen verwenden, um z.B. Bilder
                             oder PDFs einzubinden.
-                            Darüber hinaus können Systemdateien (wie Zertifikate oder Templates) z.B. für die
+                            Darüber hinaus können Systemdateien (wie Zertifikate oder Vorlagen) z.B. für die
                             Konfiguration von
                             Zahlungsdienstleistern oder der Dokumentengenerierung genutzt werden.
                         </Typography>

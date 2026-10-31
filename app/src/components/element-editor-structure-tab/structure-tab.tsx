@@ -103,7 +103,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
                 title="Elementstruktur"
                 disableMarginTop
             >
-                Die Elementstruktur ist eine Expertenfunktion für erfahrene Nutzer:innen, die es erlaubt die zugrundeliegende Datenstruktur für Elemente einzusehen und zu überschreiben.
+                Die Elementstruktur ist eine Expertenfunktion für erfahrene Mitarbeiter:innen, die es erlaubt, die zugrundeliegende Datenstruktur für Elemente einzusehen und zu überschreiben.
             </ElementEditorSectionHeader>
 
             {

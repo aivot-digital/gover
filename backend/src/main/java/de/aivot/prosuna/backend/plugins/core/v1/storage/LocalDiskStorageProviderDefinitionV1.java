@@ -644,7 +644,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
 
         if (!Files.exists(sourcePathReal) || !Files.isRegularFile(sourcePathReal)) {
-            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+            throw new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
         }
 
         var targetParentDirectoryReal = targetPathReal.getParent();
@@ -679,7 +679,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         var targetPathReal = getSecurePath(config.getRealRootPath(), targetPathFromRoot);
 
         if (!Files.exists(sourcePathReal) || !Files.isRegularFile(sourcePathReal)) {
-            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+            throw new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
         }
 
         var targetParentDirectoryReal = targetPathReal.getParent();

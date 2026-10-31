@@ -141,14 +141,14 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Löst den Prozess aus, wenn Daten über einen Webhook empfangen werden.";
+        return "Startet einen Vorgang, wenn Daten über einen Webhook empfangen werden.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Startet einen neuen Prozessvorgang durch eine eingehende HTTP-Anfrage an den bereitgestellten Webhook.
+                Startet einen neuen Vorgang durch eine eingehende HTTP-Anfrage an den bereitgestellten Webhook.
 
                 Übermittelte Nutzdaten und Anlagen werden in die initialen Vorgangsdaten übernommen. Zusätzlich stellt der Auslöser die empfangenen Dateien, Anfragedetails wie Methode, Header und Query-Parameter sowie den Eingangszeitpunkt als Ausgangsdaten bereit.
                 """;
@@ -161,7 +161,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 new ProcessNodePort(
                         PORT_NAME,
                         "Webhook empfangen",
-                        "Der Prozess wird mit den empfangenen Webhook-Daten gestartet."
+                        "Der Vorgang wird mit den empfangenen Webhook-Daten gestartet."
                 )
         );
     }
@@ -178,7 +178,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_ATTACHMENTS,
-                        "List der Anlagen",
+                        "Liste der Anlagen",
                         "Die Liste aller Anlagen, welche an den Auslöser übermittelt wurden",
                         OUTPUT_ATTACHMENTS_TYPE_DEFINITION
                 ),

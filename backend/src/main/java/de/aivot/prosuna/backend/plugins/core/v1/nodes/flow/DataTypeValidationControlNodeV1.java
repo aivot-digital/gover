@@ -142,7 +142,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         return """
                 Validiert ausgewählte Pfade der Vorgangsdaten anhand konfigurierter erwarteter Datentypen.
 
-                Das Element prüft sowohl das Vorhandensein der Werte als auch deren Typ und setzt den Prozess abhängig vom Gesamtergebnis über den passenden Ausgangsport fort. Prüfergebnis und erkannte Validierungsabweichungen stehen als Ausgangsdaten für nachfolgende Schritte bereit.
+                Das Element prüft sowohl das Vorhandensein der Werte als auch deren Typ und setzt den Vorgang abhängig vom Gesamtergebnis über den passenden Ausgangsport fort. Prüfergebnis und erkannte Validierungsabweichungen stehen als Ausgangsdaten für nachfolgende Schritte bereit.
                 """;
     }
 
@@ -190,12 +190,12 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
                 new ProcessNodePort(
                         PORT_NAME_VALID,
                         "Daten gültig",
-                        "Der Prozess wird hier fortgesetzt, wenn alle Validierungsregeln erfüllt sind."
+                        "Der Vorgang wird hier fortgesetzt, wenn alle Validierungsregeln erfüllt sind."
                 ),
                 new ProcessNodePort(
                         PORT_NAME_INVALID,
                         "Daten ungültig",
-                        "Der Prozess wird hier fortgesetzt, wenn mindestens eine Validierungsregel verletzt ist."
+                        "Der Vorgang wird hier fortgesetzt, wenn mindestens eine Validierungsregel verletzt ist."
                 )
         );
     }

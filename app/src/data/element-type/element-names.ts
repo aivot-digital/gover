@@ -40,7 +40,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.DateTime]: 'Datum und Uhrzeit',
     [ElementType.DateRange]: 'Datumsspanne',
     [ElementType.TimeRange]: 'Zeitspanne',
-    [ElementType.DateTimeRange]: 'Datum- und Zeitspanne',
+    [ElementType.DateTimeRange]: 'Datums- und Zeitspanne',
     [ElementType.MapPoint]: 'Kartenpunkt (Technische Preview)',
     [ElementType.DomainAndUserSelect]: 'Auswahl von Organisationseinheiten, Teams und Mitarbeiter:innen',
     [ElementType.AssignmentContext]: 'Verantwortlicher Personenkreis',

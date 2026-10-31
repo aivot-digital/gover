@@ -585,7 +585,7 @@ class TemplateLoaderServiceTest {
         );
 
         assertTrue(dateTimeHtml.contains("TT.MM.JJJJ HH:MM:SS"));
-        assertTrue(chipInputHtml.contains("Mehrere Einträge bitte kommasepariert nacheinander notieren."));
+        assertTrue(chipInputHtml.contains("Trennen Sie mehrere Einträge durch Kommas."));
         assertTrue(chipInputHtml.contains("Mindestens"));
         assertTrue(chipInputHtml.contains("Maximal"));
         assertTrue(chipInputHtml.contains("Zeichen je Eintrag"));
