@@ -1493,7 +1493,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
         <Box>
             <Typography>
                 Das Element „Identitätseingabe“ startet die Anmeldung über einen konfigurierten
-                Identifizierungsanbieter und kann optional eine alternative E-Mail-Eingabe erlauben.
+                Identitätsanbieter und kann optional eine alternative E-Mail-Eingabe erlauben.
             </Typography>
 
             <Typography sx={{mt: 2}}>

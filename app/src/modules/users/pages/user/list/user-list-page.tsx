@@ -135,7 +135,7 @@ export function UserListPage() {
                 <Typography
                     component="span"
                     variant="body2"
-                    title="Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden."
+                    title="Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden."
                     sx={{
                         color: "text.disabled",
                         whiteSpace: 'nowrap'
@@ -228,10 +228,10 @@ export function UserListPage() {
                         einsehen.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Informationen zu Mitarbeitenden werden von einem Identity Provider (IdP) System
+                        Informationen zu Mitarbeitenden werden von einem Identitätsanbieter (IdP)
                         bereitgestellt.
                         Änderungen an den hier angezeigten Daten sind nur über die Verwaltungsoberfläche des
-                        IdP möglich.
+                        Identitätsanbieters möglich.
                     </Typography>
                 </>
             ),
@@ -286,7 +286,7 @@ export function UserListPage() {
                 href: `mailto:${item.email}`,
                 tooltip: 'E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)',
                 disabled: item.deletedInIdp,
-                disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
+                disabledTooltip: 'Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
             },
         ];
     }, []);

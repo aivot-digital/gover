@@ -630,7 +630,7 @@ export function UserDetailsPageIndex() {
                                 my: 3,
                             }}
                         >
-                            Dieses Konto wurde im Identity Provider bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
+                            Dieses Konto wurde beim Identitätsanbieter bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
                             Der Datensatz bleibt in Prosuna erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
                         </AlertComponent>
                     ) : (
@@ -786,7 +786,7 @@ export function UserDetailsPageIndex() {
                         color: 'text.secondary',
                     }}
                 >
-                    Das Konto wird im Identity Provider gelöscht und in Prosuna als gelöscht markiert.
+                    Das Konto wird beim Identitätsanbieter gelöscht und in Prosuna als gelöscht markiert.
                     Anschließend sind keine weiteren Anmeldungen oder Passwort-Resets mehr möglich.
                 </Typography>
             </ConfirmDialog>

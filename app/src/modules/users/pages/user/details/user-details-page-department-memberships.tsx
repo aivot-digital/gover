@@ -50,7 +50,7 @@ import {
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 import {type PermissionSet} from '../../../../permissions/models/permission-set';
 
-const deletedUserMembershipTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
+const deletedUserMembershipTooltip = 'Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
 const membershipIdsLoadingTooltip = 'Lade bestehende Mitgliedschaften…';
 const membershipIdsLoadErrorTooltip = 'Die bestehenden Mitgliedschaften konnten nicht geladen werden.';
 type MembershipIdsLoadState = 'loading' | 'loaded' | 'error';

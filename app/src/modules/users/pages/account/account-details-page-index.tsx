@@ -74,7 +74,7 @@ export function AccountDetailsPageIndex() {
             children: '************',
         },
         {
-            label: 'Verwendeter IdP',
+            label: 'Verwendeter Identitätsanbieter',
             icon: <ApiOutlined />,
             children: (
                 <>
@@ -82,7 +82,7 @@ export function AccountDetailsPageIndex() {
                     <Typography component="span" sx={{
                         color: "text.secondary"
                     }}>
-                        (zentraler Identitätsdienst basierend auf Keycloak)
+                        (zentraler Identitätsanbieter auf Basis von Keycloak)
                     </Typography>
                 </>
             ),
@@ -106,7 +106,7 @@ export function AccountDetailsPageIndex() {
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Die folgenden Kontoinformationen werden von dem Dienst bereitgestellt, über den Sie sich bei Prosuna
-                anmelden. Dieser Anmeldedienst wird als Identity Provider (IdP) bezeichnet.
+                anmelden. Dieser Anmeldedienst wird als Identitätsanbieter (IdP) bezeichnet.
             </Typography>
 
             <StatusTable
@@ -133,7 +133,7 @@ export function AccountDetailsPageIndex() {
                 </Typography>
                 <Typography sx={{mb: 2}}>
                     Zugangsdaten wie Passwort oder weitere Anmeldemethoden können Sie direkt in der
-                    Verwaltungsoberfläche des Identitätsdienstes bearbeiten.
+                    Verwaltungsoberfläche des Identitätsanbieters bearbeiten.
                 </Typography>
                 <Button
                     target="_blank"

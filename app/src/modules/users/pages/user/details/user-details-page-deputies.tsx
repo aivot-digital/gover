@@ -41,7 +41,7 @@ import {
     parseLocalDateIso,
 } from '../../../../../utils/temporal-utils';
 
-const deletedUserDeputyTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
+const deletedUserDeputyTooltip = 'Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
 
 const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
     {

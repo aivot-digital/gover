@@ -21,7 +21,7 @@ export function AccountDetailsPage() {
                             <>
                                 <Typography>
                                     Hier sehen Sie Ihre Kontoinformationen, Mitgliedschaften und Rollen und passen Ihre
-                                    Benachrichtigungen an. Ihre Zugangsdaten verwalten Sie über den verlinkten Identitätsdienst.
+                                    Benachrichtigungen an. Ihre Zugangsdaten verwalten Sie über den verlinkten Identitätsanbieter.
                                 </Typography>
                                 <Typography sx={{ mt: 2 }}>
                                     Wenn Sie Fragen zur Kontoverwaltung haben, wenden Sie sich bitte an den Administrator.
