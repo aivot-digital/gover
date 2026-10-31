@@ -432,13 +432,13 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 editedStorageProvider.statusMessage != null &&
                 <AlertComponent
                     color="error"
-                    title="Fehler bei der Synchronisation des Speicheranbieters"
+                    title="Fehler bei der Synchronisierung des Speicheranbieters"
                     sx={{
                         mt: 0,
                         mb: 2,
                     }}
                 >
-                    Während der Synchronisation mit dem Speicheranbieter ist ein Fehler aufgetreten.
+                    Während der Synchronisierung mit dem Speicheranbieter ist ein Fehler aufgetreten.
                     Die folgende Fehlermeldung wurde protokolliert:
 
                     <ExpandableCodeBlock
@@ -449,7 +449,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     />
 
                     Bitte beheben Sie das Problem mit dem Speicheranbieter, damit eine ordnungsgemäße Funktion
-                    gewährleistet ist. Bitte starten Sie nach der Behebung des Problems manuell die Synchronisation,
+                    gewährleistet ist. Bitte starten Sie nach der Behebung des Problems manuell die Synchronisierung,
                     damit die Verbindung geprüft und der Fehlerstatus entfernt wird.
                 </AlertComponent>
             }

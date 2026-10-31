@@ -99,7 +99,7 @@ public class KeyCloakApiService {
         // Extract the created user ID from the Location header because no http body is returned
         var location = response.getHeaders().getFirst("Location");
         if (location == null || location.isEmpty()) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in Das Mitarbeiter:innen-Profil steht nach der nächsten Synchronisation zur Verfügung.");
+            throw ResponseException.internalServerError("Das Mitarbeiter:innen-Profil steht nach der nächsten Synchronisierung zur Verfügung.");
         }
 
         String createdUserId = location

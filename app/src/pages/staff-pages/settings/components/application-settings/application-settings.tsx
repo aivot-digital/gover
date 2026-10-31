@@ -968,7 +968,7 @@ export function ApplicationSettings() {
                                             ? 'Gespeicherte Systemeinstellungen werden geladen…'
                                             : hasSystemRolesLoadingError
                                                 ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
-                                                : 'Diese Systemrolle wird bei neuen automatischen Kontoimporten und -synchronisationen verwendet.'
+                                                : 'Diese Systemrolle wird bei neuen automatischen Kontoimporten und -synchronisierungen verwendet.'
                             }
                             value={defaultSystemRoleValue}
                             onChange={(val) => {
