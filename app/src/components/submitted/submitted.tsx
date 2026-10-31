@@ -579,7 +579,7 @@ export function Submitted(props: SubmittedProps) {
                             />
 
                             <CheckboxFieldComponent
-                                label="Ich bin damit einverstanden, dass eine Kopie meiner Angaben per unverschlüsselter E-Mail versandt wird."
+                                label="Ich bin damit einverstanden, dass eine Kopie meiner Angaben per E-Mail ohne Ende-zu-Ende-Verschlüsselung versandt wird."
                                 value={privacy}
                                 onChange={setPrivacy}
                                 error={privacyError}
