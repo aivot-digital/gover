@@ -268,9 +268,10 @@ export function UserDetailsPageDepartmentMemberships() {
             children: (
                 <>
                     <Typography>
-                        Durch das Entfernen der Mitarbeiter:in <strong>{membership.userFullName}</strong> aus der
-                        Organisationseinheit <strong>{membership.departmentName}</strong> verliert diese alle
-                        zugewiesenen Rollen und Berechtigungen in dieser Organisationseinheit.
+                        Die Mitgliedschaft von <strong>{membership.userFullName}</strong> in der
+                        Organisationseinheit <strong>{membership.departmentName}</strong> und die damit verbundenen
+                        Domänenrollenzuweisungen werden entfernt. Berechtigungen aus anderen Zuweisungen können
+                        weiterhin gelten.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         Diese Aktion kann nicht rückgängig gemacht werden.

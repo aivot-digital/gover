@@ -281,9 +281,9 @@ export function UserDetailsPageTeamMemberships() {
             children: (
                 <>
                     <Typography>
-                        Durch das Entfernen der Mitarbeiter:in <strong>{membership.userFullName}</strong> aus dem Team
-                        <strong> {membership.teamName}</strong> verliert diese alle zugewiesenen Rollen und
-                        Berechtigungen in diesem Team.
+                        Die Mitgliedschaft von <strong>{membership.userFullName}</strong> im
+                        Team <strong>{membership.teamName}</strong> und die damit verbundenen Domänenrollenzuweisungen
+                        werden entfernt. Berechtigungen aus anderen Zuweisungen können weiterhin gelten.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         Diese Aktion kann nicht rückgängig gemacht werden.
