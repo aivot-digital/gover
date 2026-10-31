@@ -343,22 +343,22 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
             if (associatedTask.status == ProcessTaskStatus.Failed && canRerunTask) {
                 items.push({
-                    label: 'Aufgabe neu starten',
+                    label: 'Aufgabe erneut ausführen',
                     icon: <Replay/>,
                     onClick: () => {
                         dispatch(setLoadingMessage({
                             blocking: true,
-                            message: 'Starte Aufgabe neu',
+                            message: 'Erneute Ausführung der Aufgabe wird angefordert',
                             estimatedTime: 500,
                         }));
                         new ProcessInstanceTaskApiService()
                             .rerunFailedTask(associatedTask.id)
                             .then(() => {
-                                dispatch(showSuccessSnackbar('Der Neustart wurde angestoßen.'));
+                                dispatch(showSuccessSnackbar('Die erneute Ausführung der Aufgabe wurde angefordert.'));
                                 onReloadRuntimeData();
                             })
                             .catch((error) => {
-                                dispatch(showApiErrorSnackbar(error, 'Der Neustart ist fehlgeschlagen.'));
+                                dispatch(showApiErrorSnackbar(error, 'Die erneute Ausführung der Aufgabe konnte nicht angefordert werden.'));
                             })
                             .finally(() => {
                                 dispatch(clearLoadingMessage());

@@ -52,17 +52,20 @@ export function ProcessListActions({
               ].includes(task.status);
     const failed = item.status === (task ? ProcessTaskStatus.Failed : ProcessInstanceStatus.Failed);
     const detailPath = task ? `/tasks/${instanceId}/${task.id}` : `/process-instances/${instanceId}`;
+    const restartLabel = task ? 'Aufgabe erneut ausführen' : 'Fehlgeschlagenen Vorgang fortsetzen';
 
     const restart = async () => {
         setAnchor(null);
-        const label = task ? 'Aufgabe erneut starten' : 'Vorgang erneut starten';
         if (
             !(await confirm({
-                title: label,
+                title: restartLabel,
+                confirmButtonText: restartLabel,
                 isDestructive: false,
                 children: (
                     <Typography>
-                        {`Möchten Sie ${task ? 'die fehlgeschlagene Aufgabe' : 'den fehlgeschlagenen Vorgang'} erneut starten?`}
+                        {task
+                            ? 'Möchten Sie die fehlgeschlagene Aufgabe erneut ausführen?'
+                            : 'Möchten Sie den fehlgeschlagenen Vorgang fortsetzen? Die fehlgeschlagene Aufgabe beziehungsweise ausstehende Verarbeitung wird erneut ausgeführt.'}
                     </Typography>
                 ),
             }))
@@ -72,10 +75,14 @@ export function ProcessListActions({
         try {
             if (task) await new ProcessInstanceTaskApiService().rerunFailedTask(task.id);
             else await new ProcessInstanceApiService().restartFailedInstance(instanceId);
-            dispatch(showSuccessSnackbar('Der Neustart wurde angestoßen.'));
+            dispatch(showSuccessSnackbar(task
+                ? 'Die erneute Ausführung der Aufgabe wurde angefordert.'
+                : 'Die Fortsetzung des Vorgangs wurde angefordert.'));
             onChanged();
         } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Der Neustart ist fehlgeschlagen.'));
+            dispatch(showApiErrorSnackbar(error, task
+                ? 'Die erneute Ausführung der Aufgabe konnte nicht angefordert werden.'
+                : 'Die Fortsetzung des Vorgangs konnte nicht angefordert werden.'));
         } finally {
             setBusy(false);
         }
@@ -144,7 +151,7 @@ export function ProcessListActions({
                         Im Prozessmodell ansehen
                     </MenuItem>
                 )}
-                {canRestart && failed && <MenuItem onClick={() => void restart()}>Erneut starten</MenuItem>}
+                {canRestart && failed && <MenuItem onClick={() => void restart()}>{restartLabel}</MenuItem>}
             </Menu>
             {assigning && canAssign && active && (
                 <ProcessAssignmentDialog

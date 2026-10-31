@@ -71,7 +71,7 @@ public class ProcessInstanceRestartService {
             entityManager.refresh(instance);
             authorization.run();
             if (instance.getStatus() != ProcessInstanceStatus.Failed) {
-                throw ResponseException.badRequest("Nur Vorgänge im Status 'Fehlgeschlagen' können neu gestartet werden.");
+                throw ResponseException.badRequest("Nur Vorgänge im Status 'Fehlgeschlagen' können fortgesetzt werden.");
             }
             var latestTask = tasks.findFirstByProcessInstanceIdOrderByStartedDescIdDesc(instanceId).orElse(null);
             if (latestTask != null) entityManager.refresh(latestTask);
@@ -82,19 +82,19 @@ public class ProcessInstanceRestartService {
             String message;
             if (latestTask == null) {
                 if (instance.getInitialPayload() == null || instance.getInitialPayload().isEmpty()) {
-                    throw ResponseException.conflict("Der Vorgang kann nicht neu gestartet werden, weil keine Initialdaten für einen erneuten Start vorliegen.");
+                    throw ResponseException.conflict("Der Vorgang kann nicht fortgesetzt werden, weil keine initialen Vorgangsdaten vorliegen.");
                 }
                 workRequests.enqueueStart(instanceId);
-                message = "Der fehlgeschlagene Vorgang wurde manuell neu gestartet, bevor eine erste Aufgabe angelegt wurde.";
+                message = "Die Fortsetzung des fehlgeschlagenen Vorgangs wurde manuell angefordert. Eine erste Aufgabe wird angelegt.";
             } else if (latestTask.getStatus() == ProcessTaskStatus.Failed) {
                 tasks.save(latestTask.setStatus(ProcessTaskStatus.Restarted).setUpdated(now));
                 workRequests.enqueueRestart(instanceId, latestTask.getId());
                 restartedTaskId = latestTask.getId();
-                message = "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.";
+                message = "Die Fortsetzung des fehlgeschlagenen Vorgangs wurde manuell angefordert. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.";
             } else if (!heldRequests.isEmpty()) {
-                message = "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die ausstehenden Verarbeitungsschritte werden erneut ausgeführt.";
+                message = "Die Fortsetzung des fehlgeschlagenen Vorgangs wurde manuell angefordert. Die ausstehenden Verarbeitungsschritte werden erneut ausgeführt.";
             } else {
-                throw ResponseException.conflict("Der Vorgang kann derzeit nur neu gestartet werden, wenn die letzte Aufgabe fehlgeschlagen ist oder noch keine Aufgabe angelegt wurde.");
+                throw ResponseException.conflict("Der Vorgang kann derzeit nur fortgesetzt werden, wenn die letzte Aufgabe fehlgeschlagen ist, eine Verarbeitung aussteht oder noch keine Aufgabe angelegt wurde.");
             }
             var restarted = instances.save(instance.setStatus(ProcessInstanceStatus.Running).setUpdated(now));
             workRequests.redispatchAfterCommit(heldRequests);
@@ -102,7 +102,7 @@ public class ProcessInstanceRestartService {
                     ProcessNodeExecutionLogLevel.Info,
                     true,
                     true,
-                    "Vorgang neu gestartet",
+                    "Fortsetzung des Vorgangs angefordert",
                     message
             );
             return restarted;
@@ -157,16 +157,16 @@ public class ProcessInstanceRestartService {
                     ProcessNodeExecutionLogLevel.Info,
                     true,
                     true,
-                    "Aufgabe neu gestartet",
+                    "Erneute Ausführung der Aufgabe angefordert",
                     instanceFailed
-                            ? "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet. Der fehlgeschlagene Vorgang wird fortgesetzt."
-                            : "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet."
+                            ? "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert. Der fehlgeschlagene Vorgang wird fortgesetzt."
+                            : "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert."
             );
             audit.create().withUser(actor).withAuditAction(AuditAction.Update, ProcessInstanceTaskEntity.class, taskId,
                             "id", Map.of("id", taskId, "processInstanceId", instanceId))
                     .withDiff(oldState, newState)
                     .withMessage(
-                            "Die fehlgeschlagene Aufgabe mit der ID %s im Vorgang mit der ID %s wurde von der Mitarbeiter:in %s neu gestartet.",
+                            "Die erneute Ausführung der fehlgeschlagenen Aufgabe mit der ID %s im Vorgang mit der ID %s wurde von der Mitarbeiter:in %s angefordert.",
                             StringUtils.quote(String.valueOf(taskId)),
                             StringUtils.quote(String.valueOf(instanceId)),
                             StringUtils.quote(actor.getFullName())

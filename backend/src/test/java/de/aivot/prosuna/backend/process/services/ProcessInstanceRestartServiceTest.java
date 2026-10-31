@@ -76,8 +76,8 @@ class ProcessInstanceRestartServiceTest {
         verify(workRequests).enqueueRestart(7L, 34L);
         verify(workRequests, never()).enqueueStart(any());
         verify(loggers).create(7L, 34L, "actor", null);
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Vorgang neu gestartet",
-                "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.");
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Fortsetzung des Vorgangs angefordert",
+                "Die Fortsetzung des fehlgeschlagenen Vorgangs wurde manuell angefordert. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.");
     }
 
     @Test
@@ -114,8 +114,8 @@ class ProcessInstanceRestartServiceTest {
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
         verify(workRequests).redispatchAfterCommit(List.of(3L));
         verify(workRequests, never()).enqueueRestart(any(), any());
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Vorgang neu gestartet",
-                "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die ausstehenden Verarbeitungsschritte werden erneut ausgeführt.");
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Fortsetzung des Vorgangs angefordert",
+                "Die Fortsetzung des fehlgeschlagenen Vorgangs wurde manuell angefordert. Die ausstehenden Verarbeitungsschritte werden erneut ausgeführt.");
     }
 
     @Test
@@ -170,8 +170,8 @@ class ProcessInstanceRestartServiceTest {
         verify(workRequests).redispatchAfterCommit(List.of(3L));
         verify(workRequests).enqueueRestart(7L, 34L);
         verify(loggers).create(7L, 34L, "actor", null);
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Aufgabe neu gestartet",
-                "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet. Der fehlgeschlagene Vorgang wird fortgesetzt.");
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Erneute Ausführung der Aufgabe angefordert",
+                "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert. Der fehlgeschlagene Vorgang wird fortgesetzt.");
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
         verify(audit).addRequiredAuditEntry(payload.capture());
         assertEquals("actor", payload.getValue().getActorId());
@@ -180,7 +180,7 @@ class ProcessInstanceRestartServiceTest {
                 "processInstanceStatus", Map.of("old", ProcessInstanceStatus.Failed, "new", ProcessInstanceStatus.Running),
                 "status", Map.of("old", ProcessTaskStatus.Failed, "new", ProcessTaskStatus.Restarted)
         ), payload.getValue().getDiff());
-        assertEquals("Die fehlgeschlagene Aufgabe mit der ID „34“ im Vorgang mit der ID „7“ wurde von der Mitarbeiter:in „Erika Muster“ neu gestartet.",
+        assertEquals("Die erneute Ausführung der fehlgeschlagenen Aufgabe mit der ID „34“ im Vorgang mit der ID „7“ wurde von der Mitarbeiter:in „Erika Muster“ angefordert.",
                 payload.getValue().getMessage());
     }
 
@@ -193,8 +193,8 @@ class ProcessInstanceRestartServiceTest {
         verify(instances, never()).save(any());
         verify(workRequests, never()).redispatchAfterCommit(any());
         verify(workRequests).enqueueRestart(7L, 34L);
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Aufgabe neu gestartet",
-                "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet.");
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Erneute Ausführung der Aufgabe angefordert",
+                "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert.");
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
         verify(audit).addRequiredAuditEntry(payload.capture());
         assertEquals(Map.of("status", Map.of("old", ProcessTaskStatus.Failed, "new", ProcessTaskStatus.Restarted)),
