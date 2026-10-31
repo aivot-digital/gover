@@ -308,12 +308,11 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                     prefillableElementTypes
                                         .map(getElementNameForType)
                                         .join(', ')
-                                }. Verborgene Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                                }. Felder mit der festen Einstellung „Verborgenes Feld“ und deaktivierte Felder können
+                                    nicht vorbefüllt werden.
                                 </li>
-                                <li>Für die Anzeige der vorbefüllbaren Felder (s.u.) ist die Berechnung der
-                                    Sichtbarkeiten deaktiviert. Bitte bedenken Sie, dass demnach auch Felder vorbefüllt
-                                    werden können, die ggf. später im durch Nutzer:innen aufgerufenen Formular nicht
-                                    sichtbar sein könnten.
+                                <li>Die dynamische Sichtbarkeit wird in dieser Vorschau nicht ausgewertet; ein
+                                    vorbefülltes Feld kann im ausgeführten Formular dennoch ausgeblendet sein.
                                 </li>
                                 <li>Der erzeugte Link enthält alle vorbefüllten Werte und kann dadurch sehr lang werden.
                                     Aus technischen Gründen ist die maximale Länge auf {MAX_LINK_LENGTH} Zeichen
@@ -344,7 +343,8 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                 .map(getElementNameForType)
                                 .join(', ')
                         }.
-                            Verborgene Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                            Felder mit der festen Einstellung „Verborgenes Feld“ und deaktivierte Felder können
+                            nicht vorbefüllt werden.
                         </AlertComponent>
                     ) : (
                         <AccordionGroup sx={{mb: 2}}>
@@ -394,8 +394,8 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                                     .map(getElementNameForType)
                                                                     .join(', ')
                                                             }.
-                                                                Verborgene Felder und deaktivierte Felder können nicht
-                                                                vorbefüllt werden.
+                                                                Felder mit der festen Einstellung „Verborgenes Feld“ und
+                                                                deaktivierte Felder können nicht vorbefüllt werden.
                                                             </AlertComponent>
                                                         </Grid>
                                                     }
