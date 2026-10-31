@@ -220,7 +220,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         var postfachId = new TextInputElement();
         postfachId.setId(TEST_POSTFACH_ID_FIELD_ID);
         postfachId.setLabel("Postfach-ID");
-        postfachId.setHint("Postfach-ID des Testnutzers, an den die Testnachricht gesendet wird.");
+        postfachId.setHint("Postfach-ID für den Empfang der Testnachricht.");
         postfachId.setRequired(true);
         postfachId.setValidation(ElementValidationFunctions.of(
                 NoCodeExpression.of(

@@ -150,7 +150,7 @@ export type StringAvatarProps = MuiAvatarProps & {
 export function StringAvatar(props: StringAvatarProps) {
     const { name, sx, backgroundMode = DEFAULT_STRING_AVATAR_BACKGROUND_MODE, showInitials = true, children, ...rest } = props;
 
-    const safeName = (name ?? '').trim() || 'Unbekannte Nutzer:in';
+    const safeName = (name ?? '').trim() || 'Unbekannte Person';
     const marbleSpec = React.useMemo(() => createMarbleSpec(safeName), [safeName]);
     const pastelColor = React.useMemo(() => stringToPastelColor(safeName), [safeName]);
     const oklchPalette = React.useMemo(() => createOklchPastelPalette(safeName), [safeName]);

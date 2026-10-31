@@ -331,7 +331,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
             if (associatedTask.status == ProcessTaskStatus.AwaitingPayment || associatedTask.status == ProcessTaskStatus.AwaitingCustomer) {
                 items.push({
-                    label: 'Aufgabe für Nutzer:in aufrufen',
+                    label: 'Aufgabe für Beteiligte aufrufen',
                     icon: ModuleIcons.tasks,
                     href: `/process/${runtimeData?.instance.accessKey}/tasks/${associatedTask.accessKey}`,
                     newTab: true,

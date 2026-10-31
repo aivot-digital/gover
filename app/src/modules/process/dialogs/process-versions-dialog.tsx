@@ -666,13 +666,13 @@ function VersionListItem(props: VersionListItemProps) {
 
         switch (status) {
             case ProcessStatus.Drafted:
-                statusText = `Zuletzt bearbeitet: ${_format(updated)}\nBearbeitet von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                statusText = `Zuletzt bearbeitet: ${_format(updated)}\nBearbeitet von: ${editorFullName ?? 'Unbekannte Person'}`;
                 break;
             case ProcessStatus.Published:
-                statusText = `Veröffentlicht am: ${_format(published)}\nVeröffentlicht von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                statusText = `Veröffentlicht am: ${_format(published)}\nVeröffentlicht von: ${editorFullName ?? 'Unbekannte Person'}`;
                 break;
             case ProcessStatus.Revoked:
-                statusText = `Zurückgezogen am: ${_format(revoked)}\nZurückgezogen von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                statusText = `Zurückgezogen am: ${_format(revoked)}\nZurückgezogen von: ${editorFullName ?? 'Unbekannte Person'}`;
                 break;
         }
 

@@ -176,9 +176,9 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     <Typography
                         color="textSecondary"
                         sx={{fontSize: '0.875rem'}}
-                        title={params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
+                        title={params.row.lastEditorName ?? 'Unbekannte Person'}
                     >
-                        {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
+                        {params.row.lastEditorName ?? 'Unbekannte Person'}
                     </Typography>
                 </Box>
             );

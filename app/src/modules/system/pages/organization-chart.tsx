@@ -251,7 +251,7 @@ export function OrganizationChart(): React.ReactElement {
                                     Teams werden ohne Hierarchie in einer eigenen Ansicht aufgeführt.
                                 </Typography>
                                 <Typography variant="body1" component="p">
-                                    Die Karten zeigen eine alphabetisch sortierte Vorschau der zugeordneten Mitarbeiter:innen. Weitere Mitglieder sind über die Mitgliederliste erreichbar. Gelöschte Nutzer:innen werden nicht angezeigt, deaktivierte Nutzer:innen werden als inaktiv markiert.
+                                    Die Karten zeigen eine alphabetisch sortierte Vorschau der zugeordneten Mitarbeiter:innen. Weitere Mitglieder sind über die Mitgliederliste erreichbar. Gelöschte Mitarbeiter:innen werden nicht angezeigt, deaktivierte Mitarbeiter:innen werden als inaktiv markiert.
                                 </Typography>
                             </Stack>
                         ),
