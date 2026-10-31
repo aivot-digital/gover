@@ -38,11 +38,11 @@ public class ProcessInstanceTaskEntity {
     private Long processInstanceId;
 
     @Nonnull
-    @NotNull(message = "Die Prozessdefinitions-ID darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Prozessdefinitions-Version darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion darf nicht null sein.")
     private Integer processVersion;
 
     @Nonnull

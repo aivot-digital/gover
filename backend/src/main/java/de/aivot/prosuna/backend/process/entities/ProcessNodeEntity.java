@@ -30,11 +30,11 @@ public class ProcessNodeEntity {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Die ID der Prozessdefinition darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Version der Prozessdefinition darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion darf nicht null sein.")
     private Integer processVersion;
 
     @Nullable

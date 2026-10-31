@@ -34,7 +34,7 @@ public class ProcessChangeEntity {
     private String userId;
 
     @Nonnull
-    @NotNull(message = "Die ID der Prozessdefinition darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
     private Integer processId;
 
     @Nullable

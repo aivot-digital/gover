@@ -370,11 +370,11 @@ public class ProcessVersionController {
                 .hasAnyProblems();
         if (hasErrors) {
             throw ResponseException
-                    .notAcceptable("Die Prozessdefinition enthält Fehler und kann daher nicht veröffentlicht werden. Bitte beheben Sie alle Fehler, bevor Sie die Prozessdefinition veröffentlichen.");
+                    .notAcceptable("Die Prozessversion enthält Fehler und kann daher nicht veröffentlicht werden. Bitte beheben Sie alle Fehler, bevor Sie die Prozessversion veröffentlichen.");
         }
 
         if (version.getStatus() != ProcessVersionStatus.Drafted && version.getStatus() != ProcessVersionStatus.Revoked) {
-            throw ResponseException.conflict("Es kann nur eine Prozessdefinition im Entwurfs- oder zurückgezogenen Status veröffentlicht werden.");
+            throw ResponseException.conflict("Es kann nur eine Prozessversion im Entwurfs- oder zurückgezogenen Status veröffentlicht werden.");
         }
 
         return processDefinitionVersionService.updateStatus(version, ProcessVersionStatus.Published);
@@ -406,7 +406,7 @@ public class ProcessVersionController {
         );
 
         if (version.getStatus() != ProcessVersionStatus.Published) {
-            throw ResponseException.conflict("Es kann nur eine veröffentlichte Prozessdefinition zurückgezogen werden.");
+            throw ResponseException.conflict("Es kann nur eine veröffentlichte Prozessversion zurückgezogen werden.");
         }
 
         return processDefinitionVersionService.updateStatus(version, ProcessVersionStatus.Revoked);

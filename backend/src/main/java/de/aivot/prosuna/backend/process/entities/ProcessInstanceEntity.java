@@ -40,7 +40,7 @@ public class ProcessInstanceEntity {
     private String accessKey;
 
     @Nonnull
-    @NotNull(message = "Die Prozessdefinitions-ID darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
     private Integer processId;
 
     @Nonnull
