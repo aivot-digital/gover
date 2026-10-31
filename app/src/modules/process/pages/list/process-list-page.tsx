@@ -319,8 +319,9 @@ export function ProcessListPage() {
                         Ein Prozess bündelt alle Prozessversionen eines Ablaufs innerhalb Ihrer Organisation.
                         Jede Prozessversion enthält einen festen Stand der Prozessdefinition mit ihren Prozesselementen,
                         Verbindungen und Einstellungen.
-                        In dieser Übersicht sehen Sie alle Prozesse, an deren Entwicklung Sie beteiligt sind oder die
-                        Ihrer Organisationseinheit zugeordnet wurden.
+                        In dieser Übersicht sehen Sie die Prozesse, für die Sie Leseberechtigungen haben.
+                        Diese können sich aus Domänenrollen in Organisationseinheiten oder Teams, direkten
+                        Prozessberechtigungen oder Systemberechtigungen ergeben.
                     </Typography>
                     <Typography sx={{
                         mb: 2
@@ -333,8 +334,8 @@ export function ProcessListPage() {
                     <Typography>
                         Um einen neuen Prozess anzulegen, klicken Sie auf „Neuer Prozess“. Weitere Optionen finden Sie
                         in den Aktionen neben jedem Prozess.
-                        Sollten Sie keiner Organisationseinheit zugeordnet sein, wenden Sie sich bitte an eine
-                        Administrator:in.
+                        Wenn Ihnen Zugriff fehlt, wenden Sie sich an die Administration.
+                        Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden.
                     </Typography>
                 </>
             ),
@@ -386,14 +387,12 @@ export function ProcessListPage() {
                         variant="h5"
                         component="h2"
                     >
-                        Noch keiner Organisationseinheit zugeordnet
+                        Keine Prozesse in diesem Bereich
                     </Typography>
                     <Typography>
-                        Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen
-                        eine
-                        Domänenrolle zuweisen.
-                        Erst dann können Sie mit der Entwicklung von Prozessen beginnen. Nach der
-                        Zuweisung müssen Sie diese Seite ggf. einmal neu laden.
+                        Hier erscheinen Prozesse, für die Sie Leseberechtigungen haben. Wenn Ihnen Zugriff fehlt,
+                        wenden Sie sich an die Administration.
+                        Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden.
                     </Typography>
                 </>
             }
@@ -401,8 +400,8 @@ export function ProcessListPage() {
                 memberships != null &&
                 memberships.length > 0 &&
                 <EmptyDataListPlaceholder
-                    title="Noch keine Prozesse angelegt"
-                    description="Prozesse verbinden Auslöser, Aufgaben, Entscheidungen und Automatisierungen zu strukturierten Abläufen."
+                    title="Keine Prozesse in diesem Bereich"
+                    description="Hier erscheinen Prozesse, für die Sie Leseberechtigungen haben. Wenn Ihnen Zugriff fehlt, wenden Sie sich an die Administration. Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden."
                     addText="Neuen Prozess anlegen"
                     onAdd={() => setShowAddDialog(true)}
                 />
