@@ -558,7 +558,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Aufgabenbeschreibung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die manuelle Handlung, die außerhalb des Systems ausgeführt und bestätigt werden soll."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die Aufgabe, die innerhalb oder außerhalb von Prosuna ausgeführt und bestätigt werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String taskDescription;
