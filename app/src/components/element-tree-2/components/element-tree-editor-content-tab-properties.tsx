@@ -463,7 +463,7 @@ function getTabDescription(type: ElementType) {
         case ElementType.SubmitStep:
             return {
                 title: 'Eigenschaften für den Abschnitt „Abschließende Informationen und Captcha“',
-                description: 'In diesem Abschnitt prüfen und übermitteln ausfüllende Personen ihre Angaben. Hier können Sie zusätzliche Hinweise zur Übermittlung und zum weiteren Ablauf angeben.',
+                description: 'Dieser Abschnitt zeigt abschließende Hinweise zur Übermittlung und zum weiteren Ablauf. Hier erfolgt auch die Captcha-Prüfung.',
                 isElement: false,
             };
         case ElementType.Step:
