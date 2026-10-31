@@ -396,8 +396,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginTop
                 maxWidth={680}
             >
-                Diese Angaben gelten nur für die aktuell geöffnete Prozessversion und werden erst wirksam, wenn diese
-                Version veröffentlicht wird.
+                Die Angaben gelten für diese Prozessversion. Im Testmodus werden gespeicherte Änderungen bereits
+                verwendet; für die öffentliche Nutzung gelten sie nach der Veröffentlichung.
             </ElementEditorSectionHeader>
 
             {!isEditable && (
