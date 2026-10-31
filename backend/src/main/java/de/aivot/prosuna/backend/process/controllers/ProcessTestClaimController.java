@@ -91,7 +91,7 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
     protected String buildCreateAuditMessage(@Nonnull UserEntity execUser,
                                              @Nonnull ProcessTestClaimEntity createdItem) {
         return String.format(
-                "Der Test-Claim mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s erstellt.",
+                "Die Testsitzung mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s erstellt.",
                 StringUtils.quote(String.valueOf(createdItem.getId())),
                 StringUtils.quote(String.valueOf(createdItem.getProcessId())),
                 StringUtils.quote(String.valueOf(createdItem.getProcessVersion())),
@@ -220,7 +220,7 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
                                              @Nonnull Integer id,
                                              @Nonnull ProcessTestClaimEntity deletedItem) {
         return String.format(
-                "Der Test-Claim mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                "Die Testsitzung mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s gelöscht.",
                 StringUtils.quote(String.valueOf(id)),
                 StringUtils.quote(String.valueOf(deletedItem.getProcessId())),
                 StringUtils.quote(String.valueOf(deletedItem.getProcessVersion())),

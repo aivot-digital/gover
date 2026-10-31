@@ -1670,16 +1670,15 @@ export function ProcessDetailsPage(): ReactNode {
         }
 
         confirm({
-            title: 'Testanspruch löschen',
+            title: 'Testsitzung beenden',
             children: (
                 <Typography>
-                    Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
-                    Test für diesen Prozess sofort beendet und die Bearbeitung des
-                    Prozesses wieder freigegeben.
+                    Möchten Sie die Testsitzung wirklich beenden?
+                    Die Bearbeitung des Prozesses wird dadurch wieder freigegeben.
                     Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge gelöscht.
                 </Typography>
             ),
-            confirmButtonText: 'Testanspruch löschen',
+            confirmButtonText: 'Testsitzung beenden',
         })
             .then((confirmed) => {
                 if (!confirmed) {
@@ -1692,14 +1691,14 @@ export function ProcessDetailsPage(): ReactNode {
                         // Removing the claim also removes its runtime access, so refresh before updating the local UI state.
                         return refreshPermissionSet({broadcast: true})
                             .catch((refreshError) => {
-                                dispatch(showApiErrorSnackbar(refreshError, 'Die Berechtigungen konnten nach dem Löschen des Testanspruchs nicht aktualisiert werden.'));
+                                dispatch(showApiErrorSnackbar(refreshError, 'Die Berechtigungen konnten nach dem Beenden der Testsitzung nicht aktualisiert werden.'));
                             });
                     })
                     .then(() => {
                         setCurrentTestClaim(null);
                         clearRuntimeData();
                         setShowProcessTestClaimInstancesDialog(false);
-                        dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
+                        dispatch(showSuccessSnackbar('Die Testsitzung wurde beendet.'));
 
                         if (instanceId != null) {
                             const nextSearchParams = new URLSearchParams(searchParams);
@@ -1709,7 +1708,7 @@ export function ProcessDetailsPage(): ReactNode {
                     });
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Testsitzung konnte nicht beendet werden.'));
             });
     }, [clearRuntimeData, confirm, currentTestClaim, dispatch, instanceId, refreshPermissionSet, searchParams, setSearchParams]);
 
