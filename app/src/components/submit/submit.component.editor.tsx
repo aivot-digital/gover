@@ -86,7 +86,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                                 documentsToReceive: val,
                             });
                         }}
-                        hint="Durch die zuständige und/oder betreuende Stelle auszustellende Dokumente. Bitte geben Sie pro Zeile ein Dokument an."
+                        hint="Dokumente, die von der verantwortlichen oder betreuenden Stelle ausgestellt werden. Geben Sie pro Zeile ein Dokument an."
                         disabled={!props.editable}
                         allowEmpty
                         addLabel="Dokument hinzufügen"
