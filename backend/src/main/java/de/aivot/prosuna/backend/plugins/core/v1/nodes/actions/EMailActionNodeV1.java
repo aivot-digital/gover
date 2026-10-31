@@ -481,7 +481,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         final var department = vDepartmentShadowedService
                 .retrieve(process.getDepartmentId())
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Der Fachbereich %d des Prozesses %d wurde nicht gefunden.",
+                        "Die Organisationseinheit %d des Prozesses %d wurde nicht gefunden.",
                         process.getDepartmentId(),
                         process.getId()
                 ));

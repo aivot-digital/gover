@@ -152,7 +152,7 @@ public class DepartmentMembershipController {
                                 "roleIds", roleIds
                         ))
                 .withMessage(
-                        "Die Zugehörigkeit mit der ID %s für die Organisationseinheit %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s erstellt.",
+                        "Die Mitgliedschaft mit der ID %s in der Organisationseinheit %s für die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(String.valueOf(createdMembership.getId())),
                         StringUtils.quote(String.valueOf(createdMembership.getDepartmentId())),
                         StringUtils.quote(createdMembership.getUserId()),
@@ -241,7 +241,7 @@ public class DepartmentMembershipController {
                                 "userId", savedMembership.getUserId()
                         ))
                 .withMessage(
-                        "Die Zugehörigkeit mit der ID %s für die Organisationseinheit %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        "Die Mitgliedschaft mit der ID %s in der Organisationseinheit %s für die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s aktualisiert.",
                         StringUtils.quote(String.valueOf(savedMembership.getId())),
                         StringUtils.quote(String.valueOf(savedMembership.getDepartmentId())),
                         StringUtils.quote(savedMembership.getUserId()),
@@ -292,7 +292,7 @@ public class DepartmentMembershipController {
                                 "userId", deletedMembership.getUserId()
                         ))
                 .withMessage(
-                        "Die Zugehörigkeit mit der ID %s für die Organisationseinheit %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        "Die Mitgliedschaft mit der ID %s in der Organisationseinheit %s für die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s gelöscht.",
                         StringUtils.quote(String.valueOf(deletedMembership.getId())),
                         StringUtils.quote(String.valueOf(deletedMembership.getDepartmentId())),
                         StringUtils.quote(deletedMembership.getUserId()),
