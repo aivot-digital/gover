@@ -32,6 +32,7 @@ export interface ChipInputFieldComponentProps extends FormFieldLayoutProps {
     required?: boolean;
     readOnly?: boolean;
     suggestions?: string[];
+    getOptionLabel?: (option: string) => string;
     allowDuplicates?: boolean;
     minItems?: number;
     maxItems?: number;
@@ -54,6 +55,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
         required,
         readOnly,
         suggestions,
+        getOptionLabel,
         allowDuplicates,
         minItems,
         maxItems,
@@ -123,7 +125,11 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
         const additions: string[] = [];
         const knownEntries = new Set(selectedValues.map(entry => entry.trim()));
         let hasDuplicates = false;
-        for (const entry of entries.map(entry => entry.trim()).filter(Boolean)) {
+        for (const rawEntry of entries.map(entry => entry.trim()).filter(Boolean)) {
+            // Typed and pasted labels must resolve to their values, just like selected suggestions.
+            const entry = getOptionLabel != null && !options.includes(rawEntry)
+                ? options.find(option => getOptionLabel(option) === rawEntry) ?? rawEntry
+                : rawEntry;
             if (allowDuplicates !== true && knownEntries.has(entry)) {
                 hasDuplicates = true;
             } else {
@@ -240,6 +246,8 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                     disabled={disabled}
                     size={size}
                     options={options}
+                    getOptionLabel={getOptionLabel}
+                    getOptionKey={option => option}
                     value={selectedValues}
                     inputValue={inputValue}
                     filterSelectedOptions={allowDuplicates !== true}

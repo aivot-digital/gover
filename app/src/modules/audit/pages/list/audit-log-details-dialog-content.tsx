@@ -72,8 +72,8 @@ export function AuditLogDetailsDialogContent(props: AuditLogDetailsDialogContent
                         ({actorId ?? '-'})
                     </Typography>
                 </Box>
-                <Typography variant="body2">Akteur-Typ: {props.row.actorType ?? '-'}</Typography>
-                <Typography variant="body2">Entity-Typ: {props.row.entityType ?? '-'}</Typography>
+                <Typography variant="body2">Akteur-Typ: {getActorTypeLabel(props.row.actorType) || '-'}</Typography>
+                <Typography variant="body2">Objekttyp: {props.row.entityType ?? '-'}</Typography>
                 <Typography variant="body2">Referenz: {props.row.entityRef ?? '-'}</Typography>
                 <Typography variant="body2">Referenz-Typ: {props.row.entityRefType ?? '-'}</Typography>
                 <Typography variant="body2">Modul: {props.row.module}</Typography>
@@ -83,7 +83,7 @@ export function AuditLogDetailsDialogContent(props: AuditLogDetailsDialogContent
 
             <Box>
                 <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5}}>
-                    <Typography variant="subtitle2">Diff</Typography>
+                    <Typography variant="subtitle2">Änderungen</Typography>
                     <Button
                         size="small"
                         variant="text"
@@ -115,7 +115,7 @@ export function AuditLogDetailsDialogContent(props: AuditLogDetailsDialogContent
 
             <Box>
                 <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5}}>
-                    <Typography variant="subtitle2">Metadata</Typography>
+                    <Typography variant="subtitle2">Metadaten</Typography>
                     <Button
                         size="small"
                         variant="text"
