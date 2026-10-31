@@ -1265,7 +1265,7 @@ export function ApplicationSettings() {
                             Am Ende eines jeden Formulars wird das Formularverzeichnis mit dem Text „Weitere Formulare“
                             verlinkt. Diese Verlinkung dient der Barrierefreiheit
                             (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
-                            und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen
+                            und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link ausblenden oder durch einen eigenen
                             Link ersetzen
                             (wenn Sie zum Beispiel alle Formulare auf Ihrer eigenen Webseite auflisten).
                         </Typography>
@@ -1293,7 +1293,7 @@ export function ApplicationSettings() {
                             </Box>
                         }
                         <CheckboxFieldComponent
-                            label="Verweis aus Formularen auf das Formularverzeichnis vollständig deaktivieren"
+                            label="Link zum Formularverzeichnis ausblenden"
                             value={(editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) == 'true'}
                             onChange={(checked) => {
                                 setEditedConfig({
@@ -1301,7 +1301,7 @@ export function ApplicationSettings() {
                                     [SystemConfigKeys.provider.listingPage.disableListingPageLink]: checked ? 'true' : 'false',
                                 });
                             }}
-                            hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
+                            hint="Blendet den Link „Weitere Formulare“ aus, unabhängig davon, ob er auf das interne oder ein externes Verzeichnis verweist. Dies kann die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen."
                             disabled={inputsDisabled}
                         />
                     </>
