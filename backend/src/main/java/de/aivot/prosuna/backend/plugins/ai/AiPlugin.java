@@ -22,7 +22,7 @@ public class AiPlugin implements Plugin {
 
     @Override
     public @Nonnull String getName() {
-        return "Prosuna AI-Funktionen";
+        return "Prosuna KI-Funktionen";
     }
 
     @Override

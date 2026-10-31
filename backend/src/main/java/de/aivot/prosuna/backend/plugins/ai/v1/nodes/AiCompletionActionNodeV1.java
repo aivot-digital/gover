@@ -193,7 +193,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         return List.of(
                 new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der Anfragetext für das KI-Modell.", "string"),
                 new ProcessNodeOutput(OUTPUT_COMPLETION, "Completion", "Die erste erzeugte Completion als Text.", "string"),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Abschlussgrund", "Der Grund, aus dem die Erzeugung der ersten KI-Antwort beendet wurde.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION)
         );
