@@ -128,7 +128,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                 var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(idGen).matches();
 
                 if (!startPatternPresent && !endPatternPresent) {
-                    throw ResponseException.badRequest("Das Format des gewählten ID-Typs ist ungültig. Bitte stellen Sie sicher, dass der ID-Typ mit „%I[0-9]“ beginnt oder endet.");
+                    throw ResponseException.badRequest("Die Formatvorlage muss mit einem Zählerplatzhalter wie „%I4“ beginnen oder enden, zum Beispiel „OBJ-%I4“.");
                 }
                 break;
         }

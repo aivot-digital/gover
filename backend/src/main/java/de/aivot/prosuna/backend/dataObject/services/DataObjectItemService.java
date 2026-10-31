@@ -109,7 +109,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                                     .group(endMatcher.groupCount())
                                     .charAt(2));
                 } else {
-                    throw ResponseException.badRequest("ID generation pattern must contain an increment part (%I{n}) at the start or end: " + schema.getIdGen());
+                    throw ResponseException.badRequest("Die Formatvorlage muss mit einem Zählerplatzhalter wie „%I4“ beginnen oder enden, zum Beispiel „OBJ-%I4“.");
                 }
 
                 var fluff = schema

@@ -420,7 +420,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     error={errors.idGen}
                     minCharacters={3}
                     maxCharacters={64}
-                    hint="Muster für automatisch generierte IDs. Unterstützte Platzhalter: %Y (Jahr), %M (Monat), %D (Tag), %I1–%I9 (fortlaufende Nummer mit führenden Nullen in gewählter Zahl). Der Platzhalter %I… muss zwingend enthalten sein und am Anfang ODER am Ende stehen (z. B. %Y-%M-%D-%I4)."
+                    hint="Unterstützte Platzhalter: %Y (Jahr), %M (Monat), %D (Tag) und %I1 bis %I9 (Zähler mit führenden Nullen). Die Formatvorlage muss mit einem Zählerplatzhalter wie %I4 beginnen oder enden, z. B. OBJ-%Y-%I4."
                     disabled={isBusy || !isEditable || !isNewItem}
                 />
             }
