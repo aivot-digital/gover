@@ -43,7 +43,7 @@ export function ShellSessionExpiredDialog() {
             </DialogTitle>
             <DialogContent tabIndex={0}>
                 <Typography>
-                    Ihre Sitzung ist aufgrund von Inaktivität abgelaufen.
+                    Ihre Sitzung ist nicht mehr gültig.
                     Bitte melden Sie sich erneut an.
                 </Typography>
             </DialogContent>
