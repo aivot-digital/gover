@@ -256,8 +256,9 @@ export function HelpDialog(props: HelpDialogProps) {
                         <li>Falls Fehler vorliegen, werden diese rot markiert. Bitte korrigieren Sie sie und versuchen
                             Sie erneut, das Formular abzusenden.
                         </li>
-                        <li>Nach erfolgreicher Übermittlung werden Ihre Angaben direkt an die verantwortliche Stelle
-                            weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte
+                        <li>Nach erfolgreicher Übermittlung werden Ihre Angaben weiterverarbeitet.
+                            Informationen zur Verarbeitung Ihrer Daten finden Sie in der Datenschutzerklärung.
+                            Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte
                             durch, indem Sie den im Formular angezeigten
                             Anweisungen folgen.
                         </li>
@@ -269,32 +270,10 @@ export function HelpDialog(props: HelpDialogProps) {
         {
             question: 'Welche Zeichen kann ich im Formular verwenden?',
             answer: (
-                <>
-                    <Typography>
-                        Das Formular unterstützt Zeichen aus dem <b>Unicode-Zeichensatz</b>, die in
-                        der <b>UTF-8-Kodierung</b> gespeichert und übertragen werden. Sie können folgende Zeichen
-                        verwenden:
-                    </Typography>
-                    <ul>
-                        <li>
-                            <b>Buchstaben:</b>
-                            A-Z, a-z, Umlaute (ä, ö, ü), ß, sowie diakritische Zeichen (á, à, â, é, è, ê, ô, etc.).
-                        </li>
-                        <li>
-                            <b>Zahlen:</b>
-                            0-9
-                        </li>
-                        <li>
-                            <b>Sonderzeichen:</b>
-                            , . : ( ) ? ! @ „ ‚ § € / + - _
-                        </li>
-                    </ul>
-                    <Typography>
-                        Andere Sonderzeichen, Steuerzeichen oder nicht-druckbare Zeichen sind nicht erlaubt.
-                        Darüber hinaus besteht die Möglichkeit, dass diese Optionen je nach Feld und Formular weiter
-                        eingeschränkt sind. Bitte beachten Sie entsprechende Hinweise im Formular.
-                    </Typography>
-                </>
+                <Typography>
+                    Welche Zeichen zulässig sind, richtet sich nach dem jeweiligen Feld. Beachten Sie dessen
+                    Hinweise und die angezeigten Fehlermeldungen.
+                </Typography>
             ),
         },
         {
@@ -321,12 +300,12 @@ export function HelpDialog(props: HelpDialogProps) {
                         </li>
                         <li>
                             <b>Maximale Dateigröße:</b>
-                            10 MB pro Datei, insgesamt max. 100 MB
+                            In der Regel 100 MB pro Datei und insgesamt 500 MB.
                         </li>
                     </ul>
                     <Typography>
-                        Es besteht die Möglichkeit, dass diese Optionen je nach Feld und Formular variieren. Bitte
-                        beachten Sie die Hinweise im Formular.
+                        Je nach Formular und Anlagenfeld können andere Dateiformate und Größenbegrenzungen gelten.
+                        Beachten Sie die Hinweise am jeweiligen Anlagenfeld.
                     </Typography>
                 </>
             ),
@@ -366,8 +345,8 @@ export function HelpDialog(props: HelpDialogProps) {
             question: 'Wer ist für dieses Formular zuständig?',
             answer: (
                 <Typography>
-                    Die Bearbeitung erfolgt durch die im Formular genannten verantwortlichen Stellen. Die Online-Plattform
-                    dient nur der digitalen Übermittlung der Formulardaten.
+                    Die verantwortliche Stelle finden Sie im Formular. Wie Ihre Angaben nach der Übermittlung
+                    weiterverarbeitet werden, erfahren Sie in der Datenschutzerklärung.
                 </Typography>
             ),
         },
@@ -397,8 +376,9 @@ export function HelpDialog(props: HelpDialogProps) {
                         <li>Die Zwischenspeicherung erfolgt lokal auf Ihrem Endgerät. Eine Kopie auf einem Server
                             existiert nicht.
                         </li>
-                        <li>Wenn Sie Ihren Browser-Cache leeren oder den Inkognito-Modus nutzen, gehen die gespeicherten
-                            Daten verloren.
+                        <li>Wenn Sie die Website-Daten für Prosuna löschen, wird auch Ihr lokal gespeicherter Entwurf
+                            entfernt. In privaten Browserfenstern bleibt er in der Regel nur bis zum Ende der privaten
+                            Sitzung erhalten.
                         </li>
                         <li>Wie lange die Daten in Ihrem Browser gespeichert bleiben, hängt von vielen Faktoren wie den
                             persönlichen Einstellungen ab. Wir haben hierauf keinen Einfluss.
@@ -415,10 +395,9 @@ export function HelpDialog(props: HelpDialogProps) {
             answer: (
                 <>
                     <Typography>
-                        Nachträgliche Änderungen sind online nicht mehr möglich, sobald das Formular übermittelt wurde.
-                        Bitte kontaktieren Sie in solchen Fällen schnellstmöglich die im Formular genannten
-                        Ansprechpartner, welche Ihnen
-                        möglicherweise weiterhelfen können.
+                        Die bereits übermittelten Angaben können Sie in diesem Formular nicht nachträglich ändern.
+                        Wenden Sie sich für Berichtigungen an die verantwortliche Stelle. Falls weitere Angaben
+                        benötigt werden, können Sie dazu eine gesonderte Aufforderung erhalten.
                     </Typography>
                 </>
             ),
