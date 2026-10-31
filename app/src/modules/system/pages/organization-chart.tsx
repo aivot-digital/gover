@@ -245,7 +245,7 @@ export function OrganizationChart(): React.ReactElement {
                                     Das Organigramm zeigt Organisationseinheiten und Teams als zoombare, verschiebbare Übersicht.
                                 </Typography>
                                 <Typography variant="body1" component="p">
-                                    Organisationseinheiten werden hierarchisch dargestellt. Mehrere oberste Organisationen erscheinen als getrennte, beschriftete Gruppen in derselben Ansicht.
+                                    Organisationseinheiten werden hierarchisch dargestellt. Mehrere Organisationseinheiten der obersten Ebene erscheinen als getrennte Gruppen.
                                 </Typography>
                                 <Typography variant="body1" component="p">
                                     Teams werden ohne Hierarchie in einer eigenen Ansicht aufgeführt.
