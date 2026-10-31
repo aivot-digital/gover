@@ -389,8 +389,7 @@ export const FormIdentitySelectionControls = forwardRef<
 
                     <Typography>
                         Bitte wählen Sie einen der nachfolgend angebotenen Kommunikationswege aus. Sie werden
-                        ausschließlich über den ausgewählten Kommunikationsweg kontaktiert. Die Angaben werden nur für
-                        die Kommunikation im Rahmen dieses Vorgangs verwendet.
+                        vorrangig über den gewählten Kommunikationsweg kontaktiert. Andere Kontaktwege sind möglich.
                     </Typography>
 
                     <FormControl>

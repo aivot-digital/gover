@@ -130,7 +130,7 @@ describe('FormIdentitySelectionControls', () => {
         const user = userEvent.setup();
 
         expect(screen.getByText(
-            'Bitte wählen Sie einen der nachfolgend angebotenen Kommunikationswege aus. Sie werden ausschließlich über den ausgewählten Kommunikationsweg kontaktiert. Die Angaben werden nur für die Kommunikation im Rahmen dieses Vorgangs verwendet.',
+            'Bitte wählen Sie einen der nachfolgend angebotenen Kommunikationswege aus. Sie werden vorrangig über den gewählten Kommunikationsweg kontaktiert. Andere Kontaktwege sind möglich.',
         )).toBeInTheDocument();
         await user.click(screen.getByRole('radio', {name: /Postfach/}));
         await waitFor(() => expect(deriveCommunication).toHaveBeenCalledWith('applicant', 20, {}, ['ALL']));
