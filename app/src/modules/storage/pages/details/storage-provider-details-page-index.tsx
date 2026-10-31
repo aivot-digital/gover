@@ -78,7 +78,7 @@ export const _StorageProviderSchema = {
         .required('Die Beschreibung des Speicheranbieters ist ein Pflichtfeld.'),
     storageProviderDefinitionKey: yup.string()
         .trim()
-        .required('Der Anbieter des Speicheranbieters ist ein Pflichtfeld.'),
+        .required('Bitte wählen Sie einen Speichertyp aus.'),
     storageProviderDefinitionVersion: yup.number()
         .min(1, 'Die Version des Speicheranbieters muss mindestens 1 sein.')
         .required('Die Version des Speicheranbieters ist ein Pflichtfeld.'),
