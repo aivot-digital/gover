@@ -788,7 +788,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('clientId')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.clientId}
-                        hint="ID des Clients, unter der der Identitätsanbieter erreichbar ist."
+                        hint="Client-ID, unter der Prosuna bei diesem Identitätsanbieter registriert ist."
                     />
                 </Grid>
 
