@@ -44,7 +44,7 @@ function validate(preset: PresetCreateReqeustDTO): Errors | null {
     if (preset.title == null || preset.title.length < 3 || preset.title.length > 190) {
         errors = {
             ...(errors ?? {}),
-            title: 'Bitte geben Sie einen Titel mit mindestens 3 und weniger als 190 Zeichen ein',
+            title: 'Bitte geben Sie einen Titel mit mindestens 3 und höchstens 190 Zeichen ein.',
         };
     }
 

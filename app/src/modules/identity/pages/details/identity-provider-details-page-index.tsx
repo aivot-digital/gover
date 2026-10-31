@@ -47,12 +47,12 @@ export const formSchema = yup.object({
     name: yup.string()
         .trim()
         .min(3, 'Der Name des Identitätsanbieters muss mindestens 3 Zeichen lang sein.')
-        .max(64, 'Der Name des Identitätsanbieters darf maximal 96 Zeichen lang sein.')
+        .max(64, 'Der Name des Identitätsanbieters darf maximal 64 Zeichen lang sein.')
         .required('Der Name des Identitätsanbieters ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
-        .max(255, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
+        .max(255, 'Die Beschreibung darf maximal 255 Zeichen lang sein.')
         .required('Die Beschreibung des Identitätsanbieters ist ein Pflichtfeld.'),
     iconAssetKey: yup.string(),
     metadataIdentifier: yup.string()
@@ -561,6 +561,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('name')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.name}
+                        maxCharacters={64}
                         hint="Name des Identitätsanbieters. Wird auch ausfüllenden Personen im Formular angezeigt."
                     />
                 </Grid>
@@ -620,6 +621,7 @@ export function IdentityProviderDetailsPageIndex() {
                         multiline={true}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.description}
+                        maxCharacters={255}
                         hint="Interne Beschreibung des Identitätsanbieters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
                     />
                 </Grid>

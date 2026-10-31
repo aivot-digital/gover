@@ -68,7 +68,7 @@ export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'created' | 'updated
     name: yup.string()
         .trim()
         .min(3, 'Der Name des Datenmodells muss mindestens 3 Zeichen lang sein.')
-        .max(96, 'Der Name des Datenmodells darf maximal 255 Zeichen lang sein.')
+        .max(96, 'Der Name des Datenmodells darf maximal 96 Zeichen lang sein.')
         .required('Der Name des Datenmodells ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
@@ -324,7 +324,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 disabled={isBusy || !isEditable}
                 error={errors.name}
                 minCharacters={3}
-                maxCharacters={255}
+                maxCharacters={96}
                 hint="Name des Datenmodells zur internen Identifizierung."
             />
 
