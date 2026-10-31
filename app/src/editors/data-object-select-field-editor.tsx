@@ -45,7 +45,7 @@ export function DataObjectSelectFieldEditor(props: BaseEditorProps<DataObjectSel
                             dataLabelAttributeKey: value,
                         });
                     }}
-                    hint="Key des Datenobjekt-Attributes, dessen Wert als primäres Label angezeigt wird (z. B. name)."
+                    hint="Datenschlüssel des Attributs, dessen Wert als Hauptbezeichnung angezeigt wird, zum Beispiel name."
                     disabled={!editable}
                 />
             </Grid>
