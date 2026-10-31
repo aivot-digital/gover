@@ -206,7 +206,7 @@ class PaymentRequestActionNodeV1Test {
                 },
                 node.getExecutionTypes()
         );
-        assertEquals("Fordert eine Online-Zahlung von einer dritten Person an.", node.getAbstract());
+        assertEquals("Fordert eine Online-Zahlung von Beteiligten an.", node.getAbstract());
     }
 
     @Test
@@ -392,7 +392,7 @@ class PaymentRequestActionNodeV1Test {
                 """
                         # Zahlungsinformationen
 
-                        **Buchungstext:** Gebührenbescheid AZ-123
+                        **Verwendungszweck:** Gebührenbescheid AZ-123
 
                         **Beschreibung:** Gebühren für die Bearbeitung
 

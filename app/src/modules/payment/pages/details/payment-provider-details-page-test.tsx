@@ -48,7 +48,7 @@ export function PaymentProviderDetailsPageTest() {
         clearValidationErrors();
 
         if (isStringNullOrEmpty(data.purpose)) {
-            setValidationError('purpose', 'Buchungstext ist erforderlich');
+            setValidationError('purpose', 'Verwendungszweck ist erforderlich');
         }
 
         if (isStringNullOrEmpty(data.description)) {
@@ -88,7 +88,7 @@ export function PaymentProviderDetailsPageTest() {
             >
                 <Grid size={6}>
                     <TextFieldComponent
-                        label="Buchungstext"
+                        label="Verwendungszweck"
                         value={data.purpose}
                         onChange={value => setData({
                             ...data,

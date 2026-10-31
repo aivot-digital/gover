@@ -55,7 +55,7 @@ public class PaymentPayloadCreationService {
         var items = createItems(paymentConfigElementValue, derivedRuntimeElementData, processExecutionData);
 
         var payload = new PaymentPayload()
-                .setPurpose(renderRequired(paymentConfigElementValue.purpose(), processExecutionData, "Buchungstext"))
+                .setPurpose(renderRequired(paymentConfigElementValue.purpose(), processExecutionData, "Verwendungszweck"))
                 .setDescription(renderRequired(paymentConfigElementValue.description(), processExecutionData, "Beschreibung"))
                 .setRequestor(createRequestor(paymentConfigElementValue, processExecutionData))
                 .setPaymentItems(items)

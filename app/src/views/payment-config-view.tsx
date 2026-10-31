@@ -436,7 +436,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
 
                 <Grid size={{xs: 12, md: 6}}>
                     <TextFieldComponent
-                        label="Buchungstext"
+                        label="Verwendungszweck"
                         value={currentValue.purpose}
                         onChange={(purpose) => updateValue({purpose})}
                         required={true}

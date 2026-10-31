@@ -33,11 +33,11 @@ const columns: GridColDef<PaymentTransactionResponseDTO>[] = [
     },
     {
         field: 'paymentRequest.purpose',
-        headerName: 'Buchungstext',
+        headerName: 'Verwendungszweck',
         flex: 1,
         valueGetter: (_, row) => {
             const value = row.paymentRequest?.purpose;
-            return value ? String(value) : 'Kein Buchungstext angegeben';
+            return value ? String(value) : 'Kein Verwendungszweck angegeben';
         },
         sortable: false,
     },

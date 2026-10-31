@@ -165,7 +165,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         return "Es wurde " + summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID))
                 + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT)) + " zur Zahlung aufgefordert und" + summary.delivery() + " informiert."
                 + " Die Zahlung wurde" + (timestamp(paidAt).isEmpty() ? summary.completedAt() : summary.at(paidAt)) + " bestätigt."
-                + detail("Zahlungszweck", summary.data(OUTPUT_PAYMENT_PURPOSE))
+                + detail("Verwendungszweck", summary.data(OUTPUT_PAYMENT_PURPOSE))
                 + detail("Beschreibung", summary.data(OUTPUT_PAYMENT_DESCRIPTION))
                 + detail("Gesamtbetrag (Euro)", summary.data(OUTPUT_PAYMENT_TOTAL) instanceof Number total
                         ? NumberUtils.formatGermanNumber(new BigDecimal(total.toString()), 2) : summary.data(OUTPUT_PAYMENT_TOTAL))
@@ -239,14 +239,14 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Fordert eine Online-Zahlung von einer dritten Person an.";
+        return "Fordert eine Online-Zahlung von Beteiligten an.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine Online-Zahlung und sendet den Zahlungslink über den für eine Identität ausgewählten Kommunikationsweg.
+                Erstellt eine Online-Zahlung und sendet den Zahlungslink über den ausgewählten Kommunikationsweg an die konfigurierte Identität.
 
                 Betreff und Nachricht werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand durch eine Mitarbeiter:in bearbeitet. Anschließend wartet das Prozesselement auf den erfolgreichen Abschluss der Zahlung.
                 """;
@@ -329,8 +329,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_PURPOSE,
-                        "Buchungszweck",
-                        "Der gerenderte Buchungszweck der Zahlungsanforderung.",
+                        "Verwendungszweck",
+                        "Der gerenderte Verwendungszweck der Zahlungsanforderung.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -944,7 +944,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         return """
                 # Zahlungsinformationen
 
-                **Buchungstext:** %s
+                **Verwendungszweck:** %s
 
                 **Beschreibung:** %s
 

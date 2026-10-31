@@ -296,7 +296,7 @@ describe('PaymentConfigView', () => {
         renderPaymentConfigView({
             errorDetails: {
                 paymentProviderKey: 'Bitte waehlen Sie einen Anbieter.',
-                purpose: 'Bitte geben Sie einen Buchungstext an.',
+                purpose: 'Bitte geben Sie einen Verwendungszweck an.',
                 description: 'Bitte geben Sie eine Beschreibung an.',
                 successMessage: 'Bitte korrigieren Sie die Erfolgsmeldung.',
                 failureMessage: 'Bitte korrigieren Sie die Fehlermeldung.',
@@ -307,7 +307,7 @@ describe('PaymentConfigView', () => {
         await screen.findByLabelText(/Zahlungsanbieter/);
 
         expect(await screen.findByText('Bitte waehlen Sie einen Anbieter.')).toBeInTheDocument();
-        expect(screen.getByText('Bitte geben Sie einen Buchungstext an.')).toBeInTheDocument();
+        expect(screen.getByText('Bitte geben Sie einen Verwendungszweck an.')).toBeInTheDocument();
         expect(screen.getByText('Bitte geben Sie eine Beschreibung an.')).toBeInTheDocument();
         expect(screen.getByText('Bitte korrigieren Sie die Erfolgsmeldung.')).toBeInTheDocument();
         expect(screen.getByText('Bitte korrigieren Sie die Fehlermeldung.')).toBeInTheDocument();
@@ -563,7 +563,7 @@ describe('PaymentConfigView', () => {
         const setValue = vi.fn();
         renderPaymentConfigView({value: validPaymentConfig(), setValue});
         fireEvent.click(await screen.findByText('Stadtkasse Musterstadt (pmPayment) – Live-System'));
-        fireEvent.change(screen.getByRole('textbox', {name: 'Buchungstext'}), {target: {value: ''}});
+        fireEvent.change(screen.getByRole('textbox', {name: 'Verwendungszweck'}), {target: {value: ''}});
         fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
         expect(setValue).toHaveBeenCalledWith(expect.objectContaining({purpose: null}));
     });
