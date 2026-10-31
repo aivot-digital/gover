@@ -44,7 +44,7 @@ describe('Submitted', () => {
             .mockResolvedValue(createStatusResponse(ProcessInstanceStatus.Running, ProcessTaskStatus.Completed));
         render(<Submitted startedProcessAccessKey="access-key" paymentRequired formElement={{children: []} as unknown as FormLayoutElement}
             processSlug="process" formSlug="form" processVersion={1}/>);
-        expect(await screen.findByText('Für diesen Vorgang ist keine weitere Zahlung erforderlich.')).toBeVisible();
+        expect(await screen.findByText('Für diese Übermittlung ist keine weitere Zahlung erforderlich.')).toBeVisible();
         expect(screen.queryByText('Zahlung abgeschlossen')).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: 'Zur Zahlung'})).not.toBeInTheDocument();
     });
@@ -131,7 +131,7 @@ describe('Submitted', () => {
             if (taskStatus === ProcessTaskStatus.Completed) {
                 expect(screen.queryByText('Ihre Angaben konnten nicht weiterverarbeitet werden')).not.toBeInTheDocument();
                 expect(screen.queryByText(/Öffnen Sie „Hilfe“ am Ende der Seite\. Dort finden Sie die Kontaktinformationen\./)).not.toBeInTheDocument();
-                expect(screen.getByText('Für diesen Vorgang ist keine weitere Zahlung erforderlich.')).toBeVisible();
+                expect(screen.getByText('Für diese Übermittlung ist keine weitere Zahlung erforderlich.')).toBeVisible();
                 expect(screen.queryByText('Zahlung abgeschlossen')).not.toBeInTheDocument();
             } else {
                 expect(screen.getByText('Ihre Angaben konnten nicht weiterverarbeitet werden')).toBeVisible();

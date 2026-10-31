@@ -460,7 +460,7 @@ export function Submitted(props: SubmittedProps) {
                     </Typography>
                     <Typography variant="body2" sx={{mt: 1, mb: 2}}>
                         {formTaskCompleted
-                            ? 'Für diesen Vorgang ist keine weitere Zahlung erforderlich.'
+                            ? 'Für diese Übermittlung ist keine weitere Zahlung erforderlich.'
                             : processFailed
                                 ? 'Die Zahlung steht wegen des Verarbeitungsfehlers derzeit nicht zur Verfügung.'
                                 : paymentReady
