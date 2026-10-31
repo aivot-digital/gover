@@ -15,7 +15,9 @@ class IdentityProviderRequestDTOTest {
         try (var factory = Validation.buildDefaultValidatorFactory()) {
             var violations = factory.getValidator().validate(request("   "));
 
-            assertTrue(violations.stream().anyMatch(violation -> violation.getMessage().contains("ist erforderlich")));
+            assertTrue(violations.stream().anyMatch(violation -> violation.getMessage().equals(
+                    "Das identifizierende Attribut des Identitätsanbieters ist erforderlich."
+            )));
         }
     }
 
@@ -24,8 +26,8 @@ class IdentityProviderRequestDTOTest {
         try (var factory = Validation.buildDefaultValidatorFactory()) {
             var violations = factory.getValidator().validate(request("email"));
 
-            assertTrue(violations.stream().anyMatch(violation -> violation.getMessage().contains(
-                    "muss in den Attributszuweisungen enthalten sein"
+            assertTrue(violations.stream().anyMatch(violation -> violation.getMessage().equals(
+                    "Das identifizierende Attribut muss in den Attributszuweisungen enthalten sein."
             )));
         }
     }

@@ -22,8 +22,8 @@ public record IdentityProviderRequestDTO(
         @Size(min = 1, max = 64, message = "Der Identifikator für die Metadaten des Identitätsanbieters muss zwischen 1 und 64 Zeichen lang sein.")
         String metadataIdentifier,
         @Nonnull
-        @NotBlank(message = "Die Identitätenkennung des Identitätsanbieters ist erforderlich.")
-        @Size(max = 255, message = "Die Identitätenkennung des Identitätsanbieters darf maximal 255 Zeichen lang sein.")
+        @NotBlank(message = "Das identifizierende Attribut des Identitätsanbieters ist erforderlich.")
+        @Size(max = 255, message = "Das identifizierende Attribut des Identitätsanbieters darf maximal 255 Zeichen lang sein.")
         String uniqueIdAttribute,
         @Nonnull
         @NotNull(message = "Der Name des Identitätsanbieters ist erforderlich.")
@@ -98,7 +98,7 @@ public record IdentityProviderRequestDTO(
     }
 
     @JsonIgnore
-    @AssertTrue(message = "Das Attribut für die eindeutige ID muss in den Attributszuweisungen enthalten sein.")
+    @AssertTrue(message = "Das identifizierende Attribut muss in den Attributszuweisungen enthalten sein.")
     public boolean isUniqueIdAttributeMapped() {
         if (uniqueIdAttribute == null || uniqueIdAttribute.isBlank() || attributes == null) {
             return true;

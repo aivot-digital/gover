@@ -364,7 +364,7 @@ public class IdentityService {
         var uniqueIdFromIdentityProvider = userInfo.get(provider.getUniqueIdAttribute());
         if (uniqueIdFromIdentityProvider == null || uniqueIdFromIdentityProvider.isBlank()) {
             throw ResponseException.internalServerError(
-                    "Die Nutzerinformationen des Identitätsanbieters %s (%s) enthalten für die konfigurierte Identitätenkennung %s keinen Wert.",
+                    "Die Nutzerinformationen des Identitätsanbieters %s (%s) enthalten für das identifizierende Attribut „%s“ keinen Wert.",
                     provider.getName(),
                     provider.getKey(),
                     provider.getUniqueIdAttribute()

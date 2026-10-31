@@ -439,7 +439,7 @@ class IdentityServiceTest {
             var exception = assertThrows(ResponseException.class, () ->
                     identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
             );
-            assertTrue(exception.getMessage().contains("Identitätenkennung sub keinen Wert"));
+            assertTrue(exception.getMessage().contains("identifizierende Attribut „sub“ keinen Wert"));
         }
 
         assertNull(identity.getUniqueIdFromIdentityProvider());

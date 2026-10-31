@@ -62,11 +62,11 @@ export const formSchema = yup.object({
         .required('Der Metadaten-Identifikator ist ein Pflichtfeld.'),
     uniqueIdAttribute: yup.string()
         .trim()
-        .max(255, 'Die Identitätenkennung darf maximal 255 Zeichen lang sein.')
-        .required('Die Identitätenkennung ist ein Pflichtfeld.')
+        .max(255, 'Das identifizierende Attribut darf maximal 255 Zeichen lang sein.')
+        .required('Das identifizierende Attribut ist ein Pflichtfeld.')
         .test(
             'mapped-attribute',
-            'Die Identitätenkennung muss in den Attributszuweisungen enthalten sein.',
+            'Das identifizierende Attribut muss in den Attributszuweisungen enthalten sein.',
             function (value) {
                 if (value == null || value.length === 0) return true;
 
@@ -945,7 +945,7 @@ export function IdentityProviderDetailsPageIndex() {
                 sx={{my: 4}}
             />
             <SelectFieldComponent
-                label="Identitätenkennung"
+                label="Identifizierendes Attribut"
                 required
                 value={identityProvider.uniqueIdAttribute || null}
                 onChange={(value) => {
@@ -955,7 +955,7 @@ export function IdentityProviderDetailsPageIndex() {
                 disabled={inputsDisabled || isSystemProvider}
                 error={errors.uniqueIdAttribute}
                 emptyStatePlaceholder="Keine Attributszuweisungen vorhanden"
-                hint="Wählen Sie das Attribut, dessen Wert eine Identität bei ihrem Identitätsanbieter eindeutig kennzeichnet."
+                hint="Attribut, dessen Wert eine Identität bei diesem Anbieter eindeutig kennzeichnet."
                 sx={{my: 4}}
             />
             <Box

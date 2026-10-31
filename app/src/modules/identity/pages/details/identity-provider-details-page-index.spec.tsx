@@ -273,10 +273,10 @@ describe('IdentityProviderDetailsPageIndex', () => {
 
         await expect(formSchema.validate(provider)).resolves.toBeDefined();
         await expect(formSchema.validate({...provider, uniqueIdAttribute: ''})).rejects.toThrow(
-            'Die Identitätenkennung ist ein Pflichtfeld.',
+            'Das identifizierende Attribut ist ein Pflichtfeld.',
         );
         await expect(formSchema.validate({...provider, uniqueIdAttribute: 'email'})).rejects.toThrow(
-            'Die Identitätenkennung muss in den Attributszuweisungen enthalten sein.',
+            'Das identifizierende Attribut muss in den Attributszuweisungen enthalten sein.',
         );
     });
 
