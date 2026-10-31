@@ -263,7 +263,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 }}
                 disabled={!props.editable}
             >
-                Spalte Hinzufügen
+                Spalte hinzufügen
             </Button>
         </>
     );

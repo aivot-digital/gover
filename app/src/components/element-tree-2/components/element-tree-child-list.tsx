@@ -259,7 +259,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                     }}
                     variant="outlined"
                 >
-                    <em>Keine Element vorhanden</em>
+                    <em>Keine Elemente vorhanden</em>
                 </Paper>
             ),
         })

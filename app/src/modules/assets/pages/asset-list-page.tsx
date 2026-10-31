@@ -110,7 +110,7 @@ export function AssetListPage() {
         prompt({
             title: 'Neuer Ordner',
             message: 'Bitte geben Sie den Namen des neuen Ordners ein.',
-            inputLabel: 'Names des Ordners',
+            inputLabel: 'Name des Ordners',
             confirmButtonText: 'Ordner anlegen',
         })
             .then((folderName) => {

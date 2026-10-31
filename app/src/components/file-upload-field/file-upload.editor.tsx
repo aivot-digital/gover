@@ -63,10 +63,14 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                             <Checkbox
                                 checked={props.element.isMultifile ?? false}
                                 onChange={(event) => {
+                                    const isMultifile = event.target.checked;
+                                    const hasDefaultLabel = props.element.label === 'Anlage' || props.element.label === 'Anlagen';
                                     props.onPatch({
-                                        isMultifile: event.target.checked,
+                                        isMultifile,
                                         minFiles: undefined,
                                         maxFiles: undefined,
+                                        // Follow the upload mode only while the generic default label is in use.
+                                        ...(hasDefaultLabel ? {label: isMultifile ? 'Anlagen' : 'Anlage'} : {}),
                                     });
                                 }}
                                 disabled={!props.editable}

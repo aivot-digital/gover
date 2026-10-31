@@ -721,7 +721,7 @@
           "metadata": null,
           "weight": 12,
           "label": "Datentyp der Rückgabe",
-          "hint": "Der erwartete Datentype der Antwort der HTTP-Anfrage.",
+          "hint": "Der erwartete Datentyp der Antwort der HTTP-Anfrage.",
           "required": false,
           "disabled": false,
           "technical": false,

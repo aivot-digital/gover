@@ -316,7 +316,7 @@ export function HelpDialog(props: HelpDialogProps) {
                 <>
                     <Typography>
                         Sie benötigen zum Ausfüllen eines Formulars grundsätzlich keine zusätzliche Software abseits
-                        ihres Web-Browsers.
+                        Ihres Web-Browsers.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         Wenn Sie optional ein PDF-Dokument herunterladen und ansehen möchten, so benötigen Sie
@@ -328,7 +328,7 @@ export function HelpDialog(props: HelpDialogProps) {
                             target={'_blank'}
                         >https://get.adobe.com/de/reader/
                         </a>
-                        ), es gibt aber auch das
+                        ), es gibt auch
                         kostenfreie Alternativen wie z. B. Foxit PDF Reader (
                         <a
                             rel="noreferrer"

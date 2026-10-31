@@ -321,7 +321,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
         var completionTexts = extractCompletionTexts(completionResponse.choices);
         if (completionTexts.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Texte.");
+            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Text.");
         }
 
         var nodeData = createNodeData(renderedPrompt, completionTexts, completionResponse);

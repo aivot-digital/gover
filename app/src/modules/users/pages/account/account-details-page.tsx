@@ -24,7 +24,7 @@ export function AccountDetailsPage() {
                                     Benachrichtigungen an. Ihre Zugangsdaten verwalten Sie über den verlinkten Identitätsanbieter.
                                 </Typography>
                                 <Typography sx={{ mt: 2 }}>
-                                    Wenn Sie Fragen zur Kontoverwaltung haben, wenden Sie sich bitte an den Administrator.
+                                    Wenn Sie Fragen zur Kontoverwaltung haben, wenden Sie sich bitte an Ihre Administration.
                                 </Typography>
                             </>
                         ),

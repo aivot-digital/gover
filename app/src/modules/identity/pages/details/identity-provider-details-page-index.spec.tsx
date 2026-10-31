@@ -293,7 +293,7 @@ describe('IdentityProviderDetailsPageIndex', () => {
         await waitFor(() => expect(testState.handleInputPatch).toHaveBeenCalled());
         for (const label of [
             'Metadaten-Identifikator',
-            'Endpunkt zur Authorisierung',
+            'Endpunkt zur Autorisierung',
             'Endpunkt zum Erstellen des Tokens',
             'Client ID',
         ]) {

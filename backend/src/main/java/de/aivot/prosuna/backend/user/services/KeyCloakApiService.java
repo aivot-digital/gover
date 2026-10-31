@@ -99,14 +99,20 @@ public class KeyCloakApiService {
         // Extract the created user ID from the Location header because no http body is returned
         var location = response.getHeaders().getFirst("Location");
         if (location == null || location.isEmpty()) {
-            throw ResponseException.internalServerError("Das Mitarbeiter:innen-Profil steht nach der nächsten Synchronisierung zur Verfügung.");
+            throw ResponseException.internalServerError("Die Anfrage zur Kontoanlage wurde an den Identitätsanbieter übermittelt, die Kennung des Kontos konnte jedoch nicht ermittelt werden. Prüfen Sie beim Identitätsanbieter, ob das Konto angelegt wurde, bevor Sie die Anlage erneut ausführen.");
         }
 
         String createdUserId = location
                 .substring(location.lastIndexOf("/") + 1);
 
-        return retrieveUser(createdUserId)
-                .orElseThrow(() -> ResponseException.internalServerError("Die Mitarbeiter:in konnte nach der Erstellung nicht geladen werden."));
+        var lookupFailureMessage = "Die Anfrage zur Kontoanlage wurde an den Identitätsanbieter übermittelt, das Konto konnte anschließend jedoch nicht geladen werden. Prüfen Sie beim Identitätsanbieter, ob das Konto angelegt wurde, bevor Sie die Anlage erneut ausführen.";
+        final Optional<KeycloakUser> createdUser;
+        try {
+            createdUser = retrieveUser(createdUserId);
+        } catch (ResponseException e) {
+            throw ResponseException.internalServerError(lookupFailureMessage, e);
+        }
+        return createdUser.orElseThrow(() -> ResponseException.internalServerError(lookupFailureMessage));
     }
 
     public Collection<KeycloakUser> listUsers() throws ResponseException {

@@ -460,7 +460,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (JacksonException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
-                    "Die HTTP-Antwort konnte nicht als %s verarbeitet werden werden: %s",
+                    "Die HTTP-Antwort konnte nicht als %s verarbeitet werden: %s",
                     responseType.equals(HttpActionNodeV1Config.ResponseConfig.RESPONSE_BODY_TYPE_OPT_JSON) ? "JSON" : "Text",
                     e.getMessage()
             );

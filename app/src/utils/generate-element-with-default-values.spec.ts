@@ -44,6 +44,7 @@ describe('generateElementWithDefaultValues', () => {
     it('should initialize file upload elements with a submitted file name', () => {
         const element = generateElementWithDefaultValues(ElementType.FileUpload) as FileUploadElement;
 
+        expect(element.label).toBe('Anlage');
         expect(element.submittedFileName).toBe('Anlage');
     });
 

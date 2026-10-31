@@ -137,8 +137,8 @@ export function AddPresetDialog(props: AddPresetDialogProps) {
                         mb: 2,
                     }}
                 >
-                    Vergeben Sie einen Titel für die Vorlage um es besser identifizieren zu können.
-                    Diesen Titel können nur Sie und ihre Kolleg:innen einsehen.
+                    Vergeben Sie einen Titel, um die Vorlage besser identifizieren zu können.
+                    Diesen Titel können nur Sie und Ihre Kolleg:innen einsehen.
                 </Typography>
 
                 <TextFieldComponent

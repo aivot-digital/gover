@@ -354,7 +354,7 @@ public class AuthController {
         }
 
         if (res.statusCode() != 200) {
-            throw ResponseException.internalServerErrorWithDetails("Unerwartete Rückmeldung beim einlösen des Authentifizierungscodes: " + res.statusCode(), GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
+            throw ResponseException.internalServerErrorWithDetails("Unerwartete Rückmeldung beim Einlösen des Authentifizierungscodes: " + res.statusCode(), GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
 
         TokenResponse tokenResponse;

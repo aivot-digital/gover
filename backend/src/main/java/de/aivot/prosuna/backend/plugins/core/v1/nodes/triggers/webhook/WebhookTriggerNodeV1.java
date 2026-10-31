@@ -696,7 +696,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 } catch (ClassCastException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
                             e,
-                            "Die Daten, die über den Webhook empfangen wurden, haben nicht das erwartete Format und können daher nicht verarbeitet werden. Erwartet wurde eon Objekt, aber es wurde %s empfangen.",
+                            "Die Daten, die über den Webhook empfangen wurden, haben nicht das erwartete Format und können daher nicht verarbeitet werden. Erwartet wurde ein Objekt, aber es wurde %s empfangen.",
                             StringUtils.quote(payloadObj.getClass().getName())
                     );
                 }

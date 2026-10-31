@@ -21,7 +21,7 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Erstellt ein Datum basierend auf den angegebenen Tag, Monat und Jahr.";
+        return "Erstellt ein Datum aus dem angegebenen Tag, Monat und Jahr.";
     }
 
     @Override

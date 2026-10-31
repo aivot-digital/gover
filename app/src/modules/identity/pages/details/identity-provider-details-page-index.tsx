@@ -692,7 +692,7 @@ export function IdentityProviderDetailsPageIndex() {
                         }}
                         variant="switch"
                         error={errors.pkceMethod}
-                        hint="Gibt an, ob bei der Authorisierung das PKCE-Verfahren mit dem S256-Hashalgorithmus verwendet werden soll. Dies erhöht die Sicherheit bei der Authorisierung, insbesondere bei öffentlichen Clients."
+                        hint="Gibt an, ob bei der Autorisierung das PKCE-Verfahren mit dem S256-Hashalgorithmus verwendet werden soll. Dies erhöht die Sicherheit bei der Autorisierung, insbesondere bei öffentlichen Clients."
                         disabled={inputsDisabled || isSystemProvider}
                     />
                 </Grid>
@@ -720,7 +720,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                 <Grid size={12}>
                     <TextFieldComponent
-                        label="Endpunkt zur Authorisierung"
+                        label="Endpunkt zur Autorisierung"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
                         required
                         value={identityProvider.authorizationEndpoint}

@@ -21,13 +21,13 @@ public class ProcessInstanceAttachmentEntity {
 
     @Nonnull
     @NotNull(message = "Der Dateiname darf nicht null sein.")
-    @NotBlank(message = "Der Dateiname darf nicht leer sein sein.")
+    @NotBlank(message = "Der Dateiname darf nicht leer sein.")
     @Size(max = 255, message = "Der Dateiname darf maximal 255 Zeichen lang sein.")
     private String fileName;
 
     @Nonnull
     @NotNull(message = "Der ursprüngliche Dateiname darf nicht null sein.")
-    @NotBlank(message = "Der ursprüngliche Dateiname darf nicht leer sein sein.")
+    @NotBlank(message = "Der ursprüngliche Dateiname darf nicht leer sein.")
     @Size(max = 255, message = "Der ursprüngliche Dateiname darf maximal 255 Zeichen lang sein.")
     private String originalFileName;
 
@@ -62,7 +62,7 @@ public class ProcessInstanceAttachmentEntity {
 
     @Nonnull
     @NotNull(message = "Der Pfad des Speicherindex-Items darf nicht null sein.")
-    @NotBlank(message = "Der Pfad des Speicherindex-Items darf nicht leer sein sein.")
+    @NotBlank(message = "Der Pfad des Speicherindex-Items darf nicht leer sein.")
     private String storagePathFromRoot;
 
     @Nullable

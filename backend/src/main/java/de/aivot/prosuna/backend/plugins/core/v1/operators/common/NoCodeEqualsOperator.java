@@ -19,7 +19,7 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Ist Gleich";
+        return "Ist gleich";
     }
 
     @Override
@@ -31,28 +31,28 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Ist Gleich“** vergleicht zwei Werte miteinander, um festzustellen, ob sie gleich sind. \s
+                Der Operator **„Ist gleich“** vergleicht zwei Werte miteinander, um festzustellen, ob sie gleich sind. \s
                 Das Ergebnis ist **wahr** (true), wenn die beiden Werte exakt gleich sind. \s
-                Sind die beiden Werte unterschiedlich, ergibt der Operator **„Ist Gleich“** den Wert **falsch**.
+                Sind die beiden Werte unterschiedlich, ergibt der Operator **„Ist gleich“** den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine eingegebene Postleitzahl der benötigten Postleitzahl entspricht.
                 
-                Mit dem Operator **„Ist Gleich“** wird diese Logik so formuliert: \s
+                Mit dem Operator **„Ist gleich“** wird diese Logik so formuliert: \s
                 `Eingabe Postleitzahl IST GLEICH Erwartete Postleitzahl`
                 
                 **Ergebnis:**
                 - Wenn die eingegebene Postleitzahl exakt der erwarteten Postleitzahl entspricht, ist das Ergebnis **wahr**.
                 - Wenn die eingegebene Postleitzahl von der erwarteten Postleitzahl abweicht, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Ist Gleich“-Operator
+                # Wahrheitswerte für den „Ist gleich“-Operator
                 - **10 IST GLEICH 10** → **wahr** \s
                 - **10 IST GLEICH 20** → **falsch** \s
                 - **"Hallo" IST GLEICH "Hallo"** → **wahr** \s
                 - **"Hallo" IST GLEICH "Welt"** → **falsch**
                 
-                # Wann verwenden Sie den Operator „Ist Gleich“?
-                Verwenden Sie **„Ist Gleich“**, wenn Sie prüfen möchten, ob zwei Werte exakt übereinstimmen. \s
+                # Wann verwenden Sie den Operator „Ist gleich“?
+                Verwenden Sie **„Ist gleich“**, wenn Sie prüfen möchten, ob zwei Werte exakt übereinstimmen. \s
                 Dieser Operator ist besonders hilfreich bei Validierungen, z. B. um sicherzustellen, dass Benutzereingaben mit den erwarteten Werten übereinstimmen.
                 """;
     }

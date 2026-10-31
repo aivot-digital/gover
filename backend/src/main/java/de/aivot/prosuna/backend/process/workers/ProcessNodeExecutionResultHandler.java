@@ -234,7 +234,7 @@ public class ProcessNodeExecutionResultHandler {
             }
             default -> throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
-                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine unbekanntes Ergebnisklasse erzeugt: %s.
+                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine unbekannte Ergebnisklasse erzeugt: %s.
                             Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
                             """,
                     StringUtils.quote(provider.getName()),
@@ -1062,7 +1062,7 @@ public class ProcessNodeExecutionResultHandler {
                     true,
                     true,
                     "Aufgabe per E-Mail zugewiesen",
-                    "Die Aufgabe %s wurde per E-Mail an %s eingeladen.",
+                    "Zur Bearbeitung der Aufgabe %s wurde eine Einladung an %s versendet.",
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
                     StringUtils.quote(communicationRequest.recipientEmailAddress())
             );
@@ -1144,7 +1144,7 @@ public class ProcessNodeExecutionResultHandler {
                     true,
                     false,
                     "Eingaben für " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " gespeichert",
-                    "Für die Aufgabe %s wurden durch die zugewiesen Mitarbeiter:in Eingaben abgespeichert.",
+                    "Für die Aufgabe %s wurden durch die zugewiesene Mitarbeiter:in Eingaben abgespeichert.",
                     StringUtils.quote(context.currentNode.resolveName(context.provider))
             );
         }

@@ -31,7 +31,7 @@ public class StorageIndexItemEntity {
     @Id
     @Nonnull
     @NotNull(message = "Der Pfad des Speicherobjekts darf nicht null sein.")
-    @NotBlank(message = "Der Pfad des Speicherobjekts darf nicht leer sein sein.")
+    @NotBlank(message = "Der Pfad des Speicherobjekts darf nicht leer sein.")
     @Size(max = 2048, message = "Der Pfad des Speicherobjekts darf maximal 2048 Zeichen lang sein.")
     private String pathFromRoot;
 
@@ -41,13 +41,13 @@ public class StorageIndexItemEntity {
 
     @Nonnull
     @NotNull(message = "Der Name der Datei darf nicht null sein.")
-    @NotBlank(message = "Der Name der Datei darf nicht leer sein sein.")
+    @NotBlank(message = "Der Name der Datei darf nicht leer sein.")
     @Size(max = 255, message = "Der Name der Datei darf maximal 255 Zeichen lang sein.")
     private String filename;
 
     @Nonnull
     @NotNull(message = "Der MIME-Typ der Datei darf nicht null sein.")
-    @NotBlank(message = "Der MIME-Typ der Datei darf nicht leer sein sein.")
+    @NotBlank(message = "Der MIME-Typ der Datei darf nicht leer sein.")
     @Size(max = 255, message = "Der MIME-Typ der Datei darf maximal 255 Zeichen lang sein.")
     private String mimeType;
 

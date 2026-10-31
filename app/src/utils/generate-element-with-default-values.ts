@@ -165,7 +165,7 @@ const elementConstructors: {
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
-        headline: 'Ihr Neues\nOnline-Formular',
+        headline: 'Ihr neues\nOnline-Formular',
         tabTitle: undefined,
         children: [],
         offlineSubmissionText: undefined,
@@ -381,7 +381,7 @@ const elementConstructors: {
     }),
     [ElementType.FileUpload]: (id) => ({
         ...makeInputBase(ElementType.FileUpload, id),
-        label: 'Anlage(n)',
+        label: 'Anlage',
         extensions: ['pdf'],
         isMultifile: undefined,
         maxFiles: undefined,

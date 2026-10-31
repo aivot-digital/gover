@@ -341,7 +341,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         var completionTexts = extractCompletionTexts(completionResponse.choices);
         if (completionTexts.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Texte.");
+            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Text.");
         }
 
         var transformedProcessData = parseTransformedProcessData(completionTexts.getFirst());
@@ -496,7 +496,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private Map<String, Object> parseTransformedProcessData(@Nonnull String completionText) throws ProcessNodeExecutionExceptionUnknown {
         var normalizedCompletion = StringUtils.toNullableTrimmedString(completionText);
         if (normalizedCompletion == null) {
-            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Texte.");
+            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Text.");
         }
 
         var jsonPayload = unwrapJsonCodeFence(normalizedCompletion);

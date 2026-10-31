@@ -181,7 +181,7 @@ public class PaymentTransactionController {
             paymentTransactionService
                     .processCallback(transaction, cleanedData);
         } catch (PaymentException e) {
-            throw ResponseException.internalServerError("Fehler beim abrufen der Zahlungsinformationen", e);
+            throw ResponseException.internalServerError("Fehler beim Abrufen der Zahlungsinformationen", e);
         }
 
         var redirect = prosunaConfig
