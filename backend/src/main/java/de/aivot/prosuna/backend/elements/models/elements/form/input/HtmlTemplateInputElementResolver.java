@@ -88,7 +88,7 @@ public class HtmlTemplateInputElementResolver {
     public String resolve(@Nullable HtmlTemplateInputElementValue value, @Nonnull ProcessExecutionData processExecutionData) throws ProcessNodeExecutionException {
         if (value == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Es muss eine Konfiguration für das HTML-Template angegeben sein."
+                    "Es muss eine Konfiguration für die HTML-Vorlage angegeben sein."
             );
         }
 

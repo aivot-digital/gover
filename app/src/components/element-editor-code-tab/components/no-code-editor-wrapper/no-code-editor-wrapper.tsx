@@ -81,7 +81,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
             .then(setOperators)
             .catch(err => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Operatoren für No-Code-Expressions konnten nicht geladen werden.'));
+                dispatch(showErrorSnackbar('Operatoren für No-Code-Ausdrücke konnten nicht geladen werden.'));
             })
             .finally(() => setIsBusy(false));
     }, []);

@@ -241,15 +241,15 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Secret für den API-Schlüssel muss ausgewählt werden."));
+                errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Geheimnis für den API-Schlüssel muss ausgewählt werden."));
             } else {
                 try {
                     var secretId = UUID.fromString(configuration.apiKeySecret.trim());
                     if (secretService.retrieve(secretId).isEmpty()) {
-                        errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden."));
+                        errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Geheimnis für den API-Schlüssel wurde nicht gefunden."));
                     }
                 } catch (IllegalArgumentException e) {
-                    errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel ist ungültig."));
+                    errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Geheimnis für den API-Schlüssel ist ungültig."));
                 }
             }
         }
@@ -282,7 +282,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
             throw new ProcessNodeExecutionExceptionMissingValue("Die Endpoint-URL für den KI-Aufruf wurde nicht angegeben.");
         }
         if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Secret für den API-Schlüssel wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Das Geheimnis für den API-Schlüssel wurde nicht angegeben.");
         }
         if (StringUtils.isNullOrEmpty(configuration.model)) {
             throw new ProcessNodeExecutionExceptionMissingValue("Das Modell für den KI-Aufruf wurde nicht angegeben.");
@@ -393,17 +393,17 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         try {
             secretId = UUID.fromString(normalizedSecretKey);
         } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Secret für den API-Schlüssel ist ungültig.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Geheimnis für den API-Schlüssel ist ungültig.");
         }
 
         SecretEntity secret = secretService
                 .retrieve(secretId)
-                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden."));
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Geheimnis für den API-Schlüssel wurde nicht gefunden."));
 
         try {
             var decryptedSecret = secretService.decrypt(secret);
             if (StringUtils.isNullOrEmpty(decryptedSecret)) {
-                throw new ProcessNodeExecutionExceptionMissingValue("Das ausgewählte Secret für den API-Schlüssel ist leer.");
+                throw new ProcessNodeExecutionExceptionMissingValue("Das ausgewählte Geheimnis für den API-Schlüssel ist leer.");
             }
             return decryptedSecret;
         } catch (ProcessNodeExecutionException e) {
@@ -411,7 +411,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der API-Schlüssel konnte nicht aus dem ausgewählten Secret entschlüsselt werden: %s",
+                    "Der API-Schlüssel konnte nicht aus dem ausgewählten Geheimnis entschlüsselt werden: %s",
                     e.getMessage()
             );
         }

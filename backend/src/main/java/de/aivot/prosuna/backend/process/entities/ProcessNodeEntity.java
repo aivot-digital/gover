@@ -69,7 +69,7 @@ public class ProcessNodeEntity {
     private AuthoredElementValues configuration;
 
     @Nonnull
-    @NotNull(message = "Die Input-Mappings dürfen nicht null sein.")
+    @NotNull(message = "Die Zuordnungen der Ausgangsdaten dürfen nicht null sein.")
     @Convert(converter = JsonObjectConverter.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> outputMappings;
