@@ -301,7 +301,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 >
                     <TextFieldComponent
                         value={props.element.privacyText ?? ''}
-                        label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
+                        label="Text zu den Datenschutzhinweisen"
                         multiline
                         onChange={(val) => {
                             props.onPatch({
