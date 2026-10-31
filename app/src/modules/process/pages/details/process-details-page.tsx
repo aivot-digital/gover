@@ -1973,7 +1973,7 @@ export function ProcessDetailsPage(): ReactNode {
         }
 
         if (!canReplaceNodeType(currentProvider.type, replacementProvider.type)) {
-            dispatch(showErrorSnackbar('Auslöser und Endelemente können nur durch denselben Prozesselementtyp ersetzt werden.'));
+            dispatch(showErrorSnackbar('Auslöser und Prozesselemente der Kategorie Abschluss können nur durch denselben Prozesselementtyp ersetzt werden.'));
             return;
         }
 

@@ -1232,7 +1232,7 @@ public class ProcessNodeExecutionResultHandler {
                 .filter(candidate -> candidate.key().equals(viaPort))
                 .findFirst()
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein ausgehender Port mit dem Schlüssel %s bereitgestellt.",
+                        "Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein Ausgangsport mit dem Schlüssel %s bereitgestellt.",
                         StringUtils.quote(currentNode.resolveName(provider)),
                         StringUtils.quote(provider.getName()),
                         StringUtils.quote(viaPort)
