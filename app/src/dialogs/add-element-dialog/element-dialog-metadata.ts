@@ -125,7 +125,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.CodeInput]: 'Erfasst technischen oder ausführbaren Code.',
     [ElementType.RichTextInput]: 'Erfasst formatierte Texte in Markdown.',
     [ElementType.UiDefinitionInput]: 'Definiert eine Benutzeroberfläche (UI) für z. B. Formulare oder Aufgaben.',
-    [ElementType.IdentityConfigElement]: 'Ermöglicht eine Identifizierung über Servicekonten oder alternativ die Eingabe einer E-Mail-Adresse.',
+    [ElementType.IdentityConfigElement]: 'Erfasst eine Identität über einen konfigurierten Identitätsanbieter oder, sofern freigegeben, über eine E-Mail-Adresse.',
     [ElementType.PaymentConfigElement]: 'Konfiguriert den Zahlungsdienstleister und die Zahlungsposten eines Formulars.',
     [ElementType.SummaryLayout]: 'Fasst mehrere Elemente zu einer Übersicht zusammen.',
     [ElementType.ProcessAttachmentDisplay]: 'Zeigt Dateien aus einem Anlagensatz des Vorgangs zum Ansehen und Herunterladen an.',
