@@ -20,7 +20,8 @@ export function AccountDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ihr Konto ist die zentrale Anlaufstelle für Ihre persönlichen Informationen und Einstellungen. Hier können Sie Ihre Kontoinformationen einsehen und bearbeiten, Ihre Mitgliedschaften in Organisationseinheiten verwalten und Benachrichtigungseinstellungen anpassen.
+                                    Hier sehen Sie Ihre Kontoinformationen, Mitgliedschaften und Rollen und passen Ihre
+                                    Benachrichtigungen an. Ihre Zugangsdaten verwalten Sie über den verlinkten Identitätsdienst.
                                 </Typography>
                                 <Typography sx={{ mt: 2 }}>
                                     Wenn Sie Fragen zur Kontoverwaltung haben, wenden Sie sich bitte an den Administrator.
