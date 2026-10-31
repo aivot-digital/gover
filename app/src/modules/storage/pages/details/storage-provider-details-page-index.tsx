@@ -646,10 +646,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         error={errors.maxFileSizeInBytes ?? maxFileSizeApiError ?? undefined}
                         decimalPlaces={2}
                         suffix="MB"
-                        hint="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
+                        hint="Maximale Dateigröße pro Datei. 0 bedeutet: keine zusätzliche Größenbegrenzung durch diesen Speicheranbieter. Systemweite Uploadgrenzen gelten weiterhin."
                         externalAction={
                             <Hint
-                                summary="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
+                                summary="Maximale Dateigröße pro Datei. 0 bedeutet: keine zusätzliche Größenbegrenzung durch diesen Speicheranbieter. Systemweite Uploadgrenzen gelten weiterhin."
                                 detailsTitle="Maximale Dateigröße"
                                 details={
                                     <>
@@ -663,6 +663,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                                             maximale Dateigröße spezifiziert werden.
                                             Die Angabe der maximalen Dateigröße erfolgt in Megabyte* und gilt pro Datei,
                                             welche an den Speicheranbieter von Prosuna übertragen wird.
+                                            0 bedeutet: keine zusätzliche Größenbegrenzung durch diesen Speicheranbieter.
+                                            Systemweite Uploadgrenzen gelten weiterhin.
                                         </Typography>
                                         <Typography
                                             sx={{
