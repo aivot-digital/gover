@@ -832,7 +832,7 @@ function PaymentConfigItemEditor(props: {
                 <Grid size={{xs: 12, md: 6}}>
                     <TextFieldComponent
                         label="Referenz"
-                        hint="Eine fachliche Referenz für die Zahlungsposition. Kann nur von Ihnen intern eingesehen werden."
+                        hint="Fachliche Referenz der Zahlungsposition. Sie wird zur Zuordnung an den Zahlungsdienstleister übermittelt."
                         value={item.reference}
                         onChange={(reference) => onChange({...item, reference})}
                         required={true}
