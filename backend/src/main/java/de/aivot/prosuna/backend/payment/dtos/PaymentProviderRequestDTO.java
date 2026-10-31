@@ -11,37 +11,37 @@ import jakarta.annotation.Nonnull;
 
 public record PaymentProviderRequestDTO(
         @Nonnull
-        @NotNull(message = "Name is required")
-        @NotBlank(message = "Name cannot be blank")
-        @Length(max = 64, message = "Name cannot be longer than 64 characters")
+        @NotNull(message = "Geben Sie einen Namen ein.")
+        @NotBlank(message = "Geben Sie einen Namen ein.")
+        @Length(max = 64, message = "Der Name darf höchstens 64 Zeichen lang sein.")
         String name,
 
         @Nonnull
-        @NotNull(message = "Description is required")
-        @NotBlank(message = "Description cannot be blank")
-        @Length(max = 255, message = "Description cannot be longer than 255 characters")
+        @NotNull(message = "Geben Sie eine interne Beschreibung ein.")
+        @NotBlank(message = "Geben Sie eine interne Beschreibung ein.")
+        @Length(max = 255, message = "Die interne Beschreibung darf höchstens 255 Zeichen lang sein.")
         String description,
 
         @Nonnull
-        @NotNull(message = "Provider key is required")
-        @NotBlank(message = "Provider key cannot be blank")
+        @NotNull(message = "Wählen Sie einen Zahlungsanbieter aus.")
+        @NotBlank(message = "Wählen Sie einen Zahlungsanbieter aus.")
         String providerKey,
 
         @Nonnull
-        @NotNull(message = "Provider version is required")
-        @Min(value = 1, message = "Provider version must be at least 1")
+        @NotNull(message = "Wählen Sie eine Version des Zahlungsanbieters aus.")
+        @Min(value = 1, message = "Die Version des Zahlungsanbieters muss mindestens 1 sein.")
         Integer providerVersion,
 
         @Nonnull
-        @NotNull(message = "Is test provider is required")
+        @NotNull(message = "Geben Sie an, ob der Zahlungsanbieter im Testbetrieb verwendet wird.")
         Boolean isTestProvider,
 
         @Nonnull
-        @NotNull(message = "Is enabled is required")
+        @NotNull(message = "Geben Sie an, ob der Zahlungsanbieter aktiviert ist.")
         Boolean isEnabled,
 
         @Nonnull
-        @NotNull(message = "Config is required")
+        @NotNull(message = "Die Konfiguration des Zahlungsanbieters fehlt.")
         AuthoredElementValues config
 ) {
     public PaymentProviderEntity toEntity() {

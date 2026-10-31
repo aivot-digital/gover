@@ -13,6 +13,8 @@ import jakarta.annotation.Nullable;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
@@ -39,6 +41,8 @@ import java.util.Map;
 @RequestMapping("/api/auth/")
 @Tag(name = "Authentication", description = "Endpoints for user authentication")
 public class AuthController {
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
     private static final String AUTH_PATH = "/protocol/openid-connect/auth";
     private static final String TOKEN_PATH = "/protocol/openid-connect/token";
     private static final String LOGOUT_PATH = "/protocol/openid-connect/logout";
@@ -376,7 +380,8 @@ public class AuthController {
                     .opsForValue()
                     .set(getAuthFlowRedisKey(state), value, AUTH_FLOW_TTL);
         } catch (JacksonException e) {
-            throw ResponseException.internalServerError(e, "Failed to create auth flow state: " + e.getMessage());
+            logger.error("Failed to create auth flow state", e);
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Anmeldung konnte nicht vorbereitet werden.", null);
         }
     }
 
@@ -562,11 +567,13 @@ public class AuthController {
             res = httpService
                     .postFormUrlEncoded(logoutUri, payload);
         } catch (HttpConnectionException e) {
-            throw ResponseException.internalServerError(e, "Failed to perform OIDC logout: " + e.getMessage());
+            logger.error("Failed to perform OIDC logout", e);
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Abmeldung beim Identitätsanbieter konnte nicht abgeschlossen werden.", null);
         }
 
         if (res.statusCode() >= 400) {
-            throw ResponseException.internalServerError("Failed to perform OIDC logout");
+            logger.error("OIDC logout failed with HTTP status {}", res.statusCode());
+            throw ResponseException.internalServerError("Die Abmeldung beim Identitätsanbieter konnte nicht abgeschlossen werden.");
         }
     }
 

@@ -8,17 +8,17 @@ import java.math.BigDecimal;
 
 public record PaymentProviderTestDataRequestDTO(
         @Nonnull
-        @NotNull(message = "purpose is required")
-        @NotBlank(message = "purpose cannot be blank")
+        @NotNull(message = "Geben Sie einen Verwendungszweck ein.")
+        @NotBlank(message = "Geben Sie einen Verwendungszweck ein.")
         String purpose,
 
         @Nonnull
-        @NotNull(message = "description is required")
-        @NotBlank(message = "description cannot be blank")
+        @NotNull(message = "Geben Sie eine Beschreibung ein.")
+        @NotBlank(message = "Geben Sie eine Beschreibung ein.")
         String description,
 
         @Nonnull
-        @NotNull(message = "amount is required")
+        @NotNull(message = "Geben Sie einen Einzelpreis (netto) ein.")
         BigDecimal amount
 ) {
 }

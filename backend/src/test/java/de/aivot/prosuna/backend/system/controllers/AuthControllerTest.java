@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.system.controllers;
 
+import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.system.controllers.AuthController;
 import jakarta.servlet.http.Cookie;
@@ -16,7 +18,10 @@ import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.http.HttpResponse;
@@ -28,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +41,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -108,6 +115,30 @@ class AuthControllerTest {
                 ),
                 eq(Duration.ofMinutes(10))
         );
+    }
+
+    @Test
+    void loginSerializationFailureDoesNotExposeTechnicalDetails() throws Exception {
+        var mapper = mock(JsonMapper.class);
+        var cause = mock(JacksonException.class);
+        when(cause.getMessage()).thenReturn("Internal serialization details");
+        when(cause.getStackTrace()).thenReturn(new StackTraceElement[0]);
+        when(mapper.writeValueAsString(any())).thenThrow(cause);
+        var request = new MockHttpServletRequest();
+        request.setServletPath("/api/auth/login");
+        var response = new MockHttpServletResponse();
+
+        try (var factory = mockStatic(JsonMapperFactory.class)) {
+            factory.when(JsonMapperFactory::getInstance).thenReturn(mapper);
+
+            var exception = assertThrows(ResponseException.class, () -> controller.login(request, response, "/staff"));
+
+            assertEquals("Die Anmeldung konnte nicht vorbereitet werden.", exception.getTitle());
+            assertNull(exception.getDetails());
+            assertSame(cause, exception.getCause());
+            assertNull(response.getRedirectedUrl());
+            verifyNoInteractions(valueOperations);
+        }
     }
 
     @Test
@@ -394,7 +425,26 @@ class AuthControllerTest {
         var request = new MockHttpServletRequest();
         var response = new MockHttpServletResponse();
 
-        assertThrows(ResponseException.class, () -> controller.logout(request, response, "refresh-token"));
+        var exception = assertThrows(ResponseException.class, () -> controller.logout(request, response, "refresh-token"));
+        assertEquals("Die Abmeldung beim Identitätsanbieter konnte nicht abgeschlossen werden.", exception.getTitle());
+        assertNull(exception.getDetails());
+        assertClearsCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/");
+        assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/");
+        verify(csrfTokenRepository).saveToken(null, request, response);
+    }
+
+    @Test
+    void logoutConnectionFailurePreservesItsCauseWithoutExposingIt() throws Exception {
+        var cause = new HttpConnectionException(new IOException("Internal connection details"));
+        when(httpService.postFormUrlEncoded(any(URI.class), any())).thenThrow(cause);
+        var request = new MockHttpServletRequest();
+        var response = new MockHttpServletResponse();
+
+        var exception = assertThrows(ResponseException.class, () -> controller.logout(request, response, "refresh-token"));
+
+        assertEquals("Die Abmeldung beim Identitätsanbieter konnte nicht abgeschlossen werden.", exception.getTitle());
+        assertNull(exception.getDetails());
+        assertSame(cause, exception.getCause());
         assertClearsCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/");
         assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/");
         verify(csrfTokenRepository).saveToken(null, request, response);

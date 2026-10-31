@@ -76,21 +76,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             WebRequest request
     ) {
         final List<String> errors = new ArrayList<>();
+        final var fieldErrors = ex.getBindingResult().getFieldErrors();
+        final var globalErrors = ex.getBindingResult().getGlobalErrors();
 
-        for (final FieldError error : ex.getBindingResult().getFieldErrors()) {
+        for (final FieldError error : fieldErrors) {
             errors.add(error.getField() + ": " + error.getDefaultMessage());
         }
 
-        for (final ObjectError error : ex.getBindingResult().getGlobalErrors()) {
+        for (final ObjectError error : globalErrors) {
             errors.add(error.getObjectName() + ": " + error.getDefaultMessage());
         }
 
-        final String message;
-        if (errors.isEmpty()) {
-            message = "Die Anfrage enthält ungültige Daten.";
-        } else {
-            message = errors.getFirst();
+        // Preserve technical field paths in details, but show only the validation message in the UI.
+        String validationMessage = null;
+        if (!fieldErrors.isEmpty()) {
+            validationMessage = fieldErrors.getFirst().getDefaultMessage();
+        } else if (!globalErrors.isEmpty()) {
+            validationMessage = globalErrors.getFirst().getDefaultMessage();
         }
+        final String message = validationMessage == null || validationMessage.isBlank()
+                ? "Die Anfrage enthält ungültige Daten."
+                : validationMessage;
 
         final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, message, errors, true);
 

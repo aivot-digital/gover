@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record AssetRequestDTO(
         @Nonnull
-        @NotNull(message = "Is private is required")
+        @NotNull(message = "Geben Sie an, ob die Datei geschützt ist.")
         Boolean isPrivate,
 
         @Nullable
