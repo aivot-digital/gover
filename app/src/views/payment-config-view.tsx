@@ -441,7 +441,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         onChange={(purpose) => updateValue({purpose})}
                         required={true}
                         disabled={isInteractionDisabled}
-                        hint="Der Buchungstext erscheint auf der Abrechnung der zahlenden Person oder Organisation, zum Beispiel auf dem Kontoauszug oder der Kreditkartenabrechnung."
+                        hint="Verwendungszweck der Zahlung. Die Darstellung auf der Abrechnung hängt vom Zahlungsdienstleister und der Zahlungsart ab."
                         error={getFieldError(errorDetails, 'purpose')}
                     />
                 </Grid>

@@ -95,7 +95,7 @@ export function PaymentProviderDetailsPageTest() {
                             purpose: value ?? '',
                         })}
                         disabled={isBusy}
-                        hint="Der Buchungstext erscheint auf der Abrechnung der zahlenden Person oder Organisation, zum Beispiel auf dem Kontoauszug oder der Kreditkartenabrechnung."
+                        hint="Verwendungszweck der Zahlung. Die Darstellung auf der Abrechnung hängt vom Zahlungsdienstleister und der Zahlungsart ab."
                         error={validationErrors.purpose}
                     />
                 </Grid>
