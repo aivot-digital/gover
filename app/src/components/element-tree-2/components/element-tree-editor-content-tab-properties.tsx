@@ -72,7 +72,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
             return undefined;
         }
 
-        return 'Mindestens ein übergeordnetes Strukturiertes Listeneingabe-Element hat noch keinen Datenschlüssel.';
+        return 'Mindestens eine übergeordnete Feldgruppe für mehrere Einträge hat noch keinen Datenschlüssel.';
     }, [replicatingParents]);
 
     const replicatingParentDestinationKeyPrefix = useMemo(() => {
