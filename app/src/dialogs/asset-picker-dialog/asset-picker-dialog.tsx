@@ -210,7 +210,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         try {
             const asset = await new AssetsApiService(api).retrieveInStorageProvider(item.pathFromRoot, item.storageProviderId);
             if (asset.key.trim().length === 0) {
-                dispatch(showErrorSnackbar('Die ausgewählte Datei ist keiner Datei zugeordnet und kann nicht ausgewählt werden.'));
+                dispatch(showErrorSnackbar('Die ausgewählte Datei ist in der Dateiverwaltung nicht vollständig registriert und kann nicht verwendet werden.'));
                 return null;
             }
 
