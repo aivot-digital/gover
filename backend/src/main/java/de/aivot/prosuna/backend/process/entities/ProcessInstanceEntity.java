@@ -91,7 +91,7 @@ public class ProcessInstanceEntity {
     private Duration runtime;
 
     @Nonnull
-    @NotNull(message = "Die Startdaten dürfen nicht null sein.")
+    @NotNull(message = "Die initialen Vorgangsdaten dürfen nicht null sein.")
     @Convert(converter = JsonObjectConverter.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> initialPayload;

@@ -26,7 +26,7 @@ public class NoCodeInstanceDataReference extends NoCodeOperand {
     @Override
     public NoCodeOperandError validate() {
         if (StringUtils.isNullOrEmpty(path)) {
-            return new NoCodeOperandError(this, "Der Instanzdaten-Schlüssel darf nicht leer sein.", null);
+            return new NoCodeOperandError(this, "Der Datenpfad darf nicht leer sein.", null);
         }
 
         if (!ProcessDataValueUtils.isValidDestinationKey(path, false, false)) {
