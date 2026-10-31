@@ -35,6 +35,7 @@ public class NoCodeDivideOperator extends NoCodeOperator {
                 # Beschreibung:
                 Der Operator **„Dividiere“** teilt einen numerischen Wert durch einen anderen. \s
                 Das Ergebnis ist der Quotient der beiden Werte.
+                Division durch null ist nicht möglich und führt zu einem Fehler.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten den Quotienten von zwei Zahlen berechnen.
@@ -52,7 +53,7 @@ public class NoCodeDivideOperator extends NoCodeOperator {
                 # Wahrheitswerte für den „Dividiere“-Operator
                 - **Dividiere 10 2** → **5** \s
                 - **Dividiere 9 3** → **3** \s
-                - **Dividiere 5 0** → **unendlich** (Division durch Null)
+                - **Dividiere 5 0** → **Fehler** (Division durch null)
                 
                 # Wann verwenden Sie den Operator „Dividiere“?
                 Verwenden Sie **„Dividiere“**, um den Quotienten von zwei numerischen Werten zu berechnen. \s
