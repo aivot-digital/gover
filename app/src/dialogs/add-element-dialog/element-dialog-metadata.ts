@@ -110,7 +110,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.TimeRange]: 'Erfasst einen Uhrzeitbereich.',
     [ElementType.DateTimeRange]: 'Erfasst einen kombinierten Zeitbereich.',
     [ElementType.MapPoint]: 'Ermöglicht die Auswahl eines Punkts auf der Karte.',
-    [ElementType.DomainAndUserSelect]: 'Wählt Organisationseinheiten oder Mitarbeitende aus.',
+    [ElementType.DomainAndUserSelect]: 'Wählt Organisationseinheiten, Teams oder Mitarbeiter:innen aus.',
     [ElementType.AssignmentContext]: 'Definiert zuständige Personen oder Gruppen.',
     [ElementType.DataModelSelect]: 'Wählt ein Datenmodell aus.',
     [ElementType.DataObjectSelect]: 'Wählt ein konkretes Datenobjekt aus.',

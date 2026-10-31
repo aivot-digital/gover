@@ -1137,8 +1137,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.DomainAndUserSelect]: (
         <Box>
             <Typography>
-                Das Domänen- und Mitarbeitendenauswahl-Element ermöglicht die Mehrfachauswahl von
-                Organisationseinheiten, Teams und Mitarbeitenden.
+                Das Element ermöglicht die Mehrfachauswahl von Organisationseinheiten, Teams und
+                Mitarbeiter:innen.
             </Typography>
 
             <Divider sx={{my: 4}}>

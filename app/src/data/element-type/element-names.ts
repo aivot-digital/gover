@@ -42,7 +42,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.TimeRange]: 'Zeitspanne',
     [ElementType.DateTimeRange]: 'Datum- und Zeitspanne',
     [ElementType.MapPoint]: 'Kartenpunkt (Technische Preview)',
-    [ElementType.DomainAndUserSelect]: 'Domänen- und Mitarbeitendenauswahl',
+    [ElementType.DomainAndUserSelect]: 'Auswahl von Organisationseinheiten, Teams und Mitarbeiter:innen',
     [ElementType.AssignmentContext]: 'Verantwortlicher Personenkreis',
     [ElementType.DataModelSelect]: 'Datenmodell-Auswahl',
     [ElementType.DataObjectSelect]: 'Datenobjekt-Auswahl',
