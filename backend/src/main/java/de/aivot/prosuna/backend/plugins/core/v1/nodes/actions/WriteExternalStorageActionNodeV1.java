@@ -353,7 +353,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 } else if (Boolean.TRUE.equals(storageProvider.getReadOnlyStorage())) {
                     addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist schreibgeschützt.".formatted(rowIndex));
                 } else if (StorageProviderType.Attachments.equals(storageProvider.getType())) {
-                    addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden.".formatted(rowIndex));
+                    addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist ein Speicher für Vorgangsanlagen und kann nicht als Ziel verwendet werden.".formatted(rowIndex));
                 }
             }
 
@@ -539,7 +539,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             );
         } else if (StorageProviderType.Attachments.equals(storageProvider.getType())) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Der Speicheranbieter %s (ID %d) ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden.",
+                    "Der Speicheranbieter %s (ID %d) ist ein Speicher für Vorgangsanlagen und kann nicht als Ziel verwendet werden.",
                     StringUtils.quote(storageProvider.getName()),
                     storageProviderId
             );
