@@ -588,7 +588,8 @@ export function PaymentProviderDetailsPageIndex() {
                     }}
                 >
                     <strong>Hinweis:</strong>{' '}
-                    Sofern noch ausstehende Transaktionen bestehen, werden diese ebenfalls gelöscht.
+                    Die in Prosuna gespeicherten Transaktionen dieses Zahlungsanbieters werden ebenfalls gelöscht.
+                    Bereits beim Zahlungsdienstleister angelegte Zahlungen werden dadurch nicht storniert.
                     Eine Liste mit ausstehenden Transaktionen können Sie im
                     Reiter <strong>Transaktionen</strong> einsehen.
                 </Typography>
