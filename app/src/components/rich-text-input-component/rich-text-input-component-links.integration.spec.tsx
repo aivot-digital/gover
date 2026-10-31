@@ -122,7 +122,7 @@ describe('Rich text link dialogs', () => {
         const url = await openNewLink(user);
         await user.type(url, 'https://example.org');
         await user.tab();
-        expect(screen.getByRole('textbox', {name: 'Linktitel'})).toHaveFocus();
+        expect(screen.getByRole('textbox', {name: 'Zusätzlicher Linkhinweis (Title-Attribut)'})).toHaveFocus();
         await user.keyboard('Example');
         await user.click(screen.getByRole('button', {name: 'URL übernehmen'}));
 
@@ -232,7 +232,7 @@ describe('Rich text link dialogs', () => {
         );
         const url = await openNewLink(user);
         await user.type(url, 'https://example.org');
-        await user.click(screen.getByRole('textbox', {name: 'Linktitel'}));
+        await user.click(screen.getByRole('textbox', {name: 'Zusätzlicher Linkhinweis (Title-Attribut)'}));
         expect(screen.getByRole('button', {name: 'URL übernehmen'})).toBeInTheDocument();
         await user.click(screen.getByRole('textbox', {name: 'Other dialog input'}));
 

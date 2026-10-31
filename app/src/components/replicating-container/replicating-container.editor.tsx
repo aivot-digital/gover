@@ -47,7 +47,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 }}>
                 <TextFieldComponent
                     value={props.element.addLabel ?? ''}
-                    label='Label-Text für Aktion "Hinzufügen"'
+                    label="Beschriftung der Schaltfläche „Hinzufügen“"
                     onChange={(val) => {
                         props.onPatch({
                             addLabel: val,
@@ -63,7 +63,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 }}>
                 <TextFieldComponent
                     value={props.element.removeLabel ?? ''}
-                    label='Label-Text für Aktion "Löschen"'
+                    label="Beschriftung der Schaltfläche „Entfernen“"
                     onChange={(val) => {
                         props.onPatch({
                             removeLabel: val,
