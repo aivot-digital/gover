@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSpecificationExecutor<UserEntity> {
@@ -24,6 +25,15 @@ public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSp
               AND u.deletedInIdp = FALSE
             """)
     boolean existsActiveUserBySystemRoleId(@Param("systemRoleId") Integer systemRoleId);
+
+    @Query("""
+            SELECT u.id
+            FROM UserEntity u
+            WHERE u.id IN :ids
+              AND u.enabled = TRUE
+              AND u.deletedInIdp = FALSE
+            """)
+    List<String> findActiveIdsByIdIn(@Param("ids") Collection<String> ids);
 
     boolean existsByEmail(String email);
 
