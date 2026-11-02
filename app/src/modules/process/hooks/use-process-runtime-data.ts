@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slice';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
@@ -29,8 +29,13 @@ export function useProcessRuntimeData(instanceId: number | null) {
 
     const [runtimeData, setRuntimeData] = useState<ProcessRuntimeData | null>(null);
     const [isRefreshingRuntimeData, setIsRefreshingRuntimeData] = useState(false);
+    // Loads overlap, e.g. after a change of the instance, and can answer out of order. Only the latest load is shown,
+    // and the loading state lasts until all have finished.
+    const loadsRef = useRef({latest: 0, running: 0});
 
     const loadRuntimeData = useCallback(() => {
+        const load = ++loadsRef.current.latest;
+        const isLatest = () => load === loadsRef.current.latest;
         if (instanceId == null) {
             setRuntimeData(null);
             return Promise.resolve();
@@ -43,6 +48,7 @@ export function useProcessRuntimeData(instanceId: number | null) {
         }));
 
         setIsRefreshingRuntimeData(true);
+        loadsRef.current.running++;
         return Promise.all([
             new ProcessInstanceApiService().retrieve(instanceId),
             // The permission set lists department-derived grants per instance, so it misses instances created
@@ -67,6 +73,9 @@ export function useProcessRuntimeData(instanceId: number | null) {
                 ]);
             })
             .then(([instance, tasks, attachments, attachmentSets, events]) => {
+                if (!isLatest()) {
+                    return;
+                }
                 setRuntimeData({
                     instance,
                     tasks: tasks.content,
@@ -76,15 +85,20 @@ export function useProcessRuntimeData(instanceId: number | null) {
                 });
             })
             .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Der Vorgang konnte nicht geladen werden.'));
+                if (isLatest()) {
+                    dispatch(showApiErrorSnackbar(error, 'Der Vorgang konnte nicht geladen werden.'));
+                }
             })
             .finally(() => {
-                setIsRefreshingRuntimeData(false);
-                dispatch(clearLoadingMessage());
+                if (--loadsRef.current.running === 0) {
+                    setIsRefreshingRuntimeData(false);
+                    dispatch(clearLoadingMessage());
+                }
             });
     }, [instanceId, dispatch, refreshPermissionSet]);
 
     const clearRuntimeData = useCallback(() => {
+        loadsRef.current.latest++;
         setRuntimeData(null);
     }, []);
 
