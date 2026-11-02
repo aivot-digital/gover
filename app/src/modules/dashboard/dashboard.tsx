@@ -1,6 +1,6 @@
 import {PageWrapper} from '../../components/page-wrapper/page-wrapper';
 import {Box, Divider, Grid, Typography} from '@mui/material';
-import React, {lazy, Suspense, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {DashboardGreeting} from './components/dashboard-greeting';
 import {DashboardTasksPanel} from './components/dashboard-tasks-panel';
@@ -37,6 +37,8 @@ export function Dashboard() {
     const [overviewError, setOverviewError] = useState(false);
     const [activityError, setActivityError] = useState(false);
     const service = useMemo(() => new DashboardApiService(), []);
+    // Answers can arrive out of order, so only the latest reload of the tasks is shown.
+    const tasksRequestRef = useRef(0);
     const activityEnabledConfig = useAppSelector(selectSystemConfigValue(SystemConfigKeys.dashboard.activity.enabled));
     const activityPeriodConfig = useAppSelector(selectSystemConfigValue(SystemConfigKeys.dashboard.activity.period));
     const initialActivityPeriod = activityPeriodConfig === DashboardActivityPeriodConfig.ThirtyDays
@@ -50,6 +52,8 @@ export function Dashboard() {
         if (shouldSimulate) return;
 
         let isActive = true;
+        // The new overview replaces the tasks of reloads that are still running.
+        tasksRequestRef.current++;
         setOverview(undefined);
         setActivity(undefined);
         setOverviewError(false);
@@ -66,8 +70,13 @@ export function Dashboard() {
 
     // Only the task panel follows changes; the other panels keep the data loaded with the page.
     const refreshTasks = useCallback(() => {
+        const request = ++tasksRequestRef.current;
         service.fetchTasks()
-            .then((tasks) => setOverview((current) => current == null ? current : {...current, tasks}))
+            .then((tasks) => {
+                if (request === tasksRequestRef.current) {
+                    setOverview((current) => current == null ? current : {...current, tasks});
+                }
+            })
             // Keep the shown tasks; the next change or visit loads them again.
             .catch(() => undefined);
     }, [service]);

@@ -155,6 +155,35 @@ describe('Dashboard task panel', () => {
         expect(panelProps.tasks.at(-1)).toBe(updatedTasks);
         expect(panelProps.recentProcesses.at(-1)).toBe(recentProcesses);
     });
+
+    it('keeps the tasks of the latest reload when an older answer arrives later', async () => {
+        vi.useFakeTimers();
+        mockOverview();
+        const olderTasks = {total: 2, overdue: 0, items: []};
+        const newerTasks = {total: 3, overdue: 0, items: []};
+        let answerOlder!: (tasks: typeof olderTasks) => void;
+        vi.spyOn(DashboardApiService.prototype, 'fetchTasks')
+            .mockReturnValueOnce(new Promise((resolve) => {
+                answerOlder = resolve;
+            }))
+            .mockResolvedValueOnce(newerTasks);
+        panelProps.tasks.length = 0;
+        signIn();
+
+        render(<MemoryRouter><Dashboard/></MemoryRouter>);
+        await act(async () => {
+            await Promise.resolve();
+        });
+        for (let reload = 0; reload < 2; reload++) {
+            await act(async () => {
+                staffEventListeners.forEach((listener) => listener({type: 'process-instance', scope: '7', userId: null}));
+                await vi.advanceTimersByTimeAsync(1_000);
+            });
+        }
+        await act(async () => answerOlder(olderTasks));
+
+        expect(panelProps.tasks.at(-1)).toBe(newerTasks);
+    });
 });
 
 function signIn() {
@@ -163,4 +192,20 @@ function signIn() {
         refreshExpires: Date.now() + 60_000,
         csrfToken: 'csrf-token',
     }));
+}
+
+function mockOverview() {
+    vi.spyOn(DashboardApiService.prototype, 'fetchOverview').mockResolvedValue({
+        tasks: {total: 1, overdue: 0, items: []},
+        instances: {total: 0, overdue: 0, items: []},
+        recentProcesses: [],
+    } as never);
+    vi.spyOn(DashboardApiService.prototype, 'fetchActivity').mockResolvedValue({
+        available: false,
+        period: DashboardActivityPeriod.ThreeMonths,
+        started: 0,
+        completed: 0,
+        active: 0,
+        buckets: [],
+    });
 }
