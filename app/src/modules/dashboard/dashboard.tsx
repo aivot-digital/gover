@@ -1,6 +1,6 @@
 import {PageWrapper} from '../../components/page-wrapper/page-wrapper';
 import {Box, Divider, Grid, Typography} from '@mui/material';
-import React, {lazy, Suspense, useEffect, useMemo, useState} from 'react';
+import React, {lazy, Suspense, useCallback, useEffect, useMemo, useState} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {DashboardGreeting} from './components/dashboard-greeting';
 import {DashboardTasksPanel} from './components/dashboard-tasks-panel';
@@ -20,6 +20,8 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {createSimulatedDashboardData} from './dashboard-simulation';
+import {useStaffEvent} from '../staff-events/hooks/use-staff-event';
+import {PROCESS_INSTANCE_STAFF_EVENT_TYPE} from '../process/data/process-instance-staff-event-type';
 
 const germanyFlagColors = ['#213048', '#EA312A', '#EEA53C'];
 
@@ -61,6 +63,20 @@ export function Dashboard() {
             .catch(() => { if (isActive) setActivityError(true); });
         return () => { isActive = false; };
     }, [service, shouldSimulate]);
+
+    // Only the task panel follows changes; the other panels keep the data loaded with the page.
+    const refreshTasks = useCallback(() => {
+        service.fetchTasks()
+            .then((tasks) => setOverview((current) => current == null ? current : {...current, tasks}))
+            // Keep the shown tasks; the next change or visit loads them again.
+            .catch(() => undefined);
+    }, [service]);
+
+    useStaffEvent({
+        type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
+        enabled: !shouldSimulate,
+        onEvent: refreshTasks,
+    });
 
     const displayedOverview = simulatedData?.overview ?? overview;
     const displayedActivity = simulatedData?.activity ?? activity;
