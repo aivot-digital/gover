@@ -108,10 +108,17 @@ public class JavascriptEngine implements AutoCloseable {
 
         // Add the function providers to the javascript context.
         var bindings = graalContext.getBindings(JS_ENGINE_NAME);
-        Value defineUnavailableProvider = null;
         for (var fp : functionProviders) {
             if (fp.isAvailableIn(context)) {
                 bindings.putMember(fp.getObjectName(), fp);
+            }
+        }
+
+        // Define the placeholders after all bindings, so an object name shared with an allowed provider is blocked. The other way round,
+        // putMember would fail on the placeholder, which has no setter.
+        Value defineUnavailableProvider = null;
+        for (var fp : functionProviders) {
+            if (fp.isAvailableIn(context)) {
                 continue;
             }
 

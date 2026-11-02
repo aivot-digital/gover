@@ -190,6 +190,35 @@ class JavascriptEngineTest {
         }
     }
 
+    @Test
+    void assetTemplateContext_BlocksObjectNamesSharedByAllowedAndBlockedProviders() throws Exception {
+        var allowed = new SharedNameAssetTemplateTestJavascriptFunctionProvider();
+        var blocked = new TestJavascriptFunctionProvider();
+
+        try (var engine = new JavascriptEngine(List.of(allowed, blocked), JavascriptExecutionContext.AssetTemplate)) {
+            var exception = assertThrows(
+                    JavascriptException.class,
+                    () -> engine.evaluateCode(new JavascriptCode().setCode("de_aivot_prosuna_test.getValue();"))
+            );
+            assertTrue(exception.getMessage().contains("nicht verfügbar"));
+        }
+
+        try (var engine = new JavascriptEngine(List.of(blocked, allowed), JavascriptExecutionContext.AssetTemplate)) {
+            var exception = assertThrows(
+                    JavascriptException.class,
+                    () -> engine.evaluateCode(new JavascriptCode().setCode("de_aivot_prosuna_test.getValue();"))
+            );
+            assertTrue(exception.getMessage().contains("nicht verfügbar"));
+        }
+    }
+
+    public static class SharedNameAssetTemplateTestJavascriptFunctionProvider extends TestJavascriptFunctionProvider {
+        @Override
+        public boolean isAvailableIn(@Nonnull JavascriptExecutionContext context) {
+            return context == JavascriptExecutionContext.Default || context == JavascriptExecutionContext.AssetTemplate;
+        }
+    }
+
     public static class AssetTemplateTestJavascriptFunctionProvider extends TestJavascriptFunctionProvider {
         @Override
         public String getObjectName() {
