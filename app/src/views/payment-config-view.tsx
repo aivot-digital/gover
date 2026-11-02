@@ -442,7 +442,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         onChange={(purpose) => updateValue({purpose})}
                         required={true}
                         disabled={isInteractionDisabled}
-                        hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte)."
+                        hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte). Übertragen werden höchstens 27 Zeichen: Buchstaben ohne Umlaute, Ziffern, Leerzeichen, Binde- und Unterstriche. Andere Zeichen werden entfernt."
                         error={getFieldError(errorDetails, 'purpose')}
                     />
                 </Grid>
@@ -456,7 +456,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         disabled={isInteractionDisabled}
                         multiline
                         rows={2}
-                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren."
+                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren. Übertragen werden höchstens 250 Zeichen: Buchstaben einschließlich Umlauten und ß, Ziffern, Leerzeichen, Binde- und Unterstriche, Kommas und Punkte. Andere Zeichen werden entfernt, Zeilenumbrüche werden zu Leerzeichen."
                         error={getFieldError(errorDetails, 'description')}
                     />
                 </Grid>
