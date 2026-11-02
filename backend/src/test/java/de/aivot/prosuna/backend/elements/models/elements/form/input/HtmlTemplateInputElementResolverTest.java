@@ -2,10 +2,12 @@ package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.services.AssetService;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.plugins.core.v1.javascript.NumberJavascriptV1;
 import de.aivot.prosuna.backend.plugins.core.v1.javascript.SecretJavascriptV1;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
@@ -279,6 +281,20 @@ class HtmlTemplateInputElementResolverTest {
         );
         assertFalse(exception.getMessage().contains("internal detail"));
         assertTrue(exception.getMessage().contains("_number_v1.formatGermanNumber(1)"));
+    }
+
+    @Test
+    void resolveShouldReportUnexpectedRenderingErrorsWithoutTheirMessage() throws Exception {
+        var templateRenderService = mock(TemplateRenderService.class);
+        when(templateRenderService.interpolate(any(), any(), any(JavascriptExecutionContext.class)))
+                .thenThrow(new UnsupportedOperationException("internal detail"));
+        var failingResolver = new HtmlTemplateInputElementResolver(assetService, storageService, templateRenderService);
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> failingResolver.resolve(template("<p>Text</p>"), new ProcessExecutionData())
+        );
+        assertFalse(exception.getMessage().contains("internal detail"));
     }
 
     @Test

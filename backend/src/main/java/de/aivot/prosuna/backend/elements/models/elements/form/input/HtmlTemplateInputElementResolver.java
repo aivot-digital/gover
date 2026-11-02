@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.services.pdf.MarkdownDialect;
@@ -171,8 +172,9 @@ public class HtmlTemplateInputElementResolver {
                     preparedTemplate,
                     JavascriptExecutionContext.AssetTemplate
             );
-        } catch (RuntimeException e) {
-            // Show the JavaScript error, e.g. of a blocked provider, but not the raw message of a host exception thrown inside a provider.
+        } catch (IllegalArgumentException e) {
+            // TemplateRenderService reports syntax and expression errors with the template line. Show the JavaScript error, e.g. of a blocked
+            // provider, but not the raw message of a host exception thrown inside a provider.
             var detail = NestedExceptionUtils.getMostSpecificCause(e) instanceof PolyglotException polyglotException && polyglotException.isGuestException()
                     ? polyglotException.getMessage()
                     : e.getMessage();
@@ -181,6 +183,13 @@ public class HtmlTemplateInputElementResolver {
                     "Die HTML-Vorlage %s konnte nicht gerendert werden: %s",
                     StringUtils.quote(htmlTemplateAssetKeyStr),
                     detail
+            );
+        } catch (RuntimeException e) {
+            // Not an error of the template, so the message may be internal or missing.
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die HTML-Vorlage %s konnte wegen eines unerwarteten Fehlers nicht gerendert werden.",
+                    StringUtils.quote(htmlTemplateAssetKeyStr)
             );
         }
         return restoreSlotContents(renderedHtml, slotContents);
