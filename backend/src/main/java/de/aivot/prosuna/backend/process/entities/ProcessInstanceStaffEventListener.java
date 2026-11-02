@@ -23,8 +23,21 @@ public class ProcessInstanceStaffEventListener {
 
     @PostPersist
     @PostUpdate
-    @PostRemove
     public void changed(@Nonnull Object entity) {
+        publish(entity);
+    }
+
+    @PostRemove
+    public void removed(@Nonnull Object entity) {
+        publish(entity);
+        // The readers of a deleted instance can no longer be determined once it is gone, so only system-wide readers
+        // would receive its event. An event without an instance lets the lists of all users reload instead.
+        if (entity instanceof ProcessInstanceEntity) {
+            events.publishEvent(new StaffEvent(STAFF_EVENT_TYPE, null, null));
+        }
+    }
+
+    private void publish(@Nonnull Object entity) {
         var instanceId = switch (entity) {
             case ProcessInstanceEntity instance -> instance.getId();
             case ProcessInstanceTaskEntity task -> task.getProcessInstanceId();

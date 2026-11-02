@@ -10,6 +10,7 @@ import java.util.Set;
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ProcessInstanceStaffEventAudienceTest {
@@ -23,5 +24,15 @@ class ProcessInstanceStaffEventAudienceTest {
 
         assertEquals("process-instance", audience.type());
         assertEquals(Set.of("reader"), audience.filter(new StaffEvent("process-instance", "7", null), connected));
+    }
+
+    @Test
+    void sendsAnEventWithoutAnInstanceToAllConnectedUsers() {
+        var permissions = mock(PermissionService.class);
+        var connected = List.of("reader", "other");
+        var audience = new ProcessInstanceStaffEventAudience(permissions);
+
+        assertEquals(connected, audience.filter(new StaffEvent("process-instance", null, null), connected));
+        verifyNoInteractions(permissions);
     }
 }

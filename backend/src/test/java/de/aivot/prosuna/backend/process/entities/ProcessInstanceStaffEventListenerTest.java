@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.entities;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.staffEvents.models.StaffEvent;
 import de.aivot.prosuna.backend.staffEvents.services.StaffEventService;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -11,6 +12,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
@@ -29,6 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @DataJpaTest(properties = {"spring.flyway.enabled=false", "spring.jpa.hibernate.ddl-auto=none",
         "spring.data.jpa.repositories.enabled=false",
@@ -93,6 +96,33 @@ class ProcessInstanceStaffEventListenerTest {
         });
 
         verify(rabbitTemplate).convertAndSend(anyString(), anyString(), Mockito.<Object>any());
+    }
+
+    @Test
+    void publishesTheInstanceOfARemovedRow() {
+        var created = transaction.execute(status -> {
+            var attachmentSet = attachmentSet();
+            em.persist(attachmentSet);
+            return attachmentSet;
+        });
+        clearInvocations(rabbitTemplate);
+
+        transaction.executeWithoutResult(status -> em.remove(em.find(ProcessInstanceAttachmentSetEntity.class, created.getId())));
+
+        verify(rabbitTemplate).convertAndSend(anyString(), anyString(), Mockito.<Object>any());
+        verify(rabbitTemplate).convertAndSend(eq("prosuna.staff-events"), eq(""), eq(INSTANCE_7_CHANGED));
+    }
+
+    @Test
+    void letsTheListsOfAllUsersReloadWhenAnInstanceIsDeleted() {
+        var events = mock(ApplicationEventPublisher.class);
+        var listener = new ProcessInstanceStaffEventListener(events);
+
+        listener.removed(new ProcessInstanceEntity().setId(7L));
+
+        verify(events).publishEvent(new StaffEvent("process-instance", "7", null));
+        verify(events).publishEvent(new StaffEvent("process-instance", null, null));
+        verifyNoMoreInteractions(events);
     }
 
     @Test

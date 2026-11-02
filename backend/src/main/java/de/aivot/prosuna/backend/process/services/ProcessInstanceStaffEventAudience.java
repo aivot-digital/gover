@@ -29,6 +29,10 @@ public class ProcessInstanceStaffEventAudience implements StaffEventAudience {
     @Nonnull
     @Override
     public Collection<String> filter(@Nonnull StaffEvent event, @Nonnull Collection<String> userIds) {
+        // An event without an instance, e.g. after a deletion, names no data and only lets the lists reload.
+        if (event.scope() == null) {
+            return userIds;
+        }
         return permissions.filterUsersWithProcessInstancePermission(userIds, Long.valueOf(event.scope()),
                 PROCESS_INSTANCE_READ);
     }
