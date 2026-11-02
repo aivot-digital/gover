@@ -115,6 +115,7 @@ describe('Dashboard task panel', () => {
     afterEach(() => {
         vi.useRealTimers();
         vi.restoreAllMocks();
+        localStorage.clear();
     });
 
     it('reloads only the tasks when a process instance changes', async () => {
@@ -137,6 +138,7 @@ describe('Dashboard task panel', () => {
         const fetchTasks = vi.spyOn(DashboardApiService.prototype, 'fetchTasks').mockResolvedValue(updatedTasks);
         panelProps.tasks.length = 0;
         panelProps.recentProcesses.length = 0;
+        signIn();
 
         render(<MemoryRouter><Dashboard/></MemoryRouter>);
         await act(async () => {
@@ -154,3 +156,11 @@ describe('Dashboard task panel', () => {
         expect(panelProps.recentProcesses.at(-1)).toBe(recentProcesses);
     });
 });
+
+function signIn() {
+    localStorage.setItem('auth_expiration', JSON.stringify({
+        accessExpires: Date.now() + 60_000,
+        refreshExpires: Date.now() + 60_000,
+        csrfToken: 'csrf-token',
+    }));
+}

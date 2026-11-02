@@ -2,10 +2,20 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {AuthService} from '../../services/auth-service';
 import type {StaffEvent} from './staff-event-source';
 
+const activity = vi.hoisted(() => ({active: true, listeners: new Set<() => void>()}));
+
 vi.mock('../../services/auth-service', () => ({
     AuthService: {
+        isAuthenticated: vi.fn(() => true),
         isAccessTokenValid: vi.fn(() => true),
         refresh: vi.fn(() => Promise.resolve()),
+    },
+}));
+vi.mock('./user-activity', () => ({
+    isUserActive: () => activity.active,
+    onUserActivity: (listener: () => void) => {
+        activity.listeners.add(listener);
+        return () => activity.listeners.delete(listener);
     },
 }));
 
@@ -69,8 +79,11 @@ describe('subscribeStaffEvents', () => {
     beforeEach(() => {
         FakeEventSource.instances = [];
         vi.stubGlobal('EventSource', FakeEventSource);
+        vi.mocked(AuthService.isAuthenticated).mockReturnValue(true);
         vi.mocked(AuthService.isAccessTokenValid).mockReturnValue(true);
         vi.mocked(AuthService.refresh).mockClear();
+        activity.active = true;
+        activity.listeners.clear();
     });
 
     afterEach(() => {
@@ -121,6 +134,48 @@ describe('subscribeStaffEvents', () => {
         FakeEventSource.instances[1].onopen?.();
         expect(listener.mock.calls).toEqual([[null]]);
 
+        unsubscribe();
+    });
+
+    it('waits for the next input before it renews the session of an inactive user', async () => {
+        vi.useFakeTimers();
+        const {subscribeStaffEvents} = await loadSource();
+        const listener = vi.fn();
+        const unsubscribe = subscribeStaffEvents(listener);
+        FakeEventSource.instances[0].onopen?.();
+
+        vi.mocked(AuthService.isAccessTokenValid).mockReturnValue(false);
+        activity.active = false;
+        FakeEventSource.instances[0].onerror?.();
+        await vi.advanceTimersByTimeAsync(60_000);
+        expect(AuthService.refresh).not.toHaveBeenCalled();
+        expect(FakeEventSource.instances).toHaveLength(1);
+
+        activity.active = true;
+        [...activity.listeners].forEach((activityListener) => activityListener());
+        await vi.waitFor(() => expect(FakeEventSource.instances).toHaveLength(2));
+        expect(AuthService.refresh).toHaveBeenCalledOnce();
+        FakeEventSource.instances[1].onopen?.();
+        expect(listener.mock.calls).toEqual([[null]]);
+
+        unsubscribe();
+        expect(activity.listeners.size).toBe(0);
+    });
+
+    it('stops reconnecting once the session has ended', async () => {
+        vi.useFakeTimers();
+        const {subscribeStaffEvents} = await loadSource();
+        const unsubscribe = subscribeStaffEvents(vi.fn());
+
+        vi.mocked(AuthService.isAccessTokenValid).mockReturnValue(false);
+        vi.mocked(AuthService.isAuthenticated).mockReturnValue(false);
+        FakeEventSource.instances[0].onerror?.();
+        await vi.advanceTimersByTimeAsync(60_000);
+        [...activity.listeners].forEach((activityListener) => activityListener());
+        await vi.advanceTimersByTimeAsync(60_000);
+
+        expect(AuthService.refresh).not.toHaveBeenCalled();
+        expect(FakeEventSource.instances).toHaveLength(1);
         unsubscribe();
     });
 

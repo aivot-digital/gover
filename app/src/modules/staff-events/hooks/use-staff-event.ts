@@ -1,5 +1,7 @@
 import {useEffect, useRef} from 'react';
 import {subscribeStaffEvents} from '../staff-event-source';
+import {AuthService} from '../../../services/auth-service';
+import {isUserActive, onUserActivity} from '../user-activity';
 
 // A burst of events, e.g. while a worker runs an instance, leads to at most one reload per interval.
 const THROTTLE_INTERVAL = 1_000;
@@ -13,7 +15,10 @@ export interface UseStaffEventOptions {
     onEvent: () => void;
 }
 
-/** Runs onEvent when the backend reports a matching event. Events that arrive while the tab is hidden run once it is visible. */
+/**
+ * Runs onEvent when the backend reports a matching event. A reload waits while the tab is hidden, and while it would
+ * renew the session of a user who has been inactive, because a reload with an expired access token refreshes it.
+ */
 export function useStaffEvent({type, scope, enabled = true, onEvent}: UseStaffEventOptions): void {
     const onEventRef = useRef(onEvent);
     const normalizedScope = scope == null ? null : String(scope);
@@ -28,22 +33,31 @@ export function useStaffEvent({type, scope, enabled = true, onEvent}: UseStaffEv
         }
 
         let timeout: number | undefined;
-        let missedWhileHidden = false;
+        let deferred = false;
+
+        const canReload = () => document.visibilityState !== 'hidden'
+            && AuthService.isAuthenticated()
+            && (AuthService.isAccessTokenValid() || isUserActive());
 
         const schedule = () => {
-            if (document.visibilityState === 'hidden') {
-                missedWhileHidden = true;
+            if (!canReload()) {
+                deferred = true;
                 return;
             }
             timeout ??= window.setTimeout(() => {
                 timeout = undefined;
+                // The tab may have been hidden or the token may have expired during the interval.
+                if (!canReload()) {
+                    deferred = true;
+                    return;
+                }
                 onEventRef.current();
             }, THROTTLE_INTERVAL);
         };
 
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible' && missedWhileHidden) {
-                missedWhileHidden = false;
+        const resume = () => {
+            if (deferred && canReload()) {
+                deferred = false;
                 schedule();
             }
         };
@@ -53,12 +67,14 @@ export function useStaffEvent({type, scope, enabled = true, onEvent}: UseStaffEv
                 schedule();
             }
         });
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        const stopWaitingForUser = onUserActivity(resume);
+        document.addEventListener('visibilitychange', resume);
 
         return () => {
             unsubscribe();
+            stopWaitingForUser();
             window.clearTimeout(timeout);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('visibilitychange', resume);
         };
     }, [enabled, type, normalizedScope]);
 }

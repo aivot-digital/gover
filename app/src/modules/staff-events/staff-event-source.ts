@@ -1,5 +1,6 @@
 import {AuthService} from '../../services/auth-service';
 import {createApiPath} from '../../utils/url-path-utils';
+import {isUserActive, onUserActivity} from './user-activity';
 
 /** An event from the backend. It only names what changed; views load the current state through the regular API. */
 export interface StaffEvent {
@@ -80,12 +81,22 @@ function startConnection(): () => void {
 function connect(onEvent: StaffEventListener, missedEvents: boolean): () => void {
     let source: EventSource | undefined;
     let reconnectTimeout: number | undefined;
+    let stopWaitingForUser: (() => void) | undefined;
     let stopped = false;
     let missed = missedEvents;
 
     const open = async () => {
         // The stream outlives the access token, so a reconnect usually needs a fresh one.
         if (!AuthService.isAccessTokenValid()) {
+            // A refresh renews the session, so it waits for the user: otherwise an open tab would keep an unattended
+            // session alive. An ended session cannot be refreshed, and retrying it would only repeat failed requests.
+            if (!AuthService.isAuthenticated() || !isUserActive()) {
+                stopWaitingForUser = onUserActivity(() => {
+                    stopWaitingForUser?.();
+                    void open();
+                });
+                return;
+            }
             await AuthService.refresh().catch(() => undefined);
         }
         if (stopped) {
@@ -113,6 +124,7 @@ function connect(onEvent: StaffEventListener, missedEvents: boolean): () => void
     return () => {
         stopped = true;
         window.clearTimeout(reconnectTimeout);
+        stopWaitingForUser?.();
         source?.close();
     };
 }

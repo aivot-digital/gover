@@ -2,9 +2,25 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import {useStaffEvent} from './use-staff-event';
 import {type StaffEventListener, subscribeStaffEvents} from '../staff-event-source';
+import {AuthService} from '../../../services/auth-service';
+
+const activity = vi.hoisted(() => ({active: true, listeners: new Set<() => void>()}));
 
 vi.mock('../staff-event-source', () => ({
     subscribeStaffEvents: vi.fn(),
+}));
+vi.mock('../../../services/auth-service', () => ({
+    AuthService: {
+        isAuthenticated: vi.fn(() => true),
+        isAccessTokenValid: vi.fn(() => true),
+    },
+}));
+vi.mock('../user-activity', () => ({
+    isUserActive: () => activity.active,
+    onUserActivity: (listener: () => void) => {
+        activity.listeners.add(listener);
+        return () => activity.listeners.delete(listener);
+    },
 }));
 
 describe('useStaffEvent', () => {
@@ -14,6 +30,8 @@ describe('useStaffEvent', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         unsubscribe.mockClear();
+        activity.active = true;
+        vi.mocked(AuthService.isAccessTokenValid).mockReturnValue(true);
         vi.mocked(subscribeStaffEvents).mockReset().mockImplementation((listener) => {
             emit = listener;
             return unsubscribe;
@@ -70,6 +88,36 @@ describe('useStaffEvent', () => {
         expect(onEvent).not.toHaveBeenCalled();
 
         setVisibility('visible');
+        vi.advanceTimersByTime(1_000);
+        expect(onEvent).toHaveBeenCalledOnce();
+    });
+
+    it('defers the reload when the tab is hidden before it runs', () => {
+        const onEvent = vi.fn();
+        renderHook(() => useStaffEvent({type: 'process-instance', scope: 7, onEvent}));
+
+        emit({type: 'process-instance', scope: '7', userId: null});
+        setVisibility('hidden');
+        vi.advanceTimersByTime(1_000);
+        expect(onEvent).not.toHaveBeenCalled();
+
+        setVisibility('visible');
+        vi.advanceTimersByTime(1_000);
+        expect(onEvent).toHaveBeenCalledOnce();
+    });
+
+    it('waits for the next input before a reload would renew the session of an inactive user', () => {
+        const onEvent = vi.fn();
+        renderHook(() => useStaffEvent({type: 'process-instance', scope: 7, onEvent}));
+        vi.mocked(AuthService.isAccessTokenValid).mockReturnValue(false);
+        activity.active = false;
+
+        emit({type: 'process-instance', scope: '7', userId: null});
+        vi.advanceTimersByTime(1_000);
+        expect(onEvent).not.toHaveBeenCalled();
+
+        activity.active = true;
+        [...activity.listeners].forEach((listener) => listener());
         vi.advanceTimersByTime(1_000);
         expect(onEvent).toHaveBeenCalledOnce();
     });
