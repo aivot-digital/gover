@@ -655,7 +655,7 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                 <Box sx={{p: 2, px: 2.8}}>
                     <RadioFieldComponent
                         label="Einfügen"
-                        hint="„Als Text“ zeigt den Wert genau so, wie er eingegeben wurde. „Mit Formatierung“ übernimmt Formatierungen wie Fettdruck und Listen und zeigt Links mit ihrer Adresse."
+                        hint="„Als Text“ fügt den Wert als einfachen Text ohne Formatierung ein. „Mit Formatierung“ übernimmt Formatierungen wie Fettdruck und Listen und zeigt Links mit ihrer Adresse."
                         value={insertion}
                         options={[
                             {value: 'text', label: 'Als Text'},
@@ -779,7 +779,8 @@ function resolveVariableSource(variable: InputModeVariable): InputVariableSource
 }
 
 function toVariableReference(variable: InputModeVariable): InputVariableReference {
-    return {source: resolveVariableSource(variable), path: variable.path, nodeDataKey: variable.nodeDataKey};
+    const reference: InputVariableReference = {source: resolveVariableSource(variable), path: variable.path, nodeDataKey: variable.nodeDataKey};
+    return variable.markdown === true ? {...reference, markdown: true} : reference;
 }
 
 function normalizeInputModeValue<T>(value: InputModeValue<T> | T | null): AuthoredInputValue<T> {

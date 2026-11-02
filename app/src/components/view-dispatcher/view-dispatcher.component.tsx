@@ -43,7 +43,11 @@ import {NoCodeDataType} from '../../data/no-code-data-type';
 import {type BaseInputElement} from '../../models/elements/form/base-input-element';
 import {type AuthoredInputValue, type InputModePolicy} from '../../models/input-mode';
 import {literalAuthoredValue} from '../../models/element-data';
-import type {DynamicTextInputMethods, DynamicTextInsertion} from '../dynamic-text/dynamic-text-metadata';
+import {
+    type DynamicTextInputMethods,
+    type DynamicTextInsertion,
+    getDynamicTextInsertionReference,
+} from '../dynamic-text/dynamic-text-metadata';
 
 type Props<T extends AnyElement> = Omit<BaseViewProps<T, any>, 'value' | 'setValue' | 'onBlur' | 'errors' | 'errorDetails'>
 
@@ -83,7 +87,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
     }, []);
     const insertDynamicTextVariable = useCallback((variable: InputModeVariable, insertion: DynamicTextInsertion) => {
         const insert = () => dynamicTextInputRef.current?.insertVariableReference(
-            getInputModeVariableReference(variable),
+            getDynamicTextInsertionReference(getInputModeVariableReference(variable), variable.markdown, insertion),
             insertion,
         );
         if (typeof requestAnimationFrame === 'function') {

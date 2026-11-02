@@ -7,6 +7,7 @@ import {
     VariablePickerDialog,
 } from '../input-mode-field/input-mode-field';
 import {getInputVariableReference, InputVariableSource} from '../../models/input-mode';
+import {getDynamicTextInsertionReference} from '../dynamic-text/dynamic-text-metadata';
 import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
 import {
     RichTextInputComponent,
@@ -75,7 +76,7 @@ export function RichTextInputWithVariablePicker(props: RichTextInputWithVariable
                 setPickerOpen(false);
 
                 const insertReference = () => inputRef.current?.insertVariableReference(
-                    getInputVariableReference(reference),
+                    getDynamicTextInsertionReference(getInputVariableReference(reference), reference.markdown, insertion),
                     insertion,
                 );
                 if (typeof requestAnimationFrame === 'function') {

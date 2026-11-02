@@ -49,6 +49,14 @@ const variables: InputModeVariable[] = [
         origin: 'Vorgang',
         source: InputVariableSource.ProtectedProcessData,
     },
+    {
+        id: 'message',
+        label: 'Nachricht',
+        path: 'nachricht',
+        origin: 'Formulareingang',
+        source: InputVariableSource.ProcessData,
+        markdown: true,
+    },
 ];
 
 function createInitialValue(): InputModeValue<string> {
@@ -57,6 +65,7 @@ function createInitialValue(): InputModeValue<string> {
 
 function Harness(props: {
     initialValue?: InputModeValue<string>;
+    onChange?: (value: InputModeValue<string>) => void;
     onInsertVariable?: (variable: InputModeVariable, insertion: DynamicTextInsertion) => void;
     dynamicTextOutputFormat?: TemplateOutputFormat;
     error?: string;
@@ -75,7 +84,10 @@ function Harness(props: {
             label="Inkrement"
             variables={variables}
             value={value}
-            onChange={setValue}
+            onChange={(next) => {
+                setValue(next);
+                props.onChange?.(next);
+            }}
             onInsertVariable={props.onInsertVariable}
             error={props.error}
             required={props.required}
@@ -224,6 +236,22 @@ describe('InputModeField', () => {
         const summary = screen.getByLabelText(/Inkrement: Gesamtbetrag.*Variable referenzieren/);
         expect(summary).toHaveTextContent('Gesamtbetrag');
         expect(summary).toHaveTextContent('$.warenkorb.gesamtbetrag');
+    });
+
+    it('remembers that a referenced variable holds Markdown', async () => {
+        const user = userEvent.setup();
+        const handleChange = vi.fn();
+        render(<Harness onChange={handleChange}/>);
+
+        await selectMode(user, 'Variable');
+        await user.click(screen.getByRole('button', {name: /Inkrement: Keine Variable referenziert/}));
+        await user.click(await screen.findByLabelText(/^Nachricht/));
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(handleChange.mock.lastCall?.[0]).toEqual({
+            type: InputMode.Variable,
+            reference: {source: InputVariableSource.ProcessData, path: 'nachricht', markdown: true},
+        });
     });
 
     it('groups the primary and cancel actions before the clear action', async () => {

@@ -95,7 +95,7 @@ describe('insertion into Markdown fields', () => {
         const insertion = screen.getByRole('group', {name: /^Einfügen/});
 
         expect(screen.getByRole('radio', {name: 'Als Text'})).toBeChecked();
-        expect(insertion).toHaveAccessibleDescription(/zeigt den Wert genau so, wie er eingegeben wurde/);
+        expect(insertion).toHaveAccessibleDescription(/fügt den Wert als einfachen Text ohne Formatierung ein/);
         await user.click(screen.getByRole('radio', {name: 'Mit Formatierung'}));
         await user.click(screen.getByRole('button', {name: 'Referenz verwenden'}));
 

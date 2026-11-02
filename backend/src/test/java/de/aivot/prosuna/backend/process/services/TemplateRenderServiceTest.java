@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
+import de.aivot.prosuna.backend.plugins.core.v1.javascript.TextJavascriptV1;
 import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
@@ -10,7 +12,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TemplateRenderServiceTest {
     @Test
@@ -203,6 +207,31 @@ class TemplateRenderServiceTest {
                 "Invalid template syntax.\nLine 2: If block is missing '{% endif %}'. [{% if $.enabled %}]",
                 exception.getMessage()
         );
+    }
+
+    @Test
+    void shouldInsertMarkdownValuesAsTheirTextWithTheTextFunction() {
+        var service = new TemplateRenderService(new JavascriptEngineFactoryService(List.of(new TextJavascriptV1())));
+        // As the rich text editor stores what a customer typed.
+        var data = ProcessExecutionData.of(Map.of("$", Map.of(
+                "message", "Bitte \\[Zum Antrag]\\(https://example.org) und 5 \\* 3 \\< 4\n\n**Danke**"
+        )));
+        var template = "Nachricht: {{ _text_v1.fromMarkdown($.message) }}";
+
+        assertEquals(
+                "Nachricht: Bitte [Zum Antrag](https://example.org) und 5 * 3 < 4\n\nDanke",
+                service.interpolate(data, template, TemplateOutputFormat.PlainText)
+        );
+        assertEquals(
+                "Nachricht: Bitte [Zum Antrag](https://example.org) und 5 * 3 < 4 Danke",
+                service.interpolate(data, template, TemplateOutputFormat.SingleLineText)
+        );
+
+        var html = MarkdownRenderer.renderHtml(service.interpolate(data, template, TemplateOutputFormat.Markdown));
+        assertTrue(html.contains("Bitte [Zum Antrag]("), html);
+        assertTrue(html.contains("5 * 3 &lt; 4"), html);
+        assertFalse(html.contains("\\"), html);
+        assertFalse(html.contains("<strong>"), html);
     }
 
     private static TemplateRenderService createService() {

@@ -39,6 +39,8 @@ export interface InputVariableReference {
     source: InputVariableSource;
     path: string;
     nodeDataKey?: string | null;
+    /** The value comes from a Markdown input. Fields that only show text then receive it as plain text. */
+    markdown?: boolean;
 }
 
 export interface InputVariableSuggestion extends InputVariableReference {

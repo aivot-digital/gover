@@ -416,6 +416,40 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldInsertWholeMarkdownValuesAsTextWhereFieldsOnlyShowText() {
+        // As the rich text editor stores what a customer typed, plus a link from other process data.
+        var stored = "**Danke** für [Antrag](https://evil.example)\n\n5 \\* 3 \\< 4";
+        var authoredValues = new AuthoredElementValues();
+        for (var fieldId : List.of("prompt", "subject", "message", "unmarked")) {
+            authoredValues.put(fieldId, new VariableAuthoredInputValue(
+                    new InputVariableReference(InputVariableSource.ProcessData, "message", null, !fieldId.equals("unmarked"))
+            ));
+        }
+
+        var result = derive(
+                createRoot(List.of(
+                        dynamicTextField(new TextInputElement(), "prompt", TemplateOutputFormat.PlainText),
+                        dynamicTextField(new TextInputElement(), "subject", TemplateOutputFormat.SingleLineText),
+                        dynamicTextField(new RichTextInputElement(), "message", TemplateOutputFormat.Markdown),
+                        dynamicTextField(new TextInputElement(), "unmarked", TemplateOutputFormat.PlainText)
+                )),
+                authoredValues,
+                new ElementDerivationOptions(),
+                new ProcessExecutionData().addProcessData("message", stored),
+                InputModeEvaluationContext.Runtime
+        );
+
+        assertFalse(result.hasAnyError());
+        assertEquals("Danke für Antrag (https://evil.example)\n\n5 * 3 < 4", result.getEffectiveValues().get("prompt"));
+        assertEquals("Danke für Antrag (https://evil.example) 5 * 3 < 4", result.getEffectiveValues().get("subject"));
+        // Markdown fields keep the formatting and only reveal link targets, as with {! !}.
+        var message = (String) result.getEffectiveValues().get("message");
+        assertTrue(message.startsWith("**Danke** für Antrag (https://evil.example)"), message);
+        // A reference without the Markdown flag inserts the value as it is stored.
+        assertEquals(stored, result.getEffectiveValues().get("unmarked"));
+    }
+
+    @Test
     void shouldInterpolateDynamicLiteralTextInsideReplicatingRows() {
         var child = dynamicTextField();
         child.setId("message");

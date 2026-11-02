@@ -30,8 +30,10 @@ import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.process.utils.TemplateValueFormatter;
@@ -1034,7 +1036,7 @@ public class ElementDerivationService {
                 if (!resolution.found()) {
                     throw new IllegalArgumentException("Die referenzierte Variable ist zur Laufzeit nicht verfügbar.");
                 }
-                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, resolution.value()));
+                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, resolution.value(), variable.reference().markdown()));
             }
 
             if (authoredValue instanceof NoCodeAuthoredInputValue noCode) {
@@ -1054,7 +1056,7 @@ public class ElementDerivationService {
                         createRuntimeAccumulator(computedElementStates, effectiveElementValues),
                         processExecutionData
                 );
-                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, result.getValue()));
+                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, result.getValue(), false));
             }
 
             if (authoredValue instanceof LowCodeAuthoredInputValue lowCode) {
@@ -1069,7 +1071,7 @@ public class ElementDerivationService {
                         .registerProcessExecutionData(processExecutionData)
                         .registerElementObject(baseElement)
                         .evaluateCode(code);
-                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, result.asObject()));
+                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, result.asObject(), false));
             }
         } catch (Exception exception) {
             throw new DerivationException(baseElement, "Der dynamische Eingabewert ist ungültig: " + exception.getMessage(), exception);
@@ -1121,13 +1123,21 @@ public class ElementDerivationService {
     /**
      * A whole value from process data or code is inserted without a template, so it is formatted like a
      * {@code {! ... !}} tag. This keeps, for example, a customer's Markdown link from hiding its target in a message.
+     * A value from a Markdown input becomes plain text where the field can only show text, as with
+     * {@code _text_v1.fromMarkdown} in a template.
      */
     @Nullable
-    private static Object formatDynamicTextValue(@Nonnull BaseElement element, @Nullable Object value) {
+    private static Object formatDynamicTextValue(@Nonnull BaseElement element,
+                                                 @Nullable Object value,
+                                                 boolean markdownValue) {
         if (element instanceof DynamicTextElement dynamicTextElement
                 && dynamicTextElement.getDynamicTextPolicy() != null
                 && value instanceof String text) {
-            return TemplateValueFormatter.formatRaw(dynamicTextElement.getDynamicTextPolicy().outputFormat(), text);
+            var format = dynamicTextElement.getDynamicTextPolicy().outputFormat();
+            var showsOnlyText = format == TemplateOutputFormat.PlainText || format == TemplateOutputFormat.SingleLineText;
+            return TemplateValueFormatter.formatRaw(format, markdownValue && showsOnlyText
+                    ? MarkdownRenderer.renderPlainText(text)
+                    : text);
         }
         return value;
     }

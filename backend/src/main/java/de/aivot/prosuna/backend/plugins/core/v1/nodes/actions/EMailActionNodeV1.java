@@ -236,7 +236,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                         OUTPUT_NAME_CONTENT,
                         "Inhalt",
                         "Der Inhalt der versendeten E-Mail als Markdown.",
-                        "string"
+                        "string",
+                        true
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS,
