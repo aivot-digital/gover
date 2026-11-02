@@ -64,6 +64,21 @@ class TemplateRenderServiceTest {
     }
 
     @Test
+    void shouldNotLetTheTemplateCompleteALinkFromAFormattedValue() {
+        var data = new ProcessExecutionData()
+                .addProcessData("message", "[Bestätigen](https://evil.example");
+
+        var html = MarkdownRenderer.renderHtml(createService().interpolate(
+                data,
+                "({! $.message !})",
+                TemplateOutputFormat.Markdown
+        ));
+
+        assertFalse(html.contains(">Bestätigen</a>"), html);
+        assertTrue(html.contains("href=\"https://evil.example\">https://evil.example</a>"), html);
+    }
+
+    @Test
     void shouldInsertValuesUnchangedInPlainTextAndOnOneLineInSingleLineTemplates() {
         assertEquals("Prompt: <tag>\n", createService().interpolate(
                 createProcessData(),

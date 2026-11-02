@@ -171,6 +171,13 @@ class MarkdownTemplateValuesTest {
     }
 
     @Test
+    void revealLinkTargetsEscapesBracketsSoTheTemplateCannotCompleteALink() {
+        var html = MarkdownRenderer.renderHtml("(" + MarkdownTemplateValues.revealLinkTargets("[Bestätigen](https://evil.example") + ")");
+
+        assertEquals("<p>([Bestätigen](<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)</p>\n", html);
+    }
+
+    @Test
     void revealLinkTargetsReturnsEmptyTextForMissingValues() {
         assertEquals("", MarkdownTemplateValues.revealLinkTargets(null));
         assertEquals("", MarkdownTemplateValues.revealLinkTargets(""));

@@ -80,7 +80,9 @@ public final class MarkdownTemplateValues {
      * change the target of a reference link in the surrounding template.</p>
      *
      * <p>A value with nothing to change is returned as it was written. Otherwise the Markdown writer writes the whole
-     * value again, which can change how its syntax is spelled, but not what it shows.</p>
+     * value again, which can change how its syntax is spelled, but not what it shows. Brackets that form no link count
+     * as something to change: the writer escapes them, so an incomplete link such as {@code [Antrag](https://…} cannot
+     * be completed by the template around the value.</p>
      */
     @Nonnull
     public static String revealLinkTargets(@Nullable String markdown) {
@@ -96,7 +98,7 @@ public final class MarkdownTemplateValues {
                 .stream()
                 .filter(link -> !MarkdownRenderer.showsItsTarget(link))
                 .toList();
-        if (linksHidingTheirTarget.isEmpty() && collector.definitions.isEmpty()) {
+        if (linksHidingTheirTarget.isEmpty() && collector.definitions.isEmpty() && !collector.textContainsBrackets) {
             return markdown;
         }
 
@@ -139,6 +141,13 @@ public final class MarkdownTemplateValues {
     private static final class LinkCollector extends AbstractVisitor {
         private final List<Link> links = new ArrayList<>();
         private final List<LinkReferenceDefinition> definitions = new ArrayList<>();
+        private boolean textContainsBrackets;
+
+        @Override
+        public void visit(Text text) {
+            var literal = text.getLiteral();
+            textContainsBrackets |= literal.indexOf('[') >= 0 || literal.indexOf(']') >= 0;
+        }
 
         @Override
         public void visit(Link link) {
