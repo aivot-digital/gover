@@ -3,7 +3,7 @@ import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme}
 import {renderToStaticMarkup} from 'react-dom/server';
 import {ImageSelector} from '../../modules/assets/components/image-selector';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
-import {TextFieldComponent} from '../text-field/text-field-component';
+import {DynamicTextInputWithVariablePicker} from '../dynamic-text/dynamic-text-input-with-variable-picker';
 import {RichTextInputWithVariablePicker} from '../rich-text-input-component/rich-text-input-with-variable-picker';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {VStorageIndexItemWithAssetEntity} from '../../modules/storage/entities/storage-index-item-entity';
@@ -353,13 +353,14 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                         <Box sx={{mt: 2}}>
                             {
                                 slotToEdit.type == 'text' &&
-                                <TextFieldComponent
+                                <DynamicTextInputWithVariablePicker
                                     label={slotToEdit.label}
                                     hint={slotToEdit.hint}
-                                    value={value}
+                                    value={value ?? null}
                                     onChange={(val) => {
                                         setEditedSlotValue(val);
                                     }}
+                                    readOnly={readOnly}
                                 />
                             }
 

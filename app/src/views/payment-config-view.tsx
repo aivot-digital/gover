@@ -44,6 +44,7 @@ import {generateId} from '../utils/id-utils';
 import {pluralize} from '../utils/humanization-utils';
 import {RadioFieldComponent} from '../components/radio-field/radio-field-component';
 import {RichTextInputWithVariablePicker} from '../components/rich-text-input-component/rich-text-input-with-variable-picker';
+import {DynamicTextInputWithVariablePicker} from '../components/dynamic-text/dynamic-text-input-with-variable-picker';
 import {FormFieldGroup} from '../components/form-field';
 import {FormFieldTokens} from '../theming/form-field-tokens';
 
@@ -435,7 +436,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 </Grid>
 
                 <Grid size={{xs: 12, md: 6}}>
-                    <TextFieldComponent
+                    <DynamicTextInputWithVariablePicker
                         label="Buchungstext"
                         value={currentValue.purpose}
                         onChange={(purpose) => updateValue({purpose})}
@@ -447,7 +448,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 </Grid>
 
                 <Grid size={{xs: 12}}>
-                    <TextFieldComponent
+                    <DynamicTextInputWithVariablePicker
                         label="Beschreibung"
                         value={currentValue.description}
                         onChange={(description) => updateValue({description})}
@@ -819,27 +820,27 @@ function PaymentConfigItemEditor(props: {
                 spacing={2}
             >
                 <Grid size={{xs: 12, md: 6}}>
-                    <TextFieldComponent
+                    <DynamicTextInputWithVariablePicker
                         label="Beschreibung"
                         hint="Name und/oder Beschreibung der Zahlungsposition. Wird der das Formular einreichenden Person angezeigt."
                         value={item.description}
                         onChange={(description) => onChange({...item, description})}
                         required={true}
                         disabled={disabled}
-                        muiPassTroughProps={{margin: 'none'}}
+                        margin="none"
                         error={getFieldError(errorDetails, 'description')}
                     />
                 </Grid>
 
                 <Grid size={{xs: 12, md: 6}}>
-                    <TextFieldComponent
+                    <DynamicTextInputWithVariablePicker
                         label="Referenz"
                         hint="Eine fachliche Referenz für die Zahlungsposition. Kann nur von Ihnen intern eingesehen werden."
                         value={item.reference}
                         onChange={(reference) => onChange({...item, reference})}
                         required={true}
                         disabled={disabled}
-                        muiPassTroughProps={{margin: 'none'}}
+                        margin="none"
                         error={getFieldError(errorDetails, 'reference')}
                     />
                 </Grid>

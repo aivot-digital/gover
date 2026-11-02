@@ -28,7 +28,7 @@
 * **System:** Fill only the slots of an HTML template that the template uses.
 * **App:** Let customers enter formatted text in forms and form requests with the Markdown field. Customers get a short toolbar with bold, italic and lists and cannot create links. New Markdown fields are limited to 5,000 characters.
 * **App:** Limit the rich text editor to what mails, PDFs and the app can show. Underline, superscript, subscript and highlight are no longer available, Markdown the editor cannot edit is shown as a protected part, and opening a field no longer changes its value.
-* **App:** Let authors choose whether a variable is inserted into a Markdown field as text or with its formatting. Identity descriptions no longer offer variables, as they were never filled in.
+* **App:** Let authors choose whether a variable is inserted into a Markdown field as text or with its formatting. Payment texts and text slots of HTML templates offer the variable picker as well. Identity descriptions no longer offer variables, as they were never filled in.
 
 ## [4.6.2](https://github.com/aivot-digital/gover/compare/v4.6.1...v4.6.2) (2026-05-05)
 

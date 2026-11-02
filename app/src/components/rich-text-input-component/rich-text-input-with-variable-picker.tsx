@@ -1,25 +1,10 @@
-import {useMemo, useRef, useState} from 'react';
-import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
-import {
-    getInputModeVariableCategoryLabel,
-    getInputModeVariableReference,
-    type InputModeVariable,
-    VariablePickerDialog,
-} from '../input-mode-field/input-mode-field';
-import {getInputVariableReference, InputVariableSource} from '../../models/input-mode';
-import {getDynamicTextInsertionReference} from '../dynamic-text/dynamic-text-metadata';
-import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {useRef} from 'react';
+import {useTemplateVariablePicker} from '../dynamic-text/use-template-variable-picker';
 import {
     RichTextInputComponent,
     type RichTextInputComponentMethods,
     type RichTextInputComponentProps,
 } from './rich-text-input-component';
-
-const VARIABLE_SOURCES: InputVariableSource[] = [
-    InputVariableSource.ElementMetadata,
-    InputVariableSource.ProcessData,
-    InputVariableSource.ProtectedProcessData,
-];
 
 export type RichTextInputWithVariablePickerProps = Omit<
     RichTextInputComponentProps,
@@ -31,60 +16,21 @@ export type RichTextInputWithVariablePickerProps = Omit<
 
 export function RichTextInputWithVariablePicker(props: RichTextInputWithVariablePickerProps) {
     const {offerFormattedInsertion, ...inputProps} = props;
-    const {inputModeVariables} = useViewDispatcherContext();
     const inputRef = useRef<RichTextInputComponentMethods | null>(null);
-    const [pickerOpen, setPickerOpen] = useState(false);
-
-    const variables = useMemo<InputModeVariable[]>(() => (
-        (inputModeVariables ?? [])
-            .filter((variable) => VARIABLE_SOURCES.includes(variable.source))
-    ), [inputModeVariables]);
-    const variableMetadata = useMemo(() => variables.map((variable) => ({
-        reference: getInputModeVariableReference(variable),
-        label: variable.label,
-        category: getInputModeVariableCategoryLabel(variable.source),
-        origin: typeof variable.origin === 'string' ? variable.origin : variable.origin?.name ?? undefined,
-        description: variable.description ?? undefined,
-    })), [variables]);
-    const isReadOnly = Boolean(inputProps.disabled || inputProps.readOnly || inputProps.busy);
+    const picker = useTemplateVariablePicker(inputRef, {
+        offerFormattedInsertion,
+        readOnly: Boolean(inputProps.disabled || inputProps.readOnly || inputProps.busy),
+    });
 
     return <>
         <RichTextInputComponent
             {...inputProps}
             ref={inputRef}
             dynamicText
-            dynamicTextVariableMetadata={variableMetadata}
-            endAction={{
-                icon: <DataObject/>,
-                tooltip: 'Variable referenzieren',
-                onClick: () => setPickerOpen(true),
-            }}
+            dynamicTextVariableMetadata={picker.variableMetadata}
+            endAction={picker.endAction}
         />
 
-        <VariablePickerDialog
-            open={pickerOpen}
-            variables={variables}
-            allowedSources={VARIABLE_SOURCES}
-            selectedReference={null}
-            allowClear={false}
-            offerFormattedInsertion={offerFormattedInsertion}
-            readOnly={isReadOnly}
-            title="Variable referenzieren"
-            onClose={() => setPickerOpen(false)}
-            onClear={() => undefined}
-            onSelect={(reference, _suggestion, insertion) => {
-                setPickerOpen(false);
-
-                const insertReference = () => inputRef.current?.insertVariableReference(
-                    getDynamicTextInsertionReference(getInputVariableReference(reference), reference.markdown, insertion),
-                    insertion,
-                );
-                if (typeof requestAnimationFrame === 'function') {
-                    requestAnimationFrame(insertReference);
-                } else {
-                    insertReference();
-                }
-            }}
-        />
+        {picker.pickerDialog}
     </>;
 }
