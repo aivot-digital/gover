@@ -75,7 +75,11 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
     useStaffEvent({
         type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
         scope: instanceId,
-        onEvent: () => listRef.current?.refresh(),
+        // Unlike refresh, without the task count: the drawer follows the events itself.
+        onEvent: () => {
+            listRef.current?.refresh();
+            refreshOptions();
+        },
     });
     const columns = useMemo(() => processListColumns<ProcessTaskListEntry>(true, refresh), [refresh]);
     const fetchFilterCounts = useCallback<FetchListFilterCounts>(

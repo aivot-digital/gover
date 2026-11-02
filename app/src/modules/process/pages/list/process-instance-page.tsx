@@ -61,7 +61,7 @@ export function ProcessInstanceListPage() {
     }, [refreshOptions]);
     useStaffEvent({
         type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
-        onEvent: () => listRef.current?.refresh(),
+        onEvent: refresh,
     });
     const columns = useMemo(() => processListColumns<ProcessInstanceListEntry>(false, refresh), [refresh]);
     const fetchFilterCounts = useCallback<FetchListFilterCounts>(
