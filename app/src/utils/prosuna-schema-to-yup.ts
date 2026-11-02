@@ -250,7 +250,8 @@ function richTextInputFieldToYup(elem: RichTextInputElement): Schema {
     let richTextSchema: StringSchema<string | undefined | null> = yup
         .string();
 
-    if (elem.maxCharacters) {
+    // Non-positive limits mean unlimited, as in the editor component and the backend.
+    if (elem.maxCharacters != null && elem.maxCharacters > 0) {
         richTextSchema = richTextSchema
             .max(elem.maxCharacters, `Zu viele Zeichen. Maximal ${elem.maxCharacters} Zeichen erlaubt.`);
     }

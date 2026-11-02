@@ -290,6 +290,18 @@ describe('rich text input validation', () => {
             .rejects.toThrow('Zu viele Zeichen. Maximal 8 Zeichen erlaubt.');
         await expect(schema.validate(literalAuthoredValue(null))).rejects.toThrow('Beschreibung ist ein Pflichtfeld.');
     });
+
+    it.each([0, -1])('should not limit the number of characters for the limit %i', async (maxCharacters) => {
+        const schema = prosunaSchemaToYup({
+            id: 'description',
+            type: ElementType.RichTextInput,
+            label: 'Beschreibung',
+            maxCharacters,
+        } as any, {}).description;
+
+        await expect(schema.validate(literalAuthoredValue(''))).resolves.toEqual(literalAuthoredValue(''));
+        await expect(schema.validate(literalAuthoredValue('**Fett**'))).resolves.toEqual(literalAuthoredValue('**Fett**'));
+    });
 });
 
 describe('process identity ID validation', () => {
