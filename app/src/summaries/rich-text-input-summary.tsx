@@ -5,7 +5,8 @@ import {MarkdownContent} from '../components/markdown-content/markdown-content';
 
 export function RichTextInputSummary(props: BaseSummaryProps<RichTextInputElement, string>) {
     const theme = useTheme();
-    const markdown = props.value?.trim() ?? '';
+    // Not trimmed: leading spaces change the Markdown, e.g. an indented code block.
+    const markdown = props.value ?? '';
 
     return (
         <Grid
@@ -48,7 +49,7 @@ export function RichTextInputSummary(props: BaseSummaryProps<RichTextInputElemen
                     md: 8,
                 }}
             >
-                {markdown.length === 0 ? (
+                {markdown.trim().length === 0 ? (
                     <Typography variant="body2">
                         Keine Angabe
                     </Typography>

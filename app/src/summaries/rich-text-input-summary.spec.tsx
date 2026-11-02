@@ -58,6 +58,13 @@ describe('RichTextInputSummary', () => {
         expect(screen.queryByRole('link')).not.toBeInTheDocument();
     });
 
+    it('keeps leading spaces that change the formatting, as in the PDF of the submission', () => {
+        renderSummary('    **wörtlich**');
+
+        expect(screen.getByText('**wörtlich**').closest('pre')).toBeInTheDocument();
+        expect(screen.queryByText('wörtlich')).not.toBeInTheDocument();
+    });
+
     it.each([null, '', ' \n '])('shows that no answer was given: %j', (value) => {
         renderSummary(value);
 
