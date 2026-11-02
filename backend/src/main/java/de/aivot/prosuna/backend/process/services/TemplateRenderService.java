@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -700,23 +701,20 @@ public class TemplateRenderService {
         private String evaluateToString(@Nonnull TemplateRenderContext context,
                                         @Nonnull String expression,
                                         int sourceIndex) {
-            return evaluate(context, "return (" + expression + ");", expression, sourceIndex)
-                    .toString();
+            return evaluate(context, "return (" + expression + ");", expression, sourceIndex, JavascriptResult::toString);
         }
 
         private boolean evaluateBoolean(@Nonnull TemplateRenderContext context,
                                         @Nonnull String expression,
                                         int sourceIndex) {
-            var result = evaluate(context, "return Boolean(" + expression + ");", expression, sourceIndex);
-            return Boolean.TRUE.equals(result.asBoolean());
+            return evaluate(context, "return Boolean(" + expression + ");", expression, sourceIndex, result -> Boolean.TRUE.equals(result.asBoolean()));
         }
 
         @Nonnull
         private List<?> evaluateList(@Nonnull TemplateRenderContext context,
                                      @Nonnull String expression,
                                      int sourceIndex) {
-            var value = evaluate(context, "return (" + expression + ");", expression, sourceIndex)
-                    .asObject();
+            var value = evaluate(context, "return (" + expression + ");", expression, sourceIndex, JavascriptResult::asObject);
 
             if (value == null) {
                 return List.of();
@@ -741,19 +739,21 @@ public class TemplateRenderService {
          * loop locals as plain identifiers, but rendering still controls whether the result is consumed as text,
          * boolean, or iterable.
          */
-        @Nonnull
-        private JavascriptResult evaluate(@Nonnull TemplateRenderContext context,
-                                          @Nonnull String body,
-                                          @Nonnull String expression,
-                                          int sourceIndex) {
+        @Nullable
+        private <T> T evaluate(@Nonnull TemplateRenderContext context,
+                               @Nonnull String body,
+                               @Nonnull String expression,
+                               int sourceIndex,
+                               @Nonnull Function<JavascriptResult, T> convert) {
             try {
                 // Expose process data and loop locals as plain identifiers inside template expressions.
                 engine.registerGlobalObject(TEMPLATE_SCOPE_NAME, context.toScope());
-                return engine.evaluateCode(JavascriptCode.of(
+                // Convert inside the try, because converting the result can run guest code such as getters.
+                return convert.apply(engine.evaluateCode(JavascriptCode.of(
                         "(() => { with (%s) { %s } })()",
                         TEMPLATE_SCOPE_NAME,
                         body
-                ));
+                )));
             } catch (Exception e) {
                 throw failure(sourceIndex, "Failed to evaluate expression '" + expression.trim() + "'.", e);
             }

@@ -262,6 +262,26 @@ class HtmlTemplateInputElementResolverTest {
     }
 
     @Test
+    void resolveShouldNotExposeHostExceptionMessagesOfFunctionProvidersCalledByLoopItemGetters() throws Exception {
+        var providerResolver = new HtmlTemplateInputElementResolver(
+                assetService,
+                storageService,
+                new TemplateRenderService(new JavascriptEngineFactoryService(List.of(new ThrowingNumberJavascriptV1())))
+        );
+
+        // Converting the loop items to Java runs the getter after the expression itself was evaluated.
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> providerResolver.resolve(
+                        template("<p>{% for item in [{ get value() { return _number_v1.formatGermanNumber(1); } }] %}x{% endfor %}</p>"),
+                        new ProcessExecutionData()
+                )
+        );
+        assertFalse(exception.getMessage().contains("internal detail"));
+        assertTrue(exception.getMessage().contains("_number_v1.formatGermanNumber(1)"));
+    }
+
+    @Test
     void resolveShouldStillRejectInvalidAuthoredSlotSyntax() throws Exception {
         var value = template("<p data-slot=\"text\" data-slot-type=\"text\">Default</p>")
                 .setSlots(Map.of("text", "{{ unclosed"));
