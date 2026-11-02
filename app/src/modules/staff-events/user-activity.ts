@@ -29,6 +29,8 @@ function startTracking(): void {
         return;
     }
     isTracking = true;
+    // Other tabs learn about the page load as well, e.g. the tab that holds the stream and waits with an expired token.
+    storeActivity();
 
     INPUT_EVENTS.forEach((type) => window.addEventListener(type, recordActivity, {capture: true, passive: true}));
     document.addEventListener('visibilitychange', () => {
@@ -50,12 +52,16 @@ function recordActivity(): void {
     }
 
     lastActivity = now;
+    storeActivity();
+    notify();
+}
+
+function storeActivity(): void {
     try {
-        localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(now));
+        localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(lastActivity));
     } catch {
         // Without the storage, only this tab knows about its input.
     }
-    notify();
 }
 
 function readStoredActivity(): number {

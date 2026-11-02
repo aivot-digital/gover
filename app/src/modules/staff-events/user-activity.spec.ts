@@ -23,6 +23,14 @@ describe('user activity', () => {
         expect(isUserActive()).toBe(false);
     });
 
+    it('tells the other tabs about the page load', async () => {
+        const {onUserActivity} = await loadUserActivity();
+
+        onUserActivity(vi.fn());
+
+        expect(localStorage.getItem('staff_last_user_activity')).toBe(String(Date.now()));
+    });
+
     it('notifies the listeners when an inactive user returns', async () => {
         const {isUserActive, onUserActivity, USER_ACTIVITY_WINDOW} = await loadUserActivity();
         const listener = vi.fn();
