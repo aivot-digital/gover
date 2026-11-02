@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
+import org.graalvm.polyglot.PolyglotException;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -127,6 +128,17 @@ class JavascriptEngineTest {
             assertEquals("value", res.asString());
         } catch (Exception e) {
             fail(e);
+        }
+    }
+
+    @Test
+    void evaluateCode_CancelsCodeThatExceedsTheCpuTimeLimit() throws Exception {
+        try (var engine = new JavascriptEngine(List.of())) {
+            var exception = assertThrows(
+                    JavascriptException.class,
+                    () -> engine.evaluateCode(new JavascriptCode().setCode("for (;;) {}"))
+            );
+            assertTrue(exception.getCause() instanceof PolyglotException polyglotException && polyglotException.isResourceExhausted());
         }
     }
 
