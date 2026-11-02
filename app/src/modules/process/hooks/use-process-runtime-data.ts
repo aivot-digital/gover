@@ -12,6 +12,8 @@ import {ProcessInstanceApiService} from '../services/process-instance-api-servic
 import {ProcessInstanceTaskApiService} from '../services/process-instance-task-api-service';
 import {ProcessInstanceAttachmentApiService} from '../services/process-instance-attachment-api-service';
 import {ProcessInstanceAttachmentSetApiService} from '../services/process-instance-attachment-set-api-service';
+import {useStaffEvent} from '../../staff-events/hooks/use-staff-event';
+import {PROCESS_INSTANCE_STAFF_EVENT_TYPE} from '../data/process-instance-staff-event-type';
 
 export interface ProcessRuntimeData {
     instance: ProcessInstanceEntity;
@@ -89,6 +91,13 @@ export function useProcessRuntimeData(instanceId: number | null) {
     useEffect(() => {
         void loadRuntimeData();
     }, [loadRuntimeData]);
+
+    useStaffEvent({
+        type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
+        scope: instanceId,
+        enabled: instanceId != null,
+        onEvent: loadRuntimeData,
+    });
 
     return {
         runtimeData,

@@ -21,6 +21,8 @@ import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-
 import {Action} from '../../../../components/actions/actions-props';
 import {useListFilter} from '../../../../components/generic-list/use-list-filter';
 import {ProcessListFilterMenu} from '../../components/process-list-filter-menu';
+import {useStaffEvent} from '../../../staff-events/hooks/use-staff-event';
+import {PROCESS_INSTANCE_STAFF_EVENT_TYPE} from '../../data/process-instance-staff-event-type';
 
 const filters: GenericListFilter[] = [
     {
@@ -70,6 +72,11 @@ export function ProcessTaskList({instanceId}: {instanceId?: number}) {
     useEffect(() => {
         dispatchProcessAssignedTaskCountRefreshEvent();
     }, []);
+    useStaffEvent({
+        type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
+        scope: instanceId,
+        onEvent: () => listRef.current?.refresh(),
+    });
     const columns = useMemo(() => processListColumns<ProcessTaskListEntry>(true, refresh), [refresh]);
     const fetchFilterCounts = useCallback<FetchListFilterCounts>(
         ({signal}) => new ProcessListApiService().tasksCounts({instanceId, assignee}, signal),
