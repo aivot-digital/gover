@@ -221,7 +221,7 @@ public class ResponseException extends Exception {
     }
 
     public static ResponseException notAcceptable() {
-        return ResponseException.conflict("Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
+        return ResponseException.notAcceptable("Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
     }
 
     public static ResponseException notAcceptable(String format, Object... args) {
@@ -229,7 +229,7 @@ public class ResponseException extends Exception {
     }
 
     public static ResponseException notAcceptable(String message) {
-        return new ResponseException(HttpStatus.NOT_ACCEPTABLE, "Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
+        return new ResponseException(HttpStatus.NOT_ACCEPTABLE, message);
     }
 
     public static ResponseException methodNotAllowed(String message) {
