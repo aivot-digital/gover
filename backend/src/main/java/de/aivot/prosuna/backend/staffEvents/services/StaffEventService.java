@@ -120,12 +120,14 @@ public class StaffEventService {
      */
     @Scheduled(fixedDelay = 25, timeUnit = TimeUnit.SECONDS)
     public void sendHeartbeats() {
-        if (streams.isEmpty()) {
+        // Only the streams whose users are checked: a stream opened meanwhile would otherwise be ended unchecked.
+        var checkedStreams = Map.copyOf(streams);
+        if (checkedStreams.isEmpty()) {
             return;
         }
 
-        var activeUserIds = Set.copyOf(users.findActiveIdsByIdIn(Set.copyOf(streams.values())));
-        streams.forEach((stream, userId) -> {
+        var activeUserIds = Set.copyOf(users.findActiveIdsByIdIn(Set.copyOf(checkedStreams.values())));
+        checkedStreams.forEach((stream, userId) -> {
             if (activeUserIds.contains(userId)) {
                 send(stream, SseEmitter.event().comment(""));
             } else {
