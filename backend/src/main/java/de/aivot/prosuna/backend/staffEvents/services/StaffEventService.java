@@ -115,7 +115,8 @@ public class StaffEventService {
 
     /**
      * Proxies close idle connections, and only a write detects a client that went away without closing its stream.
-     * The streams of users who were disabled meanwhile end here.
+     * The streams of users who were disabled meanwhile end here. Users disabled or deleted directly in the identity
+     * provider are only known after the next run of the UserSyncService.
      */
     @Scheduled(fixedDelay = 25, timeUnit = TimeUnit.SECONDS)
     public void sendHeartbeats() {
