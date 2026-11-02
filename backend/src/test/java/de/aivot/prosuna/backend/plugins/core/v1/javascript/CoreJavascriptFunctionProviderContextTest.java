@@ -21,12 +21,12 @@ class CoreJavascriptFunctionProviderContextTest {
                 Arguments.of(NumberJavascriptV1.class, true),
                 Arguments.of(OrgJavascriptV1.class, true),
                 Arguments.of(UserJavascriptV1.class, true),
-                Arguments.of(XRepositoryCodelistJavascriptV1.class, true),
                 Arguments.of(AssetJavascriptV1.class, false),
                 Arguments.of(DataObjectJavascriptV1.class, false),
                 Arguments.of(HttpJavascriptV1.class, false),
                 Arguments.of(ProcessAttachmentSetJavascriptV1.class, false),
-                Arguments.of(SecretJavascriptV1.class, false)
+                Arguments.of(SecretJavascriptV1.class, false),
+                Arguments.of(XRepositoryCodelistJavascriptV1.class, false)
         );
     }
 
