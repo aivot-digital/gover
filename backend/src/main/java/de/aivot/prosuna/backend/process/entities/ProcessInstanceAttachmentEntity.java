@@ -13,6 +13,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "process_instance_attachments")
+@EntityListeners(ProcessInstanceStaffEventListener.class)
 public class ProcessInstanceAttachmentEntity {
     @Id
     @Nonnull
