@@ -179,6 +179,34 @@ describe('subscribeStaffEvents', () => {
         unsubscribe();
     });
 
+    it('ends the stream with the session and opens a new one for the next session', async () => {
+        vi.useFakeTimers();
+        const {subscribeStaffEvents} = await loadSource();
+        const listener = vi.fn();
+        const unsubscribe = subscribeStaffEvents(listener);
+        const previousUser = FakeEventSource.instances[0];
+        previousUser.onopen?.();
+
+        // The user logs out in another tab.
+        vi.mocked(AuthService.isAuthenticated).mockReturnValue(false);
+        vi.mocked(AuthService.isAccessTokenValid).mockReturnValue(false);
+        await vi.advanceTimersByTimeAsync(5_000);
+        expect(previousUser.closed).toBe(true);
+        await vi.advanceTimersByTimeAsync(60_000);
+        expect(FakeEventSource.instances).toHaveLength(1);
+
+        // Another user signs in.
+        vi.mocked(AuthService.isAuthenticated).mockReturnValue(true);
+        vi.mocked(AuthService.isAccessTokenValid).mockReturnValue(true);
+        [...activity.listeners].forEach((activityListener) => activityListener());
+        await vi.waitFor(() => expect(FakeEventSource.instances).toHaveLength(2));
+        FakeEventSource.instances[1].onopen?.();
+        expect(listener.mock.calls).toEqual([[null]]);
+
+        unsubscribe();
+        expect(FakeEventSource.instances[1].closed).toBe(true);
+    });
+
     it('lets a tab share the stream of the tab that holds the lock and take it over once that tab closes', async () => {
         const locks = createLockManager();
         Object.defineProperty(navigator, 'locks', {value: locks, configurable: true});

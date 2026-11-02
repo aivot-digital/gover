@@ -14,6 +14,7 @@ export type StaffEventListener = (event: StaffEvent | null) => void;
 
 const SHARED_CONNECTION_NAME = 'prosuna_staff_events';
 const RECONNECT_DELAY = 3_000;
+const SESSION_CHECK_INTERVAL = 5_000;
 
 const listeners = new Set<StaffEventListener>();
 let stopConnection: (() => void) | null = null;
@@ -114,16 +115,30 @@ function connect(onEvent: StaffEventListener, missedEvents: boolean): () => void
         source.onerror = () => {
             // Reconnect manually: the browser gives up after a rejected request, e.g. once the token has expired.
             source?.close();
+            source = undefined;
             missed = true;
             reconnectTimeout = window.setTimeout(() => void open(), RECONNECT_DELAY);
         };
     };
+
+    // The stream belongs to the user who opened it, and the other tabs receive its events. It ends with the session
+    // in this browser, e.g. after a logout in another tab, so the next user who signs in gets a stream of their own.
+    const sessionCheck = window.setInterval(() => {
+        if (source == null || AuthService.isAuthenticated()) {
+            return;
+        }
+        source.close();
+        source = undefined;
+        missed = true;
+        void open();
+    }, SESSION_CHECK_INTERVAL);
 
     void open();
 
     return () => {
         stopped = true;
         window.clearTimeout(reconnectTimeout);
+        window.clearInterval(sessionCheck);
         stopWaitingForUser?.();
         source?.close();
     };
