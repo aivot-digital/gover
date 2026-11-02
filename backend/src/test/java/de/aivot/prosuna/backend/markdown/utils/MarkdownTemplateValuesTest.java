@@ -4,7 +4,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.Duration;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MarkdownTemplateValuesTest {
@@ -168,6 +171,15 @@ class MarkdownTemplateValuesTest {
         var markdown = "Preis: 5 & 6 *Euro*\n\n* Siehe https://example.org\n\n| Feld |\n| --- |\n| Ort |";
 
         assertEquals(markdown, MarkdownTemplateValues.revealLinkTargets(markdown));
+    }
+
+    @Test
+    void escapeTextDropsManyLeadingAndTrailingEmptyLines() {
+        var empty = "\n".repeat(500_000);
+
+        // Removing the lines one by one from the front took about 24 seconds for this value.
+        var escaped = assertTimeoutPreemptively(Duration.ofSeconds(5), () -> MarkdownTemplateValues.escapeText(empty + "Text" + empty));
+        assertEquals("Text", escaped);
     }
 
     @Test

@@ -47,13 +47,16 @@ public final class MarkdownTemplateValues {
             return "";
         }
 
-        var lines = new ArrayList<>(List.of(LINE_BREAK.split(text, -1)));
-        while (!lines.isEmpty() && lines.getFirst().isBlank()) {
-            lines.removeFirst();
+        var allLines = LINE_BREAK.split(text, -1);
+        var first = 0;
+        var end = allLines.length;
+        while (first < end && allLines[first].isBlank()) {
+            first++;
         }
-        while (!lines.isEmpty() && lines.getLast().isBlank()) {
-            lines.removeLast();
+        while (end > first && allLines[end - 1].isBlank()) {
+            end--;
         }
+        var lines = List.of(allLines).subList(first, end);
 
         var escaped = new StringBuilder(text.length() + 16);
         for (var i = 0; i < lines.size(); i++) {
