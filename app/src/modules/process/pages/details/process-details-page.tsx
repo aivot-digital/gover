@@ -72,7 +72,7 @@ import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
-import {includeNodeProblems} from '../../utils/include-node-problems';
+import {useAutomaticNodeValidation} from '../../hooks/use-automatic-node-validation';
 import {useSessionStorageState} from '../../../../hooks/use-session-storage-state';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectUser} from '../../../../slices/user-slice';
@@ -671,31 +671,13 @@ export function ProcessDetailsPage(): ReactNode {
 
     const showProcessExport = useProcessExport();
 
-    useEffect(() => {
-        if (processFlow == null || processVersion < 1) {
-            setProcessNodeProblems([]);
-            return;
-        }
-        new ProcessDefinitionVersionApiService()
-            .validate({
-                processDefinitionId: processId,
-                processDefinitionVersion: processVersion,
-            })
-            .then((problems) => {
-                const nodeProblems = problems.nodeProblems;
-                setProcessNodeProblems(nodeProblems);
-
-                if (nodeProblems.length === 0) {
-                    return;
-                }
-
-                setShowProcessNodeProblemsForNodes((previousShownProblems) => includeNodeProblems(
-                    previousShownProblems,
-                    nodeProblems,
-                    processFlow.nodes,
-                ));
-            });
-    }, [processId, processVersion, processFlow?.nodes, processFlow?.edges]);
+    useAutomaticNodeValidation(
+        processId,
+        processVersion,
+        processFlow,
+        setProcessNodeProblems,
+        setShowProcessNodeProblemsForNodes,
+    );
 
     const instanceId = useMemo(() => {
         const instanceIdParam = searchParams.get('instanceId');
