@@ -99,7 +99,7 @@ export function CodeListDetailsPage(): ReactNode {
                                     Einträge können manuell gepflegt oder aus XRepository bzw. einer CSV-Datei synchronisiert werden.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Da Codelisten in öffentlichen Formularen genutzt und über die öffentliche Codelisten-API ohne Anmeldung abgerufen werden können,
+                                    Da die Einträge von Codelisten in öffentlichen Formularen angezeigt werden können,
                                     dürfen sie keine vertraulichen Informationen enthalten.
                                 </Typography>
                             </>

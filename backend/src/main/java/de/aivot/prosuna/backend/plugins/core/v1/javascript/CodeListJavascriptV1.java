@@ -1,12 +1,14 @@
 package de.aivot.prosuna.backend.plugins.core.v1.javascript;
 
 import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
-import de.aivot.prosuna.backend.codeLists.entities.VCodeListItemEntity;
+import de.aivot.prosuna.backend.codeLists.entities.CodeListItemEntity;
 import de.aivot.prosuna.backend.codeLists.services.CodeListService;
+import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
@@ -26,10 +28,13 @@ import java.util.Map;
 @Component
 public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
     private final CodeListService codeListService;
+    private final CodeListElementOptionsService codeListElementOptionsService;
 
     @Autowired
-    public CodeListJavascriptV1(@Lazy CodeListService codeListService) {
+    public CodeListJavascriptV1(@Lazy CodeListService codeListService,
+                                @Lazy CodeListElementOptionsService codeListElementOptionsService) {
         this.codeListService = codeListService;
+        this.codeListElementOptionsService = codeListElementOptionsService;
     }
 
     @Nonnull
@@ -68,7 +73,7 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
         return """
                 Ermöglicht den Zugriff auf in Prosuna hinterlegte Codelisten aus JavaScript-Ausdrücken.
 
-                Eine Codeliste kann entweder als vollständige Liste ihrer Einträge oder als Auswahloptionen mit Schlüssel und Bezeichnung geladen werden. Dadurch lassen sich dieselben gepflegten Werte in Skripten, Ausdrücken und Oberflächen wiederverwenden.
+                Eine Codeliste kann entweder als vollständige Liste ihrer Einträge oder als Auswahloptionen aus einer Wert- und einer Beschriftungsspalte geladen werden. Spalten werden über ihren Spaltenschlüssel angegeben. Ohne Angabe wird die Schlüsselspalte der Codeliste verwendet. Dadurch lassen sich dieselben gepflegten Werte in Skripten, Ausdrücken und Oberflächen wiederverwenden.
                 """;
     }
 
@@ -76,7 +81,7 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
     public String[] getMethodTypeDefinitions() {
         return new String[]{
                 "getItems(codeListKey: string | null): Array<Record<string, any>>;",
-                "getOptions(codeListKey: string | null): Array<{value: string; label: string}>;"
+                "getOptions(codeListKey: string | null, valueColumnKey?: string | null, labelColumnKey?: string | null): Array<{value: string; label: string}>;"
         };
     }
 
@@ -93,7 +98,7 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
             return ProxyArray.fromArray();
         }
 
-        List<VCodeListItemEntity> items;
+        List<CodeListItemEntity> items;
         try {
             items = codeListService.listAllItems(codeListKey);
         } catch (ResponseException e) {
@@ -110,41 +115,74 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
 
     @HostAccess.Export
     public ProxyArray getOptions(@Nullable String codeListKey) {
+        return getOptions(codeListKey, null, null);
+    }
+
+    @HostAccess.Export
+    public ProxyArray getOptions(@Nullable String codeListKey, @Nullable String valueColumnKey) {
+        return getOptions(codeListKey, valueColumnKey, null);
+    }
+
+    /** Without a value column the key column is used; without a label column the value column is used. */
+    @HostAccess.Export
+    public ProxyArray getOptions(@Nullable String codeListKey,
+                                 @Nullable String valueColumnKey,
+                                 @Nullable String labelColumnKey) {
         if (codeListKey == null || codeListKey.isBlank()) {
             return ProxyArray.fromArray();
         }
 
-        List<VCodeListItemEntity> items;
-        try {
-            items = codeListService.listAllItems(codeListKey);
-        } catch (ResponseException e) {
+        var codeList = codeListService
+                .retrieve(codeListKey)
+                .orElse(null);
+        if (codeList == null) {
             return ProxyArray.fromArray();
         }
 
-        var options = items
-                .stream()
-                .map(item -> Map.of(
-                        "value", item.getValue(),
-                        "label", item.getLabel()
-                ))
-                .toList();
+        var valueColumn = StringUtils.toNullableTrimmedString(valueColumnKey);
+        if (valueColumn == null) {
+            valueColumn = codeList.getKeyColumnKey();
+        }
+        var labelColumn = StringUtils.toNullableTrimmedString(labelColumnKey);
+        if (labelColumn == null) {
+            labelColumn = valueColumn;
+        }
+        if (valueColumn == null) {
+            return ProxyArray.fromArray();
+        }
+
+        List<Map<String, String>> options;
+        try {
+            options = codeListElementOptionsService
+                    .listOptions(codeListKey, valueColumn, labelColumn, null)
+                    .stream()
+                    .map(option -> Map.of(
+                            "value", option.getValue(),
+                            "label", option.getLabel()
+                    ))
+                    .toList();
+        } catch (ResponseException e) {
+            return ProxyArray.fromArray();
+        }
 
         return JavascriptEngine.collectionToProxyArray(options);
     }
 
     @Nonnull
-    private static Map<String, Object> getItemData(@Nonnull CodeListEntity codeList, @Nonnull VCodeListItemEntity item) {
+    private static Map<String, Object> getItemData(@Nonnull CodeListEntity codeList, @Nonnull CodeListItemEntity item) {
         var data = new LinkedHashMap<String, Object>();
-        var columns = codeList.getColumns();
-        var values = item.getColumns();
-
-        for (var i = 0; i < columns.size(); i++) {
-            data.put(columns.get(i), i < values.size() ? values.get(i) : null);
+        for (var mapping : codeList.getColumnMappings()) {
+            if (mapping.index() != null) {
+                data.put(mapping.key(), item.cellAt(mapping.index()));
+            }
         }
 
+        var keyColumnIndex = codeList
+                .findColumnMapping(codeList.getKeyColumnKey())
+                .map(mapping -> mapping.index())
+                .orElse(null);
         data.put("$id", item.getId());
-        data.put("$value", item.getValue());
-        data.put("$label", item.getLabel());
+        data.put("$value", keyColumnIndex == null ? null : item.cellAt(keyColumnIndex));
         data.put("$created", item.getCreated());
         data.put("$updated", item.getUpdated());
 

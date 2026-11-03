@@ -20,6 +20,8 @@ interface TableField<T extends GridValidRowModel, K extends keyof T & string> {
     required?: boolean;
     disabled?: boolean;
     type?: GridColDef['type'];
+    // Restricts the cell to the given values and edits it with a dropdown.
+    valueOptions?: Array<{value: string; label: string}>;
     renderCell?: (value: T[K]) => ReactNode;
 }
 
@@ -149,7 +151,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
 
     // Determine the columns for the data grid based on the fields of the element
     const columns: GridColDef[] = useMemo(() => {
-        return fields.map((field) => ({
+        return fields.map((field): GridColDef => ({
             field: field.key,
             headerName: field.label,
             renderHeader: () => (
@@ -160,7 +162,9 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
             ),
             editable: !field.disabled && !isInteractionDisabled,
             flex: 1,
-            type: field.type,
+            ...(field.valueOptions != null
+                ? {type: 'singleSelect' as const, valueOptions: field.valueOptions}
+                : {type: field.type}),
             /*renderCell: (params: GridRenderCellParams<any>) => {
                 if (field.renderCell != null) {
                     return field.renderCell(params.value);

@@ -1,29 +1,42 @@
 package de.aivot.prosuna.backend.elements.services;
 
 import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
+import de.aivot.prosuna.backend.codeLists.entities.CodeListItemEntity;
+import de.aivot.prosuna.backend.codeLists.models.CodeListColumnMapping;
+import de.aivot.prosuna.backend.codeLists.repositories.CodeListItemRepository;
 import de.aivot.prosuna.backend.codeLists.repositories.CodeListRepository;
-import de.aivot.prosuna.backend.codeLists.repositories.VCodeListItemRepository;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 
+/**
+ * Resolves the options and suggestions of input elements whose entries come from a code list. Every element chooses
+ * the columns it reads by their keys, so a source that reorders its columns does not change the entries.
+ */
 @Service
 public class CodeListElementOptionsService {
     private static final String MISSING_CODE_LIST_SELECTION_MESSAGE = "Für die Codelisten-Optionen muss eine Codeliste ausgewählt sein.";
+    private static final String MISSING_OPTION_COLUMNS_MESSAGE = "Für die Codelisten-Optionen müssen eine Wert-Spalte und eine Beschriftungs-Spalte ausgewählt sein.";
+    private static final String MISSING_SUGGESTION_COLUMN_MESSAGE = "Für die Codelisten-Vorschläge muss eine Vorschlagsspalte ausgewählt sein.";
+    private static final String MISSING_GROUP_COLUMN_MESSAGE = "Für das abhängige Auswahlfeld muss eine Gruppenwert-Spalte ausgewählt sein.";
 
-    private final VCodeListItemRepository vCodeListItemRepository;
+    private final CodeListItemRepository codeListItemRepository;
     private final CodeListRepository codeListRepository;
 
     @Autowired
-    public CodeListElementOptionsService(VCodeListItemRepository vCodeListItemRepository, CodeListRepository codeListRepository) {
-        this.vCodeListItemRepository = vCodeListItemRepository;
+    public CodeListElementOptionsService(CodeListItemRepository codeListItemRepository, CodeListRepository codeListRepository) {
+        this.codeListItemRepository = codeListItemRepository;
         this.codeListRepository = codeListRepository;
     }
 
@@ -39,116 +52,173 @@ public class CodeListElementOptionsService {
         };
     }
 
+    /**
+     * Lists the options for the given columns, as an input element would receive them. Rows that share a value, and
+     * a group if one is requested, form one option whose label lists the labels of all these rows.
+     */
+    @Nonnull
+    public List<SelectInputElementOption> listOptions(@Nonnull String codeListKey,
+                                                      @Nonnull String valueColumnKey,
+                                                      @Nonnull String labelColumnKey,
+                                                      @Nullable String groupColumnKey) throws ResponseException {
+        var codeList = codeListRepository
+                .findById(codeListKey)
+                .orElseThrow(ResponseException::notFound);
+        return listOptions(codeList, valueColumnKey, labelColumnKey, StringUtils.toNullableTrimmedString(groupColumnKey));
+    }
+
     @Nonnull
     private SelectInputElement resolveSelect(@Nonnull SelectInputElement element) throws ResponseException {
+        var codeList = requireConfiguredCodeList(element.getCodeListKey());
+        // Only a dependent select needs group values; its options are then filtered by the referenced select.
+        var groupColumnKey = StringUtils.isNullOrEmpty(element.getDependsOnSelectFieldId())
+                ? null
+                : requireColumnKey(element.getCodeListGroupColumnKey(), MISSING_GROUP_COLUMN_MESSAGE);
+        var options = listOptions(
+                codeList,
+                requireColumnKey(element.getCodeListValueColumnKey(), MISSING_OPTION_COLUMNS_MESSAGE),
+                requireColumnKey(element.getCodeListLabelColumnKey(), MISSING_OPTION_COLUMNS_MESSAGE),
+                groupColumnKey
+        );
+
         var copy = copy(element, SelectInputElement.class);
-        copy
-                .setOptions(listAsSelectItems(requireConfiguredCodeListId(element.getCodeListKey())))
-                .setDependsOnSelectFieldId(null);
-        return copy;
-    }
-
-    @Nonnull
-    private TextInputElement resolveText(@Nonnull TextInputElement element) throws ResponseException {
-        var copy = copy(element, TextInputElement.class);
-        copy.setSuggestions(listAsChipInputSuggestionsItems(requireConfiguredCodeListId(element.getCodeListKey())));
-        return copy;
-    }
-
-    @Nonnull
-    private ChipInputElement resolveChipInput(@Nonnull ChipInputElement element) throws ResponseException {
-        var copy = copy(element, ChipInputElement.class);
-        copy.setSuggestions(listAsChipInputSuggestionsItems(requireConfiguredCodeListId(element.getCodeListKey())));
+        copy.setOptions(options);
         return copy;
     }
 
     @Nonnull
     private MultiCheckboxInputElement resolveMultiCheckbox(@Nonnull MultiCheckboxInputElement element) throws ResponseException {
+        var options = listOptions(
+                requireConfiguredCodeList(element.getCodeListKey()),
+                requireColumnKey(element.getCodeListValueColumnKey(), MISSING_OPTION_COLUMNS_MESSAGE),
+                requireColumnKey(element.getCodeListLabelColumnKey(), MISSING_OPTION_COLUMNS_MESSAGE),
+                null
+        );
+
         var copy = copy(element, MultiCheckboxInputElement.class);
-        copy.setOptions(listAsMultiCheckboxItems(requireConfiguredCodeListId(element.getCodeListKey())));
+        copy.setOptions(options
+                .stream()
+                .map(option -> new MultiCheckboxInputElementOption()
+                        .setValue(option.getValue())
+                        .setLabel(option.getLabel()))
+                .toList());
         return copy;
     }
 
     @Nonnull
-    public List<SelectInputElementOption> listAsSelect(@Nonnull String codeListKey) throws ResponseException {
-        return listAsSelectItems(requireCodeListId(codeListKey));
+    private TextInputElement resolveText(@Nonnull TextInputElement element) throws ResponseException {
+        var suggestions = listSuggestions(
+                requireConfiguredCodeList(element.getCodeListKey()),
+                requireColumnKey(element.getCodeListLabelColumnKey(), MISSING_SUGGESTION_COLUMN_MESSAGE)
+        );
+
+        var copy = copy(element, TextInputElement.class);
+        copy.setSuggestions(suggestions);
+        return copy;
     }
 
     @Nonnull
-    private List<SelectInputElementOption> listAsSelectItems(@Nonnull Integer codeListId) {
-        return vCodeListItemRepository
-                .findAllByCodeListIdOrderByIdAsc(codeListId)
+    private ChipInputElement resolveChipInput(@Nonnull ChipInputElement element) throws ResponseException {
+        var suggestions = listSuggestions(
+                requireConfiguredCodeList(element.getCodeListKey()),
+                requireColumnKey(element.getCodeListLabelColumnKey(), MISSING_SUGGESTION_COLUMN_MESSAGE)
+        );
+
+        var copy = copy(element, ChipInputElement.class);
+        copy.setSuggestions(suggestions);
+        return copy;
+    }
+
+    /**
+     * Rows without a value cannot be selected and are skipped. A dependent select only shows rows of the selected
+     * group, so rows without a group value are skipped as well. Values are trimmed like submitted values.
+     */
+    @Nonnull
+    private List<SelectInputElementOption> listOptions(@Nonnull CodeListEntity codeList,
+                                                       @Nonnull String valueColumnKey,
+                                                       @Nonnull String labelColumnKey,
+                                                       @Nullable String groupColumnKey) throws ResponseException {
+        var valueIndex = requireColumnIndex(codeList, valueColumnKey);
+        var labelIndex = requireColumnIndex(codeList, labelColumnKey);
+        var groupIndex = groupColumnKey == null ? null : requireColumnIndex(codeList, groupColumnKey);
+
+        var labelsByOption = new LinkedHashMap<OptionKey, LinkedHashSet<String>>();
+        for (var item : listItems(codeList)) {
+            var value = item.cellAt(valueIndex).trim();
+            var group = groupIndex == null ? null : item.cellAt(groupIndex).trim();
+            if (value.isEmpty() || (group != null && group.isEmpty())) {
+                continue;
+            }
+
+            var labels = labelsByOption.computeIfAbsent(new OptionKey(group, value), key -> new LinkedHashSet<>());
+            var label = item.cellAt(labelIndex).trim();
+            if (!label.isEmpty()) {
+                labels.add(label);
+            }
+        }
+
+        return labelsByOption
+                .entrySet()
                 .stream()
-                .map(item -> SelectInputElementOption.of(item.getValue(), item.getLabel()))
+                .map(entry -> SelectInputElementOption.of(
+                        entry.getKey().value(),
+                        entry.getValue().isEmpty() ? entry.getKey().value() : String.join(", ", entry.getValue()),
+                        entry.getKey().group()
+                ))
                 .toList();
     }
 
+    /** Free-text inputs store the suggestion text itself, so suggestions are the distinct cells of one column. */
     @Nonnull
-    public List<MultiCheckboxInputElementOption> listAsMultiCheckbox(@Nonnull String codeListKey) throws ResponseException {
-        return listAsMultiCheckboxItems(requireCodeListId(codeListKey));
-    }
-
-    @Nonnull
-    private List<MultiCheckboxInputElementOption> listAsMultiCheckboxItems(@Nonnull Integer codeListId) {
-        return vCodeListItemRepository
-                .findAllByCodeListIdOrderByIdAsc(codeListId)
+    private List<String> listSuggestions(@Nonnull CodeListEntity codeList, @Nonnull String columnKey) throws ResponseException {
+        var index = requireColumnIndex(codeList, columnKey);
+        return listItems(codeList)
                 .stream()
-                .map(item -> new MultiCheckboxInputElementOption()
-                        .setValue(item.getValue())
-                        .setLabel(item.getLabel()))
-                .toList();
-    }
-
-    @Nonnull
-    public List<String> listAsChipInputSuggestions(@Nonnull String codeListKey) throws ResponseException {
-        return listAsChipInputSuggestionsItems(requireCodeListId(codeListKey));
-    }
-
-    @Nonnull
-    private List<String> listAsChipInputSuggestionsItems(@Nonnull Integer codeListId) {
-        return vCodeListItemRepository
-                .findAllByCodeListIdOrderByIdAsc(codeListId)
-                .stream()
-                // Free-text inputs store the suggestion text, not the technical codelist value.
-                .map(item -> item.getLabel())
-                .filter(label -> label != null && !label.isBlank())
-                .map(String::trim)
+                .map(item -> item.cellAt(index).trim())
+                .filter(suggestion -> !suggestion.isEmpty())
                 .distinct()
                 .toList();
     }
 
     @Nonnull
-    private CodeListEntity requireCodeList(@Nonnull String codeListKey) throws ResponseException {
-        return codeListRepository
-                .findById(codeListKey)
-                .orElseThrow(ResponseException::notFound);
-    }
-
-    @Nonnull
-    private Integer requireCodeListId(@Nonnull String codeListKey) throws ResponseException {
-        return requireInternalId(requireCodeList(codeListKey));
-    }
-
-    @Nonnull
-    private Integer requireConfiguredCodeListId(String codeListKey) throws ResponseException {
-        if (codeListKey == null || codeListKey.isBlank()) {
-            throw ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE);
-        }
-
-        var codeList = codeListRepository
-                .findById(codeListKey)
-                .orElseThrow(() -> ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE));
-
-        return requireInternalId(codeList);
-    }
-
-    @Nonnull
-    private Integer requireInternalId(@Nonnull CodeListEntity codeList) throws ResponseException {
+    private List<CodeListItemEntity> listItems(@Nonnull CodeListEntity codeList) throws ResponseException {
         var codeListId = codeList.getId();
         if (codeListId == null) {
             throw ResponseException.internalServerError("Die interne ID der Codeliste fehlt.");
         }
-        return codeListId;
+        return codeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
+    }
+
+    @Nonnull
+    private CodeListEntity requireConfiguredCodeList(@Nullable String codeListKey) throws ResponseException {
+        if (codeListKey == null || codeListKey.isBlank()) {
+            throw ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE);
+        }
+
+        return codeListRepository
+                .findById(codeListKey)
+                .orElseThrow(() -> ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE));
+    }
+
+    @Nonnull
+    private static String requireColumnKey(@Nullable String columnKey, @Nonnull String message) throws ResponseException {
+        var trimmedColumnKey = StringUtils.toNullableTrimmedString(columnKey);
+        if (trimmedColumnKey == null) {
+            throw ResponseException.badRequest(message);
+        }
+        return trimmedColumnKey;
+    }
+
+    // Renamed or removed columns are not rewritten in the elements that reference them, so they fail visibly here.
+    private static int requireColumnIndex(@Nonnull CodeListEntity codeList, @Nonnull String columnKey) throws ResponseException {
+        return codeList
+                .findColumnMapping(columnKey)
+                .map(CodeListColumnMapping::index)
+                .orElseThrow(() -> ResponseException.badRequest(
+                        "Die Spalte %s ist in der Codeliste %s nicht vorhanden.",
+                        StringUtils.quote(columnKey),
+                        StringUtils.quote(codeList.getName())
+                ));
     }
 
     @Nonnull
@@ -156,5 +226,8 @@ public class CodeListElementOptionsService {
         return JsonMapperFactory
                 .getInstance()
                 .convertValue(element, elementType);
+    }
+
+    private record OptionKey(@Nullable String group, @Nonnull String value) {
     }
 }

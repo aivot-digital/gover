@@ -1,10 +1,11 @@
 import {BaseCrudApiService} from '../../services/base-crud-api-service';
 import {Page} from '../../models/dtos/page';
 import {SortOrder} from '../../components/generic-list/generic-list-props';
-import {CodeList} from './models/code-list';
+import {CodeList, CodeListSourceColumns} from './models/code-list';
 import {CodeListItem} from './models/code-list-item';
 import {CodeListSourceType} from './enums/code-list-source-type';
 import {CodeListStatus} from './enums/code-list-status';
+import {type SelectFieldElementOption} from '../../models/elements/form/input/select-field-element';
 
 export interface CodeListFilter {
     name: string;
@@ -30,8 +31,11 @@ export class CodeListsApiService extends BaseCrudApiService<CodeList, CodeList, 
             name: '',
             description: '',
             columns: ['Beschriftung', 'Wert'],
-            valueColumnIndex: 1,
-            labelColumnIndex: 0,
+            columnMappings: [
+                {key: 'Beschriftung', name: 'Beschriftung', index: 1},
+                {key: 'Wert', name: 'Wert', index: 2},
+            ],
+            keyColumnKey: 'Wert',
             status: CodeListStatus.Synced,
             statusMessage: null,
             lastSync: null,
@@ -92,11 +96,27 @@ export class CodeListsApiService extends BaseCrudApiService<CodeList, CodeList, 
         return await this.delete(`${this.buildPath(codeListKey)}items/${itemId}/`);
     }
 
-    public async getAssetColumns(assetKey: string): Promise<string[]> {
-        return await this.get<string[]>(`${CodeListsApiService.utilsPath}asset/${encodeURIComponent(assetKey)}/columns/`);
+    /** Lists the options an input element receives for the given columns of the code list. */
+    public async listOptions(
+        codeListKey: string,
+        valueColumnKey: string,
+        labelColumnKey: string,
+        groupColumnKey?: string | null,
+    ): Promise<SelectFieldElementOption[]> {
+        return await this.get<SelectFieldElementOption[]>(`${this.buildPath(codeListKey)}options/`, {
+            query: {
+                valueColumnKey,
+                labelColumnKey,
+                groupColumnKey: groupColumnKey ?? undefined,
+            },
+        });
     }
 
-    public async getXRepositoryColumns(urn: string): Promise<string[]> {
-        return await this.get<string[]>(`${CodeListsApiService.utilsPath}x-repository/${encodeURIComponent(urn)}/columns/`);
+    public async getAssetColumns(assetKey: string): Promise<CodeListSourceColumns> {
+        return await this.get<CodeListSourceColumns>(`${CodeListsApiService.utilsPath}asset/${encodeURIComponent(assetKey)}/columns/`);
+    }
+
+    public async getXRepositoryColumns(urn: string): Promise<CodeListSourceColumns> {
+        return await this.get<CodeListSourceColumns>(`${CodeListsApiService.utilsPath}x-repository/${encodeURIComponent(urn)}/columns/`);
     }
 }

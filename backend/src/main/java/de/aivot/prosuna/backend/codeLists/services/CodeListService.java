@@ -1,14 +1,14 @@
 package de.aivot.prosuna.backend.codeLists.services;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
+import de.aivot.prosuna.backend.codeLists.dtos.CodeListSourceColumnsDto;
 import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
 import de.aivot.prosuna.backend.codeLists.entities.CodeListItemEntity;
-import de.aivot.prosuna.backend.codeLists.entities.VCodeListItemEntity;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListSourceType;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListStatus;
+import de.aivot.prosuna.backend.codeLists.models.CodeListColumnMapping;
 import de.aivot.prosuna.backend.codeLists.repositories.CodeListItemRepository;
 import de.aivot.prosuna.backend.codeLists.repositories.CodeListRepository;
-import de.aivot.prosuna.backend.codeLists.repositories.VCodeListItemRepository;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
@@ -38,12 +38,14 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.IntStream;
 
 @Service
 public class CodeListService implements EntityService<CodeListEntity, String> {
+    private static final int MAX_COLUMN_KEY_LENGTH = 255;
+
     private final CodeListRepository codeListRepository;
     private final CodeListItemRepository codeListItemRepository;
-    private final VCodeListItemRepository vCodeListItemRepository;
     private final XRepositoryCodeListService xRepositoryCodeListService;
     private final AssetService assetService;
     private final StorageService storageService;
@@ -54,7 +56,6 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     public CodeListService(
             CodeListRepository codeListRepository,
             CodeListItemRepository codeListItemRepository,
-            VCodeListItemRepository vCodeListItemRepository,
             XRepositoryCodeListService xRepositoryCodeListService,
             AssetService assetService,
             StorageService storageService,
@@ -62,7 +63,6 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     ) {
         this.codeListRepository = codeListRepository;
         this.codeListItemRepository = codeListItemRepository;
-        this.vCodeListItemRepository = vCodeListItemRepository;
         this.xRepositoryCodeListService = xRepositoryCodeListService;
         this.assetService = assetService;
         this.storageService = storageService;
@@ -75,6 +75,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         entity.setId(null);
         entity.setCreated(Instant.now());
         entity.setUpdated(Instant.now());
+        // A new list may bring the columns of its source, so the first synchronization keeps the proposed mappings.
         normalizeCodeList(entity);
 
         if (codeListRepository.existsById(entity.getKey())) {
@@ -100,13 +101,13 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     public CodeListEntity performUpdate(@Nonnull String key,
                                         @Nonnull CodeListEntity entity,
                                         @Nonnull CodeListEntity existingEntity) throws ResponseException {
+        // The stored columns describe the existing item cells, so they are never taken from the client.
         existingEntity.setSourceType(entity.getSourceType());
         existingEntity.setSourceRef(entity.getSourceRef());
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
-        existingEntity.setColumns(entity.getColumns());
-        existingEntity.setValueColumnIndex(entity.getValueColumnIndex());
-        existingEntity.setLabelColumnIndex(entity.getLabelColumnIndex());
+        existingEntity.setColumnMappings(entity.getColumnMappings());
+        existingEntity.setKeyColumnKey(entity.getKeyColumnKey());
         normalizeCodeList(existingEntity);
         existingEntity
                 .setStatus(isSyncable(existingEntity) ? CodeListStatus.SyncPending : CodeListStatus.Synced)
@@ -166,13 +167,13 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                 return false;
             }
 
-            var importedItems = switch (codeList.getSourceType()) {
-                case XRepository -> fetchXRepositoryItems(codeList);
-                case Asset -> fetchAssetItems(codeList);
+            var source = switch (codeList.getSourceType()) {
+                case XRepository -> readXRepositorySource(codeList.getSourceRef());
+                case Asset -> readAssetSource(parseAssetKey(codeList.getSourceRef()));
                 case Manual, Plugin -> null;
             };
 
-            var recorded = transaction.execute(status -> recordSync(codeListKey, runId, codeList, importedItems));
+            var recorded = transaction.execute(status -> recordSync(codeListKey, runId, source));
             if (Boolean.TRUE.equals(recorded)) {
                 return false;
             }
@@ -214,13 +215,17 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     public byte[] exportCSV(@Nonnull String codeListKey) throws ResponseException {
         var codeList = requireCodeList(codeListKey);
         var codeListId = requireInternalId(codeList);
-        var items = vCodeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
+        var items = codeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
         var outputStream = new ByteArrayOutputStream();
 
         try (var csv = CsvWriter.builder().build(outputStream, StandardCharsets.UTF_8)) {
             csv.writeRecord(codeList.getColumns());
             for (var item : items) {
-                csv.writeRecord(item.getColumns());
+                // Rows of manual lists may lack the cells of columns added later; every record needs all fields.
+                csv.writeRecord(IntStream
+                        .rangeClosed(1, codeList.getColumns().size())
+                        .mapToObj(item::cellAt)
+                        .toList());
             }
         } catch (IOException | UncheckedIOException e) {
             throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht erzeugt werden: %s", e.getMessage());
@@ -234,63 +239,34 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     public CodeListEntity importCSV(@Nonnull String codeListKey,
                                     @Nonnull InputStream inputStream) throws ResponseException {
         var codeList = requireManualCodeList(codeListKey);
-
-        List<CodeListItemEntity> importedItems;
-        try (var csv = CsvReader.builder()
-                .detectBomHeader(true)
-                .ofCsvRecord(inputStream)
-        ) {
-            importedItems = extractCsvItems(codeList, csv);
-        } catch (CsvParseException | UncheckedIOException e) {
-            throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht geschlossen werden: %s", e.getMessage());
-        }
-
-        validateUniqueItemValues(codeList, importedItems);
-        replaceItems(codeList, importedItems);
+        applySource(codeList, readCsvSource(inputStream), false);
         return codeListRepository.save(codeList);
     }
 
     @Nonnull
-    public List<String> getXRepositoryColumns(@Nonnull String urn) throws ResponseException {
-        return extractColumnRefs(xRepositoryCodeListService.getCodeList(urn));
+    public CodeListSourceColumnsDto getXRepositoryColumns(@Nonnull String urn) throws ResponseException {
+        return proposeColumns(readXRepositorySource(urn));
     }
 
     @Nonnull
-    public List<String> getAssetColumns(@Nonnull UUID assetKey) throws ResponseException {
-        var asset = assetService
-                .retrieve(assetKey)
-                .orElseThrow(ResponseException::notFound);
-
-        try (
-                var inputStream = storageService.getDocumentContent(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
-                var csv = CsvReader.builder()
-                        .detectBomHeader(true)
-                        .ofCsvRecord(inputStream)
-        ) {
-            return extractCsvHeader(csv);
-        } catch (CsvParseException | UncheckedIOException e) {
-            throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht geschlossen werden: %s", e.getMessage());
-        }
+    public CodeListSourceColumnsDto getAssetColumns(@Nonnull UUID assetKey) throws ResponseException {
+        return proposeColumns(readAssetSource(assetKey));
     }
 
     @Nonnull
-    public Page<VCodeListItemEntity> listItems(@Nonnull String codeListKey, @Nonnull Pageable pageable) throws ResponseException {
+    public Page<CodeListItemEntity> listItems(@Nonnull String codeListKey, @Nonnull Pageable pageable) throws ResponseException {
         var codeListId = requireInternalId(requireCodeList(codeListKey));
-        return vCodeListItemRepository.findAllByCodeListId(codeListId, pageable);
+        return codeListItemRepository.findAllByCodeListId(codeListId, pageable);
     }
 
     @Nonnull
-    public List<VCodeListItemEntity> listAllItems(@Nonnull String codeListKey) throws ResponseException {
+    public List<CodeListItemEntity> listAllItems(@Nonnull String codeListKey) throws ResponseException {
         var codeListId = requireInternalId(requireCodeList(codeListKey));
-        return vCodeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
+        return codeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
     }
 
     @Nonnull
-    public VCodeListItemEntity createItem(@Nonnull String codeListKey, @Nonnull CodeListItemEntity item) throws ResponseException {
+    public CodeListItemEntity createItem(@Nonnull String codeListKey, @Nonnull CodeListItemEntity item) throws ResponseException {
         var codeList = requireManualCodeList(codeListKey);
         var codeListId = requireInternalId(codeList);
         item
@@ -298,22 +274,21 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                 .setCodeListId(codeListId)
                 .setColumns(normalizeItemColumns(codeList, item.getColumns()));
 
-        var saved = codeListItemRepository.save(item);
-        return getItem(codeListKey, saved.getId());
+        return codeListItemRepository.save(item);
     }
 
     @Nonnull
-    public VCodeListItemEntity getItem(@Nonnull String codeListKey, @Nonnull Long itemId) throws ResponseException {
+    public CodeListItemEntity getItem(@Nonnull String codeListKey, @Nonnull Long itemId) throws ResponseException {
         var codeListId = requireInternalId(requireCodeList(codeListKey));
-        return vCodeListItemRepository
+        return codeListItemRepository
                 .findByIdAndCodeListId(itemId, codeListId)
                 .orElseThrow(ResponseException::notFound);
     }
 
     @Nonnull
-    public VCodeListItemEntity updateItem(@Nonnull String codeListKey,
-                                          @Nonnull Long itemId,
-                                          @Nonnull CodeListItemEntity item) throws ResponseException {
+    public CodeListItemEntity updateItem(@Nonnull String codeListKey,
+                                         @Nonnull Long itemId,
+                                         @Nonnull CodeListItemEntity item) throws ResponseException {
         var codeList = requireManualCodeList(codeListKey);
         var codeListId = requireInternalId(codeList);
         var existingItem = codeListItemRepository
@@ -321,8 +296,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                 .orElseThrow(ResponseException::notFound);
 
         existingItem.setColumns(normalizeItemColumns(codeList, item.getColumns()));
-        codeListItemRepository.save(existingItem);
-        return getItem(codeListKey, itemId);
+        return codeListItemRepository.save(existingItem);
     }
 
     public void deleteItem(@Nonnull String codeListKey, @Nonnull Long itemId) throws ResponseException {
@@ -335,13 +309,74 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     }
 
     /**
+     * Matches the columns of a source with the existing mappings, so that keys and names stay stable when the source
+     * reorders its columns. A mapping follows the source column that its index pointed to; if that column is gone,
+     * the mapping keeps no index. Source columns without a mapping receive a new one, keyed by the column name.
+     */
+    @Nonnull
+    static List<CodeListColumnMapping> mergeColumnMappings(@Nonnull List<String> previousColumns,
+                                                           @Nonnull List<CodeListColumnMapping> previousMappings,
+                                                           @Nonnull List<String> columns,
+                                                           @Nonnull Map<String, String> names) {
+        var mappings = new ArrayList<CodeListColumnMapping>();
+        var mappedColumns = new HashSet<String>();
+        for (var mapping : previousMappings) {
+            var column = columnAt(previousColumns, mapping.index());
+            var position = column == null ? -1 : columns.indexOf(column);
+            if (position >= 0) {
+                mappedColumns.add(column);
+            }
+            mappings.add(mapping.withIndex(position < 0 ? null : position + 1));
+        }
+
+        for (var i = 0; i < columns.size(); i++) {
+            var column = columns.get(i);
+            if (mappedColumns.contains(column)) {
+                continue;
+            }
+
+            var index = i + 1;
+            // A column that returns to the source gets its former mapping back, so its references work again.
+            var formerMapping = mappings
+                    .stream()
+                    .filter(mapping -> mapping.index() == null && mapping.key().equals(column))
+                    .findFirst();
+            if (formerMapping.isPresent()) {
+                mappings.set(mappings.indexOf(formerMapping.get()), formerMapping.get().withIndex(index));
+                continue;
+            }
+
+            var key = column;
+            for (var suffix = 2; containsKey(mappings, key); suffix++) {
+                key = column + "_" + suffix;
+            }
+            mappings.add(new CodeListColumnMapping(key, names.getOrDefault(column, column), index));
+        }
+
+        return mappings;
+    }
+
+    /** Moves the cells of a stored row into the column order of a source. Cells of new columns are empty. */
+    @Nonnull
+    static List<String> remapCells(@Nonnull List<String> cells,
+                                   @Nonnull List<String> previousColumns,
+                                   @Nonnull List<String> columns) {
+        var remappedCells = new ArrayList<String>(columns.size());
+        for (var column : columns) {
+            var previousPosition = previousColumns.indexOf(column);
+            var cell = previousPosition < 0 || previousPosition >= cells.size() ? null : cells.get(previousPosition);
+            remappedCells.add(cell == null ? "" : cell);
+        }
+        return remappedCells;
+    }
+
+    /**
      * Records the result of a synchronization run in one transaction. Returns false without changes if the run no
      * longer owns the synchronization.
      */
     private boolean recordSync(@Nonnull String codeListKey,
                                @Nonnull UUID runId,
-                               @Nonnull CodeListEntity fetchedCodeList,
-                               @Nullable List<CodeListItemEntity> importedItems) {
+                               @Nullable SourceData source) {
         var codeList = codeListRepository
                 .findByKeyForUpdate(codeListKey)
                 .orElse(null);
@@ -351,17 +386,8 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         }
 
         try {
-            if (importedItems != null) {
-                codeList
-                        .setColumns(fetchedCodeList.getColumns())
-                        .setValueColumnIndex(fetchedCodeList.getValueColumnIndex())
-                        .setLabelColumnIndex(fetchedCodeList.getLabelColumnIndex());
-
-                if (codeList.getSyncKeepOutdated()) {
-                    upsertItems(codeList, importedItems);
-                } else {
-                    replaceItems(codeList, importedItems);
-                }
+            if (source != null) {
+                applySource(codeList, source, codeList.getSyncKeepOutdated());
             }
         } catch (ResponseException e) {
             throw new IllegalStateException(e.getMessage(), e);
@@ -376,86 +402,194 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         return true;
     }
 
-    /** Reads the source into the detached list, which receives the source's columns. */
-    @Nonnull
-    private List<CodeListItemEntity> fetchXRepositoryItems(@Nonnull CodeListEntity codeListEntity) throws ResponseException {
-        var xRepositoryCodeList = xRepositoryCodeListService.getCodeList(codeListEntity.getSourceRef());
-        var columnRefs = extractColumnRefs(xRepositoryCodeList);
+    /**
+     * Replaces the columns and rows of the list with those of the source. With {@code keepOutdated}, rows that are
+     * missing in the source are kept; their cells are moved into the new column order, so the mappings still read
+     * the right cells.
+     */
+    private void applySource(@Nonnull CodeListEntity codeList,
+                             @Nonnull SourceData source,
+                             boolean keepOutdated) throws ResponseException {
+        var codeListId = requireInternalId(codeList);
+        var mappings = mergeColumnMappings(codeList.getColumns(), codeList.getColumnMappings(), source.columns(), source.names());
+        var keyColumn = resolveKeyColumn(codeList.getKeyColumnKey(), mappings, source);
+        validateUniqueKeys(source.rows(), keyColumn);
 
-        if (codeListEntity.getColumns() == null || codeListEntity.getColumns().isEmpty()) {
-            var keyColumnRef = extractKeyColumnRef(xRepositoryCodeList);
-            var keyColumnIndex = keyColumnRef == null ? -1 : columnRefs.indexOf(keyColumnRef);
-            if (keyColumnIndex >= 0) {
-                codeListEntity
-                        .setValueColumnIndex(keyColumnIndex)
-                        .setLabelColumnIndex(keyColumnIndex);
+        var importedItems = source
+                .rows()
+                .stream()
+                .map(row -> new CodeListItemEntity()
+                        .setCodeListId(codeListId)
+                        .setColumns(row))
+                .toList();
+
+        if (keepOutdated) {
+            var existingByKey = new HashMap<String, CodeListItemEntity>();
+            var itemsToSave = new ArrayList<CodeListItemEntity>();
+            for (var existingItem : codeListItemRepository.findAllByCodeListId(codeListId)) {
+                existingItem.setColumns(remapCells(existingItem.getColumns(), codeList.getColumns(), source.columns()));
+                existingByKey.putIfAbsent(existingItem.cellAt(keyColumn.index()), existingItem);
+                itemsToSave.add(existingItem);
+            }
+
+            for (var importedItem : importedItems) {
+                var existingItem = existingByKey.get(importedItem.cellAt(keyColumn.index()));
+                if (existingItem == null) {
+                    itemsToSave.add(importedItem);
+                } else {
+                    existingItem.setColumns(importedItem.getColumns());
+                }
+            }
+
+            codeListItemRepository.saveAll(itemsToSave);
+        } else {
+            codeListItemRepository.deleteAllByCodeListId(codeListId);
+            codeListItemRepository.saveAll(importedItems);
+        }
+
+        codeList
+                .setColumns(source.columns())
+                .setColumnMappings(mappings)
+                .setKeyColumnKey(keyColumn.key());
+    }
+
+    /**
+     * Keeps the configured key column while the source still contains it. Otherwise, e.g. for a new list, the key
+     * column of an XRepository list or the first column whose values identify every row is used.
+     */
+    @Nonnull
+    private static CodeListColumnMapping resolveKeyColumn(@Nullable String keyColumnKey,
+                                                          @Nonnull List<CodeListColumnMapping> mappings,
+                                                          @Nonnull SourceData source) {
+        var configuredKeyColumn = mappings
+                .stream()
+                .filter(mapping -> mapping.key().equals(keyColumnKey) && mapping.index() != null)
+                .findFirst();
+        if (configuredKeyColumn.isPresent()) {
+            return configuredKeyColumn.get();
+        }
+
+        var keyColumnIndex = findDefaultKeyColumnIndex(source);
+        return mappings
+                .stream()
+                .filter(mapping -> Objects.equals(mapping.index(), keyColumnIndex))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private static int findDefaultKeyColumnIndex(@Nonnull SourceData source) {
+        var sourceKeyColumnPosition = source.keyColumnRef() == null ? -1 : source.columns().indexOf(source.keyColumnRef());
+        if (sourceKeyColumnPosition >= 0) {
+            return sourceKeyColumnPosition + 1;
+        }
+
+        for (var index = 1; index <= source.columns().size(); index++) {
+            var values = new HashSet<String>();
+            var identifiesRows = true;
+            for (var row : source.rows()) {
+                var value = cellAt(row, index);
+                if (value.isBlank() || !values.add(value)) {
+                    identifiesRows = false;
+                    break;
+                }
+            }
+            if (identifiesRows) {
+                return index;
             }
         }
 
-        codeListEntity.setColumns(columnRefs);
-        validateCodeListColumns(codeListEntity);
-
-        var importedItems = extractItems(codeListEntity, xRepositoryCodeList, columnRefs);
-        validateUniqueItemValues(codeListEntity, importedItems);
-        return importedItems;
+        return 1;
     }
 
-    /** Reads the source into the detached list, which receives the source's columns. */
+    private static void validateUniqueKeys(@Nonnull List<List<String>> rows,
+                                           @Nonnull CodeListColumnMapping keyColumn) throws ResponseException {
+        var values = new HashSet<String>();
+        for (var row : rows) {
+            var value = cellAt(row, keyColumn.index());
+            if (!values.add(value)) {
+                throw ResponseException.conflict(
+                        "Die Schlüsselspalte %s enthält den Wert %s mehrfach.",
+                        StringUtils.quote(keyColumn.name()),
+                        StringUtils.quote(value)
+                );
+            }
+        }
+    }
+
     @Nonnull
-    private List<CodeListItemEntity> fetchAssetItems(@Nonnull CodeListEntity codeListEntity) throws ResponseException {
-        var assetKey = parseAssetKey(codeListEntity.getSourceRef());
+    private CodeListSourceColumnsDto proposeColumns(@Nonnull SourceData source) {
+        var mappings = mergeColumnMappings(List.of(), List.of(), source.columns(), source.names());
+        return new CodeListSourceColumnsDto(source.columns(), mappings, resolveKeyColumn(null, mappings, source).key());
+    }
+
+    @Nonnull
+    private SourceData readXRepositorySource(@Nonnull String urn) throws ResponseException {
+        var xRepositoryCodeList = xRepositoryCodeListService.getCodeList(urn);
+        var columns = extractColumnRefs(xRepositoryCodeList);
+
+        var names = new HashMap<String, String>();
+        for (var column : xRepositoryCodeList.getColumnSet().getColumn()) {
+            var name = StringUtils.isNotNullOrEmpty(column.getLongName()) ? column.getLongName() : column.getShortName();
+            if (StringUtils.isNotNullOrEmpty(name)) {
+                names.put(column.getId(), name.trim());
+            }
+        }
+
+        var rows = new ArrayList<List<String>>();
+        if (xRepositoryCodeList.getCodeList() != null && xRepositoryCodeList.getCodeList().getRow() != null) {
+            for (var row : xRepositoryCodeList.getCodeList().getRow()) {
+                var valuesByColumnRef = new HashMap<String, String>();
+                if (row.getValue() != null) {
+                    for (var value : row.getValue()) {
+                        valuesByColumnRef.put(value.getColumnRef(), value.getSimpleValue() == null ? "" : value.getSimpleValue());
+                    }
+                }
+
+                rows.add(columns
+                        .stream()
+                        .map(columnRef -> valuesByColumnRef.getOrDefault(columnRef, ""))
+                        .toList());
+            }
+        }
+
+        return new SourceData(columns, names, rows, extractKeyColumnRef(xRepositoryCodeList));
+    }
+
+    @Nonnull
+    private SourceData readAssetSource(@Nonnull UUID assetKey) throws ResponseException {
         var asset = assetService
                 .retrieve(assetKey)
                 .orElseThrow(ResponseException::notFound);
 
-        List<CodeListItemEntity> importedItems;
-        try (
-                var inputStream = storageService.getDocumentContent(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
-                var csv = CsvReader.builder()
-                        .detectBomHeader(true)
-                        .ofCsvRecord(inputStream)
+        try (var inputStream = storageService.getDocumentContent(asset.getStorageProviderId(), asset.getStoragePathFromRoot())) {
+            return readCsvSource(inputStream);
+        } catch (IOException e) {
+            throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht geschlossen werden: %s", e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private SourceData readCsvSource(@Nonnull InputStream inputStream) throws ResponseException {
+        try (var csv = CsvReader.builder()
+                .detectBomHeader(true)
+                .ofCsvRecord(inputStream)
         ) {
-            importedItems = extractCsvItems(codeListEntity, csv);
+            var iterator = csv.iterator();
+            var columns = extractCsvHeader(iterator);
+            var rows = new ArrayList<List<String>>();
+            while (iterator.hasNext()) {
+                var row = List.copyOf(iterator.next().getFields());
+                if (row.size() != columns.size()) {
+                    throw ResponseException.badRequest("Die CSV-Datei enthält Zeilen mit unterschiedlicher Spaltenanzahl.");
+                }
+                rows.add(row);
+            }
+            return new SourceData(columns, Map.of(), rows, null);
         } catch (CsvParseException | UncheckedIOException e) {
             throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden: " + e.getMessage(), e);
         } catch (IOException e) {
             throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht geschlossen werden: %s", e.getMessage());
         }
-
-        validateUniqueItemValues(codeListEntity, importedItems);
-        return importedItems;
-    }
-
-    private void replaceItems(@Nonnull CodeListEntity codeListEntity,
-                              @Nonnull List<CodeListItemEntity> importedItems) throws ResponseException {
-        var codeListId = requireInternalId(codeListEntity);
-        codeListItemRepository.deleteAllByCodeListId(codeListId);
-        codeListItemRepository.saveAll(importedItems);
-    }
-
-    private void upsertItems(@Nonnull CodeListEntity codeListEntity,
-                             @Nonnull List<CodeListItemEntity> importedItems) throws ResponseException {
-        var codeListId = requireInternalId(codeListEntity);
-        var valueColumnIndex = codeListEntity.getValueColumnIndex();
-        var existingByValue = new HashMap<String, CodeListItemEntity>();
-
-        for (var existingItem : codeListItemRepository.findAllByCodeListId(codeListId)) {
-            existingByValue.putIfAbsent(getColumnValue(existingItem, valueColumnIndex), existingItem);
-        }
-
-        var itemsToSave = new ArrayList<CodeListItemEntity>();
-        for (var importedItem : importedItems) {
-            var importedValue = getColumnValue(importedItem, valueColumnIndex);
-            var existingItem = existingByValue.get(importedValue);
-            if (existingItem == null) {
-                itemsToSave.add(importedItem);
-            } else {
-                existingItem.setColumns(importedItem.getColumns());
-                itemsToSave.add(existingItem);
-            }
-        }
-
-        codeListItemRepository.saveAll(itemsToSave);
     }
 
     @Nonnull
@@ -486,75 +620,6 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             return null;
         }
         return xRepositoryCodeList.getColumnSet().getKey().getColumnRef().getRef();
-    }
-
-    @Nonnull
-    private List<CodeListItemEntity> extractItems(@Nonnull CodeListEntity codeListEntity,
-                                                  @Nonnull XRepositoryCodeList xRepositoryCodeList,
-                                                  @Nonnull List<String> columnRefs) throws ResponseException {
-        if (xRepositoryCodeList.getCodeList() == null || xRepositoryCodeList.getCodeList().getRow() == null) {
-            return List.of();
-        }
-
-        var codeListId = requireInternalId(codeListEntity);
-        var items = new ArrayList<CodeListItemEntity>();
-        for (var row : xRepositoryCodeList.getCodeList().getRow()) {
-            var valuesByColumnRef = new HashMap<String, String>();
-            if (row.getValue() != null) {
-                for (var value : row.getValue()) {
-                    valuesByColumnRef.put(value.getColumnRef(), value.getSimpleValue() == null ? "" : value.getSimpleValue());
-                }
-            }
-
-            var columns = columnRefs
-                    .stream()
-                    .map(columnRef -> valuesByColumnRef.getOrDefault(columnRef, ""))
-                    .toList();
-
-            items.add(new CodeListItemEntity()
-                    .setCodeListId(codeListId)
-                    .setColumns(columns));
-        }
-
-        return items;
-    }
-
-    private void validateUniqueItemValues(@Nonnull CodeListEntity codeListEntity,
-                                          @Nonnull List<CodeListItemEntity> items) throws ResponseException {
-        var values = new HashSet<String>();
-        for (var item : items) {
-            var value = getColumnValue(item, codeListEntity.getValueColumnIndex());
-            if (!values.add(value)) {
-                throw ResponseException.conflict("Die Codeliste enthält den Wert %s mehrfach.", value);
-            }
-        }
-    }
-
-    @Nonnull
-    private List<CodeListItemEntity> extractCsvItems(@Nonnull CodeListEntity codeListEntity,
-                                                     @Nonnull CsvReader<CsvRecord> csv) throws ResponseException {
-        var iterator = csv.iterator();
-        codeListEntity.setColumns(extractCsvHeader(iterator));
-        normalizeColumnIndexes(codeListEntity);
-        validateCodeListColumns(codeListEntity);
-
-        var codeListId = requireInternalId(codeListEntity);
-        var items = new ArrayList<CodeListItemEntity>();
-        while (iterator.hasNext()) {
-            var columns = new ArrayList<>(iterator.next().getFields());
-            if (columns.size() != codeListEntity.getColumns().size()) {
-                throw ResponseException.badRequest("Die CSV-Datei enthält Zeilen mit unterschiedlicher Spaltenanzahl.");
-            }
-            items.add(new CodeListItemEntity()
-                    .setCodeListId(codeListId)
-                    .setColumns(columns));
-        }
-        return items;
-    }
-
-    @Nonnull
-    private List<String> extractCsvHeader(@Nonnull CsvReader<CsvRecord> csv) throws ResponseException {
-        return extractCsvHeader(csv.iterator());
     }
 
     @Nonnull
@@ -592,28 +657,6 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         return normalizedHeader;
     }
 
-    private void normalizeColumnIndexes(@Nonnull CodeListEntity codeListEntity) {
-        var columns = codeListEntity.getColumns();
-        if (columns == null || columns.isEmpty()) {
-            codeListEntity
-                    .setValueColumnIndex(0)
-                    .setLabelColumnIndex(0);
-            return;
-        }
-
-        var lastIndex = columns.size() - 1;
-        if (codeListEntity.getValueColumnIndex() == null ||
-                codeListEntity.getValueColumnIndex() < 0 ||
-                codeListEntity.getValueColumnIndex() > lastIndex) {
-            codeListEntity.setValueColumnIndex(0);
-        }
-        if (codeListEntity.getLabelColumnIndex() == null ||
-                codeListEntity.getLabelColumnIndex() < 0 ||
-                codeListEntity.getLabelColumnIndex() > lastIndex) {
-            codeListEntity.setLabelColumnIndex(Math.min(1, lastIndex));
-        }
-    }
-
     @Nonnull
     private UUID parseAssetKey(@Nonnull String sourceRef) throws ResponseException {
         try {
@@ -639,11 +682,8 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         if (codeListEntity.getColumns() == null) {
             codeListEntity.setColumns(List.of());
         }
-        if (codeListEntity.getValueColumnIndex() == null) {
-            codeListEntity.setValueColumnIndex(0);
-        }
-        if (codeListEntity.getLabelColumnIndex() == null) {
-            codeListEntity.setLabelColumnIndex(0);
+        if (codeListEntity.getColumnMappings() == null) {
+            codeListEntity.setColumnMappings(List.of());
         }
         if (codeListEntity.getStatus() == null) {
             codeListEntity.setStatus(isSyncable(codeListEntity) ? CodeListStatus.SyncPending : CodeListStatus.Synced);
@@ -673,46 +713,100 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             throw ResponseException.badRequest("Die Quelle der Codeliste darf nicht leer sein.");
         }
 
-        if (codeListEntity.getSourceType() == CodeListSourceType.Manual && codeListEntity.getColumns().isEmpty()) {
-            throw ResponseException.badRequest("Manuelle Codelisten benötigen mindestens eine Spalte.");
-        }
-
-        validateCodeListColumns(codeListEntity);
+        normalizeColumnMappings(codeListEntity);
     }
 
-    private void validateCodeListColumns(@Nonnull CodeListEntity codeListEntity) throws ResponseException {
+    private void normalizeColumnMappings(@Nonnull CodeListEntity codeListEntity) throws ResponseException {
+        var isManual = codeListEntity.getSourceType() == CodeListSourceType.Manual;
         var columns = codeListEntity.getColumns();
-        if (columns == null || columns.isEmpty()) {
-            return;
+        // Manual lists have no source, so new columns extend the stored cells.
+        var maxIndex = isManual ? columns.size() + codeListEntity.getColumnMappings().size() : columns.size();
+
+        var mappings = new ArrayList<CodeListColumnMapping>();
+        var keys = new HashSet<String>();
+        var indexes = new HashSet<Integer>();
+        for (var mapping : codeListEntity.getColumnMappings()) {
+            if (mapping == null) {
+                throw ResponseException.badRequest("Die Spalten der Codeliste sind ungültig.");
+            }
+
+            var key = mapping.key() == null ? "" : mapping.key().trim();
+            var name = mapping.name() == null ? "" : mapping.name().trim();
+            var index = mapping.index();
+            if (key.isEmpty()) {
+                throw ResponseException.badRequest("Der Schlüssel einer Spalte darf nicht leer sein.");
+            }
+            if (key.length() > MAX_COLUMN_KEY_LENGTH) {
+                throw ResponseException.badRequest("Der Schlüssel der Spalte %s darf maximal %d Zeichen lang sein.", StringUtils.quote(key), MAX_COLUMN_KEY_LENGTH);
+            }
+            if (!keys.add(key)) {
+                throw ResponseException.badRequest("Der Spaltenschlüssel %s ist mehrfach vergeben.", StringUtils.quote(key));
+            }
+            if (name.isEmpty()) {
+                throw ResponseException.badRequest("Der Name der Spalte %s darf nicht leer sein.", StringUtils.quote(key));
+            }
+            if (index != null && (index < 1 || index > maxIndex)) {
+                throw ResponseException.badRequest("Die Position der Spalte %s ist ungültig.", StringUtils.quote(key));
+            }
+            if (index != null && !indexes.add(index)) {
+                throw ResponseException.badRequest("Die Position %d ist mehreren Spalten zugeordnet.", index);
+            }
+            mappings.add(new CodeListColumnMapping(key, name, index));
         }
 
-        if (codeListEntity.getValueColumnIndex() < 0 || codeListEntity.getValueColumnIndex() >= columns.size()) {
-            throw ResponseException.badRequest("Der Index der Wert-Spalte ist ungültig.");
+        if (isManual) {
+            if (mappings.isEmpty()) {
+                throw ResponseException.badRequest("Manuelle Codelisten benötigen mindestens eine Spalte.");
+            }
+
+            // The cells of manual lists are identified by the column keys, so a CSV export can be imported again.
+            var size = Math.max(columns.size(), indexes.stream().max(Integer::compareTo).orElse(0));
+            var manualColumns = new ArrayList<>(Collections.nCopies(size, ""));
+            for (var mapping : mappings) {
+                if (mapping.index() != null) {
+                    manualColumns.set(mapping.index() - 1, mapping.key());
+                }
+            }
+            codeListEntity.setColumns(manualColumns);
         }
 
-        if (codeListEntity.getLabelColumnIndex() < 0 || codeListEntity.getLabelColumnIndex() >= columns.size()) {
-            throw ResponseException.badRequest("Der Index der Beschriftungs-Spalte ist ungültig.");
+        var keyColumnKey = StringUtils.toNullableTrimmedString(codeListEntity.getKeyColumnKey());
+        if (keyColumnKey == null) {
+            // A synchronized list without a key column receives a default one during its next synchronization.
+            if (isManual) {
+                throw ResponseException.badRequest("Bitte wählen Sie eine Schlüsselspalte aus.");
+            }
+        } else if (mappings.stream().noneMatch(mapping -> mapping.key().equals(keyColumnKey) && mapping.index() != null)) {
+            throw ResponseException.badRequest("Die Schlüsselspalte muss eine vorhandene Spalte der Codeliste sein.");
         }
+
+        codeListEntity
+                .setColumnMappings(mappings)
+                .setKeyColumnKey(keyColumnKey);
     }
 
     @Nonnull
     private List<String> normalizeItemColumns(@Nonnull CodeListEntity codeListEntity,
                                               @Nullable List<String> columns) throws ResponseException {
-        if (columns == null || columns.size() != codeListEntity.getColumns().size()) {
+        var size = codeListEntity.getColumns().size();
+        if (columns == null || columns.size() > size) {
             throw ResponseException.badRequest("Die Anzahl der Werte passt nicht zur Spaltenanzahl der Codeliste.");
         }
 
-        for (var columnIndex : List.of(codeListEntity.getLabelColumnIndex(), codeListEntity.getValueColumnIndex())) {
-            var value = columns.get(columnIndex);
-            if (value == null || value.isBlank()) {
-                throw ResponseException.badRequest("Bitte geben Sie für „%s“ einen Wert ein.", codeListEntity.getColumns().get(columnIndex));
-            }
+        var normalizedColumns = IntStream
+                .rangeClosed(1, size)
+                .mapToObj(index -> cellAt(columns, index))
+                .toList();
+
+        var keyColumn = codeListEntity
+                .findColumnMapping(codeListEntity.getKeyColumnKey())
+                .filter(mapping -> mapping.index() != null)
+                .orElseThrow(() -> ResponseException.badRequest("Die Codeliste hat keine gültige Schlüsselspalte."));
+        if (normalizedColumns.get(keyColumn.index() - 1).isBlank()) {
+            throw ResponseException.badRequest("Bitte geben Sie für „%s“ einen Wert ein.", keyColumn.name());
         }
 
-        return columns
-                .stream()
-                .map(value -> value == null ? "" : value)
-                .toList();
+        return normalizedColumns;
     }
 
     @Nonnull
@@ -745,8 +839,27 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                 codeListEntity.getSourceType() == CodeListSourceType.Asset;
     }
 
+    @Nullable
+    private static String columnAt(@Nonnull List<String> columns, @Nullable Integer index) {
+        return index == null || index < 1 || index > columns.size() ? null : columns.get(index - 1);
+    }
+
     @Nonnull
-    private String getColumnValue(@Nonnull CodeListItemEntity item, int columnIndex) {
-        return item.getColumns().get(columnIndex);
+    private static String cellAt(@Nonnull List<String> cells, int index) {
+        var cell = index < 1 || index > cells.size() ? null : cells.get(index - 1);
+        return cell == null ? "" : cell;
+    }
+
+    private static boolean containsKey(@Nonnull List<CodeListColumnMapping> mappings, @Nonnull String key) {
+        return mappings.stream().anyMatch(mapping -> mapping.key().equals(key));
+    }
+
+    /** The columns and rows of a source. Names hold display names that differ from the column identifiers. */
+    private record SourceData(
+            @Nonnull List<String> columns,
+            @Nonnull Map<String, String> names,
+            @Nonnull List<List<String>> rows,
+            @Nullable String keyColumnRef
+    ) {
     }
 }

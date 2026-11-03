@@ -82,6 +82,16 @@ public class CodeListItemEntity {
         return this;
     }
 
+    /** Returns the cell at the 1-based index; cells that were never stored, e.g. of a newly added column, are empty. */
+    @Nonnull
+    public String cellAt(int index) {
+        if (index < 1 || index > columns.size()) {
+            return "";
+        }
+        var cell = columns.get(index - 1);
+        return cell == null ? "" : cell;
+    }
+
     @Nonnull
     public Instant getCreated() {
         return created;
