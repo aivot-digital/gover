@@ -20,15 +20,18 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.DefaultCsrfToken;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Instant;
 import java.util.List;
@@ -36,10 +39,12 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
@@ -62,6 +67,11 @@ class SecurityConfigurationCsrfWebMvcTest {
     private static final String API_KEY_USER_ID = "00000000-0000-0000-0000-000000000001";
 
     @Autowired
+    private WebApplicationContext applicationContext;
+
+    @Autowired
+    private FilterChainProxy springSecurityFilterChain;
+
     private MockMvc mockMvc;
 
     @MockitoBean
@@ -81,6 +91,10 @@ class SecurityConfigurationCsrfWebMvcTest {
 
     @BeforeEach
     void setUp() {
+        // Register the chain so the CSRF response filter runs at its configured security-filter position
+        mockMvc = MockMvcBuilders.webAppContextSetup(applicationContext)
+                .addFilters(springSecurityFilterChain)
+                .build();
         when(redis.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("csrf:token:" + CSRF_ID)).thenReturn("stored-csrf-token");
         when(jwtDecoder.decode(ACCESS_TOKEN)).thenReturn(Jwt
@@ -161,6 +175,27 @@ class SecurityConfigurationCsrfWebMvcTest {
                         .cookie(accessCookie(), csrfCookie())
                         .header("Authorization", "Bearer " + ApiKeyJwtDecoder.API_KEY_PREFIX + "unknown"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void issuesCsrfTokenForAccessCookieRequests() throws Exception {
+        mockMvc
+                .perform(get("/api/csrf-test/")
+                        .cookie(accessCookie(), csrfCookie()))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(RedisCsrfTokenRepository.HEADER_NAME));
+    }
+
+    @Test
+    void issuesNoCsrfTokenForApiKeyRequests() throws Exception {
+        // API clients usually keep no cookies, so every request would store another unused token in Redis
+        mockMvc
+                .perform(get("/api/csrf-test/")
+                        .header("Authorization", "Bearer " + API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(header().doesNotExist(RedisCsrfTokenRepository.HEADER_NAME));
+
+        verifyNoInteractions(redis);
     }
 
     @Test
