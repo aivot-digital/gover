@@ -25,7 +25,8 @@ import java.util.Map;
  * user, which becomes the principal as an {@link ApiKeyPrincipal}. All other tokens go to the Keycloak decoder.
  */
 public class ApiKeyJwtDecoder implements JwtDecoder {
-    public static final String API_KEY_PREFIX = "prosuna_api_";
+    // Keycloak access tokens are JWTs and always start with "eyJ", so they can never carry this prefix
+    public static final String API_KEY_PREFIX = "prosuna_";
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtDecoder delegate;
