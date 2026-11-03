@@ -101,6 +101,8 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     public CodeListEntity performUpdate(@Nonnull String key,
                                         @Nonnull CodeListEntity entity,
                                         @Nonnull CodeListEntity existingEntity) throws ResponseException {
+        var previousKeyColumnIndex = findKeyColumnIndex(existingEntity);
+
         // The stored columns describe the existing item cells, so they are never taken from the client.
         existingEntity.setSourceType(entity.getSourceType());
         existingEntity.setSourceRef(entity.getSourceRef());
@@ -109,6 +111,22 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         existingEntity.setColumnMappings(entity.getColumnMappings());
         existingEntity.setKeyColumnKey(entity.getKeyColumnKey());
         normalizeCodeList(existingEntity);
+
+        // Manual lists are not synchronized afterwards, so the stored rows must already fit a newly chosen key column.
+        var keyColumn = existingEntity
+                .findColumnMapping(existingEntity.getKeyColumnKey())
+                .filter(mapping -> mapping.index() != null);
+        if (existingEntity.getSourceType() == CodeListSourceType.Manual &&
+                keyColumn.isPresent() &&
+                !keyColumn.get().index().equals(previousKeyColumnIndex)) {
+            var rows = codeListItemRepository
+                    .findAllByCodeListIdOrderByIdAsc(requireInternalId(existingEntity))
+                    .stream()
+                    .map(CodeListItemEntity::getColumns)
+                    .toList();
+            validateKeys(rows, keyColumn.get());
+        }
+
         existingEntity
                 .setStatus(isSyncable(existingEntity) ? CodeListStatus.SyncPending : CodeListStatus.Synced)
                 .setStatusMessage(null);
@@ -272,7 +290,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         item
                 .setId(null)
                 .setCodeListId(codeListId)
-                .setColumns(normalizeItemColumns(codeList, item.getColumns()));
+                .setColumns(normalizeItemColumns(codeList, null, item.getColumns()));
 
         return codeListItemRepository.save(item);
     }
@@ -295,7 +313,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                 .findByIdAndCodeListId(itemId, codeListId)
                 .orElseThrow(ResponseException::notFound);
 
-        existingItem.setColumns(normalizeItemColumns(codeList, item.getColumns()));
+        existingItem.setColumns(normalizeItemColumns(codeList, existingItem.getId(), item.getColumns()));
         return codeListItemRepository.save(existingItem);
     }
 
@@ -311,7 +329,8 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     /**
      * Matches the columns of a source with the existing mappings, so that keys and names stay stable when the source
      * reorders its columns. A mapping follows the source column that its index pointed to; if that column is gone,
-     * the mapping keeps no index. Source columns without a mapping receive a new one, keyed by the column name.
+     * the mapping keeps no index and remembers the column. Source columns without a mapping receive a new one, keyed
+     * by the trimmed column name.
      */
     @Nonnull
     static List<CodeListColumnMapping> mergeColumnMappings(@Nonnull List<String> previousColumns,
@@ -321,12 +340,19 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         var mappings = new ArrayList<CodeListColumnMapping>();
         var mappedColumns = new HashSet<String>();
         for (var mapping : previousMappings) {
+            if (mapping.index() == null) {
+                mappings.add(mapping);
+                continue;
+            }
+
             var column = columnAt(previousColumns, mapping.index());
             var position = column == null ? -1 : columns.indexOf(column);
-            if (position >= 0) {
+            if (position < 0) {
+                mappings.add(mapping.unbind(column));
+            } else {
                 mappedColumns.add(column);
+                mappings.add(mapping.bindTo(position + 1));
             }
-            mappings.add(mapping.withIndex(position < 0 ? null : position + 1));
         }
 
         for (var i = 0; i < columns.size(); i++) {
@@ -336,21 +362,23 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             }
 
             var index = i + 1;
-            // A column that returns to the source gets its former mapping back, so its references work again.
+            // A column that returns to the source gets its former mapping back, even if its key was renamed.
             var formerMapping = mappings
                     .stream()
-                    .filter(mapping -> mapping.index() == null && mapping.key().equals(column))
+                    .filter(mapping -> mapping.index() == null && column.equals(mapping.formerSourceColumn()))
                     .findFirst();
             if (formerMapping.isPresent()) {
-                mappings.set(mappings.indexOf(formerMapping.get()), formerMapping.get().withIndex(index));
+                mappings.set(mappings.indexOf(formerMapping.get()), formerMapping.get().bindTo(index));
                 continue;
             }
 
-            var key = column;
+            // References trim column keys, so a key with surrounding whitespace could never be found.
+            var columnKey = column.trim();
+            var key = columnKey;
             for (var suffix = 2; containsKey(mappings, key); suffix++) {
-                key = column + "_" + suffix;
+                key = columnKey + "_" + suffix;
             }
-            mappings.add(new CodeListColumnMapping(key, names.getOrDefault(column, column), index));
+            mappings.add(new CodeListColumnMapping(key, names.getOrDefault(column, columnKey).trim(), index));
         }
 
         return mappings;
@@ -413,7 +441,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         var codeListId = requireInternalId(codeList);
         var mappings = mergeColumnMappings(codeList.getColumns(), codeList.getColumnMappings(), source.columns(), source.names());
         var keyColumn = resolveKeyColumn(codeList.getKeyColumnKey(), mappings, source);
-        validateUniqueKeys(source.rows(), keyColumn);
+        validateKeys(source.rows(), keyColumn);
 
         var importedItems = source
                 .rows()
@@ -439,6 +467,15 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                 } else {
                     existingItem.setColumns(importedItem.getColumns());
                 }
+            }
+
+            // Kept rows have no value in a key column that is new in the source, and older rows may repeat a key.
+            var keptRows = itemsToSave.stream().map(CodeListItemEntity::getColumns).toList();
+            if (!identifiesRows(keptRows, keyColumn.index())) {
+                throw ResponseException.conflict(
+                        "Veraltete Einträge können nicht beibehalten werden, weil sie in der Schlüsselspalte %s leere oder doppelte Werte haben. Synchronisieren Sie die Codeliste ohne veraltete Einträge.",
+                        StringUtils.quote(keyColumn.name())
+                );
             }
 
             codeListItemRepository.saveAll(itemsToSave);
@@ -484,16 +521,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         }
 
         for (var index = 1; index <= source.columns().size(); index++) {
-            var values = new HashSet<String>();
-            var identifiesRows = true;
-            for (var row : source.rows()) {
-                var value = cellAt(row, index);
-                if (value.isBlank() || !values.add(value)) {
-                    identifiesRows = false;
-                    break;
-                }
-            }
-            if (identifiesRows) {
+            if (identifiesRows(source.rows(), index)) {
                 return index;
             }
         }
@@ -501,11 +529,29 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         return 1;
     }
 
-    private static void validateUniqueKeys(@Nonnull List<List<String>> rows,
-                                           @Nonnull CodeListColumnMapping keyColumn) throws ResponseException {
+    /** Returns whether every row has a value in the column at {@code index} that no other row has. */
+    private static boolean identifiesRows(@Nonnull List<List<String>> rows, int index) {
+        var values = new HashSet<String>();
+        for (var row : rows) {
+            var value = cellAt(row, index);
+            if (value.isBlank() || !values.add(value)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void validateKeys(@Nonnull List<List<String>> rows,
+                                     @Nonnull CodeListColumnMapping keyColumn) throws ResponseException {
         var values = new HashSet<String>();
         for (var row : rows) {
             var value = cellAt(row, keyColumn.index());
+            if (value.isBlank()) {
+                throw ResponseException.conflict(
+                        "Die Schlüsselspalte %s enthält leere Werte.",
+                        StringUtils.quote(keyColumn.name())
+                );
+            }
             if (!values.add(value)) {
                 throw ResponseException.conflict(
                         "Die Schlüsselspalte %s enthält den Wert %s mehrfach.",
@@ -751,7 +797,9 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             if (index != null && !indexes.add(index)) {
                 throw ResponseException.badRequest("Die Position %d ist mehreren Spalten zugeordnet.", index);
             }
-            mappings.add(new CodeListColumnMapping(key, name, index));
+            // Only a mapping of a synchronized list without an index waits for its former source column to return.
+            var formerSourceColumn = index == null && !isManual ? mapping.formerSourceColumn() : null;
+            mappings.add(new CodeListColumnMapping(key, name, index, formerSourceColumn));
         }
 
         if (isManual) {
@@ -785,8 +833,10 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                 .setKeyColumnKey(keyColumnKey);
     }
 
+    /** Pads the cells of a row and checks its key value. {@code itemId} is the ID of an updated row. */
     @Nonnull
     private List<String> normalizeItemColumns(@Nonnull CodeListEntity codeListEntity,
+                                              @Nullable Long itemId,
                                               @Nullable List<String> columns) throws ResponseException {
         var size = codeListEntity.getColumns().size();
         if (columns == null || columns.size() > size) {
@@ -802,11 +852,28 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                 .findColumnMapping(codeListEntity.getKeyColumnKey())
                 .filter(mapping -> mapping.index() != null)
                 .orElseThrow(() -> ResponseException.badRequest("Die Codeliste hat keine gültige Schlüsselspalte."));
-        if (normalizedColumns.get(keyColumn.index() - 1).isBlank()) {
+        var keyValue = normalizedColumns.get(keyColumn.index() - 1);
+        if (keyValue.isBlank()) {
             throw ResponseException.badRequest("Bitte geben Sie für „%s“ einen Wert ein.", keyColumn.name());
+        }
+        // Item IDs start at 1, so 0 excludes no row when a new item is created.
+        if (codeListItemRepository.existsByKeyValue(requireInternalId(codeListEntity), keyColumn.index(), keyValue, itemId == null ? 0 : itemId)) {
+            throw ResponseException.conflict(
+                    "Der Wert %s ist in der Schlüsselspalte %s bereits vergeben.",
+                    StringUtils.quote(keyValue),
+                    StringUtils.quote(keyColumn.name())
+            );
         }
 
         return normalizedColumns;
+    }
+
+    @Nullable
+    private static Integer findKeyColumnIndex(@Nonnull CodeListEntity codeListEntity) {
+        return codeListEntity
+                .findColumnMapping(codeListEntity.getKeyColumnKey())
+                .map(CodeListColumnMapping::index)
+                .orElse(null);
     }
 
     @Nonnull

@@ -4,31 +4,43 @@ drop view if exists v_code_list_items;
 
 alter table code_lists
     add column if not exists column_mappings jsonb default '[]'::jsonb not null,
-    add column if not exists key_column_key  varchar(96);
+    add column if not exists key_column_key  text;
 
--- Every existing column becomes a mapping whose key is the source column name. Duplicate or blank names receive a
--- positional key, so all keys of a list are unique.
-with column_names as (select cl.id,
-                             c.position,
-                             coalesce(nullif(trim(c.name), ''), 'COL' || (c.position - 1)) as name
-                      from code_lists cl
-                               cross join lateral unnest(cl.columns) with ordinality as c(name, position)),
-     column_keys as (select id,
-                            position,
-                            name,
-                            case
-                                when row_number() over (partition by id, name order by position) = 1 then name
-                                else name || '_' || position
-                                end as key
-                     from column_names)
-update code_lists cl
-set column_mappings = mappings.value
-from (select id,
-             jsonb_agg(jsonb_build_object('key', key, 'name', name, 'index', position) order by position) as value
-      from column_keys
-      group by id) mappings
-where cl.id = mappings.id
-  and cl.column_mappings = '[]'::jsonb;
+-- Every existing column becomes a mapping whose key is the trimmed source column name. Blank names receive a
+-- positional name. A key that is already used gets the suffix _2, _3, ..., like new columns during a synchronization,
+-- so all keys of a list are unique.
+do
+$$
+    declare
+        code_list record;
+        position  integer;
+        name      text;
+        key       text;
+        suffix    integer;
+        used_keys text[];
+        mappings  jsonb;
+    begin
+        for code_list in select id, columns from code_lists where column_mappings = '[]'::jsonb
+            loop
+                used_keys := array []::text[];
+                mappings := '[]'::jsonb;
+                for position in 1 .. coalesce(array_length(code_list.columns, 1), 0)
+                    loop
+                        name := coalesce(nullif(trim(code_list.columns[position]), ''), 'COL' || (position - 1));
+                        key := name;
+                        suffix := 2;
+                        while key = any (used_keys)
+                            loop
+                                key := name || '_' || suffix;
+                                suffix := suffix + 1;
+                            end loop;
+                        used_keys := used_keys || key;
+                        mappings := mappings || jsonb_build_object('key', key, 'name', name, 'index', position);
+                    end loop;
+                update code_lists set column_mappings = mappings where id = code_list.id;
+            end loop;
+    end
+$$;
 
 -- The former value column identifies the rows, e.g. when outdated rows are kept during a synchronization.
 update code_lists cl

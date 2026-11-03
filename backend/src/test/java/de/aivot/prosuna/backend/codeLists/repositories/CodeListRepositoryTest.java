@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest(properties = {"spring.flyway.enabled=false", "spring.jpa.hibernate.ddl-auto=none",
         "spring.data.jpa.repositories.enabled=false",
@@ -130,6 +132,20 @@ class CodeListRepositoryTest {
         assertEquals(0, codeLists.claimSyncRedispatch("pending", BEFORE, NOW));
         assertEquals(0, codeLists.claimSyncRedispatch("recent", BEFORE, NOW));
         assertEquals(List.of("requested-while-syncing"), codeLists.findPendingSyncKeys(BEFORE));
+    }
+
+    @Test
+    void findsAKeyValueOnlyInOtherRowsOfTheSameList() {
+        sql("drop table if exists code_list_items");
+        sql("create table code_list_items (id bigint primary key, code_list_id integer, columns varchar array)");
+        sql("insert into code_list_items values (1, 7, array['Berlin', 'BE']), (2, 7, array['Hamburg', 'HH']), (3, 8, array['Bremen', 'HB'])");
+        var items = new JpaRepositoryFactory(em).getRepository(CodeListItemRepository.class);
+
+        assertTrue(items.existsByKeyValue(7, 2, "BE", 0));
+        assertTrue(items.existsByKeyValue(7, 2, "BE", 2));
+        assertFalse(items.existsByKeyValue(7, 2, "BE", 1));
+        assertFalse(items.existsByKeyValue(7, 1, "BE", 0));
+        assertFalse(items.existsByKeyValue(7, 2, "HB", 0));
     }
 
     private List<Object> row(String key) {

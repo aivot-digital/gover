@@ -50,6 +50,7 @@ public class CodeListEntity {
     private List<CodeListColumnMapping> columnMappings;
     // The key of the column whose values identify a row, e.g. to keep outdated rows during a synchronization.
     @Nullable
+    @Column(columnDefinition = "text")
     private String keyColumnKey;
     @Nonnull
     private CodeListStatus status;

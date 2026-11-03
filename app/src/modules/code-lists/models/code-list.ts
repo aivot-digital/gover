@@ -7,6 +7,8 @@ export interface CodeListColumnMapping {
     key: string;
     name: string;
     index: number | null;
+    // Set by the synchronization for a missing column, so the mapping returns with that column even after a key rename.
+    formerSourceColumn?: string | null;
 }
 
 export interface CodeList {

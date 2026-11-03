@@ -21,6 +21,8 @@ interface ColumnMappingRow {
     key: string;
     name: string;
     index: string;
+    // Not editable; kept so that a synchronization can still restore the mapping.
+    formerSourceColumn?: string | null;
 }
 
 export function CodeListColumnMappingsInput(props: CodeListColumnMappingsInputProps) {
@@ -38,6 +40,7 @@ export function CodeListColumnMappingsInput(props: CodeListColumnMappingsInputPr
         key: mapping.key,
         name: mapping.name,
         index: mapping.index == null ? '' : String(mapping.index),
+        formerSourceColumn: mapping.formerSourceColumn,
     })), [codeList.columnMappings]);
 
     // Synchronized lists point to the columns of their source. Manual lists can also use the next free position.
@@ -65,6 +68,7 @@ export function CodeListColumnMappingsInput(props: CodeListColumnMappingsInputPr
             key: row.key ?? '',
             name: row.name ?? '',
             index: row.index == null || row.index === '' ? null : Number.parseInt(row.index, 10),
+            formerSourceColumn: row.formerSourceColumn ?? null,
         }));
         // The key column follows a renamed key in the same row, so the list keeps its key column.
         const keyColumnRow = rows.findIndex((row) => row.key === codeList.keyColumnKey);
