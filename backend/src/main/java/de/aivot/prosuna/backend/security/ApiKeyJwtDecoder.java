@@ -1,15 +1,12 @@
 package de.aivot.prosuna.backend.security;
 
-import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserApiKeyRepository;
-import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 
@@ -18,11 +15,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
-import java.util.Map;
 
 /**
- * Lets a user API key stand in for the Keycloak access token. Tokens with the API key prefix are resolved to their
- * user, which becomes the principal as an {@link ApiKeyPrincipal}. All other tokens go to the Keycloak decoder.
+ * Lets a user API key stand in for the Keycloak access token. Tokens with the API key prefix become a {@link Jwt} whose
+ * subject is the key's user ID, so the existing {@code @AuthenticationPrincipal Jwt} consumers resolve the same user
+ * without changes. All other tokens go to the Keycloak decoder.
  */
 public class ApiKeyJwtDecoder implements JwtDecoder {
     // Keycloak access tokens are JWTs and always start with "eyJ", so they can never carry this prefix
@@ -31,16 +28,13 @@ public class ApiKeyJwtDecoder implements JwtDecoder {
 
     private final JwtDecoder delegate;
     private final UserApiKeyRepository userApiKeyRepository;
-    private final UserRepository userRepository;
 
     public ApiKeyJwtDecoder(
             @Nonnull JwtDecoder delegate,
-            @Nonnull UserApiKeyRepository userApiKeyRepository,
-            @Nonnull UserRepository userRepository
+            @Nonnull UserApiKeyRepository userApiKeyRepository
     ) {
         this.delegate = delegate;
         this.userApiKeyRepository = userApiKeyRepository;
-        this.userRepository = userRepository;
     }
 
     /**
@@ -66,41 +60,16 @@ public class ApiKeyJwtDecoder implements JwtDecoder {
         }
 
         var apiKey = userApiKeyRepository
-                .findByKeyHash(hash(token))
+                .findByKeyHashOfActiveUser(hash(token))
                 .filter(key -> key.getExpiration().isAfter(Instant.now()))
                 .orElseThrow(() -> new BadJwtException("Invalid API key"));
 
-        // Keycloak refuses tokens for disabled users, so the API key has to enforce this itself
-        var user = userRepository
-                .findById(apiKey.getUserId())
-                .filter(u -> Boolean.TRUE.equals(u.getEnabled()) && !Boolean.TRUE.equals(u.getDeletedInIdp()))
-                .orElseThrow(() -> new BadJwtException("Invalid API key"));
-
-        return new ApiKeyPrincipal(token, apiKey.getExpiration(), user);
-    }
-
-    /**
-     * The principal of an API key request: the user the key belongs to. It is a {@link Jwt} whose subject is the user
-     * ID, so the existing {@code @AuthenticationPrincipal Jwt} consumers resolve the same user without changes.
-     */
-    public static class ApiKeyPrincipal extends Jwt {
-        private final UserEntity user;
-
-        private ApiKeyPrincipal(@Nonnull String apiKey, @Nonnull Instant expiration, @Nonnull UserEntity user) {
-            super(
-                    apiKey,
-                    null,
-                    expiration,
-                    Map.of("alg", "none"),
-                    Map.of(JwtClaimNames.SUB, user.getId(), JwtClaimNames.EXP, expiration)
-            );
-            this.user = user;
-        }
-
-        @Nonnull
-        public UserEntity getUser() {
-            return user;
-        }
+        return Jwt
+                .withTokenValue(token)
+                .header("alg", "none")
+                .subject(apiKey.getUserId())
+                .expiresAt(apiKey.getExpiration())
+                .build();
     }
 
     @Nonnull

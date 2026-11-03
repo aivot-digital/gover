@@ -2,9 +2,7 @@ package de.aivot.prosuna.backend.security;
 
 import de.aivot.prosuna.backend.system.controllers.AuthController;
 import de.aivot.prosuna.backend.user.entities.UserApiKeyEntity;
-import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserApiKeyRepository;
-import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,9 +81,6 @@ class SecurityConfigurationCsrfWebMvcTest {
     @MockitoBean
     private UserApiKeyRepository userApiKeyRepository;
 
-    @MockitoBean
-    private UserRepository userRepository;
-
     @SuppressWarnings("unchecked")
     private final ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
 
@@ -105,15 +100,11 @@ class SecurityConfigurationCsrfWebMvcTest {
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build());
-        when(userApiKeyRepository.findByKeyHash(ApiKeyJwtDecoder.hash(API_KEY))).thenReturn(Optional.of(new UserApiKeyEntity()
+        when(userApiKeyRepository.findByKeyHashOfActiveUser(ApiKeyJwtDecoder.hash(API_KEY))).thenReturn(Optional.of(new UserApiKeyEntity()
                 .setId(1)
                 .setUserId(API_KEY_USER_ID)
                 .setExpiration(Instant.now().plusSeconds(60))
                 .setKeyHash(ApiKeyJwtDecoder.hash(API_KEY))));
-        when(userRepository.findById(API_KEY_USER_ID)).thenReturn(Optional.of(new UserEntity()
-                .setId(API_KEY_USER_ID)
-                .setEnabled(true)
-                .setDeletedInIdp(false)));
     }
 
     @Test
@@ -241,7 +232,7 @@ class SecurityConfigurationCsrfWebMvcTest {
 
         @PostMapping("/api/csrf-test/")
         public String change(@AuthenticationPrincipal Jwt jwt) {
-            return jwt instanceof ApiKeyJwtDecoder.ApiKeyPrincipal principal ? principal.getUser().getId() : "changed";
+            return jwt.getSubject();
         }
 
         @PostMapping("/api/public/csrf-test/")

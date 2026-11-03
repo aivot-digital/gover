@@ -9,3 +9,7 @@ create table user_api_keys
     key_hash   varchar(64)              not null
         unique
 );
+
+-- Lets deleting a user cascade to its keys without scanning the whole table
+create index user_api_keys_user_id_idx
+    on user_api_keys (user_id);

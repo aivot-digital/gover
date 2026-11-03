@@ -2,7 +2,6 @@ package de.aivot.prosuna.backend.security;
 
 import de.aivot.prosuna.backend.system.controllers.AuthController;
 import de.aivot.prosuna.backend.user.repositories.UserApiKeyRepository;
-import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,8 +14,6 @@ import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CsrfFilter;
@@ -62,7 +59,6 @@ public class SecurityConfiguration {
     private final CsrfResponseHeaderFilter csrfResponseHeaderFilter;
     private final JwtDecoder jwtDecoder;
     private final UserApiKeyRepository userApiKeyRepository;
-    private final UserRepository userRepository;
 
     @Autowired
     public SecurityConfiguration(
@@ -70,20 +66,16 @@ public class SecurityConfiguration {
             CsrfResponseHeaderFilter csrfResponseHeaderFilter,
             JwtDecoder jwtDecoder,
             // Lazy, so slice tests that import this configuration without JPA repositories still start
-            @Lazy UserApiKeyRepository userApiKeyRepository,
-            @Lazy UserRepository userRepository
+            @Lazy UserApiKeyRepository userApiKeyRepository
     ) {
         this.csrfTokenRepository = csrfTokenRepository;
         this.csrfResponseHeaderFilter = csrfResponseHeaderFilter;
         this.jwtDecoder = jwtDecoder;
         this.userApiKeyRepository = userApiKeyRepository;
-        this.userRepository = userRepository;
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        var jwtConverter = new JwtAuthenticationConverter();
-
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
@@ -114,15 +106,7 @@ public class SecurityConfiguration {
                 )
 
                 .oauth2ResourceServer(resourceServer -> resourceServer.jwt(jwt -> jwt
-                        .decoder(new ApiKeyJwtDecoder(jwtDecoder, userApiKeyRepository, userRepository))
-                        .jwtAuthenticationConverter(token -> {
-                            var authentication = jwtConverter.convert(token);
-                            // The converter wraps every token in a generic principal, which would hide the API key
-                            // user, so API key requests get their user principal back
-                            return token instanceof ApiKeyJwtDecoder.ApiKeyPrincipal principal
-                                    ? new JwtAuthenticationToken(principal, principal, authentication.getAuthorities())
-                                    : authentication;
-                        })
+                        .decoder(new ApiKeyJwtDecoder(jwtDecoder, userApiKeyRepository))
                 ))
 
                 .addFilterAfter(csrfResponseHeaderFilter, CsrfFilter.class);

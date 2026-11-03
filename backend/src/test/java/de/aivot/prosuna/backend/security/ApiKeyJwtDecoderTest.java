@@ -1,9 +1,7 @@
 package de.aivot.prosuna.backend.security;
 
 import de.aivot.prosuna.backend.user.entities.UserApiKeyEntity;
-import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserApiKeyRepository;
-import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.oauth2.jwt.BadJwtException;
@@ -23,8 +21,7 @@ class ApiKeyJwtDecoderTest {
 
     private final JwtDecoder keycloakDecoder = mock(JwtDecoder.class);
     private final UserApiKeyRepository userApiKeyRepository = mock(UserApiKeyRepository.class);
-    private final UserRepository userRepository = mock(UserRepository.class);
-    private final ApiKeyJwtDecoder decoder = new ApiKeyJwtDecoder(keycloakDecoder, userApiKeyRepository, userRepository);
+    private final ApiKeyJwtDecoder decoder = new ApiKeyJwtDecoder(keycloakDecoder, userApiKeyRepository);
 
     @Test
     void hashesAsLowercaseHexSha256() {
@@ -36,11 +33,10 @@ class ApiKeyJwtDecoderTest {
     void resolvesTheKeyUserAsSubject() {
         var expiration = Instant.now().plusSeconds(60);
         givenApiKey(expiration);
-        var user = givenUser(true, false);
 
         var jwt = decoder.decode(API_KEY);
 
-        assertSame(user, assertInstanceOf(ApiKeyJwtDecoder.ApiKeyPrincipal.class, jwt).getUser());
+        assertEquals(API_KEY, jwt.getTokenValue());
         assertEquals(USER_ID, jwt.getSubject());
         assertEquals(expiration, jwt.getExpiresAt());
         verifyNoInteractions(keycloakDecoder);
@@ -57,7 +53,8 @@ class ApiKeyJwtDecoderTest {
 
     @Test
     void rejectsUnknownKey() {
-        when(userApiKeyRepository.findByKeyHash(anyString())).thenReturn(Optional.empty());
+        // Also covers keys of disabled users or users deleted in the IdP, which the repository does not return
+        when(userApiKeyRepository.findByKeyHashOfActiveUser(anyString())).thenReturn(Optional.empty());
 
         assertThrows(BadJwtException.class, () -> decoder.decode(API_KEY));
     }
@@ -65,23 +62,6 @@ class ApiKeyJwtDecoderTest {
     @Test
     void rejectsExpiredKey() {
         givenApiKey(Instant.now().minusSeconds(1));
-        givenUser(true, false);
-
-        assertThrows(BadJwtException.class, () -> decoder.decode(API_KEY));
-    }
-
-    @Test
-    void rejectsKeyOfDisabledUser() {
-        givenApiKey(Instant.now().plusSeconds(60));
-        givenUser(false, false);
-
-        assertThrows(BadJwtException.class, () -> decoder.decode(API_KEY));
-    }
-
-    @Test
-    void rejectsKeyOfUserDeletedInIdp() {
-        givenApiKey(Instant.now().plusSeconds(60));
-        givenUser(true, true);
 
         assertThrows(BadJwtException.class, () -> decoder.decode(API_KEY));
     }
@@ -96,20 +76,11 @@ class ApiKeyJwtDecoderTest {
     }
 
     private void givenApiKey(Instant expiration) {
-        when(userApiKeyRepository.findByKeyHash(ApiKeyJwtDecoder.hash(API_KEY))).thenReturn(Optional.of(new UserApiKeyEntity()
+        when(userApiKeyRepository.findByKeyHashOfActiveUser(ApiKeyJwtDecoder.hash(API_KEY))).thenReturn(Optional.of(new UserApiKeyEntity()
                 .setId(1)
                 .setUserId(USER_ID)
                 .setExpiration(expiration)
                 .setKeyHash(ApiKeyJwtDecoder.hash(API_KEY))));
-    }
-
-    private UserEntity givenUser(boolean enabled, boolean deletedInIdp) {
-        var user = new UserEntity()
-                .setId(USER_ID)
-                .setEnabled(enabled)
-                .setDeletedInIdp(deletedInIdp);
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-        return user;
     }
 
     private static MockHttpServletRequest requestWithAuthorization(String authorization) {
