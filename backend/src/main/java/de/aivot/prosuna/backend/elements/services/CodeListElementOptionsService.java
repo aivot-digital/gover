@@ -16,7 +16,7 @@ import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -53,8 +53,8 @@ public class CodeListElementOptionsService {
     }
 
     /**
-     * Lists the options for the given columns, as an input element would receive them. Rows that share a value, and
-     * a group if one is requested, form one option whose label lists the labels of all these rows.
+     * Lists the options for the given columns, as an input element would receive them. Rows that share a value form
+     * one option per group, and every option of that value lists the labels of all these rows.
      */
     @Nonnull
     public List<SelectInputElementOption> listOptions(@Nonnull String codeListKey,
@@ -132,6 +132,9 @@ public class CodeListElementOptionsService {
     /**
      * Rows without a value cannot be selected and are skipped. A dependent select only shows rows of the selected
      * group, so rows without a group value are skipped as well. Values are trimmed like submitted values.
+     * <p>
+     * The label of a value does not depend on its group, since summaries and exports look labels up by the value
+     * alone and would otherwise show the label of another group.
      */
     @Nonnull
     private List<SelectInputElementOption> listOptions(@Nonnull CodeListEntity codeList,
@@ -142,7 +145,8 @@ public class CodeListElementOptionsService {
         var labelIndex = requireColumnIndex(codeList, labelColumnKey);
         var groupIndex = groupColumnKey == null ? null : requireColumnIndex(codeList, groupColumnKey);
 
-        var labelsByOption = new LinkedHashMap<OptionKey, LinkedHashSet<String>>();
+        var optionKeys = new LinkedHashSet<OptionKey>();
+        var labelsByValue = new HashMap<String, LinkedHashSet<String>>();
         for (var item : listItems(codeList)) {
             var value = item.cellAt(valueIndex).trim();
             var group = groupIndex == null ? null : item.cellAt(groupIndex).trim();
@@ -150,21 +154,24 @@ public class CodeListElementOptionsService {
                 continue;
             }
 
-            var labels = labelsByOption.computeIfAbsent(new OptionKey(group, value), key -> new LinkedHashSet<>());
+            optionKeys.add(new OptionKey(group, value));
+            var labels = labelsByValue.computeIfAbsent(value, key -> new LinkedHashSet<>());
             var label = item.cellAt(labelIndex).trim();
             if (!label.isEmpty()) {
                 labels.add(label);
             }
         }
 
-        return labelsByOption
-                .entrySet()
+        return optionKeys
                 .stream()
-                .map(entry -> SelectInputElementOption.of(
-                        entry.getKey().value(),
-                        entry.getValue().isEmpty() ? entry.getKey().value() : String.join(", ", entry.getValue()),
-                        entry.getKey().group()
-                ))
+                .map(optionKey -> {
+                    var labels = labelsByValue.get(optionKey.value());
+                    return SelectInputElementOption.of(
+                            optionKey.value(),
+                            labels.isEmpty() ? optionKey.value() : String.join(", ", labels),
+                            optionKey.group()
+                    );
+                })
                 .toList();
     }
 
@@ -186,7 +193,12 @@ public class CodeListElementOptionsService {
         if (codeListId == null) {
             throw ResponseException.internalServerError("Die interne ID der Codeliste fehlt.");
         }
-        return codeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
+        // The rows come with the columns of their list, so the mappings of codeList read the right cells.
+        return codeListItemRepository
+                .findSnapshotsByCodeListId(codeListId)
+                .stream()
+                .map(row -> row.toItem(codeList.getColumns()))
+                .toList();
     }
 
     @Nonnull

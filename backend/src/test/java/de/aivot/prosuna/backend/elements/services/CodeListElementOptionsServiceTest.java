@@ -1,8 +1,8 @@
 package de.aivot.prosuna.backend.elements.services;
 
 import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
-import de.aivot.prosuna.backend.codeLists.entities.CodeListItemEntity;
 import de.aivot.prosuna.backend.codeLists.models.CodeListColumnMapping;
+import de.aivot.prosuna.backend.codeLists.models.CodeListItemSnapshot;
 import de.aivot.prosuna.backend.codeLists.repositories.CodeListItemRepository;
 import de.aivot.prosuna.backend.codeLists.repositories.CodeListRepository;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
@@ -17,8 +17,10 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -29,6 +31,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class CodeListElementOptionsServiceTest {
+    private static final List<String> GROUP_COLUMNS = List.of("id", "color", "name", "alt_grouping");
+    private static final List<String> ITEM_COLUMNS = List.of("id", "name", "group_id", "group_alt_id");
+
     @Test
     void resolvesSelectOptionsFromTheChosenColumns() throws Exception {
         var service = groupsService();
@@ -79,6 +84,38 @@ class CodeListElementOptionsServiceTest {
     }
 
     @Test
+    void optionsOfAValueHaveTheSameLabelInEveryGroup() throws Exception {
+        var service = itemsService();
+        var element = itemsSelect("group_alt_id")
+                .setCodeListValueColumnKey("group_id")
+                .setDependsOnSelectFieldId("groups");
+
+        var resolved = assertInstanceOf(SelectInputElement.class, service.resolve(element));
+
+        // Summaries and exports look the label up by the value alone, so it must not depend on the group.
+        assertEquals(List.of(
+                SelectInputElementOption.of("1", "Item A, Item B", "1"),
+                SelectInputElementOption.of("1", "Item A, Item B", "2"),
+                SelectInputElementOption.of("2", "Item C", "1"),
+                SelectInputElementOption.of("3", "Item D", "3")
+        ), resolved.getOptions());
+    }
+
+    @Test
+    void readsTheCellsInTheColumnOrderOfTheLoadedList() throws Exception {
+        var itemRepository = mock(CodeListItemRepository.class);
+        // A synchronization moved the color column to the end after the list was loaded with GROUP_COLUMNS.
+        when(itemRepository.findSnapshotsByCodeListId(7)).thenReturn(snapshots(List.of("id", "name", "alt_grouping", "color"),
+                item("1", "Group 1", "1", "red")
+        ));
+        var service = new CodeListElementOptionsService(itemRepository, codeListRepository(groupsCodeList()));
+
+        var options = service.listOptions("groups", "id", "name", null);
+
+        assertEquals(List.of(SelectInputElementOption.of("1", "Group 1")), options);
+    }
+
+    @Test
     void selectWithoutDependencyIgnoresTheGroupColumn() throws Exception {
         var service = itemsService();
 
@@ -91,7 +128,7 @@ class CodeListElementOptionsServiceTest {
     void skipsRowsWithoutValueOrGroupAndUsesTheValueForAMissingLabel() throws Exception {
         var itemRepository = mock(CodeListItemRepository.class);
         var service = new CodeListElementOptionsService(itemRepository, codeListRepository(itemsCodeList()));
-        when(itemRepository.findAllByCodeListIdOrderByIdAsc(8)).thenReturn(List.of(
+        when(itemRepository.findSnapshotsByCodeListId(8)).thenReturn(snapshots(ITEM_COLUMNS,
                 item("a", "Item A", "1"),
                 item(" ", "Ohne Wert", "1"),
                 item("c", "Ohne Gruppe", " "),
@@ -270,17 +307,21 @@ class CodeListElementOptionsServiceTest {
     /** The updated "Groups" list of OP#1265: the color column was added in front of the name column. */
     private static CodeListElementOptionsService groupsService() {
         var itemRepository = mock(CodeListItemRepository.class);
-        when(itemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
+        when(itemRepository.findSnapshotsByCodeListId(7)).thenReturn(snapshots(GROUP_COLUMNS,
                 item("1", "red", "Group 1", "1"),
                 item("2", "blue", "Group 2", "1"),
                 item("3", "green", "Group 3", "2"),
                 item("4", "", "Group 4", "3")
         ));
-        return new CodeListElementOptionsService(itemRepository, codeListRepository(new CodeListEntity()
+        return new CodeListElementOptionsService(itemRepository, codeListRepository(groupsCodeList()));
+    }
+
+    private static CodeListEntity groupsCodeList() {
+        return new CodeListEntity()
                 .setKey("groups")
                 .setId(7)
                 .setName("Groups")
-                .setColumns(List.of("id", "color", "name", "alt_grouping"))
+                .setColumns(GROUP_COLUMNS)
                 .setColumnMappings(List.of(
                         new CodeListColumnMapping("id", "id", 1),
                         new CodeListColumnMapping("name", "name", 3),
@@ -288,12 +329,12 @@ class CodeListElementOptionsServiceTest {
                         new CodeListColumnMapping("color", "color", 2),
                         new CodeListColumnMapping("removed", "removed", null)
                 ))
-                .setKeyColumnKey("id")));
+                .setKeyColumnKey("id");
     }
 
     private static CodeListElementOptionsService itemsService() {
         var itemRepository = mock(CodeListItemRepository.class);
-        when(itemRepository.findAllByCodeListIdOrderByIdAsc(8)).thenReturn(List.of(
+        when(itemRepository.findSnapshotsByCodeListId(8)).thenReturn(snapshots(ITEM_COLUMNS,
                 item("a", "Item A", "1", "1"),
                 item("b", "Item B", "1", "2"),
                 item("c", "Item C", "2", "1"),
@@ -307,7 +348,7 @@ class CodeListElementOptionsServiceTest {
                 .setKey("items")
                 .setId(8)
                 .setName("Items")
-                .setColumns(List.of("id", "name", "group_id", "group_alt_id"))
+                .setColumns(ITEM_COLUMNS)
                 .setColumnMappings(List.of(
                         new CodeListColumnMapping("id", "id", 1),
                         new CodeListColumnMapping("name", "name", 2),
@@ -340,7 +381,15 @@ class CodeListElementOptionsServiceTest {
         return codeListRepository;
     }
 
-    private static CodeListItemEntity item(String... cells) {
-        return new CodeListItemEntity().setColumns(List.of(cells));
+    private static List<String> item(String... cells) {
+        return List.of(cells);
+    }
+
+    @SafeVarargs
+    private static List<CodeListItemSnapshot> snapshots(List<String> listColumns, List<String>... rows) {
+        return IntStream
+                .range(0, rows.length)
+                .mapToObj(index -> new CodeListItemSnapshot((long) index + 1, 7, rows[index], Instant.EPOCH, Instant.EPOCH, listColumns))
+                .toList();
     }
 }

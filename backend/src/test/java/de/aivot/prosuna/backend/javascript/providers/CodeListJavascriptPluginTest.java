@@ -40,10 +40,11 @@ class CodeListJavascriptPluginTest {
     @Test
     void getItemsReadsCellsByColumnKey() {
         try (var jsService = new JavascriptEngine(new CodeListJavascriptV1(codeListService, codeListElementOptionsService))) {
+            var codeList = codeList();
             when(codeListService.retrieve("test"))
-                    .thenReturn(Optional.of(codeList()));
-            // The source moved the name column in front of the key column.
-            when(codeListService.listAllItems("test"))
+                    .thenReturn(Optional.of(codeList));
+            // The source moved the name column in front of the key column. The rows are read for the retrieved list.
+            when(codeListService.listAllItems(codeList))
                     .thenReturn(List.of(item(123L, List.of("Berlin", "11000000"))));
 
             var result = jsService.evaluateCode(new JavascriptCode().setCode("""

@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.codeLists.entities.CodeListItemEntity;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListSourceType;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListStatus;
 import de.aivot.prosuna.backend.codeLists.models.CodeListColumnMapping;
+import de.aivot.prosuna.backend.codeLists.models.CodeListItemSnapshot;
 import de.aivot.prosuna.backend.codeLists.repositories.CodeListItemRepository;
 import de.aivot.prosuna.backend.codeLists.repositories.CodeListRepository;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -66,6 +68,9 @@ class CodeListServiceTest {
         storageService = mock(StorageService.class);
         service = new CodeListService(codeListRepository, codeListItemRepository, xRepositoryCodeListService,
                 assetService, storageService, transactionManager());
+        // Writes lock the list; unless a test claims a synchronization, the locked list is the stored one.
+        when(codeListRepository.findByKeyForUpdate(anyString()))
+                .thenAnswer(call -> codeListRepository.findById(call.getArgument(0)));
     }
 
     // region Items of manual lists
@@ -120,6 +125,7 @@ class CodeListServiceTest {
 
         assertEquals(List.of("", "BE", ""), saved.getColumns());
         assertEquals(7, saved.getCodeListId());
+        verify(codeListRepository).findByKeyForUpdate("test");
         // The updated row itself does not count as a duplicate.
         verify(codeListItemRepository).existsByKeyValue(7, 2, "BE", update ? 10L : 0L);
     }
@@ -225,7 +231,23 @@ class CodeListServiceTest {
                 () -> service.update("test", createManualCodeList().setKeyColumnKey("name")));
 
         assertEquals("Die Schlüsselspalte „Name“ enthält den Wert „Berlin“ mehrfach.", exception.getMessage());
+        verify(codeListRepository).findByKeyForUpdate("test");
         verify(codeListRepository, never()).save(any());
+    }
+
+    @Test
+    void updateOfAManualListKeepsTheFormerSourceColumnOfAMissingColumn() throws Exception {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        // A CSV import without the name column left its mapping without a position.
+        var missingName = new CodeListColumnMapping("name", "Name", null, "name");
+
+        var updated = service.update("test", createManualCodeList().setColumnMappings(List.of(
+                new CodeListColumnMapping("code", "Code", 1),
+                missingName
+        )));
+
+        assertEquals(missingName, updated.getColumnMappings().get(1));
     }
 
     @Test
@@ -653,16 +675,18 @@ class CodeListServiceTest {
     @Test
     void exportCsvWritesColumnsAndAllCellsOfEveryItem() throws Exception {
         when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
-        when(codeListItemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
-                new CodeListItemEntity().setId(1L).setCodeListId(7).setColumns(List.of("001", "Berlin")),
-                new CodeListItemEntity().setId(2L).setCodeListId(7).setColumns(List.of("00,2", "Ham\"burg")),
+        when(codeListItemRepository.findSnapshotsByCodeListId(7)).thenReturn(List.of(
+                snapshot(1L, List.of("001", "Berlin"), List.of("code", "name")),
+                snapshot(2L, List.of("00,2", "Ham\"burg"), List.of("code", "name")),
                 // The row was stored before the name column was added.
-                new CodeListItemEntity().setId(3L).setCodeListId(7).setColumns(List.of("003"))
+                snapshot(3L, List.of("003"), List.of("code", "name")),
+                // A synchronization reordered the columns after the list was read.
+                snapshot(4L, List.of("Bremen", "004"), List.of("name", "code"))
         ));
 
         var csv = new String(service.exportCSV("test"), StandardCharsets.UTF_8);
 
-        assertEquals("code,name\r\n001,Berlin\r\n\"00,2\",\"Ham\"\"burg\"\r\n003,\r\n", csv);
+        assertEquals("code,name\r\n001,Berlin\r\n\"00,2\",\"Ham\"\"burg\"\r\n003,\r\n004,Bremen\r\n", csv);
     }
 
     @Test
@@ -751,7 +775,8 @@ class CodeListServiceTest {
             current.setStatus(CodeListStatus.Syncing).setSyncRunId(runId).setSyncStarted(call.getArgument(2));
             return 1;
         });
-        when(codeListRepository.findByKeyForUpdate("test")).thenReturn(Optional.of(current));
+        // doReturn does not call the mock, whose default answer for the lock would otherwise be stubbed instead.
+        doReturn(Optional.of(current)).when(codeListRepository).findByKeyForUpdate("test");
         return runs;
     }
 
@@ -763,6 +788,10 @@ class CodeListServiceTest {
                 .setStoragePathFromRoot("/code-lists/test.csv");
         when(assetService.retrieve(ASSET_KEY)).thenReturn(Optional.of(asset));
         when(storageService.getDocumentContent(3, "/code-lists/test.csv")).thenReturn(csv(content));
+    }
+
+    private static CodeListItemSnapshot snapshot(Long id, List<String> cells, List<String> listColumns) {
+        return new CodeListItemSnapshot(id, 7, cells, Instant.EPOCH, Instant.EPOCH, listColumns);
     }
 
     private static ByteArrayInputStream csv(String content) {

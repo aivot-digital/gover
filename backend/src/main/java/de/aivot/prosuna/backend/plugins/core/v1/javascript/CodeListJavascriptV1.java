@@ -100,7 +100,7 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
 
         List<CodeListItemEntity> items;
         try {
-            items = codeListService.listAllItems(codeListKey);
+            items = codeListService.listAllItems(codeList);
         } catch (ResponseException e) {
             return ProxyArray.fromArray();
         }

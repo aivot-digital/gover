@@ -96,6 +96,17 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         return codeListRepository.findAll(specification, pageable);
     }
 
+    // Holds the lock of the list, so entries saved meanwhile cannot bypass the check of a changed key column.
+    @Nonnull
+    @Override
+    @Transactional
+    public CodeListEntity update(@Nonnull String key, @Nonnull CodeListEntity entity) throws ResponseException {
+        var existingEntity = codeListRepository
+                .findByKeyForUpdate(key)
+                .orElseThrow(ResponseException::notFound);
+        return performUpdate(key, entity, existingEntity);
+    }
+
     @Nonnull
     @Override
     public CodeListEntity performUpdate(@Nonnull String key,
@@ -232,8 +243,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     @Nonnull
     public byte[] exportCSV(@Nonnull String codeListKey) throws ResponseException {
         var codeList = requireCodeList(codeListKey);
-        var codeListId = requireInternalId(codeList);
-        var items = codeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
+        var items = listAllItems(codeList);
         var outputStream = new ByteArrayOutputStream();
 
         try (var csv = CsvWriter.builder().build(outputStream, StandardCharsets.UTF_8)) {
@@ -256,7 +266,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     @Transactional
     public CodeListEntity importCSV(@Nonnull String codeListKey,
                                     @Nonnull InputStream inputStream) throws ResponseException {
-        var codeList = requireManualCodeList(codeListKey);
+        var codeList = lockManualCodeList(codeListKey);
         applySource(codeList, readCsvSource(inputStream), false);
         return codeListRepository.save(codeList);
     }
@@ -277,15 +287,23 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         return codeListItemRepository.findAllByCodeListId(codeListId, pageable);
     }
 
+    /**
+     * Lists all rows with their cells in the column order of {@code codeList}, so its mappings read the right cells
+     * even if a synchronization reordered the columns after the list was read.
+     */
     @Nonnull
-    public List<CodeListItemEntity> listAllItems(@Nonnull String codeListKey) throws ResponseException {
-        var codeListId = requireInternalId(requireCodeList(codeListKey));
-        return codeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
+    public List<CodeListItemEntity> listAllItems(@Nonnull CodeListEntity codeList) throws ResponseException {
+        return codeListItemRepository
+                .findSnapshotsByCodeListId(requireInternalId(codeList))
+                .stream()
+                .map(row -> row.toItem(codeList.getColumns()))
+                .toList();
     }
 
     @Nonnull
+    @Transactional
     public CodeListItemEntity createItem(@Nonnull String codeListKey, @Nonnull CodeListItemEntity item) throws ResponseException {
-        var codeList = requireManualCodeList(codeListKey);
+        var codeList = lockManualCodeList(codeListKey);
         var codeListId = requireInternalId(codeList);
         item
                 .setId(null)
@@ -304,10 +322,11 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     }
 
     @Nonnull
+    @Transactional
     public CodeListItemEntity updateItem(@Nonnull String codeListKey,
                                          @Nonnull Long itemId,
                                          @Nonnull CodeListItemEntity item) throws ResponseException {
-        var codeList = requireManualCodeList(codeListKey);
+        var codeList = lockManualCodeList(codeListKey);
         var codeListId = requireInternalId(codeList);
         var existingItem = codeListItemRepository
                 .findByIdAndCodeListId(itemId, codeListId)
@@ -384,20 +403,6 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         return mappings;
     }
 
-    /** Moves the cells of a stored row into the column order of a source. Cells of new columns are empty. */
-    @Nonnull
-    static List<String> remapCells(@Nonnull List<String> cells,
-                                   @Nonnull List<String> previousColumns,
-                                   @Nonnull List<String> columns) {
-        var remappedCells = new ArrayList<String>(columns.size());
-        for (var column : columns) {
-            var previousPosition = previousColumns.indexOf(column);
-            var cell = previousPosition < 0 || previousPosition >= cells.size() ? null : cells.get(previousPosition);
-            remappedCells.add(cell == null ? "" : cell);
-        }
-        return remappedCells;
-    }
-
     /**
      * Records the result of a synchronization run in one transaction. Returns false without changes if the run no
      * longer owns the synchronization.
@@ -455,7 +460,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             var existingByKey = new HashMap<String, CodeListItemEntity>();
             var itemsToSave = new ArrayList<CodeListItemEntity>();
             for (var existingItem : codeListItemRepository.findAllByCodeListId(codeListId)) {
-                existingItem.setColumns(remapCells(existingItem.getColumns(), codeList.getColumns(), source.columns()));
+                existingItem.setColumns(existingItem.cellsInColumnOrder(codeList.getColumns(), source.columns()));
                 existingByKey.putIfAbsent(existingItem.cellAt(keyColumn.index()), existingItem);
                 itemsToSave.add(existingItem);
             }
@@ -797,8 +802,8 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             if (index != null && !indexes.add(index)) {
                 throw ResponseException.badRequest("Die Position %d ist mehreren Spalten zugeordnet.", index);
             }
-            // Only a mapping of a synchronized list without an index waits for its former source column to return.
-            var formerSourceColumn = index == null && !isManual ? mapping.formerSourceColumn() : null;
+            // A mapping without an index waits for its former source column, also in manual lists that receive CSV imports.
+            var formerSourceColumn = index == null ? mapping.formerSourceColumn() : null;
             mappings.add(new CodeListColumnMapping(key, name, index, formerSourceColumn));
         }
 
@@ -885,7 +890,22 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
 
     @Nonnull
     private CodeListEntity requireManualCodeList(@Nonnull String codeListKey) throws ResponseException {
-        var codeList = requireCodeList(codeListKey);
+        return requireManual(requireCodeList(codeListKey));
+    }
+
+    /**
+     * Locks a manual list until the transaction ends. The database cannot enforce unique keys, because the key column
+     * differs per list, so every write that checks or changes keys serializes on this lock, like synchronizations do.
+     */
+    @Nonnull
+    private CodeListEntity lockManualCodeList(@Nonnull String codeListKey) throws ResponseException {
+        return requireManual(codeListRepository
+                .findByKeyForUpdate(codeListKey)
+                .orElseThrow(ResponseException::notFound));
+    }
+
+    @Nonnull
+    private static CodeListEntity requireManual(@Nonnull CodeListEntity codeList) throws ResponseException {
         if (codeList.getSourceType() != CodeListSourceType.Manual) {
             throw ResponseException.methodNotAllowed("Nur manuelle Codelisten können direkt bearbeitet werden.");
         }
