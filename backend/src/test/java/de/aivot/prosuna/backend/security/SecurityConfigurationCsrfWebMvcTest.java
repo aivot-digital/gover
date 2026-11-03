@@ -159,6 +159,25 @@ class SecurityConfigurationCsrfWebMvcTest {
     }
 
     @Test
+    void acceptsApiKeyAfterSeveralSpaces() throws Exception {
+        mockMvc
+                .perform(post("/api/csrf-test/")
+                        .header("Authorization", "Bearer   " + API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(content().string(API_KEY_USER_ID));
+    }
+
+    @Test
+    void prefersApiKeyAfterSeveralSpacesOverAccessCookie() throws Exception {
+        mockMvc
+                .perform(post("/api/csrf-test/")
+                        .cookie(accessCookie(), csrfCookie())
+                        .header("Authorization", "Bearer   " + API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(content().string(API_KEY_USER_ID));
+    }
+
+    @Test
     void rejectsUnknownApiKeyInsteadOfFallingBackToAccessCookie() throws Exception {
         // The API key exempts the request from CSRF protection, so the cookie must not authenticate it instead
         mockMvc

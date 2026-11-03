@@ -70,6 +70,8 @@ class ApiKeyJwtDecoderTest {
     void resolvesOnlyPrefixedBearerTokensFromTheAuthorizationHeader() {
         assertEquals(API_KEY, ApiKeyJwtDecoder.resolveApiKey(requestWithAuthorization("Bearer " + API_KEY)));
         assertEquals(API_KEY, ApiKeyJwtDecoder.resolveApiKey(requestWithAuthorization("bearer " + API_KEY)));
+        assertEquals(API_KEY, ApiKeyJwtDecoder.resolveApiKey(requestWithAuthorization("Bearer   " + API_KEY)));
+        assertNull(ApiKeyJwtDecoder.resolveApiKey(requestWithAuthorization("Bearer" + API_KEY)));
         assertNull(ApiKeyJwtDecoder.resolveApiKey(requestWithAuthorization("Bearer keycloak-token")));
         assertNull(ApiKeyJwtDecoder.resolveApiKey(requestWithAuthorization("Basic " + API_KEY)));
         assertNull(ApiKeyJwtDecoder.resolveApiKey(new MockHttpServletRequest()));

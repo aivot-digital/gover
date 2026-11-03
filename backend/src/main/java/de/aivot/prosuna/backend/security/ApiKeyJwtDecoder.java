@@ -49,7 +49,9 @@ public class ApiKeyJwtDecoder implements JwtDecoder {
             return null;
         }
 
-        var token = authorization.substring(BEARER_PREFIX.length());
+        // RFC 6750 allows one or more spaces after the scheme. A missed key would let the access cookie authenticate
+        // the request instead, possibly as a different user.
+        var token = authorization.substring(BEARER_PREFIX.length()).replaceFirst("^ +", "");
         return token.startsWith(API_KEY_PREFIX) ? token : null;
     }
 
