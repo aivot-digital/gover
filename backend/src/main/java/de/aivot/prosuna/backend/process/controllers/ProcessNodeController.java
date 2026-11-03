@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutEleme
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -286,6 +287,9 @@ public class ProcessNodeController {
                 .convertValue(existing, Map.class);
 
         if (onlyConfigSave != null) {
+            // The request is replaced by the loaded node below, so its lock version is checked here.
+            LockVersioned.requireCurrent(updateDTO, existing);
+
             var conf = new AuthoredElementValues();
             conf.putAll(existing.getConfiguration());
             for (String key : onlyConfigSave) {

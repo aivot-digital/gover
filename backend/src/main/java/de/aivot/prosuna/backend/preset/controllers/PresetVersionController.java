@@ -135,6 +135,8 @@ public class PresetVersionController {
         newVersion.setUpdated(null);
         newVersion.setPublished(null);
         newVersion.setRevoked(null);
+        // A lock version sent with a copied version would make Spring Data look up a row that does not exist.
+        newVersion.setLockVersion(null);
 
         var savedVersion = versionRepository
                 .save(newVersion);
