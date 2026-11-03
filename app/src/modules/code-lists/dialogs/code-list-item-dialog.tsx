@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Alert, Dialog, DialogActions, DialogContent, Button, Grid} from '@mui/material';
 import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
-import {CodeList} from '../models/code-list';
+import {CodeList, getAvailableColumnMappings} from '../models/code-list';
 import {CodeListItem} from '../models/code-list-item';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 
@@ -15,24 +15,7 @@ interface CodeListItemDialogProps {
     onSave: (columns: string[]) => void;
 }
 
-const CodeListLabelColumnHint = 'Der Anzeigename, der für Benutzer:innen angezeigt wird.';
-const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben wird.';
-
-function getCodeListColumnHint(
-    index: number,
-    labelColumnIndex: number,
-    valueColumnIndex: number,
-): string | undefined {
-    if (index === labelColumnIndex) {
-        return CodeListLabelColumnHint;
-    }
-
-    if (index === valueColumnIndex) {
-        return CodeListValueColumnHint;
-    }
-
-    return undefined;
-}
+const KeyColumnHint = 'Die Werte der Schlüsselspalte identifizieren die Einträge der Codeliste.';
 
 export function CodeListItemDialog(props: CodeListItemDialogProps) {
     const {
@@ -44,15 +27,17 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
         onSave,
     } = props;
 
+    // The cells follow the stored column order; columns without a mapping keep their cells unchanged.
     const [columns, setColumns] = useState<string[]>([]);
     const [showValidationErrors, setShowValidationErrors] = useState(false);
+    const columnMappings = useMemo(() => getAvailableColumnMappings(codeList), [codeList]);
 
     useEffect(() => {
         if (!open) {
             return;
         }
 
-        setColumns(item?.columns ?? codeList.columns.map(() => ''));
+        setColumns(codeList.columns.map((_, index) => item?.columns[index] ?? ''));
         setShowValidationErrors(false);
     }, [codeList.columns, item, open]);
 
@@ -64,17 +49,15 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
         });
     };
 
-    const hasColumns = codeList.columns.length > 0;
+    const hasColumns = columnMappings.length > 0;
     const handleClose = isBusy ? () => undefined : onClose;
-    const isRequiredColumn = (index: number) => index === codeList.labelColumnIndex || index === codeList.valueColumnIndex;
-    const columnErrors = codeList.columns.map((column, index) => (
-        isRequiredColumn(index) && !columns[index]?.trim()
-            ? `Bitte geben Sie für „${column}“ einen Wert ein.`
-            : undefined
-    ));
+    const keyColumn = columnMappings.find((mapping) => mapping.key === codeList.keyColumnKey);
+    const keyColumnError = keyColumn != null && !columns[(keyColumn.index ?? 0) - 1]?.trim()
+        ? `Bitte geben Sie für „${keyColumn.name}“ einen Wert ein.`
+        : undefined;
     const handleSave = () => {
         setShowValidationErrors(true);
-        if (isBusy || !hasColumns || columns.length !== codeList.columns.length || columnErrors.some(error => error != null)) {
+        if (isBusy || !hasColumns || keyColumnError != null) {
             return;
         }
 
@@ -107,26 +90,26 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
                         sx={{mt: 0.5}}
                     >
                         {
-                            codeList.columns.map((column, index) => (
-                                <Grid
-                                    key={`${column}-${index}`}
-                                    size={{xs: 12, md: 6}}
-                                >
-                                    <TextFieldComponent
-                                        label={column}
-                                        value={columns[index] ?? ''}
-                                        onChange={handleColumnChange(index)}
-                                        required={isRequiredColumn(index)}
-                                        error={showValidationErrors ? columnErrors[index] : undefined}
-                                        hint={getCodeListColumnHint(
-                                            index,
-                                            codeList.labelColumnIndex,
-                                            codeList.valueColumnIndex,
-                                        )}
-                                        disabled={isBusy}
-                                    />
-                                </Grid>
-                            ))
+                            columnMappings.map((mapping) => {
+                                const index = (mapping.index ?? 0) - 1;
+                                const isKeyColumn = mapping === keyColumn;
+                                return (
+                                    <Grid
+                                        key={mapping.key}
+                                        size={{xs: 12, md: 6}}
+                                    >
+                                        <TextFieldComponent
+                                            label={mapping.name}
+                                            value={columns[index] ?? ''}
+                                            onChange={handleColumnChange(index)}
+                                            required={isKeyColumn}
+                                            error={showValidationErrors && isKeyColumn ? keyColumnError : undefined}
+                                            hint={isKeyColumn ? KeyColumnHint : undefined}
+                                            disabled={isBusy}
+                                        />
+                                    </Grid>
+                                );
+                            })
                         }
                     </Grid>
                 }
@@ -134,7 +117,7 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
             <DialogActions sx={{justifyContent: 'flex-start'}}>
                 <Button
                     onClick={handleSave}
-                    disabled={isBusy || !hasColumns || columns.length !== codeList.columns.length}
+                    disabled={isBusy || !hasColumns}
                     variant="contained"
                     startIcon={<Save/>}
                 >

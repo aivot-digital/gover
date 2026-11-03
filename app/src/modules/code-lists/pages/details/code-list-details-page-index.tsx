@@ -19,12 +19,12 @@ import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {CodeListsApiService} from '../../code-lists-api-service';
-import {CodeList} from '../../models/code-list';
+import {CodeList, CodeListSourceColumns} from '../../models/code-list';
 import {CodeListSourceType, CodeListSourceTypeLabels, isCodeListSyncable} from '../../enums/code-list-source-type';
 import {CodeListStatus} from '../../enums/code-list-status';
 import {AssetSelector} from '../../../assets/components/asset-selector';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
-import {StringListInput} from '../../../../components/string-list-input/string-list-input';
+import {CodeListColumnMappingsInput} from '../../components/code-list-column-mappings-input';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
@@ -40,18 +40,13 @@ const SourceTypeOptions = Object.values(CodeListSourceType).map((value) => ({
     label: CodeListSourceTypeLabels[value],
 })).filter((option) => option.value !== CodeListSourceType.Plugin);
 
-const DefaultManualCodeListColumns = ['Beschriftung', 'Wert'];
-const DefaultManualCodeListValueColumnIndex = 1;
-const DefaultManualCodeListLabelColumnIndex = 0;
-const CodeListLabelColumnHint = 'Der Anzeigename, der für Benutzer:innen angezeigt wird.';
-const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben wird.';
 const XRepositoryMetadataHint = 'Geben Sie die versionsspezifische URN ein und rufen Sie die Metadaten ab, um die Spaltenstruktur der Codeliste zu laden.';
 const CsvMetadataHint = 'Wählen Sie eine CSV-Datei aus. Die Metadaten werden automatisch abgerufen, um die Spaltenstruktur der Codeliste zu laden.';
 const MetadataFetchMinRuntime = 600;
 
 type MetadataFetchResult = {
     success: true;
-    columns: string[];
+    columns: CodeListSourceColumns;
 } | {
     success: false;
     error: unknown;
@@ -81,40 +76,40 @@ const CodeListSchema = yup.object({
             then: (schema) => schema.trim().required('Die Quellenreferenz ist ein Pflichtfeld.'),
             otherwise: (schema) => schema,
         }),
-    columns: yup.array()
-        .of(yup.string().trim().required())
+    // Row checks are reported for the whole table, because the form manager shows errors per field.
+    columnMappings: yup.array()
+        .test('complete', 'Jede Spalte benötigt einen Spaltenschlüssel und einen Anzeigenamen.', (mappings) => (mappings ?? [])
+            .every((mapping) => mapping.key?.trim() && mapping.name?.trim()))
+        .test('unique-keys', 'Jeder Spaltenschlüssel darf nur einmal vergeben werden.', (mappings) => {
+            const keys = (mappings ?? []).map((mapping) => mapping.key?.trim());
+            return new Set(keys).size === keys.length;
+        })
         .when('sourceType', {
             is: CodeListSourceType.Manual,
             then: (schema) => schema.min(1, 'Manuelle Codelisten benötigen mindestens eine Spalte.'),
             otherwise: (schema) => schema,
         }),
-    valueColumnIndex: yup.number()
-        .min(0, 'Die Wert-Spalte ist ungültig.')
-        .required('Die Wert-Spalte ist ein Pflichtfeld.'),
-    labelColumnIndex: yup.number()
-        .min(0, 'Die Beschriftungs-Spalte ist ungültig.')
-        .required('Die Beschriftungs-Spalte ist ein Pflichtfeld.'),
+    keyColumnKey: yup.string()
+        .nullable()
+        .when('sourceType', {
+            is: CodeListSourceType.Manual,
+            then: (schema) => schema.required('Bitte wählen Sie eine Schlüsselspalte aus.'),
+            otherwise: (schema) => schema,
+        }),
 });
 
-function parseColumns(value: string | null | undefined): string[] {
-    return (value ?? '')
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-}
-
 function sanitizeCodeList(codeList: CodeList): CodeList {
-    const columns = codeList.columns ?? [];
-    const lastIndex = Math.max(columns.length - 1, 0);
-
     return {
         ...codeList,
         key: codeList.key.trim(),
         sourceRef: codeList.sourceType === CodeListSourceType.Manual ? '' : (codeList.sourceRef ?? ''),
         description: codeList.description ?? '',
-        columns,
-        valueColumnIndex: columns.length === 0 ? 0 : Math.min(codeList.valueColumnIndex ?? 0, lastIndex),
-        labelColumnIndex: columns.length === 0 ? 0 : Math.min(codeList.labelColumnIndex ?? 0, lastIndex),
+        columnMappings: codeList.columnMappings.map((mapping) => ({
+            ...mapping,
+            key: mapping.key.trim(),
+            name: mapping.name.trim(),
+        })),
+        keyColumnKey: codeList.keyColumnKey?.trim() || null,
     };
 }
 
@@ -140,19 +135,6 @@ function isValidMetadataSourceRef(sourceType: CodeListSourceType, sourceRef: str
 
 function getMetadataRequestKey(sourceType: CodeListSourceType, sourceRef: string): string {
     return `${sourceType}:${sourceRef}`;
-}
-
-function getMetadataColumnsPatch(
-    codeList: CodeList,
-    columns: string[],
-): Pick<CodeList, 'columns' | 'valueColumnIndex' | 'labelColumnIndex'> {
-    const lastIndex = Math.max(columns.length - 1, 0);
-
-    return {
-        columns,
-        valueColumnIndex: columns.length === 0 ? 0 : Math.min(codeList.valueColumnIndex, lastIndex),
-        labelColumnIndex: columns.length === 0 ? 0 : Math.min(codeList.labelColumnIndex, lastIndex),
-    };
 }
 
 async function fetchMetadataColumns(
@@ -219,11 +201,6 @@ export function CodeListDetailsPageIndex() {
     const lastMetadataRequestKeyRef = useRef<string | null>(null);
     const canDeleteCodeList = useHasSystemPermission(Permission.CODE_LIST_DELETE);
 
-    const columnOptions = useMemo(() => (codeList?.columns ?? []).map((column, index) => ({
-        value: index.toString(),
-        label: column,
-    })), [codeList?.columns]);
-
     const runMetadataFetch = (
         sourceType: CodeListSourceType,
         sourceRef: string,
@@ -257,7 +234,14 @@ export function CodeListDetailsPageIndex() {
                     return;
                 }
 
-                handleInputPatch(getMetadataColumnsPatch(codeList, result.columns));
+                // A saved list keeps its mappings; its next synchronization matches them with the new source.
+                if (isNewItem === true) {
+                    handleInputPatch({
+                        columns: result.columns.columns,
+                        columnMappings: result.columns.columnMappings,
+                        keyColumnKey: result.columns.keyColumnKey,
+                    });
+                }
 
                 if (options.successMessage != null) {
                     dispatch(showSuccessSnackbar(options.successMessage));
@@ -352,25 +336,24 @@ export function CodeListDetailsPageIndex() {
         },
     ];
 
-    const handleColumnsChange = (value: string | null) => {
-        const columns = parseColumns(value);
-        handleInputPatch(getMetadataColumnsPatch(codeList, columns));
-    };
-
     const handleSourceTypeChange = (value: string | null) => {
         const sourceType = (value ?? CodeListSourceType.Manual) as CodeListSourceType;
-        const useDefaultManualColumns = sourceType === CodeListSourceType.Manual && codeList.columns.length === 0;
+        const defaultCodeList = apiService.initialize();
+        // A new list takes the columns of its source when its metadata is fetched; manual lists start with defaults.
+        const columnsPatch = isNewItem === true || codeList.columnMappings.length === 0
+            ? (sourceType === CodeListSourceType.Manual
+                ? {
+                    columns: defaultCodeList.columns,
+                    columnMappings: defaultCodeList.columnMappings,
+                    keyColumnKey: defaultCodeList.keyColumnKey,
+                }
+                : {columns: [], columnMappings: [], keyColumnKey: null})
+            : {};
 
         handleInputPatch({
             sourceType,
             sourceRef: '',
-            columns: useDefaultManualColumns ? [...DefaultManualCodeListColumns] : codeList.columns,
-            valueColumnIndex: useDefaultManualColumns
-                ? DefaultManualCodeListValueColumnIndex
-                : codeList.valueColumnIndex,
-            labelColumnIndex: useDefaultManualColumns
-                ? DefaultManualCodeListLabelColumnIndex
-                : codeList.labelColumnIndex,
+            ...columnsPatch,
             status: isCodeListSyncable(sourceType) ? CodeListStatus.SyncPending : CodeListStatus.Synced,
         });
     };
@@ -505,7 +488,8 @@ export function CodeListDetailsPageIndex() {
                 Allgemeine Angaben
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Legen Sie Quelle, Beschreibung, Spaltenstruktur sowie die Zuordnung von Beschriftung und technischem Wert fest.
+                Legen Sie Quelle, Beschreibung und Spalten der Codeliste fest. Welche Spalten als Wert und Beschriftung
+                dienen, legen Sie in den Auswahlfeldern fest, die die Codeliste verwenden.
             </Typography>
 
             {
@@ -592,9 +576,8 @@ export function CodeListDetailsPageIndex() {
 
                 <Grid size={{xs: 12}}>
                     <AlertComponent color="info" sx={{mt: 2, mb: 3}}>
-                        Auswahlwerte von Codelisten können in öffentlichen Formularen verwendet und über die
-                        öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Hinterlegen Sie daher keine
-                        vertraulichen Informationen.
+                        Einträge von Codelisten können in öffentlichen Formularen angezeigt werden. Hinterlegen Sie
+                        daher keine vertraulichen Informationen.
                     </AlertComponent>
                 </Grid>
 
@@ -658,43 +641,13 @@ export function CodeListDetailsPageIndex() {
                 }
 
                 <Grid size={{xs: 12}}>
-                    <StringListInput
-                        label="Spalten"
-                        hint="Die Spalten dieser Codeliste"
-                        addLabel="Spalte hinzufügen"
-                        disabled={isBusy || !isEditable || codeList.sourceType !== CodeListSourceType.Manual}
-                        noItemsHint="Noch keine Spalten definiert."
-                        value={codeList.columns ?? []}
-                        onChange={(val) => {
-                            handleInputChange('columns')(val ?? []);
-                        }}
-                        allowEmpty={false}
-                    />
-                </Grid>
-
-
-                <Grid size={{xs: 12, lg: 6}}>
-                    <SelectFieldComponent
-                        label="Beschriftungs-Spalte"
-                        value={codeList.labelColumnIndex.toString()}
-                        onChange={(value) => handleInputChange('labelColumnIndex')(Number.parseInt(value ?? '0', 10))}
-                        options={columnOptions}
-                        required={codeList.columns.length > 0}
-                        hint={CodeListLabelColumnHint}
-                        error={errors.labelColumnIndex}
-                        disabled={isBusy || !isEditable || codeList.columns.length === 0}
-                    />
-                </Grid>
-                <Grid size={{xs: 12, lg: 6}}>
-                    <SelectFieldComponent
-                        label="Wert-Spalte"
-                        value={codeList.valueColumnIndex.toString()}
-                        onChange={(value) => handleInputChange('valueColumnIndex')(Number.parseInt(value ?? '0', 10))}
-                        options={columnOptions}
-                        required={codeList.columns.length > 0}
-                        hint={CodeListValueColumnHint}
-                        error={errors.valueColumnIndex}
-                        disabled={isBusy || !isEditable || codeList.columns.length === 0}
+                    <CodeListColumnMappingsInput
+                        codeList={codeList}
+                        savedColumnMappings={item?.columnMappings ?? []}
+                        onChange={handleInputPatch}
+                        disabled={isBusy || !isEditable}
+                        error={errors.columnMappings}
+                        keyColumnError={errors.keyColumnKey}
                     />
                 </Grid>
             </Grid>

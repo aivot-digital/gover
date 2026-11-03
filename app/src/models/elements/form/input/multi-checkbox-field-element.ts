@@ -13,6 +13,9 @@ export interface MultiCheckboxFieldElement extends BaseInputElement<ElementType.
     options: MultiCheckboxFieldElementOption[] | null | undefined;
     optionsSource: OptionsSourceType | null | undefined;
     codeListKey: string | null | undefined;
+    // Keys of the code list columns for the values and the labels.
+    codeListValueColumnKey?: string | null;
+    codeListLabelColumnKey?: string | null;
     maximumOptions?: number | null;
     minimumRequiredOptions: number | null | undefined;
     displayInline: boolean | null | undefined;

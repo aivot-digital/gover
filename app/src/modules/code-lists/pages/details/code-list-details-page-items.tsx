@@ -17,7 +17,7 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {CodeListsApiService} from '../../code-lists-api-service';
-import {CodeList} from '../../models/code-list';
+import {CodeList, getAvailableColumnMappings} from '../../models/code-list';
 import {CodeListItem} from '../../models/code-list-item';
 import {CodeListSourceType} from '../../enums/code-list-source-type';
 import {CodeListItemDialog} from '../../dialogs/code-list-item-dialog';
@@ -65,6 +65,7 @@ export function CodeListDetailsPageItems() {
     const isManual = codeList?.sourceType === CodeListSourceType.Manual;
     const canManageItems = isEditable && isManual;
     const isSavedCodeList = codeList != null && codeList.key.length > 0;
+    const columnMappings = useMemo(() => codeList == null ? [] : getAvailableColumnMappings(codeList), [codeList]);
     const updateDisabledTooltip = !isEditable
         ? formatMissingPermissionTooltip(Permission.CODE_LIST_UPDATE)
         : undefined;
@@ -72,7 +73,7 @@ export function CodeListDetailsPageItems() {
         ? formatMissingPermissionTooltip(Permission.CODE_LIST_EXPORT)
         : undefined;
     const addItemDisabledTooltip = updateDisabledTooltip ??
-        ((codeList?.columns.length ?? 0) === 0 ? 'Für diese Codeliste sind noch keine Spalten definiert.' : undefined);
+        (columnMappings.length === 0 ? 'Für diese Codeliste sind noch keine Spalten definiert.' : undefined);
 
     const fetchItems = useCallback((options: GenericListPropsFetchOptions<CodeListItem>) => {
         if (codeList == null) {
@@ -97,32 +98,13 @@ export function CodeListDetailsPageItems() {
             );
     }, [codeList]);
 
-    const columnDefinitions = useMemo<Array<GridColDef<CodeListItem>>>(() => {
-        const columns = (codeList?.columns ?? []).map((column, index) => ({
-            field: `column_${index}`,
-            headerName: column,
-            flex: 1,
-            sortable: false,
-            valueGetter: (_: any, row: CodeListItem) => row.columns[index] ?? '',
-        }));
-
-        if (columns.length > 0) {
-            return columns;
-        }
-
-        return [
-            {
-                field: 'label',
-                headerName: 'Beschriftung',
-                flex: 1,
-            },
-            {
-                field: 'value',
-                headerName: 'Wert',
-                flex: 1,
-            },
-        ];
-    }, [codeList?.columns]);
+    const columnDefinitions = useMemo<Array<GridColDef<CodeListItem>>>(() => columnMappings.map((mapping) => ({
+        field: `column_${mapping.key}`,
+        headerName: mapping.name,
+        flex: 1,
+        sortable: false,
+        valueGetter: (_: any, row: CodeListItem) => row.columns[(mapping.index ?? 0) - 1] ?? '',
+    })), [columnMappings]);
 
     const getRowIdentifier = useCallback((row: CodeListItem) => row.id.toString(), []);
 
@@ -170,7 +152,7 @@ export function CodeListDetailsPageItems() {
             title: 'Eintrag löschen',
             children: (
                 <Typography>
-                    Möchten Sie den Eintrag <strong>{item.label || item.value || item.id}</strong> wirklich löschen?
+                    Möchten Sie den Eintrag <strong>{getItemKey(codeList, item) || item.id}</strong> wirklich löschen?
                 </Typography>
             ),
             confirmButtonText: 'Eintrag löschen',
@@ -310,14 +292,14 @@ export function CodeListDetailsPageItems() {
                         }}
                     >
                         <DisabledTooltip
-                            disabled={!canManageItems || (codeList?.columns.length ?? 0) === 0}
+                            disabled={!canManageItems || columnMappings.length === 0}
                             title={addItemDisabledTooltip}
                         >
                             <Button
                                 variant="contained"
                                 startIcon={<Add/>}
                                 onClick={handleOpenCreateDialog}
-                                disabled={!canManageItems || (codeList?.columns.length ?? 0) === 0}
+                                disabled={!canManageItems || columnMappings.length === 0}
                             >
                                 Eintrag hinzufügen
                             </Button>
@@ -369,7 +351,7 @@ export function CodeListDetailsPageItems() {
         addItemDisabledTooltip,
         canExportCodeList,
         canManageItems,
-        codeList?.columns.length,
+        columnMappings.length,
         exportDisabledTooltip,
         handleExportCsv,
         handleImportCsv,
@@ -403,8 +385,8 @@ export function CodeListDetailsPageItems() {
             >
                 {
                     isManual
-                        ? 'Die Auswahlwerte dieser Codeliste können in öffentlichen Formularen verwendet und über die öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Erfassen Sie keine vertraulichen Informationen.'
-                        : 'Diese Auswahlwerte werden aus der Quelle synchronisiert und können hier nicht direkt bearbeitet werden. Nach der Synchronisierung sind sie in öffentlichen Formularen und über die öffentliche Codelisten-API ohne Anmeldung abrufbar. Die Quelle darf daher keine vertraulichen Informationen enthalten.'
+                        ? 'Die Einträge dieser Codeliste können in öffentlichen Formularen angezeigt werden. Erfassen Sie keine vertraulichen Informationen.'
+                        : 'Diese Einträge werden aus der Quelle synchronisiert und können hier nicht direkt bearbeitet werden. Nach der Synchronisierung können sie in öffentlichen Formularen angezeigt werden. Die Quelle darf daher keine vertraulichen Informationen enthalten.'
                 }
             </AlertComponent>
 
@@ -428,7 +410,7 @@ export function CodeListDetailsPageItems() {
                         description={isManual ? 'Fügen Sie die ersten Werte für diese Codeliste hinzu.' : 'Bei der nächsten Synchronisierung werden Einträge aus der Quelle geladen.'}
                         addText={isManual ? 'Eintrag hinzufügen' : undefined}
                         onAdd={isManual ? handleOpenCreateDialog : undefined}
-                        addDisabled={!canManageItems || (codeList?.columns.length ?? 0) === 0}
+                        addDisabled={!canManageItems || columnMappings.length === 0}
                         addDisabledTooltip={addItemDisabledTooltip}
                     />
                 }
@@ -450,4 +432,9 @@ export function CodeListDetailsPageItems() {
             />
         </Box>
     );
+}
+
+function getItemKey(codeList: CodeList, item: CodeListItem): string | undefined {
+    const index = codeList.columnMappings.find((mapping) => mapping.key === codeList.keyColumnKey)?.index;
+    return index == null ? undefined : item.columns[index - 1];
 }

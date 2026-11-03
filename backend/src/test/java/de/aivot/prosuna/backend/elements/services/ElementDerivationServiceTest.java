@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
@@ -88,6 +89,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ElementDerivationServiceTest {
+    private static final String DEPENDENT_SELECT_MISMATCH_ERROR =
+            "Die ausgewählte Option passt nicht zur Auswahl im übergeordneten Auswahlfeld. Wählen Sie eine passende Option aus.";
+
     @Test
     void derivesDependentRadioPresentationFromAnotherRadioSelection() {
         var parent = new SelectInputElement().setPresentation(SelectInputPresentation.Radio);
@@ -102,7 +106,8 @@ class ElementDerivationServiceTest {
         authored.putLiteral("parent", "a");
         authored.putLiteral("child", "two");
         var result = derive(createRoot(List.of(parent, child)), authored, new ElementDerivationOptions());
-        assertNull(result.getEffectiveValues().get("child"));
+        assertEquals("two", result.getEffectiveValues().get("child"));
+        assertEquals(DEPENDENT_SELECT_MISMATCH_ERROR, result.getElementStates().get("child").getError());
         authored.putLiteral("child", "one");
         assertEquals("one", derive(createRoot(List.of(parent, child)), authored, new ElementDerivationOptions()).getEffectiveValues().get("child"));
     }
@@ -1569,7 +1574,7 @@ class ElementDerivationServiceTest {
     }
 
     @Test
-    void shouldClearDependentSelectValueWhenParentSelectIsInOuterScope() {
+    void shouldRejectDependentSelectValueWhenParentSelectIsInOuterScope() {
         var parent = createGroupedSelect("parent", null, List.of(
                 SelectInputElementOption.of("group_a", "Gruppe A"),
                 SelectInputElementOption.of("group_b", "Gruppe B")
@@ -1602,13 +1607,13 @@ class ElementDerivationServiceTest {
 
         assertEquals("group_b", result.getEffectiveValues().get("parent"));
         assertEquals("row-1", firstRow.getId());
-        assertNull(firstRow.getValues().get("child"));
+        assertEquals("option_a", firstRow.getValues().get("child"));
         assertEquals("row-1", result.getElementStates().get("rows").getSubStates().getFirst().getId());
-        assertNull(result.getElementStates().get("rows").getSubStates().getFirst().getStates().get("child").getError());
+        assertEquals(DEPENDENT_SELECT_MISMATCH_ERROR, rowStates(result.getElementStates(), "rows", 0).get("child").getError());
     }
 
     @Test
-    void shouldClearDependentSelectValueWhenParentSelectIsInCurrentReplicatingRow() {
+    void shouldRejectDependentSelectValueWhenParentSelectIsInCurrentReplicatingRow() {
         var rowParent = createGroupedSelect("row_parent", null, List.of(
                 SelectInputElementOption.of("group_a", "Gruppe A"),
                 SelectInputElementOption.of("group_b", "Gruppe B")
@@ -1640,8 +1645,8 @@ class ElementDerivationServiceTest {
         var firstRow = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, effectiveRows.get(0));
 
         assertEquals("group_b", firstRow.getValues().get("row_parent"));
-        assertNull(firstRow.getValues().get("row_child"));
-        assertNull(result.getElementStates().get("rows").getSubStates().getFirst().getStates().get("row_child").getError());
+        assertEquals("option_a", firstRow.getValues().get("row_child"));
+        assertEquals(DEPENDENT_SELECT_MISMATCH_ERROR, rowStates(result.getElementStates(), "rows", 0).get("row_child").getError());
     }
 
     @Test
@@ -1676,7 +1681,7 @@ class ElementDerivationServiceTest {
         var firstRow = assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, effectiveRows.get(0));
 
         assertNull(firstRow.getValues().get("row_parent"));
-        assertNull(firstRow.getValues().get("row_child"));
+        assertEquals(DEPENDENT_SELECT_MISMATCH_ERROR, rowStates(result.getElementStates(), "rows", 0).get("row_child").getError());
     }
 
     @ParameterizedTest
@@ -1701,7 +1706,7 @@ class ElementDerivationServiceTest {
         );
 
         assertEquals("group_b", result.getEffectiveValues().get("parent"));
-        assertNull(effectiveRow(result.getEffectiveValues(), "rows", 0).getValues().get("child"));
+        assertEquals(DEPENDENT_SELECT_MISMATCH_ERROR, rowStates(result.getElementStates(), "rows", 0).get("child").getError());
     }
 
     @Test
@@ -1723,9 +1728,12 @@ class ElementDerivationServiceTest {
         var matchingRow = effectiveRow(effectiveRow(result.getEffectiveValues(), "outer_rows", 0).getValues(), "inner_rows", 0);
         assertEquals("option_a", matchingRow.getValues().get("row_child"));
         assertEquals("option_b", matchingRow.getValues().get("form_child"));
-        var mismatchingRow = effectiveRow(effectiveRow(result.getEffectiveValues(), "outer_rows", 1).getValues(), "inner_rows", 0);
-        assertNull(mismatchingRow.getValues().get("row_child"));
-        assertNull(mismatchingRow.getValues().get("form_child"));
+        var matchingStates = rowStates(rowStates(result.getElementStates(), "outer_rows", 0), "inner_rows", 0);
+        assertNull(matchingStates.get("row_child").getError());
+        assertNull(matchingStates.get("form_child").getError());
+        var mismatchingStates = rowStates(rowStates(result.getElementStates(), "outer_rows", 1), "inner_rows", 0);
+        assertEquals(DEPENDENT_SELECT_MISMATCH_ERROR, mismatchingStates.get("row_child").getError());
+        assertEquals(DEPENDENT_SELECT_MISMATCH_ERROR, mismatchingStates.get("form_child").getError());
     }
 
     @Test
@@ -1739,7 +1747,7 @@ class ElementDerivationServiceTest {
 
         var result = derive(createRoot(List.of(otherRows, rows)), authoredValues, new ElementDerivationOptions());
 
-        assertNull(effectiveRow(result.getEffectiveValues(), "rows", 0).getValues().get("child"));
+        assertEquals(DEPENDENT_SELECT_MISMATCH_ERROR, rowStates(result.getElementStates(), "rows", 0).get("child").getError());
     }
 
     @Test
@@ -1756,7 +1764,38 @@ class ElementDerivationServiceTest {
                 new ElementDerivationOptions()
         );
 
+        assertEquals(DEPENDENT_SELECT_MISMATCH_ERROR, result.getElementStates().get("child").getError());
+    }
+
+    @Test
+    void shouldClearMismatchingDependentSelectValuesThatReportNoErrors() {
+        var technicalChild = createGroupOptionSelect("technical_child", "parent");
+        technicalChild.setTechnical(true);
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("parent", "group_b");
+        authoredValues.putLiteral("child", "option_a");
+        authoredValues.putLiteral("technical_child", "option_a");
+        var root = createRoot(List.of(createGroupSelect("parent"), createGroupOptionSelect("child", "parent"), technicalChild));
+
+        var result = derive(root, authoredValues, new ElementDerivationOptions().setSkipErrorsForElementIds(List.of("child")));
+
+        // Nobody can correct these inputs, so a stale value is dropped instead of blocking the submission.
         assertNull(result.getEffectiveValues().get("child"));
+        assertNull(result.getEffectiveValues().get("technical_child"));
+        assertFalse(result.hasAnyError());
+    }
+
+    @Test
+    void shouldClearMismatchingDerivedDependentSelectValues() {
+        var child = createGroupOptionSelect("child", "parent");
+        child.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("option_a")));
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("parent", "group_b");
+
+        var result = derive(createRoot(List.of(createGroupSelect("parent"), child)), authoredValues, new ElementDerivationOptions());
+
+        assertNull(result.getEffectiveValues().get("child"));
+        assertNull(result.getElementStates().get("child").getError());
     }
 
     @ParameterizedTest
@@ -1841,7 +1880,11 @@ class ElementDerivationServiceTest {
                     result.getElementStates().get("child").getError()
             );
         } else {
-            assertNull(result.getEffectiveValues().get("child"));
+            assertEquals("option_a", result.getEffectiveValues().get("child"));
+            assertEquals(
+                    "Die ausgewählte Option passt nicht zur Auswahl im Feld „Gruppe“. Wählen Sie eine passende Option aus.",
+                    result.getElementStates().get("child").getError()
+            );
         }
     }
 
@@ -2018,6 +2061,10 @@ class ElementDerivationServiceTest {
     private static EffectiveReplicatingContainerLayoutElementValue effectiveRow(Map<String, Object> values, String containerId, int index) {
         var rows = assertInstanceOf(List.class, values.get(containerId));
         return assertInstanceOf(EffectiveReplicatingContainerLayoutElementValue.class, rows.get(index));
+    }
+
+    private static ComputedElementStates rowStates(ComputedElementStates states, String containerId, int index) {
+        return states.get(containerId).getSubStates().get(index).getStates();
     }
 
     private static ReplicatingContainerLayoutElementValue rowValue(String id, String... keysAndValues) {

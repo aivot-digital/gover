@@ -5,11 +5,12 @@ import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
 import de.aivot.prosuna.backend.codeLists.entities.CodeListItemEntity;
-import de.aivot.prosuna.backend.codeLists.entities.VCodeListItemEntity;
 import de.aivot.prosuna.backend.codeLists.filters.CodeListFilter;
 import de.aivot.prosuna.backend.codeLists.permissions.CodeListPermissionProvider;
 import de.aivot.prosuna.backend.codeLists.services.CodeListService;
 import de.aivot.prosuna.backend.codeLists.services.CodeListWorker;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -38,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -52,17 +54,21 @@ public class CodeListController {
     private final UserService userService;
     private final CodeListWorker codeListWorker;
     private final PermissionService permissionService;
+    private final CodeListElementOptionsService codeListElementOptionsService;
 
     @Autowired
     public CodeListController(AuditService auditService,
                               CodeListService service,
                               UserService userService,
-                              CodeListWorker codeListWorker, PermissionService permissionService) {
+                              CodeListWorker codeListWorker,
+                              PermissionService permissionService,
+                              CodeListElementOptionsService codeListElementOptionsService) {
         this.auditService = auditService.createScopedAuditService(CodeListController.class, "Codelisten");
         this.service = service;
         this.userService = userService;
         this.codeListWorker = codeListWorker;
         this.permissionService = permissionService;
+        this.codeListElementOptionsService = codeListElementOptionsService;
     }
 
     @GetMapping("")
@@ -299,8 +305,27 @@ public class CodeListController {
         );
     }
 
+    // The columns are chosen by the caller, so any cell of the list can be read; editors need the read permission.
+    @GetMapping("{codeListKey}/options/")
+    @Operation(
+            summary = "List Code List Options",
+            description = "List the options an input element receives for the given value, label and optional group columns."
+    )
+    public List<SelectInputElementOption> listOptions(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable String codeListKey,
+            @Nonnull @RequestParam String valueColumnKey,
+            @Nonnull @RequestParam String labelColumnKey,
+            @Nullable @RequestParam(required = false) String groupColumnKey
+    ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+
+        return codeListElementOptionsService.listOptions(codeListKey, valueColumnKey, labelColumnKey, groupColumnKey);
+    }
+
     @GetMapping("{codeListKey}/items/")
-    public Page<VCodeListItemEntity> listItems(
+    public Page<CodeListItemEntity> listItems(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String codeListKey,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable
@@ -312,7 +337,7 @@ public class CodeListController {
     }
 
     @PostMapping("{codeListKey}/items/")
-    public VCodeListItemEntity createItem(
+    public CodeListItemEntity createItem(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String codeListKey,
             @Nonnull @Valid @RequestBody CodeListItemEntity item
@@ -324,7 +349,7 @@ public class CodeListController {
     }
 
     @GetMapping("{codeListKey}/items/{itemId}/")
-    public VCodeListItemEntity getItem(
+    public CodeListItemEntity getItem(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String codeListKey,
             @Nonnull @PathVariable Long itemId
@@ -336,7 +361,7 @@ public class CodeListController {
     }
 
     @PutMapping("{codeListKey}/items/{itemId}/")
-    public VCodeListItemEntity updateItem(
+    public CodeListItemEntity updateItem(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String codeListKey,
             @Nonnull @PathVariable Long itemId,

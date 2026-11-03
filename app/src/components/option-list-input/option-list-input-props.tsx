@@ -26,6 +26,8 @@ export interface OptionListInputProps extends FormFieldGroupLayoutProps {
     disableKeyField?: boolean;
     groupLabel?: string;
     showGroupField?: boolean;
+    // Values the group field can take, e.g. the values of a referenced select. Without them, the group is free text.
+    groupOptions?: Array<{value: string; label: string}>;
 
     variant?: 'elevation' | 'outlined';
 }

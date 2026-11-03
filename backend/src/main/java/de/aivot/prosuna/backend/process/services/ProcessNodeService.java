@@ -864,6 +864,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     forwardedKey.origin(),
                     forwardedKey.valueOptions(),
                     forwardedKey.codeListKey(),
+                    forwardedKey.codeListValueColumnKey(),
+                    forwardedKey.codeListLabelColumnKey(),
                     forwardedKey.codeListValueMode()
             ));
 
