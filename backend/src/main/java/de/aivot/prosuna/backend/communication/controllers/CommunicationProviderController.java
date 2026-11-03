@@ -242,7 +242,8 @@ public class CommunicationProviderController {
             @NotNull @Size(max = 255) String description,
             @NotNull AuthoredElementValues configuration,
             @NotNull Boolean isEnabled,
-            @NotNull Boolean isTestProvider
+            @NotNull Boolean isTestProvider,
+            @Nullable Long lockVersion
     ) {
         CommunicationProviderEntity toEntity() {
             var entity = new CommunicationProviderEntity();
@@ -253,6 +254,7 @@ public class CommunicationProviderController {
             entity.setConfiguration(configuration);
             entity.setEnabled(isEnabled);
             entity.setTestProvider(isTestProvider);
+            entity.setLockVersion(lockVersion);
             return entity;
         }
     }
@@ -265,12 +267,13 @@ public class CommunicationProviderController {
             String description,
             AuthoredElementValues configuration,
             Boolean isEnabled,
-            Boolean isTestProvider
+            Boolean isTestProvider,
+            Long lockVersion
     ) {
         static ProviderResponse from(CommunicationProviderEntity entity) {
             return new ProviderResponse(entity.getId(), entity.getCommunicationProviderDefinitionKey(),
                     entity.getCommunicationProviderDefinitionVersion(), entity.getName(), entity.getDescription(),
-                    entity.getConfiguration(), entity.getEnabled(), entity.getTestProvider());
+                    entity.getConfiguration(), entity.getEnabled(), entity.getTestProvider(), entity.getLockVersion());
         }
     }
 
@@ -280,7 +283,8 @@ public class CommunicationProviderController {
             @NotBlank @Size(max = 64) String name,
             @NotNull @Size(max = 255) String description,
             @NotNull Boolean isEnabled,
-            @NotNull AuthoredElementValues configuration
+            @NotNull AuthoredElementValues configuration,
+            @Nullable Long lockVersion
     ) {
         CommunicationProviderBindingEntity toEntity() {
             return new CommunicationProviderBindingEntity()
@@ -289,7 +293,8 @@ public class CommunicationProviderController {
                     .setName(name)
                     .setDescription(description)
                     .setEnabled(isEnabled)
-                    .setConfiguration(configuration);
+                    .setConfiguration(configuration)
+                    .setLockVersion(lockVersion);
         }
     }
 
@@ -301,11 +306,13 @@ public class CommunicationProviderController {
             String description,
             Boolean isEnabled,
             Integer position,
-            AuthoredElementValues configuration
+            AuthoredElementValues configuration,
+            Long lockVersion
     ) {
         static BindingResponse from(CommunicationProviderBindingEntity entity) {
             return new BindingResponse(entity.getId(), entity.getIdentityProviderKey(), entity.getCommunicationProviderId(),
-                    entity.getName(), entity.getDescription(), entity.getEnabled(), entity.getPosition(), entity.getConfiguration());
+                    entity.getName(), entity.getDescription(), entity.getEnabled(), entity.getPosition(), entity.getConfiguration(),
+                    entity.getLockVersion());
         }
     }
 

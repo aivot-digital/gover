@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.storage.converters.StorageProviderMetadataAttrib
 import de.aivot.prosuna.backend.storage.enums.StorageProviderStatus;
 import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
 import de.aivot.prosuna.backend.storage.models.StorageProviderMetadataAttribute;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -15,6 +16,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OptimisticLock;
 
 import java.time.Instant;
 import java.util.List;
@@ -23,7 +25,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "storage_providers")
-public class StorageProviderEntity {
+public class StorageProviderEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "storage_providers_id_seq";
 
     @Id
@@ -59,11 +61,15 @@ public class StorageProviderEntity {
     @Column(columnDefinition = "int2")
     private StorageProviderType type;
 
+    // Sync bookkeeping and the update timestamp do not raise the lock version, so a finished sync
+    // does not make open edit forms outdated. Content changes by a sync still do.
+    @OptimisticLock(excluded = true)
     @Nonnull
     @NotNull(message = "Der Status des Speicheranbieters darf nicht null sein.")
     @Column(columnDefinition = "int2")
     private StorageProviderStatus status;
 
+    @OptimisticLock(excluded = true)
     @Nullable
     @Size(max = 4096, message = "Die Statusnachricht des Speicheranbieters darf maximal 4096 Zeichen lang sein.")
     private String statusMessage;
@@ -102,22 +108,31 @@ public class StorageProviderEntity {
     private List<StorageProviderMetadataAttribute> metadataAttributes;
 
     // The run that claimed the requested synchronization and when it started. Only this run records its result.
+    @OptimisticLock(excluded = true)
     @Nullable
     @JsonIgnore
     private UUID syncRunId;
 
+    @OptimisticLock(excluded = true)
     @Nullable
     @JsonIgnore
     private Instant syncStarted;
 
+    @OptimisticLock(excluded = true)
     @Nullable
     private Instant lastSync;
 
     @Nonnull
     private Instant created;
 
+    @OptimisticLock(excluded = true)
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Signals
 
@@ -387,6 +402,17 @@ public class StorageProviderEntity {
 
     public StorageProviderEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public StorageProviderEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

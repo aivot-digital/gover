@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.entities;
 import de.aivot.prosuna.backend.process.enums.CaseNumberType;
 import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -18,7 +19,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "process_versions")
 @IdClass(ProcessVersionEntityId.class)
-public class ProcessVersionEntity {
+public class ProcessVersionEntity implements LockVersioned {
     public static final int MAX_INSTANCE_DEADLINE_DAYS = 3652;
 
     @Id
@@ -107,6 +108,11 @@ public class ProcessVersionEntity {
 
     @Nullable
     private Instant revoked;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Constructors
 
@@ -396,6 +402,17 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setProcessSpecificAccessibilityStatement(@Nullable String processSpecificAccessibilityStatement) {
         this.processSpecificAccessibilityStatement = processSpecificAccessibilityStatement;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public ProcessVersionEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

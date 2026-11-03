@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -218,6 +219,7 @@ public class PresetVersionController {
         var presetVersion = versionRepository
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent(updatedPreset, presetVersion);
 
         if (presetVersion.getStatus() != PresetStatus.Drafted) {
             throw ResponseException.conflict("Veröffentlichte Versionen können nicht bearbeitet werden.");

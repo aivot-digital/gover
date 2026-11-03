@@ -157,6 +157,8 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     public IdentityProviderEntity create(@Nonnull IdentityProviderEntity entity) throws ResponseException {
         // Set default values
         entity.setKey(UUID.randomUUID());
+        // A lock version from the request would make Spring Data look for a row that does not exist yet.
+        entity.setLockVersion(null);
         entity.setType(IdentityProviderType.Custom);
 
         cleanClientSecretKey(entity);
@@ -285,6 +287,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
             // Copy fix values
             updatedEntity.setKey(existingEntity.getKey());
             updatedEntity.setType(existingEntity.getType());
+            updatedEntity.setLockVersion(existingEntity.getLockVersion());
 
             cleanClientSecretKey(updatedEntity);
             cleanIconAssetKey(updatedEntity);

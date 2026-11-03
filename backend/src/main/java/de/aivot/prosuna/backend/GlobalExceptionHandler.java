@@ -2,11 +2,14 @@ package de.aivot.prosuna.backend;
 
 import de.aivot.prosuna.backend.exceptions.UserFriendlyResponseStatusException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.models.dtos.ApiErrorDto;
 import de.aivot.prosuna.backend.mail.services.ExceptionMailService;
 import io.sentry.Sentry;
+import jakarta.persistence.OptimisticLockException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
@@ -64,6 +67,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return ResponseEntity
                 .status(e.getStatus())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(apiError);
+    }
+
+    // Another transaction updated the entity between loading and saving it. This is an expected conflict, not a server error.
+    // Spring translates the JPA exception only for repository calls and commits, not for a direct EntityManager flush.
+    @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
+    public ResponseEntity<Object> handleOptimisticLockingFailure() {
+        var apiError = new ApiErrorDto(
+                HttpStatus.CONFLICT,
+                LockVersioned.CONFLICT_MESSAGE,
+                null,
+                true
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(apiError);
     }

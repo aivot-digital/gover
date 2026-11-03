@@ -59,6 +59,9 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
 
         // Set the new version number to be one greater than the latest version number
         entity.setProcessVersion(latestVersionNumber + 1);
+        // Imported and copied versions carry the lock version of their source, which would make Spring Data
+        // look for a row that does not exist yet.
+        entity.setLockVersion(null);
 
         return processDefinitionVersionRepository
                 .save(entity);
