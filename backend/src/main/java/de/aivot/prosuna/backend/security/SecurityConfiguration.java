@@ -10,14 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -31,7 +27,6 @@ import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Configuration
@@ -87,7 +82,7 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        var keycloakConverter = jwtAuthenticationConverterForKeycloak();
+        var jwtConverter = new JwtAuthenticationConverter();
 
         http
                 .csrf(csrf -> csrf
@@ -121,7 +116,7 @@ public class SecurityConfiguration {
                 .oauth2ResourceServer(resourceServer -> resourceServer.jwt(jwt -> jwt
                         .decoder(new ApiKeyJwtDecoder(jwtDecoder, userApiKeyRepository, userRepository))
                         .jwtAuthenticationConverter(token -> {
-                            var authentication = keycloakConverter.convert(token);
+                            var authentication = jwtConverter.convert(token);
                             // The converter wraps every token in a generic principal, which would hide the API key
                             // user, so API key requests get their user principal back
                             return token instanceof ApiKeyJwtDecoder.ApiKeyPrincipal principal
@@ -133,27 +128,6 @@ public class SecurityConfiguration {
                 .addFilterAfter(csrfResponseHeaderFilter, CsrfFilter.class);
 
         return http.build();
-    }
-
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverterForKeycloak() {
-        Converter<Jwt, Collection<GrantedAuthority>> jwtGrantedAuthoritiesConverter = jwt -> {
-            // All of this is deprecated since 20.04.2026
-            Map<String, Collection<String>> realmAccess = jwt.getClaim("realm_access");
-            // API key principals carry no Keycloak realm roles
-            if (realmAccess == null) {
-                return List.of();
-            }
-            Collection<String> roles = realmAccess.get("roles");
-            return roles.stream()
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
-                    .collect(Collectors.toList());
-        };
-
-        var jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
-
-        return jwtAuthenticationConverter;
     }
 
     @Bean
