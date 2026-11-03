@@ -10,6 +10,7 @@ import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/str
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {isLockVersionConflictError} from '../../../../models/api-error';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
@@ -338,7 +339,9 @@ export function IdentityProviderDetailsPageIndex() {
                     dispatch(showSuccessSnackbar('Änderungen am Identitätsanbieter erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    if (err.status === 409) {
+                    if (isLockVersionConflictError(err)) {
+                        dispatch(showErrorSnackbar(err.message));
+                    } else if (err.status === 409) {
                         dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Identitätsanbieter verwenden'));
                     } else {
                         console.error(err);

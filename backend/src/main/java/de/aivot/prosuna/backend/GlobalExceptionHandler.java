@@ -78,7 +78,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         var apiError = new ApiErrorDto(
                 HttpStatus.CONFLICT,
                 LockVersioned.CONFLICT_MESSAGE,
-                null,
+                LockVersioned.CONFLICT_DETAILS,
                 true
         );
 

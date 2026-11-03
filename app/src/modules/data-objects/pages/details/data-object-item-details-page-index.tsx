@@ -24,7 +24,7 @@ import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
 import {applyYupErrorsToElementData, prosunaSchemaToYup} from '../../../../utils/prosuna-schema-to-yup';
 import Grid from '@mui/material/Grid';
-import {isApiError} from '../../../../models/api-error';
+import {isApiError, isLockVersionConflictError} from '../../../../models/api-error';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {createDerivedRuntimeElementData, isDerivedRuntimeElementData} from '../../../../models/element-data';
@@ -229,7 +229,7 @@ export function DataObjectItemDetailsPageIndex() {
                         console.error(err);
                     }
 
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                 })
                 .finally(() => {
                     setIsBusy(false);

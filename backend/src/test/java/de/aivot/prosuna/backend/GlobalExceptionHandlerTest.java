@@ -13,6 +13,8 @@ import org.springframework.http.MediaType;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -67,6 +69,7 @@ class GlobalExceptionHandlerTest {
         var body = assertInstanceOf(ApiErrorDto.class, response.getBody());
         assertEquals(HttpStatus.CONFLICT.value(), body.getStatus());
         assertEquals(LockVersioned.CONFLICT_MESSAGE, body.getMessage());
+        assertEquals(Map.of("reason", "lock_version_conflict"), body.getDetails());
         assertTrue(body.getDisplayableToUser());
         verifyNoInteractions(mailService);
     }

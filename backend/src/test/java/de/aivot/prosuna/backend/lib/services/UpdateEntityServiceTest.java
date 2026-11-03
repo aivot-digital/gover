@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +42,7 @@ class UpdateEntityServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         assertEquals(LockVersioned.CONFLICT_MESSAGE, exception.getTitle());
+        assertEquals(Map.of("reason", "lock_version_conflict"), exception.getDetails());
         verify(service, never()).performUpdate(any(), any(), any());
     }
 

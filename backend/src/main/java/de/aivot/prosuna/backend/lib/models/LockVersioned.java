@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -13,6 +14,11 @@ import java.util.Objects;
  */
 public interface LockVersioned {
     String CONFLICT_MESSAGE = "Der Datensatz wurde zwischenzeitlich geändert. Laden Sie ihn bitte neu, bevor Sie Ihre Änderungen erneut speichern.";
+    /**
+     * Sent as {@code details.reason} of a lock conflict, so clients can tell it from other 409 responses.
+     */
+    String CONFLICT_REASON = "lock_version_conflict";
+    Map<String, String> CONFLICT_DETAILS = Map.of("reason", CONFLICT_REASON);
 
     @Nullable
     Long getLockVersion();
@@ -27,7 +33,7 @@ public interface LockVersioned {
                 && existing instanceof LockVersioned existingEntity
                 && requestedEntity.getLockVersion() != null
                 && !Objects.equals(requestedEntity.getLockVersion(), existingEntity.getLockVersion())) {
-            throw ResponseException.conflict(CONFLICT_MESSAGE);
+            throw ResponseException.conflictWithDetails(CONFLICT_MESSAGE, CONFLICT_DETAILS);
         }
     }
 }
