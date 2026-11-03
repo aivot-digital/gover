@@ -40,4 +40,19 @@ describe('useSessionStorageState', () => {
 
         expect(result.current[0]).toEqual({1: true});
     });
+
+    it('ignores updates from the setter of a previous key', () => {
+        const {result, rerender} = renderHook(
+            ({storageKey}) => useSessionStorageState<Record<number, boolean>>(storageKey, {}),
+            {initialProps: {storageKey: 'version-1'}},
+        );
+        const setVersion1State = result.current[1];
+
+        rerender({storageKey: 'version-2'});
+        act(() => {
+            setVersion1State({1: true});
+        });
+
+        expect(result.current[0]).toEqual({});
+    });
 });

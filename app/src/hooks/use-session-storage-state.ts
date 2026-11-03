@@ -31,13 +31,20 @@ export function useSessionStorageState<T>(key: string, initialState: T): [T, Dis
     }, [entry]);
 
     const setValue: Dispatch<SetStateAction<T>> = useCallback((action) => {
-        setEntry((previous) => ({
-            key: previous.key,
-            value: typeof action === 'function' ?
-                (action as (previousValue: T) => T)(previous.value) :
-                action,
-        }));
-    }, []);
+        setEntry((previous) => {
+            // Drop updates of a previous key, e.g. from a request that resolves after the key changed.
+            if (previous.key !== key) {
+                return previous;
+            }
+
+            return {
+                key,
+                value: typeof action === 'function' ?
+                    (action as (previousValue: T) => T)(previous.value) :
+                    action,
+            };
+        });
+    }, [key]);
 
     return [current.value, setValue];
 }
