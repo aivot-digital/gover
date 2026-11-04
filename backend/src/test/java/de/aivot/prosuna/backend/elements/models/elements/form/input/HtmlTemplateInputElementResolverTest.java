@@ -284,6 +284,18 @@ class HtmlTemplateInputElementResolverTest {
     }
 
     @Test
+    void resolveShouldCancelTemplateRecursionThatCatchesItsStackOverflow() {
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> resolver.resolve(
+                        template("<p>{{ (function f() { try { f() } catch (e) { f() } })() }}</p>"),
+                        new ProcessExecutionData()
+                )
+        );
+        assertTrue(exception.getMessage().contains("Maximum frame limit of 256 exceeded"), exception.getMessage());
+    }
+
+    @Test
     void resolveShouldReportUnexpectedRenderingErrorsWithoutTheirMessage() throws Exception {
         var templateRenderService = mock(TemplateRenderService.class);
         when(templateRenderService.interpolate(any(), any(), any(JavascriptExecutionContext.class)))

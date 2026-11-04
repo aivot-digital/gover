@@ -12,9 +12,11 @@ import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -138,6 +140,43 @@ class JavascriptEngineTest {
                     JavascriptException.class,
                     () -> engine.evaluateCode(new JavascriptCode().setCode("for (;;) {}"))
             );
+            assertTrue(exception.getCause() instanceof PolyglotException polyglotException && polyglotException.isResourceExhausted());
+        }
+    }
+
+    @Test
+    void assetTemplateContext_CancelsRecursionThatCatchesItsStackOverflow() throws Exception {
+        var result = new AtomicReference<Throwable>();
+        // A small, fixed thread stack, so the frame limit must apply before the catchable RangeError of the JavaScript engine,
+        // independent of the stack size of the test thread.
+        var thread = new Thread(null, () -> {
+            try (var engine = new JavascriptEngine(List.of(), JavascriptExecutionContext.AssetTemplate)) {
+                engine.evaluateCode(new JavascriptCode().setCode("(function f() { try { f() } catch (e) { f() } })()"));
+            } catch (Throwable e) {
+                result.set(e);
+            }
+        }, "asset-template-recursion", 512 * 1024);
+        // The thread must not keep the test JVM alive if the recursion is not cancelled.
+        thread.setDaemon(true);
+        thread.start();
+        thread.join(Duration.ofSeconds(5));
+
+        assertFalse(thread.isAlive(), "The recursion was not cancelled.");
+        assertTrue(result.get() instanceof JavascriptException exception
+                && exception.getCause() instanceof PolyglotException polyglotException
+                && polyglotException.isResourceExhausted(), String.valueOf(result.get()));
+    }
+
+    @Test
+    void defaultContext_AllowsRecursionDeeperThanTheAssetTemplateFrameLimit() throws Exception {
+        var code = "(function f(n) { return n === 0 ? 0 : 1 + f(n - 1) })(300)";
+
+        try (var engine = new JavascriptEngine(List.of(), JavascriptExecutionContext.Default)) {
+            assertEquals(300, engine.evaluateCode(new JavascriptCode().setCode(code)).asNumber().intValue());
+        }
+
+        try (var engine = new JavascriptEngine(List.of(), JavascriptExecutionContext.AssetTemplate)) {
+            var exception = assertThrows(JavascriptException.class, () -> engine.evaluateCode(new JavascriptCode().setCode(code)));
             assertTrue(exception.getCause() instanceof PolyglotException polyglotException && polyglotException.isResourceExhausted());
         }
     }

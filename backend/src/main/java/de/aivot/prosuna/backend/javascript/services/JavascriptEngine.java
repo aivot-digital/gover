@@ -40,6 +40,9 @@ public class JavascriptEngine implements AutoCloseable {
     private final ByteArrayOutputStream errStream = new ByteArrayOutputStream();
     private final static String JS_ENGINE_NAME = "js";
     private final static String MAX_CPU_TIME = "10s";
+    // Below the depth at which a default 1 MB thread stack throws a RangeError (about 740 frames in interpreter mode).
+    // A higher limit is never reached, and guest code can catch the RangeError and recurse again.
+    private final static String ASSET_TEMPLATE_MAX_STACK_FRAMES = "256";
 
     /**
      * Creates a new javascript executioner with the given function providers.
@@ -66,7 +69,7 @@ public class JavascriptEngine implements AutoCloseable {
      * @param context           the context in which the code is executed.
      */
     public JavascriptEngine(@Nonnull List<JavascriptFunctionProvider> functionProviders, @Nonnull JavascriptExecutionContext context) {
-        graalContext = Context
+        var builder = Context
                 // Create a new context builder for the javascript engine.
                 .newBuilder(JS_ENGINE_NAME)
 
@@ -101,10 +104,15 @@ public class JavascriptEngine implements AutoCloseable {
 
                 // Redirect the standard output and error streams to the given output streams.
                 .out(outStream)
-                .err(errStream)
+                .err(errStream);
 
-                // Build the context.
-                .build();
+        if (context == JavascriptExecutionContext.AssetTemplate) {
+            // Unlike the stack overflow of the recursion above, exceeding the frame limit cancels the code and cannot be caught.
+            // Asset templates can be changed with the asset permissions alone, so they must not be able to block a worker.
+            builder.option("sandbox.MaxStackFrames", ASSET_TEMPLATE_MAX_STACK_FRAMES);
+        }
+
+        graalContext = builder.build();
 
         // Add the function providers to the javascript context.
         var bindings = graalContext.getBindings(JS_ENGINE_NAME);
