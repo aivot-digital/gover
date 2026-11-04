@@ -157,6 +157,36 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return replaceStoredTaskViewFileUploadItems(taskView.layout, values, storedFileItemsRef.current);
     }, [taskView]);
 
+    // Each update stores the files it sends, so later updates must reference the stored attachments instead of
+    // sending the files again. Inputs changed during the update keep their other values.
+    const adoptSavedTaskView = useCallback((payload: AuthoredElementValues, updatedTaskView: TaskView): AuthoredElementValues => {
+        let persistedPayload = payload;
+        if (taskView != null) {
+            const storedFileItems = collectStoredTaskViewFileUploadItems(taskView.layout, payload, updatedTaskView.data);
+            storedFileItems.forEach((storedItem, uri) => storedFileItemsRef.current.set(uri, storedItem));
+            if (storedFileItems.size > 0) {
+                persistedPayload = replaceStoredTaskViewFileUploadItems(taskView.layout, payload, storedFileItems);
+                latestTaskInputDataRef.current = replaceStoredTaskViewFileUploadItems(
+                    taskView.layout,
+                    latestTaskInputDataRef.current,
+                    storedFileItems,
+                );
+                setTaskInputData(latestTaskInputDataRef.current);
+            }
+
+            // Stored and removed files change the attachments of the instance, e.g. for attachment displays.
+            if (haveTaskViewFileUploadItemsChanged(taskView.layout, lastPersistedTaskInputDataRef.current, persistedPayload)) {
+                setTaskAttachmentsReloadCount((count) => count + 1);
+            }
+        }
+
+        setRemovableAttachmentKeys(new Set(updatedTaskView.removableAttachmentKeys));
+        lastPersistedTaskInputDataRef.current = persistedPayload;
+        setLastPersistedTaskInputData(persistedPayload);
+
+        return persistedPayload;
+    }, [taskView]);
+
     const saveTaskInputData = useCallback(
         async (requestedPayload: AuthoredElementValues): Promise<boolean> => {
             if (item == null || deadlineExceededRef.current) {
@@ -210,36 +240,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         return false;
                     }
 
-                    // Each update stores the files it sends, so later updates must reference the stored attachments
-                    // instead of sending the files again. Inputs changed during the save keep their other values.
-                    let persistedPayload = payload;
-                    if (taskView != null) {
-                        const storedFileItems = collectStoredTaskViewFileUploadItems(taskView.layout, payload, updatedTaskView.data);
-                        storedFileItems.forEach((storedItem, uri) => storedFileItemsRef.current.set(uri, storedItem));
-                        if (storedFileItems.size > 0) {
-                            persistedPayload = replaceStoredTaskViewFileUploadItems(taskView.layout, payload, storedFileItems);
-                            latestTaskInputDataRef.current = replaceStoredTaskViewFileUploadItems(
-                                taskView.layout,
-                                latestTaskInputDataRef.current,
-                                storedFileItems,
-                            );
-                            setTaskInputData(latestTaskInputDataRef.current);
-                        }
-                    }
-
-                    // Stored and removed files change the attachments of the instance, e.g. for attachment displays.
-                    if (taskView != null && haveTaskViewFileUploadItemsChanged(
-                        taskView.layout,
-                        lastPersistedTaskInputDataRef.current,
-                        persistedPayload,
-                    )) {
-                        setTaskAttachmentsReloadCount((count) => count + 1);
-                    }
-
-                    setRemovableAttachmentKeys(new Set(updatedTaskView.removableAttachmentKeys));
+                    const persistedPayload = adoptSavedTaskView(payload, updatedTaskView);
                     pendingOfflineRetryRef.current = false;
-                    lastPersistedTaskInputDataRef.current = persistedPayload;
-                    setLastPersistedTaskInputData(persistedPayload);
                     setLastSavedAt(new Date());
 
                     const hasNewerUnsavedChanges = !deepEquals(latestTaskInputDataRef.current, persistedPayload);
@@ -281,7 +283,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             return await savePromise;
         },
-        [adoptStoredFileItems, collectFileUploads, dispatch, handleDeadlineExceeded, item, refresh, taskView],
+        [adoptSavedTaskView, adoptStoredFileItems, collectFileUploads, dispatch, handleDeadlineExceeded, item, refresh],
     );
 
     const flushCurrentTaskInputData = useCallback(async (): Promise<boolean> => {
@@ -635,6 +637,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         )
             .then(async (updatedTaskView) => {
                 dispatchProcessAssignedTaskCountRefreshEvent();
+                // The update succeeded, so a repeated event must not upload its files again if the status lookup fails.
+                adoptSavedTaskView(eventPayload, updatedTaskView);
 
                 const updatedTask = await new ProcessInstanceTaskApiService().retrieve(item.task.id);
 

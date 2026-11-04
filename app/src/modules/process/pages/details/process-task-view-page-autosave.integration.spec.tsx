@@ -357,4 +357,38 @@ describe('Task timestamps after autosave', () => {
             }, [], 'complete');
         });
     });
+
+    it('lets a repeated event reference the stored files when the status lookup after the upload failed', async () => {
+        const layout = generateElementWithDefaultValues(ElementType.GroupLayout) as GroupLayout;
+        layout.children = [{...generateElementWithDefaultValues(ElementType.FileUpload), id: 'upload'}];
+        const uploadedFile = {name: 'nachweis.pdf', size: 3, uri: 'blob:nachweis'};
+        const storedFile = {name: 'nachweis.pdf', size: 3, uri: 'process-instance-attachment:stored'};
+        const {putView} = await renderPage(ProcessTaskStatus.InProgress, {
+            layout,
+            data: {upload: literalAuthoredValue([uploadedFile])},
+            events: [{label: 'Abschließen', event: 'complete'}],
+        });
+        vi.spyOn(ProcessInstanceTaskApiService.prototype, 'deriveStaffTaskView')
+            .mockResolvedValue(createDerivedRuntimeElementData());
+        putView.mockImplementation(async (_, __, data) => ({
+            layout,
+            data: {...data, upload: literalAuthoredValue([storedFile])},
+            events: [],
+            removableAttachmentKeys: ['stored'],
+        }));
+        vi.spyOn(ProcessInstanceTaskApiService.prototype, 'retrieve')
+            .mockRejectedValueOnce(new Error('Status lookup failed'))
+            .mockResolvedValue({status: ProcessTaskStatus.InProgress} as never);
+
+        for (let i = 0; i < 2; i++) {
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', {name: 'Abschließen'}));
+                await vi.advanceTimersByTimeAsync(0);
+            });
+        }
+
+        expect(putView).toHaveBeenCalledTimes(2);
+        expect(putView).toHaveBeenNthCalledWith(1, 10, 20, {upload: literalAuthoredValue([uploadedFile])}, [uploadedFile], 'complete');
+        expect(putView).toHaveBeenNthCalledWith(2, 10, 20, {upload: literalAuthoredValue([storedFile])}, [], 'complete');
+    });
 });
