@@ -26,7 +26,7 @@ class TemplateValueFormatterTest {
                 TemplateValueFormatter.formatEscaped(TemplateOutputFormat.Markdown, VALUE)
         );
         assertEquals(
-                "<b>O'Brien</b> \\& Link (https://evil.example)\nZeile 2",
+                "<b>O'Brien</b> \\& Link ([https://evil.example](https://evil.example))\nZeile 2",
                 TemplateValueFormatter.formatRaw(TemplateOutputFormat.Markdown, VALUE)
         );
     }

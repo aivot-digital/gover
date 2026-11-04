@@ -74,7 +74,7 @@ public final class MarkdownRenderer {
             .extensions(EXTENSIONS)
             .customBlockParserFactory(new FootnoteDefinitionsAsText())
             // Runs after the autolink extension, which links URLs with any protocol.
-            .postProcessor(new DisallowedAutolinksAsText())
+            .postProcessor(new DisallowedLinksAsText(true))
             .build();
     private static final HtmlRenderer RENDERER = HtmlRenderer.builder()
             .extensions(EXTENSIONS)
@@ -102,7 +102,7 @@ public final class MarkdownRenderer {
             return "";
         }
 
-        return RENDERER.render(PARSER.parse(markdown));
+        return RENDERER.render(new DisallowedLinksAsText(false).process(PARSER.parse(markdown)));
     }
 
     /**
@@ -115,7 +115,12 @@ public final class MarkdownRenderer {
             return "";
         }
 
-        return TEXT_RENDERER.render(PARSER.parse(markdown)).strip();
+        return TEXT_RENDERER.render(new DisallowedLinksAsText(false).process(PARSER.parse(markdown))).strip();
+    }
+
+    /** Whether a link keeps this target when rendered. Other targets are not linked. */
+    static boolean isAllowedTarget(@Nonnull String target) {
+        return !URL_SANITIZER.sanitizeLinkUrl(target).isEmpty();
     }
 
     /** Whether the visible text of a link already is its target, as for bare web and e-mail addresses. */
@@ -141,10 +146,20 @@ public final class MarkdownRenderer {
     }
 
     /**
-     * Turns links that show their target back into text when that target has a protocol that is not allowed, such as
-     * {@code file:///etc/passwd}. Sanitizing would otherwise render them as links with an empty target.
+     * Turns links into their text when their target is empty or has a protocol that is not allowed, such as
+     * {@code file:///etc/passwd}. Sanitizing would otherwise render them as links with an empty target, which open the
+     * current page.
+     *
+     * <p>While parsing, only links that show their target are changed. {@link MarkdownTemplateValues#revealLinkTargets}
+     * parses with the same parser and still has to see the other links to write their targets as text.</p>
      */
-    private static final class DisallowedAutolinksAsText extends AbstractVisitor implements PostProcessor {
+    private static final class DisallowedLinksAsText extends AbstractVisitor implements PostProcessor {
+        private final boolean onlyLinksShowingTheirTarget;
+
+        private DisallowedLinksAsText(boolean onlyLinksShowingTheirTarget) {
+            this.onlyLinksShowingTheirTarget = onlyLinksShowingTheirTarget;
+        }
+
         @Override
         public Node process(Node node) {
             node.accept(this);
@@ -154,7 +169,7 @@ public final class MarkdownRenderer {
         @Override
         public void visit(Link link) {
             var target = link.getDestination();
-            if (target.isEmpty() || !showsItsTarget(link) || !URL_SANITIZER.sanitizeLinkUrl(target).isEmpty()) {
+            if ((onlyLinksShowingTheirTarget && (target.isEmpty() || !showsItsTarget(link))) || isAllowedTarget(target)) {
                 return;
             }
 

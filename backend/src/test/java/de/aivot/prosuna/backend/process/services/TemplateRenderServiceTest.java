@@ -58,7 +58,7 @@ class TemplateRenderServiceTest {
 
         assertEquals(
                 "**Nachricht:** \\*\\*Danke\\*\\* für \\[meinen Antrag\\](https://evil.example)\nZeile 2\n\n"
-                        + "**Danke** für meinen Antrag (https://evil.example)\nZeile 2",
+                        + "**Danke** für meinen Antrag ([https://evil.example](https://evil.example))\nZeile 2",
                 result
         );
     }

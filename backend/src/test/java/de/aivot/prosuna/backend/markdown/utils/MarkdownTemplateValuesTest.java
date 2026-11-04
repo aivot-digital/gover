@@ -118,7 +118,7 @@ class MarkdownTemplateValuesTest {
         assertEquals("""
                 Sehr geehrte Damen und Herren,
 
-                bitte prüfen Sie meinen Antrag (https://evil.example).
+                bitte prüfen Sie meinen Antrag ([https://evil.example](https://evil.example)).
                 **Danke**""", markdown);
         assertTrue(MarkdownRenderer.renderHtml(markdown).contains(
                 "meinen Antrag (<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)"
@@ -149,7 +149,7 @@ class MarkdownTemplateValuesTest {
                 [portal]: https://evil.example""");
         var html = MarkdownRenderer.renderHtml("[Portal][portal]\n\n" + value + "\n\n[portal]: https://portal.example");
 
-        assertEquals("Mein Antrag (https://evil.example)", value);
+        assertEquals("Mein Antrag ([https://evil.example](https://evil.example))", value);
         assertTrue(html.contains("<a rel=\"nofollow\" href=\"https://portal.example\">Portal</a>"));
     }
 
@@ -159,10 +159,25 @@ class MarkdownTemplateValuesTest {
                 "[![Logo](https://example.org/logo.png)](https://evil.example) und [Text]()"
         );
 
-        assertEquals("![Logo](https://example.org/logo.png) (https://evil.example) und Text", markdown);
+        assertEquals("![Logo](https://example.org/logo.png) ([https://evil.example](https://evil.example)) und Text", markdown);
         assertEquals(
                 "<p>Logo (<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>) und Text</p>\n",
                 MarkdownRenderer.renderHtml(markdown)
+        );
+    }
+
+    @Test
+    void revealLinkTargetsKeepsAllowedTargetsClickableAndOtherTargetsAsText() {
+        var html = MarkdownRenderer.renderHtml(MarkdownTemplateValues.revealLinkTargets(
+                "[Mail](mailto:info@example.org) [Telefon](tel:+4912345) [SMS](sms:+4912345) [FTP](ftp://example.org/a)"
+        ));
+
+        assertEquals(
+                "<p>Mail (<a rel=\"nofollow\" href=\"mailto:info@example.org\">mailto:info@example.org</a>) "
+                        + "Telefon (<a rel=\"nofollow\" href=\"tel:+4912345\">tel:+4912345</a>) "
+                        + "SMS (<a rel=\"nofollow\" href=\"sms:+4912345\">sms:+4912345</a>) "
+                        + "FTP (ftp://example.org/a)</p>\n",
+                html
         );
     }
 

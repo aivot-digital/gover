@@ -118,6 +118,15 @@ class MarkdownRendererTest {
     }
 
     @Test
+    void writesLinksWithOtherProtocolsAsTheirTextInPlainText() {
+        // The HTML part shows only the text, so mail clients must not get an address to link in the text part either.
+        assertEquals(
+                "Siehe FTP und Mail (mailto:info@example.org)",
+                MarkdownRenderer.renderPlainText("Siehe [FTP](ftp://example.org/a) und [Mail](mailto:info@example.org)")
+        );
+    }
+
+    @Test
     void rendersMissingMarkdownAsEmptyPlainText() {
         assertEquals("", MarkdownRenderer.renderPlainText(null));
         assertEquals("", MarkdownRenderer.renderPlainText(""));

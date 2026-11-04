@@ -76,8 +76,9 @@ public final class MarkdownTemplateValues {
 
     /**
      * Keeps the Markdown formatting of a value, but writes the target of every link next to its text, for example
-     * {@code [Antrag](https://example.org)} becomes {@code Antrag (https://example.org)}. Links that already show
-     * their target, such as bare web addresses, stay links.
+     * {@code [Antrag](https://example.org)} becomes {@code Antrag (https://example.org)}. A target with an allowed
+     * protocol stays clickable as a link that shows it, a target with another protocol is written as text. Links that
+     * already show their target, such as bare web addresses, stay links.
      *
      * <p>Link reference definitions are removed as well. They apply to the whole document, so a value could otherwise
      * change the target of a reference link in the surrounding template.</p>
@@ -115,8 +116,16 @@ public final class MarkdownTemplateValues {
                 link.insertBefore(child);
                 child = next;
             }
-            if (!link.getDestination().isBlank()) {
-                link.insertBefore(new Text(" (" + link.getDestination() + ")"));
+            var target = link.getDestination();
+            if (MarkdownRenderer.isAllowedTarget(target)) {
+                // The target stays clickable as a link that shows it, like a bare web address.
+                var targetLink = new Link(target, null);
+                targetLink.appendChild(new Text(target));
+                link.insertBefore(new Text(" ("));
+                link.insertBefore(targetLink);
+                link.insertBefore(new Text(")"));
+            } else if (!target.isBlank()) {
+                link.insertBefore(new Text(" (" + target + ")"));
             }
             link.unlink();
         }

@@ -122,16 +122,16 @@
       "excludes": ["<img", "logo.png"]
     },
     {
-      "name": "removes script link targets",
+      "name": "keeps links with script targets as their text",
       "markdown": "[Klick](javascript:alert(1)) [Groß](JAVASCRIPT:alert(1)) [Leer](  javascript:alert(1))",
-      "contains": [">Klick</a>", ">Groß</a>", ">Leer</a>"],
-      "excludes": ["javascript:", "JAVASCRIPT:", "alert"]
+      "contains": ["<p>Klick Groß Leer</p>"],
+      "excludes": ["<a", "href", "javascript:", "JAVASCRIPT:", "alert"]
     },
     {
-      "name": "removes data, file and vbscript link targets",
-      "markdown": "[Daten](data:text/html;base64,PHNjcmlwdD4=) [Datei](file:///etc/passwd) [VB](vbscript:msgbox)",
-      "contains": [">Daten</a>", ">Datei</a>", ">VB</a>"],
-      "excludes": ["data:", "file:", "vbscript:", "passwd"]
+      "name": "keeps links with data, file, vbscript, ftp and empty targets as their text",
+      "markdown": "[Daten](data:text/html;base64,PHNjcmlwdD4=) [Datei](file:///etc/passwd) [VB](vbscript:msgbox) [FTP](ftp://example.org/a) [Leer]() [Referenz][1]\n\n[1]: ftp://example.org/b",
+      "contains": ["<p>Daten Datei VB FTP Leer Referenz</p>"],
+      "excludes": ["<a", "href", "data:", "file:", "vbscript:", "passwd", "ftp:"]
     },
     {
       "name": "keeps web, e-mail, phone and relative link targets",

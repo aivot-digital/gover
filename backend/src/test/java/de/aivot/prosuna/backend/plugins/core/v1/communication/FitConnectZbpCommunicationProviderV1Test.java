@@ -105,7 +105,7 @@ class FitConnectZbpCommunicationProviderV1Test {
 
         assertEquals(
                 "<p><strong>Hallo</strong> &lt;img src=x onerror=alert(1)&gt; "
-                        + "<a rel=\"nofollow\" href=\"\">Portal</a></p>",
+                        + "Portal</p>",
                 html
         );
     }

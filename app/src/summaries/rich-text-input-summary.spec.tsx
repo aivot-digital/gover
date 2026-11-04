@@ -53,9 +53,10 @@ describe('RichTextInputSummary', () => {
     it('shows the target of every link in the answer', () => {
         renderSummary('Bitte bestätigen Sie hier: [Zum Antrag](https://example.org/gefaelscht)\n[Datei](file:///etc/passwd)');
 
-        expect(screen.getByText(/Zum Antrag \(https:\/\/example\.org\/gefaelscht\)/)).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: 'https://example.org/gefaelscht'})).toHaveAttribute('href', 'https://example.org/gefaelscht');
+        expect(screen.queryByRole('link', {name: 'Zum Antrag'})).not.toBeInTheDocument();
         expect(screen.getByText(/Datei \(file:\/\/\/etc\/passwd\)/)).toBeInTheDocument();
-        expect(screen.queryByRole('link')).not.toBeInTheDocument();
+        expect(screen.getAllByRole('link')).toHaveLength(1);
     });
 
     it('keeps leading spaces that change the formatting, as in the PDF of the submission', () => {

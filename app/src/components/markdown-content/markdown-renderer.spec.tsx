@@ -48,10 +48,24 @@ describe('MarkdownRenderer', () => {
             />,
         );
 
-        expect(html).toContain('Bitte bestätigen Sie hier: Zum Antrag (https://example.org/gefaelscht)');
+        expect(html).toContain('Bitte bestätigen Sie hier: Zum Antrag (<a href="https://example.org/gefaelscht" target="_blank" rel="noopener noreferrer">https://example.org/gefaelscht</a>)');
         expect(html).toContain('Datei (file:///etc/passwd)');
-        expect(html).toContain('Referenz (https://example.org/referenz)');
-        expect(html).not.toContain('<a');
+        expect(html).toContain('Referenz (<a href="https://example.org/referenz" target="_blank" rel="noopener noreferrer">https://example.org/referenz</a>)');
+        expect(html).not.toContain('>Zum Antrag<');
+    });
+
+    it('keeps revealed targets with every allowed protocol clickable', () => {
+        const html = renderToStaticMarkup(
+            <MarkdownRenderer
+                markdown="[Mail](mailto:info@example.org) [Telefon](tel:+4912345) [SMS](sms:+4912345) [FTP](ftp://example.org/a)"
+                revealLinkTargets
+            />,
+        );
+
+        expect(html).toBe('<p>Mail (<a href="mailto:info@example.org">mailto:info@example.org</a>) '
+            + 'Telefon (<a href="tel:+4912345">tel:+4912345</a>) '
+            + 'SMS (<a href="sms:+4912345">sms:+4912345</a>) '
+            + 'FTP (ftp://example.org/a)</p>');
     });
 
     it('keeps links that show their target when revealing link targets', () => {

@@ -96,21 +96,33 @@ function rewriteLinks(parent: Parent, definitions: Map<string, string>, revealTa
         }
 
         const target = child.type === 'link' ? child.url : definitions.get(child.identifier) ?? '';
+        const isAllowedTarget = sanitizeMarkdownUrl(target) !== '';
         if (showsItsTarget(child, target)) {
             // As in the backend, text instead of a link whose target the sanitizer would empty.
-            return target !== '' && sanitizeMarkdownUrl(target) === '' ? child.children : [child];
+            return target !== '' && !isAllowedTarget ? child.children : [child];
         }
         if (!revealTargets) {
-            return [child];
+            // Without an allowed target, the link would open the current page.
+            return isAllowedTarget ? [child] : child.children;
+        }
+        if (isAllowedTarget) {
+            // As in the backend, the target stays clickable as a link that shows it.
+            return [
+                ...child.children,
+                {type: 'text', value: ' ('},
+                {type: 'link', url: target, children: [{type: 'text', value: target}]},
+                {type: 'text', value: ')'},
+            ];
         }
         return target === '' ? child.children : [...child.children, {type: 'text', value: ` (${target})`}];
     });
 }
 
 /**
- * Keeps URLs with a protocol that is not allowed as text when they would be linked as their own text. With
- * `revealTargets`, every other link becomes its text followed by its target, as `MarkdownTemplateValues.revealLinkTargets`
- * does in the backend for formatted template values.
+ * Turns links with an empty target or a protocol that is not allowed into their text, as the backend does. With
+ * `revealTargets`, every link that does not show its target becomes its text followed by its target, as
+ * `MarkdownTemplateValues.revealLinkTargets` does in the backend for formatted template values. An allowed target stays
+ * clickable there, another one is text.
  */
 function remarkLinkTargets({revealTargets}: {revealTargets: boolean}) {
     return (tree: Root) => {

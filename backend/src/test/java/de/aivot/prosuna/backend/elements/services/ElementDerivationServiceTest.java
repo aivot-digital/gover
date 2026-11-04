@@ -392,7 +392,7 @@ class ElementDerivationServiceTest {
 
         assertFalse(result.hasAnyError());
         for (var fieldId : List.of("variable", "noCode", "lowCode")) {
-            assertEquals("**Danke** für Antrag (https://evil.example)", result.getEffectiveValues().get(fieldId));
+            assertEquals("**Danke** für Antrag ([https://evil.example](https://evil.example))", result.getEffectiveValues().get(fieldId));
         }
     }
 
@@ -444,7 +444,7 @@ class ElementDerivationServiceTest {
         assertEquals("Danke für Antrag (https://evil.example) 5 * 3 < 4", result.getEffectiveValues().get("subject"));
         // Markdown fields keep the formatting and only reveal link targets, as with {! !}.
         var message = (String) result.getEffectiveValues().get("message");
-        assertTrue(message.startsWith("**Danke** für Antrag (https://evil.example)"), message);
+        assertTrue(message.startsWith("**Danke** für Antrag ([https://evil.example](https://evil.example))"), message);
         // A reference without the Markdown flag inserts the value as it is stored.
         assertEquals(stored, result.getEffectiveValues().get("unmarked"));
     }
