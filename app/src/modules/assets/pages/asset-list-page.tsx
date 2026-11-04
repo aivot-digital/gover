@@ -395,38 +395,34 @@ export function AssetListPage() {
                         return;
                     }
 
-                    confirm({
-                        confirmButtonColor: 'error',
-                        title: `Ordner ${item.filename} löschen`,
-                        children: (
-                            <Typography>
-                                Soll der Ordner <strong>{item.filename}</strong> wirklich gelöscht werden?
-                                Alle darin enthaltenen Dateien und Unterordner werden ebenfalls gelöscht und
-                                können nicht wiederhergestellt werden.
-                                Dies kann nicht rückgängig gemacht werden.
-                            </Typography>
-                        ),
-                        confirmationText: item.filename,
-                        confirmButtonText: 'Löschen',
-                    })
-                        .then((confirmed) => {
-                            if (!confirmed) {
-                                return;
-                            }
-
-                            return new AssetsApiService(api)
-                                .deleteFolder(
-                                    providerId,
-                                    AssetsApiService.normalizeFolderPath(item.pathFromRoot),
-                                );
-                        })
-                        .then(() => {
-                            dispatch(showSuccessSnackbar('Ordner erfolgreich gelöscht.'));
-                            handleListRefresh();
-                        })
-                        .catch((err) => {
-                            dispatch(showApiErrorSnackbar(err, 'Der Ordner konnte nicht gelöscht werden.'));
+                    try {
+                        const confirmed = await confirm({
+                            isDestructive: true,
+                            title: `Ordner ${item.filename} löschen`,
+                            children: (
+                                <Typography>
+                                    Soll der Ordner <strong>{item.filename}</strong> wirklich gelöscht werden?
+                                    Alle darin enthaltenen Dateien und Unterordner werden ebenfalls gelöscht und
+                                    können nicht wiederhergestellt werden.
+                                    Dies kann nicht rückgängig gemacht werden.
+                                </Typography>
+                            ),
+                            confirmationText: item.filename,
+                            confirmButtonText: 'Löschen',
                         });
+                        if (!confirmed) {
+                            return;
+                        }
+
+                        await new AssetsApiService(api).deleteFolder(
+                            providerId,
+                            AssetsApiService.normalizeFolderPath(item.pathFromRoot),
+                        );
+                        dispatch(showSuccessSnackbar('Ordner erfolgreich gelöscht.'));
+                        handleListRefresh();
+                    } catch (err) {
+                        dispatch(showApiErrorSnackbar(err, 'Der Ordner konnte nicht gelöscht werden.'));
+                    }
                 },
             },
         ];
