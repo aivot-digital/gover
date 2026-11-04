@@ -1670,7 +1670,7 @@ export function ProcessDetailsPage(): ReactNode {
         }
 
         confirm({
-            confirmButtonColor: 'error',
+            isDestructive: true,
             title: 'Testanspruch löschen',
             children: (
                 <Typography>

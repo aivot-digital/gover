@@ -264,7 +264,7 @@ export function UserDetailsPageDepartmentMemberships() {
         }
 
         confirm({
-            confirmButtonColor: 'error',
+            isDestructive: true,
             title: 'Mitgliedschaft löschen',
             children: (
                 <>

@@ -333,6 +333,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
         const shouldDiscard = await confirm({
             confirmButtonColor: 'error',
+            confirmButtonText: 'Änderungen verwerfen',
             title: 'Ungespeicherte Änderungen',
             children: (
                 <Typography>
@@ -355,7 +356,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         }
 
         confirm({
-            confirmButtonColor: 'error',
+            isDestructive: true,
             title: 'Element wirklich löschen',
             children: (
                 <Typography>

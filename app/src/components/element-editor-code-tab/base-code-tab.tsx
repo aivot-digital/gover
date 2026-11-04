@@ -217,7 +217,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                 </DialogContent>
             </Dialog>
             <ConfirmDialog
-                confirmButtonColor="error"
+                isDestructive
                 title="Funktion löschen"
                 onConfirm={confirmDelete}
                 onCancel={() => {

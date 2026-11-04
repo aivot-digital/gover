@@ -287,7 +287,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             isDangerous: true,
             onClick: () => {
                 void confirm({
-                    confirmButtonColor: 'error',
+                    isDestructive: true,
                     title: 'Prozesselement löschen',
                     children: (
                         <Typography>

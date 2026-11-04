@@ -296,7 +296,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
             </FormFieldGroup>
 
             <ConfirmDialog
-                confirmButtonColor="error"
+                isDestructive
                 title="Möchten Sie diesen Datensatz wirklich löschen?"
                 onConfirm={confirmDelete}
                 onCancel={() => setConfirmDelete(undefined)}

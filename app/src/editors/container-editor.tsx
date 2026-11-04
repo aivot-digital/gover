@@ -143,6 +143,7 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout>) {
             </Paper>
             <ConfirmDialog
                 confirmButtonColor="error"
+                confirmButtonText="Verknüpfung auflösen"
                 title="Verknüpfung auflösen"
                 onConfirm={confirmRemoveMarketplace}
                 onCancel={() => {

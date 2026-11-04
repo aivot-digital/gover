@@ -133,7 +133,7 @@ export function DepartmentsDetailsPageMembers() {
                 icon: <Delete/>,
                 onClick: () => {
                     showConfirm({
-                        confirmButtonColor: 'error',
+                        isDestructive: true,
                         title: 'Mitarbeiter:in entfernen',
                         children: (
                             <>

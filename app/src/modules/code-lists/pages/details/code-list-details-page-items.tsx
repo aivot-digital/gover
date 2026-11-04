@@ -167,7 +167,7 @@ export function CodeListDetailsPageItems() {
         }
 
         showConfirm({
-            confirmButtonColor: 'error',
+            isDestructive: true,
             title: 'Eintrag löschen',
             children: (
                 <Typography>

@@ -837,7 +837,7 @@ export function FormNodeEditorPage() {
         }
 
         confirm({
-            confirmButtonColor: 'error',
+            isDestructive: true,
             title: 'Element wirklich löschen',
             children: (
                 <Typography>

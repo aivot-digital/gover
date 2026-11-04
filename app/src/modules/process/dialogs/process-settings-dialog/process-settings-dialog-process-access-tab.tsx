@@ -223,7 +223,7 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
         }
 
         const confirmed = await confirm({
-            confirmButtonColor: 'error',
+            isDestructive: true,
             title: 'Berechtigung entfernen',
             confirmButtonText: 'Entfernen',
             children: (

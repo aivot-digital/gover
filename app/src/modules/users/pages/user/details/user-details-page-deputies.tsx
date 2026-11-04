@@ -274,7 +274,7 @@ export function UserDetailsPageDeputies() {
         }
 
         confirm({
-            confirmButtonColor: 'error',
+            isDestructive: true,
             title: 'Stellvertreter:in löschen',
             children: (
                 <>
