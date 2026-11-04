@@ -1,5 +1,5 @@
-import {render, screen} from '@testing-library/react';
-import {describe, expect, it} from 'vitest';
+import {fireEvent, render, screen} from '@testing-library/react';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {createDerivedRuntimeElementData} from '../models/element-data';
 import {type RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
@@ -37,6 +37,16 @@ function renderSummary(value: string | null) {
     );
 }
 
+/** jsdom does not lay out content, so the collapsed answer reports the given heights. */
+function mockAnswerHeight(scrollHeight: number, clientHeight: number) {
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(scrollHeight);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(clientHeight);
+}
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
+
 describe('RichTextInputSummary', () => {
     it('shows the answer formatted like the PDF of the submission', () => {
         renderSummary('## Anliegen\n\nBitte **prüfen** Sie:\n\n- [Antrag](https://example.org/antrag)\n- <u>Anlage</u>');
@@ -64,6 +74,41 @@ describe('RichTextInputSummary', () => {
 
         expect(screen.getByText('**wörtlich**').closest('pre')).toBeInTheDocument();
         expect(screen.queryByText('wörtlich')).not.toBeInTheDocument();
+    });
+
+    it('collapses long answers and shows them completely on request', () => {
+        mockAnswerHeight(300, 100);
+        renderSummary('Erster Absatz\n\nZweiter Absatz');
+
+        const toggle = screen.getByRole('button', {name: 'Text vollständig anzeigen'});
+        const answer = document.getElementById(toggle.getAttribute('aria-controls')!);
+        expect(answer).toHaveTextContent('Erster Absatz');
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+        fireEvent.click(toggle);
+
+        expect(screen.getByRole('button', {name: 'Weniger anzeigen'})).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('shows short answers without a toggle', () => {
+        mockAnswerHeight(100, 100);
+        renderSummary('Kurze Antwort');
+
+        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('expands the answer when a hidden link receives keyboard focus', () => {
+        mockAnswerHeight(300, 100);
+        renderSummary('Erster Absatz\n\nSiehe https://example.org');
+        const toggle = screen.getByRole('button', {name: 'Text vollständig anzeigen'});
+        const answer = document.getElementById(toggle.getAttribute('aria-controls')!)!;
+        const link = screen.getByRole('link', {name: 'https://example.org'});
+        vi.spyOn(answer, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 400, 100));
+        vi.spyOn(link, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 200, 100, 20));
+
+        fireEvent.focus(link);
+
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
     });
 
     it.each([null, '', ' \n '])('shows that no answer was given: %j', (value) => {
