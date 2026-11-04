@@ -66,10 +66,17 @@ public class ProcessInstanceAttachmentEntity {
 
     /**
      * When the upload field of a task view stopped referencing this attachment. Flagged attachments are hidden from
-     * lists, process data and steps, and they are deleted when their task ends.
+     * lists, process data and steps, and they are due for deletion when their task ends.
      */
     @Nullable
     private Instant removedAt;
+
+    /**
+     * When the task of this flagged attachment ended. The row is kept until its file is deleted from storage, so a
+     * failed deletion can be retried; a due attachment is never restored.
+     */
+    @Nullable
+    private Instant deletionDueAt;
 
     /**
      * Ignore this field in database mapping and JSON serialization. This is only used when creating the file and saving it to the database.
@@ -278,6 +285,16 @@ public class ProcessInstanceAttachmentEntity {
 
     public ProcessInstanceAttachmentEntity setRemovedAt(@Nullable Instant removedAt) {
         this.removedAt = removedAt;
+        return this;
+    }
+
+    @Nullable
+    public Instant getDeletionDueAt() {
+        return deletionDueAt;
+    }
+
+    public ProcessInstanceAttachmentEntity setDeletionDueAt(@Nullable Instant deletionDueAt) {
+        this.deletionDueAt = deletionDueAt;
         return this;
     }
 

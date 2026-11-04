@@ -1,11 +1,15 @@
 package de.aivot.prosuna.backend.process.repositories;
 
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ProcessInstanceAttachmentRepository extends JpaRepository<ProcessInstanceAttachmentEntity, UUID>, JpaSpecificationExecutor<ProcessInstanceAttachmentEntity> {
@@ -21,7 +25,13 @@ public interface ProcessInstanceAttachmentRepository extends JpaRepository<Proce
     List<ProcessInstanceAttachmentEntity> findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(Long processInstanceTaskId,
                                                                                             Collection<Integer> attachmentSetIds);
 
-    List<ProcessInstanceAttachmentEntity> findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(Long processInstanceTaskId);
+    List<ProcessInstanceAttachmentEntity> findAllByProcessInstanceTaskIdAndRemovedAtIsNotNullAndDeletionDueAtIsNull(Long processInstanceTaskId);
+
+    List<ProcessInstanceAttachmentEntity> findTop100ByDeletionDueAtLessThanOrderByDeletionDueAtAsc(Instant deletionDueBefore);
+
+    /** Locks a due attachment, so only one run deletes its file. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<ProcessInstanceAttachmentEntity> findByKeyAndDeletionDueAtIsNotNull(UUID key);
 
     boolean existsByAttachmentSetId(Integer attachmentSetId);
 }

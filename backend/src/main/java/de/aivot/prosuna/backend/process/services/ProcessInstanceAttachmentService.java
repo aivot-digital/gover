@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -32,6 +33,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -41,12 +43,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ProcessInstanceAttachmentService implements ReadEntityService<ProcessInstanceAttachmentEntity, UUID>,
         CreateEntityService<ProcessInstanceAttachmentEntity>,
         DeleteEntityService<ProcessInstanceAttachmentEntity, UUID> {
     private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceAttachmentService.class);
+    private static final Duration DELETION_RETRY_DELAY = Duration.ofMinutes(5);
 
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
     @Nullable
@@ -267,6 +271,11 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
         var attachments = processInstanceAttachmentRepository
                 .findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(processInstanceTaskId, attachmentSetIds);
         for (var attachment : attachments) {
+            // A restarted task may run again, but the attachments due for deletion stay deleted.
+            if (attachment.getDeletionDueAt() != null) {
+                continue;
+            }
+
             var removedAt = referencedAttachmentKeys.contains(attachment.getKey())
                     ? null
                     : Objects.requireNonNullElse(attachment.getRemovedAt(), now);
@@ -283,70 +292,85 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
      * sets that no attachment is left in. Attachments of other tasks are never flagged, so documents that were
      * submitted before stay in the instance.
      * <p>
-     * The files are deleted from their storage provider only after the transaction commits, so a rollback keeps both
-     * the attachments and their files.
+     * The attachments are only marked as due for deletion in the current transaction, so a rollback keeps them. Their
+     * rows and files are deleted after the commit, and {@link #retryOverdueAttachmentDeletions} retries deletions that
+     * failed or never ran, e.g. because the storage provider was unavailable or the application stopped.
      *
      * @param userId the user who ended the task, or {@code null} if the system ended it
      */
     public void deleteRemovedUploadsOfTask(@Nonnull ProcessInstanceTaskEntity task,
                                            @Nullable String userId) {
         var removedAttachments = processInstanceAttachmentRepository
-                .findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(task.getId());
+                .findAllByProcessInstanceTaskIdAndRemovedAtIsNotNullAndDeletionDueAtIsNull(task.getId());
         if (removedAttachments.isEmpty()) {
             return;
         }
 
-        // The storage index still has a foreign key from these rows; flush their deletion first.
-        processInstanceAttachmentRepository.deleteAll(removedAttachments);
-        processInstanceAttachmentRepository.flush();
-
-        var attachmentSetIds = removedAttachments
-                .stream()
-                .map(ProcessInstanceAttachmentEntity::getAttachmentSetId)
-                .distinct()
-                .toList();
-        for (var attachmentSetId : attachmentSetIds) {
-            if (!processInstanceAttachmentRepository.existsByAttachmentSetId(attachmentSetId)) {
-                Objects.requireNonNull(processInstanceAttachmentSetRepository).deleteById(attachmentSetId);
-            }
-        }
-
+        var now = Instant.now();
         for (var attachment : removedAttachments) {
+            processInstanceAttachmentRepository.save(attachment.setDeletionDueAt(now));
             logAttachmentDeletionEvent(attachment, userId);
         }
 
+        var keys = removedAttachments
+                .stream()
+                .map(ProcessInstanceAttachmentEntity::getKey)
+                .toList();
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    deleteStoredDocuments(removedAttachments);
+                    keys.forEach(ProcessInstanceAttachmentService.this::deleteDueAttachment);
                 }
             });
         } else {
-            deleteStoredDocuments(removedAttachments);
+            keys.forEach(this::deleteDueAttachment);
         }
     }
 
-    private void deleteStoredDocuments(@Nonnull List<ProcessInstanceAttachmentEntity> attachments) {
-        for (var attachment : attachments) {
-            try {
-                Objects.requireNonNull(fileDeletionTransaction).executeWithoutResult(status -> {
-                    try {
-                        storageService.deleteDocument(attachment.getStorageProviderId(), attachment.getStoragePathFromRoot());
-                    } catch (ResponseException e) {
-                        throw new IllegalStateException(e);
-                    }
-                });
-            } catch (RuntimeException e) {
-                // The attachment is already deleted, so only its file remains in the storage provider.
-                logger.warn(
-                        "Failed to delete the file {} of the removed attachment {} from storage provider {}",
-                        attachment.getStoragePathFromRoot(),
-                        attachment.getKey(),
-                        attachment.getStorageProviderId(),
-                        e
-                );
-            }
+    /**
+     * Retries the deletion of due attachments whose deletion failed or never ran after the commit.
+     */
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+    public void retryOverdueAttachmentDeletions() {
+        // Recently due attachments are still being deleted after their commit.
+        processInstanceAttachmentRepository
+                .findTop100ByDeletionDueAtLessThanOrderByDeletionDueAtAsc(Instant.now().minus(DELETION_RETRY_DELAY))
+                .forEach(attachment -> deleteDueAttachment(attachment.getKey()));
+    }
+
+    /**
+     * Deletes a due attachment, its file and its attachment set once it is empty in a new transaction. If the file
+     * cannot be deleted, the transaction rolls back and the attachment stays due for the next retry.
+     */
+    private void deleteDueAttachment(@Nonnull UUID attachmentKey) {
+        try {
+            Objects.requireNonNull(fileDeletionTransaction).executeWithoutResult(status -> {
+                // Absent if the instance or another run deleted it in the meantime.
+                var attachment = processInstanceAttachmentRepository
+                        .findByKeyAndDeletionDueAtIsNotNull(attachmentKey)
+                        .orElse(null);
+                if (attachment == null) {
+                    return;
+                }
+
+                // The storage index still has a foreign key from this row; flush its deletion first.
+                processInstanceAttachmentRepository.delete(attachment);
+                processInstanceAttachmentRepository.flush();
+
+                try {
+                    storageService.deleteDocument(attachment.getStorageProviderId(), attachment.getStoragePathFromRoot());
+                } catch (ResponseException e) {
+                    throw new IllegalStateException(e);
+                }
+
+                var attachmentSetId = attachment.getAttachmentSetId();
+                if (!processInstanceAttachmentRepository.existsByAttachmentSetId(attachmentSetId)) {
+                    Objects.requireNonNull(processInstanceAttachmentSetRepository).deleteById(attachmentSetId);
+                }
+            });
+        } catch (RuntimeException e) {
+            logger.warn("Failed to delete the removed attachment {}. The deletion is retried later.", attachmentKey, e);
         }
     }
 

@@ -15,6 +15,7 @@ import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.test.context.ContextConfiguration;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +32,7 @@ class ProcessInstanceAttachmentRepositoryTest {
     private static final UUID SECOND = key(2);
     private static final UUID REMOVED = key(3);
     private static final UUID OTHER_TASK = key(4);
+    private static final UUID DUE = key(5);
 
     @Autowired
     private EntityManager em;
@@ -44,17 +46,19 @@ class ProcessInstanceAttachmentRepositoryTest {
                     key uuid primary key, file_name varchar(255), original_file_name varchar(255), "group" text,
                     position int, attachment_set_id int, process_instance_id bigint, process_instance_task_id bigint,
                     storage_provider_id int, storage_path_from_root text, uploaded_by_user_id varchar(36),
-                    removed_at timestamp with time zone
+                    removed_at timestamp with time zone, deletion_due_at timestamp with time zone
                 )
                 """);
-        // Set 3 of task 9 holds two referenced uploads and one removed upload; set 4 belongs to task 8.
+        // Set 3 of task 9 holds two referenced uploads and one removed upload; set 4 belongs to task 8, whose removed
+        // upload is due for deletion.
         sql("""
                 insert into process_instance_attachments values
-                    ('%s', 'b.pdf', 'b.pdf', null, 2, 3, 42, 9, 5, '/b.pdf', null, null),
-                    ('%s', 'a.pdf', 'a.pdf', null, 1, 3, 42, 9, 5, '/a.pdf', null, null),
-                    ('%s', 'c.pdf', 'c.pdf', null, 3, 3, 42, 9, 5, '/c.pdf', null, '2026-10-28 08:00:00+00'),
-                    ('%s', 'd.pdf', 'd.pdf', null, 1, 4, 42, 8, 5, '/d.pdf', null, null)
-                """.formatted(SECOND, FIRST, REMOVED, OTHER_TASK));
+                    ('%s', 'b.pdf', 'b.pdf', null, 2, 3, 42, 9, 5, '/b.pdf', null, null, null),
+                    ('%s', 'a.pdf', 'a.pdf', null, 1, 3, 42, 9, 5, '/a.pdf', null, null, null),
+                    ('%s', 'c.pdf', 'c.pdf', null, 3, 3, 42, 9, 5, '/c.pdf', null, '2026-10-28 08:00:00+00', null),
+                    ('%s', 'd.pdf', 'd.pdf', null, 1, 4, 42, 8, 5, '/d.pdf', null, null, null),
+                    ('%s', 'e.pdf', 'e.pdf', null, 2, 4, 42, 8, 5, '/e.pdf', null, '2026-10-28 08:00:00+00', '2026-10-28 09:00:00+00')
+                """.formatted(SECOND, FIRST, REMOVED, OTHER_TASK, DUE));
         attachments = new JpaRepositoryFactory(em).getRepository(ProcessInstanceAttachmentRepository.class);
     }
 
@@ -66,7 +70,7 @@ class ProcessInstanceAttachmentRepositoryTest {
     @Test
     void processInstanceReadsLeaveOutRemovedUploadsUnlessAllRowsAreNeeded() {
         assertEquals(3, attachments.findAllByProcessInstanceIdAndRemovedAtIsNull(42L).size());
-        assertEquals(4, attachments.findAllByProcessInstanceId(42L).size());
+        assertEquals(5, attachments.findAllByProcessInstanceId(42L).size());
     }
 
     @Test
@@ -74,15 +78,25 @@ class ProcessInstanceAttachmentRepositoryTest {
         var listed = attachments.findAll(ProcessInstanceAttachmentFilter.create().setProcessInstanceId(42L).build());
 
         assertFalse(keys(listed).contains(REMOVED));
+        assertFalse(keys(listed).contains(DUE));
         assertEquals(3, listed.size());
     }
 
     @Test
     void taskReadsFindTheRemovedAndAllUploadsOfTheTask() {
-        assertEquals(List.of(REMOVED), keys(attachments.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)));
+        assertEquals(List.of(REMOVED), keys(attachments.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNullAndDeletionDueAtIsNull(9L)));
+        assertEquals(List.of(), keys(attachments.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNullAndDeletionDueAtIsNull(8L)));
         assertEquals(3, attachments.findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(9L, List.of(3, 4)).size());
         assertTrue(attachments.existsByAttachmentSetId(4));
         assertFalse(attachments.existsByAttachmentSetId(5));
+    }
+
+    @Test
+    void deletionReadsFindOnlyAttachmentsDueForDeletion() {
+        assertEquals(List.of(DUE), keys(attachments.findTop100ByDeletionDueAtLessThanOrderByDeletionDueAtAsc(Instant.parse("2026-10-28T10:00:00Z"))));
+        assertEquals(List.of(), keys(attachments.findTop100ByDeletionDueAtLessThanOrderByDeletionDueAtAsc(Instant.parse("2026-10-28T09:00:00Z"))));
+        assertTrue(attachments.findByKeyAndDeletionDueAtIsNotNull(DUE).isPresent());
+        assertTrue(attachments.findByKeyAndDeletionDueAtIsNotNull(REMOVED).isEmpty());
     }
 
     private static List<UUID> keys(List<ProcessInstanceAttachmentEntity> entities) {

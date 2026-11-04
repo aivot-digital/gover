@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.config.entities.SystemConfigEntity;
 import de.aivot.prosuna.backend.config.repositories.SystemConfigRepository;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -47,9 +48,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -258,22 +261,40 @@ class ProcessInstanceAttachmentServiceTest {
     }
 
     @Test
-    void deleteRemovedUploadsOfTask_DeletesFilesOnlyAfterCommit() throws Exception {
+    void updateRemovedUploadsOfTask_NeverRestoresUploadsDueForDeletion() {
+        var due = uploadedAttachment(1, 1)
+                .setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"))
+                .setDeletionDueAt(Instant.parse("2026-10-28T09:00:00Z"));
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(9L, List.of(3)))
+                .thenReturn(List.of(due));
+
+        service.updateRemovedUploadsOfTask(9L, List.of(3), Set.of(due.getKey()), Map.of(due.getKey(), 1));
+
+        verify(attachmentRepository, never()).save(any());
+        assertNotNull(due.getRemovedAt());
+    }
+
+    @Test
+    void deleteRemovedUploadsOfTask_MarksUploadsDueAndDeletesThemOnlyAfterCommit() throws Exception {
         var removed = uploadedAttachment(1, 1).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
-        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of(removed));
+        mockRemovedUploads(removed);
         when(attachmentRepository.existsByAttachmentSetId(3)).thenReturn(false);
 
         var synchronizations = deleteRemovedUploadsInTransaction("staff-user");
 
-        var order = inOrder(attachmentRepository, attachmentSetRepository);
-        order.verify(attachmentRepository).deleteAll(List.of(removed));
-        order.verify(attachmentRepository).flush();
-        order.verify(attachmentSetRepository).deleteById(3);
-        verifyNoInteractions(storageService);
+        verify(attachmentRepository).save(removed);
+        assertNotNull(removed.getDeletionDueAt());
+        verify(attachmentRepository, never()).delete(any(ProcessInstanceAttachmentEntity.class));
+        verifyNoInteractions(storageService, attachmentSetRepository);
 
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
-        verify(storageService).deleteDocument(5, "/proc-7/42/attachments/uploaded-1.pdf");
+        var order = inOrder(attachmentRepository, storageService, attachmentSetRepository, transactionManager);
+        order.verify(attachmentRepository).delete(removed);
+        order.verify(attachmentRepository).flush();
+        order.verify(storageService).deleteDocument(5, "/proc-7/42/attachments/uploaded-1.pdf");
+        order.verify(attachmentSetRepository).deleteById(3);
+        order.verify(transactionManager).commit(any());
         verify(transactionManager).getTransaction(argThat(definition ->
                 definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW));
     }
@@ -281,30 +302,84 @@ class ProcessInstanceAttachmentServiceTest {
     @Test
     void deleteRemovedUploadsOfTask_KeepsFilesWhenTheTransactionRollsBack() {
         var removed = uploadedAttachment(1, 1).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
-        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of(removed));
+        mockRemovedUploads(removed);
 
         var synchronizations = deleteRemovedUploadsInTransaction("staff-user");
         synchronizations.forEach(synchronization ->
                 synchronization.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
 
         verifyNoInteractions(storageService);
+        verify(attachmentRepository, never()).delete(any(ProcessInstanceAttachmentEntity.class));
     }
 
     @Test
     void deleteRemovedUploadsOfTask_KeepsAttachmentSetsWithRemainingAttachments() {
         var removed = uploadedAttachment(1, 1).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
-        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of(removed));
+        mockRemovedUploads(removed);
         when(attachmentRepository.existsByAttachmentSetId(3)).thenReturn(true);
 
-        deleteRemovedUploadsInTransaction(null);
+        deleteRemovedUploadsInTransaction(null).forEach(TransactionSynchronization::afterCommit);
 
+        verify(attachmentRepository).delete(removed);
         verify(attachmentSetRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteRemovedUploadsOfTask_KeepsTheAttachmentDueWhenStorageFailsAndTheRetryDeletesIt() throws Exception {
+        var removed = uploadedAttachment(1, 1).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
+        mockRemovedUploads(removed);
+        when(attachmentRepository.existsByAttachmentSetId(3)).thenReturn(false);
+        doThrow(ResponseException.internalServerError("Storage unavailable"))
+                .doNothing()
+                .when(storageService).deleteDocument(5, "/proc-7/42/attachments/uploaded-1.pdf");
+
+        deleteRemovedUploadsInTransaction("staff-user").forEach(TransactionSynchronization::afterCommit);
+
+        // The deletion of the row rolls back with the failed file deletion, so the attachment stays due.
+        verify(transactionManager).rollback(any());
+        verify(transactionManager, never()).commit(any());
+        verify(attachmentSetRepository, never()).deleteById(any());
+        assertNotNull(removed.getDeletionDueAt());
+
+        // The retry finds the attachment in the database, without the callback of the ended task.
+        when(attachmentRepository.findTop100ByDeletionDueAtLessThanOrderByDeletionDueAtAsc(any()))
+                .thenReturn(List.of(removed));
+        service.retryOverdueAttachmentDeletions();
+
+        verify(storageService, times(2)).deleteDocument(5, "/proc-7/42/attachments/uploaded-1.pdf");
+        verify(transactionManager).commit(any());
+        verify(attachmentSetRepository).deleteById(3);
+    }
+
+    @Test
+    void retryOverdueAttachmentDeletions_OnlyRetriesDeletionsDueBeforeTheRetryDelay() {
+        when(attachmentRepository.findTop100ByDeletionDueAtLessThanOrderByDeletionDueAtAsc(any())).thenReturn(List.of());
+
+        var before = Instant.now();
+        service.retryOverdueAttachmentDeletions();
+        var after = Instant.now();
+
+        verify(attachmentRepository).findTop100ByDeletionDueAtLessThanOrderByDeletionDueAtAsc(argThat(dueBefore ->
+                !dueBefore.isBefore(before.minusSeconds(300)) && !dueBefore.isAfter(after.minusSeconds(300))));
+        verifyNoInteractions(storageService, transactionManager);
+    }
+
+    @Test
+    void retryOverdueAttachmentDeletions_SkipsAttachmentsThatAreNoLongerDue() {
+        var deleted = uploadedAttachment(1, 1).setDeletionDueAt(Instant.parse("2026-10-28T08:00:00Z"));
+        when(attachmentRepository.findTop100ByDeletionDueAtLessThanOrderByDeletionDueAtAsc(any())).thenReturn(List.of(deleted));
+        when(attachmentRepository.findByKeyAndDeletionDueAtIsNotNull(deleted.getKey())).thenReturn(Optional.empty());
+
+        service.retryOverdueAttachmentDeletions();
+
+        verify(attachmentRepository, never()).delete(any(ProcessInstanceAttachmentEntity.class));
+        verifyNoInteractions(storageService, attachmentSetRepository);
     }
 
     @Test
     void deleteRemovedUploadsOfTask_LogsDeletionEvent() {
         var removed = uploadedAttachment(1, 1).setRemovedAt(Instant.parse("2026-10-28T08:00:00Z"));
-        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of(removed));
+        mockRemovedUploads(removed);
 
         deleteRemovedUploadsInTransaction("staff-user");
 
@@ -327,12 +402,18 @@ class ProcessInstanceAttachmentServiceTest {
 
     @Test
     void deleteRemovedUploadsOfTask_DoesNothingWithoutRemovedUploads() {
-        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNull(9L)).thenReturn(List.of());
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNullAndDeletionDueAtIsNull(9L)).thenReturn(List.of());
 
         service.deleteRemovedUploadsOfTask(new ProcessInstanceTaskEntity().setId(9L), "staff-user");
 
-        verify(attachmentRepository, never()).deleteAll(any());
-        verifyNoInteractions(attachmentSetRepository, storageService, eventRepository);
+        verify(attachmentRepository, never()).save(any());
+        verifyNoInteractions(attachmentSetRepository, storageService, eventRepository, transactionManager);
+    }
+
+    private void mockRemovedUploads(ProcessInstanceAttachmentEntity removed) {
+        when(attachmentRepository.findAllByProcessInstanceTaskIdAndRemovedAtIsNotNullAndDeletionDueAtIsNull(9L))
+                .thenReturn(List.of(removed));
+        when(attachmentRepository.findByKeyAndDeletionDueAtIsNotNull(removed.getKey())).thenReturn(Optional.of(removed));
     }
 
     private List<TransactionSynchronization> deleteRemovedUploadsInTransaction(String userId) {
