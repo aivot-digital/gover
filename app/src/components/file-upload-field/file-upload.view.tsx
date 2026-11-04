@@ -180,6 +180,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                         ? `Hochgeladen als ${file.originalFileName}`
                         : undefined,
                     actionLabel,
+                    actionColor: isPersistedAttachment ? undefined : 'error',
                     actionIcon: isPersistedAttachment
                         ? <Download fontSize="small" />
                         : <Delete fontSize="small" />,

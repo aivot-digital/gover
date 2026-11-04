@@ -6,7 +6,7 @@ import React, {
     type ReactNode,
     type RefObject,
 } from 'react';
-import {alpha, Box, Button, IconButton, type SxProps, type Theme, Tooltip, Typography} from '@mui/material';
+import {alpha, Box, Button, IconButton, type IconButtonProps, type SxProps, type Theme, Tooltip, Typography} from '@mui/material';
 import UploadFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
 import {pluralize} from '../../utils/humanization-utils';
 import {getFileTypeIconForFile} from '../../utils/file-type-icon';
@@ -178,6 +178,7 @@ export interface FileUploadListItem {
     detail?: string;
     actionLabel: string;
     actionIcon: ReactNode;
+    actionColor?: IconButtonProps['color'];
     actionDisabled?: boolean;
     onAction: () => void;
 }
@@ -255,6 +256,7 @@ export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
                                 <IconButton
                                     size="small"
                                     aria-label={item.actionLabel}
+                                    color={item.actionColor}
                                     onClick={item.onAction}
                                     disabled={item.actionDisabled}
                                 >
