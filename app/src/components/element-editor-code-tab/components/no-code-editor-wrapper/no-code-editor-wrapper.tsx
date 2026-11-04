@@ -6,19 +6,9 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {flattenElementsWithParents} from '../../../../utils/flatten-elements';
 import {ElementType} from '../../../../data/element-type/element-type';
-import {Alert, AlertTitle, Box, CircularProgress, Typography} from '@mui/material';
+import {Box, CircularProgress, Typography} from '@mui/material';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
-import {
-    isNoCodeExpression,
-    isNoCodeReference,
-    NoCodeExpression,
-    NoCodeOperand,
-    NoCodeOperandError,
-} from '../../../../models/functions/no-code-expression';
-import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
-import {Collapse} from '../../../collapse/collapse';
-import {AuthoredElementValues, createDerivedRuntimeElementData} from '../../../../models/element-data';
-import {ElementDerivationContext} from '../../../../modules/elements/components/element-derivation-context';
+import {NoCodeOperand, NoCodeOperandError} from '../../../../models/functions/no-code-expression';
 import {OperandEditor} from '../expression-editor/operand-editor';
 import {FormLayoutElement as RootElement} from '../../../../models/elements/form-layout-element';
 import {StepElement} from '../../../../models/elements/steps/step-element';
@@ -29,6 +19,7 @@ import {
     NoCodeOperandEditor,
     NoCodeOperandEditorContextType,
 } from '../../../../modules/nocode/components/no-code-operand-editor';
+import {PillNoCodeEditor} from '../../../../modules/nocode/components/pill-no-code-editor';
 import {AnyElement} from '../../../../models/elements/any-element';
 
 interface NoCodeEditorWrapperProps {
@@ -45,6 +36,9 @@ interface NoCodeEditorWrapperProps {
 }
 
 const old_editor = localStorage.getItem('old_editor') != null;
+// Opt-in preview of the token-based editor; both editors read and write the same NoCodeOperand JSON.
+const pillNoCodeEditor = localStorage.getItem('pill-no-code') != null;
+const CurrentNoCodeEditor = pillNoCodeEditor ? PillNoCodeEditor : NoCodeOperandEditor;
 
 export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
     const {
@@ -64,15 +58,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
     const dispatch = useAppDispatch();
 
     const [operators, setOperators] = useState<NoCodeOperatorDetailsDTO[]>([]);
-    const [testPayload, setTestPayload] = useState<AuthoredElementValues>({});
-    const [testResult, setTestResult] = useState<{
-        expression: NoCodeExpression;
-        result: string;
-        error: boolean;
-    }>();
-
     const [isBusy, setIsBusy] = useState<boolean>(true);
-    const [isBusyTesting, setIsBusyTesting] = useState<boolean>(false);
 
     useEffect(() => {
         setIsBusy(true);
@@ -106,46 +92,6 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
 
         return allElements;
     }, [parent]);
-
-    const referencedElementIds = useMemo(() => {
-        if (noCode == null) {
-            return [];
-        }
-        return extractReferencedElementIds(noCode);
-    }, [noCode]);
-
-    const referencedElements = useMemo(() => {
-        return referencedElementIds
-            .map(id => allElements.find(e => e.element.id === id))
-            .filter(e => e != null);
-    }, [referencedElementIds, allElements]);
-
-
-    const handleTest = async (expression: NoCodeExpression) => {
-        setTestResult(undefined);
-        setIsBusyTesting(true);
-
-        const service = new NoCodeApiService(api);
-        try {
-            const result = await service.evaluateNoCode(expression, createDerivedRuntimeElementData({
-                effectiveValues: testPayload,
-                elementStates: {},
-            }));
-            setTestResult({
-                expression,
-                result: JSON.stringify(result.result, null, 2),
-                error: false,
-            });
-        } catch (e: any) {
-            setTestResult({
-                expression,
-                result: e.message,
-                error: true,
-            });
-        } finally {
-            setIsBusyTesting(false);
-        }
-    };
 
     return (
         <>
@@ -200,7 +146,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                                 opacity: editable ? 1 : 0.65,
                             }}
                         >
-                            <NoCodeOperandEditor
+                            <CurrentNoCodeEditor
                                 parameter={{
                                     label: label ?? '',
                                     description: hint ?? '',
@@ -217,77 +163,8 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                         </Box>
                     }
 
-                    {
-                        testResult != null && (
-                            <Alert
-                                severity={testResult.error ? 'error' : 'success'}
-                                sx={{
-                                    marginTop: 4,
-                                }}
-                                icon={<ScienceOutlinedIcon />}
-                                onClose={() => setTestResult(undefined)}
-                            >
-                                <AlertTitle>
-                                    Testergebnis
-                                </AlertTitle>
-
-                                {testResult.result}
-                            </Alert>
-                        )
-                    }
-
-                    {
-                        false &&
-                        referencedElements.length > 0 &&
-                        <Collapse
-                            label="Testdaten"
-                            openTooltip="Testdaten anzeigen"
-                            closeTooltip="Testdaten verbergen"
-                        >
-                            {
-                                referencedElements.map((element) => (
-                                    <ElementDerivationContext
-                                        key={element?.element.id}
-                                        element={element?.element}
-                                        authoredElementValues={testPayload}
-                                        onAuthoredElementValuesChange={(change) => {
-                                            setTestPayload({
-                                                ...testPayload,
-                                                ...change,
-                                            });
-                                        }}
-                                    />
-                                ))
-                            }
-                        </Collapse>
-                    }
                 </>
             )}
         </>
     );
-}
-
-function extractReferencedElementIds(op: NoCodeOperand): string[] {
-    const ids: string[] = [];
-
-    if (isNoCodeReference(op)) {
-        if (!ids.includes(op.elementId!)) {
-            ids.push(op.elementId!);
-        }
-    } else if (isNoCodeExpression(op) && op.operands != null) {
-        for (const c of op.operands) {
-            if (c == null) {
-                continue;
-            }
-
-            extractReferencedElementIds(c)
-                .forEach((id) => {
-                    if (!ids.includes(id)) {
-                        ids.push(id);
-                    }
-                });
-        }
-    }
-
-    return ids;
 }

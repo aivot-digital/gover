@@ -85,6 +85,17 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 """;
     }
 
+    /**
+     * All core operators are pure except those reading secrets or user accounts. New operators that use a service
+     * or repository must be excluded here as well.
+     */
+    @Override
+    public boolean supportsDryRun(@Nonnull NoCodeOperator operator) {
+        return !(operator instanceof NoCodeSecretsGetOperator
+                || operator instanceof NoCodeUserEmailOperator
+                || operator instanceof NoCodeUserFullNameOperator);
+    }
+
     @Override
     public NoCodeOperator[] getOperators() {
         return new NoCodeOperator[]{

@@ -17,7 +17,7 @@ export function SearchBaseDialog<T>(props: SearchBaseDialogProps<T>) {
             onClose={props.onClose}
             fullWidth={true}
             maxWidth="lg"
-            slotProps={{paper: {id: props.id}}}
+            slotProps={{paper: {id: props.id}, transition: {onExited: props.onExited}}}
         >
             <DialogTitleWithClose
                 onClose={props.onClose}

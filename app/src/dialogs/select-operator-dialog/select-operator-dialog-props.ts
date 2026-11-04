@@ -6,5 +6,7 @@ export interface SelectOperatorDialogProps {
     operators: NoCodeOperatorDetailsDTO[];
     onSelect: (operator: NoCodeOperatorDetailsDTO) => void;
     onClose: () => void;
+    /** Called once the dialog has finished closing. */
+    onExited?: () => void;
     desiredReturnType: NoCodeDataType;
 }

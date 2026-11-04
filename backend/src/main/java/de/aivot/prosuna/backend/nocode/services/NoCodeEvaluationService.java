@@ -1,7 +1,10 @@
 package de.aivot.prosuna.backend.nocode.services;
 
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.nocode.dtos.NoCodeDryRunResultDTO;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDryRunStatus;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
+import de.aivot.prosuna.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import de.aivot.prosuna.backend.nocode.models.*;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
@@ -14,8 +17,10 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This service evaluates no code expressions.
@@ -26,6 +31,7 @@ public class NoCodeEvaluationService {
     private static final Logger logger = LoggerFactory.getLogger(NoCodeEvaluationService.class);
 
     private final Map<String, NoCodeOperator> noCodeOperatorProviders;
+    private final Set<String> dryRunOperatorIdentifiers = new HashSet<>();
 
     @Autowired
     public NoCodeEvaluationService(List<NoCodeOperatorsProvider> noCodeOperatorProviders) {
@@ -45,6 +51,9 @@ public class NoCodeEvaluationService {
                             .log();
                 } else {
                     this.noCodeOperatorProviders.put(packageScopedOperatorIdentifier, operator);
+                    if (provider.supportsDryRun(operator)) {
+                        dryRunOperatorIdentifiers.add(packageScopedOperatorIdentifier);
+                    }
                 }
             }
         }
@@ -151,6 +160,72 @@ public class NoCodeEvaluationService {
             // Unknown operands are not supported
             default -> throw new IllegalStateException("Unexpected value: " + operand);
         };
+    }
+
+    /**
+     * Evaluates an operand like {@link #evaluate} and keeps the result of every nested operand, so the editor can
+     * show intermediate results. Failures are reported per operand instead of aborting the evaluation, and operators
+     * whose provider does not support dry runs are skipped, together with every expression that depends on them.
+     *
+     * @param operand            The operand to evaluate
+     * @param elementData        The test values and states of the referenced elements
+     * @param processDataContext The test process data
+     * @return The result of the operand, with the results of its nested operands
+     */
+    @Nonnull
+    public NoCodeDryRunResultDTO dryRun(
+            @Nullable NoCodeOperand operand,
+            @Nonnull DerivedRuntimeElementData elementData,
+            @Nonnull ProcessExecutionData processDataContext
+    ) {
+        if (!(operand instanceof NoCodeExpression expression)) {
+            try {
+                return NoCodeDryRunResultDTO.evaluated(evaluate(operand, elementData, processDataContext).getValue(), List.of());
+            } catch (RuntimeException e) {
+                logger.debug("No-code dry run could not resolve an operand", e);
+                return NoCodeDryRunResultDTO.failed("Der Wert konnte nicht gelesen werden.", List.of());
+            }
+        }
+
+        var operands = expression.getOperands() == null ? List.<NoCodeOperand>of() : expression.getOperands();
+        var operandResults = operands
+                .stream()
+                .map(child -> dryRun(child, elementData, processDataContext))
+                .toList();
+
+        var operatorIdentifier = expression.getOperatorIdentifier();
+        var operator = operatorIdentifier == null ? null : noCodeOperatorProviders.get(operatorIdentifier);
+        if (operator == null) {
+            return NoCodeDryRunResultDTO.failed("Der Operator ist nicht verfügbar.", operandResults);
+        }
+        if (!dryRunOperatorIdentifiers.contains(operatorIdentifier)) {
+            return NoCodeDryRunResultDTO.skipped(
+                    "Dieser Operator wird im Testlauf nicht ausgeführt, weil er geschützte Daten liest oder Aktionen auslösen kann.",
+                    operandResults
+            );
+        }
+        if (operandResults.stream().anyMatch(result -> result.status() != NoCodeDryRunStatus.Evaluated)) {
+            return NoCodeDryRunResultDTO.skipped(
+                    "Ein Parameter konnte nicht ausgewertet werden.",
+                    operandResults
+            );
+        }
+
+        var operandValues = operandResults.stream().map(NoCodeDryRunResultDTO::value).toArray();
+        try {
+            return NoCodeDryRunResultDTO.evaluated(operator.evaluate(elementData, operandValues).getValue(), operandResults);
+        } catch (NoCodeWrongArgumentCountException e) {
+            return NoCodeDryRunResultDTO.failed("Die Anzahl der Parameter passt nicht zum Operator.", operandResults);
+        } catch (NoCodeException e) {
+            // Operators raise NoCodeException with messages written for the people who author expressions.
+            return NoCodeDryRunResultDTO.failed(
+                    e.getMessage() == null ? "Der Operator konnte nicht ausgewertet werden." : e.getMessage(),
+                    operandResults
+            );
+        } catch (RuntimeException e) {
+            logger.debug("No-code dry run failed for operator {}", operatorIdentifier, e);
+            return NoCodeDryRunResultDTO.failed("Der Operator konnte mit diesen Werten nicht ausgewertet werden.", operandResults);
+        }
     }
 
     @Nonnull

@@ -25,6 +25,7 @@ export function SelectOperatorDialog(props: SelectOperatorDialogProps) {
         <SearchBaseDialog
             open={props.open}
             onClose={props.onClose}
+            onExited={props.onExited}
             title="Operator auswählen"
             tabs={[{
                 title: 'Alle',
