@@ -401,6 +401,16 @@ describe('RichTextInputComponent', () => {
         await waitFor(() => expect(onChange).toHaveBeenLastCalledWith('Bitte hier bestätigen'));
     });
 
+    it('previews the customer toolbar in the staff app', async () => {
+        render(<RichTextInputComponent label="Nachricht" value="Hinweis" onChange={vi.fn()} customerMode/>);
+        await screen.findByRole('textbox', {name: 'Nachricht – optional'});
+
+        expect(screen.getByRole('radio', {name: 'Fett'})).toBeInTheDocument();
+        expect(screen.queryByRole('radio', {name: 'Markdown-Quelle'})).toBeNull();
+        expect(screen.queryByRole('button', {name: 'Link erstellen'})).toBeNull();
+        expect(screen.queryByRole('combobox')).toBeNull();
+    });
+
     it('offers source mode to staff', async () => {
         render(<RichTextInputComponent label="Nachricht" value="Hinweis" onChange={vi.fn()}/>);
         await screen.findByRole('textbox', {name: 'Nachricht – optional'});

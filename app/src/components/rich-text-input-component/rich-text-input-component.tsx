@@ -113,6 +113,8 @@ export interface RichTextInputComponentProps extends FormFieldLayoutProps {
     readOnly?: boolean | null | undefined;
     busy?: boolean | null | undefined;
     reducedMode?: boolean | null | undefined;
+    /** Shows the applicants' editor. Defaults to whether the customer app runs, editor previews set it explicitly. */
+    customerMode?: boolean | null | undefined;
     maxCharacters?: number | null | undefined;
     dynamicText?: boolean | null | undefined;
     dynamicTextVariableMetadata?: readonly DynamicTextVariableMetadata[] | null | undefined;
@@ -182,6 +184,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
         readOnly,
         busy,
         reducedMode,
+        customerMode,
         maxCharacters,
         dynamicText,
         dynamicTextVariableMetadata,
@@ -245,7 +248,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
     const isReducedMode = reducedMode === true || isAutoReducedMode;
     // Customers get a short toolbar that fits on phones, without source mode and links. They cannot enter Markdown the
     // editor shows only as protected parts, and no link text of theirs can hide its address from staff.
-    const isCustomerApp = AppInfo.mode === 'customer';
+    const isCustomerMode = customerMode ?? AppInfo.mode === 'customer';
     const controlSxArray = Array.isArray(controlSx) ? controlSx : [controlSx];
     // Browsers otherwise mark expression tokens as misspellings. Revisit this once token-level spellchecking is
     // reliable across the browsers supported by the authoring UI.
@@ -809,12 +812,12 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                         dynamicText ? dynamicTextPlugin({highlight: true}) : placeholderPlugin(),
                         rawHtmlAsTextPlugin(),
                         supportedTextFormatsPlugin(),
-                        protectedMarkdownPlugin({sourceModeAvailable: !isCustomerApp}),
+                        protectedMarkdownPlugin({sourceModeAvailable: !isCustomerMode}),
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
                         // Without these plugins, pasted links become plain text and stored links protected parts.
-                        ...(isCustomerApp ? [] : [
+                        ...(isCustomerMode ? [] : [
                             linkPlugin({
                                 disableAutoLink: true,
                             }),
@@ -823,7 +826,7 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                         ]),
                         toolbarPlugin({
                             toolbarContents: () => {
-                                const toolbarItems = isCustomerApp ?
+                                const toolbarItems = isCustomerMode ?
                                     <>
                                         <UndoRedo/>
                                         <Separator/>
@@ -874,14 +877,14 @@ export const RichTextInputComponent = forwardRef<RichTextInputComponentMethods, 
                                         )}
                                     </>;
 
-                                return isCustomerApp ? toolbarItems : (
+                                return isCustomerMode ? toolbarItems : (
                                     <DiffSourceToggleWrapper options={['rich-text', 'source']}>
                                         {toolbarItems}
                                     </DiffSourceToggleWrapper>
                                 );
                             },
                         }),
-                        ...(isCustomerApp ? [] : [
+                        ...(isCustomerMode ? [] : [
                             diffSourcePlugin({
                                 viewMode: 'rich-text',
                                 readOnlyDiff: isReadOnly,

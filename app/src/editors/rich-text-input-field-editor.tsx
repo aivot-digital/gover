@@ -3,6 +3,8 @@ import {RichTextInputElement} from '../models/elements/form/input/rich-text-inpu
 import {Grid, Typography} from '@mui/material';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
+import {useElementTreeContext} from '../components/element-tree-2/element-tree-context';
+import {ElementDisplayContext} from '../data/element-type/element-child-options';
 
 export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputElement>) {
     const {
@@ -10,6 +12,9 @@ export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputEle
         onPatch,
         editable,
     } = props;
+    const {displayContext} = useElementTreeContext();
+    // Applicants always get their own short toolbar, so the setting only affects UIs that staff fill out.
+    const showReducedModeSwitch = displayContext !== ElementDisplayContext.CustomerFacing;
 
     return (
         <Grid
@@ -36,18 +41,21 @@ export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputEle
                 />
             </Grid>
             <Grid size={{xs: 12}}>
-                <CheckboxFieldComponent
-                    label="Reduzierte Toolbar erzwingen"
-                    value={element.reducedMode ?? false}
-                    onChange={(checked) => {
-                        onPatch({
-                            reducedMode: checked,
-                        });
-                    }}
-                    variant="switch"
-                    disabled={!editable}
-                    hint="Erzwingt eine reduzierte Toolbar. Wenn deaktiviert, schaltet der Editor bei Breiten unter 630px automatisch um. Antragstellende Personen sehen immer eine kurze Toolbar mit Fett, Kursiv und Listen."
-                />
+                {
+                    showReducedModeSwitch &&
+                    <CheckboxFieldComponent
+                        label="Reduzierte Toolbar erzwingen"
+                        value={element.reducedMode ?? false}
+                        onChange={(checked) => {
+                            onPatch({
+                                reducedMode: checked,
+                            });
+                        }}
+                        variant="switch"
+                        disabled={!editable}
+                        hint="Erzwingt eine reduzierte Toolbar. Wenn deaktiviert, schaltet der Editor bei Breiten unter 630px automatisch um."
+                    />
+                }
                 {
                     !editable &&
                     <Typography variant="caption"

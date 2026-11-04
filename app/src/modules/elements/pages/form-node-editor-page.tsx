@@ -1362,6 +1362,7 @@ export function FormNodeEditorPage() {
                                                                     abort,
                                                                 )}
                                                             mode={ViewDispatcherMode.Editor}
+                                                            displayContext={ElementDisplayContext.CustomerFacing}
                                                             disableValidation={disableValidation}
                                                             disableVisibilities={disableVisibility}
                                                             highlightedElementId={hoveredTreeElementId}

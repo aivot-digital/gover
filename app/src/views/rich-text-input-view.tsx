@@ -5,6 +5,7 @@ import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {ElementType} from '../data/element-type/element-type';
 import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
+import {ElementDisplayContext} from '../data/element-type/element-child-options';
 
 export function RichTextView(props: BaseViewProps<RichTextInputElement, string>) {
     const {
@@ -18,6 +19,7 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
 
     const {
         rootElement,
+        displayContext,
     } = useViewDispatcherContext();
 
     const isDisabled = useMemo(() => {
@@ -45,6 +47,8 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
             disabled={inputModeFieldProps?.disabled ?? isDisabled}
             readOnly={inputModeFieldProps?.readOnly ?? isBusy}
             reducedMode={isProcessConfigRoot ? true : element.reducedMode}
+            // The staff app's form editor previews the toolbar applicants get. Elsewhere the app decides.
+            customerMode={displayContext === ElementDisplayContext.CustomerFacing ? true : undefined}
             maxCharacters={element.maxCharacters}
             value={value}
             onChange={setValue}
