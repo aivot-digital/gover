@@ -255,7 +255,7 @@ class ProcessWorkerTest {
         });
 
         var processInstanceAttachmentRepository = createProxy(ProcessInstanceAttachmentRepository.class, (methodName, args) -> switch (methodName) {
-            case "findAllByProcessInstanceId" -> List.of();
+            case "findAllByProcessInstanceIdAndRemovedAtIsNull" -> List.of();
             default -> defaultValue(args);
         });
         var processInstanceAttachmentSetRepository = createProxy(ProcessInstanceAttachmentSetRepository.class, (methodName, args) -> switch (methodName) {
@@ -408,7 +408,7 @@ class ProcessWorkerTest {
         });
 
         var processInstanceAttachmentRepository = createProxy(ProcessInstanceAttachmentRepository.class, (methodName, args) -> switch (methodName) {
-            case "findAllByProcessInstanceId" -> List.of();
+            case "findAllByProcessInstanceIdAndRemovedAtIsNull" -> List.of();
             default -> defaultValue(args);
         });
         var processInstanceAttachmentSetRepository = createProxy(ProcessInstanceAttachmentSetRepository.class, (methodName, args) -> switch (methodName) {
@@ -658,7 +658,7 @@ class ProcessWorkerTest {
         private boolean handleResultCalled;
 
         private TestProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override

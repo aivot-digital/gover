@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
@@ -75,7 +76,7 @@ class ProcessTaskUnassignmentResultHandlerTest {
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
             assignments, workRequests, communication, instances, versions, tasks, edges, users, taskMail,
             mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class), processes, departments,
-            instanceMail, nodeService, null);
+            instanceMail, nodeService, null, mock(ProcessInstanceAttachmentService.class));
 
     @BeforeEach
     void setup() throws Exception {

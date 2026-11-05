@@ -101,7 +101,8 @@ class ProcessTaskExecutionServiceTest {
         when(edges.findByFromNodeIdAndViaPort(3, "overdue")).thenReturn(Optional.of(new ProcessEdgeEntity().setToNodeId(4).setViaPort("overdue")));
         when(loggers.create(1L, 2L, null, null)).thenReturn(logger);
         var deadlines = new ProcessTaskDeadlineService(nodes, nodeService, edges, instances, tasks, loggers,
-                new ProcessTaskDeadlineResultHandler(tasks, new ProcessWorkRequestService(workRequests, new StoredWorkSignals(rabbit), time)), time);
+                new ProcessTaskDeadlineResultHandler(tasks, new ProcessWorkRequestService(workRequests, new StoredWorkSignals(rabbit), time),
+                        mock(ProcessInstanceAttachmentService.class)), time);
         execution = new ProcessTaskExecutionService(instances, tasks, deadlines, new DataSourceTransactionManager(source), mock(jakarta.persistence.EntityManager.class));
     }
 

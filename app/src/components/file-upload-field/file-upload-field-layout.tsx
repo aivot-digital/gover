@@ -170,17 +170,21 @@ export function FileUploadInputArea(props: FileUploadInputAreaProps) {
     );
 }
 
+export interface FileUploadListItemAction {
+    label: string;
+    icon: ReactNode;
+    color?: IconButtonProps['color'];
+    disabled?: boolean;
+    onAction: () => void;
+}
+
 export interface FileUploadListItem {
     key: string;
     name: string;
     size: string;
     contentType?: string | null;
     detail?: string;
-    actionLabel: string;
-    actionIcon: ReactNode;
-    actionColor?: IconButtonProps['color'];
-    actionDisabled?: boolean;
-    onAction: () => void;
+    actions: FileUploadListItemAction[];
 }
 
 export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
@@ -251,19 +255,25 @@ export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
                             </Typography>
                         </Box>
 
-                        <Tooltip title={item.actionLabel} arrow>
-                            <span>
-                                <IconButton
-                                    size="small"
-                                    aria-label={item.actionLabel}
-                                    color={item.actionColor}
-                                    onClick={item.onAction}
-                                    disabled={item.actionDisabled}
-                                >
-                                    {item.actionIcon}
-                                </IconButton>
-                            </span>
-                        </Tooltip>
+                        <Box sx={{display: 'flex'}}>
+                            {
+                                item.actions.map((action) => (
+                                    <Tooltip key={action.label} title={action.label} arrow>
+                                        <span>
+                                            <IconButton
+                                                size="small"
+                                                aria-label={action.label}
+                                                color={action.color}
+                                                onClick={action.onAction}
+                                                disabled={action.disabled}
+                                            >
+                                                {action.icon}
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                ))
+                            }
+                        </Box>
                     </Box>
                 ))
             }

@@ -50,6 +50,12 @@ public class ProcessInstanceAttachmentSetService implements ReadEntityService<Pr
     }
 
     @Nonnull
+    public List<ProcessInstanceAttachmentSetEntity> findAllByProcessInstanceIdAndTaskId(@Nonnull Long processInstanceId,
+                                                                                        @Nonnull Long processInstanceTaskId) {
+        return repository.findAllByProcessInstanceIdAndProcessInstanceTaskId(processInstanceId, processInstanceTaskId);
+    }
+
+    @Nonnull
     public List<ProcessInstanceAttachmentSetEntity> findAllByProcessInstanceIdAndDataKey(@Nonnull Long processInstanceId,
                                                                                          @Nonnull String dataKey) {
         return repository.findAllByProcessInstanceIdAndDataKey(processInstanceId, dataKey);
