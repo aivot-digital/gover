@@ -122,6 +122,8 @@ export function DialogList<T>(props: DialogListProps<T>) {
 
         if (!isReadOnly && (Object.keys(draftErrors).length > 0 || !deepEquals(openForItem.original, openForItem.edited))) {
             const conf = await confirm({
+                confirmButtonColor: 'error',
+                confirmButtonText: 'Änderungen verwerfen',
                 title: 'Änderungen verwerfen',
                 children: (
                     <Typography>
@@ -153,6 +155,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
         }
 
         const conf = await confirm({
+            isDestructive: true,
             title: 'Eintrag löschen',
             children: (
                 <Typography>
@@ -315,6 +318,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
                                                     },
                                                 },
                                                 {
+                                                    color: 'error',
                                                     icon: <Delete/>,
                                                     tooltip: 'Eintrag löschen',
                                                     onClick: (evt) => {

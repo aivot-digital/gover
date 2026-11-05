@@ -135,6 +135,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
                 actions: [{
                     label: `${file.name} entfernen`,
                     icon: <Delete fontSize="small" />,
+                    color: 'error',
                     disabled: isInteractionDisabled,
                     onAction: () => handleRemove(file),
                 }],

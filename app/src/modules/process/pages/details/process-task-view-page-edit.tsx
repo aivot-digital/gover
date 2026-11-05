@@ -915,6 +915,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             {pendingBlockedNavigation != null && (
                 <ConfirmDialog
+                    confirmButtonColor="error"
                     title="Ungespeicherte Eingaben"
                     onConfirm={handleConfirmBlockedNavigation}
                     onCancel={handleCancelBlockedNavigation}

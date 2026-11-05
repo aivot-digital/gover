@@ -191,6 +191,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                     actions.push({
                         label: `${file.name} entfernen`,
                         icon: <Delete fontSize="small" />,
+                        color: 'error',
                         disabled: isDisabled || isBusy,
                         onAction: () => handleRemove(file),
                     });

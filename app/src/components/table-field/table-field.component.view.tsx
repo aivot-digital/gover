@@ -242,6 +242,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
             </TableFieldLayout>
 
             <ConfirmDialog
+                isDestructive
                 title="Möchten Sie die ausgewählten Einträge wirklich löschen?"
                 onConfirm={confirmDelete}
                 onCancel={() => setConfirmDelete(undefined)}
