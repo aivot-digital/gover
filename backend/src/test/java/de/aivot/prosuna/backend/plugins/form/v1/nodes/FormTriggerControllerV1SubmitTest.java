@@ -4,22 +4,34 @@ import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.steps.BaseStepElement;
+import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
+import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
+import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
@@ -264,8 +276,84 @@ class FormTriggerControllerV1SubmitTest {
         verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));
     }
 
+    @Test
+    void submitShouldStoreTemplateTagsTypedByTheCustomerAsText() throws Exception {
+        var message = new RichTextInputElement();
+        message.setId("message");
+        message.setDestinationKey("nachricht");
+        // Form definitions are stored as JSON, so a field can carry a dynamic text policy. Customer input must still
+        // never be evaluated as a template, or a customer could copy process data into their own submission.
+        message.setDynamicTextPolicy(new DynamicTextPolicy());
+        var step = new GenericStepElement();
+        step.setId("step");
+        step.setChildren(new LinkedList<BaseFormElement>(List.of(message)));
+        var form = new FormLayoutElement().setPublicTitle("Example form");
+        form.setId("root");
+        form.setChildren(new LinkedList<BaseStepElement>(List.of(step)));
+
+        var typed = """
+                Mein Antrag: {{ $.secret }}
+
+                {! $.secret !}{% if $.secret %}ja{% endif %}""";
+        var fixture = createFixture(
+                form,
+                createElementDerivationService(),
+                new ElementDataTransformService(),
+                new IdentityDataMap(),
+                UUID.randomUUID().toString()
+        );
+
+        fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                JsonMapperFactory.getInstance().writeValueAsString(new AuthoredElementValues().putLiteral("message", typed)),
+                null,
+                null,
+                new MockHttpServletResponse()
+        );
+
+        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        var initialPayload = updatedInstanceCaptor.getValue().getInitialPayload();
+        assertEquals(Map.of("nachricht", typed), initialPayload.get(FormTriggerNodeV1.DATA_KEY_PAYLOAD));
+        assertEquals(typed, assertInstanceOf(Map.class, initialPayload.get(FormTriggerNodeV1.DATA_KEY_UNMAPPED)).get("message"));
+    }
+
     private SubmitFixture createFixture(
             DerivedRuntimeElementData derivedRuntimeElementData,
+            IdentityDataMap identities,
+            String startedProcessAccessKey
+    ) throws ResponseException {
+        var elementDerivationService = mock(ElementDerivationService.class);
+        when(elementDerivationService.derive(
+                any(ElementDerivationRequest.class),
+                same(identities),
+                any(ElementDerivationLogger.class)
+        )).thenReturn(derivedRuntimeElementData);
+
+        var elementDataTransformService = mock(ElementDataTransformService.class);
+        when(elementDataTransformService.buildPayload(
+                any(FormLayoutElement.class),
+                any(EffectiveElementValues.class),
+                any(ComputedElementStates.class)
+        )).thenReturn(Map.of("mapped", "payload"));
+
+        return createFixture(
+                new FormLayoutElement().setPublicTitle("Example form"),
+                elementDerivationService,
+                elementDataTransformService,
+                identities,
+                startedProcessAccessKey
+        );
+    }
+
+    private SubmitFixture createFixture(
+            FormLayoutElement formLayout,
+            ElementDerivationService elementDerivationService,
+            ElementDataTransformService elementDataTransformService,
             IdentityDataMap identities,
             String startedProcessAccessKey
     ) throws ResponseException {
@@ -313,7 +401,7 @@ class FormTriggerControllerV1SubmitTest {
 
         var triggerConfig = new FormTriggerConfigV1();
         triggerConfig.formSlug = formSlug;
-        triggerConfig.formLayout = new FormLayoutElement().setPublicTitle("Example form");
+        triggerConfig.formLayout = formLayout;
 
         when(processNodeService.deriveConfiguration(eq(node), eq(provider), isNull(), eq(true)))
                 .thenReturn(new ProcessNodeService.ProcessConfigurationDetails<>(
@@ -328,13 +416,6 @@ class FormTriggerControllerV1SubmitTest {
         var identityService = mock(IdentityService.class);
         when(identityService.getIdentityDataMap("identity-session-id", node.getId())).thenReturn(identities);
 
-        var elementDerivationService = mock(ElementDerivationService.class);
-        when(elementDerivationService.derive(
-                any(ElementDerivationRequest.class),
-                same(identities),
-                any(ElementDerivationLogger.class)
-        )).thenReturn(derivedRuntimeElementData);
-
         var processInstanceService = mock(ProcessInstanceService.class);
         when(processInstanceService.create(any(ProcessInstanceEntity.class))).thenAnswer(invocation -> {
             var entity = invocation.getArgument(0, ProcessInstanceEntity.class);
@@ -346,14 +427,8 @@ class FormTriggerControllerV1SubmitTest {
         when(processInstanceService.update(eq(1L), any(ProcessInstanceEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(1, ProcessInstanceEntity.class));
 
-        var elementDataTransformService = mock(ElementDataTransformService.class);
-        when(elementDataTransformService.buildPayload(
-                any(FormLayoutElement.class),
-                any(EffectiveElementValues.class),
-                any(ComputedElementStates.class)
-        )).thenReturn(Map.of("mapped", "payload"));
-
         var fileUploadMultipartInputService = mock(FileUploadMultipartInputService.class);
+        // Without uploads, the normalized inputs are the submitted ones.
         when(fileUploadMultipartInputService.normalizeInputs(
                 any(FormLayoutElement.class),
                 any(AuthoredElementValues.class),
@@ -363,8 +438,8 @@ class FormTriggerControllerV1SubmitTest {
                 eq(1L),
                 isNull(),
                 isNull()
-        )).thenReturn(new FileUploadMultipartInputService.NormalizationResult(
-                new AuthoredElementValues(),
+        )).thenAnswer(invocation -> new FileUploadMultipartInputService.NormalizationResult(
+                invocation.getArgument(1, AuthoredElementValues.class),
                 List.of()
         ));
 
@@ -424,6 +499,17 @@ class FormTriggerControllerV1SubmitTest {
                 processInstanceService,
                 processSubmissionBindingService,
                 fileUploadMultipartInputService
+        );
+    }
+
+    private static ElementDerivationService createElementDerivationService() {
+        return new ElementDerivationService(
+                new JavascriptEngineFactoryService(List.of()),
+                new NoCodeEvaluationService(List.of()),
+                new ElementDataTransformService(),
+                new CodeListElementOptionsService(null, null),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
+                new InputVariableResolver()
         );
     }
 

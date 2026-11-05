@@ -25,6 +25,8 @@ import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownTemplateValues;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
@@ -43,6 +45,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
@@ -874,8 +877,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         resolvedConfiguration.recipientIdentityId(),
                         new CommunicationMessage.Builder()
                                 .subject(subject)
-                                .body(content)
-                                .htmlBody(content)
+                                .body(MarkdownRenderer.renderPlainText(content))
+                                .markdownBody(content)
                                 .callToActions(List.of(new CommunicationMessageCallToAction(
                                         "Zahlung durchführen",
                                         paymentUrl
@@ -925,11 +928,12 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     private static String createPaymentInformationMarkdown(@Nonnull PaymentPayload paymentPayload) {
+        // Purpose and descriptions can come from process data, including customer input, so they are shown as typed.
         var itemMarkdown = paymentPayload
                 .getPaymentItems()
                 .stream()
                 .map(item -> "- %s: %s Euro%s".formatted(
-                        item.getDescription(),
+                        MarkdownTemplateValues.escapeText(item.getDescription()),
                         NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
                         item.getTaxRate().signum() > 0
                                 ? " inkl. %s %% Steuern".formatted(formatTaxRate(item.getTaxRate()))
@@ -954,8 +958,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
                 **Gesamtbetrag:** %s Euro%s
                 """.formatted(
-                paymentPayload.getPurpose(),
-                paymentPayload.getDescription(),
+                MarkdownTemplateValues.escapeText(paymentPayload.getPurpose()),
+                MarkdownTemplateValues.escapeText(paymentPayload.getDescription()),
                 itemMarkdown,
                 NumberUtils.formatGermanNumber(paymentPayload.getTotal(), 2),
                 includesTaxes ? " inkl. Steuern" : ""
@@ -1039,7 +1043,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .addProcessData(context.getThisTask().getProcessData());
 
         try {
-            return templateRenderService.interpolate(processExecutionData, template);
+            // The message is shown as Markdown on the payment status page.
+            return templateRenderService.interpolate(processExecutionData, template, TemplateOutputFormat.Markdown);
         } catch (RuntimeException e) {
             throw ResponseException.internalServerError(
                     e,
