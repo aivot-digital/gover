@@ -62,6 +62,41 @@ public class TemplateRenderService {
                 .diagnostics();
     }
 
+    /**
+     * Returns the text of a template outside its tags, including the text in conditions, loops and blocks. Lets
+     * checks cover what an author typed, while values of tags are only known when rendering.
+     */
+    @Nonnull
+    public static String extractLiteralText(@Nullable String template) {
+        if (template == null || template.isEmpty()) {
+            return "";
+        }
+        var result = new TemplateParser(new TemplateSource(template)).parse();
+        var text = new StringBuilder();
+        appendLiteralText(result.nodes(), text);
+        result.blocks().values().forEach(block -> appendLiteralText(block.body(), text));
+        return text.toString();
+    }
+
+    private static void appendLiteralText(@Nonnull List<TemplateNode> nodes, @Nonnull StringBuilder text) {
+        for (var node : nodes) {
+            switch (node) {
+                case TextNode textNode -> text.append(textNode.text());
+                case IfNode ifNode -> {
+                    appendLiteralText(ifNode.trueBranch(), text);
+                    appendLiteralText(ifNode.falseBranch(), text);
+                }
+                case ForNode forNode -> appendLiteralText(forNode.body(), text);
+                case PrintNode ignored -> {
+                }
+                case RawNode ignored -> {
+                }
+                case UseBlockNode ignored -> {
+                }
+            }
+        }
+    }
+
     /** Renders an HTML template, see {@link #interpolate(ProcessExecutionData, String, TemplateOutputFormat)}. */
     @Nullable
     public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
