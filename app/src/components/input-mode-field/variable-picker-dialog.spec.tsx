@@ -1,17 +1,17 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
-import {VariablePickerDialog} from './input-mode-field';
+import {VariablePickerDialog, type InputModeVariable} from './input-mode-field';
 import {InputVariableSource, type InputVariableReference} from '../../models/input-mode';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
 vi.mock('../../utils/copy-to-clipboard', () => ({copyToClipboardText: vi.fn().mockResolvedValue(true)}));
 
-function renderPicker(reference: InputVariableReference | null = null, readOnly = false, offerFormattedInsertion = false) {
+function renderPicker(reference: InputVariableReference | null = null, readOnly = false, offerFormattedInsertion = false, variables: InputModeVariable[] = []) {
     const onSelect = vi.fn();
     render(<VariablePickerDialog
-        open title="Variable referenzieren" variables={[]}
+        open title="Variable referenzieren" variables={variables}
         allowedSources={Object.values(InputVariableSource)}
         selectedReference={reference} readOnly={readOnly} allowClear
         offerFormattedInsertion={offerFormattedInsertion}
@@ -100,6 +100,22 @@ describe('insertion into Markdown fields', () => {
         await user.click(screen.getByRole('button', {name: 'Referenz verwenden'}));
 
         expect(onSelect).toHaveBeenCalledWith(reference, undefined, 'markdown');
+    });
+
+    it('keeps the formatting of Markdown inputs unless the author chooses text', async () => {
+        const user = userEvent.setup();
+        const markdownReference = {...reference, markdown: true};
+        const suggestion: InputModeVariable = {id: 'message', label: 'Nachricht', ...markdownReference};
+        const {onSelect} = renderPicker(markdownReference, false, true, [suggestion]);
+
+        expect(screen.getByRole('radio', {name: 'Mit Formatierung'})).toBeChecked();
+        expect(screen.getByRole('group', {name: /^Einfügen/})).toHaveAccessibleDescription(/\{! !\}/);
+        await user.click(screen.getByRole('button', {name: 'Referenz verwenden'}));
+        expect(onSelect).toHaveBeenLastCalledWith(markdownReference, suggestion, 'markdown');
+
+        await user.click(screen.getByRole('radio', {name: 'Als Text'}));
+        await user.click(screen.getByRole('button', {name: 'Referenz verwenden'}));
+        expect(onSelect).toHaveBeenLastCalledWith(markdownReference, suggestion, 'text');
     });
 
     it('does not offer formatting for other fields', async () => {

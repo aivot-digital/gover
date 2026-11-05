@@ -507,7 +507,8 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
     const [draftSelectedKey, setDraftSelectedKey] = useState<string | null>(null);
     const [customSource, setCustomSource] = useState<InputVariableSource>(InputVariableSource.ProcessData);
     const [customPath, setCustomPath] = useState('');
-    const [insertion, setInsertion] = useState<DynamicTextInsertion>('text');
+    // null until the author chooses, so the default can follow the selected variable.
+    const [insertion, setInsertion] = useState<DynamicTextInsertion | null>(null);
     const tabsId = useNormalizedReactId();
     const panelId = `${tabsId}-panel`;
 
@@ -521,7 +522,7 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                 : emptyVariableReference(props.allowedSources);
             setCustomSource(initialReference.source);
             setCustomPath(toCustomVariablePath(initialReference));
-            setInsertion('text');
+            setInsertion(null);
         }
     }, [props.open, props.selectedReference, props.allowedSources]);
 
@@ -543,6 +544,8 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
     const selectedSuggestion = props.variables.find((variable) => getInputVariableKey(toVariableReference(variable)) === draftSelectedKey);
     const customReference = parseCustomVariableReference(customSource, customPath);
     const selectedReference = selectedSuggestion == null ? customReference : toVariableReference(selectedSuggestion);
+    // Markdown inputs keep their formatting by default, because authors rarely want it dropped.
+    const effectiveInsertion = insertion ?? (selectedReference?.markdown === true ? 'markdown' : 'text');
 
     return <Dialog
         open={props.open}
@@ -655,8 +658,8 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                 <Box sx={{p: 2, px: 2.8}}>
                     <RadioFieldComponent
                         label="Einfügen"
-                        hint="„Als Text“ fügt den Wert als einfachen Text ohne Formatierung ein. „Mit Formatierung“ übernimmt Formatierungen wie Fettdruck und Listen und zeigt Links mit ihrer Adresse."
-                        value={insertion}
+                        hint="„Als Text“ ({{ }}) fügt den Wert als einfachen Text ohne Formatierung ein. „Mit Formatierung“ ({! !}) übernimmt Formatierungen wie Fettdruck und Listen und zeigt Links mit ihrer Adresse."
+                        value={effectiveInsertion}
                         options={[
                             {value: 'text', label: 'Als Text'},
                             {value: 'markdown', label: 'Mit Formatierung'},
@@ -679,7 +682,7 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                     onClick={() => selectedReference != null && props.onSelect(
                         selectedReference,
                         selectedSuggestion,
-                        props.offerFormattedInsertion ? insertion : 'text',
+                        props.offerFormattedInsertion ? effectiveInsertion : 'text',
                     )}
                 >
                     Referenz verwenden

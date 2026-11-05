@@ -317,6 +317,19 @@ describe('InputModeField', () => {
         expect(handleInsertVariable).toHaveBeenCalledWith(variables[2], 'markdown');
     });
 
+    it('inserts suggested Markdown inputs with formatting by default', async () => {
+        const user = userEvent.setup();
+        const handleInsertVariable = vi.fn();
+        render(<Harness onInsertVariable={handleInsertVariable} dynamicTextOutputFormat={TemplateOutputFormat.Markdown}/>);
+
+        await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
+        await user.click(await screen.findByText('Nachricht'));
+        expect(screen.getByRole('radio', {name: 'Mit Formatierung'})).toBeChecked();
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(handleInsertVariable).toHaveBeenCalledWith(variables[3], 'markdown');
+    });
+
     it.each([TemplateOutputFormat.Html, TemplateOutputFormat.SingleLineText, undefined])
     ('inserts text without asking for %s fields', async (outputFormat) => {
         const user = userEvent.setup();
