@@ -114,7 +114,11 @@ public class SecurityConfiguration {
         Converter<Jwt, Collection<GrantedAuthority>> jwtGrantedAuthoritiesConverter = jwt -> {
             // All of this is deprecated since 20.04.2026
             Map<String, Collection<String>> realmAccess = jwt.getClaim("realm_access");
-            Collection<String> roles = realmAccess.get("roles");
+            // Keycloak leaves this claim out for clients without full scope
+            Collection<String> roles = realmAccess == null ? null : realmAccess.get("roles");
+            if (roles == null) {
+                return List.of();
+            }
             return roles.stream()
                     .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
                     .collect(Collectors.toList());
