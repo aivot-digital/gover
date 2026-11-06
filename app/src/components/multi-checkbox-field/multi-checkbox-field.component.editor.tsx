@@ -24,13 +24,6 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
     const optionsSource = props.element.optionsSource ?? OptionsSourceType.Manual;
     const usesManualOptions = optionsSource === OptionsSourceType.Manual;
 
-    const minRequiredError = (
-        usesManualOptions &&
-        props.element.minimumRequiredOptions != null &&
-        props.element.options != null &&
-        props.element.minimumRequiredOptions > props.element.options.length
-    );
-
     const options = props.element.options ?? [];
 
     return (
@@ -105,7 +98,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                             minimumRequiredOptions: val === 0 ? undefined : val,
                         });
                     }}
-                    error={minRequiredError ? 'Sie fordern mehr Optionen als Sie definiert haben.' : undefined}
+                    error={props.configurationErrors?.minimumRequiredOptions?.join(' ')}
                     hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
                     disabled={!props.editable}
                 />

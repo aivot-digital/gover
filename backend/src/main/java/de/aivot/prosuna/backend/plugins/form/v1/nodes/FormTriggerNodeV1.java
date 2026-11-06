@@ -8,7 +8,6 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
@@ -18,7 +17,6 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutEleme
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.uiPresets.PaymentGroupPreset;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
-import de.aivot.prosuna.backend.elements.utils.ElementStreamUtils;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -438,10 +436,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             }
         }
 
-        var layoutErrors = validateLegacyPublishChecklistFields(configuration.formLayout);
-        if (!layoutErrors.isEmpty()) {
-            errors.put(FormTriggerConfigV1.FORM_LAYOUT, layoutErrors);
-        }
+        // The form layout field reports configuration errors of its elements itself, see UiDefinitionInputElement.
 
         return errors.isEmpty() ? null : errors;
     }
@@ -452,32 +447,6 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         errors
                 .computeIfAbsent(fieldId, ignored -> new LinkedList<>())
                 .add(message);
-    }
-
-    @Nonnull
-    private List<String> validateLegacyPublishChecklistFields(@Nullable FormLayoutElement formLayout) {
-        if (formLayout == null) {
-            return List.of();
-        }
-
-        var errors = new LinkedList<String>();
-
-        if (StringUtils.isNullOrEmpty(formLayout.getPublicTitle())) {
-            errors.add("Der öffentliche Titel muss hinterlegt sein.");
-        }
-        ElementStreamUtils.applyAction(formLayout, element -> {
-            if (element instanceof FileUploadInputElement uploadElement && StringUtils.isNullOrEmpty(uploadElement.getSubmittedFileName())) {
-                var uploadElementLabel = FileUploadMultipartInputService.describeUploadElement(uploadElement);
-                var quotedUploadElementLabel = StringUtils.quote(uploadElementLabel);
-                var message = String.format(
-                        "Für das Anlagen-Feld %s muss ein Dateiname bei Einreichung hinterlegt sein.",
-                        quotedUploadElementLabel
-                );
-                errors.add(message);
-            }
-        });
-
-        return errors;
     }
 
     @Nonnull

@@ -8,14 +8,12 @@ import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertConte
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
-import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
@@ -310,47 +308,17 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
-    void validateConfiguration_ShouldReportMissingPublicTitleFromFormLayout() throws Exception {
+    void validateConfiguration_ShouldLeaveFormLayoutChecksToTheElements() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(false);
 
+        // The form layout field reports a missing public title through the element configuration validation.
         var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
                 processNode(),
                 configuration("antrag-online", new FormLayoutElement()),
                 DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
         ));
 
-        assertNotNull(errors);
-        assertEquals(1, errors.size());
-
-        var layoutError = errors.get(FormTriggerConfigV1.FORM_LAYOUT);
-        assertNotNull(layoutError);
-        assertEquals(List.of("Der öffentliche Titel muss hinterlegt sein."), layoutError);
-    }
-
-    @Test
-    void validateConfiguration_ShouldRequireSubmittedFileNameForFileUploads() throws Exception {
-        when(processNodeRepository.exists(anySpecification())).thenReturn(false);
-
-        var upload = new FileUploadInputElement();
-        upload.setId("document");
-        upload.setLabel("Nachweis");
-        var step = new GenericStepElement();
-        step.setId("step");
-        step.setChildren(List.of(upload));
-        var layout = validFormLayout();
-        layout.setChildren(List.of(step));
-
-        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
-                processNode(),
-                configuration("antrag-online", layout),
-                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
-        ));
-
-        assertNotNull(errors);
-        assertEquals(
-                List.of("Für das Anlagen-Feld „Nachweis“ muss ein Dateiname bei Einreichung hinterlegt sein."),
-                errors.get(FormTriggerConfigV1.FORM_LAYOUT)
-        );
+        assertNull(errors);
     }
 
     @Test
@@ -387,22 +355,6 @@ class FormTriggerNodeV1Test {
                 ),
                 errors.get(FormTriggerConfigV1.FORM_SLUG)
         );
-    }
-
-    @Test
-    void validateConfiguration_ShouldReturnSlugAndLayoutErrorsTogether() throws Exception {
-        when(processNodeRepository.exists(anySpecification())).thenReturn(true);
-
-        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
-                processNode(),
-                configuration("antrag-online", new FormLayoutElement()),
-                DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring
-        ));
-
-        assertNotNull(errors);
-        assertEquals(2, errors.size());
-        assertTrue(errors.containsKey(FormTriggerConfigV1.FORM_SLUG));
-        assertTrue(errors.containsKey(FormTriggerConfigV1.FORM_LAYOUT));
     }
 
     @Test

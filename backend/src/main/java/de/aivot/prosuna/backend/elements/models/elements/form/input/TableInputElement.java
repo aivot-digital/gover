@@ -189,6 +189,40 @@ public class TableInputElement extends BaseInputElement<List<Map<String, Object>
         }
     }
 
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // The editor only offers the minimum for required tables, so a hidden leftover value must not be reported.
+        if (getRequired()) {
+            addMinimumExceedsMaximumError(errors, "minimumRequiredRows", minimumRequiredRows, "maximumRows", maximumRows,
+                    "Sie fordern mehr Zeilen, als Sie maximal zulassen.");
+        }
+        // Unlike other elements, tables treat a maximum of 0 or less as a limit (see performValidation), so such a
+        // table rejects every row.
+        if (maximumRows != null && maximumRows < 1) {
+            addConfigurationError(errors, "maximumRows", "Lassen Sie mindestens eine Zeile zu oder entfernen Sie die Maximalanzahl der Zeilen.");
+        }
+        // formatValue fails without columns, and a table without columns cannot take any input.
+        if (fields == null || fields.isEmpty()) {
+            addConfigurationError(errors, "fields", "Fügen Sie mindestens eine Spalte hinzu.");
+        } else {
+            // Row values are stored by column key, so a missing or repeated key loses data. Label rules are editor hints.
+            var keys = new HashSet<String>();
+            for (var index = 0; index < fields.size(); index++) {
+                var column = fields.get(index);
+                var key = column == null ? null : StringUtils.toNullableTrimmedString(column.getKey());
+                var property = "fields." + index + ".key";
+                if (key == null) {
+                    addConfigurationError(errors, property, "Geben Sie einen Schlüssel für Spalte " + (index + 1) + " ein.");
+                } else if (!keys.add(key)) {
+                    addConfigurationError(errors, property, "Der Schlüssel von Spalte " + (index + 1) + " wird bereits von einer anderen Spalte verwendet.");
+                }
+            }
+        }
+        return errors;
+    }
+
     // region Hash & Equals
 
     @Override

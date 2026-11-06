@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.elements.enums.InputModeEvaluationContext;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementConfigurationErrors;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
@@ -23,6 +24,7 @@ import de.aivot.prosuna.backend.elements.models.elements.ValidationNoCodeWrapper
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.prosuna.backend.elements.models.input.InputModePolicy;
@@ -95,6 +97,35 @@ class ElementDerivationServiceTest {
         assertTrue(result.hasAnyError());
         assertEquals(Map.of("purpose", "Geben Sie einen Verwendungszweck an.", "messages", List.of("Geben Sie einen Verwendungszweck an.")),
                 result.getElementStates().get("payment").getErrorDetails());
+    }
+
+    @Test
+    void shouldReportUiDefinitionConfigurationErrorsOnlyWhileAuthoring() {
+        var field = new UiDefinitionInputElement();
+        field.setId("ui");
+        var invalidText = new TextInputElement()
+                .setMinCharacters(6)
+                .setMaxCharacters(5);
+        invalidText.setId("text");
+        invalidText.setLabel("Vorname");
+        var definition = new GroupLayoutElement();
+        definition.setId("definition");
+        definition.setChildren(new LinkedList<>(List.of(invalidText)));
+        var values = new AuthoredElementValues().putLiteral("ui", definition);
+        var root = createRoot(List.of(field));
+
+        var authoring = derive(root, values, new ElementDerivationOptions(), new ProcessExecutionData(), InputModeEvaluationContext.Authoring);
+        var runtime = derive(root, values, new ElementDerivationOptions(), new ProcessExecutionData(), InputModeEvaluationContext.Runtime);
+
+        var message = "Element „Vorname“: Sie fordern mehr Zeichen, als Sie maximal zulassen.";
+        var state = authoring.getElementStates().get("ui");
+        assertEquals(message, state.getError());
+        var details = assertInstanceOf(Map.class, state.getErrorDetails());
+        assertEquals(List.of(message), details.get("messages"));
+        var errors = assertInstanceOf(ElementConfigurationErrors.class, details.get("configurationErrors"));
+        assertEquals(Map.of(), errors.properties());
+        assertEquals(List.of("text"), List.copyOf(errors.children().keySet()));
+        assertFalse(runtime.hasAnyError());
     }
 
     @Test

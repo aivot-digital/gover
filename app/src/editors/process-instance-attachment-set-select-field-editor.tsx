@@ -10,18 +10,12 @@ export function ProcessInstanceAttachmentSetSelectFieldEditor(props: BaseEditorP
         editable,
         onPatch,
         hasSummaryLayoutParent,
+        configurationErrors,
     } = props;
 
     if (hasSummaryLayoutParent) {
         return null;
     }
-
-    const effectiveMaxItems = element.maxItems != null && element.maxItems > 0 ? element.maxItems : undefined;
-    const effectiveMinItems = element.required === true && element.minItems != null && element.minItems > 0
-        ? element.minItems
-        : undefined;
-    const minItemsError = effectiveMaxItems != null && effectiveMinItems != null && effectiveMinItems > effectiveMaxItems;
-    const maxItemsError = effectiveMaxItems != null && effectiveMinItems != null && effectiveMaxItems < effectiveMinItems;
 
     return (
         <Grid
@@ -65,7 +59,7 @@ export function ProcessInstanceAttachmentSetSelectFieldEditor(props: BaseEditorP
                             });
                         }}
                         hint="Geben Sie 0 oder nichts ein, um keine Mindestanzahl zu fordern."
-                        error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
+                        error={configurationErrors?.minItems?.join(' ')}
                         disabled={!editable}
                     />
                 </Grid>
@@ -86,7 +80,7 @@ export function ProcessInstanceAttachmentSetSelectFieldEditor(props: BaseEditorP
                         });
                     }}
                     hint="Geben Sie 0 oder nichts ein, um keine Maximalanzahl zu fordern. Bei 1 wird eine einfache Auswahl angezeigt."
-                    error={maxItemsError ? 'Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.' : undefined}
+                    error={configurationErrors?.maxItems?.join(' ')}
                     disabled={!editable}
                 />
             </Grid>

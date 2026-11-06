@@ -11,6 +11,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ChipInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
@@ -37,6 +38,18 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
 
     public ChipInputElement() {
         super(ElementType.ChipInput);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // The editor only offers the minimum for required fields, so a hidden leftover value must not be reported.
+        if (getRequired()) {
+            addMinimumExceedsMaximumError(errors, "minItems", minItems, "maxItems", maxItems,
+                    "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        }
+        return errors;
     }
 
     @Nullable

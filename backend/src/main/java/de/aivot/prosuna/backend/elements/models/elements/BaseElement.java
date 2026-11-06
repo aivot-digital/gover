@@ -16,6 +16,9 @@ import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -115,6 +118,44 @@ public abstract class BaseElement implements Serializable {
 
         if (override != null) {
             override.recalculateReferencedIds(destinationKeyIndex);
+        }
+    }
+
+    /**
+     * Validates the authored configuration of this element without its children. Subclasses extend the result of
+     * {@code super}. Checks must stay static: element trees are validated as submitted by clients, so element functions
+     * must not be executed and no resources may be loaded here.
+     * <p>
+     * Deliberately not named like a getter, so Jackson does not serialize the errors into the element.
+     *
+     * @return Error messages keyed by the name of the erroneous property. Empty if the configuration is valid.
+     */
+    @Nonnull
+    public Map<String, List<String>> validateConfiguration() {
+        return new LinkedHashMap<>();
+    }
+
+    protected static void addConfigurationError(@Nonnull Map<String, List<String>> errors,
+                                                @Nonnull String property,
+                                                @Nonnull String message) {
+        errors
+                .computeIfAbsent(property, ignored -> new LinkedList<>())
+                .add(message);
+    }
+
+    /**
+     * Reports a minimum that exceeds its maximum at both properties. Like the runtime validation, a maximum of 0 or
+     * less means no limit.
+     */
+    protected static void addMinimumExceedsMaximumError(@Nonnull Map<String, List<String>> errors,
+                                                        @Nonnull String minimumProperty,
+                                                        @Nullable Integer minimum,
+                                                        @Nonnull String maximumProperty,
+                                                        @Nullable Integer maximum,
+                                                        @Nonnull String message) {
+        if (minimum != null && maximum != null && maximum > 0 && minimum > maximum) {
+            addConfigurationError(errors, minimumProperty, message);
+            addConfigurationError(errors, maximumProperty, message);
         }
     }
 

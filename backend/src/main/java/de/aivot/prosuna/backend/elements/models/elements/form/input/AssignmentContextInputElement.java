@@ -52,6 +52,15 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
         super(ElementType.AssignmentContext);
     }
 
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minItems", minItems, "maxItems", maxItems,
+                "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        return errors;
+    }
+
     @Nullable
     @Override
     public AssignmentContextInputElementValue formatValue(@Nullable Object value) {

@@ -4,6 +4,7 @@ import {ElementWithParents} from '../../utils/flatten-elements';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {IdentityConfigElementSlotWithProviders} from '../../models/elements/form/input/identity-config-element';
+import {type ElementConfigurationErrors} from '../../modules/elements/elements-api-service';
 
 export interface ElementTreeDragItem {
     id: string;
@@ -41,6 +42,8 @@ export interface ElementTreeContextType {
     registerNewElement?: (id: string) => void;
     markElementApplied?: (id: string) => void;
     identityMappingInformation?: IdentityConfigElementSlotWithProviders[];
+    /** Server-side configuration errors of {@link root}; null until validated or while not editable. */
+    configurationErrors?: ElementConfigurationErrors | null;
 }
 
 export const ElementTreeContext = createContext<ElementTreeContextType | null>(null);
