@@ -49,6 +49,11 @@ public class NoCodeConcatOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -57,12 +62,12 @@ public class NoCodeConcatOperator extends NoCodeOperator {
                                 NoCodeDataType.Runtime,
                                 "Text 1",
                                 "Der erste Textbaustein."
-                        ),
+                        ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Text 2",
                                 "Der zweite Textbaustein."
-                        )
+                        ).withSentence("gefolgt von")
                 )
         );
     }

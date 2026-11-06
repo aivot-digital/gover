@@ -59,6 +59,11 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -67,12 +72,12 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                                 NoCodeDataType.Date,
                                 "Datum",
                                 "Das Ausgangsdatum, von dem subtrahiert werden soll."
-                        ),
+                        ).withSentence("das Datum"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Anzahl",
                                 "Die Anzahl der Einheiten, die vom Datum subtrahiert werden sollen."
-                        ),
+                        ).withSentence("minus"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Einheit",
@@ -81,7 +86,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                                 new NoCodeParameterOption("Wochen", NoCodeAddToDateOperator.WEEKS_UNIT),
                                 new NoCodeParameterOption("Monate", NoCodeAddToDateOperator.MONTHS_UNIT),
                                 new NoCodeParameterOption("Jahre", NoCodeAddToDateOperator.YEARS_UNIT)
-                        )
+                        ).withSentence("")
                 )
         );
     }

@@ -50,6 +50,11 @@ public class NoCodeListCountOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt, wie oft";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -58,12 +63,12 @@ public class NoCodeListCountOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste, in der gezählt werden soll."
-                        ),
+                        ).withSentence("in"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Wert",
                                 "Der Wert, dessen Vorkommen in der Liste gezählt werden soll."
-                        )
+                        ).withSentence("der Wert", "vorkommt")
                 )
         );
     }

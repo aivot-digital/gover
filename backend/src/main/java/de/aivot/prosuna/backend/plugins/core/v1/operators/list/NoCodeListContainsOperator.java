@@ -62,6 +62,11 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -70,12 +75,12 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
                                 NoCodeDataType.Runtime,
                                 "Liste",
                                 "Eine Liste von Werten, in der gesucht werden soll."
-                        ),
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Wert",
                                 "Der Wert, nach dem in der Liste gesucht werden soll."
-                        )
+                        ).withSentence("den Wert", "enthält")
                 )
         );
     }

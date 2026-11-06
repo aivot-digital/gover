@@ -60,6 +60,11 @@ public class NoCodeBase64Operator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -68,7 +73,7 @@ public class NoCodeBase64Operator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Text",
                                 "Der Text, der in Base64 konvertiert werden soll."
-                        )
+                        ).withSentence("", "als Base64")
                 )
         );
     }

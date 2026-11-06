@@ -60,6 +60,11 @@ public class NoCodeListGetOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt den Eintrag";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -68,12 +73,12 @@ public class NoCodeListGetOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste, aus der ein Element abgerufen werden soll"
-                        ),
+                        ).withSentence("aus"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Index",
                                 "Der Index des Elements, das abgerufen werden soll (0-basiert; negative Werte zählen von hinten)"
-                        )
+                        ).withSentence("an Index")
                 )
         );
     }

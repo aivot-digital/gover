@@ -66,4 +66,9 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
     public String getHumanReadableTemplate() {
         return "das Feld „#0“ ist nicht sichtbar";
     }
+
+    @Override
+    protected String getVisibilitySuffix() {
+        return "nicht sichtbar ist";
+    }
 }

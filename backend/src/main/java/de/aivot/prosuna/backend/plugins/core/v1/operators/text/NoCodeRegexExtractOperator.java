@@ -62,6 +62,11 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt alle Treffer";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -70,12 +75,12 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Text",
                                 "Der Text, aus dem extrahiert werden soll."
-                        ),
+                        ).withSentence("in"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Regulärer Ausdruck",
                                 "Der reguläre Ausdruck, der die zu extrahierenden Muster definiert."
-                        )
+                        ).withSentence("für den regulären Ausdruck")
                 )
         );
     }

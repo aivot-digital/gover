@@ -78,7 +78,11 @@ const nested: NoCodeOperand = {
     operands: [a, {type: 'NoCodeExpression', operatorIdentifier: 'not', operands: [null]}],
 };
 
-function Harness(props: {onChange: (operand: NoCodeOperand | null | undefined) => void; initial?: NoCodeOperand}) {
+function Harness(props: {
+    onChange: (operand: NoCodeOperand | null | undefined) => void;
+    initial?: NoCodeOperand;
+    operators?: NoCodeOperatorDetailsDTO[];
+}) {
     // Clones like a parent that copies its state, which must not rebuild the tree.
     const [operand, setOperand] = useState<NoCodeOperand | null | undefined>(props.initial ?? expression);
     return (
@@ -89,7 +93,7 @@ function Harness(props: {onChange: (operand: NoCodeOperand | null | undefined) =
                 props.onChange(next);
                 setOperand(structuredClone(next));
             }}
-            allOperators={[equals, not, add, alwaysTrue]}
+            allOperators={props.operators ?? [equals, not, add, alwaysTrue]}
             allElements={[{element: amount, parents: []}]}
         />
     );
@@ -511,3 +515,76 @@ class FakeDataTransfer {
     setDragImage() {
     }
 }
+
+describe('operator sentences and descriptions', () => {
+    const sentenceEquals: NoCodeOperatorDetailsDTO = {
+        ...equals,
+        sentenceLead: 'ergibt wahr',
+        abstractDescription: 'Prüft, ob zwei Werte gleich sind.',
+        description: 'Vergleicht **beide Werte** miteinander.',
+        signatures: [{
+            returnType: NoCodeDataType.Boolean,
+            parameters: [
+                {type: NoCodeDataType.Runtime, label: 'Wert 1', description: null, sentencePhrase: 'wenn', options: []},
+                {type: NoCodeDataType.Runtime, label: 'Wert 2', description: null, sentencePhrase: 'gleich', sentenceSuffix: 'ist', options: []},
+            ],
+        }],
+    };
+    const operatorItemName = 'Bedingung: Operator Ist Gleich, Wahrheitswert';
+
+    it('reads the expression as a sentence and keeps the parameter labels as accessible names', () => {
+        render(<Harness onChange={vi.fn()} operators={[sentenceEquals]}/>);
+
+        const operatorItem = screen.getByRole('treeitem', {name: operatorItemName});
+        const second = screen.getByRole('treeitem', {name: 'Wert 2: b, Beliebiger Wert'});
+        expect(operatorItem.firstElementChild).toHaveTextContent('Ist Gleich');
+        expect(operatorItem.firstElementChild).toHaveTextContent('ergibt wahr');
+        expect(screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'})).toHaveTextContent(/^wenn/);
+        expect(second).toHaveTextContent(/^gleich/);
+        expect(second).toHaveTextContent(/ist$/);
+        expect(screen.queryByText('Wert 1')).not.toBeInTheDocument();
+    });
+
+    it('shows the parameter label when an operator has no sentence parts', () => {
+        render(<Harness onChange={vi.fn()}/>);
+
+        expect(screen.getByText('Wert 1')).toBeInTheDocument();
+        expect(screen.queryByText('ergibt wahr')).not.toBeInTheDocument();
+    });
+
+    it('shows the summary on hover and the description on request', async () => {
+        render(<Harness onChange={vi.fn()} operators={[sentenceEquals]}/>);
+
+        fireEvent.mouseOver(screen.getByRole('button', {name: 'Ist Gleich, Wahrheitswert'}));
+        const tooltip = await screen.findByRole('tooltip');
+        expect(tooltip).toHaveTextContent('Prüft, ob zwei Werte gleich sind.');
+        fireEvent.click(within(tooltip).getByRole('button', {name: 'Mehr...'}));
+
+        const dialog = await screen.findByRole('dialog', {name: 'Ist Gleich'});
+        expect(within(dialog).getByText('beide Werte').tagName).toBe('STRONG');
+    });
+
+    it('opens the description from the action menu and returns focus to the operator', async () => {
+        render(<Harness onChange={vi.fn()} operators={[sentenceEquals]}/>);
+        const operatorItem = screen.getByRole('treeitem', {name: operatorItemName});
+
+        operatorItem.focus();
+        fireEvent.keyDown(operatorItem, {key: 'F10', shiftKey: true});
+        fireEvent.click(await screen.findByRole('menuitem', {name: 'Beschreibung anzeigen'}));
+        const dialog = await screen.findByRole('dialog', {name: 'Ist Gleich'});
+        fireEvent.keyDown(dialog, {key: 'Escape'});
+
+        await waitFor(() => expect(operatorItem).toHaveFocus());
+    });
+
+    it('offers no description for values', async () => {
+        render(<Harness onChange={vi.fn()} operators={[sentenceEquals]}/>);
+        const leaf = screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'});
+
+        leaf.focus();
+        fireEvent.keyDown(leaf, {key: 'F10', shiftKey: true});
+
+        await screen.findByRole('menuitem', {name: 'An andere Stelle verschieben'});
+        expect(screen.queryByRole('menuitem', {name: 'Beschreibung anzeigen'})).not.toBeInTheDocument();
+    });
+});

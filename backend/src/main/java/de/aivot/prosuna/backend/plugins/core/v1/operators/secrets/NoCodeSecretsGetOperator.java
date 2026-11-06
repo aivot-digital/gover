@@ -66,6 +66,11 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt das Geheimnis";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -74,7 +79,7 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Geheimnis-Schlüssel",
                                 "Der Schlüssel des Geheimnisses, dessen entschlüsselter Wert abgerufen werden soll."
-                        )
+                        ).withSentence("mit dem Schlüssel")
                 )
         );
     }

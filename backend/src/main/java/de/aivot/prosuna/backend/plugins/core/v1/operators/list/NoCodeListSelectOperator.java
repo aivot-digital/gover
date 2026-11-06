@@ -59,6 +59,11 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -67,12 +72,12 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste oder Tabelle, aus der die Werte extrahiert werden sollen."
-                        ),
+                        ).withSentence("aus"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Feld",
                                 "Das Feld (Spalte), dessen Werte extrahiert werden sollen."
-                        )
+                        ).withSentence("die Werte des Feldes")
                 )
         );
     }

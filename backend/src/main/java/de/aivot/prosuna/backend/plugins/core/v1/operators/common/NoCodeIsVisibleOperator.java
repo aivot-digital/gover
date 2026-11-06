@@ -60,6 +60,16 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    /** The phrase after the field, so subclasses keep the sentence of this operator. */
+    protected String getVisibilitySuffix() {
+        return "sichtbar ist";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -68,7 +78,7 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Wert",
                                 "Die ID des zu überprüfenden Elements."
-                        )
+                        ).withSentence("wenn das Feld", getVisibilitySuffix())
                 )
         );
     }

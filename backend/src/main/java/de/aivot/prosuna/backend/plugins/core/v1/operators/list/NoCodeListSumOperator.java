@@ -61,6 +61,11 @@ public class NoCodeListSumOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt die Summe";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -69,7 +74,7 @@ public class NoCodeListSumOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste der numerischen Werte, deren Summe berechnet werden soll."
-                        )
+                        ).withSentence("von")
                 )
         );
     }

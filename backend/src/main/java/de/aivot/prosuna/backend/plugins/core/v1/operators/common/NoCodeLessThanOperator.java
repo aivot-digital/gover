@@ -56,6 +56,11 @@ public class NoCodeLessThanOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -64,12 +69,12 @@ public class NoCodeLessThanOperator extends NoCodeOperator {
                                 NoCodeDataType.Number,
                                 "Wert 1",
                                 "Der erste zu vergleichende Wert."
-                        ),
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Wert 2",
                                 "Der zweite zu vergleichende Wert."
-                        )
+                        ).withSentence("kleiner als")
                 )
         );
     }

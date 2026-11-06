@@ -58,6 +58,11 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -66,12 +71,12 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
                                 NoCodeDataType.Number,
                                 "Minuend",
                                 "Der Wert, von dem subtrahiert wird."
-                        ),
+                        ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Subtrahend",
                                 "Der Wert, der subtrahiert wird."
-                        )
+                        ).withSentence("minus")
                 )
         );
     }

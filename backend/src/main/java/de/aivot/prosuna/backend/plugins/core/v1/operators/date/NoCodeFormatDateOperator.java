@@ -61,6 +61,11 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -69,7 +74,7 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
                                 NoCodeDataType.Date,
                                 "Datum",
                                 "Das zu formatierende Datum."
-                        ),
+                        ).withSentence("das Datum"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Format",
@@ -78,7 +83,7 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
                                 new NoCodeParameterOption("Monat und Jahr", "MM.yyyy"),
                                 new NoCodeParameterOption("Jahr", "yyyy"),
                                 new NoCodeParameterOption("ISO-Datum", "yyyy-MM-dd")
-                        )
+                        ).withSentence("im Format")
                 )
         );
     }

@@ -76,6 +76,11 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -84,12 +89,12 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                                 NoCodeDataType.Date,
                                 "Datum",
                                 "Das Ausgangsdatum, zu dem Tage, Wochen, Monate oder Jahre hinzugefügt werden sollen."
-                        ),
+                        ).withSentence("das Datum"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Anzahl",
                                 "Die Anzahl der Tage, Wochen, Monate oder Jahre, die zum Datum hinzugefügt werden sollen."
-                        ),
+                        ).withSentence("plus"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Einheit",
@@ -98,7 +103,7 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                                 new NoCodeParameterOption("Wochen", WEEKS_UNIT),
                                 new NoCodeParameterOption("Monate", MONTHS_UNIT),
                                 new NoCodeParameterOption("Jahre", YEARS_UNIT)
-                        )
+                        ).withSentence("")
                 )
         );
     }

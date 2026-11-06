@@ -50,6 +50,11 @@ public class NoCodePhoneNumberIsValidOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -58,7 +63,7 @@ public class NoCodePhoneNumberIsValidOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Telefonnummer",
                                 "Die zu prüfende Telefonnummer mit Ländervorwahl."
-                        )
+                        ).withSentence("wenn", "eine gültige Telefonnummer ist")
                 )
         );
     }

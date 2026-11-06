@@ -61,6 +61,11 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -69,12 +74,12 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste 1",
                                 "Die erste Liste, die auf gemeinsame Werte geprüft werden soll."
-                        ),
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.List,
                                 "Liste 2",
                                 "Die zweite Liste, mit der die Überschneidung geprüft werden soll."
-                        )
+                        ).withSentence("und", "gemeinsame Einträge haben")
                 )
         );
     }

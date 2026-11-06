@@ -1,5 +1,5 @@
 import {type KeyboardEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState} from 'react';
-import {Box, Button, ButtonBase, IconButton, Menu, MenuItem, Popover, Tooltip, Typography} from '@mui/material';
+import {Box, Button, ButtonBase, Dialog, DialogContent, IconButton, Link, Menu, MenuItem, Popover, type SxProps, type Theme, Tooltip, Typography} from '@mui/material';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {useDrag, useDrop, VisuallyHidden} from 'react-aria-components';
 import {v4 as uuid4} from 'uuid';
@@ -18,6 +18,9 @@ import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 import {SelectOperatorDialog} from '../../../dialogs/select-operator-dialog/select-operator-dialog';
+import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {MarkdownContent} from '../../../components/markdown-content/markdown-content';
 import {NoCodeDryRunResultDTO, NoCodeDryRunStatus} from '../../../models/dtos/no-code-dry-run-dto';
 import {NoCodeDataTypeMap} from '../data/no-code-data-type-map';
 import {humanizeNoCode} from '../utils/humanize-no-code';
@@ -82,6 +85,8 @@ interface EditorContext {
     grab: GrabState | null;
     startGrab: (nodeId: string, name: string) => void;
     openMenu: (nodeId: string, name: string, anchor: HTMLElement) => void;
+    /** Opens the description of an operator; focus returns to its tree item afterwards. */
+    showDescription: (nodeId: string, operator: NoCodeOperatorDetailsDTO) => void;
     startPointerDrag: (nodeId: string, name: string) => void;
     endPointerDrag: () => void;
     canDropPointerDrag: (slot: PillNoCodeSlot) => boolean;
@@ -150,11 +155,13 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
     const [pointerDrag, setPointerDrag] = useState<{nodeId: string; name: string} | null>(null);
     const [results, setResults] = useState<Map<string, NoCodeDryRunResultDTO> | null>(null);
     const [wrapTarget, setWrapTarget] = useState<{nodeId: string; name: string; returnType: NoCodeDataType} | null>(null);
+    // Kept until the dialog has closed, so its content stays during the transition and focus can return.
+    const [description, setDescription] = useState<{nodeId: string; operator: NoCodeOperatorDetailsDTO; open: boolean} | null>(null);
     const treeRef = useRef<HTMLDivElement>(null);
     // Blur and Tab handlers can run before the next render, so they read the grab state from here.
     const grabRef = useRef<GrabState | null>(null);
     // What happens once the menu or the operator dialog has finished closing; focusing earlier races their focus trap.
-    const afterMenuRef = useRef<{nodeId: string; name: string; wrap: boolean} | null>(null);
+    const afterMenuRef = useRef<{nodeId: string; name: string; wrap: boolean; describe?: NoCodeOperatorDetailsDTO} | null>(null);
     const focusAfterDialogRef = useRef<string | null>(null);
     const helpId = `${useNormalizedReactId()}-help`;
 
@@ -306,6 +313,7 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
         grab,
         startGrab,
         results,
+        showDescription: (nodeId, operator) => setDescription({nodeId, operator, open: true}),
         insert: (parentId, index, inserted) => {
             const node = toPillNoCodeNode(inserted);
             if (node == null) {
@@ -432,6 +440,13 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
         }
     };
 
+    const menuNode = menu == null ? null : findPillNoCodeNode(root, menu.nodeId);
+    const menuOperator = menuNode?.type === 'NoCodeExpression'
+        ? allOperators.find((op) => op.identifier === menuNode.operatorIdentifier)
+        : undefined;
+
+    const closeDescription = () => setDescription((current) => current == null ? null : {...current, open: false});
+
     const runMenuAction = (action: (menu: MenuState) => void) => {
         if (menu != null) {
             deferAnnouncements();
@@ -530,7 +545,9 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
                             const after = afterMenuRef.current;
                             afterMenuRef.current = null;
                             const slot = after == null ? null : findPillNoCodeSlot(root, after.nodeId);
-                            if (after?.wrap && slot != null) {
+                            if (after?.describe != null) {
+                                setDescription({nodeId: after.nodeId, operator: after.describe, open: true});
+                            } else if (after?.wrap && slot != null) {
                                 setWrapTarget({
                                     nodeId: after.nodeId,
                                     name: after.name,
@@ -565,7 +582,41 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
                 >
                     Übergeordneten Operator hinzufügen
                 </MenuItem>
+                {
+                    menuOperator != null &&
+                    <MenuItem
+                        onClick={() => runMenuAction((current) => {
+                            afterMenuRef.current = {nodeId: current.nodeId, name: current.name, wrap: false, describe: menuOperator};
+                        })}
+                    >
+                        Beschreibung anzeigen
+                    </MenuItem>
+                }
             </Menu>
+
+            <Dialog
+                open={description?.open ?? false}
+                onClose={closeDescription}
+                // The tree item takes focus once the dialog is gone, also when it was opened from a closed tooltip.
+                disableRestoreFocus
+                slotProps={{
+                    transition: {
+                        onExited: () => {
+                            if (description != null) {
+                                requestFocus(description.nodeId);
+                            }
+                            setDescription(null);
+                        },
+                    },
+                }}
+            >
+                <DialogTitleWithClose onClose={closeDescription}>
+                    {description?.operator.label}
+                </DialogTitleWithClose>
+                <DialogContent tabIndex={0}>
+                    <MarkdownContent markdown={description?.operator.description}/>
+                </DialogContent>
+            </Dialog>
 
             <SelectOperatorDialog
                 open={wrapTarget != null}
@@ -604,7 +655,10 @@ interface PillNoCodeTreeItemProps {
     slot: PillNoCodeSlot;
     /** Name in announcements and the action menu. Sockets have none and cannot be moved. */
     name?: string;
-    parameterLabel: string;
+    /** The parameter the item fills; its label names the item and its sentence parts surround it. */
+    parameter: NoCodeParameter;
+    /** Text after an operator that starts the sentence of its parameters. */
+    lead?: string | null;
     ariaLabel: string;
     /** IDs of the error and warning texts that describe the item. */
     describedBy?: (string | undefined)[];
@@ -620,7 +674,12 @@ interface PillNoCodeTreeItemProps {
 }
 
 function PillNoCodeTreeItem(props: PillNoCodeTreeItemProps) {
-    const {itemKey, slot, name, parameterLabel, ariaLabel, describedBy = [], showResult = false, ctx, onActivate, onRemove, children, group} = props;
+    const {itemKey, slot, name, parameter, lead, ariaLabel, describedBy = [], showResult = false, ctx, onActivate, onRemove, children, group} = props;
+    const parameterLabel = parameter.label;
+    // An empty phrase still takes the caption width, so operands of the same operator stay aligned.
+    const phrase = parameter.sentencePhrase ?? parameterLabel;
+    const hasPhrase = parameter.sentencePhrase != null || !isStringNullOrEmpty(parameterLabel);
+    const suffix = isStringNullOrEmpty(parameter.sentenceSuffix) ? null : parameter.sentenceSuffix;
     const rowRef = useRef<HTMLDivElement>(null);
     const isNode = name != null;
     const result = showResult ? ctx.results?.get(itemKey) : undefined;
@@ -718,17 +777,15 @@ function PillNoCodeTreeItem(props: PillNoCodeTreeItemProps) {
                 }}
             >
                 {
-                    !isStringNullOrEmpty(parameterLabel) &&
-                    <Typography
-                        aria-hidden
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{minWidth: 72, lineHeight: '28px'}}
-                    >
-                        {parameterLabel}
-                    </Typography>
+                    hasPhrase &&
+                    <SentenceText sx={{minWidth: 72}}>
+                        {phrase}
+                    </SentenceText>
                 }
                 {children}
+                {!isStringNullOrEmpty(lead) && <SentenceText>{lead}</SentenceText>}
+                {/* The suffix of an operator follows its operands, so the sentence reads in order. */}
+                {suffix != null && group == null && <SentenceText>{suffix}</SentenceText>}
                 {result != null && resultId != null && <PillNoCodeDryRunResult id={resultId} result={result}/>}
                 {
                     isNode &&
@@ -765,7 +822,28 @@ function PillNoCodeTreeItem(props: PillNoCodeTreeItemProps) {
                     {group}
                 </Box>
             }
+
+            {
+                suffix != null && group != null &&
+                <SentenceText sx={{display: 'block', mt: 1}}>
+                    {suffix}
+                </SentenceText>
+            }
         </Box>
+    );
+}
+
+/** Words of the sentence an expression reads as. Screen readers get the parameter label in the item name instead. */
+function SentenceText({children, sx}: {children: ReactNode; sx?: SxProps<Theme>}) {
+    return (
+        <Typography
+            aria-hidden
+            variant="caption"
+            color="text.secondary"
+            sx={[{lineHeight: '28px', whiteSpace: 'nowrap'}, ...(Array.isArray(sx) ? sx : [sx])]}
+        >
+            {children}
+        </Typography>
     );
 }
 
@@ -794,7 +872,7 @@ function PillNoCodeSocketView(props: SlotProps) {
         <PillNoCodeTreeItem
             itemKey={socketKey(parentId, index)}
             slot={{parentId, index}}
-            parameterLabel={parameter.label}
+            parameter={parameter}
             ariaLabel={`leer, ${NoCodeDataTypeLabels[parameter.type]}`}
             ctx={ctx}
             onActivate={() => setAnchor(socketRef.current)}
@@ -870,7 +948,8 @@ function PillNoCodeExpressionView(props: SlotProps & {node: PillNoCodeExpression
             itemKey={node.id}
             slot={{parentId, index}}
             name={name}
-            parameterLabel={slotParameter.label}
+            parameter={slotParameter}
+            lead={operator?.sentenceLead}
             ariaLabel={`Operator ${name}, ${NoCodeDataTypeLabels[dataType]}`}
             describedBy={[errorId, warningId]}
             showResult
@@ -889,18 +968,37 @@ function PillNoCodeExpressionView(props: SlotProps & {node: PillNoCodeExpression
                 />
             ))}
         >
-            <NoCodePill
-                dataType={dataType}
-                label={name}
-                dismissLabel={`Operator „${name}“ löschen`}
-                error={error?.error}
-                errorId={errorId}
-                warning={warning}
-                warningId={warningId}
-                tabIndex={-1}
-                onClick={() => setShowOperatorPicker(true)}
-                onDismiss={() => ctx.remove(node.id)}
-            />
+            {/* Keyboard users open the description from the action menu, because tree items keep focus off the pill. */}
+            <HintTooltip
+                arrow
+                placement="top-start"
+                title={operator == null ? '' : (
+                    <>
+                        <Box>{operator.abstractDescription}</Box>
+                        <Link
+                            component="button"
+                            onClick={() => ctx.showDescription(node.id, operator)}
+                        >
+                            Mehr...
+                        </Link>
+                    </>
+                )}
+            >
+                <Box component="span" sx={{display: 'inline-flex', maxWidth: '100%'}}>
+                    <NoCodePill
+                        dataType={dataType}
+                        label={name}
+                        dismissLabel={`Operator „${name}“ löschen`}
+                        error={error?.error}
+                        errorId={errorId}
+                        warning={warning}
+                        warningId={warningId}
+                        tabIndex={-1}
+                        onClick={() => setShowOperatorPicker(true)}
+                        onDismiss={() => ctx.remove(node.id)}
+                    />
+                </Box>
+            </HintTooltip>
 
             <SelectOperatorDialog
                 open={showOperatorPicker}
@@ -941,7 +1039,7 @@ function PillNoCodeLeafView(props: SlotProps & {node: PillNoCodeLeafNode}) {
             itemKey={node.id}
             slot={{parentId, index}}
             name={label}
-            parameterLabel={parameter.label}
+            parameter={parameter}
             ariaLabel={`${label}, ${NoCodeDataTypeLabels[dataType]}`}
             describedBy={[errorId, warningId]}
             showResult={node.type !== 'NoCodeStaticValue'}

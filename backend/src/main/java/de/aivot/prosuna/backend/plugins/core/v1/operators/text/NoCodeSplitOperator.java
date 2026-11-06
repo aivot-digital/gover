@@ -61,6 +61,11 @@ public class NoCodeSplitOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -69,12 +74,12 @@ public class NoCodeSplitOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Text",
                                 "Der Text, der aufgeteilt werden soll."
-                        ),
+                        ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Separator",
                                 "Das Zeichen oder die Zeichenfolge, anhand derer der Text aufgeteilt werden soll."
-                        )
+                        ).withSentence("aufgeteilt an")
                 )
         );
     }

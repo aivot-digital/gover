@@ -84,6 +84,17 @@ public abstract class NoCodeOperator {
     }
 
     /**
+     * Returns the text that follows the operator in the editor and starts the sentence its parameters continue.
+     * For example „ergibt wahr“, followed by the parameters „wenn A“ and „gleich B“.
+     *
+     * @return the text after the operator, or {@code null} for none
+     */
+    @Nullable
+    public String getSentenceLead() {
+        return null;
+    }
+
+    /**
      * Returns the list of parameters that the operator expects.
      *
      * @return the array of parameters that the operator expects

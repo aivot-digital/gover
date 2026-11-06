@@ -46,6 +46,11 @@ public class NoCodeCombineDateAndTimeOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt den Zeitpunkt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -54,12 +59,12 @@ public class NoCodeCombineDateAndTimeOperator extends NoCodeOperator {
                                 NoCodeDataType.Date,
                                 "Datum",
                                 "Das vollständige Kalenderdatum."
-                        ),
+                        ).withSentence("aus Datum"),
                         new NoCodeParameter(
                                 NoCodeDataType.Time,
                                 "Uhrzeit",
                                 "Die lokale Uhrzeit ohne Zeitzone."
-                        )
+                        ).withSentence("und Uhrzeit")
                 )
         );
     }

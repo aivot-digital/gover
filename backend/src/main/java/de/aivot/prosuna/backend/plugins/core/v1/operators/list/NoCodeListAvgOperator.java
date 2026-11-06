@@ -68,6 +68,11 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt den Durchschnitt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -76,7 +81,7 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste der numerischen Werte, deren Durchschnitt berechnet werden soll."
-                        )
+                        ).withSentence("von")
                 )
         );
     }

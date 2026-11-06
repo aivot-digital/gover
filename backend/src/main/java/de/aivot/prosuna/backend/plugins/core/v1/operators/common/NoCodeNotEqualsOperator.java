@@ -62,4 +62,9 @@ public class NoCodeNotEqualsOperator extends NoCodeEqualsOperator {
     public String getHumanReadableTemplate() {
         return "„#0“ ist nicht gleich „#1“";
     }
+
+    @Override
+    protected String getComparisonPhrase() {
+        return "ungleich";
+    }
 }

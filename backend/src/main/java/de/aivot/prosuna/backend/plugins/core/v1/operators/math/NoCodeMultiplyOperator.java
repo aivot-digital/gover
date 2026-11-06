@@ -60,6 +60,11 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -68,12 +73,12 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
                                 NoCodeDataType.Number,
                                 "Faktor 1",
                                 "Der erste zu multiplizierende Wert."
-                        ),
+                        ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Faktor 2",
                                 "Der zweite zu multiplizierende Wert."
-                        )
+                        ).withSentence("mal")
                 )
         );
     }

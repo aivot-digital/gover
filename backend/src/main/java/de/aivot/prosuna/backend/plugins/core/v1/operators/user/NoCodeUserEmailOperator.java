@@ -68,6 +68,11 @@ public class NoCodeUserEmailOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt die E-Mail-Adresse";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -76,7 +81,7 @@ public class NoCodeUserEmailOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Mitarbeiter:innen-ID",
                                 "Die ID der Mitarbeiter:in, deren E-Mail-Adresse ermittelt werden soll."
-                        )
+                        ).withSentence("zur Mitarbeiter:innen-ID")
                 )
         );
     }

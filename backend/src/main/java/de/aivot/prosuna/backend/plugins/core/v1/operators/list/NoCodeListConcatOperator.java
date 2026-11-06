@@ -54,6 +54,11 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt die Liste";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -62,12 +67,12 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste 1",
                                 "Die erste Liste, die zusammengefügt werden soll."
-                        ),
+                        ).withSentence("aus"),
                         new NoCodeParameter(
                                 NoCodeDataType.List,
                                 "Liste 2",
                                 "Die zweite Liste, die zusammengefügt werden soll."
-                        )
+                        ).withSentence("und")
                 )
         );
     }

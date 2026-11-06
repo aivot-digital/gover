@@ -58,6 +58,11 @@ public class NoCodeOrOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         var signatures = new NoCodeSignatur[9];
 
@@ -70,7 +75,7 @@ public class NoCodeOrOperator extends NoCodeOperator {
                         "Die " + (j + 1) + ". Bedingung für die ODER-Verknüpfung.",
                         new NoCodeParameterOption("Wahr", "true"),
                         new NoCodeParameterOption("Falsch", "false")
-                );
+                ).withSentence(j == 0 ? "wenn" : "oder");
             }
             signatures[i] = NoCodeSignatur.of(
                     NoCodeDataType.Boolean,

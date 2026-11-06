@@ -38,6 +38,11 @@ public class NoCodeFormatDateTimeOperator extends NoCodeFormatDateOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -46,7 +51,7 @@ public class NoCodeFormatDateTimeOperator extends NoCodeFormatDateOperator {
                                 NoCodeDataType.DateTime,
                                 "Zeitpunkt",
                                 "Der zu formatierende absolute Zeitpunkt."
-                        ),
+                        ).withSentence("den Zeitpunkt"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Format",
@@ -54,7 +59,7 @@ public class NoCodeFormatDateTimeOperator extends NoCodeFormatDateOperator {
                                 new NoCodeParameterOption("Datum (TT.MM.JJJJ)", "dd.MM.yyyy"),
                                 new NoCodeParameterOption("Datum mit Zeit", "dd.MM.yyyy HH:mm"),
                                 new NoCodeParameterOption("ISO Datum/Zeit", "yyyy-MM-dd'T'HH:mm:ssXXX")
-                        )
+                        ).withSentence("im Format")
                 )
         );
     }
