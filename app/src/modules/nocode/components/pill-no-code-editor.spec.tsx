@@ -531,6 +531,16 @@ describe('operator sentences and descriptions', () => {
         }],
     };
     const operatorItemName = 'Bedingung: Operator Ist Gleich, Wahrheitswert';
+    const described: NoCodeOperatorDetailsDTO = {
+        ...sentenceEquals,
+        signatures: [{
+            returnType: NoCodeDataType.Boolean,
+            parameters: [
+                {...sentenceEquals.signatures[0].parameters[0], description: 'Der erste Vergleichswert.'},
+                {...sentenceEquals.signatures[0].parameters[1], description: 'Der zweite Vergleichswert.'},
+            ],
+        }],
+    };
 
     it('reads the expression as a sentence and keeps the parameter labels as accessible names', () => {
         render(<Harness onChange={vi.fn()} operators={[sentenceEquals]}/>);
@@ -577,14 +587,48 @@ describe('operator sentences and descriptions', () => {
         await waitFor(() => expect(operatorItem).toHaveFocus());
     });
 
-    it('offers no description for values', async () => {
-        render(<Harness onChange={vi.fn()} operators={[sentenceEquals]}/>);
+    it('describes a value and the parameter it fills', async () => {
+        render(<Harness onChange={vi.fn()} operators={[described]}/>);
+
+        fireEvent.mouseOver(screen.getByRole('button', {name: 'a, Beliebiger Wert'}));
+        const tooltip = await screen.findByRole('tooltip');
+        expect(tooltip).toHaveTextContent('Ergibt den eingegebenen Wert „a“.');
+        expect(tooltip).toHaveTextContent('Wert 1: Der erste Vergleichswert.');
+        fireEvent.click(within(tooltip).getByRole('button', {name: 'Mehr...'}));
+
+        const dialog = await screen.findByRole('dialog', {name: 'Fester Wert'});
+        expect(dialog).toHaveTextContent('einen konstanten Wert direkt in den Ausdruck einzufügen');
+    });
+
+    it('names the referenced element', async () => {
+        const reference: NoCodeOperand = {...expression, operands: [{type: 'NoCodeReference', elementId: 'amount'}, a]};
+        render(<Harness onChange={vi.fn()} operators={[described]} initial={reference}/>);
+
+        fireEvent.mouseOver(screen.getByRole('button', {name: /^Betrag, /}));
+
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Ergibt den aktuellen Wert des Elements „Betrag“.');
+    });
+
+    it('describes what belongs into an empty parameter', async () => {
+        render(<Harness onChange={vi.fn()} operators={[described]} initial={{...expression, operands: [a, null]}}/>);
+
+        fireEvent.mouseOver(screen.getByRole('button', {name: 'Wert 2 festlegen'}));
+        const tooltip = await screen.findByRole('tooltip');
+
+        expect(tooltip).toHaveTextContent('Wert 2: Der zweite Vergleichswert.');
+        expect(within(tooltip).queryByRole('button', {name: 'Mehr...'})).not.toBeInTheDocument();
+    });
+
+    it('opens the description of a value from the action menu', async () => {
+        render(<Harness onChange={vi.fn()} operators={[described]}/>);
         const leaf = screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'});
 
         leaf.focus();
         fireEvent.keyDown(leaf, {key: 'F10', shiftKey: true});
+        fireEvent.click(await screen.findByRole('menuitem', {name: 'Beschreibung anzeigen'}));
+        const dialog = await screen.findByRole('dialog', {name: 'Fester Wert'});
+        fireEvent.keyDown(dialog, {key: 'Escape'});
 
-        await screen.findByRole('menuitem', {name: 'An andere Stelle verschieben'});
-        expect(screen.queryByRole('menuitem', {name: 'Beschreibung anzeigen'})).not.toBeInTheDocument();
+        await waitFor(() => expect(leaf).toHaveFocus());
     });
 });

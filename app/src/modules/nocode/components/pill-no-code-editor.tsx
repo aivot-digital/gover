@@ -1,4 +1,4 @@
-import {type KeyboardEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {type KeyboardEvent, type ReactElement, type ReactNode, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {Box, Button, ButtonBase, Dialog, DialogContent, IconButton, Link, Menu, MenuItem, Popover, type SxProps, type Theme, Tooltip, Typography} from '@mui/material';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {useDrag, useDrop, VisuallyHidden} from 'react-aria-components';
@@ -24,6 +24,7 @@ import {MarkdownContent} from '../../../components/markdown-content/markdown-con
 import {NoCodeDryRunResultDTO, NoCodeDryRunStatus} from '../../../models/dtos/no-code-dry-run-dto';
 import {NoCodeDataTypeMap} from '../data/no-code-data-type-map';
 import {humanizeNoCode} from '../utils/humanize-no-code';
+import {NoCodeOperandKindHelp} from '../data/no-code-operand-kind-help';
 import {usePillNoCodeStore} from '../hooks/use-pill-no-code-store';
 import {
     findPillNoCodeNode,
@@ -85,14 +86,20 @@ interface EditorContext {
     grab: GrabState | null;
     startGrab: (nodeId: string, name: string) => void;
     openMenu: (nodeId: string, name: string, anchor: HTMLElement) => void;
-    /** Opens the description of an operator; focus returns to its tree item afterwards. */
-    showDescription: (nodeId: string, operator: NoCodeOperatorDetailsDTO) => void;
+    /** Opens the description of a node; focus returns to its tree item afterwards. */
+    showDescription: (nodeId: string, details: NodeDetails) => void;
     startPointerDrag: (nodeId: string, name: string) => void;
     endPointerDrag: () => void;
     canDropPointerDrag: (slot: PillNoCodeSlot) => boolean;
     dropPointerDrag: (slot: PillNoCodeSlot) => void;
     /** Dry run results by node ID while the dry run panel is open. */
     results: Map<string, NoCodeDryRunResultDTO> | null;
+}
+
+/** The full description of a node, shown in a dialog. */
+interface NodeDetails {
+    title: string;
+    details: ReactNode;
 }
 
 interface SlotProps {
@@ -156,12 +163,12 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
     const [results, setResults] = useState<Map<string, NoCodeDryRunResultDTO> | null>(null);
     const [wrapTarget, setWrapTarget] = useState<{nodeId: string; name: string; returnType: NoCodeDataType} | null>(null);
     // Kept until the dialog has closed, so its content stays during the transition and focus can return.
-    const [description, setDescription] = useState<{nodeId: string; operator: NoCodeOperatorDetailsDTO; open: boolean} | null>(null);
+    const [description, setDescription] = useState<NodeDetails & {nodeId: string; open: boolean} | null>(null);
     const treeRef = useRef<HTMLDivElement>(null);
     // Blur and Tab handlers can run before the next render, so they read the grab state from here.
     const grabRef = useRef<GrabState | null>(null);
     // What happens once the menu or the operator dialog has finished closing; focusing earlier races their focus trap.
-    const afterMenuRef = useRef<{nodeId: string; name: string; wrap: boolean; describe?: NoCodeOperatorDetailsDTO} | null>(null);
+    const afterMenuRef = useRef<{nodeId: string; name: string; wrap: boolean; describe?: NodeDetails} | null>(null);
     const focusAfterDialogRef = useRef<string | null>(null);
     const helpId = `${useNormalizedReactId()}-help`;
 
@@ -313,7 +320,7 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
         grab,
         startGrab,
         results,
-        showDescription: (nodeId, operator) => setDescription({nodeId, operator, open: true}),
+        showDescription: (nodeId, details) => setDescription({...details, nodeId, open: true}),
         insert: (parentId, index, inserted) => {
             const node = toPillNoCodeNode(inserted);
             if (node == null) {
@@ -441,9 +448,7 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
     };
 
     const menuNode = menu == null ? null : findPillNoCodeNode(root, menu.nodeId);
-    const menuOperator = menuNode?.type === 'NoCodeExpression'
-        ? allOperators.find((op) => op.identifier === menuNode.operatorIdentifier)
-        : undefined;
+    const menuDetails = menuNode == null ? null : getNodeDetails(menuNode, allOperators);
 
     const closeDescription = () => setDescription((current) => current == null ? null : {...current, open: false});
 
@@ -546,7 +551,7 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
                             afterMenuRef.current = null;
                             const slot = after == null ? null : findPillNoCodeSlot(root, after.nodeId);
                             if (after?.describe != null) {
-                                setDescription({nodeId: after.nodeId, operator: after.describe, open: true});
+                                setDescription({...after.describe, nodeId: after.nodeId, open: true});
                             } else if (after?.wrap && slot != null) {
                                 setWrapTarget({
                                     nodeId: after.nodeId,
@@ -583,10 +588,10 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
                     Übergeordneten Operator hinzufügen
                 </MenuItem>
                 {
-                    menuOperator != null &&
+                    menuDetails != null &&
                     <MenuItem
                         onClick={() => runMenuAction((current) => {
-                            afterMenuRef.current = {nodeId: current.nodeId, name: current.name, wrap: false, describe: menuOperator};
+                            afterMenuRef.current = {nodeId: current.nodeId, name: current.name, wrap: false, describe: menuDetails};
                         })}
                     >
                         Beschreibung anzeigen
@@ -611,10 +616,10 @@ export function PillNoCodeEditor(props: PillNoCodeEditorProps) {
                 }}
             >
                 <DialogTitleWithClose onClose={closeDescription}>
-                    {description?.operator.label}
+                    {description?.title}
                 </DialogTitleWithClose>
                 <DialogContent tabIndex={0}>
-                    <MarkdownContent markdown={description?.operator.description}/>
+                    {description?.details}
                 </DialogContent>
             </Dialog>
 
@@ -877,25 +882,27 @@ function PillNoCodeSocketView(props: SlotProps) {
             ctx={ctx}
             onActivate={() => setAnchor(socketRef.current)}
         >
-            <ButtonBase
-                ref={socketRef}
-                tabIndex={-1}
-                aria-label={`${name} festlegen`}
-                onClick={(event) => setAnchor(event.currentTarget)}
-                sx={{
-                    height: 28,
-                    px: 1,
-                    gap: 0.5,
-                    borderRadius: 14,
-                    border: '1px dashed',
-                    borderColor: 'text.disabled',
-                    color: 'text.secondary',
-                    typography: 'body2',
-                }}
-            >
-                <Icon fontSize="small" aria-hidden/>
-                Festlegen
-            </ButtonBase>
+            <PillHint parameter={parameter}>
+                <ButtonBase
+                    ref={socketRef}
+                    tabIndex={-1}
+                    aria-label={`${name} festlegen`}
+                    onClick={(event) => setAnchor(event.currentTarget)}
+                    sx={{
+                        height: 28,
+                        px: 1,
+                        gap: 0.5,
+                        borderRadius: 14,
+                        border: '1px dashed',
+                        borderColor: 'text.disabled',
+                        color: 'text.secondary',
+                        typography: 'body2',
+                    }}
+                >
+                    <Icon fontSize="small" aria-hidden/>
+                    Festlegen
+                </ButtonBase>
+            </PillHint>
 
             <Popover
                 open={anchor != null}
@@ -968,37 +975,24 @@ function PillNoCodeExpressionView(props: SlotProps & {node: PillNoCodeExpression
                 />
             ))}
         >
-            {/* Keyboard users open the description from the action menu, because tree items keep focus off the pill. */}
-            <HintTooltip
-                arrow
-                placement="top-start"
-                title={operator == null ? '' : (
-                    <>
-                        <Box>{operator.abstractDescription}</Box>
-                        <Link
-                            component="button"
-                            onClick={() => ctx.showDescription(node.id, operator)}
-                        >
-                            Mehr...
-                        </Link>
-                    </>
-                )}
+            <PillHint
+                summary={operator?.abstractDescription}
+                parameter={slotParameter}
+                onMore={operator == null ? undefined : () => ctx.showDescription(node.id, getNodeDetails(node, ctx.allOperators)!)}
             >
-                <Box component="span" sx={{display: 'inline-flex', maxWidth: '100%'}}>
-                    <NoCodePill
-                        dataType={dataType}
-                        label={name}
-                        dismissLabel={`Operator „${name}“ löschen`}
-                        error={error?.error}
-                        errorId={errorId}
-                        warning={warning}
-                        warningId={warningId}
-                        tabIndex={-1}
-                        onClick={() => setShowOperatorPicker(true)}
-                        onDismiss={() => ctx.remove(node.id)}
-                    />
-                </Box>
-            </HintTooltip>
+                <NoCodePill
+                    dataType={dataType}
+                    label={name}
+                    dismissLabel={`Operator „${name}“ löschen`}
+                    error={error?.error}
+                    errorId={errorId}
+                    warning={warning}
+                    warningId={warningId}
+                    tabIndex={-1}
+                    onClick={() => setShowOperatorPicker(true)}
+                    onDismiss={() => ctx.remove(node.id)}
+                />
+            </PillHint>
 
             <SelectOperatorDialog
                 open={showOperatorPicker}
@@ -1029,7 +1023,7 @@ function PillNoCodeLeafView(props: SlotProps & {node: PillNoCodeLeafNode}) {
         }
     }, [ctx.autoEditId, node.id]);
 
-    const {label, dataType, dismissLabel} = describeLeaf(node, parameter, ctx.allElements);
+    const {label, dataType, dismissLabel, summary} = describeLeaf(node, parameter, ctx.allElements);
     const errorId = error?.error != null ? `pill-no-code-error-${node.id}` : undefined;
     const warning = getPillNoCodeTypeConflict(node, parameter.type, ctx.allElements, ctx.allOperators);
     const warningId = warning != null ? `pill-no-code-warning-${node.id}` : undefined;
@@ -1047,19 +1041,25 @@ function PillNoCodeLeafView(props: SlotProps & {node: PillNoCodeLeafNode}) {
             onActivate={() => setAnchor(pillRef.current)}
             onRemove={() => ctx.remove(node.id)}
         >
-            <NoCodePill
-                ref={pillRef}
-                dataType={dataType}
-                label={label}
-                dismissLabel={dismissLabel}
-                error={error?.error}
-                errorId={errorId}
-                warning={warning}
-                warningId={warningId}
-                tabIndex={-1}
-                onClick={(event) => setAnchor(event.currentTarget)}
-                onDismiss={() => ctx.remove(node.id)}
-            />
+            <PillHint
+                summary={summary}
+                parameter={parameter}
+                onMore={() => ctx.showDescription(node.id, getNodeDetails(node, ctx.allOperators)!)}
+            >
+                <NoCodePill
+                    ref={pillRef}
+                    dataType={dataType}
+                    label={label}
+                    dismissLabel={dismissLabel}
+                    error={error?.error}
+                    errorId={errorId}
+                    warning={warning}
+                    warningId={warningId}
+                    tabIndex={-1}
+                    onClick={(event) => setAnchor(event.currentTarget)}
+                    onDismiss={() => ctx.remove(node.id)}
+                />
+            </PillHint>
 
             {/* shortcut: values are edited with the existing operand editors until the pill editor has its own. */}
             <Popover
@@ -1094,7 +1094,7 @@ function describeLeaf(
     node: PillNoCodeLeafNode,
     parameter: NoCodeParameter,
     allElements: ElementWithParents[],
-): {label: string; dataType: NoCodeDataType; dismissLabel: string} {
+): {label: string; dataType: NoCodeDataType; dismissLabel: string; summary: string} {
     switch (node.type) {
         case 'NoCodeStaticValue': {
             const options = parameter.options.length > 0 || parameter.type !== NoCodeDataType.Boolean
@@ -1106,6 +1106,7 @@ function describeLeaf(
                 label,
                 dataType: parameter.type,
                 dismissLabel: `Festen Wert „${label}“ löschen`,
+                summary: isStringNullOrEmpty(node.value) ? 'Ergibt einen leeren Wert.' : `Ergibt den eingegebenen Wert „${label}“.`,
             };
         }
         case 'NoCodeReference': {
@@ -1117,6 +1118,11 @@ function describeLeaf(
                 label,
                 dataType: element != null ? NoCodeDataTypeMap[element.type] : NoCodeDataType.Runtime,
                 dismissLabel: `Wert des Elements „${label}“ löschen`,
+                summary: element != null
+                    ? `Ergibt den aktuellen Wert des Elements „${label}“.`
+                    : isStringNullOrEmpty(node.elementId)
+                        ? 'Es ist noch kein Element ausgewählt.'
+                        : 'Das ausgewählte Element ist nicht mehr vorhanden.',
             };
         }
         default: {
@@ -1125,9 +1131,100 @@ function describeLeaf(
                 label,
                 dataType: NoCodeDataType.Runtime,
                 dismissLabel: `${label} löschen`,
+                summary: summarizeDataReference(node),
             };
         }
     }
+}
+
+function summarizeDataReference(
+    node: Exclude<PillNoCodeLeafNode, {type: 'NoCodeStaticValue' | 'NoCodeReference'}>,
+): string {
+    const path = isStringNullOrEmpty(node.path) ? null : node.path;
+    switch (node.type) {
+        case 'NoCodeProcessDataReference':
+            return path == null ? 'Ergibt die gesamten Vorgangsdaten.' : `Ergibt den Wert unter „${path}“ aus den Vorgangsdaten.`;
+        case 'NoCodeInstanceDataReference':
+            return path == null
+                ? 'Ergibt die gesamten geschützten Vorgangsdaten.'
+                : `Ergibt den Wert unter „${path}“ aus den geschützten Vorgangsdaten.`;
+        case 'NoCodeNodeDataReference':
+            if (isStringNullOrEmpty(node.nodeDataKey)) {
+                return 'Es ist noch kein Datenschlüssel angegeben.';
+            }
+            return path == null
+                ? `Ergibt die Elementdaten mit dem Schlüssel „${node.nodeDataKey}“.`
+                : `Ergibt den Wert unter „${path}“ aus den Elementdaten mit dem Schlüssel „${node.nodeDataKey}“.`;
+    }
+}
+
+/** The full description of an operator, or of the kind of a value. Null for operators that cannot be resolved. */
+function getNodeDetails(node: PillNoCodeNode, allOperators: NoCodeOperatorDetailsDTO[]): NodeDetails | null {
+    if (node.type !== 'NoCodeExpression') {
+        return NoCodeOperandKindHelp[node.type];
+    }
+    const operator = allOperators.find((op) => op.identifier === node.operatorIdentifier);
+    return operator == null ? null : {
+        title: operator.label,
+        details: <MarkdownContent markdown={operator.description}/>,
+    };
+}
+
+interface PillHintProps {
+    /** What the pill evaluates to. */
+    summary?: string | null;
+    /** The parameter the pill fills; its description says what belongs there. */
+    parameter: NoCodeParameter;
+    onMore?: () => void;
+    children: ReactElement;
+}
+
+/**
+ * Explains a pill on hover. Keyboard users reach the full description through the action menu, because the tree
+ * items keep focus off the pills.
+ */
+function PillHint({summary, parameter, onMore, children}: PillHintProps) {
+    const hasSummary = !isStringNullOrEmpty(summary);
+    const hasParameterHint = !isStringNullOrEmpty(parameter.description);
+    if (!hasSummary && !hasParameterHint) {
+        return children;
+    }
+
+    return (
+        <HintTooltip
+            arrow
+            placement="left"
+            title={
+                <>
+                    {hasSummary && <Box>{summary}</Box>}
+                    {
+                        hasParameterHint &&
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            component="p"
+                            sx={{mt: hasSummary ? 1 : 0}}
+                        >
+                            {isStringNullOrEmpty(parameter.label) ? parameter.description : `${parameter.label}: ${parameter.description}`}
+                        </Typography>
+                    }
+                    {
+                        onMore != null &&
+                        <Link
+                            component="button"
+                            onClick={onMore}
+                        >
+                            Mehr...
+                        </Link>
+                    }
+                </>
+            }
+        >
+            <Box component="span" sx={{display: 'inline-flex', maxWidth: '100%'}}>
+                {children}
+            </Box>
+        </HintTooltip>
+    );
 }
 
 function PillNoCodeDryRunResult({id, result}: {id: string; result: NoCodeDryRunResultDTO}) {

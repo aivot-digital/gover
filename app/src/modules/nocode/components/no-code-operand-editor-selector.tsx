@@ -11,6 +11,7 @@ import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {SelectOperatorDialog} from '../../../dialogs/select-operator-dialog/select-operator-dialog';
 import {NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
 import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
+import {NoCodeOperandKind, NoCodeOperandKindHelp} from '../data/no-code-operand-kind-help';
 
 interface NoCodeOperandEditorSelectorProps {
     allOperators: NoCodeOperatorDetailsDTO[];
@@ -32,12 +33,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
     const disableFormOptions = contextType === 'PROCESS';
     const disableProcessOptions = contextType === 'FORM';
 
-    const [showStaticValueHelp, setShowStaticValueHelp] = useState(false);
-    const [showReferenceHelp, setShowReferenceHelp] = useState(false);
-    const [showProcessDataReferenceHelp, setShowProcessDataReferenceHelp] = useState(false);
-    const [showInstanceDataReferenceHelp, setShowInstanceDataReferenceHelp] = useState(false);
-    const [showNodeDataReferenceHelp, setShowNodeDataReferenceHelp] = useState(false);
-    const [showExpressionHelp, setShowExpressionHelp] = useState(false);
+    const [help, setHelp] = useState<NoCodeOperandKind | null>(null);
 
     const [showOperatorSelector, setShowOperatorSelector] = useState(false);
 
@@ -69,7 +65,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                         Fester Wert
                     </Button>
                     <Button
-                        onClick={() => setShowStaticValueHelp(true)}
+                        onClick={() => setHelp('NoCodeStaticValue')}
                     >
                         <Help fontSize="small"/>
                     </Button>
@@ -92,7 +88,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                         </Button>
                         <Button
                             disabled={disableFormOptions}
-                            onClick={() => setShowReferenceHelp(true)}
+                            onClick={() => setHelp('NoCodeReference')}
                         >
                             <Help fontSize="small"/>
                         </Button>
@@ -114,7 +110,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                             Vorgangsdaten
                         </Button>
                         <Button
-                            onClick={() => setShowProcessDataReferenceHelp(true)}
+                            onClick={() => setHelp('NoCodeProcessDataReference')}
                         >
                             <Help fontSize="small"/>
                         </Button>
@@ -137,7 +133,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                             Geschützte Vorgangsdaten
                         </Button>
                         <Button
-                            onClick={() => setShowInstanceDataReferenceHelp(true)}
+                            onClick={() => setHelp('NoCodeInstanceDataReference')}
                         >
                             <Help fontSize="small"/>
                         </Button>
@@ -160,7 +156,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                             Elementdaten
                         </Button>
                         <Button
-                            onClick={() => setShowNodeDataReferenceHelp(true)}
+                            onClick={() => setHelp('NoCodeNodeDataReference')}
                         >
                             <Help fontSize="small"/>
                         </Button>
@@ -178,7 +174,7 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                         Ausdruck
                     </Button>
                     <Button
-                        onClick={() => setShowExpressionHelp(true)}
+                        onClick={() => setHelp('NoCodeExpression')}
                     >
                         <Help fontSize="small"/>
                     </Button>
@@ -192,101 +188,20 @@ export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorPr
                 }
             </Box>
 
-            <InfoDialog
-                title="Fester Wert"
-                severity="info"
-                open={showStaticValueHelp}
-                onClose={() => setShowStaticValueHelp(false)}
-            >
-                <Typography>
-                    Ein „Fester Wert” ermöglicht es Ihnen, einen konstanten Wert direkt in den Ausdruck einzufügen.
-                    Dies ist nützlich, wenn Sie mit unveränderlichen Daten arbeiten oder Standardwerte festlegen
-                    möchten.
-                </Typography>
-                <Typography>
-                    Nachdem Sie den Wert festgelegt haben, können Sie diesen mit anderen Werten oder Ausdrücken
-                    kombinieren, um komplexere Berechnungen oder Logiken zu erstellen.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Wert eines Elements"
-                severity="info"
-                open={showReferenceHelp}
-                onClose={() => setShowReferenceHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Mit der Option „Wert eines Elements” können Sie auf Werte zugreifen, die in anderen Feldern
-                    eingegeben oder berechnet wurden.
-                    Dies ist besonders nützlich, um Beziehungen zwischen verschiedenen Datenpunkten herzustellen und
-                    dynamische Ausdrücke zu erstellen.
-                </Typography>
-                <Typography gutterBottom>
-                    Sie können nur Elemente auswählen, die sich im selben Kontext befinden und die oberhalb des
-                    aktuellen Elements liegen.
-                </Typography>
-                <Typography>
-                    Nachdem Sie ein Element ausgewählt haben, können Sie dessen Wert in Ihrem Ausdruck verwenden und mit
-                    anderen Werten oder Ausdrücken kombinieren.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Vorgangsdaten"
-                severity="info"
-                open={showProcessDataReferenceHelp}
-                onClose={() => setShowProcessDataReferenceHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Mit der Option „Vorgangsdaten” können Sie auf Daten aus dem Prozesskontext zugreifen.
-                </Typography>
-                <Typography gutterBottom>
-                    Diese Option greift auf den Vorgangsdaten-Kontext (`$`) zu.
-                </Typography>
-                <Typography>
-                    Über einen optionalen Pfad können Sie gezielt verschachtelte Werte auslesen.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Geschützte Vorgangsdaten"
-                severity="info"
-                open={showInstanceDataReferenceHelp}
-                onClose={() => setShowInstanceDataReferenceHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Diese Option greift auf Geschützte Vorgangsdaten (`$$`) zu.
-                </Typography>
-                <Typography>
-                    Über einen optionalen Pfad können Sie gezielt verschachtelte Werte auslesen.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Elementdaten"
-                severity="info"
-                open={showNodeDataReferenceHelp}
-                onClose={() => setShowNodeDataReferenceHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Diese Option greift auf Elementdaten (`_`) zu.
-                </Typography>
-                <Typography>
-                    Für Elementdaten muss zusätzlich der Datenschlüssel des Prozesselementes angegeben werden.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Ausdruck"
-                severity="info"
-                open={showExpressionHelp}
-                onClose={() => setShowExpressionHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Mit der Option „Ausdruck” können Sie einen benutzerdefinierten Ausdruck erstellen, der verschiedene
-                    Werte mit einem Operator kombiniert.
-                </Typography>
-            </InfoDialog>
+            {
+                // One dialog per kind keeps the content while a dialog fades out.
+                (Object.keys(NoCodeOperandKindHelp) as NoCodeOperandKind[]).map((kind) => (
+                    <InfoDialog
+                        key={kind}
+                        title={NoCodeOperandKindHelp[kind].title}
+                        severity="info"
+                        open={help === kind}
+                        onClose={() => setHelp(null)}
+                    >
+                        {NoCodeOperandKindHelp[kind].details}
+                    </InfoDialog>
+                ))
+            }
 
             <SelectOperatorDialog
                 open={showOperatorSelector}
