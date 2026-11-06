@@ -102,6 +102,8 @@ class SecurityConfigurationCsrfWebMvcTest {
                 .build());
         when(userApiKeyRepository.findByKeyHashOfActiveUser(ApiKeyJwtDecoder.hash(API_KEY))).thenReturn(Optional.of(new UserApiKeyEntity()
                 .setId(1)
+                .setName("Test")
+                .setCreated(Instant.now())
                 .setUserId(API_KEY_USER_ID)
                 .setExpiration(Instant.now().plusSeconds(60))
                 .setKeyHash(ApiKeyJwtDecoder.hash(API_KEY))));

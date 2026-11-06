@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.user.entities;
 
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -24,6 +25,16 @@ public class UserApiKeyEntity {
     private String userId;
 
     @Nonnull
+    @NotNull(message = "Der Name des API-Schlüssels darf nicht null sein.")
+    @NotBlank(message = "Der Name des API-Schlüssels darf nicht leer sein.")
+    @Size(max = 255, message = "Der Name des API-Schlüssels darf höchstens 255 Zeichen lang sein.")
+    private String name;
+
+    @Nonnull
+    @Column(nullable = false, updatable = false)
+    private Instant created;
+
+    @Nonnull
     @NotNull(message = "Das Ablaufdatum des API-Schlüssels darf nicht null sein.")
     private Instant expiration;
 
@@ -34,6 +45,11 @@ public class UserApiKeyEntity {
     @NotNull(message = "Der Hash des API-Schlüssels darf nicht null sein.")
     @Size(min = 64, max = 64, message = "Der Hash des API-Schlüssels muss 64 Zeichen lang sein.")
     private String keyHash;
+
+    @PrePersist
+    public void prePersist() {
+        created = Instant.now();
+    }
 
     @Nonnull
     public Integer getId() {
@@ -52,6 +68,26 @@ public class UserApiKeyEntity {
 
     public UserApiKeyEntity setUserId(@Nonnull String userId) {
         this.userId = userId;
+        return this;
+    }
+
+    @Nonnull
+    public String getName() {
+        return name;
+    }
+
+    public UserApiKeyEntity setName(@Nonnull String name) {
+        this.name = name;
+        return this;
+    }
+
+    @Nonnull
+    public Instant getCreated() {
+        return created;
+    }
+
+    public UserApiKeyEntity setCreated(@Nonnull Instant created) {
+        this.created = created;
         return this;
     }
 

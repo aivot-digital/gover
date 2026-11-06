@@ -34,15 +34,16 @@ class UserApiKeyRepositoryTest {
         sql("create table users (id varchar(36) primary key, enabled boolean, deleted_in_idp boolean)");
         sql("""
                 create table user_api_keys (
-                    id int primary key, user_id varchar(36), expiration timestamp with time zone, key_hash varchar(64)
+                    id int primary key, user_id varchar(36), name varchar(255),
+                    created timestamp with time zone, expiration timestamp with time zone, key_hash varchar(64)
                 )
                 """);
         sql("insert into users values ('active', true, false), ('disabled', false, false), ('deleted', true, true)");
         sql("""
                 insert into user_api_keys values
-                    (1, 'active', '2030-05-01 12:00:00+00', 'active-hash'),
-                    (2, 'disabled', '2030-05-01 12:00:00+00', 'disabled-hash'),
-                    (3, 'deleted', '2030-05-01 12:00:00+00', 'deleted-hash')
+                    (1, 'active', 'Active', '2026-05-01 12:00:00+00', '2030-05-01 12:00:00+00', 'active-hash'),
+                    (2, 'disabled', 'Disabled', '2026-05-01 12:00:00+00', '2030-05-01 12:00:00+00', 'disabled-hash'),
+                    (3, 'deleted', 'Deleted', '2026-05-01 12:00:00+00', '2030-05-01 12:00:00+00', 'deleted-hash')
                 """);
         keys = new JpaRepositoryFactory(em).getRepository(UserApiKeyRepository.class);
     }

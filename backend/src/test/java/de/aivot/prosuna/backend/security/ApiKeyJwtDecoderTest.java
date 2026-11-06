@@ -80,6 +80,8 @@ class ApiKeyJwtDecoderTest {
     private void givenApiKey(Instant expiration) {
         when(userApiKeyRepository.findByKeyHashOfActiveUser(ApiKeyJwtDecoder.hash(API_KEY))).thenReturn(Optional.of(new UserApiKeyEntity()
                 .setId(1)
+                .setName("Test")
+                .setCreated(Instant.now())
                 .setUserId(USER_ID)
                 .setExpiration(expiration)
                 .setKeyHash(ApiKeyJwtDecoder.hash(API_KEY))));
