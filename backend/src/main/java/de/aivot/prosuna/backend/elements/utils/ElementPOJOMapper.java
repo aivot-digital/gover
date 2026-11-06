@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.annotations.ReplicatingContainerRowIdPOJOBinding;
 import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
@@ -21,6 +22,7 @@ import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.utils.ReflectionUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import java.lang.reflect.*;
 import java.util.Arrays;
@@ -37,6 +39,10 @@ public class ElementPOJOMapper {
      * values to the fields of the pojoClass. See {@link InputElementPOJOBinding} and {@link LayoutElementPOJOBinding} for more details on the annotations used for mapping.
      */
     public static <T> T mapToPOJO(EffectiveElementValues effectiveElementValues, Class<T> pojoClass) throws ElementDataConversionException {
+        return mapToPOJO(effectiveElementValues, pojoClass, null);
+    }
+
+    private static <T> T mapToPOJO(EffectiveElementValues effectiveElementValues, Class<T> pojoClass, @Nullable String rowId) throws ElementDataConversionException {
         // Create an instance of the target class to fill the fields into
         T target = instantiateTargetClass(pojoClass);
 
@@ -50,6 +56,8 @@ public class ElementPOJOMapper {
             // Check if the field has the relevant annotations and extract the value accordingly
             if (field.isAnnotationPresent(InputElementPOJOBinding.class)) {
                 valueToSet = extractInputFieldValue(effectiveElementValues, field);
+            } else if (field.isAnnotationPresent(ReplicatingContainerRowIdPOJOBinding.class)) {
+                valueToSet = rowId;
             } else if (List.class.isAssignableFrom(field.getType())) {
                 // Get the generic type of the list. This represents the item type for the replicating container datasets.
                 var genericTypeClass = ReflectionUtils
@@ -141,11 +149,19 @@ public class ElementPOJOMapper {
                 );
             }
 
-            var ef = childElementDataObject instanceof EffectiveReplicatingContainerLayoutElementValue row
-                    ? row.getValues()
-                    : extractEffectiveRowValues((Map<?, ?>) childElementDataObject);
+            EffectiveElementValues ef;
+            String rowId;
+            if (childElementDataObject instanceof EffectiveReplicatingContainerLayoutElementValue row) {
+                ef = row.getValues();
+                rowId = row.getId();
+            } else {
+                var rowMap = (Map<?, ?>) childElementDataObject;
+                ef = extractEffectiveRowValues(rowMap);
+                // Only wrapped rows carry an ID; a flat row map holds child values, where "id" may be a field.
+                rowId = rowMap.containsKey("values") && rowMap.get("id") instanceof String id ? id : null;
+            }
             if (ef == null) continue;
-            var converted = mapToPOJO(ef, itemClass);
+            var converted = mapToPOJO(ef, itemClass, rowId);
             results.add(converted);
         }
 

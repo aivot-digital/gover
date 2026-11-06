@@ -1,36 +1,25 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
-import de.aivot.prosuna.backend.elements.enums.ValueFunctionType;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
-import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
-import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
-import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
-import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
-import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
-import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeOrOperator;
-import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionSupport.ConditionEvaluationResult;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
-import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -40,26 +29,24 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
-import de.aivot.prosuna.backend.process.services.ProcessDataService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
 
 import java.util.List;
 import java.util.Map;
 
+import static de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionSupport.CONDITION_LOW_CODE_FIELD_ID;
+import static de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionSupport.CONDITION_NO_CODE_FIELD_ID;
+import static de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionSupport.CONDITION_TYPE_FIELD_ID;
+import static de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionSupport.CONDITION_TYPE_VALUE_LOW_CODE;
+import static de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionSupport.CONDITION_TYPE_VALUE_NO_CODE;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 
 @Component
 public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlNodeV1.IfFlowControlNodeConfig> {
     public static final String NODE_KEY = "if";
-    private static final String CONDITION_TYPE_FIELD_ID = "conditionType";
-    private static final String CONDITION_TYPE_VALUE_NO_CODE = "no-code";
-    private static final String CONDITION_TYPE_VALUE_LOW_CODE = "low-code";
-    private static final String CONDITION_LOW_CODE_FIELD_ID = "condition";
-    private static final String CONDITION_NO_CODE_FIELD_ID = "conditionNoCode";
-    private static final String NO_CODE_OPERATOR_IS_UNDEFINED = "is-undefined";
+    private static final String CONDITION_SUBJECT = "des If-Knotens";
 
     private static final String PORT_NAME_TRUE = "true";
     private static final String PORT_NAME_FALSE = "false";
@@ -150,51 +137,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
             throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
         }
 
-        layout
-                .findChild(CONDITION_TYPE_FIELD_ID, RadioInputElement.class)
-                .ifPresent(conditionTypeField -> {
-                    conditionTypeField.setValue(new ElementValueFunctions()
-                            .setType(ValueFunctionType.NoCode)
-                            .setNoCode(new NoCodeStaticValue(CONDITION_TYPE_VALUE_NO_CODE)));
-                    conditionTypeField.setOptions(List.of(
-                            RadioInputElementOption.of(CONDITION_TYPE_VALUE_NO_CODE, "No-Code"),
-                            RadioInputElementOption.of(CONDITION_TYPE_VALUE_LOW_CODE, "Low-Code (JavaScript)")
-                    ));
-                });
-
-        layout
-                .findChild(CONDITION_LOW_CODE_FIELD_ID, CodeInputElement.class)
-                .ifPresent(conditionLowCodeField -> conditionLowCodeField.setVisibility(
-                        ElementVisibilityFunctions
-                                .of(NoCodeExpression.of(
-                                        NoCodeEqualsOperator.OPERATOR_ID,
-                                        new NoCodeReference(CONDITION_TYPE_FIELD_ID),
-                                        new NoCodeStaticValue(CONDITION_TYPE_VALUE_LOW_CODE)
-                                ))
-                                .recalculateReferencedIds()
-                ));
-
-        layout
-                .findChild(CONDITION_NO_CODE_FIELD_ID, NoCodeInputElement.class)
-                .ifPresent(conditionNoCodeField -> {
-                    conditionNoCodeField.setReturnType(NoCodeInputElement.NoCodeInputReturnType.BOOLEAN);
-                    conditionNoCodeField.setVisibility(
-                            ElementVisibilityFunctions
-                                    .of(NoCodeExpression.of(
-                                            NoCodeOrOperator.OPERATOR_ID,
-                                            NoCodeExpression.of(
-                                                    NoCodeEqualsOperator.OPERATOR_ID,
-                                                    new NoCodeReference(CONDITION_TYPE_FIELD_ID),
-                                                    new NoCodeStaticValue(CONDITION_TYPE_VALUE_NO_CODE)
-                                            ),
-                                            NoCodeExpression.of(
-                                                    NO_CODE_OPERATOR_IS_UNDEFINED,
-                                                    new NoCodeReference(CONDITION_TYPE_FIELD_ID)
-                                            )
-                                    ))
-                                    .recalculateReferencedIds()
-                    );
-                });
+        FlowConditionSupport.configureConditionFields(layout);
 
         return layout;
     }
@@ -307,50 +250,11 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
             );
         }
 
-        final String conditionEvaluated;
-        final Boolean conditionValue;
-
-        var jsCode = JavascriptCode
-                .of(lowCodeCondition);
-
-        try (var engine = javascriptEngineFactoryService.getEngine()) {
-            ProcessDataService
-                    .fillJsEngineWithData(context.getCurrentProcessExecutionData(), engine);
-
-            try {
-                var jsResult = engine
-                        .evaluateCode(jsCode);
-
-                conditionEvaluated = jsResult.toString();
-                conditionValue = jsResult.asBoolean();
-            } catch (Exception e) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        e,
-                        "Die Bedingung des If-Knotens konnte nicht als JavaScript ausgeführt werden: %s",
-                        e.getMessage()
-                );
-            }
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ProcessNodeExecutionExceptionUnknown(
-                    e,
-                    "Fehler beim Initialisieren der JavaScript-Engine für den If-Knoten: %s",
-                    e.getMessage()
-            );
-        }
-
-        if (conditionValue == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Bedingung des If-Knotens muss einen booleschen JavaScript-Wert ergeben. Übergeben wurde: %s",
-                    StringUtils.quote(conditionEvaluated)
-            );
-        }
-
-        return new ConditionEvaluationResult(
+        return FlowConditionSupport.evaluateLowCode(
+                javascriptEngineFactoryService,
+                context.getCurrentProcessExecutionData(),
                 lowCodeCondition,
-                conditionEvaluated,
-                conditionValue
+                CONDITION_SUBJECT
         );
     }
 
@@ -363,29 +267,11 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
             );
         }
 
-        final Object noCodeValue;
-        final Boolean noCodeConditionValue;
-        try {
-            var noCodeResult = noCodeEvaluationService
-                    .evaluate(
-                            noCodeCondition,
-                            new DerivedRuntimeElementData(),
-                            context.getCurrentProcessExecutionData()
-                    );
-            noCodeValue = noCodeResult.getValue();
-            noCodeConditionValue = noCodeResult.getValueAsBoolean();
-        } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die No-Code-Bedingung des If-Knotens konnte nicht ausgewertet werden: %s",
-                    e.getMessage()
-            );
-        }
-
-        return new ConditionEvaluationResult(
-                serializeNoCodeOperand(noCodeCondition),
-                noCodeValue != null ? noCodeValue.toString() : "null",
-                noCodeConditionValue
+        return FlowConditionSupport.evaluateNoCode(
+                noCodeEvaluationService,
+                context.getCurrentProcessExecutionData(),
+                noCodeCondition,
+                CONDITION_SUBJECT
         );
     }
 
@@ -395,17 +281,6 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         }
 
         return configuration.conditionNoCode.getNoCode();
-    }
-
-    @Nonnull
-    private String serializeNoCodeOperand(@Nonnull NoCodeOperand noCodeCondition) {
-        try {
-            return JsonMapperFactory
-                    .getInstance()
-                    .writeValueAsString(noCodeCondition);
-        } catch (JacksonException e) {
-            return "No-Code-Ausdruck";
-        }
     }
 
     private static String toNullableTrimmedString(Object value) {
@@ -419,13 +294,6 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
     private enum ConditionType {
         LOW_CODE,
         NO_CODE
-    }
-
-    private record ConditionEvaluationResult(
-            @Nonnull String conditionExpression,
-            @Nonnull String conditionEvaluated,
-            @Nonnull Boolean conditionValue
-    ) {
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
