@@ -2,6 +2,8 @@ package de.aivot.prosuna.backend.communication.entities;
 
 import de.aivot.prosuna.backend.core.converters.AuthoredElementValuesConverter;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -14,7 +16,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "communication_providers")
-public class CommunicationProviderEntity {
+public class CommunicationProviderEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "communication_providers_id_seq";
 
     @Id
@@ -59,6 +61,11 @@ public class CommunicationProviderEntity {
     @NotNull(message = "Der Teststatus des Kommunikationsanbieters darf nicht null sein.")
     @ColumnDefault("FALSE")
     private Boolean isTestProvider;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     public CommunicationProviderEntity() {
     }
@@ -151,6 +158,16 @@ public class CommunicationProviderEntity {
 
     public void setTestProvider(@Nonnull Boolean testProvider) {
         isTestProvider = testProvider;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public void setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
     }
 
     // endregion

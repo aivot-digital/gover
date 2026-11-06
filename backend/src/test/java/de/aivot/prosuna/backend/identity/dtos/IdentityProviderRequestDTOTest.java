@@ -62,6 +62,7 @@ class IdentityProviderRequestDTOTest {
                 List.of(),
                 true,
                 false,
+                null,
                 null
         );
     }

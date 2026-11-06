@@ -71,7 +71,9 @@ public record IdentityProviderRequestDTO(
         @NotNull(message = "Der Teststatus des Identitätsanbieters ist erforderlich.")
         Boolean isTestProvider,
         @Nullable
-        String pkceMethod
+        String pkceMethod,
+        @Nullable
+        Long lockVersion
 ) {
     @Nonnull
     public IdentityProviderEntity toEntity() {
@@ -94,7 +96,8 @@ public record IdentityProviderRequestDTO(
                 .setAdditionalParams(additionalParams)
                 .setIsEnabled(isEnabled)
                 .setIsTestProvider(isTestProvider)
-                .setPkceMethod(pkceMethod);
+                .setPkceMethod(pkceMethod)
+                .setLockVersion(lockVersion);
     }
 
     @JsonIgnore

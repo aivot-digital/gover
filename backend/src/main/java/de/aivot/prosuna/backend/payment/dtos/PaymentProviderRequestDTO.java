@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.payment.dtos;
 
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -42,7 +43,9 @@ public record PaymentProviderRequestDTO(
 
         @Nonnull
         @NotNull(message = "Config is required")
-        AuthoredElementValues config
+        AuthoredElementValues config,
+        @Nullable
+        Long lockVersion
 ) {
     public PaymentProviderEntity toEntity() {
         var entity = new PaymentProviderEntity();
@@ -53,6 +56,7 @@ public record PaymentProviderRequestDTO(
         entity.setTestProvider(isTestProvider);
         entity.setIsEnabled(isEnabled);
         entity.setConfig(config);
+        entity.setLockVersion(lockVersion);
         return entity;
     }
 }

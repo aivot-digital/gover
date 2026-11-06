@@ -9,6 +9,7 @@ import {SelectFieldComponent} from '../../../../components/select-field/select-f
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {isLockVersionConflictError} from '../../../../models/api-error';
 import {PaymentProviderAdditionalData} from './payment-provider-details-page-additional-data';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
@@ -237,7 +238,9 @@ export function PaymentProviderDetailsPageIndex() {
                     dispatch(showSuccessSnackbar('Änderungen am Zahlungsanbieter erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    if (err.status === 409) {
+                    if (isLockVersionConflictError(err)) {
+                        dispatch(showErrorSnackbar(err.message));
+                    } else if (err.status === 409) {
                         handleInputChange('isEnabled')(true);
                         dispatch(showApiErrorSnackbar(err, 'Es existieren noch veröffentlichte Formulare, die diesen Zahlungsanbieter verwenden'));
                     } else {
