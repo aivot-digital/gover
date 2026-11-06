@@ -5,6 +5,7 @@ import type {StaffEvent} from './staff-event-source';
 const activity = vi.hoisted(() => ({active: true, listeners: new Set<() => void>()}));
 
 vi.mock('../../services/auth-service', () => ({
+    AUTH_EXPIRATION_LOCAL_STORAGE_KEY: 'auth_expiration',
     AuthService: {
         isAuthenticated: vi.fn(() => true),
         isAccessTokenValid: vi.fn(() => true),
@@ -202,6 +203,33 @@ describe('subscribeStaffEvents', () => {
         await vi.waitFor(() => expect(FakeEventSource.instances).toHaveLength(2));
         FakeEventSource.instances[1].onopen?.();
         expect(listener.mock.calls).toEqual([[null]]);
+
+        unsubscribe();
+        expect(FakeEventSource.instances[1].closed).toBe(true);
+    });
+
+    it('ends the stream at once when another tab logs out, even if another user signs in before the next check', async () => {
+        vi.useFakeTimers();
+        const {subscribeStaffEvents} = await loadSource();
+        const listener = vi.fn();
+        const unsubscribe = subscribeStaffEvents(listener);
+        const previousUser = FakeEventSource.instances[0];
+        previousUser.onopen?.();
+
+        // The user logs out in another tab, and another user signs in within the same check interval.
+        await vi.advanceTimersByTimeAsync(1_000);
+        window.dispatchEvent(new StorageEvent('storage', {key: 'auth_expiration', newValue: null}));
+        await vi.advanceTimersByTimeAsync(1_000);
+        await vi.advanceTimersByTimeAsync(10_000);
+
+        expect(previousUser.closed).toBe(true);
+        expect(FakeEventSource.instances).toHaveLength(2);
+        FakeEventSource.instances[1].onopen?.();
+        expect(listener.mock.calls).toEqual([[null]]);
+
+        // A token refresh in another tab keeps the stream.
+        window.dispatchEvent(new StorageEvent('storage', {key: 'auth_expiration', newValue: '{}'}));
+        expect(FakeEventSource.instances[1].closed).toBe(false);
 
         unsubscribe();
         expect(FakeEventSource.instances[1].closed).toBe(true);

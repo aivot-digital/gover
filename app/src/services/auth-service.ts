@@ -3,7 +3,7 @@ import {ApiError} from '../models/api-error';
 
 const APP_URI_QUERY_PARAM = 'app_uri';
 const APP_STATE_QUERY_PARAM = 'app_state';
-const AUTH_EXPIRATION_LOCAL_STORAGE_KEY = 'auth_expiration';
+export const AUTH_EXPIRATION_LOCAL_STORAGE_KEY = 'auth_expiration';
 const CSRF_HEADER_NAME = 'X-CSRF-TOKEN';
 // The reverse proxy answers with these while it cannot reach the backend, e.g. during a restart.
 const BACKEND_UNREACHABLE_STATUSES = [502, 503, 504];

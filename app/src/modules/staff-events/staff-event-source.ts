@@ -1,4 +1,4 @@
-import {AuthService} from '../../services/auth-service';
+import {AUTH_EXPIRATION_LOCAL_STORAGE_KEY, AuthService} from '../../services/auth-service';
 import {createApiPath} from '../../utils/url-path-utils';
 import {isUserActive, onUserActivity} from './user-activity';
 
@@ -123,15 +123,28 @@ function connect(onEvent: StaffEventListener, missedEvents: boolean): () => void
 
     // The stream belongs to the user who opened it, and the other tabs receive its events. It ends with the session
     // in this browser, e.g. after a logout in another tab, so the next user who signs in gets a stream of their own.
-    const sessionCheck = window.setInterval(() => {
-        if (source == null || AuthService.isAuthenticated()) {
+    const endStream = () => {
+        if (source == null) {
             return;
         }
         source.close();
         source = undefined;
         missed = true;
         void open();
+    };
+    // The interval notices sessions that expire without a logout.
+    const sessionCheck = window.setInterval(() => {
+        if (!AuthService.isAuthenticated()) {
+            endStream();
+        }
     }, SESSION_CHECK_INTERVAL);
+    // A logout in another tab ends the stream at once, even if another user has signed in again before the next check.
+    const onStorage = (event: StorageEvent) => {
+        if (event.key == null || (event.key === AUTH_EXPIRATION_LOCAL_STORAGE_KEY && event.newValue == null)) {
+            endStream();
+        }
+    };
+    window.addEventListener('storage', onStorage);
 
     void open();
 
@@ -139,6 +152,7 @@ function connect(onEvent: StaffEventListener, missedEvents: boolean): () => void
         stopped = true;
         window.clearTimeout(reconnectTimeout);
         window.clearInterval(sessionCheck);
+        window.removeEventListener('storage', onStorage);
         stopWaitingForUser?.();
         source?.close();
     };
