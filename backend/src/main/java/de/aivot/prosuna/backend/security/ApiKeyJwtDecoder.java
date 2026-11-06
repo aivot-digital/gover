@@ -23,7 +23,7 @@ import java.util.HexFormat;
  */
 public class ApiKeyJwtDecoder implements JwtDecoder {
     // Keycloak access tokens are JWTs and always start with "eyJ", so they can never carry this prefix
-    public static final String API_KEY_PREFIX = "prosuna_";
+    public static final String API_KEY_PREFIX = "prosuna_api_";
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtDecoder delegate;
