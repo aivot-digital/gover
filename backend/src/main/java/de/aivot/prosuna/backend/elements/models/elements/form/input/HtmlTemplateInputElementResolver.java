@@ -2,10 +2,12 @@ package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.services.AssetService;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.services.pdf.MarkdownDialect;
@@ -13,6 +15,8 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.graalvm.polyglot.PolyglotException;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
@@ -158,7 +162,36 @@ public class HtmlTemplateInputElementResolver {
         // Otherwise template delimiters originating in process data would become executable template expressions.
         var slotContents = new LinkedHashMap<String, String>();
         var preparedTemplate = applySlotValues(templateHtml, renderedTemplates, slotContents);
-        var renderedHtml = templateRenderService.interpolate(processExecutionData, preparedTemplate);
+
+        // Unlike the slot values, which are part of the process configuration, the template content can be changed with
+        // the asset permissions alone. Only function providers that opted in to asset templates are available to it.
+        String renderedHtml;
+        try {
+            renderedHtml = templateRenderService.interpolate(
+                    processExecutionData,
+                    preparedTemplate,
+                    JavascriptExecutionContext.AssetTemplate
+            );
+        } catch (IllegalArgumentException e) {
+            // TemplateRenderService reports syntax and expression errors with the template line. Show the JavaScript error, e.g. of a blocked
+            // provider, but not the raw message of a host exception thrown inside a provider.
+            var detail = NestedExceptionUtils.getMostSpecificCause(e) instanceof PolyglotException polyglotException && polyglotException.isGuestException()
+                    ? polyglotException.getMessage()
+                    : e.getMessage();
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Die HTML-Vorlage %s konnte nicht gerendert werden: %s",
+                    StringUtils.quote(htmlTemplateAssetKeyStr),
+                    detail
+            );
+        } catch (RuntimeException e) {
+            // Not an error of the template, so the message may be internal or missing.
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die HTML-Vorlage %s konnte wegen eines unerwarteten Fehlers nicht gerendert werden.",
+                    StringUtils.quote(htmlTemplateAssetKeyStr)
+            );
+        }
         return restoreSlotContents(renderedHtml, slotContents);
     }
 

@@ -30,8 +30,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -954,6 +957,160 @@ class FileUploadMultipartInputServiceTest {
         assertTrue(exception.getMessage().contains("keinem Anlagen-Feld"));
     }
 
+    @Test
+    void normalizeInputs_AddsLaterUploadsOfTaskToItsAttachmentSet() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(attachmentService, attachmentSetService, new TestAVService());
+        var layout = createLayout("documents", "document");
+
+        normalizeSingleUpload(service, layout, List.of(), "first.pdf", 9L);
+        var firstItem = createFileItem("first.pdf", FileUploadMultipartInputService.buildAttachmentUri(
+                attachmentService.createdAttachments().getFirst().getKey()), 3);
+        normalizeSingleUpload(service, layout, List.of(firstItem), "second.pdf", 9L);
+
+        assertEquals(1, attachmentSetService.createdSets().size());
+        var setId = attachmentSetService.createdSets().getFirst().getId();
+        assertEquals(List.of(setId, setId), attachmentService.createdAttachments()
+                .stream()
+                .map(ProcessInstanceAttachmentEntity::getAttachmentSetId)
+                .toList());
+        assertEquals(2, attachmentService.createdAttachments().get(1).getPosition());
+    }
+
+    @Test
+    void normalizeInputs_SkipsFileNamesThatRemainingUploadsKeepAfterARemoval() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var service = new FileUploadMultipartInputService(attachmentService, new TestProcessInstanceAttachmentSetService(), new TestAVService());
+        var upload = createUpload("documents", "document");
+        upload.setIsMultifile(true);
+        var layout = createLayout(upload);
+
+        normalizeSingleUpload(service, layout, List.of(), "a.pdf", 9L);
+        var first = storedItemOf(attachmentService.createdAttachments().getFirst());
+        normalizeSingleUpload(service, layout, List.of(first), "b.pdf", 9L);
+        var second = storedItemOf(attachmentService.createdAttachments().get(1));
+        // The first upload was removed, so the new upload takes the position whose number the second one keeps.
+        normalizeSingleUpload(service, layout, List.of(second), "c.pdf", 9L);
+
+        assertEquals(List.of("document-1.pdf", "document-2.pdf", "document-3.pdf"), attachmentService.createdAttachments()
+                .stream()
+                .map(ProcessInstanceAttachmentEntity::getFileName)
+                .toList());
+    }
+
+    private static Map<String, Object> storedItemOf(ProcessInstanceAttachmentEntity attachment) {
+        return createFileItem(attachment.getFileName(), FileUploadMultipartInputService.buildAttachmentUri(attachment.getKey()), 3);
+    }
+
+    @Test
+    void normalizeInputs_CreatesNewAttachmentSetsWithoutTask() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(attachmentService, attachmentSetService, new TestAVService());
+        var layout = createLayout("documents", "document");
+
+        normalizeSingleUpload(service, layout, List.of(), "first.pdf", null);
+        normalizeSingleUpload(service, layout, List.of(), "second.pdf", null);
+
+        assertEquals(2, attachmentSetService.createdSets().size());
+        assertTrue(attachmentService.removedUploadUpdates().isEmpty());
+    }
+
+    @Test
+    void normalizeInputs_ReportsTheReferencedUploadsOfTheTaskSetsOfItsUploadFields() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(attachmentService, attachmentSetService, new TestAVService());
+        var otherDataKeySet = attachmentSetService.create(new ProcessInstanceAttachmentSetEntity()
+                .setName("Bescheid").setDataKey("decision").setProcessInstanceId(42L).setProcessInstanceTaskId(9L));
+        var otherTaskSet = attachmentSetService.create(new ProcessInstanceAttachmentSetEntity()
+                .setName("Antrag").setDataKey("documents").setProcessInstanceId(42L).setProcessInstanceTaskId(3L));
+        var upload = createUpload("documents", "document");
+        upload.setIsMultifile(true);
+        var hiddenUpload = createUpload("hiddenDocuments", "hidden");
+        hideElement(hiddenUpload);
+        var layout = createLayout(upload, hiddenUpload);
+        var storedKey = UUID.fromString("00000000-0000-0000-0000-00000000000a");
+        var hiddenKey = UUID.fromString("00000000-0000-0000-0000-00000000000b");
+
+        var inputs = new AuthoredElementValues();
+        inputs.putLiteral("documents", List.of(
+                createFileItem("stored.pdf", FileUploadMultipartInputService.buildAttachmentUri(storedKey), 7),
+                createFileItem("report.pdf", "blob:report", 3)
+        ));
+        inputs.putLiteral("hiddenDocuments", List.of(
+                createFileItem("hidden.pdf", FileUploadMultipartInputService.buildAttachmentUri(hiddenKey), 5)
+        ));
+
+        service.normalizeInputs(
+                layout,
+                inputs,
+                deriveStates(layout, inputs),
+                new MultipartFile[]{
+                        new MockMultipartFile("files", "report.pdf", "application/pdf", "pdf".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:report"),
+                42L,
+                9L,
+                "staff-user"
+        );
+
+        var createdKey = attachmentService.createdAttachments().getFirst().getKey();
+        var uploadSet = attachmentSetService.createdSets().getLast();
+        assertNotEquals(otherDataKeySet.getId(), uploadSet.getId());
+        assertNotEquals(otherTaskSet.getId(), uploadSet.getId());
+        assertEquals(List.of(new RemovedUploadUpdate(
+                9L,
+                List.of(uploadSet.getId()),
+                Set.of(storedKey, createdKey, hiddenKey),
+                Map.of(storedKey, 1)
+        )), attachmentService.removedUploadUpdates());
+    }
+
+    @Test
+    void findRemovableAttachmentKeys_NamesTheUploadsOfTheTaskInTheSetsOfItsUploadFields() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(attachmentService, attachmentSetService, new TestAVService());
+        var layout = createLayout(createUpload("documents", "document"));
+        normalizeSingleUpload(service, layout, List.of(), "own.pdf", 9L);
+        normalizeSingleUpload(service, layout, List.of(), "other-task.pdf", 3L);
+        var otherFieldSet = attachmentSetService.create(new ProcessInstanceAttachmentSetEntity()
+                .setName("Bescheid").setDataKey("decision").setProcessInstanceId(42L).setProcessInstanceTaskId(9L));
+        attachmentService.create(new ProcessInstanceAttachmentEntity()
+                .setFileName("decision.pdf").setAttachmentSetId(otherFieldSet.getId()).setProcessInstanceTaskId(9L));
+
+        assertEquals(
+                List.of(attachmentService.createdAttachments().getFirst().getKey()),
+                service.findRemovableAttachmentKeys(layout, 42L, 9L)
+        );
+    }
+
+    private static void normalizeSingleUpload(FileUploadMultipartInputService service,
+                                              GroupLayoutElement layout,
+                                              List<Map<String, Object>> storedItems,
+                                              String fileName,
+                                              Long processInstanceTaskId) throws Exception {
+        var items = new ArrayList<Map<String, Object>>(storedItems);
+        items.add(createFileItem(fileName, "blob:" + fileName, 3));
+        var inputs = new AuthoredElementValues();
+        inputs.putLiteral("documents", items);
+
+        service.normalizeInputs(
+                layout,
+                inputs,
+                deriveStates(layout, inputs),
+                new MultipartFile[]{
+                        new MockMultipartFile("files", fileName, "application/pdf", "pdf".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:" + fileName),
+                42L,
+                processInstanceTaskId,
+                "staff-user"
+        );
+    }
+
     private static ComputedElementStates deriveStates(BaseElement layout, AuthoredElementValues inputs) {
         return deriveStates(layout, inputs, new ElementDerivationOptions());
     }
@@ -1031,6 +1188,7 @@ class FileUploadMultipartInputServiceTest {
 
     private static final class TestProcessInstanceAttachmentService extends ProcessInstanceAttachmentService {
         private final List<ProcessInstanceAttachmentEntity> createdAttachments = new ArrayList<>();
+        private final List<RemovedUploadUpdate> removedUploadUpdates = new ArrayList<>();
 
         private TestProcessInstanceAttachmentService() {
             super(null, null, null, null);
@@ -1049,6 +1207,39 @@ class FileUploadMultipartInputServiceTest {
         private List<ProcessInstanceAttachmentEntity> createdAttachments() {
             return createdAttachments;
         }
+
+        @Override
+        public void updateRemovedUploadsOfTask(Long processInstanceTaskId,
+                                               Collection<Integer> attachmentSetIds,
+                                               Set<UUID> referencedAttachmentKeys,
+                                               Map<UUID, Integer> attachmentPositions) {
+            removedUploadUpdates.add(new RemovedUploadUpdate(
+                    processInstanceTaskId,
+                    List.copyOf(attachmentSetIds),
+                    Set.copyOf(referencedAttachmentKeys),
+                    Map.copyOf(attachmentPositions)
+            ));
+        }
+
+        private List<RemovedUploadUpdate> removedUploadUpdates() {
+            return removedUploadUpdates;
+        }
+
+        @Override
+        public List<ProcessInstanceAttachmentEntity> findAllUploadsOfTask(Long processInstanceTaskId,
+                                                                          Collection<Integer> attachmentSetIds) {
+            return createdAttachments
+                    .stream()
+                    .filter(attachment -> processInstanceTaskId.equals(attachment.getProcessInstanceTaskId())
+                            && attachmentSetIds.contains(attachment.getAttachmentSetId()))
+                    .toList();
+        }
+    }
+
+    private record RemovedUploadUpdate(Long processInstanceTaskId,
+                                       List<Integer> attachmentSetIds,
+                                       Set<UUID> referencedAttachmentKeys,
+                                       Map<UUID, Integer> attachmentPositions) {
     }
 
     private static final class TestProcessInstanceAttachmentSetService extends ProcessInstanceAttachmentSetService {
@@ -1067,6 +1258,29 @@ class FileUploadMultipartInputServiceTest {
 
         private List<ProcessInstanceAttachmentSetEntity> createdSets() {
             return createdSets;
+        }
+
+        @Override
+        public Optional<ProcessInstanceAttachmentSetEntity> retrieveLatestByProcessInstanceIdAndTaskIdAndDataKey(Long processInstanceId,
+                                                                                                             Long processInstanceTaskId,
+                                                                                                             String dataKey) {
+            return createdSets
+                    .reversed()
+                    .stream()
+                    .filter(set -> processInstanceId.equals(set.getProcessInstanceId())
+                            && processInstanceTaskId.equals(set.getProcessInstanceTaskId())
+                            && dataKey.equals(set.getDataKey()))
+                    .findFirst();
+        }
+
+        @Override
+        public List<ProcessInstanceAttachmentSetEntity> findAllByProcessInstanceIdAndTaskId(Long processInstanceId,
+                                                                                            Long processInstanceTaskId) {
+            return createdSets
+                    .stream()
+                    .filter(set -> processInstanceId.equals(set.getProcessInstanceId())
+                            && processInstanceTaskId.equals(set.getProcessInstanceTaskId()))
+                    .toList();
         }
     }
 

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
@@ -387,6 +388,22 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(ProcessInstanceStatus.Completed, instance.getStatus());
         assertTrue(instance.getKeepUntil().isAfter(Instant.now().plusSeconds(6 * 24 * 60 * 60)));
         verify(versions).findById(ProcessVersionEntityId.of(7, 2));
+    }
+
+    @Test
+    void handleResult_DeletesTheRemovedUploadsOfTheCompletedTask() throws Exception {
+        var versions = mock(ProcessVersionRepository.class);
+        when(versions.findById(any())).thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(7).setProcessVersion(1)));
+        var attachmentService = mock(ProcessInstanceAttachmentService.class);
+        var handler = createCompletionHandler(new ArrayList<>(), new ArrayList<>(), versions, attachmentService);
+        var task = processInstanceTask(null);
+        var user = new UserEntity().setId("staff-user");
+
+        handler.handleResult(new RecordingProcessNodeExecutionLogger(), user,
+                new TestProcessNodeDefinition("Complete process"), new AuthoredElementValues(), processNode("Complete process"),
+                processInstance(), task, null, new ProcessNodeExecutionResultInstanceCompleted());
+
+        verify(attachmentService).deleteRemovedUploadsOfTask(task, "staff-user");
     }
 
     @Test
@@ -1215,15 +1232,22 @@ class ProcessNodeExecutionResultHandlerTest {
         var versions = mock(ProcessVersionRepository.class);
         when(versions.findById(any())).thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(7).setProcessVersion(1)));
         return createHandler(savedTasks, users, mailService, communicationService, savedInstances,
-                processService, departmentService, versions);
+                processService, departmentService, versions, mock(ProcessInstanceAttachmentService.class));
     }
 
     private static ProcessNodeExecutionResultHandler createCompletionHandler(List<ProcessInstanceTaskEntity> savedTasks,
                                                                               List<ProcessInstanceEntity> savedInstances,
                                                                               ProcessVersionRepository versions) {
+        return createCompletionHandler(savedTasks, savedInstances, versions, mock(ProcessInstanceAttachmentService.class));
+    }
+
+    private static ProcessNodeExecutionResultHandler createCompletionHandler(List<ProcessInstanceTaskEntity> savedTasks,
+                                                                              List<ProcessInstanceEntity> savedInstances,
+                                                                              ProcessVersionRepository versions,
+                                                                              ProcessInstanceAttachmentService attachmentService) {
         return createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, savedInstances,
                 new TestProcessService(Optional.of(process())),
-                new TestDepartmentService(department()), versions);
+                new TestDepartmentService(department()), versions, attachmentService);
     }
 
     private static ProcessNodeExecutionResultHandler createHandler(List<ProcessInstanceTaskEntity> savedTasks,
@@ -1233,7 +1257,8 @@ class ProcessNodeExecutionResultHandlerTest {
                                                                    List<ProcessInstanceEntity> savedInstances,
                                                                    ProcessService processService,
                                                                    DepartmentService departmentService,
-                                                                   ProcessVersionRepository versions) {
+                                                                   ProcessVersionRepository versions,
+                                                                   ProcessInstanceAttachmentService attachmentService) {
         var assignments = mock(ProcessAssignmentService.class);
         try {
             doAnswer(invocation -> {
@@ -1260,7 +1285,8 @@ class ProcessNodeExecutionResultHandlerTest {
                 departmentService,
                 null,
                 null,
-                null
+                null,
+                attachmentService
         );
     }
 

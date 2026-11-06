@@ -103,7 +103,8 @@ export function UiDefinitionEmptyState(props: UiDefinitionEmptyStateProps) {
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
-                    opacity: 0,
+                    // Keep the content visible when reduced motion disables the entry animations.
+                    opacity: 1,
                     animation: `${fadeIn} 320ms ease-out 400ms both`,
                     '@media (prefers-reduced-motion: reduce)': {
                         '&, & *': {
@@ -127,7 +128,7 @@ export function UiDefinitionEmptyState(props: UiDefinitionEmptyStateProps) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        opacity: 0,
+                        opacity: 1,
                         animation: `${fadeIn} 320ms ease-out 520ms both`,
                         p: 0,
                         border: 0,
@@ -242,16 +243,16 @@ export function UiDefinitionEmptyState(props: UiDefinitionEmptyStateProps) {
                         my: '10px',
                         borderRadius: '999px',
                         background: `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.28)} 0%, ${alpha(theme.palette.text.secondary, 0.30)} 52%, rgba(148, 163, 184, 0) 100%)`,
-                        opacity: 0,
+                        opacity: 1,
                         transformOrigin: 'top center',
-                        transform: 'scaleY(0.35)',
+                        transform: 'scaleY(1)',
                         animation: `${guideEnter} 360ms cubic-bezier(0.22, 1, 0.36, 1) 700ms both`,
                     }}
                 />
 
                 <Box
                     sx={{
-                        opacity: 0,
+                        opacity: 1,
                         animation: `${enter} 360ms ease-out 760ms both`,
                     }}
                 >
@@ -299,7 +300,7 @@ export function UiDefinitionEmptyState(props: UiDefinitionEmptyStateProps) {
                 <Box
                     sx={{
                         mt: '26px',
-                        opacity: 0,
+                        opacity: 1,
                         animation: `${enter} 360ms ease-out 920ms both`,
                     }}
                 >
