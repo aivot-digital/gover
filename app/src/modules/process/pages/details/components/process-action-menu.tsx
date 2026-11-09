@@ -1,12 +1,14 @@
 import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, type PopoverOrigin} from '@mui/material';
 import React, {type ReactNode, useMemo} from 'react';
 import {Link} from 'react-router-dom';
+import {DisabledTooltipMenuItem} from '../../../../../components/disabled-tooltip/disabled-tooltip-menu-item';
 
 export type ProcessActionMenuItem = {
     label: string;
     icon: ReactNode;
     onClick: () => void;
     disabled?: boolean;
+    disabledTooltip?: string;
     visible?: boolean;
     isDangerous?: boolean;
 } | {
@@ -185,7 +187,7 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
                                     </MenuItem>
                                 )
                                 : (
-                                    <MenuItem
+                                    <DisabledTooltipMenuItem
                                         key={`${item.label}-${index}`}
                                         onClick={(event) => {
                                             event.stopPropagation();
@@ -195,6 +197,7 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
                                             onClose();
                                         }}
                                         disabled={item.disabled}
+                                        disabledTooltip={item.disabledTooltip}
                                         sx={{
                                             minHeight: 42,
                                             px: 1.5,
@@ -216,7 +219,7 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
                                                 color: item.isDangerous ? 'error.main' : 'text.primary',}
                                             }}
                                         />
-                                    </MenuItem>
+                                    </DisabledTooltipMenuItem>
                                 ))))
             }
         </Menu>

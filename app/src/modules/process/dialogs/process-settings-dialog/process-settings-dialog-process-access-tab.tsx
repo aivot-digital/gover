@@ -7,7 +7,7 @@ import {ProcessAccessControlEntity} from '../../entities/process-access-control-
 import {PermissionApiService} from '../../../permissions/permission-api-service';
 import {ProcessAccessControlApiService} from '../../services/process-access-control-api-service';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {Typography} from '@mui/material';
+import {Alert, Typography} from '@mui/material';
 import {getDepartmentPath} from '../../../departments/utils/department-utils';
 import {TeamEntity} from '../../../teams/entities/team-entity';
 import {useConfirm} from '../../../../providers/confirm-provider';
@@ -20,6 +20,7 @@ import {
 
 interface ProcessSettingsDialogTabProps {
     open: boolean;
+    readOnly: boolean;
     process: ProcessEntity;
     departments: VDepartmentShadowedEntity[];
     teams: TeamEntity[];
@@ -73,6 +74,7 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
 
     const {
         open,
+        readOnly,
         process,
         departments,
         teams,
@@ -339,6 +341,16 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
                 Die verwaltende Organisationseinheit ist immer berechtigt und kann nicht entfernt werden.
             </ElementEditorSectionHeader>
 
+            {
+                readOnly &&
+                <Alert
+                    severity="info"
+                    sx={{mb: 2}}
+                >
+                    Nur die verwaltende Organisationseinheit kann die Prozessberechtigungen ändern. Sie können sie hier einsehen.
+                </Alert>
+            }
+
             <ProcessSettingsDialogAccessControlMatrix
                 permissions={permissions}
                 accessControls={draftAccess}
@@ -346,6 +358,7 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
                 departments={departments}
                 teams={teams}
                 isBusy={isSaving}
+                readOnly={readOnly}
                 onAccessControlsChange={setDraftAccess}
                 onAddAccessControl={handleAddAccess}
                 onDeleteAccessControl={(access) => {

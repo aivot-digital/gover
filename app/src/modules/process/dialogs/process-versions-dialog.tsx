@@ -44,6 +44,9 @@ import {type User} from '../../users/models/user';
 import {UsersApiService} from '../../users/users-api-service';
 import {resolveUserName} from '../../users/utils/resolve-user-name';
 import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
+import {Permission} from '../../../data/permissions/permission';
+import {useHasProcessPermission} from '../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 
 function deriveProcessFromVersions(
     process: ProcessEntity,
@@ -96,6 +99,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
     const showConfirm = useConfirm();
     const showExport = useProcessExport();
     const revokeProcessVersion = useRevokeProcessVersion();
+    const canUpdateProcess = useHasProcessPermission(process.id, Permission.PROCESS_DEFINITION_UPDATE);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isBusy, setIsBusy] = useState(false);
@@ -523,6 +527,8 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                             onClick: () => latestVersion != null && handleNewDraft(publishedVersion ?? latestVersion),
                             variant: 'text',
                             visible: !hasDraft && !isLoading,
+                            disabled: !canUpdateProcess,
+                            disabledTooltip: formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_UPDATE),
                         },
                     ]}
                 >
@@ -647,6 +653,7 @@ function VersionListItem(props: VersionListItemProps) {
         processId,
     } = item;
 
+    const canUpdateProcess = useHasProcessPermission(processId, Permission.PROCESS_DEFINITION_UPDATE);
     const editorFullName = undefined; // TODO: find out, who edited this version the last time
     const testClaimOwnerName = useMemo(() => {
         if (testClaim == null) {
@@ -801,9 +808,9 @@ function VersionListItem(props: VersionListItemProps) {
                 <Actions
                     actions={[
                         {
-                            icon: <Edit/>,
+                            icon: canUpdateProcess ? <Edit/> : <Visibility/>,
                             to: `/processes/${processId}/versions/${version}`,
-                            tooltip: 'Version bearbeiten',
+                            tooltip: canUpdateProcess ? 'Version bearbeiten' : 'Version ansehen',
                             visible: !item.published && !revoked && item.processVersion !== currentOpenVersion,
                         },
                         {

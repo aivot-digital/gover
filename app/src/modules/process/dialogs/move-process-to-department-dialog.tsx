@@ -10,6 +10,10 @@ import {VDepartmentShadowedEntity} from '../../departments/entities/v-department
 import {DepartmentSelectField} from '../../departments/components/department-select-field';
 import {ProcessEntity} from '../entities/process-entity';
 import {ProcessDefinitionApiService} from '../services/process-definition-api-service';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../slices/user-slice';
+import {Permission} from '../../../data/permissions/permission';
+import {formatMissingPermissionTooltip, hasDepartmentPermission} from '../../permissions/utils/permission-utils';
 
 interface MoveProcessToDepartmentDialogProps {
     processId: number;
@@ -25,6 +29,7 @@ export function MoveProcessToDepartmentDialog(props: MoveProcessToDepartmentDial
     } = props;
 
     const dispatch = useAppDispatch();
+    const permissions = useAppSelector(selectPermissions);
 
     const [targetDepartment, setTargetDepartment] = useState<VDepartmentShadowedEntity | null>(null);
     const [targetDepartmentError, setTargetDepartmentError] = useState<string | undefined>();
@@ -142,6 +147,12 @@ export function MoveProcessToDepartmentDialog(props: MoveProcessToDepartmentDial
                         label="Neue verwaltende Organisationseinheit"
                         value={targetDepartment}
                         dialogTitle="Neue verwaltende Organisationseinheit auswählen"
+                        isDepartmentSelectable={(department) => (
+                            hasDepartmentPermission(permissions, department.id, Permission.PROCESS_DEFINITION_CREATE)
+                        )}
+                        getDepartmentDisabledTooltip={() => (
+                            formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_CREATE)
+                        )}
                         onChange={(department) => {
                             if (department == null) {
                                 setTargetDepartment(null);
