@@ -26,8 +26,9 @@ if [ "$1" = "serve" ]; then
 else
   echo "app" > /app/runtime-mode
 
-  echo "Waiting for the API to be available at ${PROSUNA_HOSTNAME}/api/actuator/health…"
-  until curl --output /dev/null --silent --head --fail "${PROSUNA_HOSTNAME}/api/actuator/health"; do
+  # The actuator only listens on the internal management port of the API, so wait for a public endpoint instead.
+  echo "Waiting for the API to be available at ${PROSUNA_HOSTNAME}/api/public/system/app-config.js…"
+  until curl --output /dev/null --silent --head --fail "${PROSUNA_HOSTNAME}/api/public/system/app-config.js"; do
     sleep 5
   done
 

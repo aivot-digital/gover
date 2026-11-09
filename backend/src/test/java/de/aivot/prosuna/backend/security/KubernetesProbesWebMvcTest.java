@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.security;
 
+import de.aivot.prosuna.backend.system.controllers.AuthController;
+import de.aivot.prosuna.backend.system.controllers.SystemHealthController;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,24 +16,36 @@ import org.springframework.boot.autoconfigure.availability.ApplicationAvailabili
 import org.springframework.boot.availability.AvailabilityChangeEvent;
 import org.springframework.boot.availability.LivenessState;
 import org.springframework.boot.availability.ReadinessState;
+import org.springframework.boot.env.OriginTrackedMapPropertySource;
 import org.springframework.boot.health.autoconfigure.actuate.endpoint.AvailabilityProbesAutoConfiguration;
 import org.springframework.boot.health.autoconfigure.actuate.endpoint.HealthEndpointAutoConfiguration;
 import org.springframework.boot.health.autoconfigure.registry.HealthContributorRegistryAutoConfiguration;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.web.OAuth2ResourceServerWebSecurityAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -42,7 +56,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest
-@ContextConfiguration(classes = KubernetesProbesWebMvcTest.ProbeConfiguration.class)
+@ContextConfiguration(
+        classes = KubernetesProbesWebMvcTest.ProbeConfiguration.class,
+        initializers = KubernetesProbesWebMvcTest.ActuatorOnMockMvcInitializer.class
+)
 @ImportAutoConfiguration(classes = {
         ApplicationAvailabilityAutoConfiguration.class,
         AvailabilityProbesAutoConfiguration.class,
@@ -56,6 +73,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         OAuth2ResourceServerWebSecurityAutoConfiguration.class
 })
 class KubernetesProbesWebMvcTest {
+    private static final AtomicBoolean COMPONENT_DOWN = new AtomicBoolean();
+
     private MockMvc mockMvc;
 
     @Autowired
@@ -72,6 +91,7 @@ class KubernetesProbesWebMvcTest {
 
     @BeforeEach
     void setUp() {
+        COMPONENT_DOWN.set(false);
         // Register the chain so the CSRF response filter runs at its configured security-filter position.
         mockMvc = MockMvcBuilders.webAppContextSetup(applicationContext)
                 .addFilters(springSecurityFilterChain)
@@ -99,7 +119,6 @@ class KubernetesProbesWebMvcTest {
             "/api/actuator/health/readiness"
     })
     void anonymousHeadHealthCheckShouldSucceedWithoutAccessingRedis(String path) throws Exception {
-        // The app container waits for the API with a HEAD request to the health endpoint.
         mockMvc.perform(head(path))
                 .andExpect(status().isOk())
                 .andExpect(header().doesNotExist(RedisCsrfTokenRepository.HEADER_NAME))
@@ -180,13 +199,75 @@ class KubernetesProbesWebMvcTest {
         verifyNoInteractions(redis);
     }
 
+    @Test
+    void anonymousSystemHealthShouldBeRejected() throws Exception {
+        allowCsrfTokenStorage();
+
+        mockMvc.perform(get("/api/system/health/"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.components").doesNotExist());
+    }
+
+    @Test
+    void authenticatedSystemHealthShouldReturnComponents() throws Exception {
+        performAuthenticatedSystemHealthRequest()
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.components.toggle.status").value("UP"));
+    }
+
+    @Test
+    void authenticatedSystemHealthShouldReturnComponentsWithServiceUnavailableWhenDown() throws Exception {
+        // The staff UI reads the component status from the body of the failed response.
+        COMPONENT_DOWN.set(true);
+
+        performAuthenticatedSystemHealthRequest()
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value("DOWN"))
+                .andExpect(jsonPath("$.components.toggle.status").value("DOWN"));
+    }
+
+    private ResultActions performAuthenticatedSystemHealthRequest() throws Exception {
+        allowCsrfTokenStorage();
+        when(jwtDecoder.decode("access-token")).thenReturn(Jwt.withTokenValue("access-token")
+                .header("alg", "none")
+                .subject("staff-user")
+                .build());
+
+        return mockMvc.perform(get("/api/system/health/")
+                .cookie(new Cookie(AuthController.ACCESS_COOKIE_NAME, "access-token")));
+    }
+
     @SuppressWarnings("unchecked")
     private void allowCsrfTokenStorage() {
         when(redis.opsForValue()).thenReturn(mock(ValueOperations.class));
     }
 
     @Configuration(proxyBeanMethods = false)
-    @Import({SecurityConfiguration.class, RedisCsrfTokenRepository.class, CsrfResponseHeaderFilter.class})
+    @Import({SecurityConfiguration.class, RedisCsrfTokenRepository.class, CsrfResponseHeaderFilter.class, SystemHealthController.class})
     static class ProbeConfiguration {
+        @Bean
+        HealthIndicator toggleHealthIndicator() {
+            return () -> COMPONENT_DOWN.get() ? Health.down().build() : Health.up().build();
+        }
+    }
+
+    /**
+     * MockMvc only reaches the main context, so the actuator must not move to the management port here. The keys have to
+     * be removed, because Spring Boot rejects any configured address, even a blank one, without a separate port.
+     */
+    static class ActuatorOnMockMvcInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+        @Override
+        public void initialize(ConfigurableApplicationContext context) {
+            var sources = context.getEnvironment().getPropertySources();
+            for (var source : sources) {
+                if (source instanceof MapPropertySource mapSource && mapSource.containsProperty("management.server.port")) {
+                    var properties = new HashMap<>(mapSource.getSource());
+                    properties.remove("management.server.port");
+                    properties.remove("management.server.address");
+                    sources.replace(source.getName(), new OriginTrackedMapPropertySource(source.getName(), properties));
+                }
+            }
+        }
     }
 }

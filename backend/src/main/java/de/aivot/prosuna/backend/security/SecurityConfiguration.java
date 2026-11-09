@@ -43,8 +43,8 @@ public class SecurityConfiguration {
     );
 
     /**
-     * Anonymous health checks: the overall status and the Kubernetes probes. HEAD is allowed as well as GET, because the
-     * app container waits for the API with HEAD requests and external monitors may use them too.
+     * Anonymous health checks: the overall status and the Kubernetes probes. HEAD is allowed as well as GET, because
+     * external monitors may use it.
      */
     static final RequestMatcher HEALTH_CHECK_REQUESTS = new OrRequestMatcher(
             Stream.of("/api/actuator/health", "/api/actuator/health/liveness", "/api/actuator/health/readiness")
