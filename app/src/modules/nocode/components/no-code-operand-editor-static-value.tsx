@@ -205,6 +205,7 @@ function updateStaticValue(props: NoCodeOperandEditorStaticValueProps, value: st
 function getStaticValueActions(props: NoCodeOperandEditorStaticValueProps) {
     return [
         {
+            color: 'error' as const,
             icon: <Delete/>,
             tooltip: 'Diesen festen Wert löschen',
             onClick: () => {

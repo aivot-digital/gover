@@ -15,7 +15,6 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessWorkRequestRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,7 +37,7 @@ class ProcessInstanceRestartServiceTest {
     private final ProcessTaskExecutionService execution = ProcessTaskExecutionTestSupport.passthrough();
     private final ProcessNodeExecutionLoggerFactory loggers = mock(ProcessNodeExecutionLoggerFactory.class);
     private final ProcessNodeExecutionLogger logger = mock(ProcessNodeExecutionLogger.class);
-    private final EntityManager entityManager = mock(EntityManager.class);
+    private final ProcessInstanceAttachmentService attachments = mock(ProcessInstanceAttachmentService.class);
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(7L).setProcessId(1).setInitialNodeId(11)
             .setInitialPayload(Map.of("input", "test")).setStatus(ProcessInstanceStatus.Failed);
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(34L).setProcessInstanceId(7L)
@@ -54,7 +53,7 @@ class ProcessInstanceRestartServiceTest {
         when(auditService.createScopedAuditService(ProcessInstanceRestartService.class, "Vorgänge")).thenReturn(audit);
         when(audit.create()).thenAnswer(invocation -> AuditLogPayload.create(audit));
         service = new ProcessInstanceRestartService(instances, tasks, requests, workRequests, execution, loggers,
-                entityManager, auditService);
+                auditService, attachments);
         when(instances.findById(7L)).thenReturn(Optional.of(instance));
         when(instances.save(instance)).thenReturn(instance);
         when(tasks.findById(34L)).thenReturn(Optional.of(task));
@@ -75,6 +74,7 @@ class ProcessInstanceRestartServiceTest {
         verify(tasks).save(task);
         verify(workRequests).enqueueRestart(7L, 34L);
         verify(workRequests, never()).enqueueStart(any());
+        verify(attachments).deleteRemovedUploadsOfTask(task, "actor");
         verify(loggers).create(7L, 34L, "actor", null);
         verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Vorgang neu gestartet",
                 "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.");
@@ -132,8 +132,11 @@ class ProcessInstanceRestartServiceTest {
 
     @Test
     void concurrentRestartSeesTheFirstRestartAfterTheLock() throws Exception {
-        // The first restart committed while this one waited for the instance lock.
-        doAnswer(call -> instance.setStatus(ProcessInstanceStatus.Running)).when(entityManager).refresh(instance);
+        // The first restart committed while this one waited for the instance lock, so loading under the lock sees it.
+        when(instances.findById(7L)).thenAnswer(call -> {
+            verify(execution).inInstance(eq(7L), any());
+            return Optional.of(instance.setStatus(ProcessInstanceStatus.Running));
+        });
 
         var exception = assertThrows(ResponseException.class, () -> service.restartFailedInstance(7L, "actor", () -> {}));
 
@@ -193,6 +196,7 @@ class ProcessInstanceRestartServiceTest {
         verify(instances, never()).save(any());
         verify(workRequests, never()).redispatchAfterCommit(any());
         verify(workRequests).enqueueRestart(7L, 34L);
+        verify(attachments).deleteRemovedUploadsOfTask(task, "actor");
         verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Aufgabe neu gestartet",
                 "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet.");
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
@@ -210,13 +214,16 @@ class ProcessInstanceRestartServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
-        verifyNoInteractions(workRequests, loggers, audit);
+        verifyNoInteractions(workRequests, loggers, audit, attachments);
     }
 
     @Test
     void concurrentRerunSeesTheFirstRerunAfterTheLock() {
-        // The first rerun committed while this one waited for the instance lock.
-        doAnswer(call -> task.setStatus(ProcessTaskStatus.Restarted)).when(entityManager).refresh(task);
+        // The first rerun committed while this one waited for the instance lock, so loading under the lock sees it.
+        when(tasks.findById(34L)).thenAnswer(call -> {
+            verify(execution).inInstance(eq(7L), any());
+            return Optional.of(task.setStatus(ProcessTaskStatus.Restarted));
+        });
 
         var exception = assertThrows(ResponseException.class, () -> service.rerunFailedTask(7L, 34L, actor, () -> {}));
 

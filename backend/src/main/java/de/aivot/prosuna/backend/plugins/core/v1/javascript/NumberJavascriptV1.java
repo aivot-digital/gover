@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.javascript;
 
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NumberInputElement;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import jakarta.annotation.Nonnull;
@@ -46,6 +47,12 @@ public class NumberJavascriptV1 implements JavascriptFunctionProvider {
 
                 Zahlen können mit einer vorgegebenen Anzahl von Nachkommastellen formatiert werden. Umgekehrt lassen sich deutsch formatierte Zeichenketten wieder in numerische Werte umwandeln.
                 """;
+    }
+
+    @Override
+    public boolean isAvailableIn(@Nonnull JavascriptExecutionContext context) {
+        // Only formats and parses numbers.
+        return context == JavascriptExecutionContext.Default || context == JavascriptExecutionContext.AssetTemplate;
     }
 
     @Override

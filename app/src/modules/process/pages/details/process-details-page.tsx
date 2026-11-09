@@ -1663,6 +1663,7 @@ export function ProcessDetailsPage(): ReactNode {
         }
 
         confirm({
+            isDestructive: true,
             title: 'Testanspruch löschen',
             children: (
                 <Typography>
@@ -2395,7 +2396,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                                 </Typography>
                                                                 <Button
                                                                     size="small"
-                                                                    color="warning"
+                                                                    color="error"
                                                                     variant="text"
                                                                     onClick={handleEndTestClaim}
                                                                     sx={{

@@ -17,6 +17,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "process_instance_tasks")
+@EntityListeners(ProcessInstanceStaffEventListener.class)
 public class ProcessInstanceTaskEntity {
     @JsonIgnore
     public static final int ACCESS_KEY_LENGTH = 128;
