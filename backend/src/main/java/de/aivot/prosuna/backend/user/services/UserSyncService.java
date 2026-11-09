@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.models.KeycloakUser;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,12 +29,15 @@ public class UserSyncService {
     private final UserRepository userRepository;
     private final KeyCloakApiService keycloakApiService;
     private final ImportedUserSystemRoleService importedUserSystemRoleService;
+    private final MeterRegistry meterRegistry;
 
     @Autowired
     public UserSyncService(AuditService auditService,
                            UserRepository userRepository,
                            KeyCloakApiService keycloakApiService,
-                           ImportedUserSystemRoleService importedUserSystemRoleService) {
+                           ImportedUserSystemRoleService importedUserSystemRoleService,
+                           MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.auditService = auditService.createScopedAuditService(UserSyncService.class, "Benutzer");
 
         this.userRepository = userRepository;
@@ -176,6 +180,7 @@ public class UserSyncService {
             failureMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
             syncFailure = e;
         } finally {
+            meterRegistry.counter("prosuna.sync.runs", "type", "user", "outcome", success ? "success" : "failed").increment();
             if (failureMessage != null || !syncedUsers.isEmpty()) {
                 var metadata = new LinkedHashMap<String, Object>();
                 metadata.put("startedAt", startedAt);

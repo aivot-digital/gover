@@ -2,6 +2,8 @@ package de.aivot.prosuna.backend.security;
 
 import de.aivot.prosuna.backend.system.controllers.AuthController;
 import de.aivot.prosuna.backend.system.controllers.SystemHealthController;
+import de.aivot.prosuna.backend.system.services.HealthMetricsWorker;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,11 +19,15 @@ import org.springframework.boot.availability.AvailabilityChangeEvent;
 import org.springframework.boot.availability.LivenessState;
 import org.springframework.boot.availability.ReadinessState;
 import org.springframework.boot.env.OriginTrackedMapPropertySource;
+import org.springframework.boot.health.actuate.endpoint.HealthEndpoint;
 import org.springframework.boot.health.autoconfigure.actuate.endpoint.AvailabilityProbesAutoConfiguration;
 import org.springframework.boot.health.autoconfigure.actuate.endpoint.HealthEndpointAutoConfiguration;
 import org.springframework.boot.health.autoconfigure.registry.HealthContributorRegistryAutoConfiguration;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
+import org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration;
+import org.springframework.boot.micrometer.metrics.autoconfigure.MetricsAutoConfiguration;
+import org.springframework.boot.micrometer.metrics.autoconfigure.export.prometheus.PrometheusMetricsExportAutoConfiguration;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.web.OAuth2ResourceServerWebSecurityAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -47,6 +53,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -67,7 +74,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         HealthEndpointAutoConfiguration.class,
         EndpointAutoConfiguration.class,
         WebEndpointAutoConfiguration.class,
-        ManagementContextAutoConfiguration.class
+        ManagementContextAutoConfiguration.class,
+        MetricsAutoConfiguration.class,
+        CompositeMeterRegistryAutoConfiguration.class,
+        PrometheusMetricsExportAutoConfiguration.class
 }, exclude = {
         OAuth2ResourceServerAutoConfiguration.class,
         OAuth2ResourceServerWebSecurityAutoConfiguration.class
@@ -82,6 +92,9 @@ class KubernetesProbesWebMvcTest {
 
     @Autowired
     private FilterChainProxy springSecurityFilterChain;
+
+    @Autowired
+    private HealthEndpoint healthEndpoint;
 
     @MockitoBean
     private StringRedisTemplate redis;
@@ -197,6 +210,38 @@ class KubernetesProbesWebMvcTest {
                 .andExpect(cookie().doesNotExist(RedisCsrfTokenRepository.COOKIE_NAME));
 
         verifyNoInteractions(redis);
+    }
+
+    @Test
+    void healthMetricsShouldReportEachComponent() {
+        var meterRegistry = new SimpleMeterRegistry();
+        var worker = new HealthMetricsWorker(healthEndpoint, meterRegistry);
+
+        worker.refresh();
+        assertEquals(1, meterRegistry.get("prosuna.health.component.up").tag("component", "toggle").gauge().value());
+
+        COMPONENT_DOWN.set(true);
+        worker.refresh();
+        assertEquals(0, meterRegistry.get("prosuna.health.component.up").tag("component", "toggle").gauge().value());
+    }
+
+    @Test
+    void anonymousPrometheusScrapeShouldSucceedWithoutAccessingRedis() throws Exception {
+        mockMvc.perform(get("/api/actuator/prometheus"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/plain"))
+                .andExpect(header().doesNotExist(RedisCsrfTokenRepository.HEADER_NAME))
+                .andExpect(cookie().doesNotExist(RedisCsrfTokenRepository.COOKIE_NAME));
+
+        verifyNoInteractions(redis);
+    }
+
+    @Test
+    void anonymousMetricsEndpointShouldBeRejected() throws Exception {
+        allowCsrfTokenStorage();
+
+        mockMvc.perform(get("/api/actuator/metrics"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

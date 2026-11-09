@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.payment.models.*;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.prosuna.backend.utils.RandomUtils;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,7 @@ public class PaymentTransactionService implements
     private final PaymentProviderRepository paymentProviderRepository;
     private final PaymentProviderConfigurationService paymentProviderConfigurationService;
     private final TransactionTemplate transactionTemplate;
+    private final MeterRegistry meterRegistry;
 
     @Autowired
     public PaymentTransactionService(
@@ -58,7 +60,9 @@ public class PaymentTransactionService implements
             PaymentProviderDefinitionsService paymentProviderDefinitionsService,
             PaymentProviderRepository paymentProviderRepository,
             PaymentProviderConfigurationService paymentProviderConfigurationService,
-            PlatformTransactionManager transactionManager) {
+            PlatformTransactionManager transactionManager,
+            MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.auditService = auditService.createScopedAuditService(PaymentTransactionService.class, "Zahlungen");
         this.paymentTransactionChangeListeners = paymentTransactionChangeListeners;
         this.config = config;
@@ -330,6 +334,7 @@ public class PaymentTransactionService implements
             if (failure != null) {
                 throw failure;
             }
+            meterRegistry.counter("prosuna.payments", "status", String.valueOf(updatedPaymentStatus)).increment();
         }
     }
 

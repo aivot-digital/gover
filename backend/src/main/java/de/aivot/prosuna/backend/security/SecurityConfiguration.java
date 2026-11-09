@@ -2,9 +2,12 @@ package de.aivot.prosuna.backend.security;
 
 import de.aivot.prosuna.backend.system.controllers.AuthController;
 import de.aivot.prosuna.backend.user.repositories.UserApiKeyRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,11 +46,17 @@ public class SecurityConfiguration {
     );
 
     /**
-     * Anonymous health checks: the overall status and the Kubernetes probes. HEAD is allowed as well as GET, because
-     * external monitors may use it.
+     * Anonymous monitoring requests: the overall status, the Kubernetes probes and the Prometheus scrape. The actuator
+     * only listens on the internal management port, so these paths are not reachable through the main server port. HEAD
+     * is allowed as well as GET, because external monitors may use it.
      */
-    static final RequestMatcher HEALTH_CHECK_REQUESTS = new OrRequestMatcher(
-            Stream.of("/api/actuator/health", "/api/actuator/health/liveness", "/api/actuator/health/readiness")
+    static final RequestMatcher MONITORING_REQUESTS = new OrRequestMatcher(
+            Stream.of(
+                            "/api/actuator/health",
+                            "/api/actuator/health/liveness",
+                            "/api/actuator/health/readiness",
+                            "/api/actuator/prometheus"
+                    )
                     .flatMap(path -> Stream.<RequestMatcher>of(
                             PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.GET, path),
                             PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.HEAD, path)
@@ -59,6 +68,7 @@ public class SecurityConfiguration {
     private final CsrfResponseHeaderFilter csrfResponseHeaderFilter;
     private final JwtDecoder jwtDecoder;
     private final UserApiKeyRepository userApiKeyRepository;
+    private final ObjectProvider<MeterRegistry> meterRegistry;
 
     @Autowired
     public SecurityConfiguration(
@@ -66,12 +76,16 @@ public class SecurityConfiguration {
             CsrfResponseHeaderFilter csrfResponseHeaderFilter,
             JwtDecoder jwtDecoder,
             // Lazy, so slice tests that import this configuration without JPA repositories still start
-            @Lazy UserApiKeyRepository userApiKeyRepository
+            @Lazy UserApiKeyRepository userApiKeyRepository,
+            // Not lazy like the repository: a proxy of the concrete MeterRegistry class would break its internal calls.
+            // Slice tests without metrics fall back to a local registry.
+            ObjectProvider<MeterRegistry> meterRegistry
     ) {
         this.csrfTokenRepository = csrfTokenRepository;
         this.csrfResponseHeaderFilter = csrfResponseHeaderFilter;
         this.jwtDecoder = jwtDecoder;
         this.userApiKeyRepository = userApiKeyRepository;
+        this.meterRegistry = meterRegistry;
     }
 
     @Bean
@@ -96,7 +110,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                         requests -> requests
                                 .requestMatchers("/api/public/**").permitAll()
-                                .requestMatchers(HEALTH_CHECK_REQUESTS).permitAll()
+                                .requestMatchers(MONITORING_REQUESTS).permitAll()
                                 .requestMatchers("/api/auth/login").permitAll()
                                 .requestMatchers("/api/auth/refresh").permitAll()
                                 .requestMatchers("/api/auth/logout").permitAll()
@@ -106,7 +120,7 @@ public class SecurityConfiguration {
                 )
 
                 .oauth2ResourceServer(resourceServer -> resourceServer.jwt(jwt -> jwt
-                        .decoder(new ApiKeyJwtDecoder(jwtDecoder, userApiKeyRepository))
+                        .decoder(new ApiKeyJwtDecoder(jwtDecoder, userApiKeyRepository, meterRegistry.getIfAvailable(SimpleMeterRegistry::new)))
                 ))
 
                 .addFilterAfter(csrfResponseHeaderFilter, CsrfFilter.class);

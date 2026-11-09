@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.av.exceptions.AVVirusFoundException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ClamConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,8 +29,10 @@ public class AVService {
 
     private final ProsunaConfig prosunaConfig;
     private final ClamConfig clamConfig;
+    private final MeterRegistry meterRegistry;
 
-    public AVService(ProsunaConfig prosunaConfig, ClamConfig clamConfig) {
+    public AVService(ProsunaConfig prosunaConfig, ClamConfig clamConfig, MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.prosunaConfig = prosunaConfig;
         this.clamConfig = clamConfig;
     }
@@ -109,6 +112,19 @@ public class AVService {
     }
 
     public void testFile(InputStream fileInputStream, String filename) throws AVCheckFailedException, AVVirusFoundException {
+        try {
+            scanFile(fileInputStream, filename);
+        } catch (AVVirusFoundException exception) {
+            meterRegistry.counter("prosuna.av.scans", "result", "infected").increment();
+            throw exception;
+        } catch (AVCheckFailedException exception) {
+            meterRegistry.counter("prosuna.av.scans", "result", "error").increment();
+            throw exception;
+        }
+        meterRegistry.counter("prosuna.av.scans", "result", "clean").increment();
+    }
+
+    private void scanFile(InputStream fileInputStream, String filename) throws AVCheckFailedException, AVVirusFoundException {
         try (var clamAvSocket = openScannerSocket();
              var uploadStream = new BufferedOutputStream(clamAvSocket.getOutputStream());
              var responseStream = clamAvSocket.getInputStream()) {

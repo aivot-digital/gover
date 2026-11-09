@@ -20,6 +20,7 @@ import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.activation.DataSource;
 import jakarta.activation.FileDataSource;
 import jakarta.annotation.Nullable;
@@ -61,6 +62,7 @@ public class MailService {
     private final MailLogoService mailLogoService;
     private final UserService userService;
     private final UserConfigService userConfigService;
+    private final MeterRegistry meterRegistry;
 
     @Value("${spring.mail.host}")
     private String mailHost;
@@ -75,7 +77,9 @@ public class MailService {
             DepartmentMembershipService departmentMembershipService,
             MailLogoService mailLogoService,
             UserService userService,
-            UserConfigService userConfigService) {
+            UserConfigService userConfigService,
+            MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.prosunaConfig = prosunaConfig;
         this.mailSender = mailSender;
         this.systemConfigService = systemConfigService;
@@ -442,7 +446,13 @@ public class MailService {
         }
 
         if (!mailHost.isEmpty()) {
-            mailSender.send(message);
+            try {
+                mailSender.send(message);
+            } catch (RuntimeException exception) {
+                meterRegistry.counter("prosuna.mails", "outcome", "failed").increment();
+                throw exception;
+            }
+            meterRegistry.counter("prosuna.mails", "outcome", "sent").increment();
         }
     }
 

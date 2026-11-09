@@ -36,6 +36,7 @@ import de.aivot.prosuna.backend.services.pdf.PdfTemplateAssetService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -112,7 +113,8 @@ class PdfServiceTest {
                 mock(PaymentProviderDefinitionsService.class),
                 httpService,
                 elementDerivationService,
-                themeService
+                themeService,
+                new SimpleMeterRegistry()
         );
 
         injectBaseUrlIntoHTMLMethod = PdfService.class

@@ -5,7 +5,10 @@ import de.aivot.prosuna.backend.av.exceptions.AVVirusFoundException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ClamConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,6 +73,34 @@ class AVServiceTest {
         }
     }
 
+    @ParameterizedTest
+    @CsvSource({"stream: OK,clean", "stream: Eicar-Test-Signature FOUND,infected", "stream: Size limit ERROR,error"})
+    void testFileShouldCountScanResult(String scannerResponse, String expectedResult) throws Exception {
+        var meterRegistry = new SimpleMeterRegistry();
+
+        try (var scanner = new ServerSocket(0)) {
+            var scannerTask = startScannerTask(scanner, socket -> {
+                var input = new DataInputStream(socket.getInputStream());
+                input.readNBytes("zINSTREAM\0".length());
+                int chunkLength;
+                while ((chunkLength = input.readInt()) != 0) {
+                    input.readNBytes(chunkLength);
+                }
+                socket.getOutputStream().write((scannerResponse + "\0").getBytes(StandardCharsets.US_ASCII));
+                socket.getOutputStream().flush();
+            });
+
+            try {
+                createService(scanner, meterRegistry).testFile(new ByteArrayInputStream(new byte[]{1}), "file.txt");
+            } catch (AVCheckFailedException | AVVirusFoundException expected) {
+                // Only the recorded result matters here.
+            }
+            scannerTask.get(5, TimeUnit.SECONDS);
+        }
+
+        assertEquals(1, meterRegistry.get("prosuna.av.scans").tag("result", expectedResult).counter().count());
+    }
+
     @Test
     void parseScannerPortShouldRejectInvalidValues() {
         assertThrows(IOException.class, () -> AVService.parseScannerPort("invalid"));
@@ -102,7 +133,7 @@ class AVServiceTest {
         prosunaConfig.setFileExtensions(List.of("pdf"));
         prosunaConfig.setContentTypes(List.of("application/pdf"));
 
-        var service = new AVService(prosunaConfig, new ClamConfig()) {
+        var service = new AVService(prosunaConfig, new ClamConfig(), new SimpleMeterRegistry()) {
             @Override
             public void testFile(MultipartFile file) {
                 throw new AssertionError("Virenscan darf bei ungültigem Dateityp nicht starten.");
@@ -118,11 +149,15 @@ class AVServiceTest {
     }
 
     private static AVService createService(ServerSocket scanner) {
+        return createService(scanner, new SimpleMeterRegistry());
+    }
+
+    private static AVService createService(ServerSocket scanner, SimpleMeterRegistry meterRegistry) {
         var clamConfig = new ClamConfig();
         clamConfig.setHost("127.0.0.1");
         clamConfig.setPort(String.valueOf(scanner.getLocalPort()));
         clamConfig.setTimeout(2000);
-        return new AVService(new ProsunaConfig(), clamConfig);
+        return new AVService(new ProsunaConfig(), clamConfig, meterRegistry);
     }
 
     private static FutureTask<Void> startScannerTask(ServerSocket scanner, SocketHandler handler) {
