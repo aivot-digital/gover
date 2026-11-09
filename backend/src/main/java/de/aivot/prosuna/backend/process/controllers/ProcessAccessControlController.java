@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessAccessControlEntity;
 import de.aivot.prosuna.backend.process.filters.ProcessAccessControlFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessAccessControlService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -32,16 +33,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProcessAccessControlController extends GenericCrudController<ProcessAccessControlEntity, Integer, ProcessAccessControlFilter> {
     private final ProcessAccessControlService processAccessControlService;
     private final PermissionService permissionService;
+    private final ProcessService processService;
 
     public ProcessAccessControlController(AuditService auditService,
                                           UserService userService,
                                           ProcessAccessControlService processAccessControlService,
-                                          PermissionService permissionService) {
+                                          PermissionService permissionService,
+                                          ProcessService processService) {
         super(auditService.createScopedAuditService(ProcessAccessControlController.class, "Prozesse"),
                 userService,
                 processAccessControlService);
         this.processAccessControlService = processAccessControlService;
         this.permissionService = permissionService;
+        this.processService = processService;
     }
 
     @Override
@@ -86,11 +90,7 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
     @Override
     protected void checkCreatePermissions(@Nonnull UserEntity execUser,
                                           @Nonnull ProcessAccessControlEntity newItem) throws ResponseException {
-        permissionService.requireProcessPermission(
-                execUser.getId(),
-                newItem.getTargetProcessId(),
-                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
-        );
+        requireManagingDepartmentUpdate(execUser, newItem.getTargetProcessId());
     }
 
     @Override
@@ -110,13 +110,39 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
     @Override
     protected void checkUpdatePermission(@Nonnull UserEntity execUser,
                                          @Nonnull Integer itemid) throws ResponseException {
-        checkRetrievePermissions(execUser, itemid);
+        requireManagingDepartmentUpdateForRule(execUser, itemid);
     }
 
     @Override
     protected void checkDeletePermission(@Nonnull UserEntity execUser,
                                          @Nonnull Integer itemid) throws ResponseException {
-        checkRetrievePermissions(execUser, itemid);
+        requireManagingDepartmentUpdateForRule(execUser, itemid);
+    }
+
+    private void requireManagingDepartmentUpdateForRule(@Nonnull UserEntity execUser,
+                                                        @Nonnull Integer itemid) throws ResponseException {
+        var existing = processAccessControlService
+                .retrieve(itemid)
+                .orElseThrow(ResponseException::notFound);
+
+        requireManagingDepartmentUpdate(execUser, existing.getTargetProcessId());
+    }
+
+    /**
+     * Delegated OEs and teams may hold the update permission on a process, but only the managing
+     * department decides who has access to it, so the permission is checked on that department.
+     */
+    private void requireManagingDepartmentUpdate(@Nonnull UserEntity execUser,
+                                                 @Nonnull Integer processId) throws ResponseException {
+        var process = processService
+                .retrieve(processId)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireDepartmentPermission(
+                execUser.getId(),
+                process.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
     }
 
     @Override
