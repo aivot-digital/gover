@@ -25,10 +25,14 @@ import {
 } from '../../services/process-node-provider-api-service';
 import {ProcessInstanceDetailsPageHistory} from './process-instance-details-page-history';
 
-const mocks = vi.hoisted(() => ({dispatch: vi.fn(), permissions: new Set<string>()}));
+const mocks = vi.hoisted(() => ({dispatch: vi.fn(), permissions: new Set<string>(), grantedProcessId: 10}));
 vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => mocks.dispatch}));
+// Each hook only knows the keys of its own scope, so a check at the wrong scope fails.
 vi.mock('../../../permissions/hooks/use-permissions', () => ({
-    useHasProcessInstancePermission: (_id: number, permission: string) => mocks.permissions.has(permission),
+    useHasProcessInstancePermission: (_id: number, permission: string) =>
+        permission.startsWith('process_instance.') && mocks.permissions.has(permission),
+    useHasProcessPermission: (id: number, permission: string) =>
+        id === mocks.grantedProcessId && permission.startsWith('process_definition.') && mocks.permissions.has(permission),
 }));
 
 function deferred<T>() {
@@ -152,6 +156,7 @@ describe('Process instance history preview', () => {
 
     beforeEach(() => {
         mocks.permissions = new Set([Permission.PROCESS_INSTANCE_READ, Permission.PROCESS_DEFINITION_READ]);
+        mocks.grantedProcessId = 10;
         vi.spyOn(ProcessDefinitionApiService.prototype, 'retrieve').mockResolvedValue(ProcessDefinitionApiService.initialize());
         vi.spyOn(ProcessInstanceEventApiService.prototype, 'listAllOrdered').mockResolvedValue(page([]));
         vi.spyOn(ProcessNodeProviderApiService.prototype, 'getNodeProviders').mockResolvedValue([
@@ -492,6 +497,13 @@ describe('Process instance history preview', () => {
                 }
             });
             expect(mocks.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('does not fetch history when the read permission is granted for a different process', async () => {
+            mocks.grantedProcessId = 99;
+            await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)], {waitForLoad: false});
+            expect(screen.getByRole('alert')).toHaveTextContent(/den Prozess zu diesem Vorgang/);
+            expect(ProcessDefinitionApiService.prototype.retrieve).not.toHaveBeenCalled();
         });
 
         it.each([Permission.PROCESS_INSTANCE_READ, Permission.PROCESS_DEFINITION_READ])(
