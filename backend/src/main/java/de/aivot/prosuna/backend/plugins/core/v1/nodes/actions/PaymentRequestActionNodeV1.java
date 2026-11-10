@@ -239,16 +239,16 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Fordert eine Online-Zahlung von Beteiligten an.";
+        return "Fordert eine Online-Zahlung von Beteiligten an und wartet auf deren Abschluss.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine Online-Zahlung und sendet den Zahlungslink über den ausgewählten Kommunikationsweg an die konfigurierte Identität.
+                Erstellt eine Online-Zahlung und sendet den Zahlungslink über die Kommunikationsanbindung der konfigurierten Identität. Bei automatischer Ausführung werden Betreff und Nachricht aus den Nachrichtenbausteinen erzeugt, bei teilautomatisierter Ausführung bearbeitet die zuständige Person sie vor dem Versand in einer Mitarbeitendenaufgabe.
 
-                Betreff und Nachricht werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand durch eine Mitarbeiter:in bearbeitet. Anschließend wartet das Prozesselement auf den erfolgreichen Abschluss der Zahlung.
+                Der Vorgang wartet, bis die Zahlung erfolgreich abgeschlossen ist, und wird dann über den Ausgangsport „Zahlung erfolgreich“ fortgesetzt. Schlägt die Zahlung fehl oder wird sie abgebrochen, schlägt die Aufgabe fehl. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
                 """;
     }
 
@@ -753,7 +753,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 || StringUtils.toNullableTrimmedString(content.subject) == null
                 || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den manuellen Versand müssen Vorlagen für Betreff und Nachrichtentext konfiguriert sein."
+                    "Für den manuellen Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
             );
         }
         return content;

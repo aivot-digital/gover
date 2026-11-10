@@ -109,13 +109,17 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Überträgt einen JSON-Datensatz an FIT-Connect.";
+        return "Sendet einen JSON-Datensatz aus den Vorgangsdaten als Einreichung über FIT-Connect.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Überträgt einen JSON-Datensatz aus den Vorgangsdaten über einen konfigurierten FIT-Connect-Onlinedienst an den ausgewählten Empfänger-Zustellpunkt.";
+        return """
+                Sendet einen JSON-Datensatz aus den Vorgangsdaten als Einreichung über den konfigurierten FIT-Connect-Onlinedienst an den ausgewählten Zustellpunkt. Anlagen werden nicht übertragen.
+
+                Nach dem Senden wird der Status der Einreichung abgefragt. Nur wenn FIT-Connect sie als eingereicht oder angenommen meldet, wird der Vorgang fortgesetzt; andernfalls schlägt die Aufgabe fehl.
+                """;
     }
 
     @Nonnull

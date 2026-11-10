@@ -146,16 +146,16 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Erstellt eine frei definierbare Aufgabe, die Mitarbeiter:innen innerhalb oder außerhalb von Prosuna bearbeiten und bestätigen.";
+        return "Erstellt eine frei beschriebene Mitarbeitendenaufgabe für einen Arbeitsschritt innerhalb oder außerhalb von Prosuna.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine frei definierbare Aufgabe für eine Mitarbeiter:in, um einen manuellen Arbeitsschritt innerhalb oder außerhalb von Prosuna zu bestätigen.
+                Erstellt eine Mitarbeitendenaufgabe mit einer frei formulierten Aufgabenbeschreibung, etwa für einen Arbeitsschritt in einem Fachsystem. Die zuständige Person wird aus dem konfigurierten Personenkreis ermittelt. Der Vorgang wartet, bis sie die Aufgabe abschließt. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
 
-                Aufgabenbeschreibung, verantwortlicher Personenkreis und eine optionale Prosuna-Oberfläche werden konfiguriert. Nach der Bestätigung setzt das Element den Vorgang fort und stellt erfasste Daten, Vermerk sowie Bearbeitungszeitpunkt und bearbeitende Person als Ausgangsdaten bereit.
+                Optional kann eine UI-Definition hinterlegt werden, deren Formularelemente mit den Vorgangsdaten vorbelegt sind. Angaben aus Formularelementen mit Datenschlüssel werden beim Abschluss in die Vorgangsdaten übernommen. Zusätzlich kann die zuständige Person einen Vermerk erfassen.
                 """;
     }
 

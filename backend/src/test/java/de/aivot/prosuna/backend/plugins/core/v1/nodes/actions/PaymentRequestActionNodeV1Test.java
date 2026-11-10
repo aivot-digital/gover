@@ -206,7 +206,7 @@ class PaymentRequestActionNodeV1Test {
                 },
                 node.getExecutionTypes()
         );
-        assertEquals("Fordert eine Online-Zahlung von Beteiligten an.", node.getAbstract());
+        assertEquals("Fordert eine Online-Zahlung von Beteiligten an und wartet auf deren Abschluss.", node.getAbstract());
     }
 
     @Test

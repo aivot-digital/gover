@@ -135,16 +135,16 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Weist einen Vorgang automatisch oder durch eine manuelle Aufgabe einer Person zu.";
+        return "Legt die zuständige Person eines Vorgangs automatisch oder über eine Mitarbeitendenaufgabe fest.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Wählen Sie, ob eine Person automatisch aus einem konfigurierten Personenkreis ermittelt wird oder ob eine manuelle Zuweisungsaufgabe entsteht.
-                Bei der manuellen Zuweisung bestimmt ein eigener Personenkreis, wer die Aufgabe erhält. Die bearbeitende Person wählt anschließend aus den aktuell für den Vorgang berechtigten Personen.
-                Eine bestehende Zuweisung wird ersetzt. Nach erfolgreicher Zuweisung wird der Vorgang fortgesetzt. Als Ergebnis stellt das Element die ID der zugewiesenen Person bereit.
+                Bei automatischer Ausführung wird die zuständige Person aus dem konfigurierten Personenkreis ermittelt; berücksichtigt werden nur Mitarbeiter:innen, die den Vorgang einsehen dürfen. Bei manueller Ausführung entsteht eine Mitarbeitendenaufgabe für eine Person aus einem eigenen Personenkreis. Diese wählt eine der Mitarbeiter:innen aus, die aktuell für den Vorgang berechtigt sind. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
+
+                Eine bestehende Zuweisung wird ersetzt. Anschließend wird der Vorgang fortgesetzt.
                 """;
     }
 

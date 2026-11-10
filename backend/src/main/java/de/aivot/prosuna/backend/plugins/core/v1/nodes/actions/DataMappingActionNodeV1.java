@@ -108,22 +108,22 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
     @Nonnull
     @Override
     public String getName() {
-        return "Datenfelder kopieren";
+        return "Datenfelder übertragen";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Kopiert Werte von Quellfeldern in Zielfelder und kann die Quellfelder anschließend löschen.";
+        return "Kopiert, verschiebt oder löscht Werte innerhalb der Vorgangsdaten.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Überträgt Werte anhand konfigurierter Regeln zwischen Pfaden innerhalb der Vorgangsdaten.
+                Führt die konfigurierten Abbildungsregeln der Reihe nach auf den Vorgangsdaten aus. Jede Regel kopiert einen Wert vom Ausgangspfad an den Zielpfad, verschiebt ihn, indem der Ausgangswert anschließend bereinigt wird, oder löscht den Ausgangswert nur. Fehlt der Ausgangswert, wird am Zielpfad `null` gesetzt.
 
-                Jede Regel kann einen Quellwert in ein Zielfeld kopieren, das Quellfeld nach der Übertragung bereinigen oder ausschließlich eine Löschung ausführen. Optional werden dabei leer gewordene übergeordnete Container aus den Vorgangsdaten entfernt.
+                Optional werden dabei leer gewordene übergeordnete Objekte und Arrays entfernt. Die übrigen Vorgangsdaten bleiben erhalten.
                 """;
     }
 

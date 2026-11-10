@@ -145,16 +145,16 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Erlaubt einer Mitarbeiter:in, Daten über eine konfigurierte Oberfläche zu ändern, hinzuzufügen oder zu entfernen.";
+        return "Lässt eine Mitarbeiter:in Vorgangsdaten über eine UI-Definition prüfen und anpassen.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine zugewiesene Prosuna-Aufgabe, in der eine Mitarbeiter:in Vorgangsdaten prüfen und bearbeiten kann.
+                Erstellt eine Mitarbeitendenaufgabe, in der die zuständige Person Vorgangsdaten über die konfigurierte UI-Definition prüft und anpasst; die Formularelemente sind mit den aktuellen Vorgangsdaten vorbelegt. Die zuständige Person wird aus dem konfigurierten Personenkreis ermittelt. Der Vorgang wartet, bis sie die Änderungen übernimmt. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
 
-                Die angezeigte Oberfläche und der zulässige Personenkreis werden über die Elementkonfiguration bestimmt. Nach der Bestätigung werden die erfassten Änderungen in die Vorgangsdaten übernommen; erfasste Daten, Vermerk und Bearbeitungsinformationen stehen zusätzlich als Ausgangsdaten zur Verfügung.
+                Beim Abschluss werden die Angaben aus Formularelementen mit Datenschlüssel in die Vorgangsdaten übernommen. Optional kann ein Änderungsvermerk erfasst werden.
                 """;
     }
 

@@ -185,16 +185,16 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Fordert Angaben von einer beteiligten Person oder Organisation über ein Formular an.";
+        return "Fordert Angaben von Beteiligten über ein Formular an und wartet auf deren Übermittlung.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Fordert zusätzliche Angaben von einer bestehenden oder neu eingeladenen Person an.
+                Erstellt eine Aufgabe für Beteiligte und sendet einen Link zum konfigurierten Formular an eine Identität des Vorgangs. Alternativ wird eine neue Identität angefordert; die Einladung geht dann an die konfigurierte E-Mail-Adresse. Bei automatischer Ausführung werden Betreff und Inhalt der Nachricht aus den Nachrichtenbausteinen erzeugt, bei teilautomatisierter Ausführung bearbeitet die zuständige Person sie vor dem Versand in einer Mitarbeitendenaufgabe.
 
-                Die Person erhält einen Link zum konfigurierten Formular. Das Prozesselement wartet auf die Übermittlung der Angaben oder den Ablauf einer konfigurierten Bearbeitungsfrist.
+                Der Vorgang wartet auf die Übermittlung der Angaben. Angaben aus Formularelementen mit Datenschlüssel werden in die Vorgangsdaten übernommen. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
                 """;
     }
 
@@ -1001,7 +1001,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var content = configuration.messageConfig == null ? null : configuration.messageConfig.manualContent;
         if (content == null || StringUtils.isNullOrEmpty(content.subject) || StringUtils.isNullOrEmpty(content.content)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den manuellen Versand müssen Vorlagen für Betreff und Nachrichtentext konfiguriert sein."
+                    "Für den manuellen Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
             );
         }
         return content;

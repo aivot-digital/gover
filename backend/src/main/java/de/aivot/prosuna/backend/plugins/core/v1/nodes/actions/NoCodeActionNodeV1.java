@@ -136,16 +136,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Führt benutzerdefinierte No-Code-Ausdrücke aus.";
+        return "Berechnet Werte mit No-Code-Ausdrücken und schreibt sie in die Vorgangsdaten.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Wertet eine Liste konfigurierter No-Code-Ausdrücke aus und schreibt deren Ergebnisse in die Vorgangsdaten.
+                Wertet die konfigurierten No-Code-Ausdrücke der Reihe nach aus und schreibt jedes Ergebnis an den festgelegten Pfad in den Vorgangsdaten. Jeder Ausdruck kann die Ergebnisse vorheriger Zeilen verwenden; die übrigen Vorgangsdaten bleiben erhalten.
 
-                Für jedes Ergebnis werden Zielpfad, erwarteter Datentyp und Ausdruck festgelegt. Dadurch können Vorgangsdaten ohne eigenen JavaScript-Code berechnet, umgewandelt oder ergänzt werden; die ausgeführten Zuweisungen stehen zusätzlich als Ausgangsdaten bereit.
+                Für jedes Ergebnis wird ein erwarteter Datentyp festgelegt. Lässt sich ein Ergebnis nicht in diesen Datentyp umwandeln, schlägt die Aufgabe fehl.
                 """;
     }
 

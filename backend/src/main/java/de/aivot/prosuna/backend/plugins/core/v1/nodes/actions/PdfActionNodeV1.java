@@ -103,7 +103,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         var template = PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY.equals(configuration.contentHtmlSource)
                 ? htmlTemplateInputElementResolver.getTemplateName(configuration.contentHtmlTemplate) : "Direkt hinterlegter HTML-Inhalt";
         return "Das Dokument „" + summary.value(OUTPUT_NAME_FILE_NAME) + "“ wurde" + summary.completedAt() + " erfolgreich erstellt."
-                + detail("Vorlage", template)
+                + detail("Dokumentvorlage", template)
                 + section("Dokument", document(summary.data(OUTPUT_NAME_ATTACHMENT_KEY), summary.data(OUTPUT_NAME_FILE_NAME)));
     }
 
@@ -146,16 +146,16 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Generiert ein PDF-Dokument basierend auf einer vordefinierten Vorlage.";
+        return "Erstellt aus einer HTML-Dokumentvorlage ein PDF-Dokument und speichert es als Anlage.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erzeugt während der Prozessausführung ein PDF-Dokument aus einer HTML-Vorlage.
+                Erstellt ein PDF-Dokument aus einer Dokumentvorlage in HTML. Die Dokumentvorlage wird direkt am Prozesselement hinterlegt oder aus „Dateien und Medien“ ausgewählt und mit Werten aus Vorgangsdaten, geschützten Vorgangsdaten und Elementdaten befüllt. Kopf- und Fußzeile werden mit `<!-- KOPFZEILE -->` und `<!-- FUSSZEILE -->` abgegrenzt.
 
-                Der HTML-Inhalt kann direkt in der Konfiguration oder über eine hinterlegte Vorlagendatei bereitgestellt werden und wird mit den Daten des aktuellen Vorgangs gerendert. Das fertige PDF wird als Vorgangsanlage gespeichert; Dateiname, Größe, Speicherort und Dateiwerte stehen als Ausgangsdaten zur Verfügung.
+                Das PDF wird als Anlage in einem neuen Anlagensatz gespeichert; die Dateiendung `.pdf` wird automatisch ergänzt.
                 """;
     }
 
@@ -177,8 +177,8 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         layout
                 .findChild(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(element -> element.setOptions(List.of(
-                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "Gespeicherte Vorlage verwenden (Dateien und Medien)"),
-                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE, "Eigene Dokumentenvorlage als HTML hinterlegen")
+                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "Gespeicherte Dokumentvorlage verwenden (Dateien und Medien)"),
+                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE, "Eigene Dokumentvorlage als HTML hinterlegen")
                 )));
 
         layout
@@ -415,7 +415,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY.equals(contentSource)) {
             if (configuration.contentHtmlTemplate == null) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
-                        "Es muss eine Datei für die HTML-Vorlage ausgewählt sein."
+                        "Es muss eine Datei für die Dokumentvorlage ausgewählt sein."
                 );
             }
 
@@ -438,13 +438,13 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
         if (headerSeparatorCount > 1) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die PDF-Vorlage enthält mehrere Abschnittstrenner %s.",
+                    "Die Dokumentvorlage enthält mehrere Abschnittstrenner %s.",
                     StringUtils.quote(HEADER_HTML_SECTION_SEPARATOR)
             );
         }
         if (footerSeparatorCount > 1) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die PDF-Vorlage enthält mehrere Abschnittstrenner %s.",
+                    "Die Dokumentvorlage enthält mehrere Abschnittstrenner %s.",
                     StringUtils.quote(FOOTER_HTML_SECTION_SEPARATOR)
             );
         }
@@ -488,7 +488,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         contentHtml = normalizeHtmlSection(contentHtml, "Inhalt");
         if (StringUtils.isNullOrEmpty(contentHtml)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die PDF-Vorlage enthält keinen HTML-Abschnitt für den Dokumentinhalt."
+                    "Die Dokumentvorlage enthält keinen HTML-Abschnitt für den Dokumentinhalt."
             );
         }
 
@@ -516,7 +516,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         var matcher = HTML_DOCUMENT_BLOCK_PATTERN.matcher(normalizedSection);
         if (matcher.find() && matcher.find()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Der Abschnitt %s der PDF-Vorlage enthält mehrere HTML-Blöcke.",
+                    "Der Abschnitt %s der Dokumentvorlage enthält mehrere HTML-Blöcke.",
                     StringUtils.quote(sectionName)
             );
         }
@@ -573,14 +573,14 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
         @InputElementPOJOBinding(id = CONTENT_HTML_SOURCE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
-                @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentenvorlage"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, ob eine gespeicherte Dokumentenvorlage aus Dateien und Medien verwendet oder eine eigene Dokumentenvorlage als HTML hinterlegt werden soll."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentvorlage"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, ob eine gespeicherte Dokumentvorlage aus Dateien und Medien verwendet oder eine eigene Dokumentvorlage als HTML hinterlegt werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String contentHtmlSource;
 
         @InputElementPOJOBinding(id = CONTENT_HTML_CODE_FIELD_ID, type = ElementType.CodeInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Eigene Dokumentenvorlage als HTML"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Eigene Dokumentvorlage als HTML"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Hinterlegen Sie das vollständige HTML für das PDF-Dokument."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "language", strValue = "html")
@@ -588,8 +588,8 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         public String contentHtml;
 
         @InputElementPOJOBinding(id = CONTENT_HTML_ASSET_KEY_FIELD_ID, type = ElementType.HtmlTemplateInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentenvorlage"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine gespeicherte HTML-Dokumentenvorlage aus Dateien und Medien aus."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentvorlage"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine gespeicherte HTML-Dokumentvorlage aus Dateien und Medien aus."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public HtmlTemplateInputElementValue contentHtmlTemplate;

@@ -141,16 +141,16 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet einen Prompt an die Completions-API einer KI und stellt die Antwort als Ausgangsdaten bereit.";
+        return "Sendet einen Prompt an eine KI und stellt die Antwort in den Elementdaten bereit.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Sendet einen konfigurierten Prompt an eine kompatible KI-Completions-API und stellt die erzeugte Antwort für nachfolgende Prozesselemente bereit.
+                Sendet den konfigurierten Prompt an eine OpenAI-kompatible Chat-Completions-API und stellt die Antwort in den Elementdaten bereit. Konfiguriert werden HTTP-Endpunkt, API-Schlüssel, Modell und Prompt; als HTTP-Endpunkt wird die Basis-URL der API angegeben, an die `/chat/completions` angehängt wird.
 
-                Endpunkt, API-Schlüssel, Modell und Prompt werden in der Elementkonfiguration festgelegt. Neben dem ersten Antworttext liefert das Element den Abschlussgrund, das tatsächlich verwendete Modell und die von der API gemeldeten Nutzungsinformationen als Ausgangsdaten.
+                Vorgangsdaten werden nur übermittelt, soweit der Prompt sie über Variablen einbindet. Meldet die API einen Fehler oder liefert sie keine Antwort, schlägt die Aufgabe fehl.
                 """;
     }
 

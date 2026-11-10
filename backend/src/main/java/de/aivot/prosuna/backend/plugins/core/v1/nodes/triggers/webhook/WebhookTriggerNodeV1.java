@@ -141,16 +141,16 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Startet einen Vorgang, wenn Daten über einen Webhook empfangen werden.";
+        return "Startet einen neuen Vorgang, sobald eine HTTP-Anfrage am bereitgestellten Webhook eingeht.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Startet einen neuen Vorgang durch eine eingehende HTTP-Anfrage an den bereitgestellten Webhook.
+                Startet für jede gültige HTTP-Anfrage an den bereitgestellten Webhook einen neuen Vorgang. Anfragemethode, Inhaltstyp und Authentifizierung werden anhand der Konfiguration geprüft; ungültige Anfragen werden abgelehnt und starten keinen Vorgang.
 
-                Übermittelte Nutzdaten und Anlagen werden in die initialen Vorgangsdaten übernommen. Zusätzlich stellt der Auslöser die empfangenen Dateien, Anfragedetails wie Methode, Header und Query-Parameter sowie den Eingangszeitpunkt als Ausgangsdaten bereit.
+                Die empfangenen Nutzdaten werden nur in die Vorgangsdaten übernommen, wenn „Daten in Vorgangsdaten kopieren“ aktiviert ist; andernfalls beginnt der Vorgang mit leeren Vorgangsdaten. Als Multipart übertragene Dateien werden als Anlagen gespeichert. Nutzdaten, Dateien und Anfragedetails stehen in den Elementdaten bereit.
                 """;
     }
 

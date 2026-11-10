@@ -176,7 +176,7 @@ public class SemiAutomaticMessageConfig {
                 },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der Nachricht"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Nachrichtenbaustein für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -197,7 +197,7 @@ public class SemiAutomaticMessageConfig {
                 },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Nachricht"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Nachrichtenbaustein für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -241,7 +241,7 @@ public class SemiAutomaticMessageConfig {
                         InputMode.LowCode
                 },
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für den Betreff"),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtenbaustein für den Betreff"),
                         @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung des bearbeitbaren Betreffs. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
@@ -262,7 +262,7 @@ public class SemiAutomaticMessageConfig {
                         InputMode.LowCode
                 },
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für die Nachricht"),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtenbaustein für die Nachricht"),
                         @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung der bearbeitbaren Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }

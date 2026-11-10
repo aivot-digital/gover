@@ -119,22 +119,22 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
     @Nonnull
     @Override
     public String getName() {
-        return "FIT-Connect Zustellpunkt";
+        return "FIT-Connect-Zustellpunkt";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Empfängt Daten von FIT-Connect und startet einen Vorgang.";
+        return "Startet für jede Übermittlung an einen FIT-Connect-Zustellpunkt einen neuen Vorgang.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Empfängt neue Übermittlungen eines FIT-Connect-Zustellpunkts und startet für jede Übermittlung einen Vorgang.
+                Empfängt Übermittlungen an den konfigurierten FIT-Connect-Zustellpunkt und startet für jede Übermittlung einen neuen Vorgang. Sobald FIT-Connect eine neue Übermittlung meldet, werden Fach- und Metadaten abgerufen und entschlüsselt, und die Übermittlung wird bei FIT-Connect angenommen. Bereits verarbeitete Übermittlungen werden ignoriert, nicht verarbeitbare zurückgewiesen.
 
-                Die Fach- und Metadaten werden über die FIT-Connect-API abgerufen und entschlüsselt. Übermittelte Anlagen werden als Vorgangsanlagen gespeichert; JSON-Daten, Metadaten, Anlagen und Übermittlungsinformationen stehen als Ausgangsdaten zur Verfügung.
+                Die JSON-Fachdaten werden nur in die Vorgangsdaten übernommen, wenn „JSON in Vorgangsdaten kopieren“ aktiviert ist; andernfalls beginnt der Vorgang mit leeren Vorgangsdaten. Übermittelte Dateien werden als Anlagen gespeichert.
                 """;
     }
 

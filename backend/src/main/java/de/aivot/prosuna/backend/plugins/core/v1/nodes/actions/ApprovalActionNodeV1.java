@@ -159,16 +159,16 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Holt eine Freigabe durch eine Mitarbeiter:in aus einem definierten Personenkreis ein.";
+        return "Lässt eine Mitarbeiter:in aus einem festgelegten Personenkreis einen Vorgang freigeben oder ablehnen.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine zugewiesene Aufgabe, über die eine Mitarbeiter:in einen Vorgang freigeben oder ablehnen kann.
-                
-                Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Ausgangsport fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Ausgangsdaten bereit.
+                Erstellt eine Mitarbeitendenaufgabe, in der die zuständige Person anhand der konfigurierten Freigabekriterien entscheidet. Der Vorgang wartet auf die Entscheidung und wird über den Ausgangsport „Freigabe erteilt“ oder „Freigabe abgelehnt“ fortgesetzt; die Entscheidung wird im Vorgangsverlauf festgehalten. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
+
+                Als Inhalt der Aufgabe dient entweder eine UI-Definition oder ein eigener Text. Bei einer UI-Definition werden Angaben aus Formularelementen mit Datenschlüssel bei beiden Entscheidungen in die Vorgangsdaten übernommen.
                 """;
     }
 
