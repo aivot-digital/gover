@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
@@ -21,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -119,6 +121,30 @@ public class TemplateRenderService {
     public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
                               @Nullable String template,
                               @Nonnull TemplateOutputFormat outputFormat) {
+        return interpolate(foldedProcessData, template, outputFormat, JavascriptExecutionContext.Default);
+    }
+
+    /**
+     * Renders an HTML template like {@link #interpolate(ProcessExecutionData, String)}, but only provides the
+     * JavaScript function providers that are available in the given context to its expressions.
+     */
+    @Nullable
+    public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
+                              @Nullable String template,
+                              @Nonnull JavascriptExecutionContext context) {
+        return interpolate(foldedProcessData, template, TemplateOutputFormat.Html, context);
+    }
+
+    /**
+     * Renders the given template in the given output format, see
+     * {@link #interpolate(ProcessExecutionData, String, TemplateOutputFormat)}, and only provides the JavaScript
+     * function providers that are available in the given context to its expressions.
+     */
+    @Nullable
+    public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
+                              @Nullable String template,
+                              @Nonnull TemplateOutputFormat outputFormat,
+                              @Nonnull JavascriptExecutionContext context) {
         if (template == null) {
             return null;
         }
@@ -128,7 +154,7 @@ public class TemplateRenderService {
             throw new IllegalArgumentException(formatDiagnostics(parseResult.diagnostics()));
         }
 
-        try (var engine = javascriptEngineFactoryService.getEngine()) {
+        try (var engine = javascriptEngineFactoryService.getEngine(context)) {
             var renderer = new TemplateRenderer(
                     new TemplateExpressionEvaluator(engine, parseResult.source()),
                     new TemplateRenderContext(foldedProcessData),
@@ -742,23 +768,20 @@ public class TemplateRenderService {
         private String evaluateToString(@Nonnull TemplateRenderContext context,
                                         @Nonnull String expression,
                                         int sourceIndex) {
-            return evaluate(context, "return (" + expression + ");", expression, sourceIndex)
-                    .toString();
+            return evaluate(context, "return (" + expression + ");", expression, sourceIndex, JavascriptResult::toString);
         }
 
         private boolean evaluateBoolean(@Nonnull TemplateRenderContext context,
                                         @Nonnull String expression,
                                         int sourceIndex) {
-            var result = evaluate(context, "return Boolean(" + expression + ");", expression, sourceIndex);
-            return Boolean.TRUE.equals(result.asBoolean());
+            return evaluate(context, "return Boolean(" + expression + ");", expression, sourceIndex, result -> Boolean.TRUE.equals(result.asBoolean()));
         }
 
         @Nonnull
         private List<?> evaluateList(@Nonnull TemplateRenderContext context,
                                      @Nonnull String expression,
                                      int sourceIndex) {
-            var value = evaluate(context, "return (" + expression + ");", expression, sourceIndex)
-                    .asObject();
+            var value = evaluate(context, "return (" + expression + ");", expression, sourceIndex, JavascriptResult::asObject);
 
             if (value == null) {
                 return List.of();
@@ -783,19 +806,21 @@ public class TemplateRenderService {
          * loop locals as plain identifiers, but rendering still controls whether the result is consumed as text,
          * boolean, or iterable.
          */
-        @Nonnull
-        private JavascriptResult evaluate(@Nonnull TemplateRenderContext context,
-                                          @Nonnull String body,
-                                          @Nonnull String expression,
-                                          int sourceIndex) {
+        @Nullable
+        private <T> T evaluate(@Nonnull TemplateRenderContext context,
+                               @Nonnull String body,
+                               @Nonnull String expression,
+                               int sourceIndex,
+                               @Nonnull Function<JavascriptResult, T> convert) {
             try {
                 // Expose process data and loop locals as plain identifiers inside template expressions.
                 engine.registerGlobalObject(TEMPLATE_SCOPE_NAME, context.toScope());
-                return engine.evaluateCode(JavascriptCode.of(
+                // Convert inside the try, because converting the result can run guest code such as getters.
+                return convert.apply(engine.evaluateCode(JavascriptCode.of(
                         "(() => { with (%s) { %s } })()",
                         TEMPLATE_SCOPE_NAME,
                         body
-                ));
+                )));
             } catch (Exception e) {
                 throw failure(sourceIndex, "Failed to evaluate expression '" + expression.trim() + "'.", e);
             }

@@ -335,6 +335,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                             color="inherit"
                             actions={[
                                 {
+                                    color: 'error',
                                     icon: <Delete/>,
                                     tooltip: 'Diesen Ausdruck löschen',
                                     onClick: () => {

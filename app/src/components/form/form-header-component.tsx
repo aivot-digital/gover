@@ -219,6 +219,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                     onClick={() => {
                         setMenuAnchorEl(undefined);
                         showConfirm({
+                            confirmButtonColor: 'error',
                             title: 'Anlage abbrechen?',
                             children: (
                                 <Typography>
@@ -238,9 +239,9 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                     }}
                 >
                     <ListItemIcon>
-                        <Delete/>
+                        <Delete color="error"/>
                     </ListItemIcon>
-                    <ListItemText>
+                    <ListItemText sx={{color: 'error.main'}}>
                         Alle Formulardaten löschen
                     </ListItemText>
                 </MenuItem>

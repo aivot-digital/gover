@@ -837,6 +837,7 @@ export function FormNodeEditorPage() {
         }
 
         confirm({
+            isDestructive: true,
             title: 'Element wirklich löschen',
             children: (
                 <Typography>

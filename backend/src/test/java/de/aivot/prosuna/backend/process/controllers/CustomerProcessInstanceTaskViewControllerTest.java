@@ -163,6 +163,18 @@ class CustomerProcessInstanceTaskViewControllerTest {
     }
 
     @Test
+    void retrieve_NamesTheStoredUploadsOfTheTaskThatItsUploadFieldsMayRemove() throws ResponseException {
+        var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), new AuthoredElementValues());
+        var upload = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        fixture.fileUploadMultipartInputService().removableAttachmentKeys = List.of(upload);
+
+        var response = fixture.controller().retrieve(fixture.procAccess(), fixture.taskAccess(), null, null);
+
+        assertEquals(List.of(upload), response.removableAttachmentKeys());
+        assertEquals(fixture.task().getId(), fixture.fileUploadMultipartInputService().removableAttachmentsTaskId);
+    }
+
+    @Test
     void retrieveShowsExpiredTaskWithoutCompletionMessageOrActions() throws ResponseException {
         var fixture = createFixture(new NoOpCustomerProcessNodeDefinition(), new AuthoredElementValues());
         fixture.task().setStatus(ProcessTaskStatus.DeadlineExceeded);
@@ -239,6 +251,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertNull(response.layout());
         assertNull(response.data());
         assertNull(response.events());
+        assertNull(response.removableAttachmentKeys());
         assertSame(newIdentitySlot, response.newIdentitySlot());
         assertEquals("applicant", response.existingIdentitySlot().id());
         assertEquals("Antragstellende Person", response.existingIdentitySlot().title());
@@ -1579,6 +1592,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final AuthoredElementValues normalizedInputs;
         private AuthoredElementValues receivedInputs;
         private ComputedElementStates receivedElementStates;
+        private List<UUID> removableAttachmentKeys = List.of();
+        private Long removableAttachmentsTaskId;
 
         private TestTaskViewMultipartInputService(AuthoredElementValues normalizedInputs) {
             super(null, null, null);
@@ -1597,6 +1612,14 @@ class CustomerProcessInstanceTaskViewControllerTest {
             receivedInputs = inputs;
             receivedElementStates = elementStates;
             return new NormalizationResult(normalizedInputs, List.of());
+        }
+
+        @Override
+        public List<UUID> findRemovableAttachmentKeys(BaseElement layout,
+                                                      Long processInstanceId,
+                                                      Long processInstanceTaskId) {
+            removableAttachmentsTaskId = processInstanceTaskId;
+            return removableAttachmentKeys;
         }
     }
 
@@ -1687,7 +1710,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class FailingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private FailingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -1706,7 +1729,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override

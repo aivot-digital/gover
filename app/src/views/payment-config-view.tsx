@@ -1264,6 +1264,7 @@ function AdditionalBookingDataEditor(props: {
                                 startIcon={<Delete/>}
                                 disabled={props.disabled}
                                 aria-label={`Buchungseintrag ${index + 1} entfernen`}
+                                color="error"
                                 onClick={() => updateRows(rows.filter((candidate) => candidate.id !== row.id))}
                             >
                                 Entfernen
