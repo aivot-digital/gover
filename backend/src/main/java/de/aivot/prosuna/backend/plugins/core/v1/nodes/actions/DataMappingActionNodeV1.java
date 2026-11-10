@@ -121,7 +121,9 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
     @Override
     public String getDescription() {
         return """
-                Führt die konfigurierten Abbildungsregeln der Reihe nach auf den Vorgangsdaten aus. Jede Regel kopiert einen Wert vom Ausgangspfad an den Zielpfad, verschiebt ihn, indem der Ausgangswert anschließend bereinigt wird, oder löscht den Ausgangswert nur. Fehlt der Ausgangswert, wird am Zielpfad `null` gesetzt.
+                Führt die konfigurierten Abbildungsregeln der Reihe nach auf den Vorgangsdaten aus. Jede Regel kopiert einen Wert vom Ausgangspfad an den Zielpfad, verschiebt ihn, indem der Ausgangswert anschließend bereinigt wird, oder löscht den Ausgangswert nur.
+
+                Fehlt der Wert an einem konkreten Ausgangspfad, wird beim Kopieren oder Verschieben am Zielpfad `null` gesetzt. Wildcard-Pfade verarbeiten nur vorhandene Array-Einträge. Gibt es keine passenden Einträge, erfolgt keine Übertragung.
 
                 Optional werden dabei leer gewordene übergeordnete Objekte und Arrays entfernt. Die übrigen Vorgangsdaten bleiben erhalten.
                 """;
@@ -365,7 +367,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
 
             @InputElementPOJOBinding(id = SOURCE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                     @ElementPOJOBindingProperty(key = "label", strValue = "Ausgangspfad"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden oder zu löschenden Wert. Wenn der Pfad nicht existiert, wird null verwendet. Pfade verwenden Punktnotation und Array-Indizes, z. B. person.name oder items[0].price. Mit items[*].price werden alle Array-Einträge abgebildet."),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden oder zu löschenden Wert, z. B. person.name oder items[0].price. Fehlt der Wert an einem konkreten Pfad, wird null verwendet. Mit items[*].price werden vorhandene Array-Einträge abgebildet; ohne passende Einträge erfolgt keine Übertragung."),
                     @ElementPOJOBindingProperty(key = "required", boolValue = true),
                     @ElementPOJOBindingProperty(key = "disableWildCards", falseValue = true),
             })

@@ -142,7 +142,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         return """
                 Prüft für jede Regel, ob der angegebene Pfad in den Vorgangsdaten vorhanden ist und dem erwarteten Datentyp entspricht. Sind alle Regeln erfüllt, wird der Vorgang über den Ausgangsport „Daten gültig“ fortgesetzt, andernfalls über „Daten ungültig“. Die gefundenen Abweichungen stehen in den Elementdaten bereit.
 
-                Ein vorhandener Wert `null` gilt als vorhanden; der Datentyp „Beliebig“ prüft nur das Vorhandensein. Ist eine Regel unvollständig oder ungültig konfiguriert, schlägt die Aufgabe fehl, statt den Ausgangsport „Daten ungültig“ zu verwenden.
+                Ein vorhandener Wert `null` gilt als vorhanden; der Datentyp „Beliebig“ prüft nur das Vorhandensein. Fehlt die Pfadangabe, ist sie ungültig oder wird ein nicht unterstützter Datentyp angegeben, schlägt die Aufgabe fehl, statt den Ausgangsport „Daten ungültig“ zu verwenden.
                 """;
     }
 

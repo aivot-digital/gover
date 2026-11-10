@@ -164,7 +164,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         return """
                 Sendet eine Nachricht an eine Identität des Vorgangs. Der Versandweg ergibt sich aus der Kommunikationsanbindung, die für die Identität hinterlegt ist; optional werden ganze Anlagensätze angehängt. Bei automatischer Ausführung werden Betreff und Inhalt aus den Nachrichtenbausteinen erzeugt, bei teilautomatisierter Ausführung bearbeitet die zuständige Person sie vor dem Versand in einer Mitarbeitendenaufgabe.
 
-                Nach dem Versand wird der Vorgang fortgesetzt. Schlägt der Versand fehl oder fehlt ein konfigurierter Anlagensatz, schlägt die Aufgabe fehl.
+                Nach erfolgreichem Versand wird der Vorgang fortgesetzt. Bei automatischer Ausführung schlägt die Aufgabe bei einem Versandfehler oder einem fehlenden oder leeren Anlagensatz fehl. Bei teilautomatisierter Ausführung bleibt die Mitarbeitendenaufgabe in diesen Fällen offen.
                 """;
     }
 
@@ -227,7 +227,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Betreff der versendeten Nachricht.", "string"),
                 new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Inhalt der versendeten Nachricht.", "string"),
                 new ProcessNodeOutput(OUTPUT_ATTACHMENT_SET_DATA_KEYS, "Anlagensätze", "Datenschlüssel der angehängten Anlagensätze.", "Array<string>"),
-                new ProcessNodeOutput(OUTPUT_SENT_AT, "Versandzeitpunkt", "Zeitpunkt, zu dem der Versand gestartet wurde.", "string"),
+                new ProcessNodeOutput(OUTPUT_SENT_AT, "Vorbereitungszeitpunkt", "Zeitpunkt, zu dem die Nachricht für den Versand vorbereitet wurde.", "string"),
                 new ProcessNodeOutput(OUTPUT_SEND_RESULT, "Versandresultat", "Resultat des Versandvorgangs, wie es vom Kommunikationsanbieter zurückgegeben wurde.", "Record<string, unknown>")
         );
     }
@@ -356,7 +356,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var configuration = context.getConfigurationOfExecutingNode();
         if (!SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Nachricht kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
+                    "Die Nachricht kann nur bei teilautomatisierter Ausführung über eine Mitarbeitendenaufgabe versendet werden."
             );
         }
 

@@ -530,7 +530,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var configuration = context.getConfigurationOfExecutingNode();
         if (!SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Zahlungsaufforderung kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
+                    "Die Zahlungsaufforderung kann nur bei teilautomatisierter Ausführung über eine Mitarbeitendenaufgabe versendet werden."
             );
         }
 
@@ -895,7 +895,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD);
         if (paymentPayloadData == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Für die manuelle Zahlungsaufforderung wurde keine vorberechnete Zahlung in den Laufzeitdaten gefunden."
+                    "Für die teilautomatisierte Zahlungsaufforderung wurde keine vorberechnete Zahlung in den Laufzeitdaten gefunden."
             );
         }
         if (paymentPayloadData instanceof PaymentPayload paymentPayload) {
@@ -907,7 +907,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         } catch (RuntimeException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
-                    "Die vorberechnete Zahlung der manuellen Zahlungsaufforderung konnte nicht gelesen werden."
+                    "Die vorberechnete Zahlung der teilautomatisierten Zahlungsaufforderung konnte nicht gelesen werden."
             );
         }
     }

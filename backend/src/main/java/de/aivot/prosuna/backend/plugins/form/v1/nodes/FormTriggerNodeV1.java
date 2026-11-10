@@ -215,7 +215,9 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         return """
                 Startet einen neuen Vorgang, sobald Beteiligte das Formular erfolgreich übermittelt haben. Das Formular ist Bestandteil des Auslösers und wird direkt in dessen Konfiguration gestaltet.
 
-                Die Vorgangsdaten enthalten anschließend nur die Angaben aus Formularelementen mit Datenschlüssel; alle übermittelten Angaben stehen zusätzlich in den Elementdaten bereit. Hochgeladene Dateien und die erzeugte Kopie der Angaben werden als Anlagen gespeichert. Ist eine Zahlung konfiguriert, wird der Vorgang erst nach deren erfolgreichem Abschluss fortgesetzt; schlägt die Zahlung fehl oder wird sie abgebrochen, schlägt die Aufgabe fehl.
+                Die Vorgangsdaten enthalten anschließend nur die Angaben aus Formularelementen mit Datenschlüssel; alle übermittelten Angaben stehen zusätzlich in den Elementdaten bereit. Hochgeladene Dateien und die erzeugte Kopie der Angaben werden als Anlagen gespeichert.
+
+                Wird eine Zahlung angefordert, wartet der Vorgang auf deren erfolgreichen Abschluss. Bei einem Gesamtbetrag von 0,00 Euro wird der Vorgang ohne Zahlung fortgesetzt. Schlägt die Zahlung fehl oder wird sie abgebrochen, schlägt die Aufgabe fehl. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Zahlungsfrist über einen eigenen Ausgangsport fortgesetzt.
                 """;
     }
 

@@ -141,7 +141,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Startet einen neuen Vorgang, sobald eine HTTP-Anfrage am bereitgestellten Webhook eingeht.";
+        return "Startet einen neuen Vorgang, sobald eine gültige HTTP-Anfrage am bereitgestellten Webhook eingeht.";
     }
 
     @Nonnull

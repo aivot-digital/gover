@@ -519,7 +519,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** Process-data key from which the JSON submission body is read. */
         @InputElementPOJOBinding(id = JSON_DATASET_PROCESS_KEY_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "JSON-Datensatz Datenschlüssel"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Datenschlüssel des JSON-Datensatzes"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Datenschlüssel, unter dem der JSON-Datensatz für die Nachrichtenübermittlung gespeichert ist."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
@@ -528,7 +528,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** URI of the JSON schema used by FIT-Connect to validate the submitted data. */
         @InputElementPOJOBinding(id = JSON_SCHEMA_LINK_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "JSON-Schema Link"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "JSON-Schema-Link"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Link zum JSON-Schema, das den Datensatz validiert."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),

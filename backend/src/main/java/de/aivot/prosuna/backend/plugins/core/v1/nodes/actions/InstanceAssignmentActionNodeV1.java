@@ -535,7 +535,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         @Nullable
         @InputElementPOJOBinding(id = MANUAL_CONTEXT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, der diese Aufgabe bearbeiten darf."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, aus dem die zuständige Person für die Zuweisungsaufgabe ermittelt wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public AssignmentContextInputElementValue manualAssignmentContext;

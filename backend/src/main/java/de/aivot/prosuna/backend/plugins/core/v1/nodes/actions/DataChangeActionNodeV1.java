@@ -145,7 +145,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Lässt eine Mitarbeiter:in Vorgangsdaten über eine UI-Definition prüfen und anpassen.";
+        return "Erstellt eine Mitarbeitendenaufgabe zum Prüfen und Anpassen der Vorgangsdaten über eine UI-Definition.";
     }
 
     @Nonnull

@@ -159,14 +159,14 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Lässt eine Mitarbeiter:in aus einem festgelegten Personenkreis einen Vorgang freigeben oder ablehnen.";
+        return "Erstellt eine Mitarbeitendenaufgabe, um einen Vorgang freizugeben oder abzulehnen.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine Mitarbeitendenaufgabe, in der die zuständige Person anhand der konfigurierten Freigabekriterien entscheidet. Der Vorgang wartet auf die Entscheidung und wird über den Ausgangsport „Freigabe erteilt“ oder „Freigabe abgelehnt“ fortgesetzt; die Entscheidung wird im Vorgangsverlauf festgehalten. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
+                Erstellt eine Mitarbeitendenaufgabe, in der die zuständige Person anhand der konfigurierten Freigabekriterien entscheidet. Die zuständige Person wird aus dem konfigurierten Personenkreis ermittelt. Der Vorgang wartet auf die Entscheidung und wird über den Ausgangsport „Freigabe erteilt“ oder „Freigabe abgelehnt“ fortgesetzt; die Entscheidung wird im Vorgangsverlauf festgehalten. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
 
                 Als Inhalt der Aufgabe dient entweder eine UI-Definition oder ein eigener Text. Bei einer UI-Definition werden Angaben aus Formularelementen mit Datenschlüssel bei beiden Entscheidungen in die Vorgangsdaten übernommen.
                 """;
@@ -268,7 +268,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die Entscheidung getroffen hat.",
+                        "Die Kennung des Kontos der Person, die die Entscheidung getroffen hat.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -279,8 +279,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
-                        "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Werte nach Element-ID",
+                        "Die Werte der Formularelemente unter ihrer jeweiligen Element-ID, unabhängig von einem Datenschlüssel.",
                         "Record<string, unknown>"
                 )
         );

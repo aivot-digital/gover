@@ -539,7 +539,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var configuration = context.getConfigurationOfExecutingNode();
         if (!SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Aufforderung kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
+                    "Die Aufforderung kann nur bei teilautomatisierter Ausführung über eine Mitarbeitendenaufgabe versendet werden."
             );
         }
 

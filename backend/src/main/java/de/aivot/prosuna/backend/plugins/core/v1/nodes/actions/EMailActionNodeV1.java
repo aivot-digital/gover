@@ -156,7 +156,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Versendet eine E-Mail an konfigurierte Adressen, automatisch oder nach Bearbeitung durch eine Mitarbeiter:in.";
+        return "Versendet eine E-Mail an konfigurierte Adressen, automatisch oder nach Bearbeitung in einer Mitarbeitendenaufgabe.";
     }
 
     @Nonnull
@@ -165,7 +165,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return """
                 Versendet eine E-Mail an die konfigurierten E-Mail-Adressen, optional mit ganzen Anlagensätzen als Anhang. Bei automatischer Ausführung werden Betreff und Inhalt aus den Nachrichtenbausteinen erzeugt und sofort versendet. Bei teilautomatisierter Ausführung bearbeitet die zuständige Person Betreff und Inhalt vor dem Versand in einer Mitarbeitendenaufgabe.
 
-                Nach dem Versand wird der Vorgang fortgesetzt. Schlägt der Versand fehl oder fehlt ein konfigurierter Anlagensatz, schlägt die Aufgabe fehl.
+                Nach erfolgreichem Versand wird der Vorgang fortgesetzt. Bei automatischer Ausführung schlägt die Aufgabe bei einem Versandfehler oder einem fehlenden oder leeren Anlagensatz fehl. Bei teilautomatisierter Ausführung bleibt die Mitarbeitendenaufgabe in diesen Fällen offen.
                 """;
     }
 
@@ -362,7 +362,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         var config = context.getConfigurationOfExecutingNode();
         if (!SemiAutomaticMessageConfig.isManual(config.messageConfig)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die E-Mail kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
+                    "Die E-Mail kann nur bei teilautomatisierter Ausführung über eine Mitarbeitendenaufgabe versendet werden."
             );
         }
 

@@ -170,7 +170,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         return """
                 Sendet den konfigurierten Prompt zusammen mit den vollständigen Vorgangsdaten, geschützten Vorgangsdaten und Elementdaten an eine OpenAI-kompatible Chat-Completions-API. Das zurückgegebene JSON-Objekt ersetzt die bisherigen Vorgangsdaten vollständig. Liefert die KI kein gültiges JSON-Objekt, schlägt die Aufgabe fehl und die Vorgangsdaten bleiben unverändert.
 
-                Als HTTP-Endpunkt wird die Basis-URL der API angegeben, an die `/chat/completions` angehängt wird. Da alle Daten des Vorgangs an den externen Dienst übermittelt werden, ist vor dem Einsatz zu prüfen, ob diese Übermittlung zulässig ist.
+                Als HTTP-Endpunkt wird die Basis-URL der API angegeben, an die `/chat/completions` angehängt wird. Da die Inhalte dieser Datenebenen an den externen Dienst übermittelt werden, ist vor dem Einsatz zu prüfen, ob diese Übermittlung zulässig ist.
                 """;
     }
 
@@ -607,7 +607,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
          */
         @InputElementPOJOBinding(id = ENDPOINT_URL_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpunkt"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Absolute URL des KI-Endpunkts für Completions."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Basis-URL der API. Der Pfad /chat/completions wird automatisch angehängt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
