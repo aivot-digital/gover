@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface VUserSystemPermissionRepository extends JpaRepository<VUserSystemPermissionEntity, String>, JpaSpecificationExecutor<VUserSystemPermissionEntity> {
@@ -16,6 +17,16 @@ public interface VUserSystemPermissionRepository extends JpaRepository<VUserSyst
     )
     boolean hasPermission(@Param("userId") String userId,
                           @Param("permission") String permission);
+
+    // Same grants as hasPermission for several users at once. "= ANY" matches like "@>" and also runs on H2 in tests.
+    @Query(value = """
+            SELECT p.user_id
+            FROM v_user_system_permission p
+            WHERE p.user_id IN (:userIds)
+              AND :permission = ANY(p.permissions)
+            """, nativeQuery = true)
+    List<String> findUserIdsWithPermission(@Nonnull @Param("userIds") Collection<String> userIds,
+                                           @Nonnull @Param("permission") String permission);
 
     @Query(value = """
             SELECT EXISTS(

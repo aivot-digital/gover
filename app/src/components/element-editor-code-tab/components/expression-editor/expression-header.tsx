@@ -82,6 +82,7 @@ export function ExpressionHeader(props: ExpressionHeaderProps) {
                         onClick: props.onShowSelect,
                     },
                     {
+                        color: 'error',
                         icon: <Delete />,
                         tooltip: 'Operator löschen',
                         onClick: () => {

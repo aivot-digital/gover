@@ -54,6 +54,18 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
                           @Param("processInstanceId") Long processInstanceId,
                           @Param("permission") String permission);
 
+    // Same grants as hasPermission for several users at once. "= ANY" matches like "@>" and also runs on H2 in tests.
+    @Query(value = """
+            SELECT DISTINCT p.user_id
+            FROM v_user_process_instance_access_permissions p
+            WHERE p.user_id IN (:userIds)
+              AND p.target_process_instance_id = :processInstanceId
+              AND :permission = ANY(p.permissions)
+            """, nativeQuery = true)
+    List<String> findUserIdsWithPermission(@Nonnull @Param("userIds") Collection<String> userIds,
+                                           @Nonnull @Param("processInstanceId") Long processInstanceId,
+                                           @Nonnull @Param("permission") String permission);
+
     // Match own rights to the same source as the effective instance grant. A right held in
     // another domain must not turn deputy-only access to this instance into assignable access.
     @Query(value = """

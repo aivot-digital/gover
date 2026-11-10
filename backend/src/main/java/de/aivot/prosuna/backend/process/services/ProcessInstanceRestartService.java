@@ -15,7 +15,6 @@ import de.aivot.prosuna.backend.process.repositories.ProcessWorkRequestRepositor
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -36,8 +35,8 @@ public class ProcessInstanceRestartService {
     private final ProcessWorkRequestService workRequests;
     private final ProcessTaskExecutionService execution;
     private final ProcessNodeExecutionLoggerFactory loggers;
-    private final EntityManager entityManager;
     private final ScopedAuditService audit;
+    private final ProcessInstanceAttachmentService attachments;
 
     public ProcessInstanceRestartService(@Nonnull ProcessInstanceRepository instances,
                                          @Nonnull ProcessInstanceTaskRepository tasks,
@@ -45,16 +44,16 @@ public class ProcessInstanceRestartService {
                                          @Nonnull ProcessWorkRequestService workRequests,
                                          @Nonnull ProcessTaskExecutionService execution,
                                          @Nonnull ProcessNodeExecutionLoggerFactory loggers,
-                                         @Nonnull EntityManager entityManager,
-                                         @Nonnull AuditService auditService) {
+                                         @Nonnull AuditService auditService,
+                                         @Nonnull ProcessInstanceAttachmentService attachments) {
         this.instances = instances;
         this.tasks = tasks;
         this.requests = requests;
         this.workRequests = workRequests;
         this.execution = execution;
         this.loggers = loggers;
-        this.entityManager = entityManager;
         this.audit = auditService.createScopedAuditService(ProcessInstanceRestartService.class, "Vorgänge");
+        this.attachments = attachments;
     }
 
     /**
@@ -67,14 +66,11 @@ public class ProcessInstanceRestartService {
             throws ResponseException {
         return Objects.requireNonNull(execution.inInstance(instanceId, () -> {
             var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
-            // Open EntityManager in View can retain entities loaded before the instance lock was acquired.
-            entityManager.refresh(instance);
             authorization.run();
             if (instance.getStatus() != ProcessInstanceStatus.Failed) {
                 throw ResponseException.badRequest("Nur Vorgänge im Status 'Fehlgeschlagen' können neu gestartet werden.");
             }
             var latestTask = tasks.findFirstByProcessInstanceIdOrderByStartedDescIdDesc(instanceId).orElse(null);
-            if (latestTask != null) entityManager.refresh(latestTask);
             // Requests of a failed instance are held until it runs again.
             var heldRequests = requests.findIdsByProcessInstanceId(instanceId);
             var now = Instant.now();
@@ -88,6 +84,7 @@ public class ProcessInstanceRestartService {
                 message = "Der fehlgeschlagene Vorgang wurde manuell neu gestartet, bevor eine erste Aufgabe angelegt wurde.";
             } else if (latestTask.getStatus() == ProcessTaskStatus.Failed) {
                 tasks.save(latestTask.setStatus(ProcessTaskStatus.Restarted).setUpdated(now));
+                attachments.deleteRemovedUploadsOfTask(latestTask, userId);
                 workRequests.enqueueRestart(instanceId, latestTask.getId());
                 restartedTaskId = latestTask.getId();
                 message = "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.";
@@ -121,9 +118,6 @@ public class ProcessInstanceRestartService {
         return Objects.requireNonNull(execution.inInstance(instanceId, () -> {
             var task = tasks.findById(taskId).orElseThrow(ResponseException::notFound);
             var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
-            // Open EntityManager in View can retain entities loaded before the instance lock was acquired.
-            entityManager.refresh(task);
-            entityManager.refresh(instance);
             if (!instanceId.equals(task.getProcessInstanceId())) {
                 throw ResponseException.notFound();
             }
@@ -149,6 +143,7 @@ public class ProcessInstanceRestartService {
                 newState.put("processInstanceStatus", ProcessInstanceStatus.Running);
             }
             var restarted = tasks.save(task.setStatus(ProcessTaskStatus.Restarted).setUpdated(now));
+            attachments.deleteRemovedUploadsOfTask(task, actor.getId());
             workRequests.enqueueRestart(instanceId, taskId);
             oldState.put("status", ProcessTaskStatus.Failed);
             newState.put("status", ProcessTaskStatus.Restarted);
