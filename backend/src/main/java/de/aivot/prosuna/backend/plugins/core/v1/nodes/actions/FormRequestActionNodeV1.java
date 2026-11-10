@@ -1001,7 +1001,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var content = configuration.messageConfig == null ? null : configuration.messageConfig.manualContent;
         if (content == null || StringUtils.isNullOrEmpty(content.subject) || StringUtils.isNullOrEmpty(content.content)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den manuellen Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
+                    "Für den teilautomatisierten Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
             );
         }
         return content;
