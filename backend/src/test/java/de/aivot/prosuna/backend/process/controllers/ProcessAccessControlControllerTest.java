@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessAccessControlEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessAccessControlService;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAccessAuditDescriptionService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -52,7 +53,8 @@ class ProcessAccessControlControllerTest {
                 mock(UserService.class),
                 accessControlService,
                 permissionService,
-                processService
+                processService,
+                mock(ProcessInstanceAccessAuditDescriptionService.class)
         );
     }
 

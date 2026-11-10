@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessAccessControlEntity;
 import de.aivot.prosuna.backend.process.filters.ProcessAccessControlFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessAccessControlService;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAccessAuditDescriptionService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -34,18 +35,21 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
     private final ProcessAccessControlService processAccessControlService;
     private final PermissionService permissionService;
     private final ProcessService processService;
+    private final ProcessInstanceAccessAuditDescriptionService auditDescriptions;
 
     public ProcessAccessControlController(AuditService auditService,
                                           UserService userService,
                                           ProcessAccessControlService processAccessControlService,
                                           PermissionService permissionService,
-                                          ProcessService processService) {
+                                          ProcessService processService,
+                                          ProcessInstanceAccessAuditDescriptionService auditDescriptions) {
         super(auditService.createScopedAuditService(ProcessAccessControlController.class, "Prozesse"),
                 userService,
                 processAccessControlService);
         this.processAccessControlService = processAccessControlService;
         this.permissionService = permissionService;
         this.processService = processService;
+        this.auditDescriptions = auditDescriptions;
     }
 
     @Override
@@ -150,10 +154,9 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
     protected String buildCreateAuditMessage(@Nonnull UserEntity execUser,
                                              @Nonnull ProcessAccessControlEntity createdItem) {
         return String.format(
-                "Die Prozess-Zugriffsregel mit der ID %s für den Zielprozess %s wurde von der Mitarbeiter:in %s erstellt.",
-                StringUtils.quote(String.valueOf(createdItem.getId())),
-                StringUtils.quote(String.valueOf(createdItem.getTargetProcessId())),
-                StringUtils.quote(execUser.getFullName())
+                "%s hat %s hinzugefügt.",
+                StringUtils.quote(execUser.getFullName()),
+                auditDescriptions.describeProcessAccess(createdItem)
         );
     }
 
@@ -163,10 +166,9 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
                                              @Nonnull Integer id,
                                              @Nonnull ProcessAccessControlEntity updatedItem) {
         return String.format(
-                "Die Prozess-Zugriffsregel mit der ID %s für den Zielprozess %s wurde von der Mitarbeiter:in %s aktualisiert.",
-                StringUtils.quote(String.valueOf(id)),
-                StringUtils.quote(String.valueOf(updatedItem.getTargetProcessId())),
-                StringUtils.quote(execUser.getFullName())
+                "%s hat %s geändert.",
+                StringUtils.quote(execUser.getFullName()),
+                auditDescriptions.describeProcessAccess(updatedItem)
         );
     }
 
@@ -176,10 +178,9 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
                                              @Nonnull Integer id,
                                              @Nonnull ProcessAccessControlEntity deletedItem) {
         return String.format(
-                "Die Prozess-Zugriffsregel mit der ID %s für den Zielprozess %s wurde von der Mitarbeiter:in %s gelöscht.",
-                StringUtils.quote(String.valueOf(id)),
-                StringUtils.quote(String.valueOf(deletedItem.getTargetProcessId())),
-                StringUtils.quote(execUser.getFullName())
+                "%s hat %s entfernt.",
+                StringUtils.quote(execUser.getFullName()),
+                auditDescriptions.describeProcessAccess(deletedItem)
         );
     }
 
