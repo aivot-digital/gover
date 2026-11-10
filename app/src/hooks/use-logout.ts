@@ -1,4 +1,5 @@
 import {AuthService} from '../services/auth-service';
+import {EditorDraftStorage} from '../services/editor-draft-storage';
 
 export function useLogout() {
     return async () => {
@@ -16,6 +17,9 @@ export function useLogout() {
                 } : undefined,
             });
         } finally {
+            // An explicit logout leaves no unsaved changes behind, e.g. on a shared computer. An expired session keeps
+            // them, so they can be offered again after the next login.
+            await EditorDraftStorage.clear().catch(console.error);
             AuthService.logout();
             window.location.href = `${window.location.origin}/staff?logout=true`;
         }

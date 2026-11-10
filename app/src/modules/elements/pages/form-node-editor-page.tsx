@@ -134,7 +134,10 @@ import {VDepartmentShadowedApiService} from '../../departments/services/v-depart
 import {Chip} from '../../../components/chip/chip';
 import {quoteString} from '../../../utils/string-utils';
 import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
-import {isApiError} from '../../../models/api-error';
+import {isApiError, isLockVersionConflictError} from '../../../models/api-error';
+import {useEditorDraft} from '../../../hooks/use-editor-draft';
+import {useMergeConflictResolution} from '../../../hooks/use-merge-conflict-resolution';
+import {formLayoutMergeSpec} from '../utils/form-layout-merge-spec';
 import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
 import {RichtextComponent} from '../../../components/richtext/richtext.component';
 import {resolvePrintablePdfFilename} from '../../forms/utils/printable-pdf-filename';
@@ -144,6 +147,9 @@ export const DialogSearchParam = 'dialog';
 const FormLayoutFieldKey = 'formLayout';
 const IdentitiesFieldKey = 'identities';
 const EditorLoadErrorMessage = 'Der Formulareditor konnte nicht geladen werden.';
+const MergedSaveMessage = 'Ihre Änderungen wurden mit dem zwischenzeitlich gespeicherten Stand zusammengeführt und gespeichert.';
+// Each attempt merges with the latest stored state; a conflict that persists beyond that is reported instead of retried.
+const MaxSaveAttempts = 3;
 
 function createEditorLoadError(error: unknown) {
     return {
@@ -160,6 +166,14 @@ function getIdentityDisplayName(identity: Pick<IdentityConfigElementSlot, 'title
 
 function cloneFormLayoutSnapshot<T extends FormLayoutElement>(element: T): T {
     return JSON.parse(JSON.stringify(element)) as T;
+}
+
+function getStoredFormLayout(node: ProcessNodeEntity): FormLayoutElement | null {
+    return getLiteralElementValue<FormLayoutElement>(node.configuration, FormLayoutFieldKey) ?? null;
+}
+
+function toEditableFormLayout(layout: FormLayoutElement | null): FormLayoutElement {
+    return layout ?? generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement;
 }
 
 export function FormNodeEditorPage() {
@@ -227,15 +241,27 @@ export function FormNodeEditorPage() {
         paymentRequired: boolean;
     } | null>(null);
 
+    const storedFormLayout = useMemo(() => node == null ? null : getStoredFormLayout(node), [node]);
+
     const {
         dialog: changeBlockerDialog,
         hasChanged,
     } = useChangeBlocker({
-        original: normalizeUiDefinitionForStorage(node == null
-            ? null
-            : getLiteralElementValue<FormLayoutElement>(node.configuration, FormLayoutFieldKey)),
+        original: normalizeUiDefinitionForStorage(storedFormLayout),
         edited: normalizeUiDefinitionForStorage(formLayout),
+        onConfirmNavigation: () => {
+            void clearDraft();
+        },
     });
+
+    const isSavingRef = useRef(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDraftChecked, setIsDraftChecked] = useState(false);
+    const draftCheckedForNodeIdRef = useRef<number | null>(null);
+    const {
+        resolve: resolveMerge,
+        dialog: mergeConflictDialog,
+    } = useMergeConflictResolution();
 
     useRecordRecentSearchItem(ServerEntityType.ProcessNodes, node?.id.toString());
 
@@ -336,6 +362,7 @@ export function FormNodeEditorPage() {
 
                 setPastLoadedForm([]);
                 setFutureLoadedForm([]);
+                setIsDraftChecked(false);
                 setNode(node);
                 setFormLayout(cloneFormLayoutSnapshot(uiElement as FormLayoutElement));
             })
@@ -530,6 +557,51 @@ export function FormNodeEditorPage() {
     const notImplemented = useNotImplemented();
 
     const isEditable = processVersion?.status === ProcessStatus.Drafted;
+
+    const {
+        loadDraft,
+        clearDraft,
+        isReady: isDraftStorageReady,
+    } = useEditorDraft<FormLayoutElement | null>({
+        draftKey: node == null ? null : `process-node/${node.id}/form-layout`,
+        base: storedFormLayout,
+        baseLockVersion: node?.lockVersion,
+        edited: formLayout,
+        hasChanged,
+        enabled: isDraftChecked && isEditable,
+    });
+
+    // Offers the unsaved changes of an earlier visit once per node, e.g. after the session expired.
+    useEffect(() => {
+        if (node == null || processVersion == null || !isDraftStorageReady || draftCheckedForNodeIdRef.current === node.id) {
+            return;
+        }
+        draftCheckedForNodeIdRef.current = node.id;
+
+        (async () => {
+            const draft = isEditable ? await loadDraft() : null;
+            if (draft == null) {
+                return;
+            }
+
+            const outcome = await resolveMerge({
+                base: draft.base,
+                mine: draft.mine,
+                theirs: storedFormLayout,
+                spec: formLayoutMergeSpec,
+                mode: 'restore',
+                storedStateChanged: draft.baseLockVersion !== (node.lockVersion ?? null),
+            });
+            if (outcome.status === 'apply') {
+                handlePatch(toEditableFormLayout(outcome.value));
+            } else {
+                // Discarded, or nothing left to restore because the changes were saved elsewhere.
+                await clearDraft();
+            }
+        })()
+            .catch(console.error)
+            .finally(() => setIsDraftChecked(true));
+    }, [node, processVersion, isDraftStorageReady]);
     const canUpdateProcess = useHasProcessPermission(node?.processId, Permission.PROCESS_DEFINITION_UPDATE);
     const previewTheme = useMemo(() => {
         const activeFormTheme = draftPreviewThemeChain?.[0] ?? (
@@ -583,31 +655,77 @@ export function FormNodeEditorPage() {
         setFormLayout(cloneFormLayoutSnapshot(nextForm));
     };
 
-    const saveForm = async (): Promise<void> => {
-        if (node == null || formLayout == null || !isEditable) {
-            return;
+    const applyStoredNode = (storedNode: ProcessNodeEntity) => {
+        setNode(storedNode);
+        setFormLayout(toEditableFormLayout(getStoredFormLayout(storedNode)));
+    };
+
+    /**
+     * Saves the layout on top of the given node. A save rejected because a newer state was stored in the meantime
+     * is merged with that state and saved again, asking only where both changed the same value.
+     * Resolves to false if nothing was saved because the person cancelled or discarded the changes.
+     */
+    const saveFormLayout = async (baseNode: ProcessNodeEntity, layout: FormLayoutElement, attempt = 1): Promise<boolean> => {
+        try {
+            const updated = await new ProcessNodeApiService()
+                .update(baseNode.id, {
+                    ...baseNode,
+                    configuration: {
+                        ...baseNode.configuration,
+                        [FormLayoutFieldKey]: literalAuthoredValue(normalizeUiDefinitionForStorage(layout)),
+                    },
+                }, {
+                    query: {
+                        onlyConfigSave: FormLayoutFieldKey,
+                    },
+                });
+            applyStoredNode(updated);
+            return true;
+        } catch (error) {
+            if (!isLockVersionConflictError(error) || attempt >= MaxSaveAttempts) {
+                throw error;
+            }
         }
 
-        const formLayoutForStorage = normalizeUiDefinitionForStorage(formLayout);
+        const storedNode = await new ProcessNodeApiService().retrieve(baseNode.id);
+        const outcome = await resolveMerge({
+            base: getStoredFormLayout(baseNode),
+            mine: layout,
+            theirs: getStoredFormLayout(storedNode),
+            spec: formLayoutMergeSpec,
+            mode: 'save',
+            storedStateChanged: true,
+        });
 
-        const updated = await new ProcessNodeApiService()
-            .update(node.id, {
-                ...node,
-                configuration: {
-                    ...node.configuration,
-                    [FormLayoutFieldKey]: literalAuthoredValue(formLayoutForStorage),
-                },
-            }, {
-                query: {
-                    onlyConfigSave: FormLayoutFieldKey,
-                },
-            });
+        if (outcome.status === 'discard') {
+            applyStoredNode(storedNode);
+        }
+        if (outcome.status !== 'apply') {
+            return false;
+        }
 
-        setNode(updated);
-        setFormLayout(
-            getLiteralElementValue<FormLayoutElement>(updated.configuration, FormLayoutFieldKey) ??
-            generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement,
-        );
+        // Based on the newer node, so the save passes the lock version check unless yet another save came first.
+        const saved = await saveFormLayout(storedNode, toEditableFormLayout(outcome.value), attempt + 1);
+        if (saved) {
+            dispatch(showSuccessSnackbar(MergedSaveMessage));
+        }
+        return saved;
+    };
+
+    const saveForm = async (): Promise<boolean> => {
+        // Guards against a second click while the first save is still running, which would end in a needless conflict.
+        if (node == null || formLayout == null || !isEditable || isSavingRef.current) {
+            return false;
+        }
+
+        isSavingRef.current = true;
+        setIsSaving(true);
+        try {
+            return await saveFormLayout(node, formLayout);
+        } finally {
+            isSavingRef.current = false;
+            setIsSaving(false);
+        }
     };
 
     const handleSave = async (): Promise<void> => {
@@ -757,7 +875,9 @@ export function FormNodeEditorPage() {
 
             if (saveNow) {
                 try {
-                    await saveForm();
+                    if (!await saveForm()) {
+                        return;
+                    }
                 } catch (err) {
                     console.error(err);
                     dispatch(showApiErrorSnackbar(err, 'Fehler beim Speichern der Änderungen'));
@@ -1036,7 +1156,7 @@ export function FormNodeEditorPage() {
             iconPosition: 'start' as const,
             onClick: handleSave,
             variant: 'contained' as const,
-            disabled: !hasChanged || !isEditable,
+            disabled: !hasChanged || !isEditable || isSaving,
         },
     ];
 
@@ -1141,7 +1261,9 @@ export function FormNodeEditorPage() {
                 }
 
                 errorMessage = 'Fehler beim Speichern der Änderungen';
-                await saveForm();
+                if (!await saveForm()) {
+                    return;
+                }
             }
 
             errorMessage = 'Der Testmodus für das Formular konnte nicht vorbereitet werden.';
@@ -1634,6 +1756,7 @@ export function FormNodeEditorPage() {
             </Dialog>
 
             {changeBlockerDialog}
+            {mergeConflictDialog}
         </PageWrapper>
     );
 }

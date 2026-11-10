@@ -16,6 +16,7 @@ import {ProcessStatus} from '../../process/enums/process-status';
 import {literalAuthoredValue} from '../../../models/element-data';
 
 const mocks = vi.hoisted(() => ({
+    api: {},
     confirm: vi.fn(),
     devToolsTab: undefined as number | undefined,
     dispatch: vi.fn(),
@@ -56,6 +57,9 @@ vi.mock('../../../hooks/use-app-selector', () => ({
         app: {
             showDialog: undefined,
         },
+        user: {
+            user: undefined,
+        },
     }),
 }));
 
@@ -64,7 +68,8 @@ vi.mock('../../../providers/confirm-provider', () => ({
 }));
 
 vi.mock('../../../hooks/use-api', () => ({
-    useApi: () => ({}),
+    // Stable like the memoized API of the real hook; a new object per render would rerun every effect that depends on it.
+    useApi: () => mocks.api,
 }));
 
 vi.mock('../../../hooks/use-change-blocker-2', () => ({
@@ -319,6 +324,30 @@ describe('FormNodeEditorPage error handling', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
 
         await waitFor(() => expectSnackbar('Das Formular wurde zwischenzeitlich geändert.'));
+    });
+
+    it('saves again on top of a newer stored node when a save is rejected by its lock version', async () => {
+        mocks.hasChanged = true;
+        const storedNode = {...createNode(), name: 'Anderswo gespeichert', lockVersion: 2};
+        vi.mocked(ProcessNodeApiService.prototype.update)
+            .mockRejectedValueOnce({
+                status: 409,
+                message: 'Der Datensatz wurde zwischenzeitlich geändert.',
+                details: {reason: 'lock_version_conflict'},
+                displayableToUser: true,
+            })
+            .mockResolvedValue(storedNode);
+        await renderLoadedEditor();
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(storedNode);
+
+        fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
+
+        await waitFor(() => expectSnackbar('Ihre Änderungen wurden mit dem zwischenzeitlich gespeicherten Stand zusammengeführt und gespeichert.'));
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(2);
+        expect(vi.mocked(ProcessNodeApiService.prototype.update).mock.calls[1][1]).toEqual(expect.objectContaining({
+            name: 'Anderswo gespeichert',
+            lockVersion: 2,
+        }));
     });
 
     it('aborts submission when saving pending editor changes fails', async () => {
