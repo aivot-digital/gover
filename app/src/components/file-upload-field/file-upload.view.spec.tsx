@@ -1,10 +1,11 @@
 import React from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
 import {createDerivedRuntimeElementData} from '../../models/element-data';
 import type {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
+import {FileUploadAttachmentDownloadProvider} from './file-upload-attachment-download-context';
 import {FileUploadView} from './file-upload.view';
 import {RemovableFileUploadAttachmentsProvider} from './removable-file-upload-attachments-context';
 
@@ -38,19 +39,29 @@ describe('FileUploadView', () => {
         expect(screen.getByRole('button', {name: 'nachweis.pdf herunterladen'})).toBeEnabled();
         expect(screen.queryByRole('button', {name: 'nachweis.pdf entfernen'})).not.toBeInTheDocument();
     });
+
+    it('downloads stored uploads through the download that the surrounding view provides', async () => {
+        const downloadAttachment = vi.fn().mockResolvedValue(new Blob(['content']));
+
+        renderView([ownUpload], vi.fn(), undefined, downloadAttachment);
+        fireEvent.click(screen.getByRole('button', {name: 'nachweis.pdf herunterladen'}));
+
+        await waitFor(() => expect(downloadAttachment).toHaveBeenCalledWith('own'));
+    });
 });
 
 function renderView(
     value: FileUploadElementItem[],
     setValue: (value: FileUploadElementItem[] | null) => void,
     removableAttachmentKeys?: ReadonlySet<string>,
+    downloadAttachment?: (attachmentKey: string) => Promise<Blob>,
 ) {
     const element: FileUploadElement = {
         ...generateElementWithDefaultValues(ElementType.FileUpload) as FileUploadElement,
         label: 'Nachweise',
         isMultifile: true,
     };
-    const view = (
+    const uploadView = (
         <FileUploadView
             element={element}
             isBusy={false}
@@ -68,6 +79,9 @@ function renderView(
             derivationTriggerIdQueue={[]}
         />
     );
+    const view = downloadAttachment == null
+        ? uploadView
+        : <FileUploadAttachmentDownloadProvider value={downloadAttachment}>{uploadView}</FileUploadAttachmentDownloadProvider>;
 
     return render(removableAttachmentKeys == null
         ? view

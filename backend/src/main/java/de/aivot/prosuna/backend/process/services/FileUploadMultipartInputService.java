@@ -490,6 +490,56 @@ public class FileUploadMultipartInputService {
                 .toList();
     }
 
+    /**
+     * Returns the keys of the stored attachments that the values of the upload fields of the layout reference,
+     * including upload fields in the rows of replicating containers.
+     */
+    @Nonnull
+    public Set<UUID> findReferencedAttachmentKeys(@Nonnull BaseElement layout,
+                                                  @Nonnull AuthoredElementValues values) {
+        var attachmentKeys = new HashSet<UUID>();
+        collectReferencedAttachmentKeys(layout, values, attachmentKeys);
+        return attachmentKeys;
+    }
+
+    private void collectReferencedAttachmentKeys(@Nonnull BaseElement element,
+                                                 @Nonnull AuthoredElementValues values,
+                                                 @Nonnull Set<UUID> attachmentKeys) {
+        if (element instanceof FileUploadInputElement fileUploadElement) {
+            var items = FileUploadInputElement._formatValue(values.getLiteral(fileUploadElement.getId()));
+            if (items != null) {
+                for (var item : items) {
+                    var attachmentKey = parseAttachmentKey(item.getUri());
+                    if (attachmentKey != null) {
+                        attachmentKeys.add(attachmentKey);
+                    }
+                }
+            }
+            return;
+        }
+
+        if (element instanceof ReplicatingContainerLayoutElement replicatingContainer) {
+            if (values.getLiteral(replicatingContainer.getId()) instanceof List<?> rawRows) {
+                for (var rawRow : rawRows) {
+                    var rowValue = resolveReplicatingContainerRowValue(rawRow);
+                    if (rowValue == null || rowValue.getValues() == null) {
+                        continue;
+                    }
+                    for (var child : replicatingContainer.getChildren()) {
+                        collectReferencedAttachmentKeys(child, rowValue.getValues(), attachmentKeys);
+                    }
+                }
+            }
+            return;
+        }
+
+        if (element instanceof LayoutElement<?> layoutElement) {
+            for (var child : layoutElement.getChildren()) {
+                collectReferencedAttachmentKeys(child, values, attachmentKeys);
+            }
+        }
+    }
+
     @Nonnull
     private List<Integer> findUploadAttachmentSetIds(@Nonnull BaseElement layout,
                                                      @Nonnull Long processInstanceId,

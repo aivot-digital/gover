@@ -1087,6 +1087,32 @@ class FileUploadMultipartInputServiceTest {
         );
     }
 
+    @Test
+    void findReferencedAttachmentKeys_CollectsStoredAttachmentsOfUploadFieldsIncludingReplicatingRows() {
+        var service = new FileUploadMultipartInputService(null, null, null);
+        var topLevel = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        var inRow = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        var notAnUpload = UUID.fromString("00000000-0000-0000-0000-000000000003");
+        var rowUpload = createUpload("rowUpload", "Nachweis");
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(List.of(rowUpload));
+        var layout = createLayout(createUpload("upload", "Antrag"), rows);
+
+        var values = new AuthoredElementValues();
+        values.putLiteral("upload", List.of(
+                createFileItem("antrag.pdf", "process-instance-attachment:" + topLevel, 1),
+                createFileItem("neu.pdf", "blob:transient", 1)
+        ));
+        values.putLiteral("rows", List.of(createReplicatingRow("row-1", Map.of(
+                "rowUpload", List.of(createFileItem("nachweis.pdf", "process-instance-attachment:" + inRow, 1))
+        ))));
+        // Values of elements that are not upload fields of the layout grant nothing.
+        values.putLiteral("other", List.of(createFileItem("fremd.pdf", "process-instance-attachment:" + notAnUpload, 1)));
+
+        assertEquals(Set.of(topLevel, inRow), service.findReferencedAttachmentKeys(layout, values));
+    }
+
     private static void normalizeSingleUpload(FileUploadMultipartInputService service,
                                               GroupLayoutElement layout,
                                               List<Map<String, Object>> storedItems,
