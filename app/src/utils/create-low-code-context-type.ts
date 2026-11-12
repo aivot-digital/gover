@@ -98,6 +98,8 @@ function elementToValueType(element: AnyElement): string {
     switch (element.type) {
         case ElementType.Checkbox:
             return 'boolean';
+        case ElementType.PhoneNumber:
+        case ElementType.Email:
         case ElementType.Text:
         case ElementType.Date:
         case ElementType.DateTime:
@@ -115,7 +117,6 @@ function elementToValueType(element: AnyElement): string {
             return '{start: string | null | undefined; end: string | null | undefined}';
         case ElementType.MapPoint:
             return '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined}';
-        case ElementType.Radio:
         case ElementType.Select:
             if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.CodeList) {
                 return 'string';
@@ -124,6 +125,7 @@ function elementToValueType(element: AnyElement): string {
                 ?.map((option) => `'${typeof option === 'string' ? option : option.value}'`)
                 .join(' | ') ?? 'string';
         case ElementType.Number:
+        case ElementType.Duration:
         case ElementType.DepartmentSelectInput:
             return 'number';
         case ElementType.MultiCheckbox:

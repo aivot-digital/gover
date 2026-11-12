@@ -10,13 +10,13 @@ public class PermissionSetPermissionProvider implements PermissionProvider {
 
     @Override
     public String getContextLabel() {
-        return "Berechtigungssets";
+        return "Effektive Berechtigungen";
     }
 
     @Override
     public PermissionEntry[] getPermissions() {
         return new PermissionEntry[]{
-                PermissionEntry.of(PERMISSION_SET_READ, "Berechtigungsset anzeigen", "Erlaubt das Anzeigen effektiver Berechtigungen anderer Benutzer:innen."),
+                PermissionEntry.of(PERMISSION_SET_READ, "Effektive Berechtigungen anzeigen", "Erlaubt das Anzeigen effektiver Berechtigungen anderer Mitarbeiter:innen."),
         };
     }
 }

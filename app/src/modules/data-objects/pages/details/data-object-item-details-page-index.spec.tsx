@@ -1,5 +1,5 @@
 import {useState, type ComponentProps} from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {describe, expect, it, vi} from 'vitest';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
@@ -12,8 +12,10 @@ import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service
 import type {DataObjectItem} from '../../models/data-object-item';
 import type {DataObjectSchema} from '../../models/data-object-schema';
 import {DataObjectItemDetailsPageIndex} from './data-object-item-details-page-index';
+import {ConfirmProvider} from '../../../../providers/confirm-provider';
 
-vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+const mocks = vi.hoisted(() => ({dispatch: vi.fn()}));
+vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => mocks.dispatch}));
 vi.mock('../../../../hooks/use-api', () => ({useApi: () => ({})}));
 vi.mock('../../../../hooks/use-change-blocker-2', () => ({useChangeBlocker: () => ({dialog: null})}));
 vi.mock('../../../permissions/hooks/use-permissions', () => ({useHasSystemPermission: () => true}));
@@ -71,7 +73,10 @@ function renderPage(isNewItem: boolean) {
         </GenericDetailsPageContext.Provider>;
     }
     render(<MemoryRouter initialEntries={['/data-objects/contacts/1']}>
-        <Routes><Route path="/data-objects/:schemaKey/:id" element={<Page/>}/></Routes>
+        <ConfirmProvider><Routes>
+            <Route path="/data-objects/:schemaKey/:id" element={<Page/>}/>
+            <Route path="/data-objects/:schemaKey" element={<p>Datenobjektübersicht</p>}/>
+        </Routes></ConfirmProvider>
     </MemoryRouter>);
     return {create, update};
 }
@@ -104,5 +109,62 @@ describe('Data-object editor API integration', () => {
         expect(screen.getByRole('button', {name: 'Speichern'})).toBeEnabled();
         fireEvent.change(input, {target: {value: 'Ada'}});
         expect(screen.getByRole('button', {name: 'Speichern'})).toBeDisabled();
+    });
+});
+
+describe('Data-object deletion', () => {
+    it('cancels without deleting or showing a success message', async () => {
+        const destroy = vi.spyOn(DataObjectItemsApiService.prototype, 'destroy').mockResolvedValue(undefined);
+        renderPage(false);
+        await screen.findByRole('textbox', {name: 'Name im Listeneintrag'});
+        fireEvent.click(screen.getByRole('button', {name: 'Löschen'}));
+        expect(screen.getByRole('dialog', {name: 'Datenobjekt löschen'})).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: 'Abbrechen'}));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(destroy).not.toHaveBeenCalled();
+        expect(mocks.dispatch).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', {name: 'Löschen'})).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', {name: 'Löschen'}));
+        expect(screen.getByRole('dialog', {name: 'Datenobjekt löschen'})).toBeInTheDocument();
+    });
+
+    it('closes confirmation and sends only one request on repeated confirmation', async () => {
+        let finish!: () => void;
+        const destroy = vi.spyOn(DataObjectItemsApiService.prototype, 'destroy').mockReturnValue(
+            new Promise<void>(resolve => { finish = resolve; }),
+        );
+        renderPage(false);
+        await screen.findByRole('textbox', {name: 'Name im Listeneintrag'});
+        const deleteButton = screen.getByRole('button', {name: 'Löschen'});
+        fireEvent.click(deleteButton);
+        fireEvent.click(deleteButton);
+        const confirm = within(screen.getByRole('dialog', {name: 'Datenobjekt löschen'})).getByRole('button', {name: 'Löschen'});
+        fireEvent.click(confirm);
+        fireEvent.click(confirm);
+        await waitFor(() => expect(destroy).toHaveBeenCalledExactlyOnceWith('1'));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(screen.getByRole('button', {name: 'Löschen'})).toBeDisabled();
+        expect(mocks.dispatch).not.toHaveBeenCalled();
+        await act(async () => finish());
+        expect(await screen.findByText('Datenobjektübersicht')).toBeInTheDocument();
+        expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({message: 'Das Datenobjekt wurde erfolgreich gelöscht.'}),
+        }));
+    });
+
+    it('allows retrying after a failed deletion', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const destroy = vi.spyOn(DataObjectItemsApiService.prototype, 'destroy').mockRejectedValue(new Error('Failed'));
+        renderPage(false);
+        await screen.findByRole('textbox', {name: 'Name im Listeneintrag'});
+        fireEvent.click(screen.getByRole('button', {name: 'Löschen'}));
+        fireEvent.click(within(screen.getByRole('dialog', {name: 'Datenobjekt löschen'})).getByRole('button', {name: 'Löschen'}));
+        await waitFor(() => expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({severity: 'error'}),
+        })));
+        expect(screen.getByRole('button', {name: 'Löschen'})).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', {name: 'Löschen'}));
+        expect(screen.getByRole('dialog', {name: 'Datenobjekt löschen'})).toBeInTheDocument();
+        expect(destroy).toHaveBeenCalledTimes(1);
     });
 });

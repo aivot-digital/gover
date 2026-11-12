@@ -1,12 +1,19 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.flow;
 
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NoCodeInputElementItem;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +27,19 @@ class IfFlowControlNodeV1Test {
             new JavascriptEngineFactoryService(List.of()),
             new NoCodeEvaluationService(List.of())
     );
+
+    @Test
+    void shouldOfferBothConditionTypesAsRadioOptionsWithNoCodeAsDefault() throws Exception {
+        var layout = node.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
+                null, new ProcessEntity(), new ProcessVersionEntity(), new ProcessNodeEntity()));
+        var selection = layout.findChild(FlowConditionSupport.CONDITION_TYPE_FIELD_ID, SelectInputElement.class).orElseThrow();
+
+        assertEquals(SelectInputPresentation.Radio, selection.getPresentation());
+        assertEquals(Boolean.TRUE, selection.getToggleButtons());
+        assertEquals(List.of("no-code", "low-code"), selection.getOptions().stream().map(SelectInputElementOption::getValue).toList());
+        assertEquals(List.of("No-Code", "Low-Code (JavaScript)"), selection.getOptions().stream().map(SelectInputElementOption::getLabel).toList());
+        assertEquals("no-code", assertInstanceOf(NoCodeStaticValue.class, selection.getValue().getNoCode()).getValue());
+    }
 
     @Test
     void shouldSelectThePortFromTheConfiguredConditionType() throws Exception {
@@ -46,8 +66,8 @@ class IfFlowControlNodeV1Test {
 
     @Test
     void shouldRejectNonBooleanLowCodeResults() {
-        assertTrue(lowCodeError("'ja'").contains("Die Bedingung des If-Knotens konnte nicht als JavaScript ausgeführt werden"));
-        assertTrue(lowCodeError("undefined").contains("Die Bedingung des If-Knotens muss einen booleschen JavaScript-Wert ergeben."));
+        assertTrue(lowCodeError("'ja'").contains("Die Bedingung des Bedingungselements konnte nicht als JavaScript ausgeführt werden"));
+        assertTrue(lowCodeError("undefined").contains("Die Bedingung des Bedingungselements muss einen booleschen JavaScript-Wert ergeben."));
     }
 
     private String lowCodeError(String condition) {

@@ -41,7 +41,7 @@ import {
     parseLocalDateIso,
 } from '../../../../../utils/temporal-utils';
 
-const deletedUserDeputyTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
+const deletedUserDeputyTooltip = 'Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
 
 const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
     {
@@ -274,6 +274,7 @@ export function UserDetailsPageDeputies() {
         }
 
         confirm({
+            isDestructive: true,
             title: 'Stellvertreter:in löschen',
             children: (
                 <>
@@ -329,7 +330,7 @@ export function UserDetailsPageDeputies() {
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Stellvertreter:innen, die für diese Nutzer:in eingerichtet sind.
+                    Eine Übersicht der Stellvertreter:innen, die für diese Mitarbeiter:in eingerichtet sind.
                 </Typography>
 
                 <GenericList<VUserDeputyWithDetailsEntity>
@@ -384,6 +385,7 @@ export function UserDetailsPageDeputies() {
                                 },
                             },
                             {
+                                color: 'error',
                                 tooltip: 'Stellvertreter:in löschen',
                                 disabled: !canDeleteDeputy,
                                 disabledTooltip: formatMissingPermissionTooltip(Permission.DEPUTY_DELETE),

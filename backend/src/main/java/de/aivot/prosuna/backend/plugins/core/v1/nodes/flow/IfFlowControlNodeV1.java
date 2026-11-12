@@ -46,7 +46,7 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.de
 @Component
 public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlNodeV1.IfFlowControlNodeConfig> {
     public static final String NODE_KEY = "if";
-    private static final String CONDITION_SUBJECT = "des If-Knotens";
+    private static final String CONDITION_SUBJECT = "des Bedingungselements";
 
     private static final String PORT_NAME_TRUE = "true";
     private static final String PORT_NAME_FALSE = "false";
@@ -107,22 +107,22 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
     @Nonnull
     @Override
     public String getName() {
-        return "Konditionelle Verzweigung (Wenn-Dann-Sonst)";
+        return "Bedingte Verzweigung (Wenn-Dann-Sonst)";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Leitet den Vorgang basierend auf einer Bedingung in unterschiedliche Pfade ein.";
+        return "Setzt den Vorgang abhängig von einer Bedingung über einen von zwei Ausgangsports fort.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Wertet eine Bedingung aus und führt den Prozess abhängig vom Ergebnis über den Dann- oder Sonst-Ausgang fort.
+                Wertet eine Bedingung aus und setzt den Vorgang über den Ausgangsport „Bedingung erfüllt“ oder „Bedingung nicht erfüllt“ fort.
 
-                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die aktuellen Laufzeitdaten zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Elementausgänge bereitgestellt.
+                Die Bedingung wird als No-Code-Ausdruck oder als Low-Code-Skript formuliert und kann auf Vorgangsdaten, geschützte Vorgangsdaten und Elementdaten zugreifen. Ein Low-Code-Skript muss einen Wahrheitswert zurückgeben, sonst schlägt die Aufgabe fehl. Bei einem No-Code-Ausdruck gilt ein leeres Ergebnis als nicht erfüllt.
                 """;
     }
 
@@ -155,12 +155,12 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                 new ProcessNodePort(
                         PORT_NAME_TRUE,
                         "Bedingung erfüllt",
-                        "Der Prozessfluss wird hier fortgesetzt, wenn die Bedingung erfüllt ist."
+                        "Der Vorgang wird hier fortgesetzt, wenn die Bedingung erfüllt ist."
                 ),
                 new ProcessNodePort(
                         PORT_NAME_FALSE,
                         "Bedingung nicht erfüllt",
-                        "Der Prozessfluss wird hier fortgesetzt, wenn die Bedingung nicht erfüllt ist."
+                        "Der Vorgang wird hier fortgesetzt, wenn die Bedingung nicht erfüllt ist."
                 )
         );
     }
@@ -178,7 +178,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_EVALUATED,
                         "Ausgewerteter Bedingungswert",
-                        "Der als JavaScript ausgewertete Rückgabewert des Bedingungsausdrucks.",
+                        "Der Rückgabewert des ausgewerteten Bedingungsausdrucks als Text.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -246,7 +246,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                                                                String lowCodeCondition) throws ProcessNodeExecutionException {
         if (StringUtils.isNullOrEmpty(lowCodeCondition)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die Low-Code-Bedingung für den If-Knoten wurde nicht angegeben."
+                    "Die Low-Code-Bedingung für das Bedingungselement wurde nicht angegeben."
             );
         }
 
@@ -263,7 +263,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                                                               NoCodeOperand noCodeCondition) throws ProcessNodeExecutionException {
         if (noCodeCondition == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die No-Code-Bedingung für den If-Knoten wurde nicht angegeben."
+                    "Die No-Code-Bedingung für das Bedingungselement wurde nicht angegeben."
             );
         }
 
@@ -298,9 +298,10 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class IfFlowControlNodeConfig {
-        @InputElementPOJOBinding(id = CONDITION_TYPE_FIELD_ID, type = ElementType.Radio, properties = {
+        @InputElementPOJOBinding(id = CONDITION_TYPE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingungsart"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, mit welchem Typ/Editor die Bedingung definiert wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob Sie die Bedingung als No-Code-Ausdruck oder als Low-Code-Skript festlegen."),
                 @ElementPOJOBindingProperty(key = "toggleButtons", boolValue = true),
                 @ElementPOJOBindingProperty(key = "displayInline", boolValue = true),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)

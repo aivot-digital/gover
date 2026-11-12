@@ -67,6 +67,7 @@ export function FileUpload({
                             >
                                 <Typography>{file.name}</Typography>
                                 <IconButton
+                                    color="error"
                                     sx={{ml: 1}}
                                     onClick={() => handleRemove(file)}
                                 >

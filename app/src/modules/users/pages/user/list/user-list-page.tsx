@@ -135,7 +135,7 @@ export function UserListPage() {
                 <Typography
                     component="span"
                     variant="body2"
-                    title="Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden."
+                    title="Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden."
                     sx={{
                         color: "text.disabled",
                         whiteSpace: 'nowrap'
@@ -222,16 +222,16 @@ export function UserListPage() {
             content: (
                 <>
                     <Typography>
-                        Mitarbeiter:innen sind Benutzer:innen, die Zugriff auf das System haben und die
-                        Anwendung nutzen können.
+                        Mitarbeiter:innen nutzen interne Konten, um auf die Bearbeitungsoberfläche zuzugreifen und die
+                        Anwendung zu nutzen.
                         In dieser Oberfläche können Sie die im System verfügbaren Mitarbeiter:innen
                         einsehen.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Informationen zu Mitarbeitenden werden von einem Identity Provider (IdP) System
+                        Informationen zu Mitarbeitenden werden von einem Identitätsanbieter (IdP)
                         bereitgestellt.
                         Änderungen an den hier angezeigten Daten sind nur über die Verwaltungsoberfläche des
-                        IdP möglich.
+                        Identitätsanbieters möglich.
                     </Typography>
                 </>
             ),
@@ -286,7 +286,7 @@ export function UserListPage() {
                 href: `mailto:${item.email}`,
                 tooltip: 'E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)',
                 disabled: item.deletedInIdp,
-                disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
+                disabledTooltip: 'Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
             },
         ];
     }, []);
@@ -294,7 +294,7 @@ export function UserListPage() {
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<User>) => (
         <EmptyDataListPlaceholder
             title="Keine Mitarbeiter:innen vorhanden"
-            description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Prosuna verwalten oder Aufgaben in Vorgängen bearbeiten."
+            description="Mitarbeiter:innen nutzen interne Konten, um Prosuna zu verwalten oder Aufgaben in Vorgängen zu bearbeiten."
             addText="Mitarbeiter:in anlegen"
             onAdd={() => navigate('/users/new')}
             addDisabled={!permissions.canCreate}

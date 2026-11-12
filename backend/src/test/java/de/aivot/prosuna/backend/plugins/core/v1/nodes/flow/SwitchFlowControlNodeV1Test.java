@@ -2,15 +2,19 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.flow;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.CodeInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NoCodeInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NoCodeInputElementItem;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
+import de.aivot.prosuna.backend.elements.services.AssetSelectionValidationService;
 import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
@@ -54,8 +58,13 @@ class SwitchFlowControlNodeV1Test {
     @Test
     void shouldShowOnlyTheEditorOfTheSelectedConditionTypeInEachCase() throws Exception {
         var cases = layout().findChild(SwitchFlowControlNodeV1.CASES_FIELD_ID, ReplicatingContainerLayoutElement.class).orElseThrow();
+        var selection = cases.findChild(FlowConditionSupport.CONDITION_TYPE_FIELD_ID, SelectInputElement.class).orElseThrow();
 
         assertEquals(Boolean.TRUE, cases.getRequired());
+        assertEquals(SelectInputPresentation.Radio, selection.getPresentation());
+        assertEquals(Boolean.TRUE, selection.getToggleButtons());
+        assertEquals(List.of("no-code", "low-code"), selection.getOptions().stream().map(SelectInputElementOption::getValue).toList());
+        assertEquals(List.of("No-Code", "Low-Code (JavaScript)"), selection.getOptions().stream().map(SelectInputElementOption::getLabel).toList());
         assertNotNull(cases.findChild(FlowConditionSupport.CONDITION_LOW_CODE_FIELD_ID, CodeInputElement.class).orElseThrow().getVisibility());
         assertNotNull(cases.findChild(FlowConditionSupport.CONDITION_NO_CODE_FIELD_ID, NoCodeInputElement.class).orElseThrow().getVisibility());
     }
@@ -68,7 +77,8 @@ class SwitchFlowControlNodeV1Test {
                 .putLiteral(FlowConditionSupport.CONDITION_LOW_CODE_FIELD_ID, "true");
         var noCodeRow = new AuthoredElementValues()
                 .putLiteral(SwitchFlowControlNodeV1.CASE_LABEL_FIELD_ID, "Bescheid")
-                .putLiteral(FlowConditionSupport.CONDITION_TYPE_FIELD_ID, FlowConditionSupport.CONDITION_TYPE_VALUE_NO_CODE);
+                .putLiteral(FlowConditionSupport.CONDITION_TYPE_FIELD_ID, FlowConditionSupport.CONDITION_TYPE_VALUE_NO_CODE)
+                .putLiteral(FlowConditionSupport.CONDITION_NO_CODE_FIELD_ID, new NoCodeInputElementItem(new NoCodeStaticValue(false)));
         var authored = new AuthoredElementValues().putLiteral(SwitchFlowControlNodeV1.CASES_FIELD_ID, List.of(
                 new ReplicatingContainerLayoutElementValue().setId(ID_1).setValues(lowCodeRow),
                 new ReplicatingContainerLayoutElementValue().setId(ID_2).setValues(noCodeRow)
@@ -77,6 +87,7 @@ class SwitchFlowControlNodeV1Test {
         var derived = derivationService().derive(layout(), authored);
         var config = ElementPOJOMapper.mapToPOJO(derived.getEffectiveValues(), SwitchFlowControlNodeV1.SwitchFlowControlNodeConfig.class);
 
+        assertFalse(derived.hasAnyError());
         assertEquals(List.of("0190a6f21a2b7c3d8e4f000000000001", "0190a6f21a2b7c3d8e4f000000000002", "default"),
                 node.getPorts(config).stream().map(ProcessNodePort::key).toList());
         var rows = derived.getElementStates().get(SwitchFlowControlNodeV1.CASES_FIELD_ID).getSubStates();
@@ -84,6 +95,25 @@ class SwitchFlowControlNodeV1Test {
         assertEquals(Boolean.FALSE, rows.get(0).getStates().get(FlowConditionSupport.CONDITION_NO_CODE_FIELD_ID).getVisible());
         assertEquals(Boolean.FALSE, rows.get(1).getStates().get(FlowConditionSupport.CONDITION_LOW_CODE_FIELD_ID).getVisible());
         assertEquals(Boolean.TRUE, rows.get(1).getStates().get(FlowConditionSupport.CONDITION_NO_CODE_FIELD_ID).getVisible());
+    }
+
+    @Test
+    void shouldDefaultNewCasesToNoCodeDuringDerivation() throws Exception {
+        var authored = new AuthoredElementValues().putLiteral(SwitchFlowControlNodeV1.CASES_FIELD_ID, List.of(
+                new ReplicatingContainerLayoutElementValue().setId(ID_1).setValues(new AuthoredElementValues()
+                        .putLiteral(SwitchFlowControlNodeV1.CASE_LABEL_FIELD_ID, "Standardprüfung")
+                        .putLiteral(FlowConditionSupport.CONDITION_NO_CODE_FIELD_ID, new NoCodeInputElementItem(new NoCodeStaticValue(true))))
+        ));
+
+        var derived = derivationService().derive(layout(), authored);
+        var config = ElementPOJOMapper.mapToPOJO(derived.getEffectiveValues(), SwitchFlowControlNodeV1.SwitchFlowControlNodeConfig.class);
+
+        assertFalse(derived.hasAnyError());
+        assertEquals("no-code", config.cases.getFirst().conditionType);
+        var row = derived.getElementStates().get(SwitchFlowControlNodeV1.CASES_FIELD_ID).getSubStates().getFirst();
+        assertEquals(Boolean.FALSE, row.getStates().get(FlowConditionSupport.CONDITION_LOW_CODE_FIELD_ID).getVisible());
+        assertEquals(Boolean.TRUE, row.getStates().get(FlowConditionSupport.CONDITION_NO_CODE_FIELD_ID).getVisible());
+        assertEquals(ID_1, execute(config).getNodeData().get("matchedCaseId"));
     }
 
     @Test
@@ -171,7 +201,8 @@ class SwitchFlowControlNodeV1Test {
                 new ElementDataTransformService(),
                 new CodeListElementOptionsService(null, null),
                 new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
-                new InputVariableResolver()
+                new InputVariableResolver(),
+                mock(AssetSelectionValidationService.class)
         );
     }
 

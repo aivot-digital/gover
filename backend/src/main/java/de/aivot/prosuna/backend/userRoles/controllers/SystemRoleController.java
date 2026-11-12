@@ -265,7 +265,7 @@ public class SystemRoleController {
         }
         if (deleteResult.defaultSystemRoleForAutomaticImportsUpdated() && deleteResult.replacementRole() != null) {
             auditMessage.append(String.format(
-                    " Die Standard-Systemrolle für automatische Benutzerimporte wurde auf %s gesetzt.",
+                    " Die Standard-Systemrolle für automatische Kontoimporte wurde auf %s gesetzt.",
                     StringUtils.quote(deleteResult.replacementRole().getName())
             ));
         }

@@ -17,6 +17,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "process_instance_tasks")
+@EntityListeners(ProcessInstanceStaffEventListener.class)
 public class ProcessInstanceTaskEntity {
     @JsonIgnore
     public static final int ACCESS_KEY_LENGTH = 128;
@@ -38,15 +39,15 @@ public class ProcessInstanceTaskEntity {
     private Long processInstanceId;
 
     @Nonnull
-    @NotNull(message = "Die Prozessdefinitions-ID darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Prozessdefinitions-Version darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion darf nicht null sein.")
     private Integer processVersion;
 
     @Nonnull
-    @NotNull(message = "Die Prozessdefinitions-Knoten-ID darf nicht null sein.")
+    @NotNull(message = "Die ID des Prozesselements darf nicht null sein.")
     private Integer processNodeId;
 
     @Nullable
@@ -60,17 +61,17 @@ public class ProcessInstanceTaskEntity {
     private Integer previousProcessNodeId;
 
     @Nullable
-    @Size(max = 96, message = "Der Schlüssel des vorherigen Prozessknoten-Ports darf maximal 96 Zeichen lang sein.")
+    @Size(max = 96, message = "Der Schlüssel des vorherigen Ausgangsports darf maximal 96 Zeichen lang sein.")
     private String previousProcessNodePortKey;
 
     @Nonnull
-    @NotNull(message = "Der Aufgaben-Status darf nicht null sein.")
+    @NotNull(message = "Der Aufgabenstatus darf nicht null sein.")
     @Column(columnDefinition = "int2")
     @Convert(converter = ProcessTaskStatusConverter.class)
     private ProcessTaskStatus status;
 
     @Nullable
-    @Size(max = 96, message = "Die Aufgaben-Status-Überschreibung darf maximal 96 Zeichen lang sein.")
+    @Size(max = 96, message = "Die angezeigte Statusbezeichnung der Aufgabe darf maximal 96 Zeichen lang sein.")
     private String statusOverride;
 
     @Nullable
@@ -121,11 +122,11 @@ public class ProcessInstanceTaskEntity {
     private Map<String, Object> processDataDiff;
 
     @Nullable
-    @Size(max = 36, message = "Die zugewiesene Benutzer-ID darf maximal 36 Zeichen lang sein.")
+    @Size(max = 36, message = "Die Konto-ID der zugewiesenen Person darf maximal 36 Zeichen lang sein.")
     private String assignedUserId;
 
     @Nullable
-    @Size(max = 36, message = "Die zugewiesene Kunden-Identitäts-ID darf maximal 36 Zeichen lang sein.")
+    @Size(max = 36, message = "Die zugewiesene Identitätskennung der beteiligten Person oder Organisation darf maximal 36 Zeichen lang sein.")
     private String assignedCustomerIdentityId;
 
     @Nullable

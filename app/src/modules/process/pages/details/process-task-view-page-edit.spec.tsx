@@ -95,6 +95,7 @@ function createTaskView(data: AuthoredElementValues): TaskView {
         layout,
         data,
         events: [],
+        removableAttachmentKeys: [],
     };
 }
 
@@ -404,7 +405,7 @@ describe('ProcessTaskViewPageEdit attachment preview', () => {
             expect(previewWindow.location.replace).not.toHaveBeenCalled();
             expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
                 payload: expect.objectContaining({
-                    message: 'Dieser Dateityp kann nicht in der Vorschau angezeigt werden. Der Anhang wird stattdessen heruntergeladen.',
+                    message: 'Dieser Dateityp kann nicht in der Vorschau angezeigt werden. Die Anlage wird stattdessen heruntergeladen.',
                     severity: SnackbarSeverity.Warning,
                 }),
             }));

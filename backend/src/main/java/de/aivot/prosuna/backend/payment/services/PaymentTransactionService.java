@@ -133,7 +133,7 @@ public class PaymentTransactionService implements
             metadata.put("exceptionType", e.getClass().getName());
             auditService.create()
                     .setTriggerType("Exception")
-                    .setMessage("Die Zahlungsanfrage konnte für den Zahlungsdienstleister nicht erstellt werden.")
+                    .setMessage("Die Zahlungsanforderung konnte für den Zahlungsdienstleister nicht erstellt werden.")
                     .setMetadata(metadata).log();
             throw e;
         }

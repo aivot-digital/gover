@@ -109,10 +109,9 @@ export function StorageProviderDetailsPage(): ReactNode {
                                             marginBottom: "16px"
                                         }}
                                     >
-                                        Konfigurieren Sie hier Zahlungsdienstleister, die in Ihrer Prosuna-Instanz global
-                                        verfügbar sein sollen.
-                                        Die erforderlichen Konfigurationsdaten erhalten Sie vom Zahlungsdienstleister
-                                        oder finden Sie in dessen Dokumentation.
+                                        Konfigurieren Sie Speicheranbieter für Dateien, Medien und Vorgangsanlagen.
+                                        Die Zugangsdaten und Konfiguration erhalten Sie von der Administration des Speichers
+                                        oder aus dessen Dokumentation.
                                     </Typography>
                                     <Typography
                                         variant="body1"
@@ -120,8 +119,7 @@ export function StorageProviderDetailsPage(): ReactNode {
                                             marginBottom: "16px"
                                         }}
                                     >
-                                        Es wird empfohlen, für jeden Zahlungsdienstleister sowohl eine produktive als
-                                        auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
+                                        Wir empfehlen getrennte Speicheranbindungen für die produktive Nutzung und für Tests.
                                     </Typography>
                                 </>
                             ),

@@ -382,7 +382,7 @@ public class StorageService {
         if (provider.getReadOnlyStorage()) {
             throw ResponseException
                     .badRequest(
-                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente gespeichert werden.",
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dateien gespeichert werden.",
                             StringUtils.quote(provider.getName()),
                             provider.getId()
                     );
@@ -404,7 +404,7 @@ public class StorageService {
                                 NumberUtils.formatGermanNumber(provider.getMaxFileSizeInMegabytes(), 2)
                         );
             }
-            throw ResponseException.internalServerError(e, "Der Inhalt des Dokuments %s konnte nicht gelesen werden.", StringUtils.quote(normalizedPath));
+            throw ResponseException.internalServerError(e, "Der Inhalt der Datei %s konnte nicht gelesen werden.", StringUtils.quote(normalizedPath));
         }
 
         avService.testFile(new ByteArrayInputStream(contentBytes), normalizedPath);
@@ -464,7 +464,7 @@ public class StorageService {
         if (provider.getReadOnlyStorage()) {
             throw ResponseException
                     .badRequest(
-                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Die Metadaten von Dokumenten können nicht aktualisiert werden.",
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Die Metadaten von Dateien können nicht aktualisiert werden.",
                             StringUtils.quote(provider.getName()),
                             provider.getId()
                     );
@@ -514,7 +514,7 @@ public class StorageService {
         if (provider.getReadOnlyStorage()) {
             throw ResponseException
                     .badRequest(
-                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente verschoben werden.",
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dateien verschoben werden.",
                             StringUtils.quote(provider.getName()),
                             provider.getId()
                     );
@@ -551,7 +551,7 @@ public class StorageService {
         if (provider.getReadOnlyStorage()) {
             throw ResponseException
                     .badRequest(
-                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente kopiert werden.",
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dateien kopiert werden.",
                             StringUtils.quote(provider.getName()),
                             provider.getId()
                     );
@@ -580,7 +580,7 @@ public class StorageService {
         if (provider.getReadOnlyStorage()) {
             throw ResponseException
                     .badRequest(
-                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dokumente gelöscht werden.",
+                            "Der Speicheranbieter %s (ID %d) ist schreibgeschützt. Es können keine Dateien gelöscht werden.",
                             StringUtils.quote(provider.getName()),
                             provider.getId()
                     );

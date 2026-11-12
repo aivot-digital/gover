@@ -9,9 +9,29 @@ export interface DynamicTextVariableMetadata {
     reference: string;
 }
 
+/**
+ * How a variable reference is inserted into Markdown: as literal `text` with `{{ }}` or as `markdown` with `{! !}`,
+ * which keeps the value's formatting. Fields that are not Markdown always insert text.
+ */
+export type DynamicTextInsertion = 'text' | 'markdown';
+
+/**
+ * Wraps a reference to a Markdown value so it is inserted as the text a reader sees, without formatting characters
+ * and the escapes the editor stores. The backend provides `_text_v1.fromMarkdown` to templates.
+ */
+export function getDynamicTextInsertionReference(
+    reference: string,
+    markdownValue: boolean | undefined,
+    insertion: DynamicTextInsertion,
+): string {
+    return markdownValue === true && insertion === 'text'
+        ? `_text_v1.fromMarkdown(${reference})`
+        : reference;
+}
+
 export interface DynamicTextInputMethods {
     focus: () => void;
-    insertVariableReference: (reference: string) => void;
+    insertVariableReference: (reference: string, insertion?: DynamicTextInsertion) => void;
 }
 
 export function getDynamicTextVariableReferences(value: string): string[] {

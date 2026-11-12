@@ -23,7 +23,7 @@ const customIcons: Record<string, {
                 margin: '0 5px',
             }}
         />,
-        label: 'Sehr Unzufrieden',
+        label: 'Sehr unzufrieden',
     },
     2: {
         icon: <SentimentDissatisfiedOutlinedIcon
@@ -59,7 +59,7 @@ const customIcons: Record<string, {
                 margin: '0 5px',
             }}
         />,
-        label: 'Sehr Zufrieden',
+        label: 'Sehr zufrieden',
     },
 };
 

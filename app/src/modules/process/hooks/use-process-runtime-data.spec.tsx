@@ -71,7 +71,7 @@ function renderRuntimeData(instanceId: number, initialPermissions: PermissionSet
     const hook = renderHook(
         ({instanceId}: {instanceId: number}) => {
             const runtime = useProcessRuntimeData(instanceId);
-            // Mirrors the gate of "Aufgabe neu starten" in the flow editor node.
+            // Mirrors the gate of "Aufgabe erneut ausführen" in the flow editor node.
             const canEditTask = useHasProcessInstancePermission(
                 runtime.runtimeData?.instance.id,
                 Permission.PROCESS_INSTANCE_EDIT_TASK,
@@ -130,6 +130,29 @@ describe('useProcessRuntimeData', () => {
 
         await act(async () => result.current.loadRuntimeData());
         expect(refresh).toHaveBeenCalledTimes(3);
+    });
+
+    it('keeps the runtime data of the latest load when an earlier load answers later', async () => {
+        vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet').mockResolvedValue(permissions([17, 18]));
+        let answerEarlierLoad!: () => void;
+        const earlierLoadAnswered = new Promise<void>((resolve) => {
+            answerEarlierLoad = resolve;
+        });
+        vi.mocked(ProcessInstanceApiService.prototype.retrieve).mockImplementation(async (id) => {
+            if (id === 17) {
+                await earlierLoadAnswered;
+            }
+            return {...new ProcessInstanceApiService().initialize(), id};
+        });
+        const {result, rerender} = renderRuntimeData(17, permissions([17, 18]));
+
+        rerender({instanceId: 18});
+        await waitFor(() => expect(result.current.runtimeData?.instance.id).toBe(18));
+        expect(result.current.isRefreshingRuntimeData).toBe(true);
+
+        await act(async () => answerEarlierLoad());
+        await waitFor(() => expect(result.current.isRefreshingRuntimeData).toBe(false));
+        expect(result.current.runtimeData?.instance.id).toBe(18);
     });
 
     it.each([

@@ -14,11 +14,13 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.input.InputModePolicy;
 import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.utils.ReflectionUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -312,7 +314,7 @@ public class ElementPOJOMapper {
                 applyInputModePolicy(fieldElement, annotation.allowedInputModes(), annotation.defaultInputMode(),
                         annotation.allowedVariableSources(), field, pojoClass);
                 applyDynamicTextPolicy(fieldElement, annotation.dynamicText(),
-                        annotation.dynamicTextVariableSuggestionSources(), field, pojoClass);
+                        annotation.dynamicTextVariableSuggestionSources(), annotation.dynamicTextFormat(), field, pojoClass);
 
                 try {
                     applyPropertiesToElement(fieldElement, annotation.properties());
@@ -425,11 +427,19 @@ public class ElementPOJOMapper {
             @Nonnull BaseElement element,
             boolean enabled,
             @Nonnull InputVariableSource[] variableSuggestionSources,
+            @Nonnull TemplateOutputFormat[] outputFormats,
             @Nonnull Field field,
             @Nonnull Class<?> pojoClass
     ) throws ElementDataConversionException {
         if (!enabled) {
             return;
+        }
+        if (outputFormats.length > 1) {
+            throw new ElementDataConversionException(
+                    "Dynamic text field %s of class %s declares more than one output format.",
+                    StringUtils.quote(field.getName()),
+                    StringUtils.quote(pojoClass.getCanonicalName())
+            );
         }
         if (!(element instanceof DynamicTextElement inputElement)) {
             throw new ElementDataConversionException(
@@ -440,7 +450,12 @@ public class ElementPOJOMapper {
             );
         }
         try {
-            inputElement.setDynamicTextPolicy(new DynamicTextPolicy(Arrays.asList(variableSuggestionSources)));
+            // Rich text fields are rendered as Markdown and text fields hold single lines such as file names or mail
+            // addresses, so only exceptions such as AI prompts declare a format.
+            var outputFormat = outputFormats.length == 1
+                    ? outputFormats[0]
+                    : element instanceof RichTextInputElement ? TemplateOutputFormat.Markdown : TemplateOutputFormat.SingleLineText;
+            inputElement.setDynamicTextPolicy(new DynamicTextPolicy(Arrays.asList(variableSuggestionSources), outputFormat));
         } catch (IllegalArgumentException exception) {
             throw new ElementDataConversionException(
                     "Invalid dynamic text policy for field %s of class %s: %s",
@@ -471,7 +486,9 @@ public class ElementPOJOMapper {
             if (!StringUtils.isNullOrEmpty(property.strValue())) {
                 setterMethod.invoke(
                         target,
-                        property.strValue()
+                        field.getType().isEnum()
+                                ? JsonMapperFactory.getInstance().convertValue(property.strValue(), field.getType())
+                                : property.strValue()
                 );
             } else if (property.doubleValue() != Double.MIN_VALUE) {
                 setterMethod.invoke(

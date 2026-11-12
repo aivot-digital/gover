@@ -55,7 +55,7 @@ public class UserProvisioningService {
     @Nonnull
     public CreateUserResponseDTO provision(@Nonnull UserEntity entity, boolean sendInitialCredentialsByEmail) throws ResponseException {
         if (entity.getSystemRoleId() == null) {
-            throw ResponseException.badRequest("Bitte eine Systemrolle auswählen.");
+            throw ResponseException.badRequest("Bitte wählen Sie eine Systemrolle aus.");
         }
 
         var systemRole = systemRoleRepository

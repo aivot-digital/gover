@@ -36,6 +36,40 @@ async function selectAustria(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('PhoneNumberFieldComponent', () => {
+    it('does not overwrite a populated number when the configured default changes', () => {
+        const onChange = vi.fn();
+        const props = {label: 'Telefon', value: '+4930123456', onChange};
+        const {rerender} = render(<PhoneNumberFieldComponent {...props} defaultCountry="DE" />);
+        rerender(<PhoneNumberFieldComponent {...props} defaultCountry="AT" />);
+        expect(onChange).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', {name: /Germany, Open flags menu/})).toBeInTheDocument();
+    });
+    it.each([undefined, '', []])('explains rejected extension pastes even with an empty external error (%s)', async error => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        const {rerender} = render(<PhoneNumberFieldComponent label="Telefon" value="+4930123456" onChange={onChange} error={error} />);
+        await user.click(screen.getByRole('textbox'));
+        await user.paste('+49 30 123456 ext. 7');
+        expect(onChange).not.toHaveBeenCalled();
+        expect(screen.getByRole('textbox')).toHaveAccessibleDescription(/nicht übernommen/);
+        rerender(<PhoneNumberFieldComponent label="Telefon" value="+436641234567" onChange={onChange} error={error} />);
+        expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid', 'true');
+    });
+    it.each(['disabled', 'readonly', 'busy'] as const)('does not normalize or change countries while %s', async state => {
+        const onChange = vi.fn();
+        const onBlur = vi.fn();
+        render(<PhoneNumberFieldComponent label="Telefon" value="+49 (0) 30 123456" onChange={onChange} onBlur={onBlur} {...{[state]: true}} />);
+        const input = screen.getByRole('textbox');
+        const {fireEvent} = await import('@testing-library/react');
+        fireEvent.blur(input);
+        expect(onChange).not.toHaveBeenCalled();
+        expect(onBlur).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', {name: /Open flags menu/})).not.toBeInTheDocument();
+    });
+    it('uses the configured initial country', () => {
+        render(<PhoneNumberFieldComponent label="Telefon" defaultCountry="AT" value={null} onChange={vi.fn()} />);
+        expect(screen.getByRole('button', {name: /Austria, Open flags menu/})).toBeInTheDocument();
+    });
     it.each([null, '', undefined])('keeps the selected calling code for an empty value of %s', async (initialValue) => {
         const user = userEvent.setup();
         const {input, onChange, onBlur} = renderControlledPhoneNumber(initialValue, initialValue ?? null);

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
@@ -87,7 +88,8 @@ class ProcessTaskDeadlineResultHandlerTest {
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
             assignments, mock(ProcessWorkRequestService.class), communication, mock(ProcessInstanceRepository.class), versions, tasks,
             edges, users, mail, mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class),
-            processes, departments, null, nodes, new BusinessTime(ZoneId.of("Europe/Berlin"), clock));
+            processes, departments, null, nodes, new BusinessTime(ZoneId.of("Europe/Berlin"), clock),
+            mock(ProcessInstanceAttachmentService.class));
 
     @BeforeEach
     void setup() throws Exception {
@@ -192,7 +194,7 @@ class ProcessTaskDeadlineResultHandlerTest {
     void unknownDeadlineIsRejectedBeforeCommunicationOrAssignment() {
         var result = ProcessNodeExecutionResultTaskAssigned.of("staff").setNewDeadlineKey("unknown")
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest("customer",
-                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").htmlBody("Nachricht").build()));
+                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").markdownBody("Nachricht").build()));
         assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
         verifyNoInteractions(tasks, events, communication, assignments, mail);
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
@@ -205,7 +207,7 @@ class ProcessTaskDeadlineResultHandlerTest {
         when(communication.sendMessage(any(), any())).thenThrow(new CommunicationException("Delivery failed"));
         var result = ProcessNodeExecutionResultTaskAssignedCustomer.of("customer").setNewDeadlineKey("customer")
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest("customer",
-                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").htmlBody("Nachricht").build()));
+                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").markdownBody("Nachricht").build()));
         assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
         assertEquals("preparation", task.getDeadlineKey());

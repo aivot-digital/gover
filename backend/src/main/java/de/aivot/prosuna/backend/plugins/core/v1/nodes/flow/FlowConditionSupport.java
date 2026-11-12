@@ -8,8 +8,8 @@ import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFuncti
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.CodeInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NoCodeInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
@@ -51,14 +51,14 @@ final class FlowConditionSupport {
      */
     static void configureConditionFields(@Nonnull LayoutElement<?> layout) {
         layout
-                .findChild(CONDITION_TYPE_FIELD_ID, RadioInputElement.class)
+                .findChild(CONDITION_TYPE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(conditionTypeField -> {
                     conditionTypeField.setValue(new ElementValueFunctions()
                             .setType(ValueFunctionType.NoCode)
                             .setNoCode(new NoCodeStaticValue(CONDITION_TYPE_VALUE_NO_CODE)));
                     conditionTypeField.setOptions(List.of(
-                            RadioInputElementOption.of(CONDITION_TYPE_VALUE_NO_CODE, "No-Code"),
-                            RadioInputElementOption.of(CONDITION_TYPE_VALUE_LOW_CODE, "Low-Code (JavaScript)")
+                            SelectInputElementOption.of(CONDITION_TYPE_VALUE_NO_CODE, "No-Code"),
+                            SelectInputElementOption.of(CONDITION_TYPE_VALUE_LOW_CODE, "Low-Code (JavaScript)")
                     ));
                 });
 
@@ -98,7 +98,7 @@ final class FlowConditionSupport {
     }
 
     /**
-     * @param subject The condition owner in genitive case for error messages, e.g. „des If-Knotens“.
+     * @param subject The condition owner in genitive case for error messages, e.g. „des Bedingungselements“.
      */
     @Nonnull
     static ConditionEvaluationResult evaluateLowCode(@Nonnull JavascriptEngineFactoryService javascriptEngineFactoryService,
@@ -156,7 +156,7 @@ final class FlowConditionSupport {
     }
 
     /**
-     * @param subject The condition owner in genitive case for error messages, e.g. „des If-Knotens“.
+     * @param subject The condition owner in genitive case for error messages, e.g. „des Bedingungselements“.
      */
     @Nonnull
     static ConditionEvaluationResult evaluateNoCode(@Nonnull NoCodeEvaluationService noCodeEvaluationService,
