@@ -12,7 +12,6 @@ import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionExcepti
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
@@ -38,7 +37,6 @@ import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
-import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
@@ -240,14 +238,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 .ifPresent(field -> {
                     field.setVisibility(recipientModeVisibility(RECIPIENT_MODE_NEW));
                     field.setMaxCharacters(254);
-                    field.setValidation(ElementValidationFunctions.of(
-                            NoCodeExpression.of(
-                                    NoCodeRegexMatchOperator.OPERATOR_ID,
-                                    NoCodeReference.of(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID),
-                                    NoCodeStaticValue.of(EmailAddressUtils.EMAIL_PATTERN_VALUE)
-                            ),
-                            "Bitte geben Sie eine gültige E-Mail-Adresse ein."
-                    ));
+                    // validateConfiguration uses the transport rules, including local and internationalized domains.
+                    // An additional Internet-only regex here would reject valid recipients before that check runs.
                 });
 
         layout.findChild(SemiAutomaticMessageConfig.GROUP_ID, GroupLayoutElement.class)
@@ -349,7 +341,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         }
 
         if (!context.isDeferred(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID)
-                && !EmailAddressUtils.isValidSingleAddress(configuration.recipientEmailAddress)) {
+                && !EmailAddressUtils.isValidTransportAddress(configuration.recipientEmailAddress)) {
             errors.put(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID, List.of("Bitte geben Sie eine gültige E-Mail-Adresse ein."));
         }
         return errors.isEmpty() ? null : errors;

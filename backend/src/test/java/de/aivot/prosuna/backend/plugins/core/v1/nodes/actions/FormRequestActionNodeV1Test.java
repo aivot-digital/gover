@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
@@ -164,6 +165,11 @@ class FormRequestActionNodeV1Test {
         assertEquals(false, newIdentities.getOptionalSlotsAllowed());
         assertNotNull(newIdentities.getVisibility());
         assertNotNull(recipient.getVisibility());
+        var invitationEmail = layout.findChild(FormRequestActionNodeV1.NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID,
+                TextInputElement.class).orElseThrow();
+        assertTrue(invitationEmail.getRequired());
+        assertEquals(254, invitationEmail.getMaxCharacters());
+        assertNull(invitationEmail.getValidation(), "Recipient syntax is checked by the node's transport validation");
 
         var automaticContent = layout.findChild(
                 SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID,
@@ -216,11 +222,16 @@ class FormRequestActionNodeV1Test {
         );
     }
 
-    @Test
-    void newRecipientModeInvitesByEmailAndCollectsIdentityBeforeForm() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+            "'  invitee@example.test  ', invitee@example.test",
+            "anna@verwaltung, anna@verwaltung",
+            "anna@müller.de, anna@xn--mller-kva.de"
+    })
+    void newRecipientModeInvitesByEmailAndCollectsIdentityBeforeForm(String address, String normalized) throws Exception {
         var configuration = new FormRequestActionNodeV1.NodeConfig();
         configuration.recipientMode = "new";
-        configuration.recipientEmailAddress = "  invitee@example.test  ";
+        configuration.recipientEmailAddress = address;
         configuration.newIdentities = List.of(new IdentityConfigElementSlot()
                 .setId("representative")
                 .setTitle("Vertretung")
@@ -244,7 +255,7 @@ class FormRequestActionNodeV1Test {
 
         assertNull(result.getIdentityId());
         assertNull(result.getCommunicationRequest().recipientIdentityId());
-        assertEquals("invitee@example.test", result.getCommunicationRequest().recipientEmailAddress());
+        assertEquals(normalized, result.getCommunicationRequest().recipientEmailAddress());
         assertEquals(List.of(new CommunicationMessageCallToAction(
                 "Daten einreichen", "https://example.test/process/instance-access/tasks/task-access"
         )), result.getCommunicationRequest().message().callToActions());
@@ -503,6 +514,50 @@ class FormRequestActionNodeV1Test {
         configuration.uiDefinition = new GroupLayoutElement();
         assertTrue(node.getMetadata(processNode, configuration, ProcessNodeDefinitionMetadata.empty())
                 .reusableUiDefinitions().isEmpty());
+    }
+
+    @ParameterizedTest
+    @EnumSource(ProcessNodeConfigurationValidationPhase.class)
+    void invitationValidationUsesTransportRulesForConcreteAddresses(ProcessNodeConfigurationValidationPhase phase) {
+        var configuration = newRecipientConfiguration();
+        for (var address : List.of("anna@verwaltung", "anna@müller.de", "anna@example.org", "\"ab\"@example.org")) {
+            configuration.recipientEmailAddress = address;
+            assertNull(node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                    new ProcessNodeEntity(), configuration, DerivedRuntimeElementData.empty(), phase)), address);
+        }
+        for (var address : List.of("", "invalid", "Name <anna@example.org>", "a@example.org\r\nBcc: b@example.org")) {
+            configuration.recipientEmailAddress = address;
+            var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                    new ProcessNodeEntity(), configuration, DerivedRuntimeElementData.empty(), phase));
+            assertNotNull(errors, address);
+            assertTrue(errors.containsKey(FormRequestActionNodeV1.NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID), address);
+        }
+    }
+
+    @Test
+    void invitationValidationDefersDynamicAddressesOnlyDuringAuthoring() {
+        var configuration = newRecipientConfiguration();
+        configuration.recipientEmailAddress = null;
+        var derived = DerivedRuntimeElementData.empty();
+        derived.getElementStates().put(FormRequestActionNodeV1.NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID,
+                new ComputedElementState().setInputValueDeferred(true));
+        assertNull(node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                new ProcessNodeEntity(), configuration, derived, ProcessNodeConfigurationValidationPhase.Authoring)));
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                new ProcessNodeEntity(), configuration, derived, ProcessNodeConfigurationValidationPhase.Runtime));
+        assertNotNull(errors);
+        assertTrue(errors.containsKey(FormRequestActionNodeV1.NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID));
+        configuration.recipientEmailAddress = "anna@verwaltung";
+        assertNull(node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                new ProcessNodeEntity(), configuration, derived, ProcessNodeConfigurationValidationPhase.Runtime)));
+    }
+
+    private static FormRequestActionNodeV1.NodeConfig newRecipientConfiguration() {
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = "new";
+        configuration.newIdentities = List.of(new IdentityConfigElementSlot()
+                .setId("representative").setTitle("Vertretung").setAllowsMail(true).setIsOptional(false));
+        return configuration;
     }
 
     @Test
