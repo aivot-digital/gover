@@ -16,6 +16,7 @@ export function StoragePathSelectorInputFieldEditor(props: BaseEditorProps<Stora
         editable,
         onPatch,
         hasSummaryLayoutParent,
+        configurationErrors,
     } = props;
 
     if (hasSummaryLayoutParent) {
@@ -76,6 +77,7 @@ export function StoragePathSelectorInputFieldEditor(props: BaseEditorProps<Stora
             <Grid size={{xs: 12}}>
                 <MultiCheckboxComponent
                     label="Auswählbare Speicheranbieter-Typen"
+                    error={configurationErrors?.allowedStorageProviderTypes?.join(' ')}
                     value={allowedTypes}
                     onChange={(value) => {
                         onPatch({

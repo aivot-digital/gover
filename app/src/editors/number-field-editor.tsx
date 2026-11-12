@@ -10,6 +10,7 @@ export function NumberFieldEditor(props: BaseEditorProps<NumberFieldElement>) {
         onPatch,
         editable,
         hasSummaryLayoutParent,
+        configurationErrors,
     } = props;
     return (
         <Grid
@@ -62,6 +63,7 @@ export function NumberFieldEditor(props: BaseEditorProps<NumberFieldElement>) {
                 <NumberFieldComponent
                     value={element.decimalPlaces ?? undefined}
                     label="Anzahl der Dezimalstellen"
+                    error={configurationErrors?.decimalPlaces?.join(' ')}
                     onChange={(val) => {
                         onPatch({
                             decimalPlaces: val,

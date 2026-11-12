@@ -53,6 +53,7 @@ export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldEleme
                     <Grid size={{xs: 12, lg: 6}}>
                         <CodeListSelectField
                             value={props.element.codeListKey}
+                            error={props.configurationErrors?.codeListKey?.join(' ')}
                             onChange={(codeListKey) => {
                                 props.onPatch({
                                     codeListKey,
@@ -69,6 +70,7 @@ export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldEleme
                 usesManualOptions &&
                 <OptionListInput
                     label="Optionen"
+                    error={props.configurationErrors?.options?.join(' ')}
                     addLabel="Option hinzufügen"
                     hint="Die antragstellende Person kann genau eine dieser Optionen auswählen."
                     noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."

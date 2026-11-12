@@ -56,6 +56,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                     <Grid size={{xs: 12, lg: 6}}>
                         <CodeListSelectField
                             value={props.element.codeListKey}
+                            error={props.configurationErrors?.codeListKey?.join(' ')}
                             onChange={(codeListKey) => {
                                 props.onPatch({
                                     codeListKey,
@@ -72,6 +73,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                 usesManualOptions &&
                 <OptionListInput
                     label="Optionen"
+                    error={props.configurationErrors?.options?.join(' ')}
                     addLabel="Option hinzufügen"
                     hint="Die antragstellende Person kann eine oder mehrere dieser Optionen auswählen."
                     noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."

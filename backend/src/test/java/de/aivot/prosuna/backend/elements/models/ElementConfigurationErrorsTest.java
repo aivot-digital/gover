@@ -35,10 +35,11 @@ class ElementConfigurationErrorsTest {
     @Test
     void shouldReportErrorsOfNestedChildrenByIdAndOmitValidChildren() {
         var table = new TableInputElement()
-                .setFields(List.of(new TableInputElementColumn().setKey("name")))
+                .setFields(List.of(new TableInputElementColumn().setKey("name").setLabel("Name")))
                 .setMinimumRequiredRows(3)
                 .setMaximumRows(2);
         table.setId("table");
+        table.setLabel("Tabelle");
         table.setRequired(true);
         var root = group("root",
                 text("valid", 1, 5),
@@ -123,6 +124,8 @@ class ElementConfigurationErrorsTest {
                 .setMinCharacters(minCharacters)
                 .setMaxCharacters(maxCharacters);
         text.setId(id);
+        // Hidden fields need no label, which keeps the label rule out of these tree tests.
+        text.setTechnical(true);
         return text;
     }
 

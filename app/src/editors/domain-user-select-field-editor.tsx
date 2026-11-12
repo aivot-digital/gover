@@ -153,6 +153,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                     >
                         <NumberFieldComponent
                             label="Prozess-ID"
+                            error={configurationErrors?.['processAccessConstraint.processId']?.join(' ')}
                             value={processAccessConstraint.processId}
                             onChange={(value) => {
                                 onPatch({
@@ -175,6 +176,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                     >
                         <NumberFieldComponent
                             label="Prozessversion"
+                            error={configurationErrors?.['processAccessConstraint.processVersion']?.join(' ')}
                             value={processAccessConstraint.processVersion}
                             onChange={(value) => {
                                 onPatch({

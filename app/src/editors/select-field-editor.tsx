@@ -47,6 +47,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
         onPatch,
         scope,
         hasSummaryLayoutParent,
+        configurationErrors,
     } = props;
 
     const {
@@ -173,6 +174,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                 >
                     <CodeListSelectField
                         value={element.codeListKey}
+                        error={configurationErrors?.codeListKey?.join(' ')}
                         onChange={(codeListKey) => {
                             onPatch({
                                 codeListKey,
@@ -193,6 +195,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                 >
                     <OptionListInput
                         label="Optionen"
+                        error={configurationErrors?.options?.join(' ')}
                         addLabel="Option hinzufügen"
                         hint={hasDependency
                             ? 'Die antragstellende Person kann genau eine dieser Optionen auswählen. Der Gruppenwert verknüpft eine Option mit dem Wert des abhängigen Auswahlfelds; leere Gruppen bleiben weiterhin immer sichtbar.'

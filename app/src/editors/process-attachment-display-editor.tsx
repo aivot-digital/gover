@@ -13,6 +13,7 @@ export function ProcessAttachmentDisplayEditor(props: BaseEditorProps<ProcessAtt
         element,
         onPatch,
         editable,
+        configurationErrors,
     } = props;
 
     const opec = useOptionalProcessNodeEditorContext();
@@ -32,6 +33,7 @@ export function ProcessAttachmentDisplayEditor(props: BaseEditorProps<ProcessAtt
                     <ProcessInstanceAttachmentSetSelect
                         attachmentSets={opec?.incomingMetadata?.forwardedAttachmentSets}
                         label="Schlüssel des Anlagensatzes"
+                        errors={configurationErrors?.attachmentSetKey}
                         value={element.attachmentSetKey == null ? null : [element.attachmentSetKey]}
                         onChange={(attachmentSetKeys) => {
                             onPatch({

@@ -45,8 +45,9 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
             addMinimumExceedsMaximumError(errors, "minFiles", minFiles, "maxFiles", maxFiles,
                     "Sie fordern mehr Anlagen, als Sie maximal zulassen.");
         }
-        // An empty list rejects every upload. A missing list allows every extension, so the editor only warns about it.
-        if (extensions != null && extensions.isEmpty()) {
+        // An empty list rejects every upload. A missing list still allows every extension at runtime, but authors must
+        // choose the allowed extensions explicitly, so both are reported.
+        if (extensions == null || extensions.isEmpty()) {
             addConfigurationError(errors, "extensions", "Wählen Sie mindestens eine erlaubte Dateiendung aus.");
         }
         // Uploads are stored under this name; FileUploadMultipartInputService rejects every upload without it.

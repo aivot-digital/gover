@@ -11,6 +11,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class RadioInputElement extends BaseInputElement<String> implements PrintableElement<String> {
@@ -31,6 +32,21 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
 
     public RadioInputElement() {
         super(ElementType.Radio);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // performValidation rejects every value while the options are missing or incomplete.
+        if (optionsSource == OptionsSourceType.CodeList) {
+            if (StringUtils.isNullOrEmpty(codeListKey)) {
+                addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
+            }
+        } else {
+            addOptionErrors(errors, "options", options, RadioInputElementOption::getValue, RadioInputElementOption::getLabel);
+        }
+        return errors;
     }
 
     @Nullable

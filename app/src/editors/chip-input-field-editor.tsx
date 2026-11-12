@@ -159,6 +159,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                 >
                     <CodeListSelectField
                         value={element.codeListKey}
+                        error={configurationErrors?.codeListKey?.join(' ')}
                         hint="Aus der Codeliste werden die Beschriftungen als Vorschläge übernommen. Die technischen Werte werden für Chip-Eingaben nicht verwendet."
                         onChange={(codeListKey) => {
                             onPatch({

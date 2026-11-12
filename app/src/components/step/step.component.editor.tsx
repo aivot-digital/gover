@@ -33,6 +33,7 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
                     <TextFieldComponent
                         value={props.element.title ?? ''}
                         label="Titel des Abschnitts"
+                        error={props.configurationErrors?.title?.join(' ')}
                         onChange={(val) => {
                             props.onPatch({
                                 title: val,

@@ -11,17 +11,20 @@ import de.aivot.prosuna.backend.elements.models.elements.steps.IntroductionStepE
 import de.aivot.prosuna.backend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
@@ -157,6 +160,59 @@ public abstract class BaseElement implements Serializable {
             addConfigurationError(errors, minimumProperty, message);
             addConfigurationError(errors, maximumProperty, message);
         }
+    }
+
+    /**
+     * Reports manually defined options that the runtime validation would reject for every value, or that the editor
+     * rejects as ambiguous. All messages are reported at the single property holding the list.
+     */
+    protected static <O> void addOptionErrors(@Nonnull Map<String, List<String>> errors,
+                                              @Nonnull String property,
+                                              @Nullable List<O> options,
+                                              @Nonnull Function<O, String> getValue,
+                                              @Nonnull Function<O, String> getLabel) {
+        if (options == null || options.isEmpty()) {
+            addConfigurationError(errors, property, "Fügen Sie mindestens eine Option hinzu.");
+            return;
+        }
+
+        var values = new HashSet<String>();
+        var labels = new HashSet<String>();
+        var hasEmptyField = false;
+        var hasDuplicateValue = false;
+        var hasDuplicateLabel = false;
+        for (var option : options) {
+            var value = option == null ? null : StringUtils.toNullableTrimmedString(getValue.apply(option));
+            var label = option == null ? null : StringUtils.toNullableTrimmedString(getLabel.apply(option));
+            hasEmptyField |= value == null || label == null;
+            hasDuplicateValue |= value != null && !values.add(value);
+            hasDuplicateLabel |= label != null && !labels.add(label);
+        }
+
+        if (hasEmptyField) {
+            addConfigurationError(errors, property, "Geben Sie für jede Option eine Beschriftung und einen Wert an.");
+        }
+        if (hasDuplicateValue) {
+            addConfigurationError(errors, property, "Die Werte der Optionen müssen eindeutig sein.");
+        }
+        if (hasDuplicateLabel) {
+            addConfigurationError(errors, property, "Die Beschriftungen der Optionen müssen eindeutig sein.");
+        }
+    }
+
+    /**
+     * Overrides can replace any property at runtime, so content that is only missing in the authored configuration
+     * must not be reported for such elements.
+     */
+    protected boolean hasOverride() {
+        return override != null && override.getType() != null;
+    }
+
+    /**
+     * Rich text editors keep empty markup such as {@code <p></p>} when all text was removed.
+     */
+    protected static boolean isRichTextEmpty(@Nullable String html) {
+        return html == null || html.replaceAll("<[^>]*>", "").replace("&nbsp;", "").isBlank();
     }
 
     public void removeInternalInformation() {

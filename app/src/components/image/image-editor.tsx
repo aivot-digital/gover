@@ -18,6 +18,7 @@ export function ImageEditor(props: BaseEditorProps<ImageElement>) {
             <TextFieldComponent
                 value={props.element.src ?? ''}
                 label="URL (Link zur Grafikdatei)"
+                error={props.configurationErrors?.src?.join(' ')}
                 onChange={(val) => {
                     props.onPatch({
                         src: val,

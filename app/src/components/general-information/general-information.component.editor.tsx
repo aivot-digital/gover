@@ -7,7 +7,6 @@ import {type CheckboxTreeOption} from '../checkbox-tree/checkbox-tree-option';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {AssetSelector} from '../../modules/assets/components/asset-selector';
 import {AssetVisibility} from '../../modules/assets/models/asset-visibility';
@@ -168,7 +167,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                                     });
                                 }}
                                 hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
-                                error={isStringNullOrEmpty(props.element.initiativeName) && isStringNotNullOrEmpty(props.element.initiativeLogoLink) ? 'Bitte geben Sie einen Alternativtext für das ausgewählte Logo an.' : undefined}
+                                error={props.configurationErrors?.initiativeName?.join(' ')}
                                 disabled={!props.editable}
                             />
                         </Grid>

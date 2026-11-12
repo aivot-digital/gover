@@ -19,6 +19,7 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement>)
                     <TextFieldComponent
                         value={props.element.content ?? ''}
                         label="Überschrift"
+                        error={props.configurationErrors?.content?.join(' ')}
                         onChange={(val) => {
                             props.onPatch({
                                 content: val,

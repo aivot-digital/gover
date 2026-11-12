@@ -140,9 +140,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                         });
                     }}
                     hint="Die antragstellende Person kann nur Dateien mit diesen Endungen hochladen."
-                    error={props.configurationErrors?.extensions?.join(' ') ??
-                        // A missing list allows every extension, so this stays a warning that does not block publishing.
-                        (props.element.extensions == null ? 'Wählen Sie mindestens eine erlaubte Dateiendung aus.' : undefined)}
+                    error={props.configurationErrors?.extensions?.join(' ')}
                     options={(allowedExtensions ?? []).map((ex) => ({
                         label: ex,
                         value: ex,

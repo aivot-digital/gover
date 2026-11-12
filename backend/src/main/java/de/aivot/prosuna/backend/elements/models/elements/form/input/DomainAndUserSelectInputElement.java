@@ -42,6 +42,21 @@ public class DomainAndUserSelectInputElement extends BaseInputElement<List<Domai
         var errors = super.validateConfiguration();
         addMinimumExceedsMaximumError(errors, "minItems", minItems, "maxItems", maxItems,
                 "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        // A missing list allows every type, an empty one none.
+        if (allowedTypes != null && allowedTypes.isEmpty()) {
+            addConfigurationError(errors, "allowedTypes", "Wählen Sie mindestens einen auswählbaren Typ aus.");
+        }
+        // performValidation rejects every value, even an empty one, while the restriction is incomplete.
+        if (processAccessConstraint != null) {
+            var processId = processAccessConstraint.getProcessId();
+            if (processId == null || processId <= 0) {
+                addConfigurationError(errors, "processAccessConstraint.processId", "Geben Sie eine Prozess-ID größer als 0 an.");
+            }
+            var processVersion = processAccessConstraint.getProcessVersion();
+            if (processVersion == null || processVersion <= 0) {
+                addConfigurationError(errors, "processAccessConstraint.processVersion", "Geben Sie eine Prozessversion größer als 0 an.");
+            }
+        }
         return errors;
     }
 

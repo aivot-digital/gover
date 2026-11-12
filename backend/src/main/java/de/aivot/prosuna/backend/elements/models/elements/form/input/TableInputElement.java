@@ -211,6 +211,10 @@ public class TableInputElement extends BaseInputElement<List<Map<String, Object>
             var keys = new HashSet<String>();
             for (var index = 0; index < fields.size(); index++) {
                 var column = fields.get(index);
+                // Labels are the column headers. Short or repeated labels still work, so the editor only hints at them.
+                if (column == null || StringUtils.isNullOrEmpty(column.getLabel())) {
+                    addConfigurationError(errors, "fields." + index + ".label", "Geben Sie einen Titel für Spalte " + (index + 1) + " ein.");
+                }
                 var key = column == null ? null : StringUtils.toNullableTrimmedString(column.getKey());
                 var property = "fields." + index + ".key";
                 if (key == null) {

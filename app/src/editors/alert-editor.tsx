@@ -17,6 +17,7 @@ export const AlertEditor: BaseEditor<AlertElement> = ({
                                                           element,
                                                           onPatch,
                                                           editable,
+                                                          configurationErrors,
                                                       }) => {
     return (
         <>
@@ -68,6 +69,7 @@ export const AlertEditor: BaseEditor<AlertElement> = ({
                     <RichTextInputComponent
                         value={element.text ?? ''}
                         label="Text"
+                        error={configurationErrors?.text?.join(' ')}
                         onChange={(value) => {
                             onPatch({text: value ?? undefined});
                         }}

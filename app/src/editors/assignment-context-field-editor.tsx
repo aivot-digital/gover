@@ -182,6 +182,7 @@ export function AssignmentContextFieldEditor(props: BaseEditorProps<AssignmentCo
                     >
                         <NumberFieldComponent
                             label="Prozess-ID"
+                            error={configurationErrors?.['processAccessConstraint.processId']?.join(' ')}
                             value={processAccessConstraint.processId}
                             onChange={(value) => {
                                 onPatch({
@@ -204,6 +205,7 @@ export function AssignmentContextFieldEditor(props: BaseEditorProps<AssignmentCo
                     >
                         <NumberFieldComponent
                             label="Prozessversion"
+                            error={configurationErrors?.['processAccessConstraint.processVersion']?.join(' ')}
                             value={processAccessConstraint.processVersion}
                             onChange={(value) => {
                                 onPatch({

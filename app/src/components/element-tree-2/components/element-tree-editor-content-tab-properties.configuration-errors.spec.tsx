@@ -50,6 +50,16 @@ describe('ElementTreeEditorContentTabProperties configuration errors', () => {
         expect(maximum).not.toHaveAccessibleDescription(new RegExp(TEXT_ERROR));
         expect(validate).toHaveBeenLastCalledWith(expect.objectContaining({minCharacters: 4}), expect.any(AbortSignal));
     });
+
+    it('shows a missing label at the title field', async () => {
+        const labelError = 'Geben Sie einen Titel für das Feld an.';
+        vi.spyOn(ElementsApiService.prototype, 'validateConfiguration')
+            .mockResolvedValue({properties: {label: [labelError]}, children: {}});
+        render(<TestProperties element={generateElementWithDefaultValues(ElementType.Text)}/>);
+
+        const title = screen.getByRole('textbox', {name: /^Titel/});
+        await waitFor(() => expect(title).toHaveAccessibleDescription(new RegExp(labelError)));
+    });
 });
 
 function TestProperties({element}: {element: AnyElement}) {

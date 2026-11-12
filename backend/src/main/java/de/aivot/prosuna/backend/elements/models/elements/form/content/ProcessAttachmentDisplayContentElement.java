@@ -2,8 +2,12 @@ package de.aivot.prosuna.backend.elements.models.elements.form.content;
 
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ProcessAttachmentDisplayContentElement extends BaseFormElement {
@@ -16,6 +20,16 @@ public class ProcessAttachmentDisplayContentElement extends BaseFormElement {
 
     public ProcessAttachmentDisplayContentElement() {
         super(ElementType.ProcessAttachmentDisplay);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        if (StringUtils.isNullOrEmpty(attachmentSetKey) && !hasOverride()) {
+            addConfigurationError(errors, "attachmentSetKey", "Wählen Sie den Anlagensatz aus, dessen Anlagen angezeigt werden sollen.");
+        }
+        return errors;
     }
 
     @Override

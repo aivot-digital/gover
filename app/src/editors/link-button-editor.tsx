@@ -34,6 +34,7 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
         element,
         onPatch,
         editable,
+        configurationErrors,
     } = props;
     const target = resolveTarget(element);
 
@@ -71,6 +72,7 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                         <TextFieldComponent
                             value={element.href}
                             label="Link"
+                            error={configurationErrors?.href?.join(' ')}
                             onChange={(href) => {
                                 onPatch({href});
                             }}
