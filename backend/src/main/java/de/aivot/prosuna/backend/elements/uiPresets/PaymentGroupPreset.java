@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButton
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownTemplateValues;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.models.PaymentItem;
@@ -62,8 +63,10 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                                 paymentPayload
                                         .getPaymentItems()
                                         .stream()
+                                        // Descriptions can come from process data: they must neither format nor link
+                                        // anything, and a line break must not end the list item.
                                         .map(item -> "- %s: %s Euro%s\n".formatted(
-                                                item.getDescription(),
+                                                MarkdownTemplateValues.escapeText(item.getDescription()),
                                                 NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
                                                 item.getTaxRate().compareTo(BigDecimal.ZERO) > 0
                                                         ? " inkl. %s%% Steuern".formatted(item.getTaxRate().stripTrailingZeros().toPlainString().replace('.', ','))

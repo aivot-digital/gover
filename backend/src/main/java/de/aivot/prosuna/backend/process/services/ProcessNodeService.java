@@ -817,7 +817,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     node.getDataKey(),
                     output.label(),
                     output.description(),
-                    node
+                    node,
+                    output.markdown()
             ));
 
             var mappedProcessDataKey = StringUtils.toNullableTrimmedString(node.getOutputMappings().get(output.key()));
@@ -825,13 +826,16 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 continue;
             }
 
-            currentMetadata.addForwardedProcessDataKey(
+            currentMetadata.addForwardedProcessDataKey(new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
                     mappedProcessDataKey,
                     output.label(),
                     output.description(),
                     node,
-                    null
-            );
+                    null,
+                    null,
+                    null,
+                    output.markdown()
+            ));
         }
 
         if (!provider.getDeadlines(configuration.configuration()).isEmpty()) {
@@ -871,7 +875,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     forwardedKey.origin(),
                     forwardedKey.valueOptions(),
                     forwardedKey.codeListKey(),
-                    forwardedKey.codeListValueMode()
+                    forwardedKey.codeListValueMode(),
+                    forwardedKey.markdown()
             ));
 
             // Wildcard paths need a concrete row binding or an explicit collection result. Neither is part of the
@@ -885,7 +890,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     null,
                     forwardedKey.label(),
                     forwardedKey.subLabel(),
-                    forwardedKey.origin()
+                    forwardedKey.origin(),
+                    forwardedKey.markdown()
             ));
         }
 
