@@ -8,6 +8,24 @@ import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code'
 import SettingsApplicationsOutlined from '@aivot/mui-material-symbols-400-n25-outlined/SettingsApplications';
 import {SamlMetadataDialog} from '../../../../dialogs/saml-metadata-dialog/saml-metadata-dialog';
 
+/**
+ * System identity providers are brokered by a Keycloak realm that differs from the staff realm in the AppConfig.
+ * Its URL is therefore taken from the provider's own authorization endpoint, so the metadata link always points to
+ * the Keycloak host and realm the login flow actually uses.
+ */
+export function createSamlMetadataUrl(identityProvider: IdentityProviderDetailsDTO): string | undefined {
+    const realmUrl = identityProvider.authorizationEndpoint.match(/^(.*\/realms\/[^/?#]+)\//)?.[1];
+    const alias = identityProvider.additionalParams.find((param) => param.key === 'kc_idp_hint')?.value;
+    if (realmUrl == null || !alias) {
+        return undefined;
+    }
+
+    const encodedAlias = encodeURIComponent(alias);
+    return identityProvider.type === IdentityProviderType.BayernID
+        ? `${realmUrl}/bayernid/${encodedAlias}/metadata`
+        : `${realmUrl}/broker/${encodedAlias}/endpoint/descriptor`;
+}
+
 interface SetupInfoBlockProps {
     title: string;
     description: string;
@@ -148,14 +166,13 @@ export function IdentityProviderDetailsPageSetup() {
         item: identityProvider,
     } = useContext<GenericDetailsPageContextType<IdentityProviderDetailsDTO, void>>(GenericDetailsPageContext);
 
-    const idpHint = useMemo(() => {
-        if (identityProvider == null) {
-            return undefined;
-        }
-
-        return identityProvider
-            .additionalParams
-            .find((param) => param.key === 'kc_idp_hint')
+    const samlMetadataLinks = useMemo(() => {
+        const url = identityProvider == null ? undefined : createSamlMetadataUrl(identityProvider);
+        return url == null ? [] : [{
+            icon: <CodeOutlinedIcon />,
+            label: 'SAML Metadaten',
+            url,
+        }];
     }, [identityProvider]);
 
 
@@ -181,11 +198,7 @@ export function IdentityProviderDetailsPageSetup() {
                             label: 'Self Service Portal (SSP)',
                             url: 'https://ssp.id.bund.de/',
                         },
-                        {
-                            icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
-                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
-                        },
+                        ...samlMetadataLinks,
                     ]}
                 />
             )}
@@ -205,11 +218,7 @@ export function IdentityProviderDetailsPageSetup() {
                             label: 'BayernID Portal',
                             url: 'https://id.bayernportal.de',
                         },
-                        {
-                            icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
-                            url: `/idp/realms/customer/bayernid/${idpHint?.value}/metadata`,
-                        },
+                        ...samlMetadataLinks,
                     ]}
                 />
             )}
@@ -229,11 +238,7 @@ export function IdentityProviderDetailsPageSetup() {
                             label: 'Serviceportal Schleswig-Holstein',
                             url: 'https://serviceportal.schleswig-holstein.de',
                         },
-                        {
-                            icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
-                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
-                        },
+                        ...samlMetadataLinks,
                     ]}
                 />
             )}
@@ -258,11 +263,7 @@ export function IdentityProviderDetailsPageSetup() {
                             label: 'Self Service Portal (SSP)',
                             url: 'https://service.mein-unternehmenskonto.de',
                         },
-                        {
-                            icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
-                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
-                        },
+                        ...samlMetadataLinks,
                     ]}
                 />
             )}
