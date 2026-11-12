@@ -5,7 +5,9 @@ import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
+import de.aivot.prosuna.backend.process.utils.TemplateValueFormatter;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
@@ -63,7 +65,52 @@ public class TemplateRenderService {
     }
 
     /**
+     * Returns the text of a template outside its tags, including the text in conditions, loops and blocks. Lets
+     * checks cover what an author typed, while values of tags are only known when rendering.
+     */
+    @Nonnull
+    public static String extractLiteralText(@Nullable String template) {
+        if (template == null || template.isEmpty()) {
+            return "";
+        }
+        var result = new TemplateParser(new TemplateSource(template)).parse();
+        var text = new StringBuilder();
+        appendLiteralText(result.nodes(), text);
+        result.blocks().values().forEach(block -> appendLiteralText(block.body(), text));
+        return text.toString();
+    }
+
+    private static void appendLiteralText(@Nonnull List<TemplateNode> nodes, @Nonnull StringBuilder text) {
+        for (var node : nodes) {
+            switch (node) {
+                case TextNode textNode -> text.append(textNode.text());
+                case IfNode ifNode -> {
+                    appendLiteralText(ifNode.trueBranch(), text);
+                    appendLiteralText(ifNode.falseBranch(), text);
+                }
+                case ForNode forNode -> appendLiteralText(forNode.body(), text);
+                case PrintNode ignored -> {
+                }
+                case RawNode ignored -> {
+                }
+                case UseBlockNode ignored -> {
+                }
+            }
+        }
+    }
+
+    /** Renders an HTML template, see {@link #interpolate(ProcessExecutionData, String, TemplateOutputFormat)}. */
+    @Nullable
+    public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
+                              @Nullable String template) {
+        return interpolate(foldedProcessData, template, TemplateOutputFormat.Html);
+    }
+
+    /**
      * Renders the given template against the provided process data.
+     *
+     * <p>The output format decides how values are inserted, see {@link TemplateOutputFormat}. It must match how the
+     * caller uses the result, because the escaping only protects that one kind of text.
      *
      * <p>The method first parses the full template and rejects invalid syntax before any JavaScript is executed.
      * That prevents partially rendered output and ensures the same parser drives both editor validation and runtime
@@ -72,17 +119,31 @@ public class TemplateRenderService {
      */
     @Nullable
     public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
-                              @Nullable String template) {
-        return interpolate(foldedProcessData, template, JavascriptExecutionContext.Default);
+                              @Nullable String template,
+                              @Nonnull TemplateOutputFormat outputFormat) {
+        return interpolate(foldedProcessData, template, outputFormat, JavascriptExecutionContext.Default);
     }
 
     /**
-     * Renders the given template like {@link #interpolate(ProcessExecutionData, String)}, but only provides the
+     * Renders an HTML template like {@link #interpolate(ProcessExecutionData, String)}, but only provides the
      * JavaScript function providers that are available in the given context to its expressions.
      */
     @Nullable
     public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
                               @Nullable String template,
+                              @Nonnull JavascriptExecutionContext context) {
+        return interpolate(foldedProcessData, template, TemplateOutputFormat.Html, context);
+    }
+
+    /**
+     * Renders the given template in the given output format, see
+     * {@link #interpolate(ProcessExecutionData, String, TemplateOutputFormat)}, and only provides the JavaScript
+     * function providers that are available in the given context to its expressions.
+     */
+    @Nullable
+    public String interpolate(@Nonnull ProcessExecutionData foldedProcessData,
+                              @Nullable String template,
+                              @Nonnull TemplateOutputFormat outputFormat,
                               @Nonnull JavascriptExecutionContext context) {
         if (template == null) {
             return null;
@@ -97,7 +158,8 @@ public class TemplateRenderService {
             var renderer = new TemplateRenderer(
                     new TemplateExpressionEvaluator(engine, parseResult.source()),
                     new TemplateRenderContext(foldedProcessData),
-                    parseResult.blocks()
+                    parseResult.blocks(),
+                    outputFormat
             );
             return renderer.render(parseResult.nodes());
         } catch (RuntimeException e) {
@@ -556,14 +618,17 @@ public class TemplateRenderService {
         private final TemplateExpressionEvaluator evaluator;
         private final TemplateRenderContext rootContext;
         private final Map<String, TemplateBlockDefinition> blocks;
+        private final TemplateOutputFormat outputFormat;
         private final Deque<String> activeBlocks = new ArrayDeque<>();
 
         private TemplateRenderer(@Nonnull TemplateExpressionEvaluator evaluator,
                                  @Nonnull TemplateRenderContext rootContext,
-                                 @Nonnull Map<String, TemplateBlockDefinition> blocks) {
+                                 @Nonnull Map<String, TemplateBlockDefinition> blocks,
+                                 @Nonnull TemplateOutputFormat outputFormat) {
             this.evaluator = evaluator;
             this.rootContext = rootContext;
             this.blocks = blocks;
+            this.outputFormat = outputFormat;
         }
 
         @Nonnull
@@ -579,12 +644,14 @@ public class TemplateRenderService {
             for (var node : nodes) {
                 switch (node) {
                     case TextNode textNode -> builder.append(textNode.text());
-                    case PrintNode printNode -> builder.append(
-                            TemplateSanitizer.escape(evaluator.evaluateToString(context, printNode.expression(), printNode.sourceIndex()))
-                    );
-                    case RawNode rawNode -> builder.append(
+                    case PrintNode printNode -> builder.append(TemplateValueFormatter.formatEscaped(
+                            outputFormat,
+                            evaluator.evaluateToString(context, printNode.expression(), printNode.sourceIndex())
+                    ));
+                    case RawNode rawNode -> builder.append(TemplateValueFormatter.formatRaw(
+                            outputFormat,
                             evaluator.evaluateToString(context, rawNode.expression(), rawNode.sourceIndex())
-                    );
+                    ));
                     case IfNode ifNode -> renderInto(
                             builder,
                             evaluator.evaluateBoolean(context, ifNode.expression(), ifNode.sourceIndex())
@@ -773,47 +840,6 @@ public class TemplateRenderService {
             return cause == null
                     ? new IllegalArgumentException(fullMessage)
                     : new IllegalArgumentException(fullMessage, cause);
-        }
-    }
-
-    /**
-     * Escapes interpolated output for both HTML and JavaScript-sensitive characters.
-     *
-     * <p>The templates are used for generated content where the final embedding context is not always strictly HTML
-     * text or strictly JavaScript text. Escaping both classes of characters is the conservative default for
-     * {@code {{ ... }}} output, while {@code {! ... !}} remains the explicit opt-out.
-     */
-    private static final class TemplateSanitizer {
-        @Nonnull
-        private static String escape(@Nullable String value) {
-            if (value == null || value.isEmpty()) {
-                return value == null ? "" : value;
-            }
-
-            var builder = new StringBuilder(value.length());
-            for (int i = 0; i < value.length(); i++) {
-                var c = value.charAt(i);
-                switch (c) {
-                    case '&' -> builder.append("&amp;");
-                    case '<' -> builder.append("&lt;");
-                    case '>' -> builder.append("&gt;");
-                    case '"' -> builder.append("&quot;");
-                    case '\'' -> builder.append("&#39;");
-                    case '\\' -> builder.append("\\\\");
-                    case '`' -> builder.append("\\`");
-                    case '\n' -> builder.append("\\n");
-                    case '\r' -> builder.append("\\r");
-                    case '\t' -> builder.append("\\t");
-                    default -> {
-                        if (c < 0x20 || c == '\u2028' || c == '\u2029') {
-                            builder.append(String.format("\\u%04x", (int) c));
-                        } else {
-                            builder.append(c);
-                        }
-                    }
-                }
-            }
-            return builder.toString();
         }
     }
 

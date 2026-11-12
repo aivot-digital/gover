@@ -108,6 +108,50 @@ vi.mock('../components/rich-text-input-component/rich-text-input-component', asy
     };
 });
 
+vi.mock('../components/dynamic-text/dynamic-text-field', async (importOriginal) => {
+    const React = await import('react');
+    const actual = await importOriginal<typeof import('../components/dynamic-text/dynamic-text-field')>();
+
+    return {
+        ...actual,
+        DynamicTextInputField: React.forwardRef((props: {
+            label: string;
+            value: string | null;
+            onChange: (value: string | null) => void;
+            disabled?: boolean;
+            readOnly?: boolean;
+            error?: string;
+            endAction?: {tooltip?: string; ariaLabel?: string; onClick: () => void};
+        }, ref) => {
+            React.useImperativeHandle(ref, () => ({
+                focus: () => undefined,
+                insertVariableReference: (reference: string) => props.onChange(`${props.value ?? ''}{{ ${reference} }}`),
+            }), [props.onChange, props.value]);
+
+            return React.createElement('div', {}, [
+                React.createElement('textarea', {
+                    key: 'input',
+                    'aria-label': props.label,
+                    value: props.value ?? '',
+                    disabled: Boolean(props.disabled) || Boolean(props.readOnly),
+                    onChange: (event: { target: { value: string } }) => props.onChange(event.target.value === '' ? null : event.target.value),
+                }),
+                props.endAction != null ? React.createElement('button', {
+                    key: 'action',
+                    type: 'button',
+                    'aria-label': props.endAction.ariaLabel ?? props.endAction.tooltip,
+                    onClick: props.endAction.onClick,
+                }, props.endAction.tooltip) : null,
+                props.error != null ? React.createElement('span', {key: 'error'}, props.error) : null,
+            ]);
+        }),
+    };
+});
+
+function openVariablePickerOf(label: string) {
+    return within(screen.getByLabelText(label).parentElement!).getByRole('button', {name: 'Variable referenzieren'});
+}
+
 describe('PaymentConfigView', () => {
     let listAllMock: MockInstance;
     let listDefinitionsMock: MockInstance;
@@ -268,7 +312,7 @@ describe('PaymentConfigView', () => {
         });
         await user.click(screen.getByText('Neue Zahlungskonfiguration'));
 
-        await user.click(screen.getAllByRole('button', {name: 'Variable referenzieren'})[0]);
+        await user.click(openVariablePickerOf('Erfolgsmeldung'));
         await user.click(await screen.findByText('Name der Person'));
         await user.click(screen.getByTestId('use-variable-reference'));
         await waitFor(() => {
@@ -276,7 +320,7 @@ describe('PaymentConfigView', () => {
             expect(screen.getByLabelText('Erfolgsmeldung')).toHaveValue('{{ $.person.name }}');
         });
 
-        await user.click(screen.getAllByRole('button', {name: 'Variable referenzieren'})[1]);
+        await user.click(openVariablePickerOf('Fehlermeldung'));
         await user.click(await screen.findByText('Name der Person'));
         await user.click(screen.getByTestId('use-variable-reference'));
         await waitFor(() => {
@@ -289,6 +333,31 @@ describe('PaymentConfigView', () => {
         expect(setValue).toHaveBeenCalledWith(expect.objectContaining({
             successMessage: '{{ $.person.name }}',
             failureMessage: '{{ $.person.name }}',
+        }));
+    });
+
+    it('inserts values of Markdown inputs into payment texts as plain text', async () => {
+        const setValue = vi.fn();
+        const user = userEvent.setup();
+
+        renderPaymentConfigView({setValue});
+
+        await waitFor(() => {
+            expect(listAllMock).toHaveBeenCalledWith({isEnabled: true});
+        });
+        await user.click(screen.getByText('Neue Zahlungskonfiguration'));
+
+        await user.click(openVariablePickerOf('Buchungstext'));
+        await user.click(await screen.findByText('Nachricht'));
+        await user.click(screen.getByTestId('use-variable-reference'));
+        await waitFor(() => {
+            expect(screen.getByLabelText('Buchungstext')).toHaveValue('{{ _text_v1.fromMarkdown($.nachricht) }}');
+        });
+
+        await user.click(screen.getByText('Übernehmen'));
+
+        expect(setValue).toHaveBeenCalledWith(expect.objectContaining({
+            purpose: '{{ _text_v1.fromMarkdown($.nachricht) }}',
         }));
     });
 
@@ -639,6 +708,11 @@ function renderPaymentConfigView(options?: {
                         source: InputVariableSource.ProcessData,
                         path: 'person.name',
                         label: 'Name der Person',
+                    }, {
+                        source: InputVariableSource.ProcessData,
+                        path: 'nachricht',
+                        label: 'Nachricht',
+                        markdown: true,
                     }],
                 }}
             >

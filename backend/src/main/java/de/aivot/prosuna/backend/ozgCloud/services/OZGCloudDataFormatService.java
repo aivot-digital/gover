@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplica
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.models.input.LiteralAuthoredInputValue;
 import de.aivot.prosuna.backend.enums.TableColumnDataType;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.ozgCloud.models.OZGCloudFormDataItem;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -710,11 +711,13 @@ public class OZGCloudDataFormatService {
             @Nonnull FormattingContext context
     ) {
         var edo = context.resolve(richTextInputField);
+        // OZG-Cloud shows values as text, so the Markdown is sent as readable plain text, as in the text part of mails.
+        var plainText = MarkdownRenderer.renderPlainText(richTextInputField.formatValue(edo.getValue()));
 
         return new OZGCloudFormDataItem(
                 richTextInputField.getId(),
                 richTextInputField.getLabel(),
-                richTextInputField.toDisplayValue(richTextInputField.formatValue(edo.getValue())),
+                plainText.isEmpty() ? richTextInputField.toDisplayValue(null) : plainText,
                 null,
                 null,
                 null,

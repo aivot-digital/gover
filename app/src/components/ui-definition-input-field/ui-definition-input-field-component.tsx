@@ -747,6 +747,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                                     highlightedElementId={hoveredTreeElementId}
                                                     disableVisibilities={disableVisibilities}
                                                     mode={ViewDispatcherMode.Editor}
+                                                    displayContext={displayContext}
                                                     showErrorSummary
                                                 />
                                         }
