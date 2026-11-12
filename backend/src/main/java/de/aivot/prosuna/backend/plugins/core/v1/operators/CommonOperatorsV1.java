@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.phone.*;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.secrets.NoCodeSecretsGetOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.text.*;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.user.NoCodeUserEmailOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.user.NoCodeSelectionIncludesOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.user.NoCodeUserFullNameOperator;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
@@ -109,6 +110,8 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
 
                 // Date
                 new NoCodeAddToDateOperator(),
+                new NoCodeAdjustDateTimeOperator(NoCodeAdjustDateTimeOperator.Direction.ADD),
+                new NoCodeAdjustDateTimeOperator(NoCodeAdjustDateTimeOperator.Direction.SUBTRACT),
                 new NoCodeCombineDateAndTimeOperator(businessTime),
                 new NoCodeCreateDateOperator(),
                 new NoCodeCreateNowOperator(businessTime),
@@ -128,6 +131,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeListAvgOperator(),
                 new NoCodeListConcatOperator(),
                 new NoCodeListContainsOperator(),
+                new NoCodeListContainsAllOperator(),
                 new NoCodeListCountOperator(),
                 new NoCodeListGetOperator(),
                 new NoCodeListIntersectionOperator(),
@@ -159,12 +163,18 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeBase64Operator(),
                 new NoCodeConcatOperator(),
                 new NoCodeRegexExtractOperator(),
+                new NoCodeRegexFindOperator(),
                 new NoCodeRegexMatchOperator(),
                 new NoCodeSplitOperator(),
+                new NoCodeTextCompareOperator(NoCodeTextCompareOperator.Mode.CONTAINS),
+                new NoCodeTextCompareOperator(NoCodeTextCompareOperator.Mode.STARTS_WITH),
+                new NoCodeTextCompareOperator(NoCodeTextCompareOperator.Mode.ENDS_WITH),
+                new NoCodeTextCompareOperator(NoCodeTextCompareOperator.Mode.EQUALS_IGNORE_CASE),
 
                 // User
                 new NoCodeUserEmailOperator(userRepository),
                 new NoCodeUserFullNameOperator(userRepository),
+                new NoCodeSelectionIncludesOperator(),
         };
     }
 }
