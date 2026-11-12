@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.system.controllers;
 import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.system.controllers.AuthController;
 import jakarta.servlet.http.Cookie;
@@ -41,7 +42,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -128,9 +128,9 @@ class AuthControllerTest {
         request.setServletPath("/api/auth/login");
         var response = new MockHttpServletResponse();
 
-        try (var factory = mockStatic(JsonMapperFactory.class)) {
-            factory.when(JsonMapperFactory::getInstance).thenReturn(mapper);
-
+        var previousMapper = JsonMapperTestUtils.installMapper();
+        try {
+            ReflectionTestUtils.setField(JsonMapperFactory.class, "mapper", mapper);
             var exception = assertThrows(ResponseException.class, () -> controller.login(request, response, "/staff"));
 
             assertEquals("Die Anmeldung konnte nicht vorbereitet werden.", exception.getTitle());
@@ -138,6 +138,8 @@ class AuthControllerTest {
             assertSame(cause, exception.getCause());
             assertNull(response.getRedirectedUrl());
             verifyNoInteractions(valueOperations);
+        } finally {
+            JsonMapperTestUtils.restoreMapper(previousMapper);
         }
     }
 

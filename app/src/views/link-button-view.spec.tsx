@@ -13,7 +13,7 @@ import {
 } from '../components/view-dispatcher/view-dispatcher.context';
 
 describe('LinkButtonView', () => {
-    it.each(['javascript:alert(1)', '//example.org', 'example.org'])('does not fall back to a task action for an invalid link: %s', href => {
+    it.each(['javascript:alert(1)', '//example.org', 'example.org', 'https://', 'mailto:', 'tel:'])('does not fall back to a task action for an invalid link: %s', href => {
         const onEvent = vi.fn().mockResolvedValue(undefined);
         renderLinkButton({label: 'Weiter', href, staffTaskEvent: 'complete'}, 'staff', {onEvent});
         const button = screen.getByRole('button', {name: 'Weiter'});

@@ -43,6 +43,7 @@ export interface HealthDataComponents {
     }>;
     storage: BaseComponent<{
         error?: string;
+        hint?: string;
         providers: Array<{
             name: string;
             definitionKey: string;

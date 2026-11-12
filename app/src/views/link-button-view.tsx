@@ -10,6 +10,7 @@ import type {
 } from '../models/elements/form/content/link-button-element';
 import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
 import {StepIconsMap} from '../data/step-icons';
+import {resolveLinkButtonHref} from '../utils/resolve-link-button-href';
 
 const DefaultLabel = 'Link öffnen';
 
@@ -23,7 +24,7 @@ export function LinkButtonView(props: BaseViewProps<LinkButtonElement, void>): R
     const {readOnly, taskViewMode} = useViewDispatcherContext();
 
     const label = resolveLabel(element.label);
-    const href = resolveHref(element.href);
+    const href = resolveLinkButtonHref(element.href);
     const variant = resolveVariant(element.variant);
     const color = resolveColor(element.color);
     const openInNewTab = element.openInNewTab !== false;
@@ -72,25 +73,6 @@ export function LinkButtonView(props: BaseViewProps<LinkButtonElement, void>): R
 function resolveLabel(label: string | null | undefined): string {
     const normalizedLabel = label?.trim();
     return normalizedLabel == null || normalizedLabel.length === 0 ? DefaultLabel : normalizedLabel;
-}
-
-function resolveHref(href: string | null | undefined): string | null {
-    const normalizedHref = href?.trim();
-    if (normalizedHref == null || normalizedHref.length === 0) {
-        return null;
-    }
-
-    if (
-        normalizedHref.startsWith('/') && !normalizedHref.startsWith('//') ||
-        normalizedHref.startsWith('#') ||
-        /^https?:\/\//i.test(normalizedHref) ||
-        /^mailto:/i.test(normalizedHref) ||
-        /^tel:/i.test(normalizedHref)
-    ) {
-        return normalizedHref;
-    }
-
-    return null;
 }
 
 function resolveTaskEvent(element: LinkButtonElement, taskViewMode: 'staff' | 'customer' | null | undefined): string | null {

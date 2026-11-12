@@ -385,7 +385,7 @@ describe('Process instance history preview', () => {
         expect(summary.querySelector('[title]')).toHaveAttribute('title', `1. ${name.trim()}: ${description}`);
     });
 
-    it('renders the complete AI response with lists, tables and code', async () => {
+    it('renders the complete AI response with lists and code, and tables as text', async () => {
         const user = userEvent.setup();
         await renderHistory([node(1, 'KI-Anfrage')], [], [{
             ...task(1, 1, ProcessTaskStatus.Completed),
@@ -394,7 +394,8 @@ describe('Process instance history preview', () => {
         await user.click(screen.getByRole('button', {name: 'Alle aufklappen'}));
         const details = within(screen.getByRole('region', {name: /^1\. KI-Anfrage:/}));
         expect(details.getAllByRole('listitem')).toHaveLength(2);
-        expect(details.getByRole('table')).toHaveTextContent('Ergebnis');
+        expect(details.queryByRole('table')).not.toBeInTheDocument();
+        expect(details.getByText(/\| Ergebnis \| 42 \|/)).toBeVisible();
         expect(details.getByText('{"ergebnis": 42}').tagName).toBe('CODE');
         expect(details.getByText('Letzter Absatz.')).toBeVisible();
         expect(details.queryByRole('alert')).not.toBeInTheDocument();

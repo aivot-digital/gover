@@ -19,6 +19,7 @@ import {
     ReplicatingContainerLayout,
 } from '../models/elements/form/layout/replicating-container-layout';
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
+import {type RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {
     applyComputedErrors,
@@ -151,6 +152,7 @@ const YupSchemaMap: {
     [ElementType.Text]: textFieldToYup,
     [ElementType.PhoneNumber]: phoneNumberFieldToYup,
     [ElementType.Email]: emailFieldToYup,
+    [ElementType.RichTextInput]: richTextInputFieldToYup,
     [ElementType.Number]: numberFieldToYup,
     [ElementType.Duration]: durationFieldToYup,
     [ElementType.Select]: selectFieldToYup,
@@ -200,7 +202,7 @@ function countedArraySchema(opts: {
 }
 
 function multiCheckboxFieldToYup(elem: MultiCheckboxFieldElement): Schema {
-    return countedArraySchema({...elem, minItems: elem.minimumRequiredOptions});
+    return countedArraySchema({...elem, minItems: elem.minimumRequiredOptions, maxItems: elem.maximumOptions});
 }
 
 function tableFieldToYup(elem: TableFieldElement): Schema {
@@ -312,6 +314,26 @@ function durationFieldToYup(elem: DurationFieldElement): Schema {
         return error == null || this.createError({message: error});
     });
     return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
+}
+
+function richTextInputFieldToYup(elem: RichTextInputElement): Schema {
+    // Not trimmed: the backend limits the stored Markdown as it is.
+    let richTextSchema: StringSchema<string | undefined | null> = yup
+        .string();
+
+    // Non-positive limits mean unlimited, as in the editor component and the backend.
+    if (elem.maxCharacters != null && elem.maxCharacters > 0) {
+        richTextSchema = richTextSchema
+            .max(elem.maxCharacters, `Zu viele Zeichen. Maximal ${elem.maxCharacters} Zeichen erlaubt.`);
+    }
+
+    if (elem.required) {
+        return richTextSchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    }
+
+    return richTextSchema
+        .nullable();
 }
 
 function numberFieldToYup(elem: AnyInputElement): Schema {

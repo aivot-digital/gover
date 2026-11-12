@@ -876,6 +876,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             {
                 showSyncConfirmDialog &&
                 <ConfirmDialog
+                    confirmButtonColor="error"
                     title="Ungespeicherte Änderungen"
                     onCancel={() => {
                         resolveSyncPreparation(false);

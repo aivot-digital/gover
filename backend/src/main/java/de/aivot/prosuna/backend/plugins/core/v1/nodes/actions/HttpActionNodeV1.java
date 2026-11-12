@@ -19,6 +19,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEnt
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
@@ -523,12 +524,13 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                 continue;
             }
 
-            var key = interpolateNullable(context, readRowValue(row, "field"));
+            // Header names and values must stay on one line.
+            var key = interpolateNullable(context, readRowValue(row, "field"), TemplateOutputFormat.SingleLineText);
             if (StringUtils.isNullOrEmpty(key)) {
                 continue;
             }
 
-            var value = interpolateNullable(context, readRowValue(row, "value"));
+            var value = interpolateNullable(context, readRowValue(row, "value"), TemplateOutputFormat.SingleLineText);
             headers.with(key.trim(), value == null ? "" : value);
         }
     }
@@ -733,8 +735,9 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                 continue;
             }
 
-            var name = interpolateNullable(context, readRowValue(row, "name"));
-            var value = interpolateNullable(context, readRowValue(row, "value"));
+            // The HTTP client encodes form fields, so values keep their line breaks.
+            var name = interpolateNullable(context, readRowValue(row, "name"), TemplateOutputFormat.SingleLineText);
+            var value = interpolateNullable(context, readRowValue(row, "value"), TemplateOutputFormat.PlainText);
             if (StringUtils.isNullOrEmpty(name)) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration("Jede Datenfeld-Zeile benötigt einen Namen.");
             }
@@ -896,12 +899,13 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
     @Nullable
     private String interpolateNullable(@Nonnull ProcessNodeExecutionInitContext<HttpActionNodeV1Config> context,
-                                       @Nullable Object value) {
+                                       @Nullable Object value,
+                                       @Nonnull TemplateOutputFormat outputFormat) {
         if (value == null) {
             return null;
         }
 
-        return templateRenderService.interpolate(context.getCurrentProcessExecutionData(), value.toString());
+        return templateRenderService.interpolate(context.getCurrentProcessExecutionData(), value.toString(), outputFormat);
     }
 
     @Nullable

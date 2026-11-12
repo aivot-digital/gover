@@ -106,7 +106,7 @@ class CommunicationServiceTest {
 
     @Test
     void preservesLocalRecipientsAcrossExecutionRequestsAndCommunicationDispatch() throws Exception {
-        var message = new CommunicationMessage.Builder().subject("Rückfrage").body("Text").htmlBody("Text").build();
+        var message = new CommunicationMessage.Builder().subject("Rückfrage").body("Text").markdownBody("Text").build();
         var request = de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest
                 .toEmail(" person@verwaltung ", message);
         communicationService.sendMessageToEmail(request.recipientEmailAddress(), request.message());
@@ -129,7 +129,7 @@ class CommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
 
         communicationService.sendMessage(identity, message);
@@ -150,7 +150,7 @@ class CommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
 
         communicationService.sendMessage(identity, message);
@@ -170,7 +170,7 @@ class CommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .build()
         ));
 
@@ -216,7 +216,7 @@ class CommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
 
         communicationService.sendMessage(emailIdentity, message);

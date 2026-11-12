@@ -132,6 +132,29 @@ describe('useProcessRuntimeData', () => {
         expect(refresh).toHaveBeenCalledTimes(3);
     });
 
+    it('keeps the runtime data of the latest load when an earlier load answers later', async () => {
+        vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet').mockResolvedValue(permissions([17, 18]));
+        let answerEarlierLoad!: () => void;
+        const earlierLoadAnswered = new Promise<void>((resolve) => {
+            answerEarlierLoad = resolve;
+        });
+        vi.mocked(ProcessInstanceApiService.prototype.retrieve).mockImplementation(async (id) => {
+            if (id === 17) {
+                await earlierLoadAnswered;
+            }
+            return {...new ProcessInstanceApiService().initialize(), id};
+        });
+        const {result, rerender} = renderRuntimeData(17, permissions([17, 18]));
+
+        rerender({instanceId: 18});
+        await waitFor(() => expect(result.current.runtimeData?.instance.id).toBe(18));
+        expect(result.current.isRefreshingRuntimeData).toBe(true);
+
+        await act(async () => answerEarlierLoad());
+        await waitFor(() => expect(result.current.isRefreshingRuntimeData).toBe(false));
+        expect(result.current.runtimeData?.instance.id).toBe(18);
+    });
+
     it.each([
         ['a grant for another instance only', permissions([17]), false],
         ['a system-level grant', permissions([], true), true],

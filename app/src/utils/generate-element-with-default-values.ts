@@ -231,6 +231,7 @@ const elementConstructors: {
         ],
         displayInline: false,
         minimumRequiredOptions: undefined,
+        maximumOptions: undefined,
     }),
     [ElementType.PhoneNumber]: (id) => ({
         ...makeInputBase(ElementType.PhoneNumber, id),
@@ -403,6 +404,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.RichTextInput, id),
         label: 'Markdown-Eingabe',
         reducedMode: false,
+        maxCharacters: 5000,
     }),
     [ElementType.UiDefinitionInput]: (id) => ({
         ...makeInputBase(ElementType.UiDefinitionInput, id),

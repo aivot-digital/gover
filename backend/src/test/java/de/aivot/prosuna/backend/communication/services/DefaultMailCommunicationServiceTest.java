@@ -70,7 +70,7 @@ class DefaultMailCommunicationServiceTest {
         service.sendMessage(" customer@example.test ", new CommunicationMessage.Builder()
                 .subject("Status update")
                 .body("Hello customer")
-                .htmlBody("Hello **customer**")
+                .markdownBody("Hello **customer**")
                 .callToActions(callToActions)
                 .build());
 
@@ -89,6 +89,33 @@ class DefaultMailCommunicationServiceTest {
                                 new CommunicationMessageCallToAction("Open portal", "https://example.test/portal"),
                                 new CommunicationMessageCallToAction("Show status", "https://example.test/status")
                         ).equals(context.get("callToActions"))
+                ),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq(new MailSendOptions(false, null, null, null))
+        );
+    }
+
+    @Test
+    void escapesRawHtmlInMarkdownBody() throws Exception {
+        configureSending();
+
+        service.sendMessage("customer@example.test", new CommunicationMessage.Builder()
+                .subject("Status update")
+                .body("Hello customer")
+                .markdownBody("Hello <a href=\"https://phishing.example\">customer</a>")
+                .build());
+
+        verify(mailService).sendMail(
+                same(defaultTheme),
+                eq("customer@example.test"),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq("Status update"),
+                eq(MailTemplate.GenericEmailMessage),
+                org.mockito.ArgumentMatchers.<Map<String, Object>>argThat(context ->
+                        "<p>Hello &lt;a href=&quot;https://phishing.example&quot;&gt;customer&lt;/a&gt;</p>\n"
+                                .equals(context.get("messageHtml"))
                 ),
                 eq(Optional.empty()),
                 eq(Optional.empty()),
@@ -154,7 +181,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .sendingDepartment(department)
                         .signatureDepartment(signatureDepartment)
                         .build(),
@@ -197,7 +224,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .sendingUser(user)
                         .build()
         );
@@ -227,7 +254,7 @@ class DefaultMailCommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .attachments(List.of(new ByteArrayCommunicationMessageAttachment("note.txt", "text/plain", bytes)))
                 .build();
 
@@ -297,7 +324,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject(" ")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .build()
         ));
         assertThrows(CommunicationException.class, () -> service.sendMessage(
@@ -305,7 +332,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .callToActions(List.of(new CommunicationMessageCallToAction(" ", "https://example.test")))
                         .build()
         ));
@@ -314,7 +341,7 @@ class DefaultMailCommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .callToActions(List.of(new CommunicationMessageCallToAction("Open", null)))
                         .build()
         ));
@@ -346,7 +373,7 @@ class DefaultMailCommunicationServiceTest {
         return new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
     }
 }

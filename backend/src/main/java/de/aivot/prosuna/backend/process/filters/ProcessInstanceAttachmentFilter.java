@@ -32,7 +32,9 @@ public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAt
                 .withContains("fileName", fileName)
                 .withEquals("group", group)
                 .withEquals("mimeType", mimeType)
-                .withEquals("uploadedByUserId", uploadedByUserId);
+                .withEquals("uploadedByUserId", uploadedByUserId)
+                // Attachments removed from an upload field are deleted when their task ends.
+                .withNull("removedAt");
 
         return builder.build();
     }

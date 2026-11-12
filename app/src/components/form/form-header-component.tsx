@@ -219,6 +219,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                     onClick={() => {
                         setMenuAnchorEl(undefined);
                         showConfirm({
+                            confirmButtonColor: 'error',
                             title: 'Eingaben verwerfen?',
                             children: (
                                 <Typography>
@@ -237,9 +238,9 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                     }}
                 >
                     <ListItemIcon>
-                        <Delete/>
+                        <Delete color="error"/>
                     </ListItemIcon>
-                    <ListItemText>
+                    <ListItemText sx={{color: 'error.main'}}>
                         Eingaben verwerfen
                     </ListItemText>
                 </MenuItem>

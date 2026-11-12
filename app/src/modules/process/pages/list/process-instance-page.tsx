@@ -18,6 +18,8 @@ import {ProcessInstanceStatusIcon} from '../../components/process-instance-statu
 import {processListColumns} from '../../components/process-list-columns';
 import {useListFilter} from '../../../../components/generic-list/use-list-filter';
 import {ProcessListFilterMenu} from '../../components/process-list-filter-menu';
+import {useStaffEvent} from '../../../staff-events/hooks/use-staff-event';
+import {PROCESS_INSTANCE_STAFF_EVENT_TYPE} from '../../data/process-instance-staff-event-type';
 
 const filters: GenericListFilter[] = [
     {
@@ -57,6 +59,10 @@ export function ProcessInstanceListPage() {
         listRef.current?.refresh();
         refreshOptions();
     }, [refreshOptions]);
+    useStaffEvent({
+        type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
+        onEvent: refresh,
+    });
     const columns = useMemo(() => processListColumns<ProcessInstanceListEntry>(false, refresh), [refresh]);
     const fetchFilterCounts = useCallback<FetchListFilterCounts>(
         ({signal}) => new ProcessListApiService().instancesCounts({assignee}, signal),

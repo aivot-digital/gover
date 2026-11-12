@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -148,6 +149,28 @@ class ElementPOJOMapperTest {
         assertEquals(
                 List.of(InputVariableSource.values()),
                 richText.getDynamicTextPolicy().variableSuggestionSources()
+        );
+    }
+
+    @Test
+    void createFromPOJO_ShouldDefaultTheOutputFormatByElementTypeAndKeepDeclaredFormats() throws ElementDataConversionException {
+        var layout = ElementPOJOMapper.createFromPOJO(DynamicTextBindingClass.class);
+
+        assertEquals(TemplateOutputFormat.SingleLineText,
+                layout.findChild("text", TextInputElement.class).orElseThrow().getDynamicTextPolicy().outputFormat());
+        assertEquals(TemplateOutputFormat.Markdown,
+                layout.findChild("rich_text", RichTextInputElement.class).orElseThrow().getDynamicTextPolicy().outputFormat());
+        assertEquals(TemplateOutputFormat.PlainText,
+                layout.findChild("multiline_text", TextInputElement.class).orElseThrow().getDynamicTextPolicy().outputFormat());
+        assertEquals(TemplateOutputFormat.PlainText,
+                layout.findChild("prompt", RichTextInputElement.class).orElseThrow().getDynamicTextPolicy().outputFormat());
+    }
+
+    @Test
+    void createFromPOJO_ShouldRejectMoreThanOneOutputFormat() {
+        assertThrows(
+                ElementDataConversionException.class,
+                () -> ElementPOJOMapper.createFromPOJO(AmbiguousDynamicTextFormatBindingClass.class)
         );
     }
 
@@ -335,6 +358,21 @@ class ElementPOJOMapperTest {
 
         @InputElementPOJOBinding(id = "rich_text", type = ElementType.RichTextInput, dynamicText = true)
         private String richText;
+
+        @InputElementPOJOBinding(id = "multiline_text", type = ElementType.Text, dynamicText = true,
+                dynamicTextFormat = TemplateOutputFormat.PlainText)
+        private String multilineText;
+
+        @InputElementPOJOBinding(id = "prompt", type = ElementType.RichTextInput, dynamicText = true,
+                dynamicTextFormat = TemplateOutputFormat.PlainText)
+        private String prompt;
+    }
+
+    @LayoutElementPOJOBinding(id = "ambiguous_dynamic_text_format_root", type = ElementType.ConfigLayout)
+    public static class AmbiguousDynamicTextFormatBindingClass {
+        @InputElementPOJOBinding(id = "text", type = ElementType.Text, dynamicText = true,
+                dynamicTextFormat = {TemplateOutputFormat.PlainText, TemplateOutputFormat.Html})
+        private String text;
     }
 
     @LayoutElementPOJOBinding(id = "unsupported_dynamic_text_root", type = ElementType.ConfigLayout)
