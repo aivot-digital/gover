@@ -312,7 +312,9 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             }
         }
 
-        if (!folderMarkerExists && folder.getDocuments().isEmpty() && folder.getSubfolders().isEmpty()) {
+        // The bucket root has no marker object, so an empty bucket still has an existing, empty root folder.
+        var isRoot = "/".equals(normalizedPath);
+        if (!isRoot && !folderMarkerExists && folder.getDocuments().isEmpty() && folder.getSubfolders().isEmpty()) {
             return Optional.empty();
         }
 
