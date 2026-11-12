@@ -37,6 +37,7 @@ const testState = vi.hoisted(() => {
             supportsMetadataAttributes: false,
         },
         definitions: [] as Record<string, any>[],
+        defaultStorageProviderId: null as string | null,
         handleInputPatch: vi.fn(),
         registerSyncPreparationHandler: vi.fn(),
     };
@@ -77,7 +78,7 @@ vi.mock('../../../../hooks/use-app-dispatch', () => ({
 }));
 
 vi.mock('../../../../hooks/use-app-selector', () => ({
-    useAppSelector: () => null,
+    useAppSelector: () => testState.defaultStorageProviderId,
 }));
 
 vi.mock('../../../permissions/hooks/use-permissions', () => ({
@@ -96,6 +97,8 @@ describe('StorageProviderDetailsPageIndex', () => {
         testState.provider.storageProviderDefinitionVersion = testState.definition.version;
         testState.provider.configuration = {};
         testState.definitions = [testState.definition];
+        testState.defaultStorageProviderId = null;
+        testState.provider.readOnlyStorage = false;
         testState.handleInputPatch.mockReset();
     });
 
@@ -157,5 +160,32 @@ describe('StorageProviderDetailsPageIndex', () => {
         fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Version'}));
         expect(screen.getByRole('option', {name: 'Version 1'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: 'Version 2'})).toBeInTheDocument();
+    });
+
+    it('prevents making a default storage provider read-only', () => {
+        testState.defaultStorageProviderId = testState.provider.id.toString();
+
+        render(
+            <MemoryRouter>
+                <StorageProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        const readOnlySwitch = screen.getByRole('switch', {name: /read-only Speicher/});
+        expect(readOnlySwitch).toBeDisabled();
+        expect(readOnlySwitch).toHaveAccessibleDescription(/kann nicht schreibgeschützt werden/);
+    });
+
+    it('keeps a read-only default storage provider switchable to writable', () => {
+        testState.defaultStorageProviderId = testState.provider.id.toString();
+        testState.provider.readOnlyStorage = true;
+
+        render(
+            <MemoryRouter>
+                <StorageProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByRole('switch', {name: /read-only Speicher/})).toBeEnabled();
     });
 });

@@ -372,6 +372,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             ? 'Systemanbieter können nicht bearbeitet werden.'
             : undefined;
     const defaultStorageDeleteDisabled = isDefaultAttachmentStorage || isDefaultAssetStorage;
+    // Matches the backend, which only rejects the switch, so a read-only default can still be made writable.
+    const readOnlyStorageLocked = defaultStorageDeleteDisabled && !originalStorageProvider?.readOnlyStorage;
     const deleteDisabledTooltip = !canDeleteStorageProvider
         ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_DELETE)
         : editedStorageProvider.systemProvider
@@ -618,7 +620,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         onChange={handleInputChange('readOnlyStorage')}
                         variant="switch"
                         error={errors.readOnlyStorage}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || readOnlyStorageLocked}
+                        hint={readOnlyStorageLocked ? 'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dateien und Medien konfiguriert und kann nicht schreibgeschützt werden.' : undefined}
                     />
 
                     <CheckboxFieldComponent
