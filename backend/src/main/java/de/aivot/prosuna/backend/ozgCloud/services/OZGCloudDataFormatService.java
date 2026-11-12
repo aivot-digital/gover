@@ -800,8 +800,8 @@ public class OZGCloudDataFormatService {
             @Nonnull DurationInputElement field,
             @Nonnull FormattingContext context
     ) {
-        var value = field.formatValue(context.resolve(field).getValue());
-        return new OZGCloudFormDataItem(field.getId(), field.getLabel(), field.toDisplayValue(value), null, null, null, null);
+        var value = context.resolve(field).getValue();
+        return new OZGCloudFormDataItem(field.getId(), field.getLabel(), field.display(value), null, null, null, null);
     }
 
     private OZGCloudFormDataItem buildTimeField(
