@@ -564,6 +564,7 @@ export function renderIconButton(action: EndAction, key?: number) {
     const button = <IconButton
         key={key}
         aria-label={action.ariaLabel ?? action.tooltip}
+        color={action.color}
         onClick={action.onClick}
         disabled={action.disabled}
     >

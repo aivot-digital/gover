@@ -37,9 +37,11 @@ describe('FileUploadFileList', () => {
                     key: 'file',
                     name: fileName,
                     size: '51.01 MB',
-                    actionLabel: 'Datei entfernen',
-                    actionIcon: <span />,
-                    onAction: () => undefined,
+                    actions: [{
+                        label: 'Datei entfernen',
+                        icon: <span />,
+                        onAction: () => undefined,
+                    }],
                 }]}
             />,
         );

@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,6 +25,25 @@ class PaymentConfigElementValueValidationTest {
                 new PaymentConfigElementValue(UUID.randomUUID(), null, "Description", false, null, List.of(fixedItem()), null, null)));
         assertEquals(Map.of("purpose", "Geben Sie einen Verwendungszweck an.",
                 "messages", List.of("Geben Sie einen Verwendungszweck an.")), exception.getErrorDetails());
+    }
+
+    @Test
+    void shouldAcceptTagsAndOverlongTexts() {
+        assertDoesNotThrow(() -> new PaymentConfigElement().performValidation(new PaymentConfigElementValue(
+                UUID.randomUUID(), "Gebuehr {{ $.aktenzeichen }}", "Gebühr für Ihren Antrag, Nr. {! $.nummer !} " + "x".repeat(300),
+                false, null, List.of(fixedItem()), null, null)));
+    }
+
+    @Test
+    void shouldNameTypedCharactersThatAreNotTransmitted() {
+        var exception = assertThrows(ValidationException.class, () -> new PaymentConfigElement().performValidation(new PaymentConfigElementValue(
+                UUID.randomUUID(), "Gebühr (Antrag) {{ $.nummer }}", "Kosten: 10\u00A0€ {% if $.eilig %}sofort!{% endif %}",
+                false, null, List.of(fixedItem()), null, null)));
+
+        assertEquals("Der Buchungstext enthält Zeichen, die nicht übertragen werden: „ü“, „(“, „)“. Erlaubt sind Buchstaben ohne Umlaute, ß und Akzente, Ziffern, Leerzeichen, Binde- und Unterstriche.",
+                ((Map<?, ?>) exception.getErrorDetails()).get("purpose"));
+        assertEquals("Die Beschreibung enthält Zeichen, die nicht übertragen werden: „:“, U+00A0, „€“, „!“. Erlaubt sind Buchstaben, auch mit Umlaut oder Akzent, ß, Ziffern, Leerzeichen, Binde- und Unterstriche, Kommas und Punkte.",
+                ((Map<?, ?>) exception.getErrorDetails()).get("description"));
     }
 
     @Test

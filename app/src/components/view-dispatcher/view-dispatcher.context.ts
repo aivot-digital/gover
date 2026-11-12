@@ -3,6 +3,7 @@ import type {AnyElement} from '../../models/elements/any-element';
 import type {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {type InputVariableSuggestion} from '../../models/input-mode';
 import {findReplicatingContainerId} from '../../utils/flatten-elements';
+import {type ElementDisplayContext} from '../../data/element-type/element-child-options';
 
 export enum ViewDispatcherMode {
     Editor,
@@ -23,6 +24,8 @@ export interface ViewDispatcherContextType {
     mode: ViewDispatcherMode;
     showInvisibleElements?: boolean;
     taskViewMode?: TaskViewMode | null;
+    /** Who fills the rendered UI. Lets editor previews show the controls of that audience instead of the staff app's. */
+    displayContext?: ElementDisplayContext | null;
     readOnly?: boolean;
     showErrorSummary?: boolean;
 

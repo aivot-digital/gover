@@ -332,6 +332,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         }
 
         const shouldDiscard = await confirm({
+            confirmButtonColor: 'error',
+            confirmButtonText: 'Änderungen verwerfen',
             title: 'Ungespeicherte Änderungen',
             children: (
                 <Typography>
@@ -354,6 +356,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         }
 
         confirm({
+            isDestructive: true,
             title: 'Element wirklich löschen',
             children: (
                 <Typography>
@@ -744,6 +747,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                                     highlightedElementId={hoveredTreeElementId}
                                                     disableVisibilities={disableVisibilities}
                                                     mode={ViewDispatcherMode.Editor}
+                                                    displayContext={displayContext}
                                                     showErrorSummary
                                                 />
                                         }

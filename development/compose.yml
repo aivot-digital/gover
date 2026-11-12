@@ -36,6 +36,9 @@ services:
     network_mode: host
     environment:
       API_PORT: 9191
+      # Like the examples, deny Chromium every URL except the local Prosuna URL and temporary render files. This
+      # version enforces the allow-list on every request; CHROMIUM_DENY_PRIVATE_IPS needs Gotenberg 8.32 or later.
+      CHROMIUM_ALLOW_LIST: "^(http://localhost:9595/|file:///tmp/)"
 
   s3-object-storage:
     image: docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z

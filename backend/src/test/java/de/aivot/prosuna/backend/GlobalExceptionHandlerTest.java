@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend;
 
+import de.aivot.prosuna.backend.exceptions.UserFriendlyResponseStatusException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.mail.services.ExceptionMailService;
@@ -16,6 +17,7 @@ import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -72,5 +74,25 @@ class GlobalExceptionHandlerTest {
         assertEquals(Map.of("reason", "lock_version_conflict"), body.getDetails());
         assertTrue(body.getDisplayableToUser());
         verifyNoInteractions(mailService);
+    }
+
+    @Test
+    void handleUserFriendlyResponseExceptionShouldShowTheReasonAsText() {
+        var handler = new GlobalExceptionHandler(
+                mock(ExceptionMailService.class),
+                mock(ProsunaConfig.class)
+        );
+        var exception = new UserFriendlyResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Der Antrag mit der ID <img src=x onerror=alert(1)> wurde nicht gefunden & ist gelöscht."
+        );
+
+        var response = handler.handleUserFriendlyResponseException(exception);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals(MediaType.TEXT_HTML, response.getHeaders().getContentType());
+        var body = assertInstanceOf(String.class, response.getBody());
+        assertTrue(body.contains("Der Antrag mit der ID &lt;img src=x onerror=alert(1)&gt; wurde nicht gefunden &amp; ist gelöscht."));
+        assertFalse(body.contains("<img"));
     }
 }

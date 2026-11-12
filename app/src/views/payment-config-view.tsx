@@ -44,6 +44,7 @@ import {generateId} from '../utils/id-utils';
 import {pluralize} from '../utils/humanization-utils';
 import {RadioFieldComponent} from '../components/radio-field/radio-field-component';
 import {RichTextInputWithVariablePicker} from '../components/rich-text-input-component/rich-text-input-with-variable-picker';
+import {DynamicTextInputWithVariablePicker} from '../components/dynamic-text/dynamic-text-input-with-variable-picker';
 import {FormFieldGroup} from '../components/form-field';
 import {FormFieldTokens} from '../theming/form-field-tokens';
 
@@ -435,19 +436,19 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 </Grid>
 
                 <Grid size={{xs: 12, md: 6}}>
-                    <TextFieldComponent
+                    <DynamicTextInputWithVariablePicker
                         label="Buchungstext"
                         value={currentValue.purpose}
                         onChange={(purpose) => updateValue({purpose})}
                         required={true}
                         disabled={isInteractionDisabled}
-                        hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte)."
+                        hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte). Übertragen werden höchstens 27 Zeichen, ein längerer Text wird nach dem Einfügen der Variablenwerte gekürzt. Nicht erlaubte Zeichen in Variablenwerten werden entfernt."
                         error={getFieldError(errorDetails, 'purpose')}
                     />
                 </Grid>
 
                 <Grid size={{xs: 12}}>
-                    <TextFieldComponent
+                    <DynamicTextInputWithVariablePicker
                         label="Beschreibung"
                         value={currentValue.description}
                         onChange={(description) => updateValue({description})}
@@ -455,7 +456,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         disabled={isInteractionDisabled}
                         multiline
                         rows={2}
-                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren."
+                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren. Übertragen werden höchstens 250 Zeichen, ein längerer Text wird nach dem Einfügen der Variablenwerte gekürzt. Nicht erlaubte Zeichen in Variablenwerten werden entfernt, Zeilenumbrüche werden zu Leerzeichen."
                         error={getFieldError(errorDetails, 'description')}
                     />
                 </Grid>
@@ -542,6 +543,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     disabled={isInteractionDisabled}
                     hint="Diese Meldung wird in der Vorgangsansicht angezeigt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
                     error={getFieldError(errorDetails, 'successMessage')}
+                    offerFormattedInsertion
                 />
             </Box>
 
@@ -559,6 +561,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                     disabled={isInteractionDisabled}
                     hint="Diese Meldung wird in der Vorgangsansicht angezeigt, wenn die Zahlung fehlgeschlagen ist oder abgebrochen wurde."
                     error={getFieldError(errorDetails, 'failureMessage')}
+                    offerFormattedInsertion
                 />
             </Box>
         </Box>
@@ -817,27 +820,27 @@ function PaymentConfigItemEditor(props: {
                 spacing={2}
             >
                 <Grid size={{xs: 12, md: 6}}>
-                    <TextFieldComponent
+                    <DynamicTextInputWithVariablePicker
                         label="Beschreibung"
                         hint="Name und/oder Beschreibung der Zahlungsposition. Wird der das Formular einreichenden Person angezeigt."
                         value={item.description}
                         onChange={(description) => onChange({...item, description})}
                         required={true}
                         disabled={disabled}
-                        muiPassTroughProps={{margin: 'none'}}
+                        margin="none"
                         error={getFieldError(errorDetails, 'description')}
                     />
                 </Grid>
 
                 <Grid size={{xs: 12, md: 6}}>
-                    <TextFieldComponent
+                    <DynamicTextInputWithVariablePicker
                         label="Referenz"
                         hint="Eine fachliche Referenz für die Zahlungsposition. Kann nur von Ihnen intern eingesehen werden."
                         value={item.reference}
                         onChange={(reference) => onChange({...item, reference})}
                         required={true}
                         disabled={disabled}
-                        muiPassTroughProps={{margin: 'none'}}
+                        margin="none"
                         error={getFieldError(errorDetails, 'reference')}
                     />
                 </Grid>
@@ -1261,6 +1264,7 @@ function AdditionalBookingDataEditor(props: {
                                 startIcon={<Delete/>}
                                 disabled={props.disabled}
                                 aria-label={`Buchungseintrag ${index + 1} entfernen`}
+                                color="error"
                                 onClick={() => updateRows(rows.filter((candidate) => candidate.id !== row.id))}
                             >
                                 Entfernen

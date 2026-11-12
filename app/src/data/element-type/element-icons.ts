@@ -3,6 +3,7 @@ import MenuOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Menu'
 import ExpandOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Expand';
 import ImageOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Image';
 import NotesOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Notes';
+import EditNoteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/EditNote';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import TextFieldsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/TextFields';
 import NumbersOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Numbers';
@@ -71,7 +72,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.ConfigLayout]: UploadFileOutlinedIcon,
     [ElementType.FunctionInput]: UploadFileOutlinedIcon,
     [ElementType.CodeInput]: CodeOutlinedIcon,
-    [ElementType.RichTextInput]: UploadFileOutlinedIcon,
+    [ElementType.RichTextInput]: EditNoteOutlinedIcon,
     [ElementType.UiDefinitionInput]: Dashboard2,
     [ElementType.IdentityConfigElement]: UploadFileOutlinedIcon,
     [ElementType.TabLayout]: UploadFileOutlinedIcon,

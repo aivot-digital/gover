@@ -55,6 +55,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
             }
         } else {
             const confirmed = await showConfirm({
+                confirmButtonColor: 'error',
                 title: "Änderungen verwerfen?",
                 confirmButtonText: "Ja, verwerfen",
                 children: <div>Möchten Sie die Änderungen wirklich verwerfen? Diese Aktion kann nicht rückgängig gemacht werden.</div>,
