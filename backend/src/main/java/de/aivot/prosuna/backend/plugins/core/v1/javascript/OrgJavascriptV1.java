@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.javascript;
 
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
@@ -67,6 +68,12 @@ public class OrgJavascriptV1 implements JavascriptFunctionProvider {
 
                 Neben Name und Postanschrift können technische und fachliche Kontaktdaten sowie die hinterlegte Standard-E-Mail-Signatur einer Organisationseinheit abgefragt werden. Die Werte lassen sich gemeinsam als Objekt oder über einzelne Zugriffsfunktionen laden.
                 """;
+    }
+
+    @Override
+    public boolean isAvailableIn(@Nonnull JavascriptExecutionContext context) {
+        // Only reads the names and contact details of departments.
+        return context == JavascriptExecutionContext.Default || context == JavascriptExecutionContext.AssetTemplate;
     }
 
     @Override

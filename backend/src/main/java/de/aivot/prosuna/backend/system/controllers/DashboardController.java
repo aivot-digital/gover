@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.system.dtos.DashboardActivityDTO;
 import de.aivot.prosuna.backend.system.dtos.DashboardOverviewDTO;
 import de.aivot.prosuna.backend.system.services.DashboardService;
 import de.aivot.prosuna.backend.user.services.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.annotation.Nullable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,6 +31,13 @@ public class DashboardController {
     public DashboardOverviewDTO getOverview(@Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
         var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
         return dashboardService.getOverview(user);
+    }
+
+    @GetMapping("tasks/")
+    @Operation(summary = "Retrieve the dashboard tasks", description = "Returns the open tasks assigned to the current user, as shown in the task panel of the overview. Lets the dashboard reload the panel after a change without loading the whole overview.")
+    public DashboardOverviewDTO.TaskSummary getTasks(@Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        return dashboardService.getTaskSummary(user);
     }
 
     @GetMapping("activity/")

@@ -6,7 +6,7 @@ import React, {
     type ReactNode,
     type RefObject,
 } from 'react';
-import {alpha, Box, Button, type SxProps, type Theme, Typography} from '@mui/material';
+import {alpha, Box, Button, type IconButtonProps, type SxProps, type Theme, Typography} from '@mui/material';
 import UploadFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
 import {pluralize} from '../../utils/humanization-utils';
 import {FileList} from '../file-list/file-list';
@@ -170,16 +170,21 @@ export function FileUploadInputArea(props: FileUploadInputAreaProps) {
     );
 }
 
+export interface FileUploadListItemAction {
+    label: string;
+    icon: ReactNode;
+    color?: IconButtonProps['color'];
+    disabled?: boolean;
+    onAction: () => void;
+}
+
 export interface FileUploadListItem {
     key: string;
     name: string;
     size: string;
     contentType?: string | null;
     detail?: string;
-    actionLabel: string;
-    actionIcon: ReactNode;
-    actionDisabled?: boolean;
-    onAction: () => void;
+    actions: FileUploadListItemAction[];
 }
 
 export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
@@ -191,12 +196,13 @@ export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
                 name: item.name,
                 contentType: item.contentType,
                 secondaryText: [item.size, item.detail].filter(Boolean).join(' · '),
-                actions: [{
-                    label: item.actionLabel,
-                    icon: item.actionIcon,
-                    onClick: item.onAction,
-                    disabled: item.actionDisabled,
-                }],
+                actions: item.actions.map(action => ({
+                    label: action.label,
+                    icon: action.icon,
+                    color: action.color,
+                    onClick: action.onAction,
+                    disabled: action.disabled,
+                })),
             }))}
         />
     );

@@ -327,7 +327,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         var testMessage = new CommunicationMessage.Builder()
                 .subject("Testnachricht")
                 .body("Dies ist eine Testnachricht.")
-                .htmlBody("<p>Dies ist eine Testnachricht.</p>")
+                .markdownBody("Dies ist eine Testnachricht.")
                 .build();
 
         var result = sendMessage(testContext, testIdentity, testMessage);
@@ -373,12 +373,12 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         defaultMailCommunicationService.sendMessage(recipient, message, options);
 
         assert message.subject() != null;
-        assert message.htmlBody() != null;
+        assert message.markdownBody() != null;
 
         return Map.of(
                 "recipient", recipient,
                 "subject", message.subject(),
-                "body", message.htmlBody()
+                "body", message.markdownBody()
         );
     }
 

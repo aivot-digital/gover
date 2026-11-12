@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.payment.models.PaymentItem;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.XBezahldiensteAddress;
 import de.aivot.prosuna.backend.payment.models.XBezahldiensteRequestor;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
@@ -55,8 +56,8 @@ public class PaymentPayloadCreationService {
         var items = createItems(paymentConfigElementValue, derivedRuntimeElementData, processExecutionData);
 
         var payload = new PaymentPayload()
-                .setPurpose(renderRequired(paymentConfigElementValue.purpose(), processExecutionData, "Buchungstext"))
-                .setDescription(renderRequired(paymentConfigElementValue.description(), processExecutionData, "Beschreibung"))
+                .setPurpose(renderRequired(paymentConfigElementValue.purpose(), processExecutionData, "Buchungstext", TemplateOutputFormat.SingleLineText))
+                .setDescription(renderRequired(paymentConfigElementValue.description(), processExecutionData, "Beschreibung", TemplateOutputFormat.PlainText))
                 .setRequestor(createRequestor(paymentConfigElementValue, processExecutionData))
                 .setPaymentItems(items)
                 .setTotal(calculateTotal(items));
@@ -128,8 +129,8 @@ public class PaymentPayloadCreationService {
 
         var paymentItem = new PaymentItem();
         paymentItem.setId(resolveItemId(itemConfig, index));
-        paymentItem.setReference(renderRequired(itemConfig.reference(), processExecutionData, "Referenz der Zahlungsposition " + (index + 1)));
-        paymentItem.setDescription(renderRequired(itemConfig.description(), processExecutionData, "Beschreibung der Zahlungsposition " + (index + 1)));
+        paymentItem.setReference(renderRequired(itemConfig.reference(), processExecutionData, "Referenz der Zahlungsposition " + (index + 1), TemplateOutputFormat.SingleLineText));
+        paymentItem.setDescription(renderRequired(itemConfig.description(), processExecutionData, "Beschreibung der Zahlungsposition " + (index + 1), TemplateOutputFormat.PlainText));
         paymentItem.setQuantity(quantity);
         paymentItem.setTaxRate(normalizedTaxRate);
         paymentItem.setNetPrice(normalizedSingleNetAmount);
@@ -271,7 +272,7 @@ public class PaymentPayloadCreationService {
                 throw new PaymentException("Buchungsdaten dürfen keine leeren Schlüssel enthalten.");
             }
 
-            var value = render(entry.getValue(), processExecutionData);
+            var value = render(entry.getValue(), processExecutionData, TemplateOutputFormat.SingleLineText);
             if (value != null) {
                 bookingData.add(new PaymentProduct.BookingDataItem(entry.getKey(), value));
             }
@@ -447,19 +448,22 @@ public class PaymentPayloadCreationService {
     @Nonnull
     private String renderRequired(@Nullable String template,
                                   @Nonnull ProcessExecutionData processExecutionData,
-                                  @Nonnull String fieldName) throws PaymentException {
-        var value = render(template, processExecutionData);
+                                  @Nonnull String fieldName,
+                                  @Nonnull TemplateOutputFormat outputFormat) throws PaymentException {
+        var value = render(template, processExecutionData, outputFormat);
         if (StringUtils.isNullOrEmpty(value)) {
             throw new PaymentException("%s darf nicht leer sein.", fieldName);
         }
         return value;
     }
 
+    // Payment texts go to the payment provider as plain text, so values must not be escaped for HTML.
     @Nullable
     private String render(@Nullable String template,
-                          @Nonnull ProcessExecutionData processExecutionData) throws PaymentException {
+                          @Nonnull ProcessExecutionData processExecutionData,
+                          @Nonnull TemplateOutputFormat outputFormat) throws PaymentException {
         try {
-            return templateRenderService.interpolate(processExecutionData, template);
+            return templateRenderService.interpolate(processExecutionData, template, outputFormat);
         } catch (RuntimeException e) {
             throw new PaymentException(e, "Die Vorlage %s konnte nicht gerendert werden.", StringUtils.quote(template));
         }

@@ -15,11 +15,18 @@ import {type ProcessInstanceDetails} from '../../entities/process-instance-detai
 import {isProcessInstanceFinished, ProcessInstanceStatusLabels, ProcessInstanceStatusColor} from '../../enums/process-instance-status';
 import {Permission} from '../../../../data/permissions/permission';
 import {useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {useStaffEvent} from '../../../staff-events/hooks/use-staff-event';
+import {PROCESS_INSTANCE_STAFF_EVENT_TYPE} from '../../data/process-instance-staff-event-type';
 
 export function ProcessInstanceDetailsPage() {
     const {id} = useParams();
     const refreshPermissionSet = useRefreshPermissionSet();
     const controlRef = useRef<GenericDetailsPageControlRef>(null);
+    useStaffEvent({
+        type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
+        scope: id,
+        onEvent: () => controlRef.current?.refresh(),
+    });
     const [taskMenu, setTaskMenu] = useState<{
         anchor: Element;
         item: ProcessInstanceDetails;
