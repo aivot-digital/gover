@@ -20,6 +20,7 @@ import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -225,7 +226,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 new ProcessNodeOutput(OUTPUT_IDENTITY_ID, "Identität", "ID der adressierten Identität.", "string"),
                 new ProcessNodeOutput(OUTPUT_BINDING_ID, "Kommunikationsanbindung", "ID der verwendeten Kommunikationsanbindung.", "number | null"),
                 new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Betreff der versendeten Nachricht.", "string"),
-                new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Inhalt der versendeten Nachricht.", "string"),
+                new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Inhalt der versendeten Nachricht.", "string", true),
                 new ProcessNodeOutput(OUTPUT_ATTACHMENT_SET_DATA_KEYS, "Anlagensätze", "Datenschlüssel der angehängten Anlagensätze.", "Array<string>"),
                 new ProcessNodeOutput(OUTPUT_SENT_AT, "Vorbereitungszeitpunkt", "Zeitpunkt, zu dem die Nachricht für den Versand vorbereitet wurde.", "string"),
                 new ProcessNodeOutput(OUTPUT_SEND_RESULT, "Versandresultat", "Resultat des Versandvorgangs, wie es vom Kommunikationsanbieter zurückgegeben wurde.", "Record<string, unknown>")
@@ -449,8 +450,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                         identityId,
                         new CommunicationMessage.Builder()
                                 .subject(subject)
-                                .body(content)
-                                .htmlBody(content)
+                                .body(MarkdownRenderer.renderPlainText(content))
+                                .markdownBody(content)
                                 .timestamp(sentAt)
                                 .attachments(attachments)
                                 .signatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(

@@ -276,6 +276,7 @@ function InstancePermissions({item}: {item: ProcessInstanceDetails}) {
                     </Button>
                     <Button
                         disabled={!hasChanged || saving}
+                        color="error"
                         onClick={() => {
                             setDraft(persisted.map(toDraft));
                             setConflict(null);

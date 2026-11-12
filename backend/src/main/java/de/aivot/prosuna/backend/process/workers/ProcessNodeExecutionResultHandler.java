@@ -22,6 +22,7 @@ import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
@@ -61,6 +62,7 @@ public class ProcessNodeExecutionResultHandler {
     private final BusinessTime businessTime;
     private final DepartmentService departmentService;
     private final ProcessInstanceMailService processInstanceMailService;
+    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
 
     @Autowired
     public ProcessNodeExecutionResultHandler(ProcessAssignmentService assignmentService,
@@ -77,7 +79,8 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessService processService,
                                              DepartmentService departmentService, ProcessInstanceMailService processInstanceMailService,
                                              ProcessNodeService processNodeService,
-                                             BusinessTime businessTime) {
+                                             BusinessTime businessTime,
+                                             ProcessInstanceAttachmentService processInstanceAttachmentService) {
         this.assignmentService = assignmentService;
         this.workRequestService = workRequestService;
         this.communicationService = communicationService;
@@ -94,6 +97,7 @@ public class ProcessNodeExecutionResultHandler {
         this.businessTime = businessTime;
         this.departmentService = departmentService;
         this.processInstanceMailService = processInstanceMailService;
+        this.processInstanceAttachmentService = processInstanceAttachmentService;
     }
 
     public <NodeConfig> void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
@@ -448,7 +452,7 @@ public class ProcessNodeExecutionResultHandler {
         var message = new CommunicationMessage.Builder()
                 .subject(originalMessage.subject())
                 .body(originalMessage.body())
-                .htmlBody(originalMessage.htmlBody())
+                .markdownBody(originalMessage.markdownBody())
                 .callToActions(originalMessage.callToActions())
                 .timestamp(originalMessage.timestamp())
                 .attachments(originalMessage.attachments())
@@ -514,7 +518,7 @@ public class ProcessNodeExecutionResultHandler {
         var messageDetails = new LinkedHashMap<String, Object>();
         messageDetails.put("subject", message.subject());
         messageDetails.put("body", message.body());
-        messageDetails.put("htmlBody", message.htmlBody());
+        messageDetails.put("markdownBody", message.markdownBody());
         messageDetails.put("referenceId", message.referenceId());
         messageDetails.put("sendingUser", createSendingUserDetails(message.sendingUser()));
         messageDetails.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));
@@ -1150,6 +1154,14 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
+    /** Deletes the files that were removed from the upload fields of the task before it completed. */
+    private void deleteRemovedUploads(@Nonnull HandlerContext<?, ?> context) {
+        processInstanceAttachmentService.deleteRemovedUploadsOfTask(
+                context.processInstanceTask,
+                context.triggeringUser != null ? context.triggeringUser.getId() : null
+        );
+    }
+
     private void handleTaskComplete(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskCompleted> context) throws ProcessNodeExecutionException {
         var completionPath = requireCompletionPath(context, context.result.getViaPort());
         var port = completionPath.port();
@@ -1158,6 +1170,7 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         context.processInstanceTask.setFinished(Instant.now());
         applyDataLayersAndStatusOverride(context, true);
+        deleteRemovedUploads(context);
 
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
         var updateInstance = !context.additionalIdentities.isEmpty()
@@ -1262,6 +1275,7 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         context.processInstanceTask.setFinished(completionTime);
         applyDataLayersAndStatusOverride(context, true);
+        deleteRemovedUploads(context);
 
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
         context.processInstance.setStatus(ProcessInstanceStatus.Completed);

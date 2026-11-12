@@ -9,7 +9,7 @@
             <span th:if="${base.isBlankPrint() && element.required}">(Pflichtangabe)</span>
         </div>
         <div class="content">
-            <span th:if="${base.isNotBlankPrint()}" th:text="${element.toDisplayValue(value)}"></span>
+            <span th:if="${base.isNotBlankPrint()}" th:text="${element.display(value)}"></span>
             <span class="suffix" th:if="${base.isBlankPrint()}"
                   th:text="${(element.largestUnit != null && element.largestUnit.name() == 'Day' ? 'Tage / ' : '') + (element.precision != null && element.precision.name() == 'Second' ? 'Stunden / Minuten / Sekunden' : 'Stunden / Minuten')}"></span>
         </div>

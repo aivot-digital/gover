@@ -496,7 +496,7 @@ public class AssetController {
 
         var updatedMetadata = metadata != null ? metadata : StorageItemMetadata.empty();
 
-        var updatedStorageElement = storageService.updateDocumentMetadata(
+        storageService.updateDocumentMetadata(
                 storageProvider.getId(),
                 filePath,
                 updatedMetadata
@@ -532,8 +532,7 @@ public class AssetController {
                         storageProvider.getId(),
                         filePath
                 ))
-                .orElseThrow(ResponseException::internalServerError)
-                .setMetadata(updatedStorageElement.getMetadata()); // Update the metadata because of the outdated context
+                .orElseThrow(ResponseException::internalServerError);
     }
 
     @GetMapping("files-content/**")

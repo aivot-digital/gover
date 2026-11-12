@@ -30,6 +30,9 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
     private Integer minimumRequiredOptions;
 
     @Nullable
+    private Integer maximumOptions;
+
+    @Nullable
     private Boolean displayInline;
 
     @Nullable
@@ -54,6 +57,10 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         if (value != null) {
             testValuesInOptions(value);
             testRequiredOptionsMet(value);
+            if (maximumOptions != null && maximumOptions > 0 && value.size() > maximumOptions) {
+                throw new ValidationException(this, "Maximal " + maximumOptions + " "
+                        + (maximumOptions == 1 ? "Option darf" : "Optionen dürfen") + " ausgewählt werden.");
+            }
         }
     }
 
@@ -174,6 +181,7 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
                 && optionsSource == that.optionsSource
                 && Objects.equals(codeListKey, that.codeListKey)
                 && Objects.equals(minimumRequiredOptions, that.minimumRequiredOptions)
+                && Objects.equals(maximumOptions, that.maximumOptions)
                 && Objects.equals(displayInline, that.displayInline);
     }
 
@@ -185,6 +193,7 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(minimumRequiredOptions);
+        result = 31 * result + Objects.hashCode(maximumOptions);
         result = 31 * result + Objects.hashCode(displayInline);
         return result;
     }
@@ -230,6 +239,17 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
     public MultiCheckboxInputElement setMinimumRequiredOptions(@Nullable Integer minimumRequiredOptions) {
         this.minimumRequiredOptions = minimumRequiredOptions;
+        return this;
+    }
+
+    @Nullable
+    public Integer getMaximumOptions() {
+        return maximumOptions;
+    }
+
+    @Nonnull
+    public MultiCheckboxInputElement setMaximumOptions(@Nullable Integer maximumOptions) {
+        this.maximumOptions = maximumOptions;
         return this;
     }
 

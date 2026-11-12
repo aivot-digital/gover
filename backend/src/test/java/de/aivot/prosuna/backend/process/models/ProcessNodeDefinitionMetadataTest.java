@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -22,7 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,6 +54,28 @@ class ProcessNodeDefinitionMetadataTest {
         var keys = ProcessNodeDefinitionMetadata.empty().withLayout(root, origin())
                 .forwardedProcessDataKeys().stream().map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList();
         assertTrue(keys.contains("people[*].addresses[*].value"));
+    }
+
+    @Test
+    void withLayout_ShouldMarkValuesOfMarkdownInputs() {
+        var name = textInput("name");
+        name.setDestinationKey("name");
+        var message = new RichTextInputElement();
+        message.setId("message");
+        message.setDestinationKey("message");
+        var root = new GroupLayoutElement();
+        root.setId("root");
+        root.setChildren(List.of(name, message));
+
+        var markdownByKey = ProcessNodeDefinitionMetadata.empty().withLayout(root, origin())
+                .forwardedProcessDataKeys()
+                .stream()
+                .collect(Collectors.toMap(
+                        ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey,
+                        ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::markdown
+                ));
+
+        assertEquals(Map.of("name", false, "message", true), markdownByKey);
     }
 
     private static final Pattern ELEMENT_ID_PATTERN = Pattern.compile("^[a-z][a-zA-Z0-9_]*$");

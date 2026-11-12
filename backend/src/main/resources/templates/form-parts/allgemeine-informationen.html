@@ -53,7 +53,8 @@
             th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.expiring) }"
     >
         <h4>Fristen</h4>
-        <div th:utext="${ form.rootElement?.introductionStep?.expiring }">
+        <!--/* Die Fristen sind wie im Formular einfacher Text; Zeilenumbrüche bleiben erhalten. */-->
+        <div th:text="${ form.rootElement?.introductionStep?.expiring }" style="white-space: pre-wrap;">
             Fristen
         </div>
     </div>
@@ -97,7 +98,7 @@
         >
             <a
                     class="do-not-print-link"
-                    th:utext="${ privacyUrl }"
+                    th:text="${ privacyUrl }"
                     th:href="${ privacyUrl }"
                     target="_blank"
             >

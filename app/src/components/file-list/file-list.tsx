@@ -1,11 +1,12 @@
 import type {ReactNode} from 'react';
-import {Box, ButtonBase, IconButton, type SxProps, type Theme, Tooltip, Typography} from '@mui/material';
+import {Box, ButtonBase, IconButton, type IconButtonProps, type SxProps, type Theme, Tooltip, Typography} from '@mui/material';
 import {getFileTypeIconForFile} from '../../utils/file-type-icon';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 export interface FileListAction {
     label: string;
     icon: ReactNode;
+    color?: IconButtonProps['color'];
     onClick: () => void;
     disabled?: boolean;
 }
@@ -96,6 +97,7 @@ export function FileList({items, sx}: {items: FileListItem[]; sx?: SxProps<Theme
                                         <span>
                                             <IconButton
                                                 size="small"
+                                                color={action.color}
                                                 aria-label={action.label}
                                                 onClick={action.onClick}
                                                 disabled={action.disabled}

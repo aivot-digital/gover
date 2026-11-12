@@ -583,6 +583,7 @@ export function PresetEditPage() {
             </Box>
 
             <ConfirmDialog
+                isDestructive
                 title="Vorlage wirklich löschen"
                 onConfirm={confirmDelete}
                 onCancel={() => {

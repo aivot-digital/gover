@@ -217,7 +217,8 @@ public record ProcessNodeDefinitionMetadata(
                         origin,
                         valueOptions,
                         codeListKey,
-                        getCodeListValueMode(i, codeListKey)
+                        getCodeListValueMode(i, codeListKey),
+                        i instanceof RichTextInputElement
                 ));
             }
 
@@ -503,13 +504,25 @@ public record ProcessNodeDefinitionMetadata(
             @Nullable
             String codeListKey,
             @Nullable
-            CodeListValueMode codeListValueMode
+            CodeListValueMode codeListValueMode,
+            // Values of Markdown inputs, which the variable picker inserts as plain text unless they keep their formatting.
+            boolean markdown
     ) {
         public ForwardedProcessDataKey(@Nonnull String processDataKey,
                                        @Nonnull String label,
                                        @Nullable String subLabel,
                                        @Nonnull ProcessNodeEntity origin) {
-            this(processDataKey, label, subLabel, origin, null, null, null);
+            this(processDataKey, label, subLabel, origin, null, null, null, false);
+        }
+
+        public ForwardedProcessDataKey(@Nonnull String processDataKey,
+                                       @Nonnull String label,
+                                       @Nullable String subLabel,
+                                       @Nonnull ProcessNodeEntity origin,
+                                       @Nullable List<ValueOption> valueOptions,
+                                       @Nullable String codeListKey,
+                                       @Nullable CodeListValueMode codeListValueMode) {
+            this(processDataKey, label, subLabel, origin, valueOptions, codeListKey, codeListValueMode, false);
         }
 
         public record ValueOption(

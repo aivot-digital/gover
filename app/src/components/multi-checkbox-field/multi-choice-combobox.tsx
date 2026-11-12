@@ -13,6 +13,8 @@ export function MultiChoiceCombobox(props: MultiCheckboxComponentProps) {
     const selected = useMemo(() => (props.value ?? []).map((value) => props.options.find((option) => option.value === value)
         ?? {value, label: value}), [props.value, props.options]);
 
+    const maximumReached = (props.maxItems ?? 0) > 0 && selected.length >= props.maxItems!;
+
     return <FormField
         {...props}
         labelAction={typeof labelAction === 'function'
@@ -37,14 +39,17 @@ export function MultiChoiceCombobox(props: MultiCheckboxComponentProps) {
             getOptionKey={(option) => option.value}
             isOptionEqualToValue={(option, value) => option.value === value.value}
             filterOptions={filterOptions}
+            getOptionDisabled={(option) => maximumReached && !selected.some(value => value.value === option.value)}
             noOptionsText={props.options.length === 0 ? 'Keine Optionen vorhanden' : 'Keine passenden Optionen gefunden'}
             onChange={(_, options) => {
                 if (locked) return;
+                // Keep removals possible even when existing or calculated values exceed the limit.
+                if ((props.maxItems ?? 0) > 0 && options.length > props.maxItems! && options.length >= selected.length) return;
                 const values = options.map((option) => option.value);
                 props.onChange(values.length > 0 ? values : null);
             }}
             renderOption={({key, ...optionProps}, option, {selected}) => <li key={key} {...optionProps}>
-                <Checkbox checked={selected} tabIndex={-1} disableRipple
+                <Checkbox checked={selected} disabled={optionProps['aria-disabled'] === true} tabIndex={-1} disableRipple
                     slotProps={{input: {'aria-hidden': true}}} sx={{pointerEvents: 'none'}}/>
                 {option.label}
             </li>}

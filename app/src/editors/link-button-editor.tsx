@@ -12,6 +12,7 @@ import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-fiel
 import {FormFieldGroup} from '../components/form-field';
 import {StepIconsMap} from '../data/step-icons';
 import {IconPickerDialog} from '../dialogs/icon-picker-dialog/icon-picker-dialog';
+import {resolveLinkButtonHref} from '../utils/resolve-link-button-href';
 
 type LinkButtonTarget = 'href' | 'staffTaskEvent' | 'customerTaskEvent';
 
@@ -103,6 +104,10 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                         <TextFieldComponent
                             value={element.href}
                             label="Link"
+                            hint="Geben Sie Webadressen mit Protokoll ein, zum Beispiel https://www.beispiel.de."
+                            validate={(value) => value?.trim() && resolveLinkButtonHref(value) == null
+                                ? 'Geben Sie einen gültigen Link an, zum Beispiel https://www.beispiel.de. Möglich sind auch mailto:, tel:, /pfad oder #anker.'
+                                : undefined}
                             onChange={(href) => {
                                 onPatch({href});
                             }}

@@ -127,9 +127,11 @@ export function TeamsDetailsPageMembers() {
                         : undefined,
             },
             {
+                color: 'error' as const,
                 icon: <Delete />,
                 onClick: () => {
                     showConfirm({
+                        isDestructive: true,
                         title: 'Mitarbeiter:in entfernen',
                         children: (
                             <>

@@ -191,6 +191,17 @@ describe('Rich text link dialogs', () => {
         expect(onChange.mock.calls.every(([markdown]) => !markdown.includes('https://discarded.example.org'))).toBe(true);
     });
 
+    it('never makes a script link target clickable', async () => {
+        renderEditor('[Linktext](javascript:alert(1))');
+        const editor = await screen.findByRole('textbox', {name: 'Bearbeitungshinweis – optional'});
+        await waitFor(() => expect(editor.querySelector('a')).not.toBeNull());
+
+        // Lexical allows the same link protocols as the Markdown renderers, which drop this target as well.
+        expect(editor.querySelector('a')).toHaveAttribute('href', 'about:blank');
+        await selectEditorText(editor, 'Linktext', true);
+        expect(await screen.findByRole('link', {name: /javascript:alert\(1\)/})).toHaveAttribute('href', 'about:blank');
+    });
+
     it('closes a link preview on a non-focusable outside click and keeps it closed on scroll', async () => {
         const user = userEvent.setup();
         renderEditor('[Linktext](https://example.org)');

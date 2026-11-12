@@ -28,6 +28,25 @@ async function selectAction(label: string) {
 }
 
 describe('LinkButtonEditor action selection', () => {
+    it.each(['www.beispiel.de', 'https://', 'javascript:alert(1)', '//beispiel.de'])('validates %s after blur and clears the error when corrected', href => {
+        renderEditor();
+        const input = screen.getByRole('textbox', {name: /^Link/});
+        fireEvent.change(input, {target: {value: href}});
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+        fireEvent.blur(input);
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription(/Geben Sie einen gültigen Link an/);
+        fireEvent.change(input, {target: {value: 'https://www.beispiel.de'}});
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it.each(['', 'https://beispiel.de', 'http://beispiel.de', 'mailto:kontakt@beispiel.de', 'tel:+4930123456', '/pfad', '#anker'])('accepts supported or empty links after blur: %s', href => {
+        renderEditor({href});
+        const input = screen.getByRole('textbox', {name: /^Link/});
+        fireEvent.blur(input);
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+    });
+
     it.each(eventActions)('keeps $key selected while entering, clearing and reloading an event', async ({key, label}) => {
         const view = renderEditor({href: 'https://example.org'});
         await selectAction(label);

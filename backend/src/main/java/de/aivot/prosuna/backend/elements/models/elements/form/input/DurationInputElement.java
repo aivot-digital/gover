@@ -84,16 +84,35 @@ public class DurationInputElement extends BaseInputElement<BigDecimal> implement
     @Nonnull
     @Override
     public String toDisplayValue(@Nullable BigDecimal value) {
-        return value == null ? "Keine Angabe" : formatBound(DurationValueUtils.requireSeconds(value));
+        return display(value);
+    }
+
+    @Nonnull
+    @Override
+    public String display(@Nullable Object value) {
+        try {
+            var seconds = formatValue(value);
+            return seconds == null ? "Keine Angabe" : formatBound(DurationValueUtils.requireSeconds(seconds));
+        } catch (IllegalArgumentException exception) {
+            // Technical and calculated values can reach PDF/export without passing input validation.
+            return "Ungültige Zeitdauer";
+        }
     }
 
     @Nonnull
     @Override
     public Boolean evaluate(@Nonnull ConditionOperator operator, @Nullable Object referencedValue, @Nullable Object comparedValue) {
-        var a = formatValue(referencedValue);
-        if (operator == ConditionOperator.Empty) return a == null;
-        if (operator == ConditionOperator.NotEmpty) return a != null;
-        var b = formatValue(comparedValue);
+        final BigDecimal a;
+        final BigDecimal b;
+        try {
+            a = formatConditionValue(referencedValue);
+            if (operator == ConditionOperator.Empty) return a == null;
+            if (operator == ConditionOperator.NotEmpty) return a != null;
+            b = formatConditionValue(comparedValue);
+        } catch (IllegalArgumentException exception) {
+            // Malformed operands must not abort derivation or compare equal to a missing value.
+            return false;
+        }
         return switch (operator) {
             case Equals -> a == null ? b == null : b != null && a.compareTo(b) == 0;
             case NotEquals -> a == null ? b != null : b == null || a.compareTo(b) != 0;
@@ -103,6 +122,12 @@ public class DurationInputElement extends BaseInputElement<BigDecimal> implement
             case GreaterThanOrEqual -> a != null && b != null && a.compareTo(b) >= 0;
             default -> false;
         };
+    }
+
+    @Nullable
+    private BigDecimal formatConditionValue(@Nullable Object value) {
+        // Empty condition operands are missing values; input validation remains strict.
+        return value instanceof String text && text.isBlank() ? null : formatValue(value);
     }
 
     @Override

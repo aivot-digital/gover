@@ -65,7 +65,12 @@ import {
 } from '../../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../../modules/permissions/models/permission-set';
 import {AssetsApiService} from '../../../modules/assets/assets-api-service';
-import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
+import {
+    dispatchProcessAssignedTaskCountRefreshEvent,
+    subscribeProcessAssignedTaskCountRefreshEvent,
+} from '../../../modules/process/utils/process-assigned-task-count-events';
+import {useStaffEvent} from '../../../modules/staff-events/hooks/use-staff-event';
+import {PROCESS_INSTANCE_STAFF_EVENT_TYPE} from '../../../modules/process/data/process-instance-staff-event-type';
 import {SIMULATED_DASHBOARD_TASK_COUNT} from '../../../modules/dashboard/dashboard-simulation';
 import {hasModuleFlag, ModuleFlag} from '../../../utils/module-flags';
 import {alpha, type Theme as MuiTheme} from '@mui/material/styles';
@@ -356,6 +361,11 @@ export function ShellDrawer() {
     const [assetStorageProviderItems, setAssetStorageProviderItems] = useState<DrawerItem[]>([]);
     const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
     const [assignedTaskCount, setAssignedTaskCount] = useState<number | null>(null);
+    useStaffEvent({
+        type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
+        enabled: !shouldSimulate && user?.id != null,
+        onEvent: dispatchProcessAssignedTaskCountRefreshEvent,
+    });
     const hasDrawerSystemPermission = useCallback((permission: Permission | string): boolean => {
         return hasSystemPermission(permissions, permission);
     }, [permissions]);
