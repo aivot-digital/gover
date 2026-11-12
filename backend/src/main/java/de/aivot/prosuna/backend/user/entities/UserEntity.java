@@ -23,9 +23,9 @@ public class UserEntity {
 
     @Nullable
     @Column(length = 255)
-    @NotNull(message = "Die E-Mail Adresse darf nicht null sein.")
-    @Email(message = "Die E-Mail Adresse muss gültig sein.")
-    @Size(min = 8, max = 255, message = "Die E-Mail Adresse muss zwischen 8 und 255 Zeichen lang sein.")
+    @NotNull(message = "Die E-Mail-Adresse darf nicht null sein.")
+    @Email(message = "Die E-Mail-Adresse muss gültig sein.")
+    @Size(min = 8, max = 255, message = "Die E-Mail-Adresse muss zwischen 8 und 255 Zeichen lang sein.")
     private String email;
 
     @Nullable

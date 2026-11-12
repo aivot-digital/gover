@@ -185,7 +185,7 @@ public class FormTriggerUtilsControllerV1 {
         }
 
         if (StringUtils.isNullOrEmpty(config.formSlug)) {
-            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält keinen Formular-Slug.");
+            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält kein URL-Segment des Formulars.");
         }
 
         return new ResolvedFormTriggerConfiguration(
@@ -227,7 +227,7 @@ public class FormTriggerUtilsControllerV1 {
         }
 
         return getDepartment(process.getDepartmentId())
-                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für den PDF-Druck gefunden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Keine Organisationseinheit für den PDF-Druck gefunden."));
     }
 
     @Nonnull

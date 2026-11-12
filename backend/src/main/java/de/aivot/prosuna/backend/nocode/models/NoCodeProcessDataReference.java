@@ -26,11 +26,11 @@ public class NoCodeProcessDataReference extends NoCodeOperand {
     @Nonnull
     public NoCodeOperandError validate() {
         if (StringUtils.isNullOrEmpty(path)) {
-            return new NoCodeOperandError(this, "Der Prozessdaten-Schlüssel darf nicht leer sein.", null);
+            return new NoCodeOperandError(this, "Der Datenschlüssel darf nicht leer sein.", null);
         }
 
         if (!ProcessDataValueUtils.isValidDestinationKey(path, false, true)) {
-            return new NoCodeOperandError(this, "Verwenden Sie einen Vorgangsdatenpfad wie person.name, items[0].name oder items[*].name.", null);
+            return new NoCodeOperandError(this, "Verwenden Sie einen Datenpfad wie person.name, items[0].name oder items[*].name.", null);
         }
 
         return new NoCodeOperandError(this, null, null);

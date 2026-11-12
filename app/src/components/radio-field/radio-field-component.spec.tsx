@@ -3,6 +3,15 @@ import {describe, expect, it, vi} from 'vitest';
 import {RadioFieldComponent} from './radio-field-component';
 
 describe('RadioFieldComponent', () => {
+    it.each([false, true])('blocks changes in read-only mode with toggleButtons=%s', (toggleButtons) => {
+        const onChange = vi.fn();
+        render(<RadioFieldComponent label="Kontaktweg" value="email" onChange={onChange}
+            options={[{value: 'email', label: 'E-Mail'}, {value: 'post', label: 'Post'}]}
+            readOnly toggleButtons={toggleButtons}/>);
+        fireEvent.click(screen.getByRole(toggleButtons ? 'button' : 'radio', {name: 'Post'}));
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('exposes one labelled and described fieldset without a redundant radio group', () => {
         const onChange = vi.fn();
 

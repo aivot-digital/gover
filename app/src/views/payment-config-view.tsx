@@ -437,12 +437,12 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
 
                 <Grid size={{xs: 12, md: 6}}>
                     <DynamicTextInputWithVariablePicker
-                        label="Buchungstext"
+                        label="Verwendungszweck"
                         value={currentValue.purpose}
                         onChange={(purpose) => updateValue({purpose})}
                         required={true}
                         disabled={isInteractionDisabled}
-                        hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte). Übertragen werden höchstens 27 Zeichen, ein längerer Text wird nach dem Einfügen der Variablenwerte gekürzt. Nicht erlaubte Zeichen in Variablenwerten werden entfernt."
+                        hint="Verwendungszweck der Zahlung. Die Darstellung auf der Abrechnung hängt vom Zahlungsdienstleister und der Zahlungsart ab. Übertragen werden höchstens 27 Zeichen, ein längerer Text wird nach dem Einfügen der Variablenwerte gekürzt. Nicht erlaubte Zeichen in Variablenwerten werden entfernt."
                         error={getFieldError(errorDetails, 'purpose')}
                     />
                 </Grid>
@@ -456,7 +456,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         disabled={isInteractionDisabled}
                         multiline
                         rows={2}
-                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die anfallenden Gebühren. Übertragen werden höchstens 250 Zeichen, ein längerer Text wird nach dem Einfügen der Variablenwerte gekürzt. Nicht erlaubte Zeichen in Variablenwerten werden entfernt, Zeilenumbrüche werden zu Leerzeichen."
+                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die Zahlung. Übertragen werden höchstens 250 Zeichen, ein längerer Text wird nach dem Einfügen der Variablenwerte gekürzt. Nicht erlaubte Zeichen in Variablenwerten werden entfernt, Zeilenumbrüche werden zu Leerzeichen."
                         error={getFieldError(errorDetails, 'description')}
                     />
                 </Grid>
@@ -606,7 +606,7 @@ function RequestorMappingEditor(props: {
                             value: 'fixOrg',
                         },
                         {
-                            label: 'Die Art der Antragsteller:in wird aus den Prozessdaten abgeleitet',
+                            label: 'Die Art der zahlenden Person oder Organisation wird aus den Vorgangsdaten abgeleitet',
                             value: 'processDataKey',
                         },
                     ]}
@@ -618,7 +618,7 @@ function RequestorMappingEditor(props: {
                 <>
                     <RequestorMappingField
                         label="Datenfeld zur Kennzeichnung als Organisation"
-                        hint="Dieses Prozessdatenfeld muss einen Wahrheitswert enthalten, der angibt, ob es sich um eine Organisation handelt."
+                        hint="Dieser Wert in den Vorgangsdaten muss einen Wahrheitswert enthalten, der angibt, ob es sich um eine Organisation handelt."
                         value={value.isOrganizationDestinationKey}
                         onChange={(next) => onChange('isOrganizationDestinationKey', next)}
                         disabled={disabled}
@@ -663,7 +663,7 @@ function RequestorMappingEditor(props: {
                         value={value.genderDestinationKey}
                         onChange={(next) => onChange('genderDestinationKey', next)}
                         disabled={disabled}
-                        hint="Dieses Prozessdatenfeld muss einen der folgenden Werte enthalten: M, W oder D."
+                        hint="Dieser Wert in den Vorgangsdaten muss einen der folgenden Werte enthalten: M, W oder D."
                         error={getFieldError(errorDetails, 'genderDestinationKey')}
                     />
                 </>
@@ -822,7 +822,7 @@ function PaymentConfigItemEditor(props: {
                 <Grid size={{xs: 12, md: 6}}>
                     <DynamicTextInputWithVariablePicker
                         label="Beschreibung"
-                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der das Formular einreichenden Person angezeigt."
+                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der zahlenden Person oder Organisation angezeigt."
                         value={item.description}
                         onChange={(description) => onChange({...item, description})}
                         required={true}
@@ -835,7 +835,7 @@ function PaymentConfigItemEditor(props: {
                 <Grid size={{xs: 12, md: 6}}>
                     <DynamicTextInputWithVariablePicker
                         label="Referenz"
-                        hint="Eine fachliche Referenz für die Zahlungsposition. Kann nur von Ihnen intern eingesehen werden."
+                        hint="Fachliche Referenz der Zahlungsposition. Sie wird zur Zuordnung an den Zahlungsdienstleister übermittelt."
                         value={item.reference}
                         onChange={(reference) => onChange({...item, reference})}
                         required={true}

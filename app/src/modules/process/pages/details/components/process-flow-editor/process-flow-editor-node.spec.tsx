@@ -103,11 +103,11 @@ it('reruns a failed task and reloads the runtime data', async () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', {name: 'Aktionen zur Aufgabe'}));
-    await user.click(await screen.findByRole('menuitem', {name: 'Aufgabe neu starten'}));
+    await user.click(await screen.findByRole('menuitem', {name: 'Aufgabe erneut ausführen'}));
 
     expect(rerun).toHaveBeenCalledWith(12);
     await waitFor(() => expect(onReloadRuntimeData).toHaveBeenCalled());
-    expect(mocks.dispatch).toHaveBeenCalledWith(dispatchedSnackbar('Der Neustart wurde angestoßen.', SnackbarSeverity.Success));
+    expect(mocks.dispatch).toHaveBeenCalledWith(dispatchedSnackbar('Die erneute Ausführung der Aufgabe wurde angefordert.', SnackbarSeverity.Success));
 });
 
 it('reports a rerun the server rejects instead of failing silently', async () => {
@@ -117,10 +117,10 @@ it('reports a rerun the server rejects instead of failing silently', async () =>
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', {name: 'Aktionen zur Aufgabe'}));
-    await user.click(await screen.findByRole('menuitem', {name: 'Aufgabe neu starten'}));
+    await user.click(await screen.findByRole('menuitem', {name: 'Aufgabe erneut ausführen'}));
 
     await waitFor(() => expect(mocks.dispatch).toHaveBeenCalledWith(
-        dispatchedSnackbar('Der Neustart ist fehlgeschlagen.', SnackbarSeverity.Error),
+        dispatchedSnackbar('Die erneute Ausführung der Aufgabe konnte nicht angefordert werden.', SnackbarSeverity.Error),
     ));
     expect(onReloadRuntimeData).not.toHaveBeenCalled();
 });

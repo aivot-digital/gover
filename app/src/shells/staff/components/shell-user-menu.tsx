@@ -120,9 +120,9 @@ export function ShellUserMenu({
                                 mt: 0.25,
                             }}
                             noWrap
-                            title={userName || 'Unbekannte Nutzer:in'}
+                            title={userName || 'Unbekannte Person'}
                         >
-                            {userName || 'Unbekannte Nutzer:in'}
+                            {userName || 'Unbekannte Person'}
                         </Typography>
                         <Typography
                             variant="caption"

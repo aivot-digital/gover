@@ -255,7 +255,7 @@ describe('CustomerFormPage', () => {
 
         fireEvent.click(screen.getByRole('button', {name: 'Formular absenden'}));
 
-        await waitFor(() => expectSnackbar('Die Anhänge konnten nicht für das Absenden vorbereitet werden.'));
+        await waitFor(() => expectSnackbar('Die Anlagen konnten nicht für das Absenden vorbereitet werden.'));
         await expectSubmissionReleased();
         expect(FormTriggerApiService.prototype.submitForm).not.toHaveBeenCalled();
         expectActionTypeNotDispatched('shell/setLoadingMessage');
@@ -273,7 +273,7 @@ describe('CustomerFormPage', () => {
 
         fireEvent.click(screen.getByRole('button', {name: 'Formular absenden'}));
 
-        await waitFor(() => expectSnackbar('Die Anhänge konnten nicht für das Absenden vorbereitet werden.'));
+        await waitFor(() => expectSnackbar('Die Anlagen konnten nicht für das Absenden vorbereitet werden.'));
         await expectSubmissionReleased();
         expect(blob).not.toHaveBeenCalled();
         expect(FormTriggerApiService.prototype.submitForm).not.toHaveBeenCalled();

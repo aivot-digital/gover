@@ -1,3 +1,6 @@
+import {PhoneNumberFieldElement} from '../models/elements/form/input/phone-number-field-element';
+import {EmailFieldElement} from '../models/elements/form/input/email-field-element';
+import {DurationFieldElement, DurationLargestUnit, DurationPrecision} from '../models/elements/form/input/duration-field-element';
 import {ElementType} from '../data/element-type/element-type';
 import {type IntroductionStepElement} from '../models/elements/steps/introduction-step-element';
 import {type SummaryStepElement} from '../models/elements/steps/summary-step-element';
@@ -18,7 +21,6 @@ import {MultiCheckboxFieldElement} from '../models/elements/form/input/multi-che
 import {NumberFieldElement} from '../models/elements/form/input/number-field-element';
 import {ReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 import {RichtextElement} from '../models/elements/form/content/richtext-element';
-import {RadioFieldElement} from '../models/elements/form/input/radio-field-element';
 import {SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {SpacerElement} from '../models/elements/form/content/spacer-element';
 import {TableFieldElement} from '../models/elements/form/input/table-field-element';
@@ -112,9 +114,11 @@ const elementConstructors: {
     [ElementType.Headline]: (id: string) => HeadlineElement;
     [ElementType.MultiCheckbox]: (id: string) => MultiCheckboxFieldElement;
     [ElementType.Number]: (id: string) => NumberFieldElement;
+    [ElementType.PhoneNumber]: (id: string) => PhoneNumberFieldElement;
+    [ElementType.Email]: (id: string) => EmailFieldElement;
+    [ElementType.Duration]: (id: string) => DurationFieldElement;
     [ElementType.ReplicatingContainer]: (id: string) => ReplicatingContainerLayout;
     [ElementType.RichText]: (id: string) => RichtextElement;
-    [ElementType.Radio]: (id: string) => RadioFieldElement;
     [ElementType.Select]: (id: string) => SelectFieldElement;
     [ElementType.Spacer]: (id: string) => SpacerElement;
     [ElementType.Table]: (id: string) => TableFieldElement;
@@ -161,7 +165,7 @@ const elementConstructors: {
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
-        headline: 'Ihr Neues\nOnline-Formular',
+        headline: 'Ihr neues\nOnline-Formular',
         tabTitle: undefined,
         children: [],
         offlineSubmissionText: undefined,
@@ -181,7 +185,7 @@ const elementConstructors: {
     [ElementType.Alert]: (id) => ({
         ...makeFormBase(ElementType.Alert, id),
         title: 'Hinweis',
-        text: 'Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.',
+        text: 'Nutzen Sie diesen Hinweis, um ausfüllenden Personen zusätzliche Informationen hervorgehoben bereitzustellen.',
         alertType: 'info',
     }),
     [ElementType.GroupLayout]: (id) => ({
@@ -227,6 +231,25 @@ const elementConstructors: {
         ],
         displayInline: false,
         minimumRequiredOptions: undefined,
+        maximumOptions: undefined,
+    }),
+    [ElementType.PhoneNumber]: (id) => ({
+        ...makeInputBase(ElementType.PhoneNumber, id),
+        label: 'Telefonnummer',
+        defaultCountry: 'DE', preferredCountries: ['DE', 'AT', 'CH'], autocomplete: 'tel',
+    }),
+    [ElementType.Email]: (id) => ({
+        ...makeInputBase(ElementType.Email, id),
+        label: 'E-Mail-Adresse',
+        allowLocalDomains: false, autocomplete: 'email',
+    }),
+    [ElementType.Duration]: (id) => ({
+        ...makeInputBase(ElementType.Duration, id),
+        label: 'Zeitdauer',
+        precision: DurationPrecision.Minute,
+        largestUnit: DurationLargestUnit.Hour,
+        minDuration: undefined,
+        maxDuration: undefined,
     }),
     [ElementType.Number]: (id) => ({
         ...makeInputBase(ElementType.Number, id),
@@ -249,27 +272,6 @@ const elementConstructors: {
         ...makeFormBase(ElementType.RichText, id),
         content: 'Textanzeige',
     }),
-    [ElementType.Radio]: (id) => ({
-        ...makeInputBase(ElementType.Radio, id),
-        label: 'Einzelauswahl (Optionsfelder)',
-        optionsSource: OptionsSourceType.Manual,
-        codeListKey: undefined,
-        options: [
-            {
-                value: 'option_1',
-                label: 'Option 1',
-            },
-            {
-                value: 'option_2',
-                label: 'Option 2',
-            },
-            {
-                value: 'option_3',
-                label: 'Option 3',
-            },
-        ],
-        displayInline: false,
-    }),
     [ElementType.Select]: (id) => ({
         ...makeInputBase(ElementType.Select, id),
         label: 'Einzelauswahl',
@@ -290,7 +292,7 @@ const elementConstructors: {
             },
         ],
         autocomplete: undefined,
-        presentation: SelectFieldPresentation.Dropdown,
+        presentation: SelectFieldPresentation.Radio,
         dependsOnSelectFieldId: undefined,
         placeholder: undefined,
     }),
@@ -359,8 +361,8 @@ const elementConstructors: {
     }),
     [ElementType.SubmitStep]: (id) => ({
         ...makeFormBase(ElementType.SubmitStep, id),
-        textPreSubmit: 'Sie können Ihre Angaben nun verbindlich an die zuständige/bewirtschaftende Stelle übermitteln. Bitte stellen Sie sicher, dass Sie Ihre getätigten Angaben sorgfältig geprüft haben.',
-        textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Die zuständige/bewirtschaftende Stelle kann diese nun bearbeiten. Sofern weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
+        textPreSubmit: 'Sie können Ihre Angaben nun übermitteln. Bitte prüfen Sie zuvor, ob Ihre Angaben vollständig und richtig sind.',
+        textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Falls weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
         textProcessingTime: undefined,
         documentsToReceive: undefined,
             }),
@@ -380,7 +382,7 @@ const elementConstructors: {
     }),
     [ElementType.FileUpload]: (id) => ({
         ...makeInputBase(ElementType.FileUpload, id),
-        label: 'Anlage(n)',
+        label: 'Anlage',
         extensions: ['pdf'],
         isMultifile: undefined,
         maxFiles: undefined,
@@ -413,14 +415,14 @@ const elementConstructors: {
     }),
     [ElementType.IdentityConfigElement]: (id) => ({
         ...makeInputBase(ElementType.IdentityConfigElement, id),
-        label: 'Identitätsnachweis',
+        label: 'Angaben zur Identität',
         options: [],
         allowsMail: false,
     }),
     [ElementType.TabLayout]: (id) => ({}),
     [ElementType.ChipInput]: (id) => ({
         ...makeInputBase(ElementType.ChipInput, id),
-        label: 'Tag-Liste (Schlagwörter)',
+        label: 'Mehrfach-Texteingabe',
         placeholder: 'Eintrag hinzufügen',
         suggestions: undefined,
         optionsSource: OptionsSourceType.Manual,
@@ -448,7 +450,7 @@ const elementConstructors: {
     }),
     [ElementType.DateTimeRange]: (id) => ({
         ...makeInputBase(ElementType.DateTimeRange, id),
-        label: 'Datum- und Zeitspanne',
+        label: 'Datums- und Zeitspanne',
         placeholder: undefined,
         mode: TimeFieldComponentModelMode.Minute,
     }),
@@ -502,7 +504,7 @@ const elementConstructors: {
     }),
     [ElementType.ProcessDataKeyInput]: (id) => ({
         ...makeInputBase(ElementType.ProcessDataKeyInput, id),
-        label: 'Prozessdaten-Schlüssel',
+        label: 'Datenschlüssel',
         disableWildCards: false,
         scopeProcessDataKeyInputElementId: undefined,
     }),
@@ -515,8 +517,8 @@ const elementConstructors: {
     }),
     [ElementType.ProcessIdentityIdInput]: (id) => ({
         ...makeInputBase(ElementType.ProcessIdentityIdInput, id),
-        label: 'Prozessidentität',
-        placeholder: 'Prozessidentität auswählen',
+        label: 'Identität',
+        placeholder: 'Identität auswählen',
         requiresCommunication: false,
     }),
     [ElementType.SecretSelectInput]: (id) => ({
@@ -526,7 +528,7 @@ const elementConstructors: {
     }),
     [ElementType.AssetSelectInput]: (id) => ({
         ...makeInputBase(ElementType.AssetSelectInput, id),
-        label: 'Asset',
+        label: 'Datei',
         placeholder: 'Keine Datei ausgewählt',
         dialogTitle: 'Datei auswählen',
         allowedMimeTypes: undefined,
@@ -563,6 +565,7 @@ const elementConstructors: {
     [ElementType.LinkButton]: (id) => ({
         ...makeFormBase(ElementType.LinkButton, id),
         label: 'Link öffnen',
+        icon: undefined,
         href: undefined,
         openInNewTab: true,
         staffTaskEvent: undefined,

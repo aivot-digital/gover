@@ -97,7 +97,7 @@ public class HtmlTemplateInputElementResolver {
     public String resolve(@Nullable HtmlTemplateInputElementValue value, @Nonnull ProcessExecutionData processExecutionData) throws ProcessNodeExecutionException {
         if (value == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Es muss eine Konfiguration für das HTML-Template angegeben sein."
+                    "Es muss eine Konfiguration für die HTML-Vorlage angegeben sein."
             );
         }
 
@@ -128,7 +128,7 @@ public class HtmlTemplateInputElementResolver {
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Das Asset für den angegebenen Schlüssel %s konnte nicht geladen werden.",
+                    "Die Datei für den angegebenen Schlüssel %s konnte nicht geladen werden.",
                     StringUtils.quote(htmlTemplateAssetKeyStr)
             );
         }
@@ -327,7 +327,7 @@ public class HtmlTemplateInputElementResolver {
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der Bild-Slot %s enthält einen ungültigen Asset-Schlüssel.",
+                    "Der Bild-Slot %s enthält einen ungültigen Dateischlüssel.",
                     StringUtils.quote(slotId)
             );
         }

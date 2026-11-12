@@ -3,7 +3,7 @@
         <mj-include path="../partials/head.mjml" />
 
         <mj-preview>
-            Benachrichtigung über das Ende einer Zugehörigkeit zu einer Organisationseinheit
+            Benachrichtigung über das Ende einer Mitgliedschaft in einer Organisationseinheit
         </mj-preview>
     </mj-head>
     <mj-body>

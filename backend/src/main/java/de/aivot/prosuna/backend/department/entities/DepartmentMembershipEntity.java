@@ -25,7 +25,7 @@ public class DepartmentMembershipEntity {
     private Integer departmentId;
 
     @Nonnull
-    @NotNull(message = "Die ID des Benutzers darf nicht null sein")
+    @NotNull(message = "Die Konto-ID darf nicht null sein")
     private String userId;
 
     @Nonnull

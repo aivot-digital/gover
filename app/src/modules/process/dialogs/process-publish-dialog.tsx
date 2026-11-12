@@ -150,7 +150,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
                     {
                         !canPublish &&
                         <InsufficientPermissionAlert
-                            message="Sie verfügen nicht über die notwendige Berechtigung um diese Prozessversion zu veröffentlichen."
+                            message="Sie verfügen nicht über die notwendige Berechtigung, um diese Prozessversion zu veröffentlichen."
                             requiredPermissions={[
                                 Permission.PROCESS_DEFINITION_PUBLISH_LOCAL,
                             ]}

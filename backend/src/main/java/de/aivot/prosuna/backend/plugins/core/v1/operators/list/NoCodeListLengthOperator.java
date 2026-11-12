@@ -44,7 +44,7 @@ public class NoCodeListLengthOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** 3
                 
-                # Wahrheitswerte für den „Listenlänge“-Operator
+                # Beispiele und Ergebnisse
                 - **Liste ["Apfel", "Banane", "Orange"]** → **3** \s
                 - **Liste []** → **0** \s
                 - **Liste ["1", "2", "3", "4"]** → **4**

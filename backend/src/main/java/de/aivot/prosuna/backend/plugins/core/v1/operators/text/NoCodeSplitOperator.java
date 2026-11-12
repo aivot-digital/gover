@@ -49,7 +49,7 @@ public class NoCodeSplitOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** ["apfel", "banane", "orange"]
                 
-                # Wahrheitswerte für den „Aufteilen“-Operator
+                # Beispiele und Ergebnisse
                 - **Text "a,b,c" Separator ","** → **["a", "b", "c"]** \s
                 - **Text "hallo welt" Separator " "** → **["hallo", "welt"]** \s
                 - **Text "eins|zwei|drei" Separator "|"** → **["eins", "zwei", "drei"]**
