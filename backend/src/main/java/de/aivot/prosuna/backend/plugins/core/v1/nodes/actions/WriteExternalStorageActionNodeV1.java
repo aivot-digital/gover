@@ -179,16 +179,16 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Speichert die Anlagen eines Anlagensatzes in einem ausgewählten Speicheranbieter.";
+        return "Speichert die Anlagen eines oder mehrerer Anlagensätze bei Speicheranbietern.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Überträgt Dateien aus Vorgangsanlagensätzen in konfigurierte externe Speicheranbieter.
+                Speichert die Anlagen aus einem oder mehreren Anlagensätzen bei den konfigurierten Speicheranbietern, etwa in einem externen Speicher oder in „Dateien und Medien“. Für jeden Anlagensatz werden Speicheranbieter, Zielpfad und optional angepasste Dateinamen festgelegt.
 
-                Für jeden Anlagensatz werden Zielanbieter, Zielpfad und optional angepasste Dateinamen festgelegt. Das Element kann mehrere Anlagensätze in einem Schritt verarbeiten und stellt Ablageergebnisse, gespeicherte Pfade, Dateinamen und Anzahl der geschriebenen Dateien als Ausgangsdaten bereit.
+                Fehlende oder leere Anlagensätze werden übersprungen, wenn sie als optional markiert sind. Andernfalls schlägt die Aufgabe fehl.
                 """;
     }
 
@@ -1087,7 +1087,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
          */
         @InputElementPOJOBinding(id = IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, type = ElementType.Checkbox, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Optionaler Anlagensatz"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn aktiviert, schlägt der Vorgang nicht fehl, wenn kein Anlagensatz vorhanden ist."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Ist diese Option aktiviert, wird ein fehlender oder leerer Anlagensatz übersprungen."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         @Nullable

@@ -63,14 +63,14 @@ public class InstanceUnassignmentActionNodeV1 implements ProcessNodeDefinition<I
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Entfernt die Zuweisung eines Vorgangs und setzt den Vorgang fort.";
+        return "Hebt die Zuweisung der zuständigen Person zum Vorgang auf und setzt den Vorgang fort.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Entfernt die zentrale Zuweisung des aktuellen Vorgangs. Ist keine Person zugewiesen, bleibt die Zuweisung leer und der Vorgang wird fortgesetzt.
+                Hebt die Zuweisung der zuständigen Person zum Vorgang auf. Zuweisungen offener Mitarbeitendenaufgaben bleiben unverändert. Ist keine Person zugewiesen, wird der Vorgang ohne Änderung fortgesetzt.
                 """;
     }
 

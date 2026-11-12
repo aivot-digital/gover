@@ -133,16 +133,16 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Prüft, ob konfigurierte Datenpfade in den Vorgangsdaten vorhanden sind und den erwarteten Datentypen entsprechen.";
+        return "Prüft, ob konfigurierte Pfade in den Vorgangsdaten vorhanden sind und den erwarteten Datentypen entsprechen.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Validiert ausgewählte Pfade der Vorgangsdaten anhand konfigurierter erwarteter Datentypen.
+                Prüft für jede Regel, ob der angegebene Pfad in den Vorgangsdaten vorhanden ist und dem erwarteten Datentyp entspricht. Sind alle Regeln erfüllt, wird der Vorgang über den Ausgangsport „Daten gültig“ fortgesetzt, andernfalls über „Daten ungültig“. Die gefundenen Abweichungen stehen in den Elementdaten bereit.
 
-                Das Element prüft sowohl das Vorhandensein der Werte als auch deren Typ und setzt den Vorgang abhängig vom Gesamtergebnis über den passenden Ausgangsport fort. Prüfergebnis und erkannte Validierungsabweichungen stehen als Ausgangsdaten für nachfolgende Schritte bereit.
+                Ein vorhandener Wert `null` gilt als vorhanden; der Datentyp „Beliebig“ prüft nur das Vorhandensein. Fehlt die Pfadangabe, ist sie ungültig oder wird ein nicht unterstützter Datentyp angegeben, schlägt die Aufgabe fehl, statt den Ausgangsport „Daten ungültig“ zu verwenden.
                 """;
     }
 
@@ -207,7 +207,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VALIDATED_RULE_COUNT,
                         "Anzahl Regeln",
-                        "Die Anzahl der erfolgreich validierten Regeln.",
+                        "Die Anzahl der geprüften Regeln.",
                         "number"
                 ),
                 new ProcessNodeOutput(

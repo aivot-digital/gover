@@ -135,7 +135,7 @@ public class SemiAutomaticMessageConfig {
                 properties = {
                         @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                         @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie zwischen automatischem Versand und teilautomatisierter Ausführung. Bei teilautomatisierter Ausführung wird die Nachricht anhand einer Vorlage vorbereitet und vor dem Versand durch eine Mitarbeiter:in geprüft und bei Bedarf bearbeitet."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie zwischen automatischem Versand und teilautomatisierter Ausführung. Bei teilautomatisierter Ausführung wird die Nachricht anhand der Nachrichtenbausteine vorbereitet und vor dem Versand durch eine Mitarbeiter:in geprüft und bei Bedarf bearbeitet."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -176,7 +176,7 @@ public class SemiAutomaticMessageConfig {
                 },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der Nachricht"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Nachrichtenbaustein für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -197,7 +197,7 @@ public class SemiAutomaticMessageConfig {
                 },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Nachricht"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Nachrichtenbaustein für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -241,7 +241,7 @@ public class SemiAutomaticMessageConfig {
                         InputMode.LowCode
                 },
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für den Betreff"),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtenbaustein für den Betreff"),
                         @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung des bearbeitbaren Betreffs. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
@@ -262,7 +262,7 @@ public class SemiAutomaticMessageConfig {
                         InputMode.LowCode
                 },
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für die Nachricht"),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtenbaustein für die Nachricht"),
                         @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung der bearbeitbaren Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }

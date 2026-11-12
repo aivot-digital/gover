@@ -120,22 +120,22 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
     @Nonnull
     @Override
     public String getName() {
-        return "Konditionelle Verzweigung (Wenn-Dann-Sonst)";
+        return "Bedingte Verzweigung (Wenn-Dann-Sonst)";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Leitet den Vorgang basierend auf einer Bedingung in unterschiedliche Pfade ein.";
+        return "Setzt den Vorgang abhängig von einer Bedingung über einen von zwei Ausgangsports fort.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Wertet eine Bedingung aus und führt den Vorgang abhängig vom Ergebnis über den Dann- oder Sonst-Ausgangsport fort.
+                Wertet eine Bedingung aus und setzt den Vorgang über den Ausgangsport „Bedingung erfüllt“ oder „Bedingung nicht erfüllt“ fort.
 
-                Die Bedingung kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die verfügbaren Datenebenen des Vorgangs zugreifen. Ergebnis, gewählter Bedingungstyp und ausgewertete Bedingung werden als Ausgangsdaten bereitgestellt.
+                Die Bedingung wird als No-Code-Ausdruck oder als Low-Code-Skript formuliert und kann auf Vorgangsdaten, geschützte Vorgangsdaten und Elementdaten zugreifen. Ein Low-Code-Skript muss einen Wahrheitswert zurückgeben, sonst schlägt die Aufgabe fehl. Bei einem No-Code-Ausdruck gilt ein leeres Ergebnis als nicht erfüllt.
                 """;
     }
 
@@ -235,7 +235,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_EVALUATED,
                         "Ausgewerteter Bedingungswert",
-                        "Der als JavaScript ausgewertete Rückgabewert des Bedingungsausdrucks.",
+                        "Der Rückgabewert des ausgewerteten Bedingungsausdrucks als Text.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -433,7 +433,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         @InputElementPOJOBinding(id = CONDITION_TYPE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingungsart"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, mit welchem Typ/Editor die Bedingung definiert wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob Sie die Bedingung als No-Code-Ausdruck oder als Low-Code-Skript festlegen."),
                 @ElementPOJOBindingProperty(key = "toggleButtons", boolValue = true),
                 @ElementPOJOBindingProperty(key = "displayInline", boolValue = true),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)

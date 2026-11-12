@@ -124,16 +124,18 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Erhöht einen Zählerstand bei jeder Ausführung um einen konfigurierbaren Wert.";
+        return "Ändert einen Zählerstand bei jeder Ausführung um einen konfigurierbaren Wert.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Aktualisiert bei jeder Ausführung einen Zähler und eignet sich damit insbesondere für Schleifen und wiederholte Prozessschritte.
+                Addiert bei jeder Ausführung das konfigurierte Inkrement zum aktuellen Zählerstand und eignet sich damit für Schleifen und wiederholte Schritte. Das Inkrement beträgt standardmäßig `1` und kann auch negativ sein.
 
-                Der aktuelle Wert kann an einem konfigurierten Vorgangsdatenpfad gespeichert werden. Ohne Zielpfad verwendet das Element seinen zuletzt gespeicherten Elementwert. Das Inkrement ist frei konfigurierbar und beträgt standardmäßig `1`; neuer Wert, vorheriger Wert und verwendetes Inkrement werden als Ausgangsdaten bereitgestellt.
+                Ist ein Zielpfad konfiguriert, wird der Zählerstand dort in den Vorgangsdaten gelesen und gespeichert. Ohne Zielpfad wird der Wert der vorherigen Ausführung dieses Prozesselements aus den Elementdaten fortgeführt. Ein noch nicht vorhandener Zählerstand beginnt bei `0`.
+
+                Zählerstand und Inkrement werden als ganze Zahlen verarbeitet. Als Zählerstand werden auch numerische Zeichenketten und Ja/Nein-Werte (`1` beziehungsweise `0`) akzeptiert. Andere Datentypen werden als `0` behandelt; bei einer nicht numerischen Zeichenkette schlägt die Aufgabe fehl.
                 """;
     }
 
@@ -174,19 +176,19 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                 new ProcessNodeOutput(
                         OUTPUT_VALUE,
                         "Zählerstand",
-                        "Der neue Zählerstand nach der Erhöhung.",
+                        "Der neue Zählerstand nach der Änderung.",
                         "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PREVIOUS_VALUE,
                         "Vorheriger Zählerstand",
-                        "Der Zählerstand vor der Erhöhung.",
+                        "Der Zählerstand vor der Änderung.",
                         "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_INCREMENT,
                         "Inkrement",
-                        "Der Wert, um den der Zähler erhöht wurde.",
+                        "Der Wert, der zum vorherigen Zählerstand addiert wurde.",
                         "number"
                 )
         );
@@ -367,7 +369,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                 },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Inkrement"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Optionale Natürliche Zahl, um die der Zähler erhöht wird. Wenn leer, wird standardmäßig um 1 erhöht."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Optionale ganze Zahl, die zum Zählerstand addiert wird. Negative Werte verringern den Zählerstand. Wenn leer, wird 1 verwendet."),
                         @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0),
                         @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
                 }
