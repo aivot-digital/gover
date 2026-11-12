@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
+import {type RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
 import {type FileUploadElement} from '../models/elements/form/input/file-upload-element';
 import {generateElementWithDefaultValues} from './generate-element-with-default-values';
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
@@ -13,6 +14,12 @@ import {type DepartmentSelectInputElement} from '../models/elements/form/input/d
 import {AssetVisibility} from '../modules/assets/models/asset-visibility';
 
 describe('generateElementWithDefaultValues', () => {
+    it('should limit new Markdown fields to 5000 characters', () => {
+        const element = generateElementWithDefaultValues(ElementType.RichTextInput) as RichTextInputElement;
+
+        expect(element.maxCharacters).toBe(5000);
+    });
+
     it('should default text fields to not being copyable', () => {
         const element = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 

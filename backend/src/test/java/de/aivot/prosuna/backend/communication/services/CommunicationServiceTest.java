@@ -120,7 +120,7 @@ class CommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
 
         communicationService.sendMessage(identity, message);
@@ -141,7 +141,7 @@ class CommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
 
         communicationService.sendMessage(identity, message);
@@ -161,7 +161,7 @@ class CommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .build()
         ));
 
@@ -207,7 +207,7 @@ class CommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
 
         communicationService.sendMessage(emailIdentity, message);

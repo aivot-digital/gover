@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInpu
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.uiPresets.SemiAutomaticMessageConfig;
+import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.mail.enums.MailTemplate;
 import de.aivot.prosuna.backend.mail.models.MailSendOptions;
@@ -24,6 +25,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -38,6 +40,7 @@ import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolv
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
+import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
@@ -197,6 +200,24 @@ class EMailActionNodeV1Test {
         ).orElseThrow();
         assertEquals("Organisationseinheit für die Signatur", manualSignatureDepartment.getLabel());
         assertFalse(manualSignatureDepartment.getRequired());
+
+        // Recipients and subjects become mail headers and the content is rendered as Markdown.
+        for (var subjectFieldId : List.of(
+                EMailActionNodeV1.EMailActionNodeConfig.RECIPIENT_FIELD_ID,
+                EMailActionNodeV1.EMailActionNodeConfig.BCC_RECIPIENT_FIELD_ID,
+                SemiAutomaticMessageConfig.AutomaticContent.SUBJECT_FIELD_ID,
+                SemiAutomaticMessageConfig.ManualContent.SUBJECT_FIELD_ID
+        )) {
+            assertEquals(TemplateOutputFormat.SingleLineText, layout.findChild(subjectFieldId, TextInputElement.class)
+                    .orElseThrow().getDynamicTextPolicy().outputFormat());
+        }
+        for (var contentFieldId : List.of(
+                SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID,
+                SemiAutomaticMessageConfig.ManualContent.CONTENT_FIELD_ID
+        )) {
+            assertEquals(TemplateOutputFormat.Markdown, layout.findChild(contentFieldId, RichTextInputElement.class)
+                    .orElseThrow().getDynamicTextPolicy().outputFormat());
+        }
     }
 
     @Test
@@ -229,7 +250,7 @@ class EMailActionNodeV1Test {
                 eq(MailTemplate.ProcessEmail),
                 org.mockito.ArgumentMatchers.<Map<String, Object>>argThat(mailContext ->
                         "Nachricht für Ada".equals(mailContext.get("title"))
-                                && "Hallo **Ada**".equals(mailContext.get("messageText"))
+                                && "Hallo Ada".equals(mailContext.get("messageText"))
                                 && mailContext.get("messageHtml").toString().contains("<strong>Ada</strong>")
                                 && department.equals(mailContext.get("department"))
                                 && signatureDepartment.equals(mailContext.get("signatureDepartment"))
@@ -239,11 +260,55 @@ class EMailActionNodeV1Test {
                 eq(MailSendOptions.defaults())
         );
         assertEquals("Nachricht für Ada", result.getNodeData().get("subject"));
-        assertTrue(result.getNodeData().get("content").toString().contains("<strong>Ada</strong>"));
+        assertEquals("Hallo **Ada**", result.getNodeData().get("content"));
         assertArrayEquals(
                 new String[]{"customer@example.test"},
                 (String[]) result.getNodeData().get("to")
         );
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void customerMarkdownInsertedAsTextStaysTextInBothMailParts() throws Exception {
+        var customerMessage = """
+                Sehr geehrte Damen und Herren,
+
+                bitte prüfen Sie [meinen Antrag](https://evil.example).
+                **Danke**""";
+        var configuration = configuration("automatic");
+        configuration.messageConfig.automaticContent.subject = "Neue Nachricht";
+        configuration.messageConfig.automaticContent.content = new TemplateRenderService(new JavascriptEngineFactoryService(List.of()))
+                .interpolate(
+                        new ProcessExecutionData().addProcessData("message", customerMessage),
+                        "Neue Nachricht:\n\n{{ $.message }}",
+                        TemplateOutputFormat.Markdown
+                );
+        configuration.to = "staff@example.test";
+
+        node.init(initContext(configuration, new ProcessExecutionData(), processInstance(), task()));
+
+        var mailContextCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mailService).sendMail(
+                same(departmentTheme),
+                eq("staff@example.test"),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                eq("Neue Nachricht"),
+                eq(MailTemplate.ProcessEmail),
+                mailContextCaptor.capture(),
+                eq(Optional.empty()),
+                eq(Optional.empty()),
+                any()
+        );
+        var mailContext = (Map<String, Object>) mailContextCaptor.getValue();
+        assertEquals("""
+                <p>Neue Nachricht:</p>
+                <p>Sehr geehrte Damen und Herren,<br />
+                <br />
+                bitte prüfen Sie [meinen Antrag](<a rel="nofollow" href="https://evil.example">https://evil.example</a>).<br />
+                **Danke**</p>
+                """, mailContext.get("messageHtml"));
+        assertEquals("Neue Nachricht:\n\n" + customerMessage, mailContext.get("messageText"));
     }
 
     @Test
