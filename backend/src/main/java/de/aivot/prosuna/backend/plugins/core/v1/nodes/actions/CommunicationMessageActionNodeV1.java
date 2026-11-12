@@ -155,16 +155,16 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet eine Nachricht über den ausgewählten Kommunikationsanbieter an die Identität.";
+        return "Sendet eine Nachricht über die Kommunikationsanbindung einer Identität des Vorgangs.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Sendet eine Nachricht über den für die Identität festgelegten Kommunikationsweg.
+                Sendet eine Nachricht an eine Identität des Vorgangs. Der Versandweg ergibt sich aus der Kommunikationsanbindung, die für die Identität hinterlegt ist; optional werden ganze Anlagensätze angehängt. Bei automatischer Ausführung werden Betreff und Inhalt aus den Nachrichtenbausteinen erzeugt, bei teilautomatisierter Ausführung bearbeitet die zuständige Person sie vor dem Versand in einer Mitarbeitendenaufgabe.
 
-                Betreff und Inhalt werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand durch eine Mitarbeiter:in bearbeitet. Optional können vollständige Anlagensätze angehängt werden. Nach dem synchronen Versand stehen die verwendete Identität, die Kommunikationsanbindung, die Nachrichtendaten und das Ergebnis des Kommunikationsanbieters als Ausgangsdaten bereit.
+                Nach erfolgreichem Versand wird der Vorgang fortgesetzt. Bei automatischer Ausführung schlägt die Aufgabe bei einem Versandfehler oder einem fehlenden oder leeren Anlagensatz fehl. Bei teilautomatisierter Ausführung bleibt die Mitarbeitendenaufgabe in diesen Fällen offen.
                 """;
     }
 
@@ -227,7 +227,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Betreff der versendeten Nachricht.", "string"),
                 new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Inhalt der versendeten Nachricht.", "string"),
                 new ProcessNodeOutput(OUTPUT_ATTACHMENT_SET_DATA_KEYS, "Anlagensätze", "Datenschlüssel der angehängten Anlagensätze.", "Array<string>"),
-                new ProcessNodeOutput(OUTPUT_SENT_AT, "Versandzeitpunkt", "Zeitpunkt des erfolgreichen Versands.", "string"),
+                new ProcessNodeOutput(OUTPUT_SENT_AT, "Vorbereitungszeitpunkt", "Zeitpunkt, zu dem die Nachricht für den Versand vorbereitet wurde.", "string"),
                 new ProcessNodeOutput(OUTPUT_SEND_RESULT, "Versandresultat", "Resultat des Versandvorgangs, wie es vom Kommunikationsanbieter zurückgegeben wurde.", "Record<string, unknown>")
         );
     }
@@ -356,7 +356,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var configuration = context.getConfigurationOfExecutingNode();
         if (!SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Nachricht kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
+                    "Die Nachricht kann nur bei teilautomatisierter Ausführung über eine Mitarbeitendenaufgabe versendet werden."
             );
         }
 
@@ -498,7 +498,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 || StringUtils.toNullableTrimmedString(content.subject) == null
                 || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den manuellen Versand müssen Vorlagen für Betreff und Nachrichtentext konfiguriert sein."
+                    "Für den teilautomatisierten Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
             );
         }
         return content;

@@ -197,16 +197,16 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Führt HTTP-Anfragen zu externen Systemen durch.";
+        return "Sendet eine HTTP-Anfrage an ein Fachsystem oder einen externen Dienst und stellt die Antwort bereit.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Führt einen konfigurierten HTTP-Aufruf zu einem externen System aus und bereitet die Antwort für den weiteren Prozess auf.
+                Sendet eine HTTP-Anfrage mit der konfigurierten Methode, Authentifizierung und dem gewählten Inhalt, etwa JSON, Formulardaten oder ganze Anlagensätze. Die Antwort steht je nach Konfiguration als Text oder JSON in den Elementdaten bereit oder wird als Datei in einem neuen Anlagensatz gespeichert.
 
-                Unterstützt werden unterschiedliche HTTP-Methoden, Authentifizierungsarten sowie JSON-, Formular- und Dateiinhalte. Antwortstatus, Header und verarbeiteter Inhalt werden als Ausgangsdaten bereitgestellt; Dateiantworten können zusätzlich als Vorgangsanlagen gespeichert werden.
+                Ohne weitere Konfiguration gilt nur der Statuscode `200` als erfolgreich. Bei jedem anderen Statuscode schlägt die Aufgabe fehl.
                 """;
     }
 

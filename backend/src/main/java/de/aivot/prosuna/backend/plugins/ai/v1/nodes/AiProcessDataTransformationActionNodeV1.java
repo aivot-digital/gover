@@ -161,16 +161,16 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet die Vorgangsdaten, Elementdaten und geschützten Vorgangsdaten an eine KI und ersetzt die Vorgangsdaten durch das zurückgegebene JSON-Objekt.";
+        return "Lässt eine KI die Vorgangsdaten umwandeln und ersetzt sie durch das zurückgegebene JSON-Objekt.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Verwendet eine kompatible KI-Completions-API, um die Vorgangsdaten, Elementdaten und geschützten Vorgangsdaten in ein neues JSON-Objekt zu transformieren.
+                Sendet den konfigurierten Prompt zusammen mit den vollständigen Vorgangsdaten, geschützten Vorgangsdaten und Elementdaten an eine OpenAI-kompatible Chat-Completions-API. Das zurückgegebene JSON-Objekt ersetzt die bisherigen Vorgangsdaten vollständig. Liefert die KI kein gültiges JSON-Objekt, schlägt die Aufgabe fehl und die Vorgangsdaten bleiben unverändert.
 
-                Endpunkt, API-Schlüssel, Modell und Prompt werden konfiguriert; der Prompt kann die aktuellen Vorgangsdaten einbeziehen. Das von der KI zurückgegebene JSON-Objekt ersetzt anschließend die bisherigen Vorgangsdaten vollständig. Informationen zu Modell, Abschlussgrund, Nutzung und erzeugten Top-Level-Schlüsseln stehen als Ausgangsdaten zur Verfügung.
+                Als HTTP-Endpunkt wird die Basis-URL der API angegeben, an die `/chat/completions` angehängt wird. Da die Inhalte dieser Datenebenen an den externen Dienst übermittelt werden, ist vor dem Einsatz zu prüfen, ob diese Übermittlung zulässig ist.
                 """;
     }
 
@@ -607,7 +607,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
          */
         @InputElementPOJOBinding(id = ENDPOINT_URL_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpunkt"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Absolute URL des KI-Endpunkts für Completions."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Basis-URL der API. Der Pfad /chat/completions wird automatisch angehängt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })

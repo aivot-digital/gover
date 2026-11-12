@@ -101,7 +101,7 @@ class CommunicationMessageActionNodeV1Test {
                 node.getExecutionTypes()
         );
         assertEquals(
-                "Sendet eine Nachricht über den ausgewählten Kommunikationsanbieter an die Identität.",
+                "Sendet eine Nachricht über die Kommunikationsanbindung einer Identität des Vorgangs.",
                 node.getAbstract()
         );
         assertEquals(
