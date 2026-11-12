@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
@@ -79,7 +79,8 @@ describe('ReplicatingContainerView', () => {
         const user = userEvent.setup();
         const props = renderView({element: {...element, minimumRequiredSets: 3}});
         await user.click(screen.getByRole('button', {name: 'Datensatz löschen'}));
-        await user.click(screen.getByRole('button', {name: 'Bestätigen'}));
+        expect(props.setValue).not.toHaveBeenCalled();
+        await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: 'Löschen'}));
         expect(props.setValue).toHaveBeenCalledWith(null, ['addresses', 'street']);
     });
 
