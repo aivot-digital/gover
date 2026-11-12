@@ -841,6 +841,7 @@ export function FormNodeEditorPage() {
         }
 
         confirm({
+            isDestructive: true,
             title: 'Element wirklich löschen',
             children: (
                 <Typography>
@@ -1377,6 +1378,7 @@ export function FormNodeEditorPage() {
                                                                     abort,
                                                                 )}
                                                             mode={ViewDispatcherMode.Editor}
+                                                            displayContext={ElementDisplayContext.CustomerFacing}
                                                             disableValidation={disableValidation}
                                                             disableVisibilities={disableVisibility}
                                                             highlightedElementId={hoveredTreeElementId}

@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -167,6 +168,7 @@ public class SemiAutomaticMessageConfig {
                 id = SUBJECT_FIELD_ID,
                 type = ElementType.Text,
                 dynamicText = true,
+                dynamicTextFormat = TemplateOutputFormat.SingleLineText,
                 allowedInputModes = {
                         InputMode.Literal,
                         InputMode.Variable,
@@ -233,6 +235,7 @@ public class SemiAutomaticMessageConfig {
                 id = SUBJECT_FIELD_ID,
                 type = ElementType.Text,
                 dynamicText = true,
+                dynamicTextFormat = TemplateOutputFormat.SingleLineText,
                 allowedInputModes = {
                         InputMode.Literal,
                         InputMode.Variable,

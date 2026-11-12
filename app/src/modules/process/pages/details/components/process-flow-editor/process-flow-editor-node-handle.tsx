@@ -113,6 +113,8 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
 
     const handleDeleteEdge = (): void => {
         void confirm({
+            confirmButtonColor: 'error',
+            confirmButtonText: 'Verbindung aufheben',
             title: 'Verbindung aufheben',
             children: (
                 <Typography>

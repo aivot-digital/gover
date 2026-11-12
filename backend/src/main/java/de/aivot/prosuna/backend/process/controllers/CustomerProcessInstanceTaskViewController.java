@@ -614,6 +614,7 @@ public class CustomerProcessInstanceTaskViewController {
 
         if (res.isEmpty()) {
             return createTaskViewResponse(
+                    taskViewData,
                     identityState,
                     layout,
                     inputs,
@@ -682,6 +683,7 @@ public class CustomerProcessInstanceTaskViewController {
         );
 
         return createTaskViewResponse(
+                taskViewData,
                 updatedIdentityState,
                 updatedView.layout(),
                 updatedView.data(),
@@ -800,6 +802,7 @@ public class CustomerProcessInstanceTaskViewController {
                 identitySessionId
         );
         return createTaskViewResponse(
+                taskViewData,
                 identityState,
                 customerView.layout(),
                 customerView.data(),
@@ -809,11 +812,12 @@ public class CustomerProcessInstanceTaskViewController {
 
     @Nonnull
     private TaskViewResponse createTaskViewResponse(
+            @Nonnull TaskViewData<?> taskViewData,
             @Nonnull CustomerTaskIdentityService.CustomerTaskIdentityState identityState,
             @Nonnull GroupLayoutElement layout,
             @Nonnull AuthoredElementValues data,
             @Nonnull List<TaskViewEvent> events
-    ) {
+    ) throws ResponseException {
         TaskViewExistingIdentitySlot existingIdentitySlot = null;
         if (identityState.existingIdentity() != null) {
             existingIdentitySlot = new TaskViewExistingIdentitySlot(
@@ -824,10 +828,19 @@ public class CustomerProcessInstanceTaskViewController {
             );
         }
 
+        var removableAttachmentKeys = identityState.isReady()
+                ? fileUploadMultipartInputService.findRemovableAttachmentKeys(
+                        layout,
+                        taskViewData.instance().getId(),
+                        taskViewData.task().getId()
+                )
+                : null;
+
         return new TaskViewResponse(
                 identityState.isReady() ? layout : null,
                 identityState.isReady() ? data : null,
                 identityState.isReady() ? events : null,
+                removableAttachmentKeys,
                 identityState.newIdentitySlot(),
                 existingIdentitySlot
         );
@@ -1102,6 +1115,8 @@ public class CustomerProcessInstanceTaskViewController {
      * @param layout               The layout, or {@code null} while an identity requirement blocks access.
      * @param data                 The authored data, or {@code null} while an identity requirement blocks access.
      * @param events               The available events, or {@code null} while an identity requirement blocks access.
+     * @param removableAttachmentKeys The task's own stored uploads, which its upload fields may remove, or {@code null}
+     *                                while an identity requirement blocks access. Other attachments stay protected.
      * @param newIdentitySlot      The new identity slot, or {@code null} if none is configured.
      * @param existingIdentitySlot The existing provider identity requirement, or {@code null} if none applies.
      */
@@ -1112,6 +1127,8 @@ public class CustomerProcessInstanceTaskViewController {
             AuthoredElementValues data,
             @Nullable
             List<TaskViewEvent> events,
+            @Nullable
+            List<UUID> removableAttachmentKeys,
             @Nullable
             IdentitySlotResponseDTO newIdentitySlot,
             @Nullable

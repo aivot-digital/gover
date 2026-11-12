@@ -122,7 +122,7 @@ public class ProcessDataService {
                 .orElseThrow(() -> new RuntimeException("Initial node not found for process instance " + instance.getId()));
 
         List<ProcessInstanceAttachmentEntity> allAttachments = processInstanceAttachmentRepository
-                .findAllByProcessInstanceId(instance.getId());
+                .findAllByProcessInstanceIdAndRemovedAtIsNull(instance.getId());
         List<ProcessInstanceAttachmentSetEntity> allAttachmentSets = processInstanceAttachmentSetRepository
                 .findAllByProcessInstanceId(instance.getId());
 

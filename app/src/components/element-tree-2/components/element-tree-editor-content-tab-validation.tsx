@@ -230,6 +230,7 @@ export function ElementTreeEditorContentTabValidation() {
                                                     <Actions
                                                         actions={[
                                                             {
+                                                                color: 'error',
                                                                 icon: <Delete/>,
                                                                 tooltip: 'Delete Expression',
                                                                 onClick: () => {
