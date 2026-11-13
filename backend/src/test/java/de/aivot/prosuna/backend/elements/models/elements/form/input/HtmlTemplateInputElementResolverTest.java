@@ -2,11 +2,18 @@ package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.services.AssetService;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.plugins.core.v1.javascript.NumberJavascriptV1;
+import de.aivot.prosuna.backend.plugins.core.v1.javascript.SecretJavascriptV1;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
+import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
+import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
+import org.graalvm.polyglot.HostAccess;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -19,10 +26,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class HtmlTemplateInputElementResolverTest {
@@ -161,6 +172,30 @@ class HtmlTemplateInputElementResolverTest {
     }
 
     @Test
+    void resolveShouldRenderSlotValuesForTheirSlotType() throws Exception {
+        var value = template("<p data-slot=\"text\" data-slot-type=\"text\">Default</p>"
+                + "<section data-slot=\"literal\" data-slot-type=\"richtext\">Default</section>"
+                + "<section data-slot=\"markdown\" data-slot-type=\"richtext\">Default</section>")
+                .setSlots(Map.of(
+                        "text", "{{ $.name }}",
+                        "literal", "Antwort: {{ $.message }}",
+                        "markdown", "{! $.message !}"
+                ));
+        var data = new ProcessExecutionData()
+                .addProcessData("name", "O'Brien\nZeile 2")
+                .addProcessData("message", "**Danke** für [Antrag](https://evil.example)");
+
+        assertEquals(
+                "<p data-slot=\"text\" data-slot-type=\"text\">O&#39;Brien\nZeile 2</p>"
+                        + "<section data-slot=\"literal\" data-slot-type=\"richtext\"><p>Antwort: **Danke** für "
+                        + "[Antrag](<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)</p>\n</section>"
+                        + "<section data-slot=\"markdown\" data-slot-type=\"richtext\"><p><strong>Danke</strong> für Antrag "
+                        + "(<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)</p>\n</section>",
+                resolver.resolve(value, data)
+        );
+    }
+
+    @Test
     void restoreSlotContentsShouldNotReplacePlaceholderTextWithinInsertedValues() {
         var firstPlaceholder = "PROSUNA_SLOT_" + UUID.randomUUID() + "_END";
         var secondPlaceholder = "PROSUNA_SLOT_" + UUID.randomUUID() + "_END";
@@ -191,7 +226,111 @@ class HtmlTemplateInputElementResolverTest {
     void resolveShouldStillRejectInvalidAuthoredTemplateSyntax() throws Exception {
         var value = template("{{ unclosed");
 
-        assertThrows(IllegalArgumentException.class, () -> resolver.resolve(value, new ProcessExecutionData()));
+        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> resolver.resolve(value, new ProcessExecutionData()));
+    }
+
+    @Test
+    void resolveShouldOnlyProvideFunctionProvidersThatOptedInToAssetTemplates() throws Exception {
+        var secretService = mock(SecretService.class);
+        var secretKey = UUID.randomUUID();
+        var secret = new SecretEntity();
+        secret.setKey(secretKey);
+        when(secretService.retrieve(secretKey)).thenReturn(Optional.of(secret));
+        when(secretService.decrypt(secret)).thenReturn("decrypted-secret");
+        var providerResolver = new HtmlTemplateInputElementResolver(
+                assetService,
+                storageService,
+                new TemplateRenderService(new JavascriptEngineFactoryService(List.of(
+                        new SecretJavascriptV1(secretService),
+                        new NumberJavascriptV1()
+                )))
+        );
+
+        assertEquals(
+                "<p>1.234,50</p>",
+                providerResolver.resolve(template("<p>{{ _number_v1.formatGermanNumber(1234.5) }}</p>"), new ProcessExecutionData())
+        );
+
+        var blockedTemplate = template("<p>{{ _secrets_v1.get('" + secretKey + "') }}</p>");
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> providerResolver.resolve(blockedTemplate, new ProcessExecutionData())
+        );
+        assertTrue(exception.getMessage().contains(
+                "Die Funktionen „Geheimnisse“ (_secrets_v1) sind in HTML-Vorlagen aus Dateien & Medien nicht verfügbar."
+        ));
+        verify(secretService, never()).retrieve(any(UUID.class));
+
+        // Slot values are part of the process configuration and keep all function providers.
+        var slotTemplate = template("<p data-slot=\"text\" data-slot-type=\"text\">Default</p>")
+                .setSlots(Map.of("text", "{{ _secrets_v1.get('" + secretKey + "') }}"));
+        assertEquals(
+                "<p data-slot=\"text\" data-slot-type=\"text\">decrypted-secret</p>",
+                providerResolver.resolve(slotTemplate, new ProcessExecutionData())
+        );
+    }
+
+    @Test
+    void resolveShouldNotExposeHostExceptionMessagesOfFunctionProviders() throws Exception {
+        var providerResolver = new HtmlTemplateInputElementResolver(
+                assetService,
+                storageService,
+                new TemplateRenderService(new JavascriptEngineFactoryService(List.of(new ThrowingNumberJavascriptV1())))
+        );
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> providerResolver.resolve(template("<p>{{ _number_v1.formatGermanNumber(1) }}</p>"), new ProcessExecutionData())
+        );
+        assertFalse(exception.getMessage().contains("internal detail"));
+        assertTrue(exception.getMessage().contains("_number_v1.formatGermanNumber(1)"));
+    }
+
+    @Test
+    void resolveShouldNotExposeHostExceptionMessagesOfFunctionProvidersCalledByLoopItemGetters() throws Exception {
+        var providerResolver = new HtmlTemplateInputElementResolver(
+                assetService,
+                storageService,
+                new TemplateRenderService(new JavascriptEngineFactoryService(List.of(new ThrowingNumberJavascriptV1())))
+        );
+
+        // Converting the loop items to Java runs the getter after the expression itself was evaluated.
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> providerResolver.resolve(
+                        template("<p>{% for item in [{ get value() { return _number_v1.formatGermanNumber(1); } }] %}x{% endfor %}</p>"),
+                        new ProcessExecutionData()
+                )
+        );
+        assertFalse(exception.getMessage().contains("internal detail"));
+        assertTrue(exception.getMessage().contains("_number_v1.formatGermanNumber(1)"));
+    }
+
+    @Test
+    void resolveShouldCancelTemplateRecursionThatCatchesItsStackOverflow() {
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> resolver.resolve(
+                        template("<p>{{ (function f() { try { f() } catch (e) { f() } })() }}</p>"),
+                        new ProcessExecutionData()
+                )
+        );
+        assertTrue(exception.getMessage().contains("Maximum frame limit of 256 exceeded"), exception.getMessage());
+    }
+
+    @Test
+    void resolveShouldReportUnexpectedRenderingErrorsWithoutTheirMessage() throws Exception {
+        var templateRenderService = mock(TemplateRenderService.class);
+        when(templateRenderService.interpolate(any(), any(), any(JavascriptExecutionContext.class)))
+                .thenThrow(new UnsupportedOperationException("internal detail"));
+        var failingResolver = new HtmlTemplateInputElementResolver(assetService, storageService, templateRenderService);
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> failingResolver.resolve(template("<p>Text</p>"), new ProcessExecutionData())
+        );
+        assertFalse(exception.getMessage().contains("internal detail"));
     }
 
     @Test
@@ -211,5 +350,13 @@ class HtmlTemplateInputElementResolverTest {
         when(storageService.getDocumentContent(11, "templates/test.html"))
                 .thenReturn(new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8)));
         return new HtmlTemplateInputElementValue().setAssetKey(assetKey.toString()).setSlots(Map.of());
+    }
+
+    public static class ThrowingNumberJavascriptV1 extends NumberJavascriptV1 {
+        @Override
+        @HostAccess.Export
+        public String formatGermanNumber(Number number) {
+            throw new IllegalStateException("internal detail");
+        }
     }
 }

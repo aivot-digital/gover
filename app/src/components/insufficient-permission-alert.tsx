@@ -18,8 +18,8 @@ export function InsufficientPermissionAlert(props: InsufficientPermissionAlertPr
                 variant="body2"
                 color="textSecondary"
             >
-                {message}
-                Bitte wenden Sie sich an Ihre Administrator:in um die notwendigen Berechtigungen zu erhalten.
+                {message}{' '}
+                Wenden Sie sich an Ihre Administration, um die erforderlichen Berechtigungen zu erhalten.
             </Typography>
             <Typography>
                 Benötigte Berechtigungen:

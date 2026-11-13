@@ -48,7 +48,7 @@ public class NoCodeBase64Operator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** "SGFsbG8gV2VsdA=="
                 
-                # Wahrheitswerte für den „Konvertiere zu Base64“-Operator
+                # Beispiele und Ergebnisse
                 - **Text "Hallo"** → **"SGFsbG8="** \s
                 - **Text "a,b,c"** → **"YSxiLGM="** \s
                 - **Text ""** → **""**

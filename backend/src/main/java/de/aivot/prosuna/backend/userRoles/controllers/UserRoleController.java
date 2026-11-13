@@ -111,7 +111,7 @@ public class UserRoleController {
                                 "name", created.getName()
                         ))
                 .withMessage(
-                        "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        "Die Domänenrolle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(created.getName()),
                         StringUtils.quote(String.valueOf(created.getId())),
                         StringUtils.quote(execUser.getFullName())
@@ -179,7 +179,7 @@ public class UserRoleController {
                                 "name", result.getName()
                         ))
                 .withMessage(
-                        "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        "Die Domänenrolle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
                         StringUtils.quote(result.getName()),
                         StringUtils.quote(String.valueOf(result.getId())),
                         StringUtils.quote(execUser.getFullName())
@@ -227,7 +227,7 @@ public class UserRoleController {
                                 "name", entity.getName()
                         ))
                 .withMessage(
-                        "Die Fachrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        "Die Domänenrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
                         StringUtils.quote(entity.getName()),
                         StringUtils.quote(String.valueOf(entity.getId())),
                         StringUtils.quote(execUser.getFullName())

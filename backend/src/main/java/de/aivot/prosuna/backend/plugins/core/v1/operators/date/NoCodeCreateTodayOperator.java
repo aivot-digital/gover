@@ -23,7 +23,7 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Erstelle Heutiges Datum";
+        return "Heutiges Datum erstellen";
     }
 
     @Override
@@ -35,22 +35,22 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Erstelle Heutiges Datum“** erstellt das heutige Kalenderdatum in der Zeitzone der Anwendung. \s
+                Der Operator **„Heutiges Datum erstellen“** erstellt das heutige Kalenderdatum in der Zeitzone der Anwendung. \s
                 Er wird verwendet, um das aktuelle Datum zu erhalten.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie möchten das heutige Datum erhalten. \s
-                Mit dem Operator **„Erstelle Heutiges Datum“** können Sie das aktuelle Datum erstellen:
+                Mit dem Operator **„Heutiges Datum erstellen“** können Sie das aktuelle Datum erstellen:
                 
                 ```text
-                Erstelle Heutiges Datum ()
+                Heutiges Datum erstellen ()
                 ```
                 
                 **Ergebnis:** \s
                 Das erstellte Datum ist das heutige Kalenderdatum.
                 
-                # Wann verwenden Sie den Operator „Erstelle Heutiges Datum“?
-                Verwenden Sie **„Erstelle Heutiges Datum“**, wenn Sie:
+                # Wann verwenden Sie den Operator „Heutiges Datum erstellen“?
+                Verwenden Sie **„Heutiges Datum erstellen“**, wenn Sie:
                 - Das aktuelle Datum benötigen. \s
                 - Ein Datum für Berechnungen oder Vergleiche erstellen möchten.
                 """;

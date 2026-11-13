@@ -359,6 +359,7 @@ export function ProcessNodeEditor(): ReactNode {
         }
 
         confirm({
+            isDestructive: true,
             title: 'Prozesselement löschen',
             children: (
                 <>

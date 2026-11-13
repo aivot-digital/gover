@@ -129,7 +129,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("<p>Body</p>")
+                .markdownBody("Body")
                 .callToActions(List.of(
                         new CommunicationMessageCallToAction(
                                 "Open <portal>",
@@ -151,11 +151,28 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
+    void rendersMarkdownBodyWithoutRawHtmlOrScriptLinks() throws Exception {
+        var message = new CommunicationMessage.Builder()
+                .subject("Subject")
+                .body("Body")
+                .markdownBody("**Hallo** <img src=x onerror=alert(1)> [Portal](javascript:alert(1))")
+                .build();
+
+        var html = FitConnectZbpCommunicationProviderV1.renderMessageHtml(message);
+
+        assertEquals(
+                "<p><strong>Hallo</strong> &lt;img src=x onerror=alert(1)&gt; "
+                        + "Portal</p>",
+                html
+        );
+    }
+
+    @Test
     void appendsEscapedDepartmentSignatureAfterCallToActions() throws Exception {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("<p>Body</p>")
+                .markdownBody("Body")
                 .callToActions(List.of(new CommunicationMessageCallToAction("Open", "https://example.test")))
                 .signatureDepartment(new VDepartmentShadowedEntity()
                         .setId(17)
@@ -178,7 +195,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("<p>Body</p>")
+                .markdownBody("Body")
                 .callToActions(List.of(new CommunicationMessageCallToAction("Open", " ")))
                 .build();
 
@@ -196,7 +213,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("<p>Body</p>")
+                .markdownBody("Body")
                 .sendingDepartment(department)
                 .build();
         var mailboxId = UUID.randomUUID();
@@ -222,7 +239,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("<p>Body</p>")
+                .markdownBody("Body")
                 .sendingUser(user)
                 .build();
 
@@ -466,7 +483,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel(context, identity));
         assertEquals("Testnachricht", message.subject());
         assertEquals("Dies ist eine Testnachricht.", message.body());
-        assertEquals("<p>Dies ist eine Testnachricht.</p>", message.htmlBody());
+        assertEquals("Dies ist eine Testnachricht.", message.markdownBody());
         assertNotNull(message.timestamp());
         assertEquals(List.of(), message.attachments());
         var alert = result
@@ -511,11 +528,11 @@ class FitConnectZbpCommunicationProviderV1Test {
                 () -> testDefinition.handleTest(provider, config, testInputs(42))
         );
 
-        assertEquals("Die Postfach-ID des Testnutzers ist erforderlich.", missing.getMessage());
-        assertEquals("Die Postfach-ID des Testnutzers ist erforderlich.", blank.getMessage());
-        assertEquals("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.", invalid.getMessage());
-        assertEquals("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.", nonCanonical.getMessage());
-        assertEquals("Die Postfach-ID des Testnutzers ist erforderlich.", wrongType.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht ist erforderlich.", missing.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht ist erforderlich.", blank.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.", invalid.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.", nonCanonical.getMessage());
+        assertEquals("Die Postfach-ID für den Empfang der Testnachricht ist erforderlich.", wrongType.getMessage());
         verify(testDefinition, never()).sendMessage(any(), any(), any());
     }
 
@@ -561,7 +578,7 @@ class FitConnectZbpCommunicationProviderV1Test {
 
         var exception = assertThrows(CommunicationException.class, () -> resolveSenderClientSecret(config));
 
-        assertEquals("Failed to parse sender client secret key as UUID: not-a-uuid", exception.getMessage());
+        assertEquals("Die Kennung des Client-Geheimnisses des Absenders ist keine gültige UUID: not-a-uuid", exception.getMessage());
         verifyNoInteractions(secretService);
     }
 
@@ -573,7 +590,7 @@ class FitConnectZbpCommunicationProviderV1Test {
 
         var exception = assertThrows(CommunicationException.class, () -> resolveSenderClientSecret(config));
 
-        assertEquals("Sender client secret not found: " + secretKey, exception.getMessage());
+        assertEquals("Das Client-Geheimnis des Absenders wurde nicht gefunden: " + secretKey, exception.getMessage());
         verify(secretService).retrieve(secretKey);
     }
 
@@ -588,7 +605,7 @@ class FitConnectZbpCommunicationProviderV1Test {
 
         var exception = assertThrows(CommunicationException.class, () -> resolveSenderClientSecret(config));
 
-        assertEquals("Failed to decrypt sender client secret: " + secretKey, exception.getMessage());
+        assertEquals("Das Client-Geheimnis des Absenders konnte nicht entschlüsselt werden: " + secretKey, exception.getMessage());
         assertEquals(cause, exception.getCause());
     }
 
@@ -740,7 +757,7 @@ class FitConnectZbpCommunicationProviderV1Test {
             return definition.sendMessage(context, identity, new CommunicationMessage.Builder()
                     .subject("Subject")
                     .body("Body")
-                    .htmlBody("<p>Body</p>")
+                    .markdownBody("Body")
                     .referenceId("9QXA-D0B8-MR9P")
                     .build());
         }

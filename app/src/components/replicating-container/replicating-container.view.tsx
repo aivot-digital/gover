@@ -64,7 +64,10 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         return false;
     }, [element, isBusy, isDeriving, props.inputModeLiteralContext?.fieldProps]);
 
-    const minRequiredSets = element.required === true ? (element.minimumRequiredSets ?? 1) : 0;
+    const minimumSets = Math.max(0, element.minimumRequiredSets ?? 0);
+    // Optional collections must remain clearable, even while their non-empty value is below the validation minimum.
+    const minRequiredSets = element.required === true ? Math.max(1, minimumSets) : 0;
+    const displayedMinimumSets = Math.max(minimumSets, minRequiredSets);
     const hasEntries = (value?.length ?? 0) > 0;
     const isAddDisabled = isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets);
     const shouldShowEmptyState = !hasEntries;
@@ -193,7 +196,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                 }}
                                             >
                                                 <Button
-                                                    color="inherit"
+                                                    color="error"
                                                     variant="text"
                                                     size="small"
                                                     startIcon={<Delete sx={{fontSize: 16}}/>}
@@ -205,15 +208,10 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                         minHeight: 24,
                                                         px: 0.75,
                                                         py: 0.25,
-                                                        color: 'text.secondary',
                                                         fontSize: '0.75rem',
                                                         lineHeight: 1.2,
                                                         '& .MuiButton-startIcon': {
                                                             mr: 0.5,
-                                                        },
-                                                        '&:hover': {
-                                                            color: 'error.main',
-                                                            backgroundColor: 'action.hover',
                                                         },
                                                     }}
                                                 >
@@ -268,9 +266,9 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             >
                                 <Typography variant="body2" color="text.secondary">
                                     Keine Datensätze vorhanden.{' '}
-                                    {minRequiredSets > 0 && (
+                                    {displayedMinimumSets > 0 && (
                                         <>
-                                            Mindestens {minRequiredSets} {minRequiredSets === 1 ? 'Datensatz ist' : 'Datensätze sind'} erforderlich.
+                                            {element.required ? 'Mindestens' : 'Bei Eingabe mindestens'} {displayedMinimumSets} {displayedMinimumSets === 1 ? 'Datensatz' : 'Datensätze'} erforderlich.
                                         </>
                                     )}
                                 </Typography>
@@ -301,6 +299,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
             </FormFieldGroup>
 
             <ConfirmDialog
+                isDestructive
                 title="Möchten Sie diesen Datensatz wirklich löschen?"
                 onConfirm={confirmDelete}
                 onCancel={() => setConfirmDelete(undefined)}

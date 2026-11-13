@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.av.exceptions.AVVirusFoundException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ClamConfig;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,8 +29,10 @@ public class AVService {
 
     private final ProsunaConfig prosunaConfig;
     private final ClamConfig clamConfig;
+    private final MeterRegistry meterRegistry;
 
-    public AVService(ProsunaConfig prosunaConfig, ClamConfig clamConfig) {
+    public AVService(ProsunaConfig prosunaConfig, ClamConfig clamConfig, MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.prosunaConfig = prosunaConfig;
         this.clamConfig = clamConfig;
     }
@@ -67,26 +70,26 @@ public class AVService {
     private String getContentTypeAndExtensionValidationError(MultipartFile file) {
         var filename = file.getOriginalFilename();
         if (filename == null) {
-            return "Der Name des Anhangs fehlt.";
+            return "Der Name der Anlage fehlt.";
         }
 
         var splitFilename = filename.split("\\.");
         if (splitFilename.length < 2) {
-            return String.format("Der Anhang \"%s\" hat keine Dateiendung.", filename);
+            return String.format("Die Anlage \"%s\" hat keine Dateiendung.", filename);
         }
 
         var extension = splitFilename[splitFilename.length - 1];
         if (prosunaConfig.getFileExtensions().stream().noneMatch(ext -> ext.equalsIgnoreCase(extension))) {
-            return String.format("Die Dateiendung des Anhangs \"%s\" ist nicht erlaubt.", filename);
+            return String.format("Die Dateiendung der Anlage \"%s\" ist nicht erlaubt.", filename);
         }
 
         var contentType = file.getContentType();
         if (contentType == null) {
-            return String.format("Der Inhaltstyp des Anhangs \"%s\" fehlt.", filename);
+            return String.format("Der Inhaltstyp der Anlage \"%s\" fehlt.", filename);
         }
 
         if (prosunaConfig.getContentTypes().stream().noneMatch(ct -> ct.equalsIgnoreCase(contentType))) {
-            return String.format("Der Inhaltstyp des Anhangs \"%s\" ist nicht erlaubt.", filename);
+            return String.format("Der Inhaltstyp der Anlage \"%s\" ist nicht erlaubt.", filename);
         }
 
         return null;
@@ -109,6 +112,19 @@ public class AVService {
     }
 
     public void testFile(InputStream fileInputStream, String filename) throws AVCheckFailedException, AVVirusFoundException {
+        try {
+            scanFile(fileInputStream, filename);
+        } catch (AVVirusFoundException exception) {
+            meterRegistry.counter("prosuna.av.scans", "result", "infected").increment();
+            throw exception;
+        } catch (AVCheckFailedException exception) {
+            meterRegistry.counter("prosuna.av.scans", "result", "error").increment();
+            throw exception;
+        }
+        meterRegistry.counter("prosuna.av.scans", "result", "clean").increment();
+    }
+
+    private void scanFile(InputStream fileInputStream, String filename) throws AVCheckFailedException, AVVirusFoundException {
         try (var clamAvSocket = openScannerSocket();
              var uploadStream = new BufferedOutputStream(clamAvSocket.getOutputStream());
              var responseStream = clamAvSocket.getInputStream()) {

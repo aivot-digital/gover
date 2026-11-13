@@ -62,7 +62,7 @@ public class ProcessSubmissionBindingService {
                     .digest(secret.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Der SHA-256 Algorithmus wird nicht unterstützt.", e);
+            throw new IllegalStateException("Der SHA-256-Algorithmus wird nicht unterstützt.", e);
         }
     }
 }

@@ -13,7 +13,7 @@
                  line-height="28px"
                  padding="24px 0 0">
             <span th:text="${title}">
-                Beispieltitle
+                Beispieltitel
             </span>
         </mj-text>
 

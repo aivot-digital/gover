@@ -127,7 +127,7 @@ export function CommunicationBindingDialog({binding, identityProviderKey, provid
                 )}
                 <CheckboxFieldComponent
                     label="Aktiv"
-                    hint="Gibt an, ob diese Kommunikationsanbindung aktiviert ist. Bei temporären technischen Problemen o. Ä. kann die Verbindung deaktiviert werden, ohne die Konfiguration zu verlieren."
+                    hint="Gibt an, ob diese Kommunikationsanbindung aktiviert ist. Bei temporären technischen Problemen o. Ä. kann die Anbindung deaktiviert werden, ohne die Konfiguration zu verlieren."
                     variant="switch"
                     value={request.isEnabled}
                     onChange={value => updateRequest('isEnabled', value)}

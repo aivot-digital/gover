@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.javascript;
 
 import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
@@ -63,7 +64,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Modul stellt Funktionen zur Verarbeitung von Datumswerten bereit.";
+        return "Diese JavaScript-Funktionsbibliothek unterstützt die Verarbeitung von Datumswerten.";
     }
 
     @Nonnull
@@ -72,8 +73,14 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return """
                 Stellt JavaScript-Hilfsfunktionen für Datums-, Zeit- und Zeitzonenwerte bereit.
 
-                Datumswerte können erzeugt, normalisiert, formatiert und in die lokale Anwendungszeitzone überführt werden. Darüber hinaus unterstützt das Modul Berechnungen wie das Addieren oder Subtrahieren von Tagen, Wochen, Monaten und Jahren sowie die Ermittlung von Zeitabständen.
+                Datumswerte können erzeugt, normalisiert, formatiert und in die lokale Anwendungszeitzone überführt werden. Darüber hinaus unterstützt die Funktionsbibliothek Berechnungen wie das Addieren oder Subtrahieren von Tagen, Wochen, Monaten und Jahren sowie die Ermittlung von Zeitabständen.
                 """;
+    }
+
+    @Override
+    public boolean isAvailableIn(@Nonnull JavascriptExecutionContext context) {
+        // Only computes and formats dates.
+        return context == JavascriptExecutionContext.Default || context == JavascriptExecutionContext.AssetTemplate;
     }
 
     @Override

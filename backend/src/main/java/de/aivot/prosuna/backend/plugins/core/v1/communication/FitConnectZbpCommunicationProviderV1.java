@@ -29,6 +29,7 @@ import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
@@ -120,13 +121,13 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Versendet Nachrichten und Anhänge über FIT-Connect an das zentrale Bürgerpostfach.";
+        return "Versendet Nachrichten und Anlagen über FIT-Connect an das zentrale Bürgerpostfach.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Versendet Nachrichten einschließlich Anhängen über einen konfigurierten FIT-Connect-Zustellpunkt an das zentrale Bürgerpostfach einer Identität.";
+        return "Versendet Nachrichten einschließlich Anlagen über einen konfigurierten FIT-Connect-Zustellpunkt an das zentrale Bürgerpostfach einer Identität.";
     }
 
 
@@ -143,7 +144,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         try {
             config = ElementPOJOMapper.createFromPOJO(Config.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError("Failed to create config layout for FIT-Connect communication provider.", e);
+            throw ResponseException.internalServerError("Die Konfigurationsoberfläche für den FIT-Connect-Kommunikationsanbieter konnte nicht erstellt werden.", e);
         }
 
         config
@@ -215,7 +216,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         try {
             config = ElementPOJOMapper.createFromPOJO(IdentityBinding.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError("Failed to create identity provider binding config layout for FIT-Connect communication provider.", e);
+            throw ResponseException.internalServerError("Die Konfigurationsoberfläche für die Kommunikationsbindung des FIT-Connect-Anbieters konnte nicht erstellt werden.", e);
         }
 
         config
@@ -239,7 +240,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         var postfachId = new TextInputElement();
         postfachId.setId(TEST_POSTFACH_ID_FIELD_ID);
         postfachId.setLabel("Postfach-ID");
-        postfachId.setHint("Postfach-ID des Testnutzers, an den die Testnachricht gesendet wird.");
+        postfachId.setHint("Postfach-ID für den Empfang der Testnachricht.");
         postfachId.setRequired(true);
         postfachId.setValidation(ElementValidationFunctions.of(
                 NoCodeExpression.of(
@@ -263,7 +264,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                                          @Nonnull AuthoredElementValues inputs) throws CommunicationException {
         var input = inputs.getLiteral(TEST_POSTFACH_ID_FIELD_ID);
         if (!(input instanceof String rawPostfachId) || rawPostfachId.isBlank()) {
-            throw new CommunicationException("Die Postfach-ID des Testnutzers ist erforderlich.");
+            throw new CommunicationException("Die Postfach-ID für den Empfang der Testnachricht ist erforderlich.");
         }
 
         var normalizedPostfachId = rawPostfachId.trim();
@@ -271,10 +272,10 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         try {
             postfachId = UUID.fromString(normalizedPostfachId);
         } catch (IllegalArgumentException e) {
-            throw new CommunicationException("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.", e);
+            throw new CommunicationException("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.", e);
         }
         if (!postfachId.toString().equalsIgnoreCase(normalizedPostfachId)) {
-            throw new CommunicationException("Die Postfach-ID des Testnutzers muss eine gültige UUID sein.");
+            throw new CommunicationException("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.");
         }
 
         var identityProviderKey = UUID.randomUUID();
@@ -327,7 +328,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         var testMessage = new CommunicationMessage.Builder()
                 .subject("Testnachricht")
                 .body("Dies ist eine Testnachricht.")
-                .htmlBody("<p>Dies ist eine Testnachricht.</p>")
+                .markdownBody("Dies ist eine Testnachricht.")
                 .build();
 
         var result = sendMessage(testContext, testIdentity, testMessage);
@@ -365,14 +366,14 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
             for (var att : message.attachments()) {
                 var attachmentContent = att.getContent();
                 if (attachmentContent == null) {
-                    throw new CommunicationException("Attachment content is null for attachment: " + att.getName());
+                    throw new CommunicationException("Der Inhalt der Anlage fehlt: " + att.getName());
                 }
 
                 final byte[] attachmentData;
                 try (attachmentContent) {
                     attachmentData = attachmentContent.readAllBytes();
                 } catch (IOException e) {
-                    throw new CommunicationException("Failed to read attachment: " + att.getName(), e);
+                    throw new CommunicationException("Die Anlage konnte nicht gelesen werden: " + att.getName(), e);
                 }
 
                 final String contentType = att.getContentType() != null ? att.getContentType() : "application/octet-stream";
@@ -501,7 +502,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
 
     @Nonnull
     static String renderMessageHtml(@Nonnull CommunicationMessage message) throws CommunicationException {
-        var content = new StringBuilder(message.htmlBody());
+        var content = new StringBuilder(MarkdownRenderer.renderHtml(message.markdownBody()).strip());
         for (var callToAction : message.callToActions()) {
             if (callToAction == null) {
                 throw new CommunicationException("Eine Aktion der Nachricht darf nicht leer sein.");
@@ -574,7 +575,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         try {
             postfachId = UUID.fromString(postfachIdString);
         } catch (Exception e) {
-            throw new CommunicationException("Failed to parse BPK2 attribute value as UUID: " + postfachIdString, e);
+            throw new CommunicationException("Das BPK2-Attribut enthält keine gültige UUID: " + postfachIdString, e);
         }
         return postfachId;
     }
@@ -585,7 +586,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         try {
             destinationId = UUID.fromString(config.destinationId);
         } catch (Exception e) {
-            throw new CommunicationException("Failed to parse destination ID as UUID: " + config.destinationId, e);
+            throw new CommunicationException("Die Zustellpunkt-ID ist keine gültige UUID: " + config.destinationId, e);
         }
         return destinationId;
     }
@@ -595,7 +596,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         try {
             return UUID.fromString(config.senderDestinationId);
         } catch (Exception e) {
-            throw new CommunicationException("Failed to parse sender destination ID as UUID: " + config.senderDestinationId, e);
+            throw new CommunicationException("Die Zustellpunkt-ID des Absenders ist keine gültige UUID: " + config.senderDestinationId, e);
         }
     }
 
@@ -605,18 +606,18 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         try {
             senderClientSecretKey = UUID.fromString(config.senderClientSecret);
         } catch (Exception e) {
-            throw new CommunicationException("Failed to parse sender client secret key as UUID: " + config.senderClientSecret, e);
+            throw new CommunicationException("Die Kennung des Client-Geheimnisses des Absenders ist keine gültige UUID: " + config.senderClientSecret, e);
         }
 
         final var senderClientSecretEntity = secretService
                 .retrieve(senderClientSecretKey)
-                .orElseThrow(() -> new CommunicationException("Sender client secret not found: " + senderClientSecretKey));
+                .orElseThrow(() -> new CommunicationException("Das Client-Geheimnis des Absenders wurde nicht gefunden: " + senderClientSecretKey));
 
         final String senderClientSecret;
         try {
             senderClientSecret = secretService.decrypt(senderClientSecretEntity);
         } catch (Exception e) {
-            throw new CommunicationException("Failed to decrypt sender client secret: " + senderClientSecretKey, e);
+            throw new CommunicationException("Das Client-Geheimnis des Absenders konnte nicht entschlüsselt werden: " + senderClientSecretKey, e);
         }
 
         return senderClientSecret;
@@ -659,7 +660,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                     "Der private Schlüssel des FIT-Connect-Zertifikats"
             );
         } catch (ResponseException e) {
-            throw new CommunicationException("Failed to resolve private key for FIT-Connect communication provider.", e);
+            throw new CommunicationException("Der private Schlüssel für den FIT-Connect-Kommunikationsanbieter konnte nicht geladen werden.", e);
         }
 
         String clientCertPem;
@@ -669,7 +670,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                     "Das Client-Zertifikat des FIT-Connect-Zertifikats"
             );
         } catch (ResponseException e) {
-            throw new CommunicationException("Failed to resolve client certificate for FIT-Connect communication provider.", e);
+            throw new CommunicationException("Das Client-Zertifikat für den FIT-Connect-Kommunikationsanbieter konnte nicht geladen werden.", e);
         }
 
         try {
@@ -679,7 +680,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                     .authorCertificateAsPem(clientCertPem)
                     .build();
         } catch (RuntimeException e) {
-            throw new CommunicationException("Failed to parse the ZBP author certificate or private key.", e);
+            throw new CommunicationException("Das ZBP-Autorenzertifikat oder der private Schlüssel konnte nicht verarbeitet werden.", e);
         }
     }
 

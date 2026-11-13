@@ -232,7 +232,7 @@ export function PresetEditPage() {
             title: 'Neuen Entwurf anlegen',
             children: (
                 <Typography>
-                    Möchten Sie wirklich eine neuen Entwurf (Arbeitsversion) der Vorlage {preset.title} anlegen?
+                    Möchten Sie wirklich einen neuen Entwurf (Arbeitsversion) der Vorlage {preset.title} anlegen?
                 </Typography>
             ),
             confirmButtonText: 'Ja, Entwurf anlegen',
@@ -583,6 +583,7 @@ export function PresetEditPage() {
             </Box>
 
             <ConfirmDialog
+                isDestructive
                 title="Vorlage wirklich löschen"
                 onConfirm={confirmDelete}
                 onCancel={() => {

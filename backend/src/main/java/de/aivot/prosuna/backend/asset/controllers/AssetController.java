@@ -61,7 +61,7 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class AssetController {
-    private static final String MODULE_NAME = "Dateien & Medien";
+    private static final String MODULE_NAME = "Dateien und Medien";
 
     private final ScopedAuditService auditService;
 
@@ -325,7 +325,7 @@ public class AssetController {
                         )
                 )
                 .withMessage(
-                        "Die Datei %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        "Die Datei %s wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(filePath),
                         StringUtils.quote(execUser.getFullName())
                 )
@@ -496,7 +496,7 @@ public class AssetController {
 
         var updatedMetadata = metadata != null ? metadata : StorageItemMetadata.empty();
 
-        var updatedStorageElement = storageService.updateDocumentMetadata(
+        storageService.updateDocumentMetadata(
                 storageProvider.getId(),
                 filePath,
                 updatedMetadata
@@ -532,8 +532,7 @@ public class AssetController {
                         storageProvider.getId(),
                         filePath
                 ))
-                .orElseThrow(ResponseException::internalServerError)
-                .setMetadata(updatedStorageElement.getMetadata()); // Update the metadata because of the outdated context
+                .orElseThrow(ResponseException::internalServerError);
     }
 
     @GetMapping("files-content/**")
@@ -879,12 +878,12 @@ public class AssetController {
         var marker = "/files/";
         var markerIndex = requestUrl.indexOf(marker);
         if (markerIndex < 0) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         var normalizedPath = requestUrl.substring(markerIndex + marker.length());
         if (normalizedPath.isBlank()) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         if (!normalizedPath.startsWith("/")) {
@@ -907,12 +906,12 @@ public class AssetController {
         var marker = "/files-content/";
         var markerIndex = requestUrl.indexOf(marker);
         if (markerIndex < 0) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         var normalizedPath = requestUrl.substring(markerIndex + marker.length());
         if (normalizedPath.isBlank()) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         if (!normalizedPath.startsWith("/")) {
@@ -935,12 +934,12 @@ public class AssetController {
         var marker = "/files-metadata/";
         var markerIndex = requestUrl.indexOf(marker);
         if (markerIndex < 0) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         var normalizedPath = requestUrl.substring(markerIndex + marker.length());
         if (normalizedPath.isBlank()) {
-            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
+            throw ResponseException.notAcceptable("Das Stammverzeichnis eines Speichers kann keine Datei sein.");
         }
 
         if (!normalizedPath.startsWith("/")) {
@@ -1005,7 +1004,7 @@ public class AssetController {
                 .retrieve(storageProviderId)
                 .orElseThrow(ResponseException::notFound);
         if (storageProvider.getType() != StorageProviderType.Assets) {
-            throw ResponseException.forbidden("Der angegebene Speicheranbieter ist kein Asset-Speicher.");
+            throw ResponseException.forbidden("Der angegebene Speicheranbieter ist kein Speicher für Dateien und Medien.");
         }
         return storageProvider;
     }

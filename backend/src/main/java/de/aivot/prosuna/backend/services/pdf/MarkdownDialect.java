@@ -1,56 +1,27 @@
 package de.aivot.prosuna.backend.services.pdf;
 
-import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.commonmark.Extension;
-import org.commonmark.ext.autolink.AutolinkExtension;
-import org.commonmark.ext.footnotes.FootnotesExtension;
-import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension;
-import org.commonmark.ext.gfm.tables.TablesExtension;
-import org.commonmark.ext.task.list.items.TaskListItemsExtension;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
 import org.thymeleaf.context.IExpressionContext;
 import org.thymeleaf.dialect.AbstractDialect;
 import org.thymeleaf.dialect.IExpressionObjectDialect;
 import org.thymeleaf.expression.IExpressionObjectFactory;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
+/** Exposes {@link MarkdownRenderer} to Thymeleaf templates as {@code #markdown}. */
 public class MarkdownDialect extends AbstractDialect implements IExpressionObjectDialect {
     public static final String ID = "markdown";
-
-    private static final List<Extension> EXTENSIONS = List.of(
-            AutolinkExtension.create(),
-            FootnotesExtension.create(),
-            TablesExtension.create(),
-            StrikethroughExtension.builder()
-                    .requireTwoTildes(false)
-                    .build(),
-            TaskListItemsExtension.create()
-    );
-    private static final Parser PARSER = Parser.builder()
-            .extensions(EXTENSIONS)
-            .build();
-    private static final HtmlRenderer RENDERER = HtmlRenderer.builder()
-            .extensions(EXTENSIONS)
-            .softbreak("<br />\n")
-            .escapeHtml(true)
-            .sanitizeUrls(true)
-            .build();
 
     public MarkdownDialect() {
         super(ID);
     }
 
+    @Nonnull
     public String render(@Nullable String markdown) {
-        if (StringUtils.isNullOrEmpty(markdown)) {
-            return "";
-        }
-
-        return RENDERER.render(PARSER.parse(markdown));
+        return MarkdownRenderer.renderHtml(markdown);
     }
 
     @Override

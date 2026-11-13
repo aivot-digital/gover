@@ -21,14 +21,14 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Erstellt ein Datum basierend auf den angegebenen Tag, Monat und Jahr.";
+        return "Erstellt ein Datum aus dem angegebenen Tag, Monat und Jahr.";
     }
 
     @Override
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Erstelle Datum“** erstellt ein Datum basierend auf den angegebenen Tag, Monat und Jahr. \s
+                Der Operator **„Erstelle Datum“** erstellt ein Datum aus dem angegebenen Tag, Monat und Jahr. \s
                 Er wird verwendet, um ein Datum aus einzelnen Komponenten zu erstellen.
                 
                 # Anwendungsbeispiel:

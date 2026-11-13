@@ -125,6 +125,7 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout>) {
                     variant="outlined"
                     startIcon={<LinkOffOutlinedIcon/>}
                     onClick={handleRemoveMarketplaceInformation}
+                    color="error"
                 >
                     Verknüpfung auflösen
                 </Button>
@@ -141,14 +142,16 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout>) {
                 />
             </Paper>
             <ConfirmDialog
+                confirmButtonColor="error"
+                confirmButtonText="Verknüpfung auflösen"
                 title="Verknüpfung auflösen"
                 onConfirm={confirmRemoveMarketplace}
                 onCancel={() => {
                     setConfirmRemoveMarketplace(undefined);
                 }}
             >
-                Soll die Verknüpfung wirklich aufgelöst werden?
-                Bitte beachten Sie, dass die Verknüpfung nicht wiederhergestellt werden kann.
+                Die Verknüpfung zum Marktplatz-Baustein wird entfernt.
+                Das Element kann anschließend lokal bearbeitet werden.
             </ConfirmDialog>
         </>
     );
