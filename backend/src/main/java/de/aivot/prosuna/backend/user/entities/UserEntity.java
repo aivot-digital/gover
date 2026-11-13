@@ -2,12 +2,14 @@ package de.aivot.prosuna.backend.user.entities;
 
 import de.aivot.prosuna.backend.user.models.KeycloakUser;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,7 +17,7 @@ import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Table(name = "users")
-public class UserEntity {
+public class UserEntity implements LockVersioned {
     @Id
     @Nonnull
     @Column(length = 36)
@@ -59,6 +61,11 @@ public class UserEntity {
     @Nullable
     @ColumnDefault("null")
     private Integer systemRoleId;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Properties
 
@@ -209,6 +216,17 @@ public class UserEntity {
 
     public UserEntity setFullName(@Nonnull String fullName) {
         this.fullName = fullName;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public UserEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 
