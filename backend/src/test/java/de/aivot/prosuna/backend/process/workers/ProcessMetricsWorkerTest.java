@@ -30,6 +30,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -95,6 +97,35 @@ class ProcessMetricsWorkerTest {
         assertDoesNotThrow(worker::refreshEngineState);
 
         assertEquals(3, gauge("prosuna.process.work.pending"));
+    }
+
+    @Test
+    void refreshUpdatesTheRegisteredMeterInsteadOfReplacingIt() {
+        // Replacing meters lets a concurrent Prometheus scrape see the gauge twice and fail.
+        givenBacklog(3, NOW);
+        worker.refreshEngineState();
+        var meter = meterRegistry.get("prosuna.process.work.pending").gauge();
+        givenBacklog(8, NOW);
+
+        worker.refreshEngineState();
+
+        assertSame(meter, meterRegistry.get("prosuna.process.work.pending").gauge());
+        assertEquals(8, meter.value());
+    }
+
+    @Test
+    void removesNodeRowsThatNoLongerExist() {
+        var known = nodeCount("known", 1, 7);
+        var removedPlugin = nodeCount("removed-plugin", 2, 2);
+        when(nodes.countByDefinition(ProcessVersionStatus.Published)).thenReturn(List.of(known, removedPlugin));
+        worker.refreshProcessSetups();
+        var knownUpdated = nodeCount("known", 1, 9);
+        when(nodes.countByDefinition(ProcessVersionStatus.Published)).thenReturn(List.of(knownUpdated));
+
+        worker.refreshProcessSetups();
+
+        assertEquals(9, gauge("prosuna.process.nodes", "definition", "known", "definition_version", "1"));
+        assertNull(meterRegistry.find("prosuna.process.nodes").tags("definition", "removed-plugin").gauge());
     }
 
     @Test
