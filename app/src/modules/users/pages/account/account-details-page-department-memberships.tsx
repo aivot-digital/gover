@@ -28,8 +28,8 @@ export function AccountDetailsPageDepartmentMemberships() {
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Eine Übersicht der Organisationseinheiten, in denen Sie Mitglied sind, und den dazugehörigen Rollen.
-                Wenn Sie noch keiner Organisationseinheit zugeordnet sind, bitten Sie eine Administrator:in, Sie zu
+                Eine Übersicht der Organisationseinheiten, in denen Sie Mitglied sind, und der dazugehörigen Rollen.
+                Wenn Sie noch keiner Organisationseinheit zugeordnet sind, bitten Sie Ihre Administration, Sie zu
                 einer Organisationseinheit hinzuzufügen.
             </Typography>
 

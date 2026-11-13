@@ -32,6 +32,10 @@ public class NoCodeGreaterThanOperator extends NoCodeOperator {
                 Der Operator **„Größer als“** vergleicht zwei Werte und prüft, ob der erste Wert größer als der zweite Wert ist. \s
                 Das Ergebnis ist **wahr** (true), wenn der erste Wert größer ist als der zweite Wert. \s
                 Andernfalls ist das Ergebnis **falsch**.
+
+                Zahlen und numerische Texte werden numerisch verglichen. \s
+                Nicht numerische Texte werden über ihre Länge verglichen, sofern sie nicht als Datum oder Uhrzeit erkannt werden. \s
+                Eine alphabetische Sortierung findet nicht statt.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Zahl größer als eine andere Zahl ist.
@@ -46,8 +50,8 @@ public class NoCodeGreaterThanOperator extends NoCodeOperator {
                 # Wahrheitswerte für den „Größer als“-Operator
                 - **10 GRÖßER ALS 5** → **wahr** \s
                 - **5 GRÖßER ALS 10** → **falsch** \s
-                - **"def" GRÖßER ALS "abc"** → **wahr** (länge des Textes) \s
-                - **"abc" GRÖßER ALS "def"** → **falsch** (länge des Textes)
+                - **"abcd" GRÖßER ALS "abc"** → **wahr** (Länge des Textes) \s
+                - **"abc" GRÖßER ALS "def"** → **falsch** (gleiche Textlänge)
                 
                 # Wann verwenden Sie den Operator „Größer als“?
                 Verwenden Sie **„Größer als“**, wenn Sie prüfen möchten, ob ein Wert größer ist als ein anderer Wert. \s

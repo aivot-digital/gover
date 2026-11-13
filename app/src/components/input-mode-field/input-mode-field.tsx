@@ -43,7 +43,10 @@ import {
     InputVariableSource,
     type InputVariableSuggestion,
     normalizeAuthoredInputValue,
+    TemplateOutputFormat,
 } from '../../models/input-mode';
+import {type DynamicTextInsertion} from '../dynamic-text/dynamic-text-metadata';
+import {RadioFieldComponent} from '../radio-field/radio-field-component';
 import {isNoCodeStaticValue, type NoCodeOperand} from '../../models/functions/no-code-expression';
 import {NoCodeEditorWrapper} from '../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
 import {NoCodeDataType} from '../../data/no-code-data-type';
@@ -88,10 +91,11 @@ export interface InputModeFieldProps<T> extends Omit<FormFieldLayoutProps, 'labe
     allowedModes?: InputMode[];
     allowedVariableSources?: InputVariableSource[];
     dynamicTextVariableSources?: InputVariableSource[];
+    dynamicTextOutputFormat?: TemplateOutputFormat;
     variables: InputModeVariable[];
     value: InputModeValue<T> | T | null;
     onChange: (value: InputModeValue<T>, triggeringElementIds?: string[]) => void;
-    onInsertVariable?: (variable: InputModeVariable) => void;
+    onInsertVariable?: (variable: InputModeVariable, insertion: DynamicTextInsertion) => void;
     renderLiteral: (context: InputModeLiteralRenderContext<T>) => React.ReactNode;
     rootElement?: AnyElement;
     noCodeReturnType?: NoCodeDataType;
@@ -343,6 +347,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
             allowedSources={variablePickerSources}
             selectedReference={variablePickerPurpose === 'mapping' && value.type === InputMode.Variable ? value.reference : null}
             allowClear={variablePickerPurpose === 'mapping'}
+            offerFormattedInsertion={variablePickerPurpose === 'placeholder' && props.dynamicTextOutputFormat === TemplateOutputFormat.Markdown}
             readOnly={editingDisabled}
             title="Variable referenzieren"
             onClose={() => setVariablePickerPurpose(null)}
@@ -350,9 +355,9 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
                 updateDraft(InputMode.Variable, emptyVariableReference(allowedVariableSources));
                 setVariablePickerPurpose(null);
             }}
-            onSelect={(reference, suggestion) => {
+            onSelect={(reference, suggestion, insertion) => {
                 if (variablePickerPurpose === 'placeholder') {
-                    onInsertVariable?.(suggestion ?? {...reference, label: getInputVariableReference(reference)});
+                    onInsertVariable?.(suggestion ?? {...reference, label: getInputVariableReference(reference)}, insertion);
                 } else {
                     updateDraft(InputMode.Variable, reference);
                 }
@@ -488,8 +493,10 @@ interface VariablePickerDialogProps {
     allowedSources: InputVariableSource[];
     selectedReference: InputVariableReference | null;
     allowClear: boolean;
+    /** Lets authors of Markdown fields choose whether the value keeps its formatting. */
+    offerFormattedInsertion?: boolean;
     readOnly: boolean;
-    onSelect: (reference: InputVariableReference, suggestion?: InputModeVariable) => void;
+    onSelect: (reference: InputVariableReference, suggestion: InputModeVariable | undefined, insertion: DynamicTextInsertion) => void;
     onClear: () => void;
     onClose: () => void;
 }
@@ -500,6 +507,8 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
     const [draftSelectedKey, setDraftSelectedKey] = useState<string | null>(null);
     const [customSource, setCustomSource] = useState<InputVariableSource>(InputVariableSource.ProcessData);
     const [customPath, setCustomPath] = useState('');
+    // null until the author chooses, so the default can follow the selected variable.
+    const [insertion, setInsertion] = useState<DynamicTextInsertion | null>(null);
     const tabsId = useNormalizedReactId();
     const panelId = `${tabsId}-panel`;
 
@@ -513,6 +522,7 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                 : emptyVariableReference(props.allowedSources);
             setCustomSource(initialReference.source);
             setCustomPath(toCustomVariablePath(initialReference));
+            setInsertion(null);
         }
     }, [props.open, props.selectedReference, props.allowedSources]);
 
@@ -534,6 +544,8 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
     const selectedSuggestion = props.variables.find((variable) => getInputVariableKey(toVariableReference(variable)) === draftSelectedKey);
     const customReference = parseCustomVariableReference(customSource, customPath);
     const selectedReference = selectedSuggestion == null ? customReference : toVariableReference(selectedSuggestion);
+    // Markdown inputs keep their formatting by default, because authors rarely want it dropped.
+    const effectiveInsertion = insertion ?? (selectedReference?.markdown === true ? 'markdown' : 'text');
 
     return <Dialog
         open={props.open}
@@ -640,6 +652,26 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                     />
                 </Stack>
             </Box>
+
+            {props.offerFormattedInsertion && <>
+                <Divider/>
+                <Box sx={{p: 2, px: 2.8}}>
+                    <RadioFieldComponent
+                        label="Einfügen"
+                        hint="„Als Text“ ({{ }}) fügt den Wert als einfachen Text ohne Formatierung ein. „Mit Formatierung“ ({! !}) übernimmt Formatierungen wie Fettdruck und Listen und zeigt Links mit ihrer Adresse."
+                        value={effectiveInsertion}
+                        options={[
+                            {value: 'text', label: 'Als Text'},
+                            {value: 'markdown', label: 'Mit Formatierung'},
+                        ]}
+                        onChange={(nextInsertion) => setInsertion(nextInsertion === 'markdown' ? 'markdown' : 'text')}
+                        required
+                        displayInline
+                        disabled={props.readOnly}
+                        margin="none"
+                    />
+                </Box>
+            </>}
         </DialogContent>
         <DialogActions>
             <Stack direction="row" spacing={1} data-testid="variable-dialog-primary-actions">
@@ -647,7 +679,11 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                     data-testid="use-variable-reference"
                     variant="contained"
                     disabled={selectedReference == null}
-                    onClick={() => selectedReference != null && props.onSelect(selectedReference, selectedSuggestion)}
+                    onClick={() => selectedReference != null && props.onSelect(
+                        selectedReference,
+                        selectedSuggestion,
+                        props.offerFormattedInsertion ? effectiveInsertion : 'text',
+                    )}
                 >
                     Referenz verwenden
                 </Button>}
@@ -746,7 +782,8 @@ function resolveVariableSource(variable: InputModeVariable): InputVariableSource
 }
 
 function toVariableReference(variable: InputModeVariable): InputVariableReference {
-    return {source: resolveVariableSource(variable), path: variable.path, nodeDataKey: variable.nodeDataKey};
+    const reference: InputVariableReference = {source: resolveVariableSource(variable), path: variable.path, nodeDataKey: variable.nodeDataKey};
+    return variable.markdown === true ? {...reference, markdown: true} : reference;
 }
 
 function normalizeInputModeValue<T>(value: InputModeValue<T> | T | null): AuthoredInputValue<T> {

@@ -72,7 +72,8 @@ import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
-import {includeNodeProblems} from '../../utils/include-node-problems';
+import {useAutomaticNodeValidation} from '../../hooks/use-automatic-node-validation';
+import {useSessionStorageState} from '../../../../hooks/use-session-storage-state';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectUser} from '../../../../slices/user-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
@@ -108,7 +109,7 @@ const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 const PROCESS_NODE_TYPE_LABELS: Record<ProcessNodeType, string> = {
     [ProcessNodeType.Trigger]: 'Auslöser',
     [ProcessNodeType.Action]: 'Aktionen',
-    [ProcessNodeType.FlowControl]: 'Flusselemente',
+    [ProcessNodeType.FlowControl]: 'Ablaufsteuerung',
     [ProcessNodeType.Termination]: 'Abschlüsse',
 };
 
@@ -364,7 +365,7 @@ function isInbetweenCandidateProvider(provider: ProcessNodeProvider): boolean {
 
 function getUnavailableProcessNodeProviderMessage(provider: ProcessNodeProvider): string {
     if (!isProcessNodeProviderEnabled(provider)) {
-        return 'Die Formularerweiterung ist auf dieser Instanz nicht aktiviert.';
+        return 'Das Formularmodul ist in dieser Instanz nicht aktiviert.';
     }
 
     return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[provider.type]} in dieser Prozessversion ist erreicht.`;
@@ -508,7 +509,6 @@ export function ProcessDetailsPage(): ReactNode {
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [processNodeProblems, setProcessNodeProblems] = useState<ProcessNodeProblems[]>([]);
-    const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useState<Record<number, boolean>>({});
     const [isEditorPaneCollapsed, setIsEditorPaneCollapsed] = useState(false);
     const [hideEditorPaneExpandButton, setHideEditorPaneExpandButton] = useState(false);
     const [editorPaneWidth, setEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
@@ -562,7 +562,7 @@ export function ProcessDetailsPage(): ReactNode {
 
             URL.revokeObjectURL(objectUrl);
         } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
+            dispatch(showApiErrorSnackbar(error, 'Die Anlage konnte nicht heruntergeladen werden.'));
         }
     }, [dispatch]);
 
@@ -594,6 +594,21 @@ export function ProcessDetailsPage(): ReactNode {
             processVersionParam,
         };
     }, [params]);
+
+    // Kept per tab and process version, so revealed problems survive leaving the page, e.g. for the form editor.
+    const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useSessionStorageState<Record<number, boolean>>(
+        `process_${processId}_${processVersion}_shown_node_problems`,
+        {},
+    );
+
+    // Explicit validations (test, publish) reveal the problems of every affected node, including nodes never saved.
+    const revealNodeProblems = useCallback((nodeProblems: ProcessNodeProblems[]): void => {
+        setProcessNodeProblems(nodeProblems);
+        setShowProcessNodeProblemsForNodes((previous) => ({
+            ...previous,
+            ...Object.fromEntries(nodeProblems.map((problem) => [problem.node.id, true])),
+        }));
+    }, [setShowProcessNodeProblemsForNodes]);
 
     useEffect(() => {
         if (processId < 1 || processVersionParam !== 'latest') {
@@ -656,31 +671,13 @@ export function ProcessDetailsPage(): ReactNode {
 
     const showProcessExport = useProcessExport();
 
-    useEffect(() => {
-        if (processFlow == null || processVersion < 1) {
-            setProcessNodeProblems([]);
-            return;
-        }
-        new ProcessDefinitionVersionApiService()
-            .validate({
-                processDefinitionId: processId,
-                processDefinitionVersion: processVersion,
-            })
-            .then((problems) => {
-                const nodeProblems = problems.nodeProblems;
-                setProcessNodeProblems(nodeProblems);
-
-                if (nodeProblems.length === 0) {
-                    return;
-                }
-
-                setShowProcessNodeProblemsForNodes((previousShownProblems) => includeNodeProblems(
-                    previousShownProblems,
-                    nodeProblems,
-                    processFlow.nodes,
-                ));
-            });
-    }, [processId, processVersion, processFlow?.nodes, processFlow?.edges]);
+    useAutomaticNodeValidation(
+        processId,
+        processVersion,
+        processFlow,
+        setProcessNodeProblems,
+        setShowProcessNodeProblemsForNodes,
+    );
 
     const instanceId = useMemo(() => {
         const instanceIdParam = searchParams.get('instanceId');
@@ -1009,7 +1006,7 @@ export function ProcessDetailsPage(): ReactNode {
                     return;
                 }
 
-                dispatch(showApiErrorSnackbar(err, 'Die Testansprüche konnten nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Testsitzungen konnten nicht geladen werden.'));
             });
 
         return () => {
@@ -1218,7 +1215,7 @@ export function ProcessDetailsPage(): ReactNode {
             const ports = await requireCandidatePorts(candidate, true);
             const defaultPort = getDefaultProcessNodePort(ports);
             if (existingEdge != null && defaultPort == null) {
-                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen fachlichen Ausgang besitzt.'));
+                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen Ausgangsport besitzt.'));
                 return;
             }
             const newNode = await new ProcessNodeApiService().createWithGeneratedDataKey(candidate);
@@ -1362,7 +1359,7 @@ export function ProcessDetailsPage(): ReactNode {
             const ports = await requireCandidatePorts(candidate, true);
             const defaultPort = getDefaultProcessNodePort(ports);
             if (defaultPort == null) {
-                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen fachlichen Ausgang besitzt.'));
+                dispatch(showErrorSnackbar('Dieses Prozesselement kann hier nicht eingefügt werden, da es keinen Ausgangsport besitzt.'));
                 return;
             }
             const newNode = await new ProcessNodeApiService().createWithGeneratedDataKey(candidate);
@@ -1579,7 +1576,7 @@ export function ProcessDetailsPage(): ReactNode {
                 children: (
                     <Typography>
                         Der Prozess befindet sich bereits im Testmodus.
-                        Sie müssen den aktuellen Testmodus beenden, bevor Sie einen neuen Starten können.
+                        Sie müssen den aktuellen Testmodus beenden, bevor Sie einen neuen starten können.
                     </Typography>
                 ),
                 confirmButtonText: 'Ok',
@@ -1598,11 +1595,7 @@ export function ProcessDetailsPage(): ReactNode {
             const nodeProblems = problems.nodeProblems;
             const hasProblems = versionProblems.length > 0 || nodeProblems.length > 0;
 
-            setProcessNodeProblems(nodeProblems);
-            setShowProcessNodeProblemsForNodes(nodeProblems.reduce((acc, prob) => ({
-                ...acc,
-                [prob.node.id]: true,
-            }), {}));
+            revealNodeProblems(nodeProblems);
 
             const confirmed = await confirm({
                 title: 'Prozessmodellierung testen',
@@ -1612,7 +1605,7 @@ export function ProcessDetailsPage(): ReactNode {
                             Möchten Sie die Prozessmodellierung testen?
                             Die Prozessversion kann während des Tests nicht veröffentlicht werden.
                             Sie können den Test jederzeit abbrechen.
-                            Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                            Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge gelöscht.
                         </Typography>
                         {
                             (nodeProblems.length > 0 || versionProblems.length > 0) &&
@@ -1671,16 +1664,15 @@ export function ProcessDetailsPage(): ReactNode {
 
         confirm({
             isDestructive: true,
-            title: 'Testanspruch löschen',
+            title: 'Testsitzung beenden',
             children: (
                 <Typography>
-                    Möchten Sie den Testanspruch wirklich löschen? Dadurch wird der
-                    Test für diesen Prozess sofort beendet und die Bearbeitung des
-                    Prozesses wieder freigegeben.
-                    Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
+                    Möchten Sie die Testsitzung wirklich beenden?
+                    Die Bearbeitung des Prozesses wird dadurch wieder freigegeben.
+                    Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge gelöscht.
                 </Typography>
             ),
-            confirmButtonText: 'Testanspruch löschen',
+            confirmButtonText: 'Testsitzung beenden',
         })
             .then((confirmed) => {
                 if (!confirmed) {
@@ -1693,14 +1685,14 @@ export function ProcessDetailsPage(): ReactNode {
                         // Removing the claim also removes its runtime access, so refresh before updating the local UI state.
                         return refreshPermissionSet({broadcast: true})
                             .catch((refreshError) => {
-                                dispatch(showApiErrorSnackbar(refreshError, 'Die Berechtigungen konnten nach dem Löschen des Testanspruchs nicht aktualisiert werden.'));
+                                dispatch(showApiErrorSnackbar(refreshError, 'Die Berechtigungen konnten nach dem Beenden der Testsitzung nicht aktualisiert werden.'));
                             });
                     })
                     .then(() => {
                         setCurrentTestClaim(null);
                         clearRuntimeData();
                         setShowProcessTestClaimInstancesDialog(false);
-                        dispatch(showSuccessSnackbar('Testanspruch wurde gelöscht.'));
+                        dispatch(showSuccessSnackbar('Die Testsitzung wurde beendet.'));
 
                         if (instanceId != null) {
                             const nextSearchParams = new URLSearchParams(searchParams);
@@ -1710,7 +1702,7 @@ export function ProcessDetailsPage(): ReactNode {
                     });
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Testsitzung konnte nicht beendet werden.'));
             });
     }, [clearRuntimeData, confirm, currentTestClaim, dispatch, instanceId, refreshPermissionSet, searchParams, setSearchParams]);
 
@@ -1974,7 +1966,7 @@ export function ProcessDetailsPage(): ReactNode {
         }
 
         if (!canReplaceNodeType(currentProvider.type, replacementProvider.type)) {
-            dispatch(showErrorSnackbar('Auslöser und Endelemente können nur durch denselben Prozesselementtyp ersetzt werden.'));
+            dispatch(showErrorSnackbar('Auslöser und Prozesselemente der Kategorie Abschluss können nur durch denselben Prozesselementtyp ersetzt werden.'));
             return;
         }
 
@@ -1988,7 +1980,7 @@ export function ProcessDetailsPage(): ReactNode {
                 outputMappings: {},
             });
         } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Die Ausgänge des Ersatzes konnten nicht ermittelt werden.'));
+            dispatch(showApiErrorSnackbar(error, 'Die Ausgangsports des Ersatzes konnten nicht ermittelt werden.'));
             return;
         }
         const replacementPlan = buildNodeReplacementPlan(processFlow, node, replacementProvider, replacementPorts);
@@ -2010,7 +2002,7 @@ export function ProcessDetailsPage(): ReactNode {
                     </Typography>
                     <Typography>
                         Name, Kurzbeschreibung und Datenschlüssel bleiben erhalten.
-                        Sämtliche Konfiguration und Zuweisungen werden zurückgesetzt.
+                        Die gesamte Konfiguration und alle Zuweisungen werden zurückgesetzt.
                     </Typography>
                     <Typography>
                         Bestehende eingehende Verbindungen bleiben erhalten. {outgoingConnectionSummary}
@@ -2855,6 +2847,7 @@ export function ProcessDetailsPage(): ReactNode {
                 process={processFlow.definition}
                 version={processFlow.version}
                 availableNodeProviders={availableNodeProviders}
+                onNodeProblems={revealNodeProblems}
                 onPublish={(publishedVersion) => {
                     setProcessFlow({
                         ...processFlow,

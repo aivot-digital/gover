@@ -67,7 +67,7 @@ export function StorageProviderDetailsPageTest() {
                 disabled={!!storageProvider?.readOnlyStorage || !canTestStorageProvider}
                 hint={
                     storageProvider?.readOnlyStorage
-                        ? 'Diese Option ist deaktiviert, da der Speicheranbieter als read-only (nur lesend) konfiguriert ist.'
+                        ? 'Diese Option ist deaktiviert, da der Speicheranbieter als schreibgeschützt (nur lesend) konfiguriert ist.'
                         : !canTestStorageProvider
                             ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_UPDATE)
                             : undefined
@@ -107,7 +107,7 @@ export function StorageProviderDetailsPageTest() {
                         : (
                             <>
                                 {writable
-                                    ? 'Die Verbindung zum Speicheranbieter und dessen Beschreibbarkeit konnte nicht bestätigt werden.'
+                                    ? 'Die Verbindung zum Speicheranbieter und dessen Beschreibbarkeit konnten nicht bestätigt werden.'
                                     : 'Die Verbindung zum Speicheranbieter konnte nicht bestätigt werden.'}
                                 {testResult.error && (
                                     <ExpandableCodeBlock value={testResult.error} sx={{ mt: 2 }} />

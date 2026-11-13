@@ -34,7 +34,7 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Formatiert ein Datum gemäß eines angegebenen Formats.";
+        return "Formatiert ein Datum nach einem angegebenen Format.";
     }
 
     @Override

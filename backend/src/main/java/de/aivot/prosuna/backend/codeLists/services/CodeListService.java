@@ -625,7 +625,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         try {
             return UUID.fromString(sourceRef);
         } catch (IllegalArgumentException e) {
-            throw ResponseException.badRequest("Die Asset-Referenz der Codeliste ist keine gültige UUID.", e);
+            throw ResponseException.badRequest("Die Dateireferenz der Codeliste ist keine gültige UUID.", e);
         }
     }
 

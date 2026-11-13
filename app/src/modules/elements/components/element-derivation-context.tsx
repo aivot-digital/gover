@@ -50,6 +50,7 @@ import {
     ViewDispatcherContextProvider,
     ViewDispatcherMode,
 } from '../../../components/view-dispatcher/view-dispatcher.context';
+import {type ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {deepEquals} from '../../../utils/equality-utils';
 import {type InputVariableSuggestion} from '../../../models/input-mode';
@@ -87,6 +88,7 @@ interface ElementDerivationContextProps {
     disableVisibilities?: boolean;
     highlightedElementId?: string | null;
     taskViewMode?: TaskViewMode | null;
+    displayContext?: ElementDisplayContext | null;
     inputModesEnabled?: boolean;
     inputModeVariables?: InputVariableSuggestion[];
     deriveOnMount?: boolean;
@@ -165,6 +167,7 @@ export const ElementDerivationContext = forwardRef<
         disableVisibilities = false,
         highlightedElementId,
         taskViewMode = null,
+        displayContext = null,
         inputModesEnabled = false,
         inputModeVariables = [],
         deriveOnMount = true,
@@ -455,6 +458,7 @@ export const ElementDerivationContext = forwardRef<
                     showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
                     highlightedElementId: highlightedElementId,
                     taskViewMode,
+                    displayContext,
                     inputModesEnabled,
                     inputModeVariables,
                     readOnly,

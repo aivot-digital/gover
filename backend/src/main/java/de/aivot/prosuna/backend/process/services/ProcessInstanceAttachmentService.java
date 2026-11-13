@@ -36,6 +36,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +118,7 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                 .orElse(null);
 
         if (defaultStorageProviderId == null) {
-            throw ResponseException.internalServerError("Es wurde kein Standard-Speicheranbieter für Prozess-Anhänge konfiguriert.");
+            throw ResponseException.internalServerError("Es wurde kein Standard-Speicheranbieter für Vorgangsanlagen konfiguriert.");
         }
 
         var processInstance = processInstanceRepository
@@ -162,6 +163,8 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
         // endregion
 
         var savedEntity = processInstanceAttachmentRepository.save(entity);
+        // JPA merge may return a different instance and does not copy transient metadata.
+        savedEntity.setSizeInBytes(doc.getSizeInBytes());
         logAttachmentCreationEvent(savedEntity);
         return savedEntity;
     }
@@ -191,8 +194,8 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
                     attachment.getUploadedByUserId() == null,
                     true,
                     false,
-                    "Anhang erstellt",
-                    String.format("Der Anhang %s wurde erstellt.", StringUtils.quote(attachment.getFileName())),
+                    "Anlage erstellt",
+                    String.format("Die Anlage %s wurde erstellt.", StringUtils.quote(attachment.getFileName())),
                     details,
                     Instant.now(),
                     null,
@@ -206,32 +209,56 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
     public Page<ProcessInstanceAttachmentEntity> performList(@Nonnull Pageable pageable,
                                                              @Nullable Specification<ProcessInstanceAttachmentEntity> specification,
                                                              @Nullable Filter<ProcessInstanceAttachmentEntity> filter) throws ResponseException {
-        return processInstanceAttachmentRepository.findAll(specification, pageable);
+        var page = processInstanceAttachmentRepository.findAll(specification, pageable);
+        populateFileSizes(page.getContent());
+        return page;
     }
 
     @Nonnull
     @Override
     public Optional<ProcessInstanceAttachmentEntity> retrieve(@Nonnull UUID key) throws ResponseException {
-        return processInstanceAttachmentRepository.findById(key);
+        var attachment = processInstanceAttachmentRepository.findById(key);
+        attachment.ifPresent(entity -> populateFileSizes(List.of(entity)));
+        return attachment;
     }
 
     @Nonnull
     @Override
     public Optional<ProcessInstanceAttachmentEntity> retrieve(@Nonnull Specification<ProcessInstanceAttachmentEntity> specification) throws ResponseException {
-        return processInstanceAttachmentRepository.findOne(specification);
+        var attachment = processInstanceAttachmentRepository.findOne(specification);
+        attachment.ifPresent(entity -> populateFileSizes(List.of(entity)));
+        return attachment;
     }
 
     @Nonnull
     public List<ProcessInstanceAttachmentEntity> findAllByProcessInstanceIdAndFileName(@Nonnull Long processInstanceId,
                                                                                          @Nonnull String fileName) {
-        return processInstanceAttachmentRepository
+        var attachments = processInstanceAttachmentRepository
                 .findAllByProcessInstanceIdAndFileName(processInstanceId, fileName);
+        populateFileSizes(attachments);
+        return attachments;
     }
 
     @Nonnull
     public List<ProcessInstanceAttachmentEntity> findAllByAttachmentSetId(@Nonnull Integer attachmentSetId) {
-        return processInstanceAttachmentRepository
+        var attachments = processInstanceAttachmentRepository
                 .findAllByAttachmentSetIdAndRemovedAtIsNullOrderByPositionAscKeyAsc(attachmentSetId);
+        populateFileSizes(attachments);
+        return attachments;
+    }
+
+    private void populateFileSizes(@Nonnull List<ProcessInstanceAttachmentEntity> attachments) {
+        if (attachments.isEmpty()) {
+            return;
+        }
+
+        // Resolve metadata in one database query instead of contacting the storage provider for every file.
+        var sizes = new HashMap<UUID, Long>();
+        processInstanceAttachmentRepository.findSizesByKeys(attachments.stream()
+                        .map(ProcessInstanceAttachmentEntity::getKey)
+                        .toList())
+                .forEach(item -> sizes.put(item.getKey(), item.getSizeInBytes()));
+        attachments.forEach(attachment -> attachment.setSizeInBytes(sizes.get(attachment.getKey())));
     }
 
     /**

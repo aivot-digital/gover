@@ -71,7 +71,7 @@ function renderRuntimeData(instanceId: number, initialPermissions: PermissionSet
     const hook = renderHook(
         ({instanceId}: {instanceId: number}) => {
             const runtime = useProcessRuntimeData(instanceId);
-            // Mirrors the gate of "Aufgabe neu starten" in the flow editor node.
+            // Mirrors the gate of "Aufgabe erneut ausführen" in the flow editor node.
             const canEditTask = useHasProcessInstancePermission(
                 runtime.runtimeData?.instance.id,
                 Permission.PROCESS_INSTANCE_EDIT_TASK,

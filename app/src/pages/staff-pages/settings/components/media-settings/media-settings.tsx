@@ -128,7 +128,7 @@ export function MediaSettings() {
                         title="Eine digitale Grafikdatei, die geometrische Formeln verwendet, um Bilder darzustellen, die ohne Qualitätsverlust skaliert werden können"
                     >
                         Vektordatei
-                    </abbr> (z.B. SVG) um eine optimale Darstellung zu gewährleisten.
+                    </abbr> (z. B. SVG), um eine optimale Darstellung zu gewährleisten.
                 </Typography>
 
                 {

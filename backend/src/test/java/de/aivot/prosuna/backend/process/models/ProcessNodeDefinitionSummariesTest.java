@@ -113,11 +113,11 @@ class ProcessNodeDefinitionSummariesTest {
         return Stream.of(
                 Arguments.of(ApprovalActionNodeV1.class, "Die Freigabe wurde am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ erteilt."),
                 Arguments.of(DataChangeActionNodeV1.class, "Die Vorgangsdaten wurden am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ geändert."),
-                Arguments.of(ManualActionNodeV1.class, "Die manuelle Aufgabe wurde am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ abgeschlossen."),
+                Arguments.of(ManualActionNodeV1.class, "Die freie Aufgabe wurde am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ abgeschlossen."),
                 Arguments.of(CounterActionNodeV1.class, "Der Zähler „counter“ wurde um 3 erhöht."), 
                 Arguments.of(CommunicationMessageActionNodeV1.class, "Die Nachricht wurde am 01.10.2026 um 09:00:00 Uhr erfolgreich versendet."),
                 Arguments.of(EMailActionNodeV1.class, "Die E-Mail-Nachricht wurde am 01.10.2026 um 12:00:00 Uhr erfolgreich versendet."),
-                Arguments.of(FormRequestActionNodeV1.class, "Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 Uhr zur Einreichung von Daten aufgefordert und über E\\-Mail informiert. Die angeforderten Daten wurden am 01.10.2026 um 11:00:00 Uhr durch die Identität „customer“ eingereicht."),
+                Arguments.of(FormRequestActionNodeV1.class, "Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 Uhr zur Übermittlung von Angaben aufgefordert und über E\\-Mail informiert. Die angeforderten Angaben wurden am 01.10.2026 um 11:00:00 Uhr durch die Identität „customer“ übermittelt."),
                 Arguments.of(PaymentRequestActionNodeV1.class, "Die Zahlung wurde am 01.10.2026 um 11:00:00 Uhr bestätigt."),
                 Arguments.of(InstanceAssignmentActionNodeV1.class, "Der Vorgang wurde „Ida Beispiel“ durch „Ada Beispiel“ zugewiesen."),
                 Arguments.of(InstanceUnassignmentActionNodeV1.class, "Die Zuweisung des Vorgangs an „Ida Beispiel“ wurde aufgehoben."),
@@ -346,6 +346,14 @@ class ProcessNodeDefinitionSummariesTest {
         var markdown = summary(new AiCompletionActionNodeV1(null, null, null), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
         assertTrue(markdown.endsWith("\n\n**Antwort der KI**\n\n" + response));
         assertFalse(markdown.contains("Nicht Teil der Antwort"));
+    }
+
+    @Test
+    void aiSummaryShowsTheTargetOfLinksInTheResponse() throws Exception {
+        // A prompt that includes customer input can make the model repeat a link whose text hides its target.
+        task.getNodeData().put("completion", "Bitte **jetzt** [bestätigen](https://evil.example).");
+        var markdown = summary(new AiCompletionActionNodeV1(null, null, null), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
+        assertTrue(markdown.endsWith("\n\n**Antwort der KI**\n\nBitte **jetzt** bestätigen ([https://evil.example](https://evil.example))."));
     }
 
     @ParameterizedTest

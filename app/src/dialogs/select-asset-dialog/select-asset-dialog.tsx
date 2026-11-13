@@ -21,6 +21,7 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
             show={show}
             mimeType={mimetype}
             visibility={visibility}
+            storageProviderId={props.storageProviderId}
             onCancel={onCancel}
             onSelectAsset={(assetKey) => {
                 onSelect(assetKey);
