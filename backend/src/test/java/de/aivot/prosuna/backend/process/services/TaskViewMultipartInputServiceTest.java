@@ -1290,7 +1290,7 @@ class FileUploadMultipartInputServiceTest {
 
     private static final class TestAVService extends AVService {
         private TestAVService() {
-            super(null, null);
+            super(null, null, null);
         }
 
         @Override

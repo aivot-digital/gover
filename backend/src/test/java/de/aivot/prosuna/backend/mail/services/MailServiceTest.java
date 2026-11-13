@@ -19,6 +19,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.user.dtos.UserInitialCredentialsDTO;
 import de.aivot.prosuna.backend.user.services.UserService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.annotation.Nullable;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Multipart;
@@ -148,7 +149,8 @@ class MailServiceTest {
                 mock(DepartmentMembershipService.class),
                 mailLogoService,
                 mock(UserService.class),
-                mock(UserConfigService.class)
+                mock(UserConfigService.class),
+                new SimpleMeterRegistry()
         );
         ReflectionTestUtils.setField(service, "mailHost", "smtp.example.org");
         var context = new HashMap<String, Object>();
@@ -231,7 +233,8 @@ class MailServiceTest {
                 mock(DepartmentMembershipService.class),
                 mailLogoService,
                 mock(UserService.class),
-                mock(UserConfigService.class)
+                mock(UserConfigService.class),
+                new SimpleMeterRegistry()
         );
         ReflectionTestUtils.setField(service, "mailHost", "smtp.example.org");
         var context = new HashMap<String, Object>();
@@ -321,7 +324,8 @@ class MailServiceTest {
                 mock(DepartmentMembershipService.class),
                 mailLogoService,
                 mock(UserService.class),
-                mock(UserConfigService.class)
+                mock(UserConfigService.class),
+                new SimpleMeterRegistry()
         );
         ReflectionTestUtils.setField(service, "mailHost", "smtp.example.org");
         var context = new HashMap<String, Object>();
@@ -414,7 +418,8 @@ class MailServiceTest {
                 mock(DepartmentMembershipService.class),
                 mailLogoService,
                 mock(UserService.class),
-                mock(UserConfigService.class)
+                mock(UserConfigService.class),
+                new SimpleMeterRegistry()
         );
         ReflectionTestUtils.setField(service, "mailHost", "smtp.example.org");
         var context = new HashMap<String, Object>();
@@ -506,7 +511,8 @@ class MailServiceTest {
                 mock(DepartmentMembershipService.class),
                 mock(MailLogoService.class),
                 mock(UserService.class),
-                mock(UserConfigService.class)
+                mock(UserConfigService.class),
+                new SimpleMeterRegistry()
         );
         ReflectionTestUtils.setField(service, "mailHost", "smtp.example.org");
         var context = new HashMap<String, Object>();
