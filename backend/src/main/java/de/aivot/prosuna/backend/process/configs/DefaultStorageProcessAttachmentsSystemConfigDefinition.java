@@ -44,6 +44,7 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
                         storageProviderRepository
                                 .findAllByType(StorageProviderType.Attachments)
                                 .stream()
+                                .filter((sp) -> !sp.getReadOnlyStorage())
                                 .map((sp) -> SelectInputElementOption.of(sp.getId().toString(), sp.getName()))
                                 .toList()
                 )
@@ -97,7 +98,17 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
     public void validateChange(@Nullable String oldValue,
                                @Nullable String newValue,
                                boolean changeConfirmed) throws ResponseException {
-        if (Objects.equals(oldValue, newValue) || changeConfirmed) {
+        if (Objects.equals(oldValue, newValue)) {
+            return;
+        }
+
+        if (newValue != null && storageProviderRepository.existsByIdAndReadOnlyStorageTrue(Integer.parseInt(newValue))) {
+            throw ResponseException.badRequest(
+                    "Der ausgewählte Speicheranbieter ist schreibgeschützt und kann nicht als zentraler Speicheranbieter für Vorgangsanlagen verwendet werden. Bitte wählen Sie einen anderen Speicheranbieter aus."
+            );
+        }
+
+        if (changeConfirmed) {
             return;
         }
 

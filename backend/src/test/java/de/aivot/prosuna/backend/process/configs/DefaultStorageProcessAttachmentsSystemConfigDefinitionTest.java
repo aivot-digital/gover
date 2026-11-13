@@ -49,6 +49,20 @@ class DefaultStorageProcessAttachmentsSystemConfigDefinitionTest {
     }
 
     @Test
+    void validateChangeShouldRejectReadOnlyProviderEvenWhenConfirmed() {
+        var storageProviderRepository = mock(StorageProviderRepository.class);
+        when(storageProviderRepository.existsByIdAndReadOnlyStorageTrue(2)).thenReturn(true);
+        var definition = new DefaultStorageProcessAttachmentsSystemConfigDefinition(
+                storageProviderRepository,
+                mock(ProcessInstanceRepository.class)
+        );
+
+        var exception = assertThrows(ResponseException.class, () -> definition.validateChange("1", "2", true));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+    }
+
+    @Test
     void validateChangeShouldIgnoreUnchangedValue() {
         var processInstanceRepository = mock(ProcessInstanceRepository.class);
         var definition = createDefinition(processInstanceRepository);

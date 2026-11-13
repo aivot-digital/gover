@@ -140,6 +140,12 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
             throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
         }
 
+        // Only the switch is checked, so a default provider that is already read-only can still be edited.
+        if (!Boolean.TRUE.equals(existingEntity.getReadOnlyStorage()) && Boolean.TRUE.equals(entity.getReadOnlyStorage())) {
+            testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, existingEntity, "Anlagen von Vorgängen", "auf schreibgeschützt gesetzt");
+            testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, existingEntity, "Dateien und Medien", "auf schreibgeschützt gesetzt");
+        }
+
         var def = storageProviderDefinitionService
                 .retrieveProviderDefinition(
                         existingEntity.getStorageProviderDefinitionKey(),
@@ -220,16 +226,22 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                     .badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um einen Systemanbieter handelt");
         }
 
-        testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, entity, "Anlagen von Vorgängen");
-        testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, entity, "Dateien und Medien");
+        testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, entity, "Anlagen von Vorgängen", "gelöscht");
+        testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, entity, "Dateien und Medien", "gelöscht");
 
         // TODO: Check if any file of this storage provider is used in a process or process instance.
 
         storageProviderRepository.delete(entity);
     }
 
-    private void testSystemConfigRelated(@Nonnull String key, @Nonnull StorageProviderEntity entity, @Nonnull String label) throws ResponseException {
-        // Check if the storage provider is the default for process attachments and prevents its deletion
+    /**
+     * Prevents an operation, named by its past participle such as "gelöscht", that would leave a default storage
+     * provider unable to store new files.
+     */
+    private void testSystemConfigRelated(@Nonnull String key,
+                                         @Nonnull StorageProviderEntity entity,
+                                         @Nonnull String label,
+                                         @Nonnull String operation) throws ResponseException {
         var defaultAttachmentStorageIdRaw = systemConfigService
                 .getValue(key);
 
@@ -252,7 +264,8 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                 throw ResponseException
                         .badRequest(
                                 String.format(
-                                        "Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um den Standardanbieter für %s handelt.",
+                                        "Dieser Speicheranbieter kann nicht %s werden, da es sich um den Standardanbieter für %s handelt.",
+                                        operation,
                                         StringUtils.quote(label)
                                 )
                         );
