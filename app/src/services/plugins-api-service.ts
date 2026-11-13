@@ -19,11 +19,11 @@ export const PluginComponentTypeOptions: PluginComponentType[] = [
 ];
 
 export const PluginComponentTypeDisplayNames: Record<PluginComponentType, string> = {
-    [PluginComponentType.JavascriptFunctionProvider]: 'JavaScript-Funktionsanbieter',
+    [PluginComponentType.JavascriptFunctionProvider]: 'JavaScript-Funktionsbibliothek',
     [PluginComponentType.StorageProviderDefinition]: 'Speicheranbieter-Definition',
     [PluginComponentType.ProcessNodeDefinition]: 'Prozesselement-Definition',
     [PluginComponentType.PaymentProviderDefinition]: 'Zahlungsanbieter-Definition',
-    [PluginComponentType.OperatorProvider]: 'Operator-Anbieter',
+    [PluginComponentType.OperatorProvider]: 'Sammlung von No-Code-Operatoren',
     [PluginComponentType.CommunicationProviderDefinition]: 'Kommunikationsanbieter-Definition',
 };
 

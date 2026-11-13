@@ -85,8 +85,8 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
                         my: 2,
                         maxWidth: 400
                     }}>
-                    Der Prozess befindet sich aktuell nicht in der Testphase.
-                    Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
+                    Der Prozess befindet sich aktuell nicht im Testmodus.
+                    Sobald der Testmodus aktiviert ist, können hier zusätzliche Eigenschaften des Prozesselements
                     konfiguriert werden.
                 </Typography>
             }

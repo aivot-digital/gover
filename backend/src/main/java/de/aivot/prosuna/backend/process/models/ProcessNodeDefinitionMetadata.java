@@ -219,7 +219,8 @@ public record ProcessNodeDefinitionMetadata(
                         codeListKey,
                         codeListKey == null ? null : getCodeListValueColumnKey(i),
                         codeListKey == null ? null : getCodeListLabelColumnKey(i),
-                        getCodeListValueMode(i, codeListKey)
+                        getCodeListValueMode(i, codeListKey),
+                        i instanceof RichTextInputElement
                 ));
             }
 
@@ -528,13 +529,28 @@ public record ProcessNodeDefinitionMetadata(
             @Nullable
             String codeListLabelColumnKey,
             @Nullable
-            CodeListValueMode codeListValueMode
+            CodeListValueMode codeListValueMode,
+            // Values of Markdown inputs, which the variable picker inserts as plain text unless they keep their formatting.
+            boolean markdown
     ) {
         public ForwardedProcessDataKey(@Nonnull String processDataKey,
                                        @Nonnull String label,
                                        @Nullable String subLabel,
                                        @Nonnull ProcessNodeEntity origin) {
-            this(processDataKey, label, subLabel, origin, null, null, null, null, null);
+            this(processDataKey, label, subLabel, origin, null, null, null, null, null, false);
+        }
+
+        public ForwardedProcessDataKey(@Nonnull String processDataKey,
+                                       @Nonnull String label,
+                                       @Nullable String subLabel,
+                                       @Nonnull ProcessNodeEntity origin,
+                                       @Nullable List<ValueOption> valueOptions,
+                                       @Nullable String codeListKey,
+                                       @Nullable String codeListValueColumnKey,
+                                       @Nullable String codeListLabelColumnKey,
+                                       @Nullable CodeListValueMode codeListValueMode) {
+            this(processDataKey, label, subLabel, origin, valueOptions, codeListKey, codeListValueColumnKey,
+                    codeListLabelColumnKey, codeListValueMode, false);
         }
 
         public record ValueOption(

@@ -380,7 +380,7 @@ export function PaymentProviderDetailsPageIndex() {
                                 }))}
                                 disabled={isBusy || !isEditable}
                                 error={errors.providerKey}
-                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist für zahlende Personen oder Organisationen sichtbar."
                             /> :
                             <SelectFieldComponent
                                 label="Zahlungsanbieter"
@@ -394,7 +394,7 @@ export function PaymentProviderDetailsPageIndex() {
                                 }))}
                                 disabled={true}
                                 error={errors.providerKey}
-                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                                hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsanbieters eingeblendet wird. Der Name des Anbieters ist für zahlende Personen oder Organisationen sichtbar."
                             />
                     }
                 </Grid>
@@ -588,7 +588,8 @@ export function PaymentProviderDetailsPageIndex() {
                     }}
                 >
                     <strong>Hinweis:</strong>{' '}
-                    Sofern noch ausstehende Transaktionen bestehen, werden diese ebenfalls gelöscht.
+                    Die in Prosuna gespeicherten Transaktionen dieses Zahlungsanbieters werden ebenfalls gelöscht.
+                    Bereits beim Zahlungsdienstleister angelegte Zahlungen werden dadurch nicht storniert.
                     Eine Liste mit ausstehenden Transaktionen können Sie im
                     Reiter <strong>Transaktionen</strong> einsehen.
                 </Typography>

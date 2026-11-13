@@ -129,6 +129,36 @@ describe('ChipInputFieldComponent', () => {
         expect(onChange.mock.calls).toEqual([[['Berlin']]]);
     });
 
+    it('displays option labels and preserves their values when selecting suggestions', () => {
+        const onChange = vi.fn();
+        const labels: Record<string, string> = {create: 'Erstellt', update: 'Aktualisiert'};
+        render(<ControlledField value={['create']} suggestions={['create', 'update']}
+                                getOptionLabel={value => labels[value] ?? value} onChange={onChange}/>);
+        expect(screen.getByText('Erstellt')).toBeVisible();
+
+        fireEvent.change(screen.getByRole('combobox'), {target: {value: 'Aktu'}});
+        fireEvent.click(screen.getByRole('option', {name: 'Aktualisiert'}));
+
+        expect(onChange).toHaveBeenLastCalledWith(['create', 'update']);
+        expect(screen.getByText('Aktualisiert')).toBeVisible();
+    });
+
+    it('resolves typed and pasted labels to their values while preserving unknown entries', () => {
+        const onChange = vi.fn();
+        const labels: Record<string, string> = {create: 'Erstellt', update: 'Aktualisiert'};
+        render(<ControlledField suggestions={['create', 'update']}
+                                getOptionLabel={value => labels[value] ?? value} onChange={onChange}/>);
+        const input = screen.getByRole('combobox');
+
+        fireEvent.change(input, {target: {value: 'Erstellt'}});
+        fireEvent.keyDown(input, {key: 'Enter'});
+        expect(onChange).toHaveBeenLastCalledWith(['create']);
+
+        paste(input, 'Aktualisiert\nCustom');
+
+        expect(onChange).toHaveBeenLastCalledWith(['create', 'update', 'Custom']);
+    });
+
     it('commits the draft on Tab without preventing focus movement', async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();

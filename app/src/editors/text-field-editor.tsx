@@ -89,7 +89,7 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                                 minCharacters: val,
                             });
                         }}
-                        error={element.maxCharacters != null && element.minCharacters != null && element.minCharacters > element.maxCharacters ? 'Sie fordern mehr Zeichen als Sie maximal zulassen.' : undefined}
+                        error={element.maxCharacters != null && element.minCharacters != null && element.minCharacters > element.maxCharacters ? 'Sie fordern mehr Zeichen, als Sie maximal zulassen.' : undefined}
                         hint="Geben Sie 0 oder nichts ein, um keine Minimalanzahl zu fordern."
                         disabled={!editable}
                     />
@@ -108,7 +108,7 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                                 maxCharacters: val,
                             });
                         }}
-                        error={element.maxCharacters != null && element.minCharacters != null && element.maxCharacters < element.minCharacters ? 'Sie fordern mehr Zeichen als Sie maximal zulassen.' : undefined}
+                        error={element.maxCharacters != null && element.minCharacters != null && element.maxCharacters < element.minCharacters ? 'Sie fordern mehr Zeichen, als Sie maximal zulassen.' : undefined}
                         hint="Geben Sie 0 oder nichts ein, um keine Maximalanzahl zu fordern."
                         disabled={!editable}
                     />

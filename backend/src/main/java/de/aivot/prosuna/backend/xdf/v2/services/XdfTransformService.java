@@ -415,7 +415,7 @@ public class XdfTransformService {
                     default:
                         fields.add(createErrorAlert(
                                 "Nicht unterstützter Datentyp",
-                                "Datentype %s für die Feldart %s für das Feld %s (%s) wird nicht unterstützt",
+                                "Datentyp %s für die Feldart %s für das Feld %s (%s) wird nicht unterstützt",
                                 datentyp,
                                 feldart,
                                 name,

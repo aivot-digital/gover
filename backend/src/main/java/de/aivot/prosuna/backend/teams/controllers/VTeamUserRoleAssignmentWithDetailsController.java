@@ -141,7 +141,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .orElseThrow(ResponseException::unauthorized);
 
         if (Objects.isNull(newAssignment.getTeamMembershipId())) {
-            throw ResponseException.badRequest("Die ID der Teamzugehörigkeit muss angegeben werden.");
+            throw ResponseException.badRequest("Die ID der Teammitgliedschaft muss angegeben werden.");
         }
 
         var membership = teamMembershipService
@@ -165,7 +165,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                         "teamId", membership.getTeamId(),
                         "userId", membership.getUserId()
                 )).withMessage(
-                "Die Team-Rollenzuweisung mit der ID %s zur Teamzugehörigkeit %s (Team %s, Mitarbeiter:in %s, Rolle %s) wurde von der Mitarbeiter:in %s erstellt.",
+                "Die Domänenrollenzuweisung mit der ID %s zur Teammitgliedschaft %s (Team %s, Mitarbeiter:in %s, Domänenrolle %s) wurde von der Mitarbeiter:in %s erstellt.",
                 StringUtils.quote(String.valueOf(created.getId())),
                 StringUtils.quote(String.valueOf(created.getTeamMembershipId())),
                 StringUtils.quote(String.valueOf(membership.getTeamId())),
@@ -231,7 +231,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .orElseThrow(ResponseException::notFound);
 
         if (Objects.isNull(entity.getTeamMembershipId())) {
-            throw ResponseException.badRequest("Die ID der Teamzugehörigkeit muss angegeben werden.");
+            throw ResponseException.badRequest("Die ID der Teammitgliedschaft muss angegeben werden.");
         }
 
         var membership = teamMembershipService
@@ -254,7 +254,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                         "teamId", membership.getTeamId(),
                         "userId", membership.getUserId()
                 )).withMessage(
-                "Die Team-Rollenzuweisung mit der ID %s zur Teamzugehörigkeit %s (Team %s, Mitarbeiter:in %s, Rolle %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                "Die Domänenrollenzuweisung mit der ID %s zur Teammitgliedschaft %s (Team %s, Mitarbeiter:in %s, Domänenrolle %s) wurde von der Mitarbeiter:in %s gelöscht.",
                 StringUtils.quote(String.valueOf(entity.getId())),
                 StringUtils.quote(String.valueOf(entity.getTeamMembershipId())),
                 StringUtils.quote(String.valueOf(membership.getTeamId())),

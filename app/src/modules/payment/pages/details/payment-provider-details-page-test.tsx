@@ -48,7 +48,7 @@ export function PaymentProviderDetailsPageTest() {
         clearValidationErrors();
 
         if (isStringNullOrEmpty(data.purpose)) {
-            setValidationError('purpose', 'Buchungstext ist erforderlich');
+            setValidationError('purpose', 'Verwendungszweck ist erforderlich');
         }
 
         if (isStringNullOrEmpty(data.description)) {
@@ -88,14 +88,14 @@ export function PaymentProviderDetailsPageTest() {
             >
                 <Grid size={6}>
                     <TextFieldComponent
-                        label="Buchungstext"
+                        label="Verwendungszweck"
                         value={data.purpose}
                         onChange={value => setData({
                             ...data,
                             purpose: value ?? '',
                         })}
                         disabled={isBusy}
-                        hint="Der Buchungstext (oder auch Verwendungszweck) wird bei der antragstellenden Person auf der Abrechnung (z.B. Bank, Kreditkarte etc.) erscheinen."
+                        hint="Verwendungszweck der Zahlung. Die Darstellung auf der Abrechnung hängt vom Zahlungsdienstleister und der Zahlungsart ab."
                         error={validationErrors.purpose}
                     />
                 </Grid>
@@ -109,7 +109,7 @@ export function PaymentProviderDetailsPageTest() {
                             description: value ?? '',
                         })}
                         disabled={isBusy}
-                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der antragstellenden Person angezeigt."
+                        hint="Name und/oder Beschreibung der Zahlungsposition. Wird der zahlenden Person oder Organisation angezeigt."
                         error={validationErrors.description}
                     />
                 </Grid>

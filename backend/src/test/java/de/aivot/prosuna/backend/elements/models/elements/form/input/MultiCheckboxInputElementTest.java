@@ -67,7 +67,7 @@ class MultiCheckboxInputElementTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0, Es können mehrere Optionen ausgewählt werden",
+            "0, Mehrfachauswahl möglich",
             "1, Es kann höchstens 1 Option ausgewählt werden",
             "2, Es können höchstens 2 Optionen ausgewählt werden"
     })

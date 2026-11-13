@@ -35,7 +35,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                         value={props.element.minimumRequiredRows ?? undefined}
                         label="Mindestanzahl der hinzuzufügenden Zeilen"
                         hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
-                        error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                        error={minRequiredError ? 'Sie fordern mehr Zeilen, als Sie maximal zulassen.' : undefined}
                         onChange={(val) => {
                             props.onPatch({
                                 minimumRequiredRows: val,
@@ -56,7 +56,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             value={props.element.maximumRows ?? undefined}
                             label="Maximalanzahl der hinzuzufügenden Zeilen"
                             hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                            error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                            error={minRequiredError ? 'Sie fordern mehr Zeilen, als Sie maximal zulassen.' : undefined}
                             onChange={(val) => {
                                 props.onPatch({
                                     maximumRows: val,
@@ -263,7 +263,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 }}
                 disabled={!props.editable}
             >
-                Spalte Hinzufügen
+                Spalte hinzufügen
             </Button>
         </>
     );

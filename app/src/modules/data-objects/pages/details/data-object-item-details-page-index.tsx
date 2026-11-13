@@ -2,7 +2,7 @@ import * as yup from 'yup';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType,
@@ -20,8 +20,7 @@ import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {DataObjectItem} from '../../models/data-object-item';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
-import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
+import {useConfirm} from '../../../../providers/confirm-provider';
 import {applyYupErrorsToElementData, prosunaSchemaToYup} from '../../../../utils/prosuna-schema-to-yup';
 import Grid from '@mui/material/Grid';
 import {isApiError} from '../../../../models/api-error';
@@ -111,11 +110,8 @@ export function DataObjectItemDetailsPageIndex() {
         useDeepEquals: true,
     });
 
-    const {
-        confirmOptions: confirmDeleteOptions,
-        showConfirmDialog: showConfirmDeleteDialog,
-        hideConfirmDialog: hideConfirmDeleteDialog,
-    } = useConfirmDialog();
+    const confirm = useConfirm();
+    const deletePendingRef = useRef(false);
     const editPermission = isNewItem ? Permission.OBJECT_ITEM_CREATE : Permission.OBJECT_ITEM_UPDATE;
     const editDisabledTooltip = !isEditable
         ? formatMissingPermissionTooltip(editPermission)
@@ -237,48 +233,40 @@ export function DataObjectItemDetailsPageIndex() {
         }
     };
 
-    const handleDelete = () => {
-        if (!canDeleteDataObjectItem) {
+    const handleDelete = async () => {
+        if (!canDeleteDataObjectItem || isBusy || deletePendingRef.current ||
+            originalDataObjectItem == null || isNewItem || dataObjectKey == null) {
             return;
         }
 
-        showConfirmDeleteDialog({
-            title: 'Datenobjekt löschen',
-            state: {},
-            onRender: (state, updateState) => {
-                return (
+        deletePendingRef.current = true;
+        try {
+            const confirmed = await confirm({
+                isDestructive: true,
+                title: 'Datenobjekt löschen',
+                children: (
                     <Typography>
                         Möchten Sie das Datenobjekt wirklich löschen?
                         Dieser Vorgang kann nicht rückgängig gemacht werden.
                     </Typography>
-                );
-            },
-            onConfirm: (state) => {
-                if (originalDataObjectItem == null || isNewItem || dataObjectKey == null) {
-                    return;
-                }
+                ),
+            });
+            if (!confirmed) {
+                return;
+            }
 
-                setIsBusy(true);
-
-                new DataObjectItemsApiService(api, dataObjectKey)
-                    .destroy(originalDataObjectItem.id)
-                    .then(() => {
-                        reset(); // prevent change blocker by resetting unsaved changes
-                        navigate(`/data-objects/${dataObjectKey}/`, {
-                            replace: true,
-                        });
-                        dispatch(showSuccessSnackbar('Das Datenobjekt wurde erfolgreich gelöscht.'));
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        dispatch(showErrorSnackbar('Beim Löschen des Datenobjektes ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
-                        setIsBusy(false);
-                    });
-            },
-            onCancel: () => {
-                hideConfirmDeleteDialog();
-            },
-        });
+            setIsBusy(true);
+            await new DataObjectItemsApiService(api, dataObjectKey).destroy(originalDataObjectItem.id);
+            reset(); // prevent change blocker by resetting unsaved changes
+            navigate(`/data-objects/${dataObjectKey}/`, {replace: true});
+            dispatch(showSuccessSnackbar('Das Datenobjekt wurde erfolgreich gelöscht.'));
+        } catch (err) {
+            console.error(err);
+            dispatch(showErrorSnackbar('Beim Löschen des Datenobjektes ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
+            setIsBusy(false);
+        } finally {
+            deletePendingRef.current = false;
+        }
     };
 
     return (
@@ -400,9 +388,6 @@ export function DataObjectItemDetailsPageIndex() {
 
             {changeBlocker.dialog}
 
-            <ConfirmDialogV2
-                options={confirmDeleteOptions}
-            />
         </Box>
     );
 }

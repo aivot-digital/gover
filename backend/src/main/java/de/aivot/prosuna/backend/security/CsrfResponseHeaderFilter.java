@@ -15,8 +15,11 @@ import java.io.IOException;
 public class CsrfResponseHeaderFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@Nonnull HttpServletRequest request) {
-        // Resolving a deferred CSRF token writes to Redis; health checks and Kubernetes probes must not depend on it.
-        return SecurityConfiguration.HEALTH_CHECK_REQUESTS.matches(request);
+        // Resolving a deferred CSRF token writes to Redis; monitoring requests and Kubernetes probes must not depend on it.
+        // API key requests need no CSRF token, and API clients usually keep no cookies, so every request would store
+        // another unused token.
+        return SecurityConfiguration.MONITORING_REQUESTS.matches(request)
+                || ApiKeyJwtDecoder.resolveApiKey(request) != null;
     }
 
     @Override

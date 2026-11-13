@@ -159,16 +159,16 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Holt eine Freigabe durch eine Mitarbeiter:in aus einem definierten Personenkreis ein.";
+        return "Erstellt eine Mitarbeitendenaufgabe, um einen Vorgang freizugeben oder abzulehnen.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine zugewiesene Aufgabe, über die eine Mitarbeiter:in einen Vorgang freigeben oder ablehnen kann.
-                
-                Der zulässige Personenkreis und die angezeigten Inhalte werden in der Elementkonfiguration festgelegt. Nach der Bearbeitung wird der Vorgang über den passenden Ausgang fortgesetzt; Entscheidung, Vermerk und Bearbeitungsinformationen stehen als Elementausgänge bereit.
+                Erstellt eine Mitarbeitendenaufgabe, in der die zuständige Person anhand der konfigurierten Freigabekriterien entscheidet. Die zuständige Person wird aus dem konfigurierten Personenkreis ermittelt. Der Vorgang wartet auf die Entscheidung und wird über den Ausgangsport „Freigabe erteilt“ oder „Freigabe abgelehnt“ fortgesetzt; die Entscheidung wird im Vorgangsverlauf festgehalten. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
+
+                Als Inhalt der Aufgabe dient entweder eine UI-Definition oder ein eigener Text. Bei einer UI-Definition werden Angaben aus Formularelementen mit Datenschlüssel bei beiden Entscheidungen in die Vorgangsdaten übernommen.
                 """;
     }
 
@@ -239,12 +239,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 new ProcessNodePort(
                         PORT_APPROVED,
                         "Freigabe erteilt",
-                        "Der Prozess wird fortgesetzt, wenn die Freigabe erteilt wurde."
+                        "Der Vorgang wird fortgesetzt, wenn die Freigabe erteilt wurde."
                 ),
                 new ProcessNodePort(
                         PORT_REJECTED,
                         "Freigabe abgelehnt",
-                        "Der Prozess wird fortgesetzt, wenn die Freigabe abgelehnt wurde."
+                        "Der Vorgang wird fortgesetzt, wenn die Freigabe abgelehnt wurde."
                 )
         );
     }
@@ -268,7 +268,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die Entscheidung getroffen hat.",
+                        "Die Kennung des Kontos der Person, die die Entscheidung getroffen hat.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -279,8 +279,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
-                        "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Werte nach Element-ID",
+                        "Die Werte der Formularelemente unter ihrer jeweiligen Element-ID, unabhängig von einem Datenschlüssel.",
                         "Record<string, unknown>"
                 )
         );
@@ -317,7 +317,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         StringUtils.quote(this.resolveNodeName(context.getThisNode()))
                 ));
 
@@ -526,7 +526,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         public static final String DATA_CONTENT = DATA_CONTENT_FIELD_ID;
         @InputElementPOJOBinding(id = DATA_CONTENT, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Daten"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Prosuna-UI, in der die freizugebenden Inhalte dargestellt werden."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine UI-Definition zur Darstellung der freizugebenden Inhalte."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public GroupLayoutElement dataContent;

@@ -316,10 +316,10 @@ describe('FieldLayoutGallery accessibility', () => {
         expect(imageButton).toHaveAccessibleDescription('Das Logo wird auf hellen Hintergründen verwendet.');
         expect(container.querySelector('button[aria-label="Logo: Auswahl entfernen"]')).toBeDisabled();
 
-        const departmentLabel = screen.getByTitle('Zuständige Organisationseinheit');
+        const departmentLabel = screen.getByTitle('Verantwortliche Organisationseinheit');
         const departmentButton = document.getElementById(departmentLabel.getAttribute('for')!);
         expect(departmentButton).toHaveAccessibleName(
-            'Zuständige Organisationseinheit – optional Fachbereich Digitalisierung',
+            'Verantwortliche Organisationseinheit – optional Fachbereich Digitalisierung',
         );
         expect(departmentButton).toHaveAttribute('aria-haspopup', 'dialog');
 
@@ -348,7 +348,7 @@ describe('FieldLayoutGallery accessibility', () => {
         expect(screen.getByRole('button', {name: 'antrag.pdf entfernen'})).toBeInTheDocument();
 
         const attachmentSet = screen.getByRole('combobox', {name: 'Anlagensatz'});
-        expect(attachmentSet).toHaveValue('Formularzusammenfassung');
+        expect(attachmentSet).toHaveValue('Kopie der Angaben');
         expect(attachmentSet).toHaveAccessibleDescription(
             'Wählen Sie den Anlagensatz, der gespeichert werden soll. 1/1',
         );

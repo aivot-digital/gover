@@ -50,7 +50,7 @@ public record ProcessNodeExecutionResultCommunicationRequest(
 
         nodeDataOutputKey = nodeDataOutputKey == null ? DEFAULT_NODE_DATA_OUTPUT_KEY : nodeDataOutputKey;
         if (StringUtils.isNullOrEmpty(nodeDataOutputKey)) {
-            throw new IllegalArgumentException("Der Node-Data-Ausgabeschlüssel für das Kommunikationsergebnis darf nicht leer sein.");
+            throw new IllegalArgumentException("Der Datenschlüssel in den Elementdaten für das Kommunikationsergebnis darf nicht leer sein.");
         }
 
         if (recipientIdentityId != null) {

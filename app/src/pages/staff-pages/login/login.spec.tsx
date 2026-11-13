@@ -19,7 +19,7 @@ describe('Login', () => {
             'Für diesen Bereich ist eine Anmeldung erforderlich. Melden Sie sich mit Ihrem ' +
             'persönlichen Mitarbeitenden-Konto an, um darauf zuzugreifen.',
         )).toBeVisible();
-        expect(screen.getByText('Sie werden zum verwendeten Identitätsdienst weitergeleitet.')).toBeVisible();
+        expect(screen.getByText('Sie werden zum verwendeten Identitätsanbieter weitergeleitet.')).toBeVisible();
         const prosunaLinks = screen.getAllByRole('link', {
             name: 'Mehr über Prosuna',
         });

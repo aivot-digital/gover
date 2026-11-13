@@ -149,6 +149,7 @@ export function CodeListDetailsPageItems() {
         }
 
         showConfirm({
+            isDestructive: true,
             title: 'Eintrag löschen',
             children: (
                 <Typography>
@@ -256,6 +257,7 @@ export function CodeListDetailsPageItems() {
                 disabledTooltip: updateDisabledTooltip,
             },
             {
+                color: 'error' as const,
                 icon: <Delete/>,
                 onClick: () => handleDeleteItem(item),
                 tooltip: 'Eintrag löschen',

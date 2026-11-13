@@ -34,7 +34,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
         props.element.minFiles > props.element.maxFiles;
     const requiresSubmittedFileNameIndex = props.element.isMultifile === true || hasReplicatingContainerParent;
     const submittedFileNameError = props.element.submittedFileName == null || props.element.submittedFileName.trim().length === 0 ?
-        'Bitte geben Sie einen Dateinamen bei Einreichung an.' :
+        'Bitte geben Sie einen Dateinamen bei Übermittlung an.' :
         undefined;
     const submittedFileNameHint = !requiresSubmittedFileNameIndex
         ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei.'
@@ -63,10 +63,14 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                             <Checkbox
                                 checked={props.element.isMultifile ?? false}
                                 onChange={(event) => {
+                                    const isMultifile = event.target.checked;
+                                    const hasDefaultLabel = props.element.label === 'Anlage' || props.element.label === 'Anlagen';
                                     props.onPatch({
-                                        isMultifile: event.target.checked,
+                                        isMultifile,
                                         minFiles: undefined,
                                         maxFiles: undefined,
+                                        // Follow the upload mode only while the generic default label is in use.
+                                        ...(hasDefaultLabel ? {label: isMultifile ? 'Anlagen' : 'Anlage'} : {}),
                                     });
                                 }}
                                 disabled={!props.editable}
@@ -97,7 +101,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                                     minFiles: val,
                                 });
                             }}
-                            error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                            error={invalidMinMax ? 'Die Mindestanzahl an Anlagen darf nicht größer als die Maximalanzahl sein.' : undefined}
                             disabled={!props.editable}
                         />
                     </Grid>
@@ -116,7 +120,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                                     maxFiles: val,
                                 });
                             }}
-                            error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                            error={invalidMinMax ? 'Die Mindestanzahl an Anlagen darf nicht größer als die Maximalanzahl sein.' : undefined}
                             disabled={!props.editable}
                         />
                     </Grid>
@@ -124,7 +128,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
             }
             <Grid size={12}>
                 <TextFieldComponent
-                    label="Dateiname bei Einreichung"
+                    label="Dateiname bei Übermittlung"
                     value={props.element.submittedFileName ?? undefined}
                     onChange={(val) => {
                         props.onPatch({
@@ -146,7 +150,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                             extensions: val,
                         });
                     }}
-                    hint="Die antragstellende Person kann nur Dateien mit diesen Endungen hochladen."
+                    hint="Die ausfüllende Person kann nur Dateien mit diesen Endungen hochladen."
                     error={props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
                     options={(allowedExtensions ?? []).map((ex) => ({
                         label: ex,

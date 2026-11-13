@@ -46,6 +46,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
 
     const referenceActions = [
         {
+            color: 'error' as const,
             icon: <Delete/>,
             tooltip: 'Diesen Vorgangsdaten-Verweis löschen',
             onClick: () => onChange(undefined),

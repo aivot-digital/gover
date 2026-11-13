@@ -68,7 +68,7 @@ export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'created' | 'updated
     name: yup.string()
         .trim()
         .min(3, 'Der Name des Datenmodells muss mindestens 3 Zeichen lang sein.')
-        .max(96, 'Der Name des Datenmodells darf maximal 255 Zeichen lang sein.')
+        .max(96, 'Der Name des Datenmodells darf maximal 96 Zeichen lang sein.')
         .required('Der Name des Datenmodells ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
@@ -77,11 +77,11 @@ export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'created' | 'updated
         .required('Die Beschreibung des Datenmodells ist ein Pflichtfeld.'),
     idGen: yup.string()
         .trim()
-        .max(64, 'Die ID Formatvorlage darf maximal 64 Zeichen lang sein.')
-        .required('Die Angabe des ID Typs ist ein Pflichtfeld.'),
+        .max(64, 'Die ID-Formatvorlage darf maximal 64 Zeichen lang sein.')
+        .required('Die Angabe des ID-Typs ist ein Pflichtfeld.'),
     schema: yup.mixed<GroupLayout>()
-        .required('Bitte legen Sie ein Datenschema mit mindestens einem Datenfeld fest.')
-        .test('has-data-field', 'Das Datenschema muss mindestens ein Datenfeld enthalten.', schema => (
+        .required('Bitte legen Sie eine UI-Definition mit mindestens einem Eingabefeld fest.')
+        .test('has-data-field', 'Die UI-Definition muss mindestens ein Eingabefeld enthalten.', schema => (
             schema != null && schema.type === ElementType.GroupLayout &&
             flattenElements(schema).some(element => isAnyInputElement(element) && element.type !== ElementType.ReplicatingContainer)
         )),
@@ -105,7 +105,7 @@ const IdGenOptions = [
     },
     {
         label: 'Formatvorlage',
-        subLabel: 'Erzeugt fortlaufende IDs nach einem vorgegeben Muster mit der Unterstützung von Platzhaltern (z. B. ANT-%Y-%M-%D-%I4 → ANT-2025-10-01-0001). ',
+        subLabel: 'Erzeugt fortlaufende IDs nach einem vorgegebenen Muster mit der Unterstützung von Platzhaltern (z. B. ANT-%Y-%M-%D-%I4 → ANT-2025-10-01-0001). ',
         value: '',
     },
 ];
@@ -324,7 +324,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 disabled={isBusy || !isEditable}
                 error={errors.name}
                 minCharacters={3}
-                maxCharacters={255}
+                maxCharacters={96}
                 hint="Name des Datenmodells zur internen Identifizierung."
             />
 
@@ -420,17 +420,17 @@ export function DataObjectSchemaDetailsPageIndex() {
                     error={errors.idGen}
                     minCharacters={3}
                     maxCharacters={64}
-                    hint="Muster für automatisch generierte IDs. Unterstützte Platzhalter: %Y (Jahr), %M (Monat), %D (Tag), %I1–%I9 (fortlaufende Nummer mit führenden Nullen in gewählter Zahl). Der Platzhalter %I… muss zwingend enthalten sein und am Anfang ODER am Ende stehen (z. B. %Y-%M-%D-%I4)."
+                    hint="Unterstützte Platzhalter: %Y (Jahr), %M (Monat), %D (Tag) und %I1 bis %I9 (Zähler mit führenden Nullen). Die Formatvorlage muss mit einem Zählerplatzhalter wie %I4 beginnen oder enden, z. B. OBJ-%Y-%I4."
                     disabled={isBusy || !isEditable || !isNewItem}
                 />
             }
 
             <Box sx={{my: 3}}>
                 <UiDefinitionInputFieldComponent
-                    label="Datenschema"
+                    label="UI-Definition"
                     required
                     error={errors.schema}
-                    hint="Das Datenschema beschreibt die Struktur der Daten, die in den Datenobjekten gespeichert werden. Es definiert die Felder und deren Typen."
+                    hint="Die UI-Definition legt die Formularelemente zur Erfassung der Datenobjekte sowie deren Anordnung und Eingaberegeln fest."
                     value={currentDataObject.schema}
                     expectedRootType={ElementType.GroupLayout}
                     onChange={(schema) => {

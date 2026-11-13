@@ -161,7 +161,7 @@ function DateTimeRangeExample() {
 
     return (
         <DateTimeRangeFieldComponent
-            label="Datum- und Zeitspanne"
+            label="Datums- und Zeitspanne"
             value={{start, end}}
             onChange={() => {
             }}
@@ -250,8 +250,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Das Bild-Element dient Ihnen dazu, ein beliebiges Bild darzustellen.
             </Typography>
             <Typography sx={{mt: 2}}>
-                Bitte beachten Sie, dass Sie Bilder nur via URL einbinden können.
-                Das Bild muss also auf einem Server hochgeladen und über das Internet erreichbar sein.
+                Wählen Sie ein Bild aus Dateien und Medien oder geben Sie eine erreichbare Bild-URL an.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -294,7 +293,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.LinkButton]: (
         <Box>
             <Typography>
-                Mit einer Schaltfläche können Sie einen Link öffnen oder eine vom Prozessknoten unterstützte
+                Mit einer Schaltfläche können Sie einen Link öffnen oder eine vom Prozesselement unterstützte
                 Aufgabenaktion auslösen. Aufgabenaktionen stehen nur in der passenden Ansicht für Mitarbeitende
                 oder externe Beteiligte zur Verfügung und benötigen eine technische Ereigniskennung.
             </Typography>
@@ -1033,7 +1032,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.DateTime]: (
         <Box>
             <Typography>
-                Das Datum und Uhrzeit-Element dient Ihnen dazu, einen konkreten Zeitpunkt abzufragen.
+                Das Element „Datum und Uhrzeit“ dient Ihnen dazu, einen konkreten Zeitpunkt abzufragen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1087,7 +1086,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.DateTimeRange]: (
         <Box>
             <Typography>
-                Das Element „Datum- und Zeitspanne“ ermöglicht die Erfassung eines Start- und Endzeitpunkts.
+                Das Element „Datums- und Zeitspanne“ ermöglicht die Erfassung eines Start- und Endzeitpunkts.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1137,8 +1136,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.DomainAndUserSelect]: (
         <Box>
             <Typography>
-                Das Domänen- und Mitarbeitendenauswahl-Element ermöglicht die Mehrfachauswahl von
-                Organisationseinheiten, Teams und Mitarbeitenden.
+                Das Element ermöglicht die Mehrfachauswahl von Organisationseinheiten, Teams und
+                Mitarbeiter:innen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1330,8 +1329,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Time]: (
         <Box>
             <Typography>
-                Das Uhrzeit-Element dient Ihnen dazu, Eingaben der Uhrzeit (0-24 Uhr) von Ihren Nutzer:innen
-                entgegenzunehmen.
+                Das Uhrzeit-Element erfasst Uhrzeiten von 00:00 bis 23:59 Uhr,
+                bei aktivierten Sekunden bis 23:59:59 Uhr.
                 Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
 
@@ -1354,7 +1353,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
         <Box>
             <Typography>
                 Das Anlagen-Element ermöglicht es Ihnen, hochzuladende Dokumente von Ihren Nutzer:innen
-                entgegenzunehmen. Welche Art von Anlagen (Dateiendungen) erlaubt sind und in welcher Anzahl,
+                entgegenzunehmen. Welche Arten von Anlagen (Dateiendungen) erlaubt sind und in welcher Anzahl,
                 können Sie festlegen.
             </Typography>
 
@@ -1462,8 +1461,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.RichTextInput]: (
         <Box>
             <Typography>
-                Das Element „Markdown-Eingabe“ erlaubt die Erfassung formatierter Texte (z. B. mit Überschriften,
-                Listen und Links).
+                Das Element „Markdown-Eingabe“ erlaubt die Erfassung formatierter Texte und speichert sie als
+                Markdown. Antragstellende Personen können Text fett oder kursiv setzen und Listen anlegen, in der
+                Sachbearbeitung stehen zusätzlich unter anderem Überschriften und Links zur Verfügung. E-Mails und
+                PDF-Dokumente zeigen den Text formatiert an.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1493,12 +1494,12 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
         <Box>
             <Typography>
                 Das Element „Identitätseingabe“ startet die Anmeldung über einen konfigurierten
-                Identifizierungsanbieter und kann optional eine alternative E-Mail-Eingabe erlauben.
+                Identitätsanbieter und kann optional eine alternative E-Mail-Eingabe erlauben.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Attribute aus der Identifizierung können anschließend in andere Formularfelder
-                außerhalb von Wiederholungscontainern übernommen werden.
+                Attribute aus der Identifizierung können anschließend in andere Formularelemente
+                außerhalb von Feldgruppen für mehrere Einträge übernommen werden.
             </Typography>
         </Box>
     ),
@@ -1506,7 +1507,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
         <Box>
             <Typography>
                 Das Element „Zahlungskonfiguration“ legt den Zahlungsdienstleister, den
-                Buchungstext und die Zahlungsposten eines Formulars fest.
+                Verwendungszweck und die Zahlungsposten eines Formulars fest.
             </Typography>
         </Box>
     ),
@@ -1568,7 +1569,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography>
                 Stellt vorhandene Dateien aus den Anlagensätzen des Vorgangs bereit, die zum gewählten Anlagensatz-Schlüssel gehören.
                 Die Dateien können angesehen und heruntergeladen werden.
-                So lassen sich beispielsweise eingereichte Nachweise in einem späteren Bearbeitungsschritt prüfen oder erstellte Bescheide bereitstellen.
+                So lassen sich beispielsweise übermittelte Anlagen in einem späteren Bearbeitungsschritt prüfen oder erstellte Bescheide bereitstellen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1576,7 +1577,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Divider>
 
             <ProcessAttachmentDisplayComponent
-                labelText="Eingereichte Nachweise"
+                labelText="Übermittelte Anlagen"
                 items={[
                     {
                         key: 'income',

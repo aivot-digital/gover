@@ -290,6 +290,35 @@ class TemplateLoaderServiceTest {
     }
 
     @Test
+    void richTextFieldTemplate_RendersMaximumLengthOnlyInBlankPrint() {
+        var element = new RichTextInputElement()
+                .setMaxCharacters(2000);
+        element.setLabel("Beschreibung");
+
+        var blankHtml = new TemplateLoaderService().processTemplate(
+                "form-parts/elements/rich-text-field.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "element", element,
+                        "value", ""
+                ),
+                TemplateMode.HTML
+        );
+        var customerHtml = new TemplateLoaderService().processTemplate(
+                "form-parts/elements/rich-text-field.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Customer),
+                        "element", element,
+                        "value", "Text"
+                ),
+                TemplateMode.HTML
+        );
+
+        assertTrue(blankHtml.contains("<span>2000</span>"));
+        assertFalse(customerHtml.contains("<span>2000</span>"));
+    }
+
+    @Test
     void markdownDialect_RendersFrontendGfmFeatures() {
         var html = new MarkdownDialect().render("""
                 ~Einfach~
@@ -308,13 +337,11 @@ class TemplateLoaderServiceTest {
         assertTrue(html.contains("<del>Einfach</del>"));
         assertTrue(html.contains("href=\"https://example.org/path\""));
         assertTrue(html.contains(">https://example.org/path<"));
-        assertTrue(html.contains("<table>"));
-        assertTrue(html.contains("<th>Spalte A</th>"));
-        assertTrue(html.contains("<td>Wert 1</td>"));
-        assertTrue(html.contains("<sup"));
-        assertTrue(html.contains("Fussnote"));
-        assertFalse(html.contains("| Spalte A |"));
-        assertFalse(html.contains("[^1]"));
+        assertTrue(html.contains("| Spalte A | Spalte B |<br />"));
+        assertTrue(html.contains("<p>Referenz[^1]</p>"));
+        assertTrue(html.contains("<p>[^1]: Fussnote</p>"));
+        assertFalse(html.contains("<table"));
+        assertFalse(html.contains("<sup"));
     }
 
     @Test
@@ -343,8 +370,8 @@ class TemplateLoaderServiceTest {
                 TemplateMode.HTML
         );
 
-        assertTrue(html.contains("Zuständige Stelle"));
-        assertTrue(html.contains("Bewirtschaftende Stelle"));
+        assertTrue(html.contains("Verantwortliche Stelle"));
+        assertTrue(html.contains("Betreuende Stelle"));
         assertTrue(html.contains("Responsible Street 1"));
         assertTrue(html.contains("Managing Street 2"));
         assertFalse(html.contains("Responsible Department Name"));
@@ -467,7 +494,7 @@ class TemplateLoaderServiceTest {
 
         var html = renderBlankForm(rootElement);
 
-        assertTrue(html.contains("Hinweise zur Einreichung des ausgefüllten Antrages"));
+        assertTrue(html.contains("Hinweise zur Übermittlung des ausgefüllten Formulars"));
         assertTrue(html.contains("<strong>postalisch</strong>"));
         assertFalse(html.contains("Unterschrift"));
     }
@@ -492,6 +519,30 @@ class TemplateLoaderServiceTest {
         assertTrue(html.contains("<strong>Wichtig</strong>"));
         assertTrue(html.contains("<li>Punkt A</li>"));
         assertFalse(html.contains("- Punkt A"));
+    }
+
+    @Test
+    void generalInformationTemplate_RendersDeadlinesAndThePrivacyLinkAsText() {
+        var introductionStep = new IntroductionStepElement()
+                .setExpiring("<b>Bis 31.12.</b>\n<img src=x onerror=alert(1)>");
+        var form = new PrintableFormPdfData()
+                .setSlug("test-form")
+                .setRootElement(new FormLayoutElement().setChildren(List.of(introductionStep)));
+        var html = new TemplateLoaderService().processTemplate(
+                "form-parts/allgemeine-informationen.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "form", form,
+                        "step", new PdfElement(introductionStep, null, List.of())
+                ),
+                TemplateMode.HTML
+        );
+
+        // The form shows deadlines as plain text, so the PDF must neither render nor run HTML from them.
+        assertTrue(html.contains("&lt;b&gt;Bis 31.12.&lt;/b&gt;\n&lt;img src=x onerror=alert(1)&gt;"));
+        assertFalse(html.contains("<b>"));
+        assertFalse(html.contains("<img src=x"));
+        assertTrue(html.contains(">https://prosuna.example/test-form?dialog=privacy</a>"));
     }
 
     @Test
@@ -585,7 +636,7 @@ class TemplateLoaderServiceTest {
         );
 
         assertTrue(dateTimeHtml.contains("TT.MM.JJJJ HH:MM:SS"));
-        assertTrue(chipInputHtml.contains("Mehrere Einträge bitte kommasepariert nacheinander notieren."));
+        assertTrue(chipInputHtml.contains("Trennen Sie mehrere Einträge durch Kommas."));
         assertTrue(chipInputHtml.contains("Mindestens"));
         assertTrue(chipInputHtml.contains("Maximal"));
         assertTrue(chipInputHtml.contains("Zeichen je Eintrag"));

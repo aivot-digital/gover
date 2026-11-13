@@ -50,13 +50,13 @@ public class XRepositoryCodelistJavascriptV1 implements JavascriptFunctionProvid
     @Nonnull
     @Override
     public String getName() {
-        return "XRepository Codelisten";
+        return "XRepository-Codelisten";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Codelisten aus den XRepositories.";
+        return "Diese JavaScript-Funktionsbibliothek ermöglicht den Zugriff auf Codelisten aus den XRepositories.";
     }
 
     @Nonnull

@@ -32,6 +32,7 @@ export interface ChipInputFieldComponentProps extends FormFieldLayoutProps {
     required?: boolean;
     readOnly?: boolean;
     suggestions?: string[];
+    getOptionLabel?: (option: string) => string;
     allowDuplicates?: boolean;
     minItems?: number;
     maxItems?: number;
@@ -54,6 +55,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
         required,
         readOnly,
         suggestions,
+        getOptionLabel,
         allowDuplicates,
         minItems,
         maxItems,
@@ -81,9 +83,9 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
         ? `${required ? 'Mindestens' : 'Bei Eingabe mindestens'} ${effectiveMinItems} ${pluralize(effectiveMinItems ?? 0, 'Eintrag', 'Einträge')}`
         : `Noch mindestens ${remainingItems} ${pluralize(remainingItems, 'Eintrag', 'Einträge')}`;
     const validationError = effectiveMaxItems != null && selectedValues.length > effectiveMaxItems
-        ? `Maximal ${effectiveMaxItems} Einträge erlaubt.`
+        ? `Maximal ${effectiveMaxItems} ${pluralize(effectiveMaxItems, 'Eintrag', 'Einträge')} erlaubt.`
         : minItems != null && minItems > 0 && selectedValues.length > 0 && selectedValues.length < minItems
-            ? `Mindestens ${minItems} Einträge erforderlich.`
+            ? `Mindestens ${minItems} ${pluralize(minItems, 'Eintrag', 'Einträge')} erforderlich.`
             : maxItemLength != null && maxItemLength > 0 && selectedValues.some(entry => entry.trim().length > maxItemLength)
                 ? `Jeder Eintrag darf höchstens ${maxItemLength} Zeichen enthalten.`
                 : allowDuplicates !== true && new Set(selectedValues.map(entry => entry.trim())).size !== selectedValues.length
@@ -123,7 +125,11 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
         const additions: string[] = [];
         const knownEntries = new Set(selectedValues.map(entry => entry.trim()));
         let hasDuplicates = false;
-        for (const entry of entries.map(entry => entry.trim()).filter(Boolean)) {
+        for (const rawEntry of entries.map(entry => entry.trim()).filter(Boolean)) {
+            // Typed and pasted labels must resolve to their values, just like selected suggestions.
+            const entry = getOptionLabel != null && !options.includes(rawEntry)
+                ? options.find(option => getOptionLabel(option) === rawEntry) ?? rawEntry
+                : rawEntry;
             if (allowDuplicates !== true && knownEntries.has(entry)) {
                 hasDuplicates = true;
             } else {
@@ -134,7 +140,7 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
         // Check only additions. Existing values must survive stricter rules and removals.
         // Reject an oversized paste as a whole instead of silently dropping its last entries.
         if (additions.length > 0 && effectiveMaxItems != null && selectedValues.length + additions.length > effectiveMaxItems) {
-            setFeedbackMessage(`Die Einträge wurden nicht übernommen. Maximal ${effectiveMaxItems} Einträge möglich.`);
+            setFeedbackMessage(`Die Einträge wurden nicht übernommen. Maximal ${effectiveMaxItems} ${pluralize(effectiveMaxItems, 'Eintrag', 'Einträge')} möglich.`);
             return false;
         }
         if (additions.length > 0) onChange([...selectedValues, ...additions]);
@@ -240,6 +246,8 @@ export function ChipInputFieldComponent(props: ChipInputFieldComponentProps) {
                     disabled={disabled}
                     size={size}
                     options={options}
+                    getOptionLabel={getOptionLabel}
+                    getOptionKey={option => option}
                     value={selectedValues}
                     inputValue={inputValue}
                     filterSelectedOptions={allowDuplicates !== true}

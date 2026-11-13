@@ -646,7 +646,7 @@ export function FormNodeEditorPage() {
                             Sie sind im Begriff, ein XDatenfeld-Schema zu importieren.
                         </Typography>
                         <Typography>
-                            Beim Import werden ggf. bereits bestehende Formularfelder im Editor durch die importierte
+                            Beim Import werden ggf. bereits bestehende Formularelemente im Editor durch die importierte
                             Struktur ersetzt.
                             Möchten Sie den Vorgang wirklich fortsetzen?
                         </Typography>
@@ -838,6 +838,7 @@ export function FormNodeEditorPage() {
         }
 
         confirm({
+            isDestructive: true,
             title: 'Element wirklich löschen',
             children: (
                 <Typography>
@@ -1081,10 +1082,10 @@ export function FormNodeEditorPage() {
                         <>
                             <Typography>
                                 Sie haben die Validierungen für dieses Formular deaktiviert.
-                                Es können ungültige oder fehlenden Eingaben vorliegen, die zu Fehlern beim Absenden des
+                                Es können ungültige oder fehlende Eingaben vorliegen, die zu Fehlern beim Absenden des
                                 Formulars führen können.
                                 Nur wenn alle Felder gültig sind, kann das Formular korrekt abgesendet werden.
-                                Andernfalls wird die Einreichung automatisch abgelehnt.
+                                Andernfalls wird die Übermittlung automatisch abgelehnt.
                             </Typography>
                             <Typography
                                 sx={{
@@ -1106,12 +1107,11 @@ export function FormNodeEditorPage() {
             // Check if a slug is configured and break if no slug is present because we cannot submit data without a slug
             if (configuredFormSlug == null || configuredFormSlug === '') {
                 await confirm({
-                    title: 'Keine Formular-URL vergeben',
+                    title: 'URL-Segment fehlt',
                     children: (
                         <Typography>
-                            Sie haben für dieses Formular keine Formular-URL konfiguriert.
-                            Öffnen Sie die Eigenschaften des entsprechenden Formular-Eingangselements und konfigurieren
-                            Sie eine Formular-URL, damit dieses Formular abgesendet werden kann.
+                            Für dieses Formular fehlt ein URL-Segment.
+                            Öffnen Sie die Eigenschaften des Formulareingangs und konfigurieren Sie das URL-Segment des Formulars.
                         </Typography>
                     ),
                     confirmButtonText: 'Ok',
@@ -1157,7 +1157,7 @@ export function FormNodeEditorPage() {
 
             if (testClaim == null) {
                 const createTestClaim = await confirm({
-                    title: 'Nicht im Test-Modus',
+                    title: 'Nicht im Testmodus',
                     children: (
                         <Typography>
                             Der Prozess, für den Sie das Formular absenden möchten, befindet
@@ -1207,7 +1207,7 @@ export function FormNodeEditorPage() {
                 }
             }
 
-            errorMessage = 'Die Anhänge konnten nicht für das Absenden vorbereitet werden.';
+            errorMessage = 'Die Anlagen konnten nicht für das Absenden vorbereitet werden.';
             const formData = new FormData();
             formData.append('inputs', JSON.stringify(values));
 
@@ -1363,6 +1363,7 @@ export function FormNodeEditorPage() {
                                                                     abort,
                                                                 )}
                                                             mode={ViewDispatcherMode.Editor}
+                                                            displayContext={ElementDisplayContext.CustomerFacing}
                                                             disableValidation={disableValidation}
                                                             disableVisibilities={disableVisibility}
                                                             highlightedElementId={hoveredTreeElementId}
@@ -1556,7 +1557,7 @@ export function FormNodeEditorPage() {
                             marginBottom: 4
                         }}>
                         Um die Auswahl vollständig zurückzusetzen, können Sie das formularspezifische
-                        Drei-Punkte-Menü verwenden und {quoteString('Alle Formulardaten löschen')} auswählen.
+                        Drei-Punkte-Menü verwenden und {quoteString('Eingaben verwerfen')} auswählen.
                     </Typography>
 
                     {isLoadingIdentitySlots &&

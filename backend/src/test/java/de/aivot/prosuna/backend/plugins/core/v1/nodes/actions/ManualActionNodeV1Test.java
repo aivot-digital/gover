@@ -529,7 +529,7 @@ class ManualActionNodeV1Test {
                 .setId(NODE_ID)
                 .setProcessId(PROCESS_ID)
                 .setProcessVersion(PROCESS_VERSION)
-                .setName("Manuelle Aktion ausführen")
+                .setName("Freie Aufgabe")
                 .setDataKey("manualActionNode")
                 .setProcessNodeDefinitionKey("de.aivot.core.manual_action")
                 .setProcessNodeDefinitionVersion(1)

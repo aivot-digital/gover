@@ -188,6 +188,7 @@ export function TableFieldComponent(props: TableFieldComponentProps) {
             }
 
             <ConfirmDialog
+                isDestructive
                 title="Möchten Sie die ausgewählten Einträge wirklich löschen?"
                 onConfirm={confirmDelete}
                 onCancel={() => setConfirmDelete(undefined)}

@@ -165,7 +165,7 @@ const elementConstructors: {
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
-        headline: 'Ihr Neues\nOnline-Formular',
+        headline: 'Ihr neues\nOnline-Formular',
         tabTitle: undefined,
         children: [],
         offlineSubmissionText: undefined,
@@ -185,7 +185,7 @@ const elementConstructors: {
     [ElementType.Alert]: (id) => ({
         ...makeFormBase(ElementType.Alert, id),
         title: 'Hinweis',
-        text: 'Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.',
+        text: 'Nutzen Sie diesen Hinweis, um ausfüllenden Personen zusätzliche Informationen hervorgehoben bereitzustellen.',
         alertType: 'info',
     }),
     [ElementType.GroupLayout]: (id) => ({
@@ -361,8 +361,8 @@ const elementConstructors: {
     }),
     [ElementType.SubmitStep]: (id) => ({
         ...makeFormBase(ElementType.SubmitStep, id),
-        textPreSubmit: 'Sie können Ihre Angaben nun verbindlich an die zuständige/bewirtschaftende Stelle übermitteln. Bitte stellen Sie sicher, dass Sie Ihre getätigten Angaben sorgfältig geprüft haben.',
-        textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Die zuständige/bewirtschaftende Stelle kann diese nun bearbeiten. Sofern weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
+        textPreSubmit: 'Sie können Ihre Angaben nun übermitteln. Bitte prüfen Sie zuvor, ob Ihre Angaben vollständig und richtig sind.',
+        textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Falls weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
         textProcessingTime: undefined,
         documentsToReceive: undefined,
             }),
@@ -382,7 +382,7 @@ const elementConstructors: {
     }),
     [ElementType.FileUpload]: (id) => ({
         ...makeInputBase(ElementType.FileUpload, id),
-        label: 'Anlage(n)',
+        label: 'Anlage',
         extensions: ['pdf'],
         isMultifile: undefined,
         maxFiles: undefined,
@@ -404,6 +404,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.RichTextInput, id),
         label: 'Markdown-Eingabe',
         reducedMode: false,
+        maxCharacters: 5000,
     }),
     [ElementType.UiDefinitionInput]: (id) => ({
         ...makeInputBase(ElementType.UiDefinitionInput, id),
@@ -414,7 +415,7 @@ const elementConstructors: {
     }),
     [ElementType.IdentityConfigElement]: (id) => ({
         ...makeInputBase(ElementType.IdentityConfigElement, id),
-        label: 'Identitätsnachweis',
+        label: 'Angaben zur Identität',
         options: [],
         allowsMail: false,
     }),
@@ -449,7 +450,7 @@ const elementConstructors: {
     }),
     [ElementType.DateTimeRange]: (id) => ({
         ...makeInputBase(ElementType.DateTimeRange, id),
-        label: 'Datum- und Zeitspanne',
+        label: 'Datums- und Zeitspanne',
         placeholder: undefined,
         mode: TimeFieldComponentModelMode.Minute,
     }),
@@ -503,7 +504,7 @@ const elementConstructors: {
     }),
     [ElementType.ProcessDataKeyInput]: (id) => ({
         ...makeInputBase(ElementType.ProcessDataKeyInput, id),
-        label: 'Prozessdaten-Schlüssel',
+        label: 'Datenschlüssel',
         disableWildCards: false,
         scopeProcessDataKeyInputElementId: undefined,
     }),
@@ -516,8 +517,8 @@ const elementConstructors: {
     }),
     [ElementType.ProcessIdentityIdInput]: (id) => ({
         ...makeInputBase(ElementType.ProcessIdentityIdInput, id),
-        label: 'Prozessidentität',
-        placeholder: 'Prozessidentität auswählen',
+        label: 'Identität',
+        placeholder: 'Identität auswählen',
         requiresCommunication: false,
     }),
     [ElementType.SecretSelectInput]: (id) => ({

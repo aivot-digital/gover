@@ -17,9 +17,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.util.HtmlUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -47,10 +50,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(UserFriendlyResponseStatusException.class)
     public ResponseEntity<Object> handleUserFriendlyResponseException(UserFriendlyResponseStatusException e) {
+        // Reasons may contain request values such as path parameters, so they must not become markup.
+        var reason = HtmlUtils.htmlEscape(Objects.requireNonNullElse(e.getReason(), ""), StandardCharsets.UTF_8.name());
         return ResponseEntity
                 .status(e.getStatusCode())
                 .contentType(MediaType.TEXT_HTML)
-                .body("<html><head><meta charset=\"UTF-8\"><title>Fehler beim Aufruf der Seite</title></head><body>Leider ist beim Aufruf der Seite ein Fehler aufgetreten. Die Fehlermeldung lautet:<br/><br/>" +  e.getReason() + "</body></html>");
+                .body("<html><head><meta charset=\"UTF-8\"><title>Fehler beim Aufruf der Seite</title></head><body>Leider ist beim Aufruf der Seite ein Fehler aufgetreten. Die Fehlermeldung lautet:<br/><br/>" + reason + "</body></html>");
     }
 
     @ExceptionHandler(ResponseException.class)
@@ -76,21 +81,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             WebRequest request
     ) {
         final List<String> errors = new ArrayList<>();
+        final var fieldErrors = ex.getBindingResult().getFieldErrors();
+        final var globalErrors = ex.getBindingResult().getGlobalErrors();
 
-        for (final FieldError error : ex.getBindingResult().getFieldErrors()) {
+        for (final FieldError error : fieldErrors) {
             errors.add(error.getField() + ": " + error.getDefaultMessage());
         }
 
-        for (final ObjectError error : ex.getBindingResult().getGlobalErrors()) {
+        for (final ObjectError error : globalErrors) {
             errors.add(error.getObjectName() + ": " + error.getDefaultMessage());
         }
 
-        final String message;
-        if (errors.isEmpty()) {
-            message = "Die Anfrage enthält ungültige Daten.";
-        } else {
-            message = errors.getFirst();
+        // Preserve technical field paths in details, but show only the validation message in the UI.
+        String validationMessage = null;
+        if (!fieldErrors.isEmpty()) {
+            validationMessage = fieldErrors.getFirst().getDefaultMessage();
+        } else if (!globalErrors.isEmpty()) {
+            validationMessage = globalErrors.getFirst().getDefaultMessage();
         }
+        final String message = validationMessage == null || validationMessage.isBlank()
+                ? "Die Anfrage enthält ungültige Daten."
+                : validationMessage;
 
         final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, message, errors, true);
 

@@ -9,10 +9,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "process_instance_attachments")
+@EntityListeners(ProcessInstanceStaffEventListener.class)
 public class ProcessInstanceAttachmentEntity {
     @Id
     @Nonnull
@@ -21,13 +23,13 @@ public class ProcessInstanceAttachmentEntity {
 
     @Nonnull
     @NotNull(message = "Der Dateiname darf nicht null sein.")
-    @NotBlank(message = "Der Dateiname darf nicht leer sein sein.")
+    @NotBlank(message = "Der Dateiname darf nicht leer sein.")
     @Size(max = 255, message = "Der Dateiname darf maximal 255 Zeichen lang sein.")
     private String fileName;
 
     @Nonnull
     @NotNull(message = "Der ursprüngliche Dateiname darf nicht null sein.")
-    @NotBlank(message = "Der ursprüngliche Dateiname darf nicht leer sein sein.")
+    @NotBlank(message = "Der ursprüngliche Dateiname darf nicht leer sein.")
     @Size(max = 255, message = "Der ursprüngliche Dateiname darf maximal 255 Zeichen lang sein.")
     private String originalFileName;
 
@@ -62,11 +64,25 @@ public class ProcessInstanceAttachmentEntity {
 
     @Nonnull
     @NotNull(message = "Der Pfad des Speicherindex-Items darf nicht null sein.")
-    @NotBlank(message = "Der Pfad des Speicherindex-Items darf nicht leer sein sein.")
+    @NotBlank(message = "Der Pfad des Speicherindex-Items darf nicht leer sein.")
     private String storagePathFromRoot;
 
     @Nullable
     private String uploadedByUserId;
+
+    /**
+     * When the upload field of a task view stopped referencing this attachment. Flagged attachments are hidden from
+     * lists, process data and steps, and they are due for deletion when their task ends.
+     */
+    @Nullable
+    private Instant removedAt;
+
+    /**
+     * When the task of this flagged attachment ended. The row is kept until its file is deleted from storage, so a
+     * failed deletion can be retried; a due attachment is never restored.
+     */
+    @Nullable
+    private Instant deletionDueAt;
 
     /**
      * Ignore this field in database mapping and JSON serialization. This is only used when creating the file and saving it to the database.
@@ -275,6 +291,26 @@ public class ProcessInstanceAttachmentEntity {
 
     public ProcessInstanceAttachmentEntity setUploadedByUserId(@Nullable String uploadedByUserId) {
         this.uploadedByUserId = uploadedByUserId;
+        return this;
+    }
+
+    @Nullable
+    public Instant getRemovedAt() {
+        return removedAt;
+    }
+
+    public ProcessInstanceAttachmentEntity setRemovedAt(@Nullable Instant removedAt) {
+        this.removedAt = removedAt;
+        return this;
+    }
+
+    @Nullable
+    public Instant getDeletionDueAt() {
+        return deletionDueAt;
+    }
+
+    public ProcessInstanceAttachmentEntity setDeletionDueAt(@Nullable Instant deletionDueAt) {
+        this.deletionDueAt = deletionDueAt;
         return this;
     }
 

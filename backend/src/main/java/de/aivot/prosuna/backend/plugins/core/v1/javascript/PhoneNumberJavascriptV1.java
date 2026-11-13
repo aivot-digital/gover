@@ -14,7 +14,7 @@ public class PhoneNumberJavascriptV1 implements JavascriptFunctionProvider {
     @Override @Nonnull public String getComponentVersion() { return "1.0.0"; }
     @Override @Nonnull public String getParentPluginKey() { return CorePlugin.PLUGIN_KEY; }
     @Override @Nonnull public String getName() { return "Telefonnummernfunktionen"; }
-    @Override @Nonnull public String getAbstract() { return "Prüft, normalisiert und formatiert Telefonnummern mit Ländervorwahl."; }
+    @Override @Nonnull public String getAbstract() { return "Diese JavaScript-Funktionsbibliothek prüft, normalisiert und formatiert Telefonnummern mit Ländervorwahl."; }
     @Override @Nonnull public String getDescription() {
         return "isPossible prüft die Plausibilität, isValid zusätzlich bekannte Nummernpläne. Beide prüfen keine Erreichbarkeit. "
                 + "normalize gibt plausible Nummern im E.164-Format zurück. format stellt sie international (Standard) oder national dar. "

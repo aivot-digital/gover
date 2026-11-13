@@ -175,7 +175,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                                 });
                             }}
                             minValue={1}
-                            hint="Verfahrens-ID, für die die möglichen Personenkreise ermittelt werden."
+                            hint="Prozess-ID, für die die möglichen Personenkreise ermittelt werden."
                             disabled={!editable}
                         />
                     </Grid>
@@ -197,7 +197,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                                 });
                             }}
                             minValue={1}
-                            hint="Version des Verfahrens, für die die Rechte ausgewertet werden."
+                            hint="Prozessversion, für die die Berechtigungen ausgewertet werden."
                             disabled={!editable}
                         />
                     </Grid>

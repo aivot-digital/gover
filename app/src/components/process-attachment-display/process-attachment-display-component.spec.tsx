@@ -57,7 +57,7 @@ describe('ProcessAttachmentDisplayComponent', () => {
         expect(screen.getByRole('status')).toHaveTextContent('Anhänge werden geladen...');
         rerender(<ProcessAttachmentDisplayComponent labelText=" "/>);
         expect(screen.getByRole('group', {name: 'Anlagensatz-Anzeige'})).not.toHaveAttribute('aria-busy', 'true');
-        expect(screen.getByRole('status')).toHaveTextContent('Keine Anhänge vorhanden.');
+        expect(screen.getByRole('status')).toHaveTextContent('Keine Anlagen vorhanden.');
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
 

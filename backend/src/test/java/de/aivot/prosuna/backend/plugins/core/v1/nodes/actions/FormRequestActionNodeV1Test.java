@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
@@ -164,13 +165,18 @@ class FormRequestActionNodeV1Test {
         assertEquals(false, newIdentities.getOptionalSlotsAllowed());
         assertNotNull(newIdentities.getVisibility());
         assertNotNull(recipient.getVisibility());
+        var invitationEmail = layout.findChild(FormRequestActionNodeV1.NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID,
+                TextInputElement.class).orElseThrow();
+        assertTrue(invitationEmail.getRequired());
+        assertEquals(254, invitationEmail.getMaxCharacters());
+        assertNull(invitationEmail.getValidation(), "Recipient syntax is checked by the node's transport validation");
 
         var automaticContent = layout.findChild(
                 SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID,
                 RichTextInputElement.class
         ).orElseThrow();
         assertEquals(
-                "Der Text der Nachricht. Ein Link zum Einreichen der angeforderten Daten wird automatisch ergänzt.",
+                "Der Text der Nachricht. Ein Link zum Übermitteln der angeforderten Angaben wird automatisch ergänzt.",
                 automaticContent.getHint()
         );
     }
@@ -202,25 +208,30 @@ class FormRequestActionNodeV1Test {
         );
 
         var message = result.getCommunicationRequest().message();
-        assertEquals("Hallo **Ada**", message.body());
-        assertEquals("Hallo **Ada**", message.htmlBody());
+        assertEquals("Hallo Ada", message.body());
+        assertEquals("Hallo **Ada**", message.markdownBody());
         assertSame(signatureDepartment, message.signatureDepartment());
         assertEquals(RECIPIENT_IDENTITY_ID, result.getIdentityId());
         assertEquals(RECIPIENT_IDENTITY_ID, result.getCommunicationRequest().recipientIdentityId());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(
-                        "Daten einreichen",
+                        "Angaben übermitteln",
                         "https://example.test/process/instance-access/tasks/task-access"
                 )),
                 message.callToActions()
         );
     }
 
-    @Test
-    void newRecipientModeInvitesByEmailAndCollectsIdentityBeforeForm() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+            "'  invitee@example.test  ', invitee@example.test",
+            "anna@verwaltung, anna@verwaltung",
+            "anna@müller.de, anna@xn--mller-kva.de"
+    })
+    void newRecipientModeInvitesByEmailAndCollectsIdentityBeforeForm(String address, String normalized) throws Exception {
         var configuration = new FormRequestActionNodeV1.NodeConfig();
         configuration.recipientMode = "new";
-        configuration.recipientEmailAddress = "  invitee@example.test  ";
+        configuration.recipientEmailAddress = address;
         configuration.newIdentities = List.of(new IdentityConfigElementSlot()
                 .setId("representative")
                 .setTitle("Vertretung")
@@ -244,9 +255,9 @@ class FormRequestActionNodeV1Test {
 
         assertNull(result.getIdentityId());
         assertNull(result.getCommunicationRequest().recipientIdentityId());
-        assertEquals("invitee@example.test", result.getCommunicationRequest().recipientEmailAddress());
+        assertEquals(normalized, result.getCommunicationRequest().recipientEmailAddress());
         assertEquals(List.of(new CommunicationMessageCallToAction(
-                "Daten einreichen", "https://example.test/process/instance-access/tasks/task-access"
+                "Angaben übermitteln", "https://example.test/process/instance-access/tasks/task-access"
         )), result.getCommunicationRequest().message().callToActions());
         assertEquals(1, instance.getIdentities().size());
 
@@ -315,12 +326,12 @@ class FormRequestActionNodeV1Test {
         var headline = assertInstanceOf(HeadlineContentElement.class, view.layout().getChildren().getFirst());
         var introduction = assertInstanceOf(RichTextContentElement.class, view.layout().getChildren().get(1));
         if (status == ProcessTaskStatus.AwaitingCustomer) {
-            assertEquals("Daten einreichen", headline.getContent());
-            assertTrue(introduction.getContent().contains("Bitte ergänzen Sie"));
-            assertEquals(List.of(new TaskViewEvent("Daten einreichen", "submit")), view.events());
+            assertEquals("Angaben übermitteln", headline.getContent());
+            assertEquals("Ergänzen Sie die angeforderten Angaben und übermitteln Sie diese anschließend.", introduction.getContent());
+            assertEquals(List.of(new TaskViewEvent("Angaben übermitteln", "submit")), view.events());
         } else {
             assertEquals("Angeforderte Angaben", headline.getContent());
-            assertFalse(introduction.getContent().contains("Bitte ergänzen Sie"));
+            assertFalse(introduction.getContent().contains("Ergänzen Sie"));
             assertTrue(view.events().isEmpty());
         }
     }
@@ -335,8 +346,8 @@ class FormRequestActionNodeV1Test {
 
         assertEquals(1, view.layout().getChildren().size());
         var confirmation = assertInstanceOf(AlertContentElement.class, view.layout().getChildren().getFirst());
-        assertEquals("Daten eingereicht", confirmation.getTitle());
-        assertEquals("Sie haben die angeforderten Daten erfolgreich eingereicht.", confirmation.getText());
+        assertEquals("Angaben übermittelt", confirmation.getTitle());
+        assertEquals("Sie haben die angeforderten Angaben erfolgreich übermittelt.", confirmation.getText());
         assertTrue(view.data().isEmpty());
         assertTrue(view.trustedData().isEmpty());
         assertTrue(view.events().isEmpty());
@@ -505,6 +516,50 @@ class FormRequestActionNodeV1Test {
                 .reusableUiDefinitions().isEmpty());
     }
 
+    @ParameterizedTest
+    @EnumSource(ProcessNodeConfigurationValidationPhase.class)
+    void invitationValidationUsesTransportRulesForConcreteAddresses(ProcessNodeConfigurationValidationPhase phase) {
+        var configuration = newRecipientConfiguration();
+        for (var address : List.of("anna@verwaltung", "anna@müller.de", "anna@example.org", "\"ab\"@example.org")) {
+            configuration.recipientEmailAddress = address;
+            assertNull(node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                    new ProcessNodeEntity(), configuration, DerivedRuntimeElementData.empty(), phase)), address);
+        }
+        for (var address : List.of("", "invalid", "Name <anna@example.org>", "a@example.org\r\nBcc: b@example.org")) {
+            configuration.recipientEmailAddress = address;
+            var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                    new ProcessNodeEntity(), configuration, DerivedRuntimeElementData.empty(), phase));
+            assertNotNull(errors, address);
+            assertTrue(errors.containsKey(FormRequestActionNodeV1.NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID), address);
+        }
+    }
+
+    @Test
+    void invitationValidationDefersDynamicAddressesOnlyDuringAuthoring() {
+        var configuration = newRecipientConfiguration();
+        configuration.recipientEmailAddress = null;
+        var derived = DerivedRuntimeElementData.empty();
+        derived.getElementStates().put(FormRequestActionNodeV1.NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID,
+                new ComputedElementState().setInputValueDeferred(true));
+        assertNull(node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                new ProcessNodeEntity(), configuration, derived, ProcessNodeConfigurationValidationPhase.Authoring)));
+        var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                new ProcessNodeEntity(), configuration, derived, ProcessNodeConfigurationValidationPhase.Runtime));
+        assertNotNull(errors);
+        assertTrue(errors.containsKey(FormRequestActionNodeV1.NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID));
+        configuration.recipientEmailAddress = "anna@verwaltung";
+        assertNull(node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(
+                new ProcessNodeEntity(), configuration, derived, ProcessNodeConfigurationValidationPhase.Runtime)));
+    }
+
+    private static FormRequestActionNodeV1.NodeConfig newRecipientConfiguration() {
+        var configuration = new FormRequestActionNodeV1.NodeConfig();
+        configuration.recipientMode = "new";
+        configuration.newIdentities = List.of(new IdentityConfigElementSlot()
+                .setId("representative").setTitle("Vertretung").setAllowsMail(true).setIsOptional(false));
+        return configuration;
+    }
+
     @Test
     void newRecipientModeRejectsMissingOrOptionalIdentityAndInvalidEmail() {
         var configuration = new FormRequestActionNodeV1.NodeConfig();
@@ -645,13 +700,13 @@ class FormRequestActionNodeV1Test {
                         new ProcessNodeOutput(
                                 "recipientIdentityId",
                                 "Identität",
-                                "Die ID der bestehenden oder beim Einreichen neu angegebenen Prozessidentität.",
+                                "Die ID der bestehenden oder bei der Übermittlung neu angegebenen Identität.",
                                 "string"
                         ),
                         new ProcessNodeOutput(
                                 "payload",
                                 "Zugeordnete Formulardaten",
-                                "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden.",
+                                "Enthält alle Formulardaten, die über einen Datenschlüssel zugeordnet wurden.",
                                 "Record<string, unknown>"
                         ),
                         new ProcessNodeOutput(
@@ -670,7 +725,7 @@ class FormRequestActionNodeV1Test {
                         new ProcessNodeOutput(
                                 "started",
                                 "Eingangszeitstempel",
-                                "Der Zeitstempel des Dateneingangs an den Auslöser",
+                                "Der Zeitpunkt der Übermittlung der Angaben",
                                 "string"
                         )
                 ),
@@ -873,8 +928,8 @@ class FormRequestActionNodeV1Test {
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
         assertEquals("submitted", completed.getViaPort());
         var event = captureHistoryEvent();
-        assertEquals("Daten eingereicht", event.getTitle());
-        assertEquals("Die angeforderten Daten wurden durch die Identität „" + expectedDisplayName + "“ eingereicht.", event.getMessage());
+        assertEquals("Angaben übermittelt", event.getTitle());
+        assertEquals("Die angeforderten Angaben wurden durch die Identität „" + expectedDisplayName + "“ übermittelt.", event.getMessage());
         assertNull(event.getTriggeringUserId());
         assertNull(event.getConcernedUserId());
         assertEquals(RECIPIENT_IDENTITY_ID, event.getConcernedIdentityId());

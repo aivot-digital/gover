@@ -15,6 +15,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.xrepository.models.*;
 import de.aivot.prosuna.backend.xrepository.services.XRepositoryCodeListService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +50,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class CodeListServiceTest {
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private static final Instant STALE_BEFORE = Instant.parse("2030-05-01T11:00:00Z");
     private static final UUID ASSET_KEY = UUID.fromString("00000000-0000-0000-0000-000000000003");
 
@@ -67,7 +69,7 @@ class CodeListServiceTest {
         assetService = mock(AssetService.class);
         storageService = mock(StorageService.class);
         service = new CodeListService(codeListRepository, codeListItemRepository, xRepositoryCodeListService,
-                assetService, storageService, transactionManager());
+                assetService, storageService, transactionManager(), meterRegistry);
         // Writes lock the list; unless a test claims a synchronization, the locked list is the stored one.
         when(codeListRepository.findByKeyForUpdate(anyString()))
                 .thenAnswer(call -> codeListRepository.findById(call.getArgument(0)));
@@ -400,6 +402,7 @@ class CodeListServiceTest {
                 eq("Die Schlüsselspalte „Schlüssel“ enthält den Wert „001“ mehrfach."), any());
         verify(codeListRepository, never()).save(any());
         assertEquals(List.of(), current.getColumns());
+        assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "failed").count());
     }
 
     @Test
@@ -419,6 +422,7 @@ class CodeListServiceTest {
         assertEquals(List.of("code", "COL1", "name"), current.getColumns());
         assertEquals("code", current.getKeyColumnKey());
         assertEquals(List.of(List.of("001", "x", "Berlin"), List.of("002", "x", "Hamburg")), savedItemColumns());
+        assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "success").count());
     }
 
     /** Test case 2 of OP#1265: the updated CSV adds the color column in front of the name column. */

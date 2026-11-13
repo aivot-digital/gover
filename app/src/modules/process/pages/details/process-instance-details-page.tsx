@@ -15,11 +15,18 @@ import {type ProcessInstanceDetails} from '../../entities/process-instance-detai
 import {isProcessInstanceFinished, ProcessInstanceStatusLabels, ProcessInstanceStatusColor} from '../../enums/process-instance-status';
 import {Permission} from '../../../../data/permissions/permission';
 import {useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {useStaffEvent} from '../../../staff-events/hooks/use-staff-event';
+import {PROCESS_INSTANCE_STAFF_EVENT_TYPE} from '../../data/process-instance-staff-event-type';
 
 export function ProcessInstanceDetailsPage() {
     const {id} = useParams();
     const refreshPermissionSet = useRefreshPermissionSet();
     const controlRef = useRef<GenericDetailsPageControlRef>(null);
+    useStaffEvent({
+        type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
+        scope: id,
+        onEvent: () => controlRef.current?.refresh(),
+    });
     const [taskMenu, setTaskMenu] = useState<{
         anchor: Element;
         item: ProcessInstanceDetails;
@@ -111,7 +118,7 @@ export function ProcessInstanceDetailsPage() {
                                     sx={{mb: 2}}
                                 >
                                     Ein Vorgang ist die konkrete Ausführung eines Prozesses, zum Beispiel die
-                                    Bearbeitung eines eingereichten Antrags. Der Prozess legt fest, welche Schritte
+                                    Bearbeitung übermittelter Angaben. Der Prozess legt fest, welche Schritte
                                     erforderlich sind und wie sie zusammenhängen. In einem Vorgang können mehrere
                                     Aufgaben entstehen, die unterschiedlichen Personen zugewiesen sind.
                                 </Typography>

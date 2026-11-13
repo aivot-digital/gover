@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.workers.ProcessTaskDeadlineResultHandler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -101,8 +102,10 @@ class ProcessTaskExecutionServiceTest {
         when(edges.findByFromNodeIdAndViaPort(3, "overdue")).thenReturn(Optional.of(new ProcessEdgeEntity().setToNodeId(4).setViaPort("overdue")));
         when(loggers.create(1L, 2L, null, null)).thenReturn(logger);
         var deadlines = new ProcessTaskDeadlineService(nodes, nodeService, edges, instances, tasks, loggers,
-                new ProcessTaskDeadlineResultHandler(tasks, new ProcessWorkRequestService(workRequests, new StoredWorkSignals(rabbit), time)), time);
-        execution = new ProcessTaskExecutionService(instances, tasks, deadlines, new DataSourceTransactionManager(source), mock(jakarta.persistence.EntityManager.class));
+                new ProcessTaskDeadlineResultHandler(tasks, new ProcessWorkRequestService(workRequests, new StoredWorkSignals(rabbit), time),
+                        mock(ProcessInstanceAttachmentService.class)), time,
+                        new SimpleMeterRegistry());
+        execution = new ProcessTaskExecutionService(instances, tasks, deadlines, new DataSourceTransactionManager(source));
     }
 
     @Test

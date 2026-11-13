@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
 import de.aivot.prosuna.backend.codeLists.entities.CodeListItemEntity;
 import de.aivot.prosuna.backend.codeLists.services.CodeListService;
 import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -64,7 +65,7 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Codelisten.";
+        return "Diese JavaScript-Funktionsbibliothek ermöglicht den Zugriff auf Codelisten.";
     }
 
     @Nonnull
@@ -75,6 +76,12 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
 
                 Eine Codeliste kann entweder als vollständige Liste ihrer Einträge oder als Auswahloptionen aus einer Wert- und einer Beschriftungsspalte geladen werden. Spalten werden über ihren Spaltenschlüssel angegeben. Ohne Angabe wird die Schlüsselspalte der Codeliste verwendet. Dadurch lassen sich dieselben gepflegten Werte in Skripten, Ausdrücken und Oberflächen wiederverwenden.
                 """;
+    }
+
+    @Override
+    public boolean isAvailableIn(@Nonnull JavascriptExecutionContext context) {
+        // Only reads code lists.
+        return context == JavascriptExecutionContext.Default || context == JavascriptExecutionContext.AssetTemplate;
     }
 
     @Override
