@@ -314,11 +314,13 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
      * @return The last counter value or 0 if no previous instantiation exists.
      */
     private long getLastCounterValueFromPreviousInstantiation(@Nonnull ProcessNodeExecutionInitContext<CounterActionNodeV1Configuration> context) {
-        // Find the last instantiation of this process node.
+        // Find the last instantiation of this process node. The current task is already saved at this point
+        // and is the most recently started one, so it must be excluded.
         Optional<ProcessInstanceTaskEntity> lastIterationTask = processInstanceTaskRepository
-                .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
+                .findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc(
                         context.getThisProcessInstance().getId(),
-                        context.getThisNode().getId()
+                        context.getThisNode().getId(),
+                        context.getThisTask().getId()
                 );
 
         // Extract the last iteration counter value or 0 if none exists.
