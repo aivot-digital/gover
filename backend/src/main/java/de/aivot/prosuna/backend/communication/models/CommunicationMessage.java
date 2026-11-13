@@ -12,10 +12,12 @@ import java.util.List;
 public record CommunicationMessage(
         @Nonnull
         String subject,
+        // Plain text version of markdownBody, for example for the text part of mails.
         @Nonnull
         String body,
+        // Providers render it with MarkdownRenderer, which escapes raw HTML.
         @Nonnull
-        String htmlBody,
+        String markdownBody,
         @Nonnull
         List<CommunicationMessageCallToAction> callToActions,
         @Nonnull
@@ -34,7 +36,7 @@ public record CommunicationMessage(
     public static class Builder {
         private String subject;
         private String body;
-        private String htmlBody;
+        private String markdownBody;
         private List<CommunicationMessageCallToAction> callToActions = List.of();
         private Instant timestamp = Instant.now();
         private List<CommunicationMessageAttachment> attachments = List.of();
@@ -53,8 +55,8 @@ public record CommunicationMessage(
             return this;
         }
 
-        public Builder htmlBody(String htmlBody) {
-            this.htmlBody = htmlBody;
+        public Builder markdownBody(String markdownBody) {
+            this.markdownBody = markdownBody;
             return this;
         }
 
@@ -96,12 +98,12 @@ public record CommunicationMessage(
         public CommunicationMessage build() {
             assert subject != null : "Subject must not be null";
             assert body != null : "Body must not be null";
-            assert htmlBody != null : "HTML Body must not be null";
+            assert markdownBody != null : "Markdown body must not be null";
 
             return new CommunicationMessage(
                     subject,
                     body,
-                    htmlBody,
+                    markdownBody,
                     callToActions != null ? callToActions : List.of(),
                     timestamp,
                     attachments != null ? attachments : List.of(),

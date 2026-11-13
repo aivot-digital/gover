@@ -8,10 +8,11 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.Instant;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "departments")
-public class DepartmentEntity {
+public class DepartmentEntity implements LockVersioned {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "departments_id_seq")
     @SequenceGenerator(name = "departments_id_seq", allocationSize = 1)
@@ -48,12 +49,12 @@ public class DepartmentEntity {
 
     @Nullable
     @Column(length = 255)
-    @Length(max = 255, message = "Die technische Support E-Mail-Adresse darf maximal 255 Zeichen lang sein")
+    @Length(max = 255, message = "Die E-Mail-Adresse für den technischen Support darf maximal 255 Zeichen lang sein")
     private String technicalSupportEmail;
 
     @Nullable
     @Column(length = 96)
-    @Length(max = 96, message = "Die technische Support Telefonnummer darf maximal 96 Zeichen lang sein")
+    @Length(max = 96, message = "Die Telefonnummer für den technischen Support darf maximal 96 Zeichen lang sein")
     private String technicalSupportPhone;
 
     @Nullable
@@ -62,12 +63,12 @@ public class DepartmentEntity {
 
     @Nullable
     @Column(length = 255)
-    @Length(max = 255, message = "Die fachliche Support E-Mail-Adresse darf maximal 255 Zeichen lang sein")
+    @Length(max = 255, message = "Die E-Mail-Adresse für den fachlichen Support darf maximal 255 Zeichen lang sein")
     private String specialSupportEmail;
 
     @Nullable
     @Column(length = 96)
-    @Length(max = 96, message = "Die fachliche Support Telefonnummer darf maximal 96 Zeichen lang sein")
+    @Length(max = 96, message = "Die Telefonnummer für den fachlichen Support darf maximal 96 Zeichen lang sein")
     private String specialSupportPhone;
 
     @Nullable
@@ -86,6 +87,11 @@ public class DepartmentEntity {
 
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Signals
 
@@ -280,6 +286,17 @@ public class DepartmentEntity {
 
     public DepartmentEntity setDepth(@Nonnull Integer depth) {
         this.depth = depth;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public DepartmentEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

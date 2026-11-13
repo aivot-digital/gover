@@ -71,6 +71,9 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     @Nonnull
     @Override
     public DataObjectItemEntity create(@Nonnull DataObjectItemEntity entity) throws ResponseException {
+        // A lock version from the request would make Spring Data look for a row that does not exist yet.
+        entity.setLockVersion(null);
+
         var schema = dataObjectSchemaRepository
                 .findById(entity.getSchemaKey())
                 .orElseThrow(ResponseException::badRequest);
@@ -109,7 +112,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                                     .group(endMatcher.groupCount())
                                     .charAt(2));
                 } else {
-                    throw ResponseException.badRequest("ID generation pattern must contain an increment part (%I{n}) at the start or end: " + schema.getIdGen());
+                    throw ResponseException.badRequest("Die Formatvorlage muss mit einem Zählerplatzhalter wie „%I4“ beginnen oder enden, zum Beispiel „OBJ-%I4“.");
                 }
 
                 var fluff = schema
@@ -138,7 +141,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 .existsById(new DataObjectItemEntityId(entity.getSchemaKey(), id));
         if (idCheck) {
             throw ResponseException
-                    .badRequest("Es existiert bereits ein Datenobjekt mit der ID '" + id + "' für das Schema '" + entity.getSchemaKey() + "'");
+                    .badRequest("Es existiert bereits ein Datenobjekt mit der ID '" + id + "' für das Datenmodell '" + entity.getSchemaKey() + "'");
         }
 
         entity.setId(id);

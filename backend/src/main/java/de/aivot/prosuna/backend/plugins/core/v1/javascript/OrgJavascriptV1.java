@@ -57,7 +57,7 @@ public class OrgJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Organisationseinheiten.";
+        return "Diese JavaScript-Funktionsbibliothek stellt Informationen zu Organisationseinheiten bereit.";
     }
 
     @Nonnull

@@ -23,39 +23,36 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob ein bestimmtes Element auf der Benutzeroberfläche aktuell sichtbar ist.";
+        return "Prüft, ob das angegebene Formularelement laut berechnetem Sichtbarkeitszustand sichtbar ist.";
     }
 
     @Override
     public String getDescription() {
         return """                
                 # Beschreibung:
-                Der Operator **„Ist Sichtbar“** prüft, ob ein bestimmtes Element auf der Benutzeroberfläche aktuell **sichtbar** ist. \s
-                Dazu nimmt der Operator die **ID des Elements** als Eingabe und gibt **wahr** (true) zurück, wenn das Element sichtbar ist, oder **falsch** (false), wenn es ausgeblendet ist.
+                Der Operator **„Ist sichtbar“** prüft den berechneten Sichtbarkeitszustand des angegebenen Formularelements. \s
+                Geben Sie die **ID eines im Formular konfigurierten Formularelements** an. \s
+                Der Operator gibt **wahr** (true) zurück, wenn der berechnete Zustand sichtbar ist, und **falsch** (false), wenn er nicht sichtbar ist.
                 
                 # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob ein Hinweisfeld mit der ID `"hinweis"` angezeigt wird.
+                Im Formular ist ein Eingabefeld mit der ID `"telefonnummer"` konfiguriert.
+                Seine Sichtbarkeit wird über eine Bedingung gesteuert.
                 
-                Mit dem Operator **„Ist Sichtbar“** formulieren Sie: \s
+                Mit dem Operator **„Ist sichtbar“** prüfen Sie dessen berechneten Sichtbarkeitszustand: \s
                 ```text
-                Ist Sichtbar("hinweis")
+                Ist sichtbar("telefonnummer")
                 ```
                 
                 **Ergebnis:**
-                - **wahr:** Wenn das Element mit der ID `"hinweis"` auf der Oberfläche angezeigt wird. \s
-                - **falsch:** Wenn das Element ausgeblendet ist (z. B. per CSS `display: none` oder durch eine Bedingung).
+                - **wahr:** Wenn das Eingabefeld im berechneten Zustand sichtbar ist. \s
+                - **falsch:** Wenn das Eingabefeld im berechneten Zustand nicht sichtbar ist.
                 
                 **Weitere Beispiele:**
-                - **Ist Sichtbar("button_submit"):** → **wahr**, wenn der Button sichtbar ist. \s
-                - **Ist Sichtbar("error_message"):** → **falsch**, wenn die Fehlermeldung ausgeblendet ist.
+                - **Ist sichtbar("zusatzangaben"):** → **wahr**, wenn der im Formular konfigurierte Abschnitt `"zusatzangaben"` im berechneten Zustand sichtbar ist. \s
+                - **Ist sichtbar("hinweis"):** → **falsch**, wenn das im Formular konfigurierte Textelement `"hinweis"` im berechneten Zustand nicht sichtbar ist.
                 
-                # Wann verwenden Sie den Operator „Ist Sichtbar“?
-                Verwenden Sie **„Ist Sichtbar“**, wenn:
-                - Sie prüfen möchten, ob ein bestimmtes Element in der Benutzeroberfläche angezeigt wird. \s
-                - Sie auf sichtbare oder ausgeblendete Elemente reagieren möchten (z. B. um Bedingungen oder Aktionen zu steuern). \s
-                - Sie dynamische Interfaces verwalten, bei denen Elemente je nach Benutzeraktion ein- oder ausgeblendet werden.
-                
-                Dieser Operator ist besonders hilfreich für interaktive Workflows, dynamische Formulare oder benutzerfreundliche Oberflächen mit einblendbaren Elementen.
+                # Wann verwenden Sie den Operator „Ist sichtbar“?
+                Verwenden Sie **„Ist sichtbar“**, um Bedingungen in Ihrem Formular vom berechneten Sichtbarkeitszustand eines anderen Formularelements abhängig zu machen.
                 """;
     }
 
@@ -67,7 +64,7 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Wert",
-                                "Die ID des zu überprüfenden Elements."
+                                "Die ID des zu überprüfenden Formularelements."
                         )
                 )
         );
@@ -86,6 +83,6 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "das Feld „#0“ ist sichtbar";
+        return "das Formularelement „#0“ ist sichtbar";
     }
 }

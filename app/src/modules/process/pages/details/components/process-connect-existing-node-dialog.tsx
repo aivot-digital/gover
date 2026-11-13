@@ -191,7 +191,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                     <TextField
                         select
                         fullWidth
-                        label="Ausgang"
+                        label="Ausgangsport"
                         value={selectedPortKey}
                         onChange={(event) => {
                             setSelectedPortKey(event.target.value);
@@ -203,7 +203,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                         }}
                     >
                         <option value="" disabled>
-                            Ausgang auswählen
+                            Ausgangsport auswählen
                         </option>
                         {
                             availablePorts.map((port) => (
@@ -221,7 +221,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                         <Typography variant="caption" sx={{
                             color: "text.secondary"
                         }}>
-                            Ausgang
+                            Ausgangsport
                         </Typography>
                         <Typography sx={{
                             fontWeight: 600

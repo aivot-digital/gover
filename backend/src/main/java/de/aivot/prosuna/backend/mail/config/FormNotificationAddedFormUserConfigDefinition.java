@@ -48,7 +48,7 @@ public class FormNotificationAddedFormUserConfigDefinition implements UserConfig
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn in einer Ihrer entwickelnden Organisationseinheiten ein neues Formular angelegt wird.";
+        return "Erhalten Sie eine Benachrichtigung, wenn in einer Ihrer verwaltenden Organisationseinheiten ein neues Formular angelegt wird.";
     }
 
     @Override

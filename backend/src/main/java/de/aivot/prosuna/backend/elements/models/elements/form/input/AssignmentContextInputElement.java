@@ -160,19 +160,19 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
 
         var preferences = new ArrayList<String>();
         if (value.prefersPreviousProcessStepAssignee()) {
-            preferences.add("Bevorzuge Bearbeiter:in des vorherigen Prozessschritts");
+            preferences.add("Zuständige Person des vorherigen Prozessschritts bevorzugen");
         } else if (value.prefersUninvolvedUser()) {
-            preferences.add("Bevorzuge eine neue, unbeteiligte Mitarbeiter:in");
+            preferences.add("Bisher unbeteiligte Mitarbeiter:in bevorzugen");
         } else if (value.prefersProcessInstanceAssignee()) {
-            preferences.add("Bevorzuge die dem Vorgang zugewiesene Mitarbeiter:in");
+            preferences.add("Zuständige Person des Vorgangs bevorzugen");
         }
 
         if (value.prefersPreviousIterationAssignee()) {
-            preferences.add("Bevorzuge zuletzt zuständige Mitarbeiter:in");
+            preferences.add("Zuletzt zuständige Mitarbeiter:in bevorzugen");
         }
 
         if (value.prefersDifferentFromPreviousIterationAssignee()) {
-            preferences.add("Bevorzuge eine andere Mitarbeiter:in");
+            preferences.add("Andere Mitarbeiter:in bevorzugen");
         }
 
         if (!preferences.isEmpty()) {

@@ -19,7 +19,7 @@ public class PluginPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(
                         PLUGIN_READ,
                         "Erweiterungen anzeigen",
-                        "Erlaubt nur das Anzeigen der Seite „Erweiterungen“ und das Einsehen installierter Plugins sowie deren Metadaten."
+                        "Erlaubt nur das Anzeigen der Seite „Erweiterungen“ und das Einsehen installierter Erweiterungen sowie deren Metadaten."
                 ),
         };
     }
