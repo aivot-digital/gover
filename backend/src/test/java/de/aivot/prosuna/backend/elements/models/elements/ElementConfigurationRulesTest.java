@@ -20,8 +20,6 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.MultiCheckbo
 import de.aivot.prosuna.backend.elements.models.elements.form.input.MultiCheckboxInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
@@ -57,15 +55,25 @@ class ElementConfigurationRulesTest {
     void shouldTreatNonPositiveMaximumAsNoLimit() {
         assertEquals(Map.of(), labelled(new DomainAndUserSelectInputElement()).setMinItems(3).setMaxItems(0).validateConfiguration());
         assertEquals(Map.of(), labelled(new AssignmentContextInputElement()).setMinItems(3).setMaxItems(0).validateConfiguration());
+        assertEquals(Map.of(), labelled(new TableInputElement()).setFields(List.of(column("name"))).setMinimumRequiredRows(3).setMaximumRows(0).validateConfiguration());
+        assertEquals(Map.of(), labelled(new TableInputElement()).setFields(List.of(column("name"))).setMaximumRows(-1).validateConfiguration());
     }
 
     @Test
-    void shouldIgnoreMinimumsTheEditorHidesForOptionalElements() {
-        assertEquals(Map.of(), labelled(new ChipInputElement()).setMinItems(3).setMaxItems(2).validateConfiguration());
-        assertEquals(Map.of(), labelled(new ProcessInstanceAttachmentSetSelectElement()).setMinItems(3).setMaxItems(2).validateConfiguration());
-        assertEquals(Map.of(), labelled(new ReplicatingContainerLayoutElement()).setMinimumRequiredSets(3).setMaximumSets(2).validateConfiguration());
-        assertEquals(Map.of(), labelled(new TableInputElement()).setFields(List.of(column("name"))).setMinimumRequiredRows(3).setMaximumRows(2).validateConfiguration());
-        assertEquals(Map.of(), multiCheckbox(3, "a").validateConfiguration());
+    void shouldReportMinimumsOfOptionalElements() {
+        // Minimums apply as soon as entries exist, so optional elements need consistent limits too.
+        assertRangeError(labelled(new ChipInputElement()).setMinItems(3).setMaxItems(2),
+                "minItems", "maxItems", "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        assertRangeError(labelled(new ProcessInstanceAttachmentSetSelectElement()).setMinItems(3).setMaxItems(2),
+                "minItems", "maxItems", "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        assertRangeError(labelled(new ReplicatingContainerLayoutElement()).setMinimumRequiredSets(3).setMaximumSets(2),
+                "minimumRequiredSets", "maximumSets", "Sie fordern mehr Datensätze, als Sie maximal zulassen.");
+        assertRangeError(labelled(new TableInputElement()).setFields(List.of(column("name"))).setMinimumRequiredRows(3).setMaximumRows(2),
+                "minimumRequiredRows", "maximumRows", "Sie fordern mehr Zeilen, als Sie maximal zulassen.");
+        assertEquals(Map.of("minimumRequiredOptions", List.of("Sie fordern mehr Optionen, als Sie definiert haben.")),
+                multiCheckbox(3, "a").validateConfiguration());
+        assertRangeError(multiCheckbox(2, "a", "b", "c").setMaximumOptions(1),
+                "minimumRequiredOptions", "maximumOptions", "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
     }
 
     @Test
@@ -120,7 +128,7 @@ class ElementConfigurationRulesTest {
         upload.setSubmittedFileName(" ");
 
         assertEquals(
-                Map.of("submittedFileName", List.of("Geben Sie einen Dateinamen bei Einreichung an.")),
+                Map.of("submittedFileName", List.of("Geben Sie einen Dateinamen bei Übermittlung an.")),
                 upload.validateConfiguration()
         );
     }
@@ -144,15 +152,6 @@ class ElementConfigurationRulesTest {
     }
 
     @Test
-    void shouldReportTableMaximumsThatRejectEveryRow() {
-        var expected = Map.of("maximumRows", List.of("Lassen Sie mindestens eine Zeile zu oder entfernen Sie die Maximalanzahl der Zeilen."));
-
-        assertEquals(expected, required(labelled(new TableInputElement()).setFields(List.of(column("name"))).setMinimumRequiredRows(3).setMaximumRows(0)).validateConfiguration());
-        assertEquals(expected, labelled(new TableInputElement()).setFields(List.of(column("name"))).setMaximumRows(-1).validateConfiguration());
-        assertEquals(Map.of(), labelled(new TableInputElement()).setFields(List.of(column("name"))).setMaximumRows(1).validateConfiguration());
-    }
-
-    @Test
     void shouldRequireALabelForVisibleInputs() {
         var expected = Map.of("label", List.of("Geben Sie einen Titel für das Feld an."));
         var hidden = new TextInputElement();
@@ -172,7 +171,7 @@ class ElementConfigurationRulesTest {
         assertEquals(Map.of("options", List.of("Fügen Sie mindestens eine Option hinzu.")),
                 labelled(new SelectInputElement()).validateConfiguration());
         assertEquals(Map.of("options", List.of("Fügen Sie mindestens eine Option hinzu.")),
-                labelled(new RadioInputElement()).setOptions(List.of()).validateConfiguration());
+                labelled(new SelectInputElement()).setOptions(List.of()).validateConfiguration());
         assertEquals(Map.of("options", List.of(
                         "Geben Sie für jede Option eine Beschriftung und einen Wert an.",
                         "Die Werte der Optionen müssen eindeutig sein.",
@@ -185,8 +184,8 @@ class ElementConfigurationRulesTest {
                 )).validateConfiguration());
         assertEquals(Map.of("options", List.of("Geben Sie für jede Option eine Beschriftung und einen Wert an.")),
                 multiCheckbox(null, "a", "").validateConfiguration());
-        assertEquals(Map.of(), labelled(new RadioInputElement())
-                .setOptions(List.of(RadioInputElementOption.of("a", "A"), RadioInputElementOption.of("b", "B")))
+        assertEquals(Map.of(), labelled(new SelectInputElement())
+                .setOptions(List.of(SelectInputElementOption.of("a", "A"), SelectInputElementOption.of("b", "B")))
                 .validateConfiguration());
     }
 
@@ -195,7 +194,6 @@ class ElementConfigurationRulesTest {
         var expected = Map.of("codeListKey", List.of("Wählen Sie eine Codeliste aus."));
 
         assertEquals(expected, labelled(new SelectInputElement()).setOptionsSource(OptionsSourceType.CodeList).validateConfiguration());
-        assertEquals(expected, labelled(new RadioInputElement()).setOptionsSource(OptionsSourceType.CodeList).validateConfiguration());
         assertEquals(expected, multiCheckbox(null).setOptionsSource(OptionsSourceType.CodeList).validateConfiguration());
         assertEquals(expected, labelled(new ChipInputElement()).setOptionsSource(OptionsSourceType.CodeList).validateConfiguration());
         assertEquals(Map.of(), labelled(new SelectInputElement()).setOptionsSource(OptionsSourceType.CodeList).setCodeListKey("staaten").validateConfiguration());

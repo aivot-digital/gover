@@ -174,7 +174,7 @@ class FormTriggerNodeV1Test {
 
         assertNotNull(output);
         assertEquals("Eingangszeitstempel", output.label());
-        assertEquals("Der Zeitstempel der Formulareinreichung.", output.description());
+        assertEquals("Der Zeitstempel der Übermittlung.", output.description());
         assertEquals("string", output.typeDefinition());
     }
 
@@ -188,7 +188,7 @@ class FormTriggerNodeV1Test {
                 .orElse(null);
 
         assertNotNull(output);
-        assertEquals("Formularzusammenfassung", output.label());
+        assertEquals("Kopie der Angaben", output.label());
         assertEquals(
                 "Array<{ name: string; originalFileName: string; uri: string; size: number; }>",
                 output.typeDefinition()
@@ -229,7 +229,7 @@ class FormTriggerNodeV1Test {
 
         var attachmentSet = metadata.forwardedAttachmentSets().getFirst();
         assertEquals("formNode", attachmentSet.dataKey());
-        assertEquals("Formularzusammenfassung", attachmentSet.label());
+        assertEquals("Kopie der Angaben", attachmentSet.label());
         assertFalse(attachmentSet.isMultifile());
     }
 
@@ -417,22 +417,22 @@ class FormTriggerNodeV1Test {
 
         var attachmentSetCaptor = ArgumentCaptor.forClass(ProcessInstanceAttachmentSetEntity.class);
         verify(processInstanceAttachmentSetService).create(attachmentSetCaptor.capture());
-        assertEquals("Formularzusammenfassung.pdf", attachmentSetCaptor.getValue().getName());
+        assertEquals("Kopie der Angaben.pdf", attachmentSetCaptor.getValue().getName());
         assertEquals("formNode", attachmentSetCaptor.getValue().getDataKey());
         assertEquals(PROCESS_INSTANCE_ID, attachmentSetCaptor.getValue().getProcessInstanceId());
         assertEquals(TASK_ID, attachmentSetCaptor.getValue().getProcessInstanceTaskId());
 
         var attachmentCaptor = ArgumentCaptor.forClass(ProcessInstanceAttachmentEntity.class);
         verify(processInstanceAttachmentService).create(attachmentCaptor.capture());
-        assertEquals("Formularzusammenfassung.pdf", attachmentCaptor.getValue().getFileName());
+        assertEquals("Kopie der Angaben.pdf", attachmentCaptor.getValue().getFileName());
         assertEquals(321, attachmentCaptor.getValue().getAttachmentSetId());
         Assertions.assertArrayEquals(pdfBytes, attachmentCaptor.getValue().getFileBytes());
 
         @SuppressWarnings("unchecked")
         var files = (List<FileUploadInputElementItem>) result.getNodeData().get(FormTriggerNodeV1.DATA_KEY_CUSTOMER_SUMMARY_FILES);
         assertEquals(1, files.size());
-        assertEquals("Formularzusammenfassung.pdf", files.getFirst().getName());
-        assertEquals("Formularzusammenfassung.pdf", files.getFirst().getOriginalFileName());
+        assertEquals("Kopie der Angaben.pdf", files.getFirst().getName());
+        assertEquals("Kopie der Angaben.pdf", files.getFirst().getOriginalFileName());
         assertEquals(pdfBytes.length, files.getFirst().getSize());
         assertTrue(files.getFirst().getUri().startsWith(FileUploadMultipartInputService.PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX));
     }
@@ -563,7 +563,7 @@ class FormTriggerNodeV1Test {
         )).layout();
 
         var richText = layout.findChild("rtx", RichTextContentElement.class).orElseThrow();
-        assertTrue(richText.getContent().contains("# Zahlung erfolgreich\n# Zahlung erhalten\nDanke **Ada**."));
+        assertTrue(richText.getContent().contains("# Zahlung abgeschlossen\n# Zahlung erhalten\nDanke **Ada**."));
     }
 
     @Test

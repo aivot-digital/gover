@@ -67,26 +67,26 @@ public class AVService {
     private String getContentTypeAndExtensionValidationError(MultipartFile file) {
         var filename = file.getOriginalFilename();
         if (filename == null) {
-            return "Der Name des Anhangs fehlt.";
+            return "Der Name der Anlage fehlt.";
         }
 
         var splitFilename = filename.split("\\.");
         if (splitFilename.length < 2) {
-            return String.format("Der Anhang \"%s\" hat keine Dateiendung.", filename);
+            return String.format("Die Anlage \"%s\" hat keine Dateiendung.", filename);
         }
 
         var extension = splitFilename[splitFilename.length - 1];
         if (prosunaConfig.getFileExtensions().stream().noneMatch(ext -> ext.equalsIgnoreCase(extension))) {
-            return String.format("Die Dateiendung des Anhangs \"%s\" ist nicht erlaubt.", filename);
+            return String.format("Die Dateiendung der Anlage \"%s\" ist nicht erlaubt.", filename);
         }
 
         var contentType = file.getContentType();
         if (contentType == null) {
-            return String.format("Der Inhaltstyp des Anhangs \"%s\" fehlt.", filename);
+            return String.format("Der Inhaltstyp der Anlage \"%s\" fehlt.", filename);
         }
 
         if (prosunaConfig.getContentTypes().stream().noneMatch(ct -> ct.equalsIgnoreCase(contentType))) {
-            return String.format("Der Inhaltstyp des Anhangs \"%s\" ist nicht erlaubt.", filename);
+            return String.format("Der Inhaltstyp der Anlage \"%s\" ist nicht erlaubt.", filename);
         }
 
         return null;

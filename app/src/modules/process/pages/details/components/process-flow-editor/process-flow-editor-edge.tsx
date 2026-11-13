@@ -203,7 +203,7 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
                                     children: (
                                         <>
                                             <Typography variant="h6">
-                                                Die weitergereichte Vorgangsdatenebene
+                                                Vorgangsdaten beim Übergang zum nächsten Prozesselement
                                             </Typography>
                                             <ExpandableCodeBlock
                                                 value={JSON.stringify(

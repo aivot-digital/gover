@@ -43,11 +43,8 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
     @Override
     public Map<String, List<String>> validateConfiguration() {
         var errors = super.validateConfiguration();
-        // The editor only offers the minimum for required containers, so a hidden leftover value must not be reported.
-        if (getRequired()) {
-            addMinimumExceedsMaximumError(errors, "minimumRequiredSets", minimumRequiredSets, "maximumSets", maximumSets,
-                    "Sie fordern mehr Datensätze, als Sie maximal zulassen.");
-        }
+        addMinimumExceedsMaximumError(errors, "minimumRequiredSets", minimumRequiredSets, "maximumSets", maximumSets,
+                "Sie fordern mehr Datensätze, als Sie maximal zulassen.");
         return errors;
     }
 
@@ -98,12 +95,13 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
 
     @Override
     public void performValidation(List<ReplicatingContainerLayoutElementValue> value) throws ValidationException {
-        if (value == null) {
+        if (value == null || value.isEmpty()) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
             }
         } else {
-            var minSets = Boolean.TRUE.equals(getRequired()) ? (minimumRequiredSets != null ? minimumRequiredSets : 1) : 0;
+            // Once rows exist, the configured minimum applies to both optional and required collections.
+            var minSets = Math.max(minimumRequiredSets != null ? minimumRequiredSets : 0, Boolean.TRUE.equals(getRequired()) ? 1 : 0);
             if (value.size() < minSets) {
                 throw new ValidationException(this, "Es " + pluralize(minSets, "muss", "müssen") + " mindestens " + minSets + " " + pluralize(minSets, "Datensatz", "Datensätze") + " hinzugefügt werden.");
             }

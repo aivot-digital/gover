@@ -56,7 +56,7 @@ public class DefaultMailCommunicationService {
                             @Nonnull MailCommunicationSendOptions options) throws CommunicationException {
         final String recipient;
         try {
-            recipient = EmailAddressUtils.normalizeSingleAddress(rawRecipient);
+            recipient = EmailAddressUtils.normalizeTransportAddress(rawRecipient);
         } catch (IllegalArgumentException e) {
             throw new CommunicationException("Die E-Mail-Adresse der Identität ist ungültig.", e);
         }
@@ -219,7 +219,7 @@ public class DefaultMailCommunicationService {
                 continue;
             }
             var name = attachment.getName() == null || attachment.getName().isBlank()
-                    ? "Anhang"
+                    ? "Anlage"
                     : attachment.getName();
             var contentType = attachment.getContentType() == null || attachment.getContentType().isBlank()
                     ? MediaType.APPLICATION_OCTET_STREAM

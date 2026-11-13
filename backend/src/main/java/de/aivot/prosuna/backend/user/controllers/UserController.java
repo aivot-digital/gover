@@ -51,7 +51,7 @@ public class UserController {
             UserProvisioningService userProvisioningService,
             KeyCloakApiService keyCloakApiService, PermissionService permissionService) {
         this.auditService = auditService
-                .createScopedAuditService(UserController.class, "Benutzer");
+                .createScopedAuditService(UserController.class, "Mitarbeiter:innen");
 
         this.userService = userService;
         this.userProvisioningService = userProvisioningService;

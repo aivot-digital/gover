@@ -144,7 +144,7 @@ export function ElementTreeEditorContentTabOverride<T extends AnyElement>() {
                 {
                     override.type === 'NoCode' && (
                         <div>
-                            No-Code Überschreibungsfunktionen sind derzeit nicht unterstützt.
+                            No-Code-Überschreibungsfunktionen werden derzeit nicht unterstützt.
                         </div>
                     )
                 }

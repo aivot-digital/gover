@@ -1,3 +1,4 @@
+import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import React, {useMemo} from 'react';
 import {type BaseEditorProps} from './base-editor';
 import {
@@ -28,6 +29,7 @@ const optionsSourceOptions = [
 ];
 
 const presentationOptions: SelectFieldComponentOption<SelectFieldPresentation>[] = [
+    {label: 'Optionsfelder', subLabel: 'Alle Optionen sind direkt sichtbar.', value: SelectFieldPresentation.Radio},
     {
         label: 'Auswahlmenü',
         subLabel: 'Kompakte Darstellung für kurze, überschaubare Optionslisten.',
@@ -198,8 +200,8 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                         error={configurationErrors?.options?.join(' ')}
                         addLabel="Option hinzufügen"
                         hint={hasDependency
-                            ? 'Die antragstellende Person kann genau eine dieser Optionen auswählen. Der Gruppenwert verknüpft eine Option mit dem Wert des abhängigen Auswahlfelds; leere Gruppen bleiben weiterhin immer sichtbar.'
-                            : 'Die antragstellende Person kann genau eine dieser Optionen auswählen.'}
+                            ? 'Die ausfüllende Person kann genau eine dieser Optionen auswählen. Der Gruppenwert verknüpft eine Option mit dem Wert des abhängigen Auswahlfelds; leere Gruppen bleiben weiterhin immer sichtbar.'
+                            : 'Die ausfüllende Person kann genau eine dieser Optionen auswählen.'}
                         noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
                         value={options}
                         onChange={(options) => {
@@ -216,7 +218,16 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                 </Grid>
             }
 
+            {presentation === SelectFieldPresentation.Radio && !hasSummaryLayoutParent && <Grid size={{xs: 12, lg: 6}}>
+                <CheckboxFieldComponent
+                    label="Optionen nebeneinander anzeigen"
+                    value={element.displayInline ?? false}
+                    onChange={(displayInline) => onPatch({displayInline})}
+                    disabled={!editable}
+                />
+            </Grid>}
             {
+                presentation !== SelectFieldPresentation.Radio &&
                 scope !== 'data_modelling' &&
                 !hasSummaryLayoutParent &&
                 <Grid

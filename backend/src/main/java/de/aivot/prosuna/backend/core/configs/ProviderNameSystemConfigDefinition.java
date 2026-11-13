@@ -38,13 +38,16 @@ public class ProviderNameSystemConfigDefinition implements SystemConfigDefinitio
     @Nonnull
     @Override
     public String getLabel() {
-        return "Name des Anbieters";
+        return "Name der Organisation";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Der Name des Anbieters, der in der Anwendung angezeigt wird.";
+        return "Name der Organisation, die diese Prosuna-Instanz einsetzt. " +
+                "Dieser Name wird in der Anwendung angezeigt und ist auch für externe Beteiligte sichtbar, " +
+                "beispielsweise im Formularverzeichnis und in Formularen. " +
+                "Änderungen am Namen werden erst nach dem erneuten Laden der Anwendung in allen Bereichen sichtbar.";
     }
 
     @Nonnull

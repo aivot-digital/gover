@@ -238,7 +238,7 @@ public class ProcessNodeExecutionResultHandler {
             }
             default -> throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
-                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine unbekanntes Ergebnisklasse erzeugt: %s.
+                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine unbekannte Ergebnisklasse erzeugt: %s.
                             Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
                             """,
                     StringUtils.quote(provider.getName()),
@@ -388,7 +388,7 @@ public class ProcessNodeExecutionResultHandler {
         if (!(executionResult instanceof ProcessNodeExecutionResultTaskCompleted)
                 && !(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    "Neue Prozessidentitäten dürfen nur beim Abschluss einer Aufgabe oder eines Vorgangs übernommen werden."
+                    "Neue Identitäten dürfen nur beim Abschluss einer Aufgabe oder eines Vorgangs übernommen werden."
             );
         }
 
@@ -398,12 +398,12 @@ public class ProcessNodeExecutionResultHandler {
             var identity = entry.getValue();
             if (identity == null || !Objects.equals(entry.getKey(), identity.identityId())) {
                 throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Eine neue Prozessidentität besitzt keine konsistente Identitäts-ID."
+                        "Eine neue Identität besitzt keine konsistente Identitäts-ID."
                 );
             }
             if (processIdentities != null && processIdentities.containsKey(entry.getKey())) {
                 throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Die neue Prozessidentität %s existiert bereits im Vorgang.",
+                        "Die neue Identität %s existiert bereits im Vorgang.",
                         StringUtils.quote(entry.getKey())
                 );
             }
@@ -1054,7 +1054,7 @@ public class ProcessNodeExecutionResultHandler {
             var communicationRequest = context.result.getCommunicationRequest();
             if (communicationRequest == null || communicationRequest.recipientEmailAddress() == null) {
                 throw new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Eine Kundenaufgabe ohne Prozessidentität benötigt eine Einladung per E-Mail."
+                        "Eine Aufgabe für Beteiligte ohne Identität benötigt eine Einladung per E-Mail."
                 );
             }
 
@@ -1066,7 +1066,7 @@ public class ProcessNodeExecutionResultHandler {
                     true,
                     true,
                     "Aufgabe per E-Mail zugewiesen",
-                    "Die Aufgabe %s wurde per E-Mail an %s eingeladen.",
+                    "Zur Bearbeitung der Aufgabe %s wurde eine Einladung an %s versendet.",
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
                     StringUtils.quote(communicationRequest.recipientEmailAddress())
             );
@@ -1148,7 +1148,7 @@ public class ProcessNodeExecutionResultHandler {
                     true,
                     false,
                     "Eingaben für " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " gespeichert",
-                    "Für die Aufgabe %s wurden durch die zugewiesen Mitarbeiter:in Eingaben abgespeichert.",
+                    "Für die Aufgabe %s wurden durch die zugewiesene Mitarbeiter:in Eingaben abgespeichert.",
                     StringUtils.quote(context.currentNode.resolveName(context.provider))
             );
         }
@@ -1199,7 +1199,7 @@ public class ProcessNodeExecutionResultHandler {
                     "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde durch die Mitarbeiter:in %s abgeschlossen.
-                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Für die ausgehende Verbindung wird der Ausgangsport %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
@@ -1215,7 +1215,7 @@ public class ProcessNodeExecutionResultHandler {
                     "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde abgeschlossen.
-                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Für die ausgehende Verbindung wird der Ausgangsport %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
@@ -1245,7 +1245,7 @@ public class ProcessNodeExecutionResultHandler {
                 .filter(candidate -> candidate.key().equals(viaPort))
                 .findFirst()
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein ausgehender Port mit dem Schlüssel %s bereitgestellt.",
+                        "Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein Ausgangsport mit dem Schlüssel %s bereitgestellt.",
                         StringUtils.quote(currentNode.resolveName(provider)),
                         StringUtils.quote(provider.getName()),
                         StringUtils.quote(viaPort)
@@ -1254,11 +1254,11 @@ public class ProcessNodeExecutionResultHandler {
         if (port.deadlineKey() != null
                 && (task.getDeadline() == null || !port.deadlineKey().equals(task.getDeadlineKey()))) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    "Der Ausgang „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
+                    "Der Ausgangsport „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
         }
         var edge = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(currentNode.getId(), viaPort)
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Für das Prozesselement %s wurde kein ausgehender Pfad für den Port %s definiert. Bitte prüfen Sie den Aufbau Ihres Prozessmodells.",
+                        "Für das Prozesselement %s wurde keine Verbindung für den Ausgangsport %s definiert. Bitte prüfen Sie den Aufbau Ihrer Prozessdefinition.",
                         StringUtils.quote(currentNode.resolveName(provider)),
                         StringUtils.quote(port.label())
                 ));
@@ -1424,7 +1424,7 @@ public class ProcessNodeExecutionResultHandler {
                 }
             } catch (IllegalArgumentException | IllegalStateException e) {
                 throw new IllegalStateException(
-                        "Das Ausgabe-Mapping '%s' fuer den Knotenausgang '%s' ist ungueltig: %s"
+                        "Die Datenzuordnung „%s“ für den Ausgangswert „%s“ ist ungültig: %s"
                                 .formatted(targetFieldPath, nodeProviderOutput.key(), e.getMessage()),
                         e
                 );

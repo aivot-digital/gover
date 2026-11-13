@@ -31,11 +31,8 @@ public class ProcessInstanceAttachmentSetSelectElement extends BaseInputElement<
     @Override
     public Map<String, List<String>> validateConfiguration() {
         var errors = super.validateConfiguration();
-        // The editor only offers the minimum for required fields, so a hidden leftover value must not be reported.
-        if (getRequired()) {
-            addMinimumExceedsMaximumError(errors, "minItems", minItems, "maxItems", maxItems,
-                    "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
-        }
+        addMinimumExceedsMaximumError(errors, "minItems", minItems, "maxItems", maxItems,
+                "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
         return errors;
     }
 

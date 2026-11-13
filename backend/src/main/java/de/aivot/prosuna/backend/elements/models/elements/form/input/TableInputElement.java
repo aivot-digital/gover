@@ -95,19 +95,20 @@ public class TableInputElement extends BaseInputElement<List<Map<String, Object>
             throw new RequiredValidationException(this);
         }
 
-        if (minimumRequiredRows != null && (value == null || value.size() < minimumRequiredRows)) {
-            int actualRows = value == null ? 0 : value.size();
+        if (value == null || value.isEmpty()) {
+            return;
+        }
+
+        // Optional empty tables are handled above; a minimum must not implicitly make them required.
+        if (minimumRequiredRows != null && minimumRequiredRows > 0 && value.size() < minimumRequiredRows) {
+            int actualRows = value.size();
             String actualLabel = actualRows == 1 ? "Zeile" : "Zeilen";
             String minLabel = minimumRequiredRows == 1 ? "Zeile" : "Zeilen";
 
             throw new ValidationException(this, "Es müssen mindestens " + minimumRequiredRows + " " + minLabel + " hinzugefügt werden (derzeit nur " + actualRows + " " + actualLabel + ").");
         }
 
-        if (value == null || value.isEmpty()) {
-            return;
-        }
-
-        if (maximumRows != null && value.size() > maximumRows) {
+        if (maximumRows != null && maximumRows > 0 && value.size() > maximumRows) {
             String maxLabel = maximumRows == 1 ? "Zeile" : "Zeilen";
             String actualLabel = value.size() == 1 ? "Zeile" : "Zeilen";
 
@@ -193,16 +194,8 @@ public class TableInputElement extends BaseInputElement<List<Map<String, Object>
     @Override
     public Map<String, List<String>> validateConfiguration() {
         var errors = super.validateConfiguration();
-        // The editor only offers the minimum for required tables, so a hidden leftover value must not be reported.
-        if (getRequired()) {
-            addMinimumExceedsMaximumError(errors, "minimumRequiredRows", minimumRequiredRows, "maximumRows", maximumRows,
-                    "Sie fordern mehr Zeilen, als Sie maximal zulassen.");
-        }
-        // Unlike other elements, tables treat a maximum of 0 or less as a limit (see performValidation), so such a
-        // table rejects every row.
-        if (maximumRows != null && maximumRows < 1) {
-            addConfigurationError(errors, "maximumRows", "Lassen Sie mindestens eine Zeile zu oder entfernen Sie die Maximalanzahl der Zeilen.");
-        }
+        addMinimumExceedsMaximumError(errors, "minimumRequiredRows", minimumRequiredRows, "maximumRows", maximumRows,
+                "Sie fordern mehr Zeilen, als Sie maximal zulassen.");
         // formatValue fails without columns, and a table without columns cannot take any input.
         if (fields == null || fields.isEmpty()) {
             addConfigurationError(errors, "fields", "Fügen Sie mindestens eine Spalte hinzu.");

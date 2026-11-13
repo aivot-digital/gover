@@ -114,7 +114,7 @@ class AVServiceTest {
         var exception = assertThrows(ResponseException.class, () -> service.testMultipartFiles(new MultipartFile[]{file}));
 
         assertEquals(HttpStatus.NOT_ACCEPTABLE, exception.getStatus());
-        assertEquals("Die Dateiendung des Anhangs \"report.exe\" ist nicht erlaubt.", exception.getTitle());
+        assertEquals("Die Dateiendung der Anlage \"report.exe\" ist nicht erlaubt.", exception.getTitle());
     }
 
     private static AVService createService(ServerSocket scanner) {

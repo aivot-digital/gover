@@ -30,7 +30,7 @@ class UserSyncServiceTest {
         var auditService = mock(AuditService.class);
         var scopedAuditService = mock(ScopedAuditService.class);
         var auditLogPayload = mock(AuditLogPayload.class);
-        when(auditService.createScopedAuditService(UserSyncService.class, "Benutzer")).thenReturn(scopedAuditService);
+        when(auditService.createScopedAuditService(UserSyncService.class, "Mitarbeiter:innen")).thenReturn(scopedAuditService);
         when(scopedAuditService.create()).thenReturn(auditLogPayload);
         when(auditLogPayload.withSystem()).thenReturn(auditLogPayload);
         when(auditLogPayload.setTriggerType(anyString())).thenReturn(auditLogPayload);

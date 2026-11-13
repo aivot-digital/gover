@@ -17,7 +17,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -97,6 +99,29 @@ class ProcessInstanceAttachmentRepositoryTest {
         assertEquals(List.of(), keys(attachments.findTop100ByDeletionDueAtLessThanOrderByDeletionDueAtAsc(Instant.parse("2026-10-28T09:00:00Z"))));
         assertTrue(attachments.findByKeyAndDeletionDueAtIsNotNull(DUE).isPresent());
         assertTrue(attachments.findByKeyAndDeletionDueAtIsNotNull(REMOVED).isEmpty());
+    }
+
+    @Test
+    void resolvesSizesByBothProviderAndPathOnlyForRequestedAttachments() {
+        sql("drop table if exists storage_index_items");
+        sql("create table storage_index_items (storage_provider_id int, path_from_root varchar, size_in_bytes bigint)");
+        var first = UUID.randomUUID();
+        var second = UUID.randomUUID();
+        var other = UUID.randomUUID();
+        var missing = UUID.randomUUID();
+        sql("""
+                insert into process_instance_attachments (key, storage_provider_id, storage_path_from_root) values
+                ('%s', 1, '/same.pdf'), ('%s', 2, '/same.pdf'), ('%s', 1, '/other.pdf'), ('%s', 1, '/missing.pdf')
+                """.formatted(first, second, other, missing));
+        sql("""
+                insert into storage_index_items values
+                (1, '/same.pdf', 0), (2, '/same.pdf', 5000000000), (1, '/other.pdf', 42)
+                """);
+
+        var sizes = attachments.findSizesByKeys(List.of(first, second, missing)).stream()
+                .collect(Collectors.toMap(item -> item.getKey(), item -> item.getSizeInBytes()));
+
+        assertEquals(Map.of(first, 0L, second, 5_000_000_000L), sizes);
     }
 
     private static List<UUID> keys(List<ProcessInstanceAttachmentEntity> entities) {

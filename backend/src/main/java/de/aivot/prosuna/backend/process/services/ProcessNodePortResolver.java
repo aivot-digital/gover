@@ -94,15 +94,15 @@ public class ProcessNodePortResolver {
         validator.validate(port).stream()
                 .map(violation -> violation.getMessage()).sorted().forEach(problems::add);
         if (!keys.add(port.key())) {
-            problems.add("Der Ausgangsschlüssel „%s“ wird mehrfach verwendet.".formatted(port.key()));
+            problems.add("Der Schlüssel des Ausgangsports „%s“ wird mehrfach verwendet.".formatted(port.key()));
         }
         if (port.deadlineKey() != null) {
-            problems.add("Die Zuordnung eines Ausgangs zu einer Frist wird automatisch ermittelt.");
+            problems.add("Die Zuordnung eines Ausgangsports zu einer Frist wird automatisch ermittelt.");
         }
     }
 
     @Nonnull
     public static ProcessNodePortResolution failed() {
-        return new ProcessNodePortResolution(List.of(), List.of("Die Ausgänge und Fristen konnten nicht ermittelt werden. Prüfen Sie die Konfiguration des Prozesselements."));
+        return new ProcessNodePortResolution(List.of(), List.of("Die Ausgangsports und Fristen konnten nicht ermittelt werden. Prüfen Sie die Konfiguration des Prozesselements."));
     }
 }

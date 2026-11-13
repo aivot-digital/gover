@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 public record ProcessInstanceReassignRequestDTO(
         @Nullable
-        @Size(min = 36, max = 36, message = "Die Benutzer-ID des Zuständigen muss 36 Zeichen lang sein.")
+        @Size(min = 36, max = 36, message = "Die Konto-ID der zuständigen Person muss 36 Zeichen lang sein.")
         String assignedUserId
 ) {
 }

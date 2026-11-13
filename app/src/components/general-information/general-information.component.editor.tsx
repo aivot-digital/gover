@@ -166,7 +166,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                                         initiativeName: val,
                                     });
                                 }}
-                                hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
+                                hint="Beschreiben Sie den relevanten Bildinhalt kurz und aussagekräftig. Der Alternativtext unterstützt die Nutzung mit Screenreadern."
                                 error={props.configurationErrors?.initiativeName?.join(' ')}
                                 disabled={!props.editable}
                             />
@@ -175,7 +175,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Informationen für antragstellende Personen"
+                title="Informationen für ausfüllende Personen"
                 variant={"h5"}
             />
             <Grid
@@ -197,7 +197,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                             sx={{
                                 mb: 1,
                             }}
-                        >Antragsberechtigte</InputLabel>
+                        >Berechtigte Personen und Organisationen</InputLabel>
                         <CheckboxTree
                             options={eligibleEntities}
                             value={props.element.eligiblePersons ?? []}
@@ -212,7 +212,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
 
                     <RichTextInputComponent
                         value={props.element.expectedCosts ?? ''}
-                        label="Gebühren des Antrages"
+                        label="Kosten"
                         onChange={(val) => {
                             props.onPatch({
                                 expectedCosts: val ?? undefined,
@@ -252,12 +252,12 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Dokumente des Antrages"
+                title="Dokumente zum Formular"
                 variant={"h5"}
             />
             <StringListInput
                 label="Relevante Dokumente"
-                hint="Geben Sie hier Dokumente an, welche Antragsberechtigte vor Antragstellung lesen sollten."
+                hint="Geben Sie hier Dokumente an, die ausfüllende Personen vor dem Ausfüllen lesen sollten."
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine relevanten Dokumente angegeben"
                 value={props.element.supportingDocuments ?? undefined}
@@ -270,10 +270,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 disabled={!props.editable}
             />
             <StringListInput
-                label="Einzureichende Dokumente"
-                hint="Geben Sie hier Dokumente an, welche Antragsberechtigte einzureichen haben."
+                label="Benötigte Dokumente"
+                hint="Geben Sie hier Dokumente an, die ausfüllende Personen übermitteln müssen."
                 addLabel="Dokument hinzufügen"
-                noItemsHint="Keine einzureichenden Dokumente angegeben"
+                noItemsHint="Keine benötigten Dokumente angegeben"
                 value={props.element.documentsToAttach ?? undefined}
                 onChange={(supportingDocuments) => {
                     props.onPatch({
@@ -300,7 +300,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 >
                     <TextFieldComponent
                         value={props.element.privacyText ?? ''}
-                        label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
+                        label="Text zu den Datenschutzhinweisen"
                         multiline
                         onChange={(val) => {
                             props.onPatch({

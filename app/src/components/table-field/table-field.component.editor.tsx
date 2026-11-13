@@ -19,27 +19,24 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 container
                 columnSpacing={4}
             >
-                {
-                    props.element.required &&
-                    <Grid
-                        size={{
-                            xs: 12,
-                            lg: 6,
-                        }}>
-                        <NumberFieldComponent
-                            value={props.element.minimumRequiredRows ?? undefined}
-                            label="Mindestanzahl der hinzuzufügenden Zeilen"
-                            hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern"
-                            error={props.configurationErrors?.minimumRequiredRows?.join(' ')}
-                            onChange={(val) => {
-                                props.onPatch({
-                                    minimumRequiredRows: val,
-                                });
-                            }}
-                            disabled={!props.editable}
-                        />
-                    </Grid>
-                }
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}>
+                    <NumberFieldComponent
+                        value={props.element.minimumRequiredRows ?? undefined}
+                        label="Mindestanzahl der hinzuzufügenden Zeilen"
+                        hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
+                        error={props.configurationErrors?.minimumRequiredRows?.join(' ')}
+                        onChange={(val) => {
+                            props.onPatch({
+                                minimumRequiredRows: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
 
                 <Grid
                     size={{
@@ -51,7 +48,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                         <NumberFieldComponent
                             value={props.element.maximumRows ?? undefined}
                             label="Maximalanzahl der hinzuzufügenden Zeilen"
-                            hint="Lassen Sie das Feld leer, um keine Maximalanzahl zu fordern."
+                            hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
                             error={props.configurationErrors?.maximumRows?.join(' ')}
                             onChange={(val) => {
                                 props.onPatch({
@@ -271,7 +268,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 }}
                 disabled={!props.editable}
             >
-                Spalte Hinzufügen
+                Spalte hinzufügen
             </Button>
         </>
     );

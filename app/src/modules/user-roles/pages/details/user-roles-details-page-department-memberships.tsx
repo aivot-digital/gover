@@ -80,7 +80,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     maxWidth: 900,
                 }}>
                     Eine Übersicht der Mitarbeiter:innen, denen diese Domänenrolle in verschiedenen
-                    Organisationseinheiten zugewiesen sind.
+                    Organisationseinheiten zugewiesen ist.
                 </Typography>
 
                 <GenericList<VDepartmentMembershipWithDetailsEntity>

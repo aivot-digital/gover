@@ -1,4 +1,5 @@
 import React from 'react';
+import {MultiChoicePresentation} from '../../models/elements/form/input/multi-choice-presentation';
 import {Grid} from '@mui/material';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
@@ -33,6 +34,19 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                 columnSpacing={4}
                 rowSpacing={2}
             >
+                <Grid size={{xs: 12, lg: 6}}>
+                    <SelectFieldComponent
+                        label="Darstellung der Auswahl"
+                        value={props.element.presentation ?? MultiChoicePresentation.Checkboxes}
+                        options={[
+                            {value: MultiChoicePresentation.Checkboxes, label: 'Auswahlfeld-Liste'},
+                            {value: MultiChoicePresentation.Combobox, label: 'Durchsuchbare Auswahl'},
+                        ]}
+                        onChange={(presentation) => props.onPatch({presentation: presentation ?? MultiChoicePresentation.Checkboxes})}
+                        disabled={!props.editable}
+                        required
+                    />
+                </Grid>
                 <Grid size={{xs: 12, lg: 6}}>
                     <SelectFieldComponent
                         label="Optionen definieren über"
@@ -75,7 +89,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                     label="Optionen"
                     error={props.configurationErrors?.options?.join(' ')}
                     addLabel="Option hinzufügen"
-                    hint="Die antragstellende Person kann eine oder mehrere dieser Optionen auswählen."
+                    hint="Die ausfüllende Person kann eine oder mehrere dieser Optionen auswählen."
                     noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
                     value={options as any}
                     onChange={(options) => {
@@ -89,24 +103,36 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                 />
             }
 
-            {
-                props.element.required === true &&
-                <NumberFieldComponent
-                    label="Erforderliche Mindestanzahl"
-                    value={props.element.minimumRequiredOptions ?? 1}
-                    onChange={(val) => {
-                        props.onPatch({
-                            required: val === 0 ? false : props.element.required,
-                            minimumRequiredOptions: val === 0 ? undefined : val,
-                        });
-                    }}
-                    error={props.configurationErrors?.minimumRequiredOptions?.join(' ')}
-                    hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
-                    disabled={!props.editable}
-                />
-            }
+            <Grid container columnSpacing={4}>
+                <Grid size={{xs: 12, lg: 6}}>
+                    <NumberFieldComponent
+                        label="Mindestanzahl"
+                        value={props.element.minimumRequiredOptions ?? undefined}
+                        onChange={(val) => {
+                            props.onPatch({
+                                minimumRequiredOptions: val === 0 ? undefined : val,
+                            });
+                        }}
+                        error={props.configurationErrors?.minimumRequiredOptions?.join(' ')}
+                        hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
+                        disabled={!props.editable}
+                    />
+                </Grid>
+                <Grid size={{xs: 12, lg: 6}}>
+                    <NumberFieldComponent
+                        label="Maximalanzahl"
+                        value={props.element.maximumOptions ?? undefined}
+                        onChange={(value) => props.onPatch({maximumOptions: value === 0 ? undefined : value})}
+                        minValue={0}
+                        hint="Geben Sie 0 oder nichts ein, um die Anzahl der ausgewählten Optionen nicht zu begrenzen."
+                        error={props.configurationErrors?.maximumOptions?.join(' ')}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
 
             {
+                props.element.presentation !== MultiChoicePresentation.Combobox &&
                 !props.hasSummaryLayoutParent &&
                 <CheckboxFieldComponent
                     label="Optionen nebeneinander anzeigen"

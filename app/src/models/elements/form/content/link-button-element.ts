@@ -3,10 +3,11 @@ import {BaseFormElement} from '../base-form-element';
 
 export type LinkButtonElementVariant = 'contained' | 'text' | 'outlined';
 
-export type LinkButtonElementColor = 'primary' | 'secondary';
+export type LinkButtonElementColor = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error';
 
 export interface LinkButtonElement extends BaseFormElement<ElementType.LinkButton> {
     label: string | null | undefined;
+    icon?: string | null;
     href: string | null | undefined;
     openInNewTab: boolean | null | undefined;
     staffTaskEvent: string | null | undefined;

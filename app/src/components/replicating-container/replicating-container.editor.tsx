@@ -19,7 +19,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 <TextFieldComponent
                     value={props.element.headlineTemplate ?? ''}
                     label="Überschrift des einzelnen Datensatzes"
-                    hint='Verwenden Sie "#" um die aktuelle Nummer des Datensatzes in der Überschrift einzusetzen.'
+                    hint='Verwenden Sie "#", um die aktuelle Nummer des Datensatzes in der Überschrift einzusetzen.'
                     onChange={(val) => {
                         props.onPatch({
                             headlineTemplate: val,
@@ -40,7 +40,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 }}>
                 <TextFieldComponent
                     value={props.element.addLabel ?? ''}
-                    label='Label-Text für Aktion "Hinzufügen"'
+                    label="Beschriftung der Schaltfläche „Hinzufügen“"
                     onChange={(val) => {
                         props.onPatch({
                             addLabel: val,
@@ -56,7 +56,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 }}>
                 <TextFieldComponent
                     value={props.element.removeLabel ?? ''}
-                    label='Label-Text für Aktion "Löschen"'
+                    label="Beschriftung der Schaltfläche „Entfernen“"
                     onChange={(val) => {
                         props.onPatch({
                             removeLabel: val,
@@ -65,28 +65,24 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     disabled={!props.editable}
                 />
             </Grid>
-            {
-                (props.element.required === true) &&
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}>
-                    <NumberFieldComponent
-                        value={props.element.minimumRequiredSets ?? 1}
-                        label="Mindestanzahl der hinzuzufügenden Datensätze"
-                        hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
-                        onChange={(val) => {
-                            props.onPatch({
-                                minimumRequiredSets: (val ?? 0) > 0 ? val : undefined,
-                                required: (val ?? 0) > 0,
-                            });
-                        }}
-                        error={props.configurationErrors?.minimumRequiredSets?.join(' ')}
-                        disabled={!props.editable}
-                    />
-                </Grid>
-            }
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
+                <NumberFieldComponent
+                    value={props.element.minimumRequiredSets ?? undefined}
+                    label="Mindestanzahl der hinzuzufügenden Datensätze"
+                    hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
+                    onChange={(val) => {
+                        props.onPatch({
+                            minimumRequiredSets: (val ?? 0) > 0 ? val : undefined,
+                        });
+                    }}
+                    error={props.configurationErrors?.minimumRequiredSets?.join(' ')}
+                    disabled={!props.editable}
+                />
+            </Grid>
             <Grid
                 size={{
                     xs: 12,

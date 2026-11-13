@@ -39,7 +39,7 @@ class OrgJavascriptPluginTest {
         assertEquals("org", provider.getComponentKey());
         assertEquals("1.0.0", provider.getComponentVersion());
         assertEquals("Organisationseinheiten", provider.getName());
-        assertEquals("Dieses Paket enth\u00e4lt Funktionen f\u00fcr Organisationseinheiten.", provider.getAbstract());
+        assertEquals("Diese JavaScript-Funktionsbibliothek stellt Informationen zu Organisationseinheiten bereit.", provider.getAbstract());
         assertTrue(provider.getDescription().contains("Prosuna-Organisationseinheiten"));
 
         var methodDefinitions = List.of(provider.getMethodTypeDefinitions());

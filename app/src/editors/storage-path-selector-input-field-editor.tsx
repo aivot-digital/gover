@@ -62,7 +62,7 @@ export function StoragePathSelectorInputFieldEditor(props: BaseEditorProps<Stora
 
             <Grid size={{xs: 12}}>
                 <CheckboxFieldComponent
-                    label="Read-only Speicheranbieter auswählbar"
+                    label="Schreibgeschützte Speicheranbieter auswählbar"
                     value={element.allowReadOnlyStorageProviders === true}
                     onChange={(value) => {
                         onPatch({

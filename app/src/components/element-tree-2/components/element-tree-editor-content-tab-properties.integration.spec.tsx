@@ -82,7 +82,7 @@ describe('ElementTreeEditorContentTabProperties editor naming', () => {
         const title = screen.getByRole('textbox', {name: /^Titel – optional$/});
         const key = screen.getByRole('textbox', {name: /^Datenschlüssel/});
         expect(title.compareDocumentPosition(key) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-        const width = screen.getByRole('combobox', {name: 'Breite des Elements in der Darstellung'});
+        const width = screen.getByRole('radiogroup', {name: 'Breite (Darstellung)'});
         expect(key.compareDocumentPosition(width) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 

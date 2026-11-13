@@ -52,7 +52,7 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
         }
         // Uploads are stored under this name; FileUploadMultipartInputService rejects every upload without it.
         if (StringUtils.isNullOrEmpty(submittedFileName)) {
-            addConfigurationError(errors, "submittedFileName", "Geben Sie einen Dateinamen bei Einreichung an.");
+            addConfigurationError(errors, "submittedFileName", "Geben Sie einen Dateinamen bei Übermittlung an.");
         }
         return errors;
     }

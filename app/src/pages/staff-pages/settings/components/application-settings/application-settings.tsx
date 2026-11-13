@@ -195,9 +195,9 @@ export function ApplicationSettings() {
     const assetStorageProviderError =
         canReadStorageProviders && !isLoadingSystemConfigs && !hasSystemConfigsLoadingError && !isLoadingAssetStorageProviders
             ? assetStorageProviders.length === 0
-                ? 'Es ist kein Speicheranbieter für Assets vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
+                ? 'Es ist kein Speicheranbieter für Dateien und Medien vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
                 : isStringNullOrEmpty(assetStorageProviderValue)
-                    ? 'Bitte wählen Sie einen Speicheranbieter für Assets aus.'
+                    ? 'Bitte wählen Sie einen Speicheranbieter für Dateien und Medien aus.'
                     : undefined
             : undefined;
     const attachmentStorageProviderError =
@@ -321,7 +321,7 @@ export function ApplicationSettings() {
             })
             .catch((err) => {
                 if (isActive) {
-                    dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Assets konnte nicht geladen werden'));
+                    dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Dateien und Medien konnte nicht geladen werden.'));
                 }
             })
             .finally(() => {
@@ -460,7 +460,7 @@ export function ApplicationSettings() {
                     key: SystemConfigKeys.storage.assets.default_storage_provider,
                     options: assetStorageProviders,
                     canRead: canReadStorageProviders,
-                    errorMessage: 'Für Assets muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
+                    errorMessage: 'Für Dateien und Medien muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
                 },
             ];
 
@@ -493,11 +493,11 @@ export function ApplicationSettings() {
 
             if (canReadSystemRoles && isStringNullOrEmpty(currentDefaultSystemRole)) {
                 if (systemRoleOptions.length === 0) {
-                    dispatch(showErrorSnackbar('Für automatische Benutzerimporte muss mindestens eine Systemrolle vorhanden sein. Legen Sie zuerst eine Systemrolle an.'));
+                    dispatch(showErrorSnackbar('Für automatische Kontoimporte muss mindestens eine Systemrolle vorhanden sein. Legen Sie zuerst eine Systemrolle an.'));
                     return;
                 }
 
-                dispatch(showErrorSnackbar('Bitte wählen Sie eine Standard-Systemrolle für automatische Benutzerimporte aus.'));
+                dispatch(showErrorSnackbar('Bitte wählen Sie eine Standard-Systemrolle für automatische Kontoimporte aus.'));
                 return;
             }
 
@@ -564,9 +564,10 @@ export function ApplicationSettings() {
                                         Vorgangsanlagen sollte in diesem Zustand nur bewusst geändert werden.
                                     </Typography>
                                     <Typography sx={{mb: 1}}>
-                                        Durch den Wechsel können Datenstrukturen auf mehrere Speicheranbieter aufgeteilt
-                                        werden. Außerdem kann der Zugriff auf bereits bestehende Anhänge innerhalb
-                                        aktiver Vorgänge verloren gehen.
+                                        Nach einem Wechsel können Anlagen desselben Vorgangs auf mehrere Speicheranbieter
+                                        verteilt sein. Bereits gespeicherte Anlagen werden nicht automatisch übertragen.
+                                        Der bisherige Speicheranbieter muss weiterhin verfügbar bleiben, damit diese
+                                        Anlagen abgerufen werden können.
                                     </Typography>
                                     <Typography>
                                         Möchten Sie den Speicheranbieter trotzdem ändern?
@@ -782,7 +783,7 @@ export function ApplicationSettings() {
                 <Typography
                     variant="subtitle1"
                 >
-                    Über den Betreiber
+                    Über die Organisation
                 </Typography>
                 <Typography
                     sx={{
@@ -790,11 +791,10 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems.
-                    Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
-                    Änderungen am Betreiber-Namen werden erst nach dem nächsten Neu-Laden der Anwendung in allen
-                    Bereichen
-                    sichtbar.
+                    Hinterlegen Sie den Namen der Organisation, die diese Prosuna-Instanz einsetzt.
+                    Dieser Name wird in der Anwendung angezeigt und ist auch für externe Beteiligte sichtbar,
+                    beispielsweise im Formularverzeichnis und in Formularen.
+                    Änderungen am Namen werden erst nach dem erneuten Laden der Anwendung in allen Bereichen sichtbar.
                 </Typography>
                 <Grid
                     container
@@ -807,7 +807,7 @@ export function ApplicationSettings() {
                         }}
                     >
                         <TextFieldComponent
-                            label="Name des Betreibers"
+                            label="Name der Organisation"
                             placeholder="Bad Musterstadt"
                             value={editedConfig[SystemConfigKeys.provider.name] ?? config[SystemConfigKeys.provider.name]}
                             onChange={(val) => {
@@ -944,7 +944,7 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Legen Sie fest, welche Systemrollen bei automatischen Benutzerimporten verwendet werden und welche
+                    Legen Sie fest, welche Systemrollen bei automatischen Kontoimporten verwendet werden und welche
                     Rolle systemweit als höchste Berechtigungsstufe gilt.
                 </Typography>
                 <Grid
@@ -958,7 +958,7 @@ export function ApplicationSettings() {
                         }}
                     >
                         <SelectFieldComponent
-                            label="Standard-Systemrolle für automatische Benutzerimporte"
+                            label="Standard-Systemrolle für automatische Kontoimporte"
                             hint={
                                 !canReadSystemRoles
                                     ? systemRoleReadHint
@@ -968,7 +968,7 @@ export function ApplicationSettings() {
                                             ? 'Gespeicherte Systemeinstellungen werden geladen…'
                                             : hasSystemRolesLoadingError
                                                 ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
-                                                : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
+                                                : 'Diese Systemrolle wird bei neuen automatischen Kontoimporten und -synchronisierungen verwendet.'
                             }
                             value={defaultSystemRoleValue}
                             onChange={(val) => {
@@ -1059,10 +1059,11 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Dieser Speicheranbieter wird verwendet, um Vorgangsanlagen zu speichern, wenn kein spezifischer
-                    Speicheranbieter innerhalb eines Prozesselementes konfiguriert ist.
-                    Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Vorgänge hat, die den
-                    zentralen Speicheranbieter verwenden.
+                    Dieser Speicheranbieter wird für Anlagen von Vorgängen verwendet, zum Beispiel hochgeladene
+                    Dateien oder erzeugte PDF-Dokumente. Bereits gespeicherte Anlagen bleiben an ihrem bisherigen
+                    Speicherort. Nach einem Wechsel können weitere Anlagen desselben Vorgangs bei einem anderen
+                    Speicheranbieter gespeichert werden. Halten Sie die bisherigen Speicheranbieter weiterhin erreichbar,
+                    damit diese Anlagen abgerufen werden können.
                 </Typography>
                 <Grid
                     container
@@ -1104,7 +1105,7 @@ export function ApplicationSettings() {
                         mt: 4,
                     }}
                 >
-                    Zentraler Speicheranbieter für Assets
+                    Zentraler Speicheranbieter für Dateien und Medien
                 </Typography>
                 <Typography
                     sx={{
@@ -1112,11 +1113,11 @@ export function ApplicationSettings() {
                         mb: 1.6,
                     }}
                 >
-                    Dieser Speicheranbieter wird verwendet, um Assets zu speichern, wenn kein spezifischer
-                    Speicheranbieter
-                    für ein Asset konfiguriert ist.
-                    Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den
-                    zentralen Speicheranbieter verwenden.
+                    Wählen Sie den Standard-Speicheranbieter für zentral verwaltete Dateien und Medien, die in Formularen,
+                    Prozessen und Konfigurationen verwendet werden können, zum Beispiel Bilder, Zertifikate oder Vorlagen.
+                    Ein Wechsel überträgt bereits gespeicherte Dateien nicht automatisch; sie bleiben ihrem bisherigen
+                    Speicheranbieter zugeordnet. Halten Sie die bisherigen Speicheranbieter weiterhin erreichbar, damit diese
+                    Dateien abgerufen werden können.
                 </Typography>
                 <Grid
                     container
@@ -1129,8 +1130,8 @@ export function ApplicationSettings() {
                         }}
                     >
                         <SelectFieldComponent
-                            label="Zentraler Speicheranbieter für Assets"
-                            hint={!canReadStorageProviders ? storageProviderReadHint : 'Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll.'}
+                            label="Zentraler Speicheranbieter für Dateien und Medien"
+                            hint={!canReadStorageProviders ? storageProviderReadHint : 'Geben Sie den Speicheranbieter an, der standardmäßig für Dateien und Medien verwendet werden soll.'}
                             value={assetStorageProviderValue}
                             onChange={(val) => {
                                 setEditedConfig({
@@ -1146,7 +1147,7 @@ export function ApplicationSettings() {
                                 isLoadingAssetStorageProviders
                             }
                             options={assetStorageProviders}
-                            emptyStatePlaceholder={!canReadStorageProviders ? 'Keine Berechtigung zur Einsicht' : 'Keine Speicheranbieter für Assets vorhanden'}
+                            emptyStatePlaceholder={!canReadStorageProviders ? 'Keine Berechtigung zur Einsicht' : 'Keine Speicheranbieter für Dateien und Medien vorhanden'}
                             startIcon={ModuleIcons.storage}
                         />
                     </Grid>
@@ -1266,7 +1267,7 @@ export function ApplicationSettings() {
                             Am Ende eines jeden Formulars wird das Formularverzeichnis mit dem Text „Weitere Formulare“
                             verlinkt. Diese Verlinkung dient der Barrierefreiheit
                             (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
-                            und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen
+                            und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link ausblenden oder durch einen eigenen
                             Link ersetzen
                             (wenn Sie zum Beispiel alle Formulare auf Ihrer eigenen Webseite auflisten).
                         </Typography>
@@ -1294,7 +1295,7 @@ export function ApplicationSettings() {
                             </Box>
                         }
                         <CheckboxFieldComponent
-                            label="Verweis aus Formularen auf das Formularverzeichnis vollständig deaktivieren"
+                            label="Link zum Formularverzeichnis ausblenden"
                             value={(editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) == 'true'}
                             onChange={(checked) => {
                                 setEditedConfig({
@@ -1302,7 +1303,7 @@ export function ApplicationSettings() {
                                     [SystemConfigKeys.provider.listingPage.disableListingPageLink]: checked ? 'true' : 'false',
                                 });
                             }}
-                            hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
+                            hint="Blendet den Link „Weitere Formulare“ aus, unabhängig davon, ob er auf das interne oder ein externes Verzeichnis verweist. Dies kann die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen."
                             disabled={inputsDisabled}
                         />
                     </>

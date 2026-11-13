@@ -91,7 +91,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String NODE_KEY = "form";
     private static final String PORT_NAME = "input";
     private static final String COPY_VALUE_TEMPLATE_PATH_SEGMENT = "__copy_value__";
-    private static final String CUSTOMER_SUMMARY_FILE_NAME = "Formularzusammenfassung";
+    private static final String CUSTOMER_SUMMARY_FILE_NAME = "Kopie der Angaben";
     private static final String CUSTOMER_SUMMARY_FILE_NAME_EXT = CUSTOMER_SUMMARY_FILE_NAME + ".pdf";
 
     public static final String DATA_KEY_PAYMENT_PAYLOAD = PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD;
@@ -205,16 +205,18 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Startet einen neuen Vorgang durch die Einreichung eines Formulars.";
+        return "Startet einen neuen Vorgang, sobald Beteiligte Angaben über ein Formular übermitteln.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Startet einen neuen Vorgang, sobald das Formular erfolgreich eingereicht wurde. Das Formular ist Bestandteil des Auslösers und wird direkt in dessen Konfiguration definiert.
+                Startet einen neuen Vorgang, sobald Beteiligte das Formular erfolgreich übermittelt haben. Das Formular ist Bestandteil des Auslösers und wird direkt in dessen Konfiguration gestaltet.
 
-                Die eingereichten Formulardaten stehen sowohl über die konfigurierten Datenschlüssel als auch als vollständige Formular-Rohdaten für die weitere Prozessausführung zur Verfügung. Zusätzlich stellt der Auslöser hochgeladene Anlagen, den Eingangszeitpunkt, die erzeugte Formularzusammenfassung und gegebenenfalls Zahlungsdetails als Ausgänge bereit.
+                Die Vorgangsdaten enthalten anschließend nur die Angaben aus Formularelementen mit Datenschlüssel; alle übermittelten Angaben stehen zusätzlich in den Elementdaten bereit. Hochgeladene Dateien und die erzeugte Kopie der Angaben werden als Anlagen gespeichert.
+
+                Wird eine Zahlung angefordert, wartet der Vorgang auf deren erfolgreichen Abschluss. Bei einem Gesamtbetrag von 0,00 Euro wird der Vorgang ohne Zahlung fortgesetzt. Schlägt die Zahlung fehl oder wird sie abgebrochen, schlägt die Aufgabe fehl. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Zahlungsfrist über einen eigenen Ausgangsport fortgesetzt.
                 """;
     }
 
@@ -243,8 +245,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Formular eingereicht",
-                        "Ein neuer Vorgang wird mit den eingereichten Formulardaten gestartet."
+                        "Angaben übermittelt",
+                        "Ein neuer Vorgang wird mit den übermittelten Formulardaten gestartet."
                 )
         );
     }
@@ -274,13 +276,13 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 new ProcessNodeOutput(
                         DATA_KEY_STARTED,
                         "Eingangszeitstempel",
-                        "Der Zeitstempel der Formulareinreichung.",
+                        "Der Zeitstempel der Übermittlung.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_CUSTOMER_SUMMARY_FILES,
                         CUSTOMER_SUMMARY_FILE_NAME,
-                        "Die erzeugte Formularzusammenfassung der eingereichten Formulardaten im Format des Datei-Anlagen-Feldes.",
+                        "Die erzeugte Kopie der übermittelten Angaben im Format des Datei-Anlagen-Feldes.",
                         OUTPUT_FILES_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
@@ -328,7 +330,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         pdm.addForwardedAttachmentSet(
                 processNodeEntity.getDataKey(),
                 CUSTOMER_SUMMARY_FILE_NAME,
-                "Zusammenfassung der eingereichten Formulardaten.",
+                "Zusammenfassung der übermittelten Formulardaten.",
                 false,
                 processNodeEntity
         );
@@ -693,12 +695,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             Thread.currentThread().interrupt();
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die PDF-Erstellung der Formularzusammenfassung wurde unterbrochen."
+                    "Die PDF-Erstellung der Kopie der Angaben wurde unterbrochen."
             );
         } catch (IOException | URISyntaxException | ResponseException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Erzeugen der Formularzusammenfassung: %s",
+                    "Fehler beim Erzeugen der Kopie der Angaben: %s",
                     e.getMessage()
             );
         }
@@ -727,7 +729,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Speichern der Formularzusammenfassung als Vorgangsanlage: %s",
+                    "Fehler beim Speichern der Kopie der Angaben als Vorgangsanlage: %s",
                     e.getMessage()
             );
         }
@@ -739,7 +741,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var rawSubmission = initialPayload.get(DATA_KEY_UNMAPPED);
         if (rawSubmission == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die Formular-Rohdaten für die Formularzusammenfassung fehlen."
+                    "Die Formular-Rohdaten für die Kopie der Angaben fehlen."
             );
         }
 
@@ -748,7 +750,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
-                    "Die Formular-Rohdaten konnten nicht für die Formularzusammenfassung verarbeitet werden."
+                    "Die Formular-Rohdaten konnten nicht für die Kopie der Angaben verarbeitet werden."
             );
         }
     }

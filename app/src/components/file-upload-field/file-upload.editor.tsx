@@ -56,10 +56,14 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                             <Checkbox
                                 checked={props.element.isMultifile ?? false}
                                 onChange={(event) => {
+                                    const isMultifile = event.target.checked;
+                                    const hasDefaultLabel = props.element.label === 'Anlage' || props.element.label === 'Anlagen';
                                     props.onPatch({
-                                        isMultifile: event.target.checked,
+                                        isMultifile,
                                         minFiles: undefined,
                                         maxFiles: undefined,
+                                        // Follow the upload mode only while the generic default label is in use.
+                                        ...(hasDefaultLabel ? {label: isMultifile ? 'Anlagen' : 'Anlage'} : {}),
                                     });
                                 }}
                                 disabled={!props.editable}
@@ -82,9 +86,9 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                         }}
                     >
                         <NumberFieldComponent
-                            value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles ?? undefined}
+                            value={props.element.minFiles ?? undefined}
                             label="Mindestanzahl an Anlagen"
-                            hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
+                            hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
                             onChange={(val) => {
                                 props.onPatch({
                                     minFiles: val,
@@ -117,7 +121,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
             }
             <Grid size={12}>
                 <TextFieldComponent
-                    label="Dateiname bei Einreichung"
+                    label="Dateiname bei Übermittlung"
                     value={props.element.submittedFileName ?? undefined}
                     onChange={(val) => {
                         props.onPatch({
@@ -139,7 +143,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                             extensions: val,
                         });
                     }}
-                    hint="Die antragstellende Person kann nur Dateien mit diesen Endungen hochladen."
+                    hint="Die ausfüllende Person kann nur Dateien mit diesen Endungen hochladen."
                     error={props.configurationErrors?.extensions?.join(' ')}
                     options={(allowedExtensions ?? []).map((ex) => ({
                         label: ex,
