@@ -132,7 +132,7 @@ export function AssetDetailsPage() {
         }
 
         dispatch(setLoadingMessage({
-            message: 'Verschiebe Datei',
+            message: 'Datei wird verschoben',
             blocking: true,
             estimatedTime: 500,
         }));
@@ -173,7 +173,7 @@ export function AssetDetailsPage() {
         }
 
         dispatch(setLoadingMessage({
-            message: 'Kopiere Datei',
+            message: 'Datei wird kopiert',
             blocking: true,
             estimatedTime: 500,
         }));
@@ -189,7 +189,7 @@ export function AssetDetailsPage() {
                 ? AssetsApiService.normalizeFolderPath(copiedAsset.storagePathFromRoot.substring(0, copiedAsset.storagePathFromRoot.lastIndexOf('/')))
                 : '/';
 
-            dispatch(showSuccessSnackbar('Datei erfolgreich kopiert. Navigiere zur Kopie.'));
+            dispatch(showSuccessSnackbar('Datei erfolgreich kopiert. Die Kopie wird geöffnet.'));
             navigate(
                 `/assets/providers/${parsedStorageProviderId}/files/${AssetsApiService.encodeStoragePathForRoute(copiedAsset.storagePathFromRoot)}?path=${encodeURIComponent(parentFolder)}`,
                 {replace: true},
@@ -346,20 +346,20 @@ export function AssetDetailsPage() {
                     icon: <InsertDriveFileOutlinedIcon/>,
                     title: storageProviderReadOnly ? 'Datei ansehen' : 'Datei bearbeiten',
                     helpDialog: {
-                        title: 'Hilfe zu Dokumenten & Medieninhalten',
+                        title: 'Hilfe zu Dateien und Medien',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography>
-                                    Dateien und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
+                                    Dateien und Medien sind Inhalte, die in der Anwendung hochgeladen und
                                     verwaltet werden können.
                                     In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und
                                     bearbeiten.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Sie können die hochgeladenen Dateien u.A. in Formularen verwenden, um z.B. Bilder
+                                    Sie können die hochgeladenen Dateien u. a. in Formularen verwenden, um z.B. Bilder
                                     oder PDFs einzubinden.
-                                    Darüber hinaus können Systemdateien (wie Zertifikate oder Templates) z.B. für die
+                                    Darüber hinaus können Systemdateien (wie Zertifikate oder Vorlagen) z.B. für die
                                     Konfiguration von
                                     Zahlungsdienstleistern oder der Dokumentengenerierung genutzt werden.
                                 </Typography>

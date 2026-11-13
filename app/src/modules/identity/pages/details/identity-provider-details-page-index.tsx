@@ -47,12 +47,12 @@ export const formSchema = yup.object({
     name: yup.string()
         .trim()
         .min(3, 'Der Name des Identitätsanbieters muss mindestens 3 Zeichen lang sein.')
-        .max(64, 'Der Name des Identitätsanbieters darf maximal 96 Zeichen lang sein.')
+        .max(64, 'Der Name des Identitätsanbieters darf maximal 64 Zeichen lang sein.')
         .required('Der Name des Identitätsanbieters ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
-        .max(255, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
+        .max(255, 'Die Beschreibung darf maximal 255 Zeichen lang sein.')
         .required('Die Beschreibung des Identitätsanbieters ist ein Pflichtfeld.'),
     iconAssetKey: yup.string(),
     metadataIdentifier: yup.string()
@@ -62,11 +62,11 @@ export const formSchema = yup.object({
         .required('Der Metadaten-Identifikator ist ein Pflichtfeld.'),
     uniqueIdAttribute: yup.string()
         .trim()
-        .max(255, 'Die Identitätenkennung darf maximal 255 Zeichen lang sein.')
-        .required('Die Identitätenkennung ist ein Pflichtfeld.')
+        .max(255, 'Das identifizierende Attribut darf maximal 255 Zeichen lang sein.')
+        .required('Das identifizierende Attribut ist ein Pflichtfeld.')
         .test(
             'mapped-attribute',
-            'Die Identitätenkennung muss in den Attributszuweisungen enthalten sein.',
+            'Das identifizierende Attribut muss in den Attributszuweisungen enthalten sein.',
             function (value) {
                 if (value == null || value.length === 0) return true;
 
@@ -421,7 +421,7 @@ export function IdentityProviderDetailsPageIndex() {
     };
 
     const handleStatusChange = async (newValue: boolean) => {
-        // Bei Aktivierung und wenn es sich um ein offizielles Nutzerkonto handelt
+        // Bei Aktivierung und wenn es sich um ein offizielles Konto handelt
         if (newValue === true && identityProvider.type !== IdentityProviderType.Custom) {
             const confirmed = await showConfirm({
                 title: 'Hinweis zur Einrichtung',
@@ -429,7 +429,7 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Nutzerkontos
+                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Kontos
                             gelesen und umgesetzt haben.
                         </Typography>
                         <Typography gutterBottom>
@@ -452,7 +452,7 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Wenn Sie den Identitätsanbieter deaktivieren, wird das Nutzerkonto automatisch aus
+                            Wenn Sie den Identitätsanbieter deaktivieren, wird das Konto automatisch aus
                             Formularen mit dem Status "In Bearbeitung" entfernt.
                         </Typography>
                         <Typography gutterBottom>
@@ -537,7 +537,7 @@ export function IdentityProviderDetailsPageIndex() {
                 Identitätsanbieter konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Konfigurieren Sie den Identitätsanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in
+                Konfigurieren Sie den Identitätsanbieter, um Konten dieses Anbieters zur Authentifizierung in
                 Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die
                 Konfiguration bereits für
                 Formulare verwendet wird.
@@ -561,7 +561,8 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('name')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.name}
-                        hint="Name des Identitätsanbieters. Sichtbar auch für Antragsteller:innen im Formular."
+                        maxCharacters={64}
+                        hint="Name des Identitätsanbieters. Wird auch ausfüllenden Personen im Formular angezeigt."
                     />
                 </Grid>
 
@@ -620,6 +621,7 @@ export function IdentityProviderDetailsPageIndex() {
                         multiline={true}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.description}
+                        maxCharacters={255}
                         hint="Interne Beschreibung des Identitätsanbieters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
                     />
                 </Grid>
@@ -638,7 +640,7 @@ export function IdentityProviderDetailsPageIndex() {
                             sx={{width: '100%'}}
                         >
                             <strong>Hinweis:</strong>{' '}
-                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Prosuna
+                            Die Konfigurationen für die offiziellen Konten von Bund und Ländern werden von Prosuna
                             bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
@@ -690,7 +692,7 @@ export function IdentityProviderDetailsPageIndex() {
                         }}
                         variant="switch"
                         error={errors.pkceMethod}
-                        hint="Gibt an, ob bei der Authorisierung das PKCE-Verfahren mit dem S256-Hashalgorithmus verwendet werden soll. Dies erhöht die Sicherheit bei der Authorisierung, insbesondere bei öffentlichen Clients."
+                        hint="Gibt an, ob bei der Autorisierung das PKCE-Verfahren mit dem S256-Hashalgorithmus verwendet werden soll. Dies erhöht die Sicherheit bei der Autorisierung, insbesondere bei öffentlichen Clients."
                         disabled={inputsDisabled || isSystemProvider}
                     />
                 </Grid>
@@ -712,13 +714,13 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('metadataIdentifier')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.metadataIdentifier}
-                        hint="Technische ID zur Zuweisung der Metadaten. Wenn Sie eine Produktive und eine Testkonfiguration anlegen, verwenden Sie dieselbe ID, um zwischen beiden Umgebungen umschalten zu können."
+                        hint="Technische ID zur Zuweisung der Metadaten. Wenn Sie eine produktive und eine Testkonfiguration anlegen, verwenden Sie dieselbe ID, um zwischen beiden Umgebungen umschalten zu können."
                     />
                 </Grid>
 
                 <Grid size={12}>
                     <TextFieldComponent
-                        label="Endpunkt zur Authorisierung"
+                        label="Endpunkt zur Autorisierung"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
                         required
                         value={identityProvider.authorizationEndpoint}
@@ -726,7 +728,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('authorizationEndpoint')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.authorizationEndpoint}
-                        hint="Pfad oder vollständige URL zum Authorization-Endpoint des Identity-Providers."
+                        hint="Pfad oder vollständige URL zum Authorization-Endpoint des Identitätsanbieters."
                     />
                 </Grid>
 
@@ -761,7 +763,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                 <Grid size={12}>
                     <TextFieldComponent
-                        label="Endpunkt zum Beenden der Session"
+                        label="Endpunkt zum Beenden der Sitzung"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
                         value={identityProvider.endSessionEndpoint ?? undefined}
                         onChange={val => {
@@ -781,14 +783,14 @@ export function IdentityProviderDetailsPageIndex() {
                     }}
                 >
                     <TextFieldComponent
-                        label="Client ID"
+                        label="Client-ID"
                         required
                         value={identityProvider.clientId}
                         onChange={handleInputChange('clientId')}
                         onBlur={handleInputBlur('clientId')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.clientId}
-                        hint="ID des Clients, unter der der Identitätsanbieter erreichbar ist."
+                        hint="Client-ID, unter der Prosuna bei diesem Identitätsanbieter registriert ist."
                     />
                 </Grid>
 
@@ -935,7 +937,7 @@ export function IdentityProviderDetailsPageIndex() {
                                 <li>
                                     <strong>Anzeigeattribut</strong>
                                     – Steuert, ob der Wert später
-                                    zur Identifikation in Übersichten von Prosuna (z. B. in Anträgen) angezeigt wird.
+                                    zur Identifikation in Übersichten von Prosuna (z. B. in Vorgängen) angezeigt wird.
                                 </li>
                             </ul>
                         </Box>
@@ -945,7 +947,7 @@ export function IdentityProviderDetailsPageIndex() {
                 sx={{my: 4}}
             />
             <SelectFieldComponent
-                label="Identitätenkennung"
+                label="Identifizierendes Attribut"
                 required
                 value={identityProvider.uniqueIdAttribute || null}
                 onChange={(value) => {
@@ -955,7 +957,7 @@ export function IdentityProviderDetailsPageIndex() {
                 disabled={inputsDisabled || isSystemProvider}
                 error={errors.uniqueIdAttribute}
                 emptyStatePlaceholder="Keine Attributszuweisungen vorhanden"
-                hint="Wählen Sie das Attribut, dessen Wert eine Identität bei ihrem Identitätsanbieter eindeutig kennzeichnet."
+                hint="Attribut, dessen Wert eine Identität bei diesem Anbieter eindeutig kennzeichnet."
                 sx={{my: 4}}
             />
             <Box
@@ -1044,7 +1046,7 @@ export function IdentityProviderDetailsPageIndex() {
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
                 message="Dieser Identitätsanbieter kann nicht gelöscht werden, da er noch in Formularen verwendet wird."
-                solutionText="Bitte ändern Sie die Einstellungen zur Einbindung von Nutzerkonten in diesen Formularen und versuchen Sie es erneut:"
+                solutionText="Bitte ändern Sie die Einstellungen zur Einbindung von Konten in diesen Formularen und versuchen Sie es erneut:"
                 links={relatedEntities ?? undefined}
             />
         </Box>

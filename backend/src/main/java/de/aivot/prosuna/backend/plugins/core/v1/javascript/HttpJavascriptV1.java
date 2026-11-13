@@ -52,7 +52,7 @@ public class HttpJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Modul stellt Funktionen zur Durchführung von HTTP-Anfragen bereit.";
+        return "Diese JavaScript-Funktionsbibliothek ermöglicht HTTP-Anfragen an externe Dienste.";
     }
 
     @Nonnull
@@ -61,7 +61,7 @@ public class HttpJavascriptV1 implements JavascriptFunctionProvider {
         return """
                 Ermöglicht HTTP-Aufrufe aus JavaScript-Ausdrücken, um externe Dienste anzusprechen.
 
-                Das Modul unterstützt GET- und POST-Anfragen mit frei definierbaren Headern. POST-Anfragen können zusätzlich einen Textinhalt übertragen; Status und Antwortinhalt stehen anschließend für die weitere Verarbeitung zur Verfügung.
+                Die Funktionsbibliothek unterstützt GET- und POST-Anfragen mit frei definierbaren Headern. POST-Anfragen können zusätzlich einen Textinhalt übertragen; Status und Antwortinhalt stehen anschließend für die weitere Verarbeitung zur Verfügung.
                 """;
     }
 

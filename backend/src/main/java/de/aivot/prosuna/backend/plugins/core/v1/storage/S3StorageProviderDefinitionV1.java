@@ -73,13 +73,13 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     @Nonnull
     @Override
     public String getName() {
-        return "S3 Speicheranbieter";
+        return "S3-Speicheranbieter";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Speichert Dokumente auf einem S3-kompatiblen Objektspeicher.";
+        return "Speichert Dateien auf einem S3-kompatiblen Objektspeicher.";
     }
 
     @Nonnull
@@ -88,7 +88,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         return """
                 Bindet einen Amazon-S3-kompatiblen Objektspeicher als Prosuna-Speicheranbieter ein.
 
-                Über Endpoint, Bucket und Zugangsdaten kann sowohl Amazon S3 als auch ein kompatibler Dienst angebunden werden. Der Anbieter unterstützt die Verwaltung von Dokumenten und Ordnerstrukturen sowie das Speichern von Metadatenattributen an den abgelegten Objekten.
+                Über Endpoint, Bucket und Zugangsdaten kann sowohl Amazon S3 als auch ein kompatibler Dienst angebunden werden. Der Anbieter unterstützt die Verwaltung von Dateien und Ordnerstrukturen sowie das Speichern von Metadatenattributen an den abgelegten Objekten.
                 """;
     }
 
@@ -227,7 +227,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 );
             } catch (ErrorResponseException e) {
                 if (ACCESS_DENIED_ERROR_CODE.equals(e.errorResponse().code())) {
-                    throw new StorageException("Der Zugriff auf den S3-kompatiblen Speicher ist nicht schreibbar. Bitte überprüfen Sie die Berechtigungen des Access Keys.");
+                    throw new StorageException("Auf den S3-kompatiblen Speicher kann nicht schreibend zugegriffen werden. Bitte überprüfen Sie die Berechtigungen des Access Keys.");
                 } else {
                     throw new StorageException(e, "Fehler beim Überprüfen der Schreibberechtigung im S3-kompatiblen Speicher.");
                 }
@@ -481,7 +481,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             client.putObject(putObjectArgs);
         } catch (MinioException e) {
-            throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher gespeichert werden.");
+            throw new StorageException(e, "Die Datei konnte nicht im S3-kompatiblen Speicher gespeichert werden.");
         }
 
         return retrieveDocument(config, path).orElseGet(() -> new StorageDocument(
@@ -509,11 +509,11 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             objectStats = client.statObject(statObjectArgs);
         } catch (ErrorResponseException e) {
             if ("NoSuchKey".equals(e.errorResponse().code())) {
-                throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
+                throw new StorageException("Die Datei %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
             }
-            throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
+            throw new StorageException(e, "Die Metadaten der Datei konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
         } catch (MinioException e) {
-            throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
+            throw new StorageException(e, "Die Metadaten der Datei konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
         }
 
         var copyObjectArgsBuilder = CopyObjectArgs
@@ -538,11 +538,11 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             client.copyObject(copyObjectArgsBuilder.build());
         } catch (ErrorResponseException e) {
             if ("NoSuchKey".equals(e.errorResponse().code())) {
-                throw new StorageException("Das Dokument %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
+                throw new StorageException("Die Datei %s konnte nicht gefunden werden.", StringUtils.quote(pathFromRoot));
             }
-            throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
+            throw new StorageException(e, "Die Metadaten der Datei konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
         } catch (MinioException e) {
-            throw new StorageException(e, "Die Metadaten des Dokuments konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
+            throw new StorageException(e, "Die Metadaten der Datei konnten im S3-kompatiblen Speicher nicht aktualisiert werden.");
         }
 
         return retrieveDocument(config, pathFromRoot).orElseGet(() -> new StorageDocument(
@@ -571,9 +571,9 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             if (e.errorResponse().code().equals("NoSuchKey")) {
                 return Optional.empty();
             }
-            throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
+            throw new StorageException(e, "Fehler beim Abrufen der Datei aus dem S3-kompatiblen Speicher.");
         } catch (MinioException e) {
-            throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
+            throw new StorageException(e, "Fehler beim Abrufen der Datei aus dem S3-kompatiblen Speicher.");
         }
 
         var metadata = fromUserMetadata(response.userMetadata());
@@ -601,7 +601,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             inputStream = client.getObject(getObjectArgs);
         } catch (MinioException e) {
-            throw new StorageException(e, "Fehler beim Abrufen des Dokuments aus dem S3-kompatiblen Speicher.");
+            throw new StorageException(e, "Fehler beim Abrufen der Datei aus dem S3-kompatiblen Speicher.");
         }
 
         return inputStream;
@@ -624,9 +624,9 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             if (e.errorResponse().code().equals("NoSuchKey")) {
                 return false;
             }
-            throw new StorageException(e, "Fehler beim Überprüfen der Existenz des Dokuments im S3-kompatiblen Speicher.");
+            throw new StorageException(e, "Fehler beim Überprüfen der Existenz der Datei im S3-kompatiblen Speicher.");
         } catch (MinioException e) {
-            throw new StorageException(e, "Fehler beim Überprüfen der Existenz des Dokuments im S3-kompatiblen Speicher.");
+            throw new StorageException(e, "Fehler beim Überprüfen der Existenz der Datei im S3-kompatiblen Speicher.");
         }
     }
 
@@ -637,7 +637,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                                         @Nonnull String targetPathFromRoot) throws StorageException {
         if (sourcePathFromRoot.equals(targetPathFromRoot)) {
             return retrieveDocument(config, sourcePathFromRoot)
-                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot)));
+                    .orElseThrow(() -> new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot)));
         }
 
         var copiedDocument = copyDocument(config, sourcePathFromRoot, targetPathFromRoot);
@@ -669,11 +669,11 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             client.copyObject(copyObjectArgs);
         } catch (ErrorResponseException e) {
             if ("NoSuchKey".equals(e.errorResponse().code())) {
-                throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
+                throw new StorageException("Die Quelldatei %s konnte nicht gefunden werden.", StringUtils.quote(sourcePathFromRoot));
             }
-            throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");
+            throw new StorageException(e, "Die Datei konnte nicht im S3-kompatiblen Speicher kopiert werden.");
         } catch (MinioException e) {
-            throw new StorageException(e, "Das Dokument konnte nicht im S3-kompatiblen Speicher kopiert werden.");
+            throw new StorageException(e, "Die Datei konnte nicht im S3-kompatiblen Speicher kopiert werden.");
         }
 
         return retrieveDocument(config, targetPathFromRoot).orElseGet(() -> new StorageDocument(
@@ -697,7 +697,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         try {
             client.removeObject(removeObjectArgs);
         } catch (MinioException e) {
-            throw new StorageException(e, "Das Dokument konnte nicht aus dem S3-kompatiblen Speicher gelöscht werden.");
+            throw new StorageException(e, "Die Datei konnte nicht aus dem S3-kompatiblen Speicher gelöscht werden.");
         }
     }
 

@@ -220,11 +220,10 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                         setMenuAnchorEl(undefined);
                         showConfirm({
                             confirmButtonColor: 'error',
-                            title: 'Anlage abbrechen?',
+                            title: 'Eingaben verwerfen?',
                             children: (
                                 <Typography>
-                                    Möchten Sie die Anlage eines neuen Formulars wirklich abbrechen? Bisher eingegebene
-                                    Daten werden dabei verworfen.
+                                    Möchten Sie Ihre bisherigen Eingaben verwerfen und das Formular neu beginnen?
                                 </Typography>
                             ),
                             confirmButtonText: 'Ja, Eingaben verwerfen',
@@ -242,7 +241,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                         <Delete color="error"/>
                     </ListItemIcon>
                     <ListItemText sx={{color: 'error.main'}}>
-                        Alle Formulardaten löschen
+                        Eingaben verwerfen
                     </ListItemText>
                 </MenuItem>
             </Menu>

@@ -56,7 +56,7 @@ public class StoragePathSelectorInputElement extends BaseInputElement<StoragePat
         }
 
         if (value.getStorageProviderId() == null || StringUtils.isNullOrEmpty(value.getPath())) {
-            throw new ValidationException(this, "Es muss ein Speicheranbieter und ein Pfad ausgewählt werden.");
+            throw new ValidationException(this, "Es müssen ein Speicheranbieter und ein Pfad ausgewählt werden.");
         }
     }
 

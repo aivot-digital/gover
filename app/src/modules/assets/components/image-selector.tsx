@@ -103,7 +103,7 @@ export function ImageSelector(props: ImageSelectorProps) {
                 if (active) {
                     setAssetLoadFailed(true);
                     if (!isApiError(err) || err.status !== 403) {
-                        dispatch(showApiErrorSnackbar(err, 'Asset konnte nicht geladen werden'));
+                        dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht geladen werden.'));
                     }
                 }
             });

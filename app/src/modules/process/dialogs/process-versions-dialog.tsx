@@ -193,7 +193,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                 return testClaimContexts;
             })
             .catch(error => {
-                dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Testansprüche'));
+                dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Testsitzungen'));
                 return testClaims;
             });
     };
@@ -330,7 +330,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
             children: (
                 <Box>
                     Für diesen Prozess existiert derzeit kein aktiver Entwurf.
-                    Möchten Sie einen neuen Entwurf (Arbeitsversion) für diesen Prozess anlegen um diesen zu
+                    Möchten Sie einen neuen Entwurf (Arbeitsversion) für diesen Prozess anlegen, um diesen zu
                     bearbeiten?
                 </Box>
             ),
@@ -343,7 +343,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
 
     async function handleUseAsNewProcess(version: number): Promise<void> {
         dispatch(setLoadingMessage({
-            message: 'Die Prozessversion wird für den export vorbereitet',
+            message: 'Die Prozessversion wird für den Export vorbereitet',
             blocking: true,
             estimatedTime: 2000,
         }));
@@ -360,7 +360,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                 });
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Fehler beim Vorbereiten der Prozessdefinition'));
+                dispatch(showApiErrorSnackbar(err, 'Fehler beim Vorbereiten der Prozessversion'));
             })
             .finally(() => {
                 dispatch(clearLoadingMessage());
@@ -673,13 +673,13 @@ function VersionListItem(props: VersionListItemProps) {
 
         switch (status) {
             case ProcessStatus.Drafted:
-                statusText = `Zuletzt bearbeitet: ${_format(updated)}\nBearbeitet von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                statusText = `Zuletzt bearbeitet: ${_format(updated)}\nBearbeitet von: ${editorFullName ?? 'Unbekannte Person'}`;
                 break;
             case ProcessStatus.Published:
-                statusText = `Veröffentlicht am: ${_format(published)}\nVeröffentlicht von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                statusText = `Veröffentlicht am: ${_format(published)}\nVeröffentlicht von: ${editorFullName ?? 'Unbekannte Person'}`;
                 break;
             case ProcessStatus.Revoked:
-                statusText = `Zurückgezogen am: ${_format(revoked)}\nZurückgezogen von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
+                statusText = `Zurückgezogen am: ${_format(revoked)}\nZurückgezogen von: ${editorFullName ?? 'Unbekannte Person'}`;
                 break;
         }
 

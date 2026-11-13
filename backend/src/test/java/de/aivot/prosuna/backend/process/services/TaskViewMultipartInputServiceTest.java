@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.elements.services.AssetSelectionValidationService;
+import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -24,6 +26,7 @@ import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
+import org.mockito.Mockito;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
@@ -502,7 +505,7 @@ class FileUploadMultipartInputServiceTest {
                 "staff-user"
         ));
 
-        assertTrue(exception.getMessage().contains("Dateiname bei Einreichung"));
+        assertTrue(exception.getMessage().contains("Dateiname bei Übermittlung"));
     }
 
     @Test
@@ -1124,7 +1127,8 @@ class FileUploadMultipartInputServiceTest {
                 new ElementDataTransformService(),
                 new CodeListElementOptionsService(null, null),
                 new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
-                new InputVariableResolver()
+                new InputVariableResolver(),
+                new AssetSelectionValidationService(Mockito.mock(AssetRepository.class))
         )
                 .derive(new ElementDerivationRequest(layout, inputs, options))
                 .getElementStates();
@@ -1286,7 +1290,7 @@ class FileUploadMultipartInputServiceTest {
 
     private static final class TestAVService extends AVService {
         private TestAVService() {
-            super(null, null);
+            super(null, null, null);
         }
 
         @Override

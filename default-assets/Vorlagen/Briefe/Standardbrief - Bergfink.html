@@ -228,8 +228,8 @@
                     <div
                             data-slot="anschrift"
                             data-slot-type="richtext"
-                            data-slot-label="Anschrift des Empfängers"
-                            data-slot-hint="Diese Anschrift wird im Briefkopf der PDF-Datei angezeigt. Sie sollte die Anschrift des Empfängers enthalten."
+                            data-slot-label="Anschrift der empfangenden Person oder Organisation"
+                            data-slot-hint="Diese Anschrift wird im Briefkopf der PDF-Datei angezeigt. Sie sollte die Anschrift der empfangenden Person oder Organisation enthalten."
                     >
                         {{ $.person.vorname }} {{ $.person.nachname }} <br/>
                         {{ $.anschrift.strasse }} {{ $.anschrift.hausnummer }} <br/>
@@ -241,13 +241,13 @@
                         <tbody>
                             <tr>
                                 <td>
-                                    <strong>Ansprechpartner/in:</strong>
+                                    <strong>Ansprechperson:</strong>
                                 </td>
                                 <td
                                         data-slot="contact_name"
                                         data-slot-type="text"
-                                        data-slot-label="Ansprechpartner/in"
-                                        data-slot-hint="Ansprechpartner/in beim Sozialamt Bad Musterstadt"
+                                        data-slot-label="Ansprechperson"
+                                        data-slot-hint="Ansprechperson beim Sozialamt Bad Musterstadt"
                                 >
                                     Max Mustermann
                                 </td>
@@ -275,7 +275,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td>Aktenzeichen</td>
+                                <td>Vorgangskennung</td>
                                 <td>
                                     {{ $$.caseNumber }}
                                 </td>

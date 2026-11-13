@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DurationInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TableInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -159,9 +160,16 @@ public class PdfElementsGenerator {
         Object value = null;
         if (customerInput != null && currentElement instanceof BaseInputElement<?> inputElement) {
             Object rawValue = customerInput.getEffectiveValues().getOrDefault(currentElement.getId(), null);
-            // Replicating rows are already effective values here. Formatting them again would deserialize their
-            // unwrapped child values as AuthoredElementValues.
-            value = currentElement instanceof ReplicatingContainerLayoutElement ? rawValue : inputElement.formatValue(rawValue);
+            if (currentElement instanceof ReplicatingContainerLayoutElement) {
+                // Replicating rows are already effective values here. Formatting them again would deserialize their
+                // unwrapped child values as AuthoredElementValues.
+                value = rawValue;
+            } else if (currentElement instanceof DurationInputElement) {
+                // The duration template handles invalid raw values through display(), without aborting the PDF.
+                value = rawValue;
+            } else {
+                value = inputElement.formatValue(rawValue);
+            }
         }
 
         if (currentElement instanceof FormLayoutElement rootElement) {

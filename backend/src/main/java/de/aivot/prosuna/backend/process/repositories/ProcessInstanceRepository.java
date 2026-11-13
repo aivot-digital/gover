@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.projections.DashboardActivityBucketProjection;
 import de.aivot.prosuna.backend.process.projections.DashboardInstanceCountsProjection;
+import de.aivot.prosuna.backend.process.projections.ProcessInstanceStatusCountProjection;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -240,4 +241,14 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
                                       @Param("incrementStart") int incrementStart,
                                       @Param("padding") int padding,
                                       @Param("expectedLength") int expectedLength);
+
+    @Nonnull
+    @Query("""
+            select instance.status as status, count(instance) as total
+            from ProcessInstanceEntity instance
+            where instance.createdForTestClaimId is null and instance.status in :statuses
+            group by instance.status
+            """)
+    List<ProcessInstanceStatusCountProjection> countRealInstancesByStatus(
+            @Nonnull @Param("statuses") Collection<ProcessInstanceStatus> statuses);
 }
