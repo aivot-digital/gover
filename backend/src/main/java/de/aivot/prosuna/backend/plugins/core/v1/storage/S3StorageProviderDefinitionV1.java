@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.storage;
 
+import de.aivot.prosuna.backend.core.properties.HttpServiceProperties;
 import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
@@ -32,6 +33,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
@@ -41,15 +43,18 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     private final SecretService secretService;
     private final KnownExtensionsService knownExtensionsService;
     private final StorageProviderRepository storageProviderRepository;
+    private final HttpServiceProperties httpServiceProperties;
 
     // TODO: Maybe cache MinioClients for better performance
 
     public S3StorageProviderDefinitionV1(SecretService secretService,
                                          KnownExtensionsService knownExtensionsService,
-                                         StorageProviderRepository storageProviderRepository) {
+                                         StorageProviderRepository storageProviderRepository,
+                                         HttpServiceProperties httpServiceProperties) {
         this.secretService = secretService;
         this.knownExtensionsService = knownExtensionsService;
         this.storageProviderRepository = storageProviderRepository;
+        this.httpServiceProperties = httpServiceProperties;
     }
 
     @Nonnull
@@ -722,11 +727,16 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             throw new StorageException(e, "Fehler beim Entschlüsseln des Geheimnisses für den Secret Key.");
         }
 
-        return MinioClient
+        var client = MinioClient
                 .builder()
                 .endpoint(config.endpoint)
                 .credentials(config.accessKey, storageSecretKey)
                 .build();
+        // MinIO waits up to 5 minutes by default. The limits apply to each network operation, not to a whole transfer.
+        var connectTimeout = TimeUnit.SECONDS.toMillis(httpServiceProperties.getConnectionTimeoutSeconds());
+        var readTimeout = TimeUnit.SECONDS.toMillis(httpServiceProperties.getReadTimeoutSeconds());
+        client.setTimeout(connectTimeout, readTimeout, readTimeout);
+        return client;
     }
 
     @Nonnull
