@@ -50,7 +50,7 @@ import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabl
 import {type PermissionSet} from '../../../../permissions/models/permission-set';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 
-const deletedUserMembershipTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
+const deletedUserMembershipTooltip = 'Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
 const membershipIdsLoadingTooltip = 'Lade bestehende Mitgliedschaften…';
 const membershipIdsLoadErrorTooltip = 'Die bestehenden Mitgliedschaften konnten nicht geladen werden.';
 type MembershipIdsLoadState = 'loading' | 'loaded' | 'error';
@@ -282,9 +282,9 @@ export function UserDetailsPageTeamMemberships() {
             children: (
                 <>
                     <Typography>
-                        Durch das Entfernen der Mitarbeiter:in <strong>{membership.userFullName}</strong> aus dem Team
-                        <strong> {membership.teamName}</strong> verliert diese alle zugewiesenen Rollen und
-                        Berechtigungen in diesem Team.
+                        Die Mitgliedschaft von <strong>{membership.userFullName}</strong> im
+                        Team <strong>{membership.teamName}</strong> und die damit verbundenen Domänenrollenzuweisungen
+                        werden entfernt. Berechtigungen aus anderen Zuweisungen können weiterhin gelten.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         Diese Aktion kann nicht rückgängig gemacht werden.
@@ -336,7 +336,7 @@ export function UserDetailsPageTeamMemberships() {
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Teams, in denen diese Mitarbeiter:in Mitglied ist, und die
+                    Eine Übersicht der Teams, in denen diese Mitarbeiter:in Mitglied ist, und der
                     dazugehörigen
                     Rollen.
                 </Typography>

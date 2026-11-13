@@ -13,6 +13,8 @@ import de.aivot.prosuna.backend.process.repositories.ProcessWorkRequestRepositor
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 import de.aivot.prosuna.backend.utils.DatabaseFailureUtils;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +63,7 @@ public class ProcessWorkRequestWorker {
     private final Duration redispatchInterval;
     // A new broker connection may lead to a broker that has lost all messages, e.g. after the broker was recreated.
     private final AtomicBoolean publishAllPending = new AtomicBoolean(true);
+    private final MeterRegistry meterRegistry;
 
     public ProcessWorkRequestWorker(@Nonnull ProcessWorkRequestRepository requests,
                                     @Nonnull ProcessWorkRequestService requestService,
@@ -69,7 +72,9 @@ public class ProcessWorkRequestWorker {
                                     @Nonnull ProcessTaskExecutionService execution, @Nonnull ProcessWorker worker,
                                     @Nonnull BusinessTime time, @Nonnull ConnectionFactory connectionFactory,
                                     @Value("${prosuna.process-work.batch-size:100}") int batchSize,
-                                    @Value("${prosuna.process-work.redispatch-interval:PT5M}") Duration redispatchInterval) {
+                                    @Value("${prosuna.process-work.redispatch-interval:PT5M}") Duration redispatchInterval,
+                                    MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.requests = requests;
         this.requestService = requestService;
         this.instances = instances;
@@ -139,10 +144,15 @@ public class ProcessWorkRequestWorker {
     @RabbitListener(queues = ProcessWorkRequestService.QUEUE, concurrency = "${prosuna.process-work.concurrency:4}",
             containerFactory = "processWorkListenerContainerFactory")
     public void consume(@Nonnull Long requestId) {
+        var sample = Timer.start(meterRegistry);
+        var outcome = "success";
         ProcessWorkRequestEntity request = null;
         try {
             request = requests.findById(requestId).orElse(null);
-            if (request == null) return;
+            if (request == null) {
+                outcome = "discarded";
+                return;
+            }
             if (request.getKind() == ProcessWorkRequestKind.Resume) {
                 consumeResume(request);
             } else {
@@ -150,13 +160,16 @@ public class ProcessWorkRequestWorker {
             }
         } catch (ResponseException exception) {
             // The instance or task no longer exists; its requests were deleted with it.
+            outcome = "discarded";
         } catch (RuntimeException exception) {
             // The work rolled back, so the request remains pending. A temporarily unavailable database, e.g. a lost
             // connection or a failed commit, only delays the work until the request is published again.
             if (request == null || DatabaseFailureUtils.isTransient(exception)) {
                 logger.warn("Could not run process work request {}; it remains pending", requestId, exception);
+                outcome = "retry";
                 return;
             }
+            outcome = "failed";
             // Running the work again would fail again, so the failed instance holds the request until it is restarted.
             var taskId = request.getKind() == ProcessWorkRequestKind.Resume ? request.getTaskId() : null;
             try {
@@ -165,6 +178,10 @@ public class ProcessWorkRequestWorker {
                 exception.addSuppressed(recordingException);
                 logger.error("Could not record the failure of process work request {}", requestId, exception);
             }
+        } finally {
+            // Recorded here, after the transaction of the work has ended, so a rolled back run is never a success.
+            sample.stop(meterRegistry.timer("prosuna.process.work",
+                    "kind", request != null ? request.getKind().name() : "unknown", "outcome", outcome));
         }
     }
 

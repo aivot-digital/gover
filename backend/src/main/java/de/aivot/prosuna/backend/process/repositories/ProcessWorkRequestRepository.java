@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessWorkRequestEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessWorkRequestKind;
+import de.aivot.prosuna.backend.process.projections.ProcessWorkBacklogProjection;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -64,4 +65,18 @@ public interface ProcessWorkRequestRepository extends JpaRepository<ProcessWorkR
     @Nonnull
     @Query("select request.id from ProcessWorkRequestEntity request where request.processInstanceId = :instanceId order by request.id")
     List<Long> findIdsByProcessInstanceId(@Nonnull @Param("instanceId") Long processInstanceId);
+
+    /** Summarizes the requests the dispatcher would publish; see {@link #findDispatchableIds}. */
+    @Nonnull
+    @Query("""
+            select count(request) as total, min(request.created) as oldestCreated
+            from ProcessWorkRequestEntity request
+            join ProcessInstanceEntity instance on instance.id = request.processInstanceId
+            left join ProcessInstanceTaskEntity task on task.id = request.taskId
+            where instance.status in :instanceStatuses
+              and (task.id is null or task.status not in :heldTaskStatuses)
+            """)
+    ProcessWorkBacklogProjection summarizeBacklog(
+            @Nonnull @Param("instanceStatuses") Collection<ProcessInstanceStatus> instanceStatuses,
+            @Nonnull @Param("heldTaskStatuses") Collection<ProcessTaskStatus> heldTaskStatuses);
 }

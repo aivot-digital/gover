@@ -33,6 +33,12 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
     private Integer maxItems;
 
     @Nullable
+    private Integer maxItemLength;
+
+    @Nullable
+    private List<String> pasteSeparators;
+
+    @Nullable
     private Boolean allowDuplicates;
 
     public ChipInputElement() {
@@ -59,6 +65,10 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
             throw new ValidationException(this, "Maximal " + maxItems + " Einträge erlaubt.");
         }
 
+        if (maxItemLength != null && maxItemLength > 0 && value.stream().anyMatch(entry -> entry.length() > maxItemLength)) {
+            throw new ValidationException(this, "Jeder Eintrag darf höchstens " + maxItemLength + " Zeichen enthalten.");
+        }
+
         if (!Boolean.TRUE.equals(allowDuplicates) && value.stream().distinct().count() != value.size()) {
             throw new ValidationException(this, "Mehrfach vorhandene Einträge sind nicht erlaubt.");
         }
@@ -79,31 +89,30 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
 
     @Nonnull
     @Override
-    public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
-        if (referencedValue == null) {
-            return operator == ConditionOperator.Empty;
+    public Boolean evaluate(ConditionOperator operator, @Nullable Object referencedValue, @Nullable Object comparedValue) {
+        var formatted = formatValue(referencedValue);
+        var entries = formatted == null ? List.<String>of() : formatted;
+        if (operator == ConditionOperator.Empty) {
+            return entries.isEmpty();
         }
 
         if (operator == ConditionOperator.NotEmpty) {
-            return true;
+            return !entries.isEmpty();
         }
 
-        if (referencedValue instanceof Collection<?> cValA) {
-            if (comparedValue instanceof String sValueB) {
-                return switch (operator) {
-                    case Includes -> cValA.stream().anyMatch(sValueB::equals);
-                    case NotIncludes -> cValA.stream().noneMatch(sValueB::equals);
-                    default -> false;
-                };
-            }
-
-            if (comparedValue instanceof Collection<?> cValB) {
-                return switch (operator) {
-                    case Includes -> cValB.stream().allMatch(cValA::contains);
-                    case NotIncludes -> cValB.stream().noneMatch(cValA::contains);
-                    default -> false;
-                };
-            }
+        if (comparedValue instanceof String entry) {
+            return switch (operator) {
+                case Includes -> entries.contains(entry);
+                case NotIncludes -> !entries.contains(entry);
+                default -> false;
+            };
+        }
+        if (comparedValue instanceof Collection<?> comparedEntries) {
+            return switch (operator) {
+                case Includes -> comparedEntries.stream().allMatch(entries::contains);
+                case NotIncludes -> comparedEntries.stream().noneMatch(entries::contains);
+                default -> false;
+            };
         }
 
         return false;
@@ -113,7 +122,7 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
     public static List<String> _formatValue(@Nullable Object value) {
         var res = switch (value) {
             case null -> null;
-            case String sValue -> List.of(sValue.trim());
+            case String sValue -> sValue.trim().isEmpty() ? null : List.of(sValue.trim());
             case Collection<?> cValue -> cValue.stream()
                     .filter(Objects::nonNull)
                     .map(v -> v.toString().trim())
@@ -137,6 +146,8 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
                 && Objects.equals(codeListKey, that.codeListKey)
                 && Objects.equals(minItems, that.minItems)
                 && Objects.equals(maxItems, that.maxItems)
+                && Objects.equals(maxItemLength, that.maxItemLength)
+                && Objects.equals(pasteSeparators, that.pasteSeparators)
                 && Objects.equals(allowDuplicates, that.allowDuplicates);
     }
 
@@ -149,6 +160,8 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
         result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(minItems);
         result = 31 * result + Objects.hashCode(maxItems);
+        result = 31 * result + Objects.hashCode(maxItemLength);
+        result = 31 * result + Objects.hashCode(pasteSeparators);
         result = 31 * result + Objects.hashCode(allowDuplicates);
         return result;
     }
@@ -210,6 +223,28 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
 
     public ChipInputElement setMaxItems(@Nullable Integer maxItems) {
         this.maxItems = maxItems;
+        return this;
+    }
+
+    @Nullable
+    public Integer getMaxItemLength() {
+        return maxItemLength;
+    }
+
+    @Nonnull
+    public ChipInputElement setMaxItemLength(@Nullable Integer maxItemLength) {
+        this.maxItemLength = maxItemLength;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getPasteSeparators() {
+        return pasteSeparators;
+    }
+
+    @Nonnull
+    public ChipInputElement setPasteSeparators(@Nullable List<String> pasteSeparators) {
+        this.pasteSeparators = pasteSeparators;
         return this;
     }
 

@@ -334,15 +334,15 @@ export function FormsListPage(): React.ReactElement {
             {
                 (memberships == null || memberships.length === 0) &&
                 <EmptyDataListPlaceholder
-                    title="Noch keiner Organisationseinheit zugeordnet"
-                    description="Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen eine passende Domänenrolle zuweisen. Danach werden hier die Formulare Ihrer zugänglichen Prozesse angezeigt."
+                    title="Keine Formulare in diesem Bereich"
+                    description="Hier erscheinen Formulare, für die Sie Leseberechtigungen haben. Wenn Ihnen Zugriff fehlt, wenden Sie sich an die Administration. Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden."
                 />
             }
             {
                 memberships != null && memberships.length > 0 &&
                 <EmptyDataListPlaceholder
                     title="Keine Formulare in diesem Bereich"
-                    description="Formulare entstehen als Formulareingänge innerhalb eines Prozesses und werden gemeinsam mit der jeweiligen Prozessversion veröffentlicht."
+                    description="Hier erscheinen Formulare, für die Sie Leseberechtigungen haben. Wenn Ihnen Zugriff fehlt, wenden Sie sich an die Administration. Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden."
                 />
             }
         </Box>

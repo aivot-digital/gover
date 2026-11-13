@@ -18,6 +18,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElemen
 import de.aivot.prosuna.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
+import de.aivot.prosuna.backend.elements.services.AssetSelectionValidationService;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
@@ -547,7 +548,8 @@ class FormTriggerControllerV1SubmitTest {
                 new ElementDataTransformService(),
                 new CodeListElementOptionsService(null, null),
                 new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
-                new InputVariableResolver()
+                new InputVariableResolver(),
+                mock(AssetSelectionValidationService.class)
         );
     }
 

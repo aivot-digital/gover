@@ -184,12 +184,12 @@ class ProcessNodeServiceTest {
 
         node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
-                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgangsport")));
         org.mockito.Mockito.verify(processEdgeRepository, org.mockito.Mockito.never()).delete(any(ProcessEdgeEntity.class));
         assertEquals("processing_overdue", edge.getViaPort());
         node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(null, true)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
-                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgangsport")));
     }
 
     @Test
@@ -1084,7 +1084,7 @@ class ProcessNodeServiceTest {
 
         var exception = assertThrows(ResponseException.class, () -> formService.validateNewProcessNodeBatch(List.of(createFormNode())));
 
-        assertTrue(exception.getMessage().contains("Formularerweiterung"));
+        assertTrue(exception.getMessage().contains("Formularmodul"));
     }
 
     @Test
@@ -1509,7 +1509,7 @@ class ProcessNodeServiceTest {
                 .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
 
         var problems = service.validate(targetNode, provider, false).orElseThrow();
-        var expectedError = "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar.";
+        var expectedError = "Die ausgewählte Identität „missing-identity“ ist nicht mehr verfügbar.";
 
         assertEquals(List.of("Identity: " + expectedError), problems.problems());
         assertEquals(
@@ -1541,7 +1541,7 @@ class ProcessNodeServiceTest {
                 .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
 
         var problems = service.validate(targetNode, provider, false).orElseThrow();
-        var expectedError = "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden.";
+        var expectedError = "Die verfügbaren Identitäten konnten nicht ermittelt werden.";
 
         assertEquals(List.of("Identity: " + expectedError), problems.problems());
         assertEquals(
@@ -1575,7 +1575,7 @@ class ProcessNodeServiceTest {
         var problems = service.validate(targetNode, provider, false).orElseThrow();
 
         assertEquals(
-                List.of("Identity: Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden."),
+                List.of("Identity: Die verfügbaren Identitäten konnten nicht ermittelt werden."),
                 problems.problems()
         );
     }
@@ -1624,7 +1624,7 @@ class ProcessNodeServiceTest {
         var problems = service.validate(targetNode, provider, false).orElseThrow();
 
         assertEquals(
-                "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar. Provider error.",
+                "Die ausgewählte Identität „missing-identity“ ist nicht mehr verfügbar. Provider error.",
                 problems
                         .derivedRuntimeElementData()
                         .getElementStates()

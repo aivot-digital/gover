@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.security;
 
 import de.aivot.prosuna.backend.user.repositories.UserApiKeyRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,13 +30,18 @@ public class ApiKeyJwtDecoder implements JwtDecoder {
 
     private final JwtDecoder delegate;
     private final UserApiKeyRepository userApiKeyRepository;
+    private final Counter validApiKeyRequests;
+    private final Counter invalidApiKeyRequests;
 
     public ApiKeyJwtDecoder(
             @Nonnull JwtDecoder delegate,
-            @Nonnull UserApiKeyRepository userApiKeyRepository
+            @Nonnull UserApiKeyRepository userApiKeyRepository,
+            @Nonnull MeterRegistry meterRegistry
     ) {
         this.delegate = delegate;
         this.userApiKeyRepository = userApiKeyRepository;
+        this.validApiKeyRequests = meterRegistry.counter("prosuna.api.key.requests", "outcome", "valid");
+        this.invalidApiKeyRequests = meterRegistry.counter("prosuna.api.key.requests", "outcome", "invalid");
     }
 
     /**
@@ -64,7 +71,11 @@ public class ApiKeyJwtDecoder implements JwtDecoder {
         var apiKey = userApiKeyRepository
                 .findByKeyHashOfActiveUser(hash(token))
                 .filter(key -> key.getExpiration().isAfter(Instant.now()))
-                .orElseThrow(() -> new BadJwtException("Invalid API key"));
+                .orElseThrow(() -> {
+                    invalidApiKeyRequests.increment();
+                    return new BadJwtException("Invalid API key");
+                });
+        validApiKeyRequests.increment();
 
         return Jwt
                 .withTokenValue(token)

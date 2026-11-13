@@ -192,22 +192,22 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     @Nonnull
     @Override
     public String getName() {
-        return "Externer HTTP Aufruf";
+        return "Externer HTTP-Aufruf";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Führt HTTP-Requests zu externen Systemen durch.";
+        return "Sendet eine HTTP-Anfrage an ein Fachsystem oder einen externen Dienst und stellt die Antwort bereit.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Führt einen konfigurierten HTTP-Aufruf zu einem externen System aus und bereitet die Antwort für den weiteren Prozess auf.
+                Sendet eine HTTP-Anfrage mit der konfigurierten Methode, Authentifizierung und dem gewählten Inhalt, etwa JSON, Formulardaten oder ganze Anlagensätze. Die Antwort steht je nach Konfiguration als Text oder JSON in den Elementdaten bereit oder wird als Datei in einem neuen Anlagensatz gespeichert.
 
-                Unterstützt werden unterschiedliche HTTP-Methoden, Authentifizierungsarten sowie JSON-, Formular- und Dateiinhalte. Antwortstatus, Header und verarbeiteter Inhalt werden als Ausgänge bereitgestellt; Dateiantworten können zusätzlich als Vorgangsanlagen gespeichert werden.
+                Ohne weitere Konfiguration gilt nur der Statuscode `200` als erfolgreich. Bei jedem anderen Statuscode schlägt die Aufgabe fehl.
                 """;
     }
 
@@ -252,7 +252,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                 new ProcessNodePort(
                         SUCCESS_PORT,
                         "HTTP erfolgreich",
-                        "Der Prozess wird hier fortgesetzt, wenn die Antwort einen erlaubten HTTP-Statuscode liefert."
+                        "Der Vorgang wird hier fortgesetzt, wenn die Antwort einen erlaubten HTTP-Statuscode liefert."
                 )
         );
     }
@@ -268,9 +268,9 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                 new ProcessNodeOutput(OUTPUT_NAME_FILE_NAME, "Dateiname", "Der Dateiname der gespeicherten Antwortdatei.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_NAME_MIME_TYPE, "MIME-Typ", "Der MIME-Typ der gespeicherten Antwortdatei.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_NAME_SIZE_BYTES, "Dateigröße", "Die Größe der gespeicherten Antwortdatei in Bytes.", "number | null"),
-                new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_KEY, "Anhang-Schlüssel", "Der Schlüssel des gespeicherten Prozess-Anhangs.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter", "Die ID des Speicheranbieters des gespeicherten Prozess-Anhangs.", "number | null"),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad des gespeicherten Prozess-Anhangs.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_KEY, "Anlagenschlüssel", "Der Schlüssel der gespeicherten Anlage.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter", "Die ID des Speicheranbieters der gespeicherten Anlage.", "number | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad der gespeicherten Anlage.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateien", "Die gespeicherten Antwortdateien im Format des Datei-Anlagen-Feldes.", OUTPUT_FILES_TYPE_DEFINITION)
         );
     }
@@ -287,7 +287,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                             processNodeEntity.getDataKey(),
                             StringUtils.isNotNullOrEmpty(configuration.responseConfig.responseFileName)
                                     ? configuration.responseConfig.responseFileName
-                                    : Objects.requireNonNullElse(processNodeEntity.getName(), "Http-Anfrage"),
+                                    : Objects.requireNonNullElse(processNodeEntity.getName(), "HTTP-Anfrage"),
                             null,
                             false,
                             processNodeEntity
@@ -320,7 +320,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Vorbereiten oder Ausführen des HTTP-Requests: %s",
+                    "Fehler beim Vorbereiten oder Ausführen der HTTP-Anfrage: %s",
                     e.getMessage()
             );
         }
@@ -429,7 +429,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             } catch (ResponseException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
-                        "Die HTTP-Antwortdatei konnte nicht als Prozess-Anhang gespeichert werden: %s",
+                        "Die HTTP-Antwortdatei konnte nicht als Anlage gespeichert werden: %s",
                         e.getMessage()
                 );
             }
@@ -486,7 +486,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                          @Nullable String url) throws ProcessNodeExecutionException {
         var renderedUrl = url;
         if (StringUtils.isNullOrEmpty(renderedUrl)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Die URL für den HTTP-Request wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Die URL für die HTTP-Anfrage wurde nicht angegeben.");
         }
 
         try {
@@ -497,7 +497,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die URL für den HTTP-Request ist ungültig: %s",
+                    "Die URL für die HTTP-Anfrage ist ungültig: %s",
                     renderedUrl
             );
         }
@@ -648,7 +648,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                                                      @Nullable String rawProcessDataKey) throws ProcessNodeExecutionException {
         var processDataKey = normalizeProcessDataKey(rawProcessDataKey);
         if (processDataKey == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der Prozessdaten-Schlüssel für den JSON-Anfragekörper wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Der Datenschlüssel für den JSON-Anfragekörper wurde nicht angegeben.");
         }
 
         if (processDataKey.isEmpty()) {
@@ -663,7 +663,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der Prozessdaten-Schlüssel %s ist ungültig.",
+                    "Der Datenschlüssel %s ist ungültig.",
                     StringUtils.quote(rawProcessDataKey)
             );
         }
@@ -710,7 +710,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                     } catch (IOException | ResponseException e) {
                         throw new ProcessNodeExecutionExceptionUnknown(
                                 e,
-                                "Der Inhalt des Prozess-Anhangs %s konnte nicht geladen werden: %s",
+                                "Der Inhalt der Anlage %s konnte nicht geladen werden: %s",
                                 StringUtils.quote(attachment.getFileName()),
                                 e.getMessage()
                         );
@@ -774,7 +774,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
         if (attachments.isEmpty()) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anhänge.",
+                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anlagen.",
                     StringUtils.quote(normalizedDataKey)
             );
         }

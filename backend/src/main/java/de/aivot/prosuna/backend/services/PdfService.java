@@ -45,6 +45,8 @@ import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
@@ -81,6 +83,7 @@ public class PdfService {
     private final ProcessRepository processRepository;
     private final ProcessVersionRepository processVersionRepository;
     private final ThemeService themeService;
+    private final MeterRegistry meterRegistry;
 
     @Autowired
     public PdfService(GotenbergConfig gotenbergConfig,
@@ -96,7 +99,9 @@ public class PdfService {
                       PaymentProviderRepository paymentProviderRepository,
                       PaymentProviderDefinitionsService paymentProviderDefinitionsService,
                       HttpService httpService,
-                      ElementDerivationService elementDerivationService, ThemeService themeService) {
+                      ElementDerivationService elementDerivationService, ThemeService themeService,
+                      MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.pdfLogoService = pdfLogoService;
@@ -457,18 +462,25 @@ public class PdfService {
 
         var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 
-        HttpResponse<byte[]> response;
+        var sample = Timer.start(meterRegistry);
+        var outcome = "failed";
         try {
-            response = httpService.postMultipart(convertUri, multipart);
-        } catch (HttpConnectionException e) {
-            throw new IOException("Failed to generate PDF with Gotenberg.", e);
-        }
+            HttpResponse<byte[]> response;
+            try {
+                response = httpService.postMultipart(convertUri, multipart);
+            } catch (HttpConnectionException e) {
+                throw new IOException("Failed to generate PDF with Gotenberg.", e);
+            }
 
-        if (response.statusCode() != 200) {
-            throw new IOException("Failed to generate PDF with Gotenberg. Status: " + response.statusCode());
-        }
+            if (response.statusCode() != 200) {
+                throw new IOException("Failed to generate PDF with Gotenberg. Status: " + response.statusCode());
+            }
 
-        return response.body();
+            outcome = "success";
+            return response.body();
+        } finally {
+            sample.stop(meterRegistry.timer("prosuna.pdf.generation", "outcome", outcome));
+        }
     }
 
     /**

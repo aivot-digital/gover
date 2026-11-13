@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
 import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
+import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
@@ -52,6 +53,12 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
 
     @Nullable
     private List<String> suggestions;
+
+    @Nullable
+    private OptionsSourceType optionsSource;
+
+    @Nullable
+    private String codeListKey;
 
     public TextInputElement() {
         super(ElementType.Text);
@@ -183,6 +190,8 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
                 && Objects.equals(prefix, textField.prefix)
                 && Objects.equals(copyable, textField.copyable)
                 && Objects.equals(copyValueTemplate, textField.copyValueTemplate)
+                && optionsSource == textField.optionsSource
+                && Objects.equals(codeListKey, textField.codeListKey)
                 && Objects.equals(suggestions, textField.suggestions)
                 && Objects.equals(dynamicTextPolicy, textField.dynamicTextPolicy);
     }
@@ -199,6 +208,8 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         result = 31 * result + Objects.hashCode(copyable);
         result = 31 * result + Objects.hashCode(copyValueTemplate);
         result = 31 * result + Objects.hashCode(suggestions);
+        result = 31 * result + Objects.hashCode(optionsSource);
+        result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(dynamicTextPolicy);
         return result;
     }
@@ -308,6 +319,28 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
 
     public TextInputElement setCopyValueTemplate(@Nullable String copyValueTemplate) {
         this.copyValueTemplate = copyValueTemplate;
+        return this;
+    }
+
+    @Nullable
+    public OptionsSourceType getOptionsSource() {
+        return optionsSource;
+    }
+
+    @Nonnull
+    public TextInputElement setOptionsSource(@Nullable OptionsSourceType optionsSource) {
+        this.optionsSource = optionsSource;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListKey() {
+        return codeListKey;
+    }
+
+    @Nonnull
+    public TextInputElement setCodeListKey(@Nullable String codeListKey) {
+        this.codeListKey = codeListKey;
         return this;
     }
 

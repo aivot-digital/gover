@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend;
 
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
+import de.aivot.prosuna.backend.elements.compatibility.LegacyRadioDeserializerModifier;
 import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +30,9 @@ public class JsonMapperConfiguration {
     public JsonMapperBuilderCustomizer customJacksonSerializers() {
         // Keep this HTTP mapper aligned with ObjectMapperFactory, which is used by
         // persistence and destination-payload code outside Spring MVC.
-        return builder -> builder.addModule(new SimpleModule("prosuna-temporal")
+        return builder -> builder.addModule(new SimpleModule("prosuna-legacy-elements")
+                .setDeserializerModifier(new LegacyRadioDeserializerModifier()))
+                .addModule(new SimpleModule("prosuna-temporal")
                 .addDeserializer(Instant.class, new StrictInstantValueDeserializer())
                 .addSerializer(Instant.class, new ApplicationTimeZoneInstantValueSerializer())
                 .addSerializer(LocalTime.class, new LocalTimeSerializer(DateTimeFormatter.ofPattern("HH:mm:ss")))

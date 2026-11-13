@@ -54,7 +54,7 @@ describe('NoCodeOperandEditorExpression', () => {
             {label: 'Hamburg', value: 'HH'},
         ]);
         const element = {
-            ...generateElementWithDefaultValues(ElementType.Radio),
+            ...generateElementWithDefaultValues(ElementType.Select),
             id: 'state',
             label: 'Bundesland',
             optionsSource: OptionsSourceType.CodeList,

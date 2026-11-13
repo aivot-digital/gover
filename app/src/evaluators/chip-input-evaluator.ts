@@ -3,27 +3,23 @@ import {type BaseEvaluator} from './base-evaluator';
 
 export const ChipInputEvaluator: BaseEvaluator<string[]> = {
     [ConditionOperator.Includes]: (valueA, valueB) => {
-        if (valueA == null) {
-            return valueB == null;
-        }
+        const entries = valueA ?? [];
 
         if (Array.isArray(valueB)) {
-            return valueB.every(vb => valueA.includes(vb));
+            return valueB.every(vb => entries.includes(vb));
         } else if (typeof valueB === 'string') {
-            return valueA.includes(valueB);
+            return entries.includes(valueB);
         }
 
         return false;
     },
     [ConditionOperator.NotIncludes]: (valueA, valueB) => {
-        if (valueA == null) {
-            return valueB != null;
-        }
+        const entries = valueA ?? [];
 
         if (Array.isArray(valueB)) {
-            return !valueB.every(vb => valueA.includes(vb));
+            return !valueB.some(vb => entries.includes(vb));
         } else if (typeof valueB === 'string') {
-            return !valueA.includes(valueB);
+            return !entries.includes(valueB);
         }
 
         return false;

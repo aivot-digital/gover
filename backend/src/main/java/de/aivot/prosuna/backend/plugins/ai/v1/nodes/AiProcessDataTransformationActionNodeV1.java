@@ -162,16 +162,16 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet die vollständigen Laufzeitdaten eines Vorgangs an eine KI und ersetzt die Vorgangsdaten durch das zurückgegebene JSON-Objekt.";
+        return "Lässt eine KI die Vorgangsdaten umwandeln und ersetzt sie durch das zurückgegebene JSON-Objekt.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Verwendet eine kompatible KI-Completions-API, um die vollständigen Laufzeitdaten eines Vorgangs in ein neues JSON-Objekt zu transformieren.
+                Sendet den konfigurierten Prompt zusammen mit den vollständigen Vorgangsdaten, geschützten Vorgangsdaten und Elementdaten an eine OpenAI-kompatible Chat-Completions-API. Das zurückgegebene JSON-Objekt ersetzt die bisherigen Vorgangsdaten vollständig. Liefert die KI kein gültiges JSON-Objekt, schlägt die Aufgabe fehl und die Vorgangsdaten bleiben unverändert.
 
-                Endpoint, API-Schlüssel, Modell und Prompt werden konfiguriert; der Prompt kann die aktuellen Vorgangsdaten einbeziehen. Das von der KI zurückgegebene JSON-Objekt ersetzt anschließend die bisherigen Vorgangsdaten vollständig. Informationen zu Modell, Abschlussgrund, Nutzung und erzeugten Top-Level-Schlüsseln stehen als Ausgänge zur Verfügung.
+                Als HTTP-Endpunkt wird die Basis-URL der API angegeben, an die `/chat/completions` angehängt wird. Da die Inhalte dieser Datenebenen an den externen Dienst übermittelt werden, ist vor dem Einsatz zu prüfen, ob diese Übermittlung zulässig ist.
                 """;
     }
 
@@ -203,7 +203,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                 new ProcessNodePort(
                         SUCCESS_PORT,
                         "Vorgangsdaten transformiert",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Vorgangsdaten erfolgreich transformiert wurden."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Vorgangsdaten erfolgreich transformiert wurden."
                 )
         );
     }
@@ -213,10 +213,10 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
                 new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell.", "string"),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Abschlussgrund", "Der Grund, aus dem die Erzeugung der ersten KI-Antwort beendet wurde.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION),
-                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Prozessdatenobjekts.", "Array<string>")
+                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Vorgangsdatenobjekts.", "Array<string>")
         );
     }
 
@@ -230,7 +230,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpoint-URL muss angegeben werden."));
+                errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpunkt-URL muss angegeben werden."));
             } else {
                 try {
                     parseEndpointUri(configuration.endpointUrl);
@@ -242,15 +242,15 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Secret für den API-Schlüssel muss ausgewählt werden."));
+                errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Geheimnis für den API-Schlüssel muss ausgewählt werden."));
             } else {
                 try {
                     var secretId = UUID.fromString(configuration.apiKeySecret.trim());
                     if (secretService.retrieve(secretId).isEmpty()) {
-                        errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden."));
+                        errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Geheimnis für den API-Schlüssel wurde nicht gefunden."));
                     }
                 } catch (IllegalArgumentException e) {
-                    errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel ist ungültig."));
+                    errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Geheimnis für den API-Schlüssel ist ungültig."));
                 }
             }
         }
@@ -261,7 +261,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, List.of("Das Prompt muss angegeben werden."));
+                errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, List.of("Der Prompt muss angegeben werden."));
             }
         }
 
@@ -280,16 +280,16 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var configuration = context.getConfigurationOfExecutingNode();
 
         if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Die Endpoint-URL für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Die Endpunkt-URL für den KI-Aufruf wurde nicht angegeben.");
         }
         if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Secret für den API-Schlüssel wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Das Geheimnis für den API-Schlüssel wurde nicht angegeben.");
         }
         if (StringUtils.isNullOrEmpty(configuration.model)) {
             throw new ProcessNodeExecutionExceptionMissingValue("Das Modell für den KI-Aufruf wurde nicht angegeben.");
         }
         if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Prompt für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Der Prompt für den KI-Aufruf wurde nicht angegeben.");
         }
 
         var endpointUri = parseEndpointUri(configuration.endpointUrl);
@@ -297,7 +297,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var renderedPrompt = configuration.prompt;
         if (StringUtils.isNullOrEmpty(renderedPrompt)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Das Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
+                    "Der Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
             );
         }
 
@@ -342,7 +342,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         var completionTexts = extractCompletionTexts(completionResponse.choices);
         if (completionTexts.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Texte.");
+            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Text.");
         }
 
         var transformedProcessData = parseTransformedProcessData(completionTexts.getFirst());
@@ -357,7 +357,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private URI parseEndpointUri(@Nullable String endpointUrl) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedUrl = StringUtils.toNullableTrimmedString(endpointUrl);
         if (normalizedUrl == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpoint-URL für den KI-Aufruf ist leer.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL für den KI-Aufruf ist leer.");
         }
 
         try {
@@ -368,7 +368,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                     .toUri();
 
             if (!uri.isAbsolute() || StringUtils.isNullOrEmpty(uri.getScheme()) || StringUtils.isNullOrEmpty(uri.getHost())) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpoint-URL muss eine absolute URL sein.");
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL muss eine absolute URL sein.");
             }
 
             return uri;
@@ -377,7 +377,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die Endpoint-URL ist ungültig: %s",
+                    "Die Endpunkt-URL ist ungültig: %s",
                     normalizedUrl
             );
         }
@@ -394,17 +394,17 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         try {
             secretId = UUID.fromString(normalizedSecretKey);
         } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Secret für den API-Schlüssel ist ungültig.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Geheimnis für den API-Schlüssel ist ungültig.");
         }
 
         SecretEntity secret = secretService
                 .retrieve(secretId)
-                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden."));
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Geheimnis für den API-Schlüssel wurde nicht gefunden."));
 
         try {
             var decryptedSecret = secretService.decrypt(secret);
             if (StringUtils.isNullOrEmpty(decryptedSecret)) {
-                throw new ProcessNodeExecutionExceptionMissingValue("Das ausgewählte Secret für den API-Schlüssel ist leer.");
+                throw new ProcessNodeExecutionExceptionMissingValue("Das ausgewählte Geheimnis für den API-Schlüssel ist leer.");
             }
             return decryptedSecret;
         } catch (ProcessNodeExecutionException e) {
@@ -412,7 +412,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der API-Schlüssel konnte nicht aus dem ausgewählten Secret entschlüsselt werden: %s",
+                    "Der API-Schlüssel konnte nicht aus dem ausgewählten Geheimnis entschlüsselt werden: %s",
                     e.getMessage()
             );
         }
@@ -497,7 +497,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private Map<String, Object> parseTransformedProcessData(@Nonnull String completionText) throws ProcessNodeExecutionExceptionUnknown {
         var normalizedCompletion = StringUtils.toNullableTrimmedString(completionText);
         if (normalizedCompletion == null) {
-            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Texte.");
+            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Text.");
         }
 
         var jsonPayload = unwrapJsonCodeFence(normalizedCompletion);
@@ -607,8 +607,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
          * Absolute URL of the AI completions endpoint. The node uses this URL as-is and does not render it as a template.
          */
         @InputElementPOJOBinding(id = ENDPOINT_URL_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpoint"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Absolute URL des KI-Endpunkts für Completions."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpunkt"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Basis-URL der API. Der Pfad /chat/completions wird automatisch angehängt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })

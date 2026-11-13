@@ -18,41 +18,38 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob ein bestimmtes Element auf der Benutzeroberfläche aktuell nicht sichtbar ist.";
+        return "Prüft, ob das angegebene Formularelement laut berechnetem Sichtbarkeitszustand nicht sichtbar ist.";
     }
 
     @Override
     public String getDescription() {
         return """                
-                ### **Operator: "Ist Nicht Sichtbar"**
+                ### **Operator: "Ist nicht sichtbar"**
                 
                 # Beschreibung:
-                Der Operator **„Ist Nicht Sichtbar“** prüft, ob ein bestimmtes Element auf der Benutzeroberfläche aktuell **nicht sichtbar** ist. \s
-                Dazu nimmt der Operator die **ID des Elements** als Eingabe und gibt **wahr** (true) zurück, wenn das Element ausgeblendet ist, oder **falsch** (false), wenn es sichtbar ist.
+                Der Operator **„Ist nicht sichtbar“** prüft den berechneten Sichtbarkeitszustand des angegebenen Formularelements. \s
+                Geben Sie die **ID eines im Formular konfigurierten Formularelements** an. \s
+                Der Operator gibt **wahr** (true) zurück, wenn der berechnete Zustand nicht sichtbar ist, und **falsch** (false), wenn er sichtbar ist.
                 
                 # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob ein Hinweisfeld mit der ID `"hinweis"` derzeit ausgeblendet ist.
+                Im Formular ist ein Eingabefeld mit der ID `"telefonnummer"` konfiguriert.
+                Seine Sichtbarkeit wird über eine Bedingung gesteuert.
                 
-                Mit dem Operator **„Ist Nicht Sichtbar“** formulieren Sie: \s
+                Mit dem Operator **„Ist nicht sichtbar“** prüfen Sie dessen berechneten Sichtbarkeitszustand: \s
                 ```text
-                Ist Nicht Sichtbar("hinweis")
+                Ist nicht sichtbar("telefonnummer")
                 ```
                 
                 **Ergebnis:**
-                - **wahr:** Wenn das Element mit der ID `"hinweis"` ausgeblendet ist (z. B. per CSS `display: none` oder durch eine Bedingung). \s
-                - **falsch:** Wenn das Element sichtbar ist.
+                - **wahr:** Wenn das Eingabefeld im berechneten Zustand nicht sichtbar ist. \s
+                - **falsch:** Wenn das Eingabefeld im berechneten Zustand sichtbar ist.
                 
                 **Weitere Beispiele:**
-                - **Ist Nicht Sichtbar("button_submit"):** → **falsch**, wenn der Button sichtbar ist. \s
-                - **Ist Nicht Sichtbar("error_message"):** → **wahr**, wenn die Fehlermeldung ausgeblendet ist.
+                - **Ist nicht sichtbar("zusatzangaben"):** → **falsch**, wenn der im Formular konfigurierte Abschnitt `"zusatzangaben"` im berechneten Zustand sichtbar ist. \s
+                - **Ist nicht sichtbar("hinweis"):** → **wahr**, wenn das im Formular konfigurierte Textelement `"hinweis"` im berechneten Zustand nicht sichtbar ist.
                 
-                # Wann verwenden Sie den Operator „Ist Nicht Sichtbar“?
-                Verwenden Sie **„Ist Nicht Sichtbar“**, wenn:
-                - Sie prüfen möchten, ob ein bestimmtes Element in der Benutzeroberfläche nicht angezeigt wird. \s
-                - Sie auf unsichtbare Elemente reagieren möchten (z. B. um bestimmte Aktionen erst dann auszuführen, wenn ein Element versteckt ist). \s
-                - Sie dynamische Interfaces verwalten, bei denen Elemente je nach Benutzeraktion ausgeblendet werden.
-                
-                Dieser Operator ist besonders hilfreich, um Workflows, Formulare oder Benutzeroberflächen mit dynamischen Anzeigeelementen effizient zu steuern.
+                # Wann verwenden Sie den Operator „Ist nicht sichtbar“?
+                Verwenden Sie **„Ist nicht sichtbar“**, um Bedingungen in Ihrem Formular vom berechneten Sichtbarkeitszustand eines anderen Formularelements abhängig zu machen.
                 """;
     }
 
@@ -64,6 +61,6 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "das Feld „#0“ ist nicht sichtbar";
+        return "das Formularelement „#0“ ist nicht sichtbar";
     }
 }

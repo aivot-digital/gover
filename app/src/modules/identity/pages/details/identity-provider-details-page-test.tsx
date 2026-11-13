@@ -105,7 +105,7 @@ export function IdentityProviderDetailsPageTest() {
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Um die korrekte Funktion und Erscheinung eines Nutzerkontos sicherzustellen, können Sie hier einen Test durchführen.
+                Um die korrekte Funktion und Erscheinung eines Kontos sicherzustellen, können Sie hier einen Test durchführen.
                 Nach einem erfolgreichen Test werden Sie auf diese Seite zurückgeleitet und können die Daten einsehen, die an Prosuna übermittelt wurden.
             </Typography>
 

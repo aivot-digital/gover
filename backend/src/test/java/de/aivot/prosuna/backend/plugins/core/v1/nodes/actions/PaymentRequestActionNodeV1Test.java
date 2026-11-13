@@ -14,8 +14,8 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentCo
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -167,11 +167,11 @@ class PaymentRequestActionNodeV1Test {
 
         var executionType = layout.findChild(
                 SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_FIELD_ID,
-                RadioInputElement.class
+                SelectInputElement.class
         ).orElseThrow();
         assertEquals(List.of(
-                RadioInputElementOption.of("automatic", "Automatisch versenden"),
-                RadioInputElementOption.of("manual", "Manuell bearbeiten und versenden")
+                SelectInputElementOption.of("automatic", "Automatisch versenden"),
+                SelectInputElementOption.of("manual", "Manuell bearbeiten und versenden")
         ), executionType.getOptions());
 
         var automaticGroup = layout.findChild(
@@ -207,7 +207,7 @@ class PaymentRequestActionNodeV1Test {
                 },
                 node.getExecutionTypes()
         );
-        assertEquals("Fordert eine Online-Zahlung von einer dritten Person an.", node.getAbstract());
+        assertEquals("Fordert eine Online-Zahlung von Beteiligten an und wartet auf deren Abschluss.", node.getAbstract());
     }
 
     @Test
@@ -393,7 +393,7 @@ class PaymentRequestActionNodeV1Test {
                 """
                         # Zahlungsinformationen
 
-                        **Buchungstext:** Gebührenbescheid AZ-123
+                        **Verwendungszweck:** Gebührenbescheid AZ-123
 
                         **Beschreibung:** Gebühren für die Bearbeitung
 
@@ -481,7 +481,7 @@ class PaymentRequestActionNodeV1Test {
                 .orElseThrow()
                 .getContent());
 
-        assertTrue(html.contains("<strong>Buchungstext:</strong> [Jetzt zahlen](<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)"));
+        assertTrue(html.contains("<strong>Verwendungszweck:</strong> [Jetzt zahlen](<a rel=\"nofollow\" href=\"https://evil.example\">https://evil.example</a>)"));
         assertTrue(html.contains("<strong>Beschreibung:</strong> **Dringend**<br />\n# Hinweis"));
         assertTrue(html.contains("<li>&lt;b&gt;Gebühr&lt;/b&gt;: 10,00 Euro</li>"));
         assertFalse(html.contains(">Jetzt zahlen</a>"));

@@ -526,7 +526,7 @@ function getExpressionOperandLabel(operand: NoCodeExpression, allOperators: NoCo
         .find(op => op.identifier === operand.operatorIdentifier);
 
     if (operator == null) {
-        return `Der Ausdruck mit dem unbekannten No-Code Operand (ID: ${operand.operatorIdentifier})`;
+        return `Der Ausdruck mit dem unbekannten No-Code-Operator (ID: ${operand.operatorIdentifier})`;
     }
 
     return operator.label;
@@ -539,7 +539,6 @@ function getReferencedElementOptions(
     switch (element.type) {
         case ElementType.Checkbox:
             return BOOL_DEFAULT_OPTIONS;
-        case ElementType.Radio:
         case ElementType.Select:
             if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
                 return element.options.map((option) => (
