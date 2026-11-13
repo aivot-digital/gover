@@ -3,6 +3,7 @@ import type {ProcessAttachmentDisplayElement} from '../models/elements/form/cont
 import React, {useMemo} from 'react';
 import {useOptionalProcessTaskViewAttachmentContext} from '../modules/process/pages/details/process-task-view-attachment-context';
 import {ProcessAttachmentDisplayComponent} from '../components/process-attachment-display/process-attachment-display-component';
+import {useOptionalProcessNodeEditorContext} from '../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
 
 export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachmentDisplayElement, void>): React.JSX.Element {
     const {
@@ -10,6 +11,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
     } = props;
 
     const attachmentContext = useOptionalProcessTaskViewAttachmentContext();
+    const editorContext = useOptionalProcessNodeEditorContext();
     const configuredAttachmentSetKey = element.attachmentSetKey ?? '';
     const hasConfiguredAttachmentSetKey = configuredAttachmentSetKey.trim().length > 0;
 
@@ -47,10 +49,15 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
                 <ProcessAttachmentDisplayComponent
                     labelText={element.label}
                     hintText={element.hint}
-                    statusText="Konfigurieren Sie einen Anlagensatz-Schlüssel, um Vorgangsanhänge anzuzeigen."
+                    statusText="Konfigurieren Sie einen Anlagensatz-Schlüssel, um Vorgangsanlagen anzuzeigen."
                 />
             );
         }
+
+        // Resolve the preview title from current metadata; persist only the stable key, not a copy of the title.
+        const attachmentSetTitle = editorContext?.incomingMetadata?.forwardedAttachmentSets
+            .find(attachmentSet => attachmentSet.dataKey === configuredAttachmentSetKey)?.label;
+        const previewTitle = element.label?.trim() || attachmentSetTitle?.trim() || 'Vorschau des Anlagensatzes';
 
         return (
             <ProcessAttachmentDisplayComponent
@@ -59,11 +66,11 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
                 items={[
                     {
                         key: 'preview',
-                        fileName: element.label ?? configuredAttachmentSetKey,
-                        originalFileName: element.label ?? configuredAttachmentSetKey,
+                        fileName: previewTitle,
+                        secondaryText: `Anlagensatz-Schlüssel: ${configuredAttachmentSetKey}`,
                     },
                 ]}
-                previewText="Dies ist eine Vorschau. Anhänge können im Modellierungsmodus nicht angesehen oder heruntergeladen werden."
+                previewText="Dies ist eine Vorschau. Anlagen können im Modellierungsmodus nicht angesehen oder heruntergeladen werden."
             />
         );
     }
@@ -74,7 +81,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
                 labelText={element.label}
                 hintText={element.hint}
                 loading
-                statusText="Anhänge werden geladen..."
+                statusText="Anlagen werden geladen..."
             />
         );
     }
@@ -84,7 +91,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
             <ProcessAttachmentDisplayComponent
                 labelText={element.label}
                 hintText={element.hint}
-                statusText="Es ist kein Anlagensatz-Schlüssel für die anzuzeigenden Anhänge konfiguriert."
+                statusText="Es ist kein Anlagensatz-Schlüssel für die anzuzeigenden Anlagen konfiguriert."
             />
         );
     }
@@ -104,7 +111,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
             <ProcessAttachmentDisplayComponent
                 labelText={element.label}
                 hintText={element.hint}
-                statusText="Der konfigurierte Anlagensatz enthält keine Anhänge."
+                statusText="Der konfigurierte Anlagensatz enthält keine Anlagen."
             />
         );
     }
@@ -117,6 +124,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
                 key: attachment.key,
                 fileName: attachment.fileName,
                 originalFileName: attachment.originalFileName,
+                sizeInBytes: attachment.sizeInBytes,
                 group: attachment.group,
                 onView: () => {
                     void attachmentContext.viewAttachment(attachment);

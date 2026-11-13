@@ -247,7 +247,7 @@ class AiHubCompletionActionNodeV1Test {
                 )))
         );
 
-        assertTrue(exception.getMessage().contains("Die Antwort der KI enthält keinen Texte."));
+        assertTrue(exception.getMessage().contains("Die Antwort der KI enthält keinen Text."));
     }
 
     @Test

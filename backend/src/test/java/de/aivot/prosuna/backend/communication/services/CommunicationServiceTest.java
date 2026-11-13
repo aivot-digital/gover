@@ -105,6 +105,15 @@ class CommunicationServiceTest {
     }
 
     @Test
+    void preservesLocalRecipientsAcrossExecutionRequestsAndCommunicationDispatch() throws Exception {
+        var message = new CommunicationMessage.Builder().subject("Rückfrage").body("Text").markdownBody("Text").build();
+        var request = de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultCommunicationRequest
+                .toEmail(" person@verwaltung ", message);
+        communicationService.sendMessageToEmail(request.recipientEmailAddress(), request.message());
+        verify(defaultMailCommunicationService).sendMessage("person@verwaltung", message);
+    }
+
+    @Test
     void deliveryChannelUsesSelectedBindingAndToleratesUnavailableMetadata() {
         assertEquals("E-Mail", communicationService.describeDeliveryChannel(null));
         binding.setName("Servicekonto");
@@ -120,7 +129,7 @@ class CommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
 
         communicationService.sendMessage(identity, message);
@@ -141,7 +150,7 @@ class CommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
 
         communicationService.sendMessage(identity, message);
@@ -161,7 +170,7 @@ class CommunicationServiceTest {
                 new CommunicationMessage.Builder()
                         .subject("Subject")
                         .body("Body")
-                        .htmlBody("Body")
+                        .markdownBody("Body")
                         .build()
         ));
 
@@ -207,7 +216,7 @@ class CommunicationServiceTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
 
         communicationService.sendMessage(emailIdentity, message);

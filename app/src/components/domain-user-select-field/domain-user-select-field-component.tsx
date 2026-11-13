@@ -1,3 +1,4 @@
+import {createOptionFilter} from '../select-field/option-search';
 import {
     Autocomplete,
     Box,
@@ -326,13 +327,14 @@ export function DomainUserSelectFieldComponent(props: DomainUserSelectFieldCompo
                             {params.children}
                         </li>
                     )}
+                    filterOptions={createOptionFilter<DomainAndUserSelectOption>((option) => [option.label, option.subLabel, option.group])}
                     getOptionLabel={(option) => option.label}
                     noOptionsText={
                         isLoading
                             ? 'Lade Optionen…'
                             : !hasEnabledType
                                 ? 'Keine Typen freigegeben'
-                                : 'Keine Optionen verfügbar'
+                                : options.length > 0 ? 'Keine passenden Optionen gefunden' : 'Keine Optionen verfügbar'
                     }
                     onChange={(_: SyntheticEvent, nextValues) => {
                         if (!busy) {

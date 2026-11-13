@@ -188,7 +188,7 @@ public class CaseNumberGeneratorService {
 
         if (incrementMatchCount != 1) {
             throw ResponseException.badRequest(
-                    "Die Formatvorlage für die Vorgangskennung muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten."
+                    "Die Formatvorlage für die Vorgangskennung muss genau einen Zählerplatzhalter im Format %I(n) enthalten."
             );
         }
 
@@ -211,7 +211,7 @@ public class CaseNumberGeneratorService {
         var padding = Integer.parseInt(incrementMatcher.group(1));
         if (padding < CASE_NUMBER_PADDING_MIN || padding > CASE_NUMBER_PADDING_MAX) {
             throw ResponseException.badRequest(
-                    "Die Inkrement-Breite in der Formatvorlage für die Vorgangskennung muss zwischen %d und %d Stellen liegen.",
+                    "Die Zählerbreite in der Formatvorlage für die Vorgangskennung muss zwischen %d und %d Stellen liegen.",
                     CASE_NUMBER_PADDING_MIN,
                     CASE_NUMBER_PADDING_MAX
             );

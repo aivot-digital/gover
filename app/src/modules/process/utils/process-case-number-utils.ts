@@ -58,7 +58,7 @@ export function validateCaseNumberTemplate(caseNumberTemplate: string | null | u
 
             const padding = Number.parseInt(incrementMatch[1], 10);
             if (padding < CASE_NUMBER_PADDING_MIN || padding > CASE_NUMBER_PADDING_MAX) {
-                return `Die Inkrement-Breite muss zwischen ${CASE_NUMBER_PADDING_MIN} und ${CASE_NUMBER_PADDING_MAX} Stellen liegen.`;
+                return `Die Zählerbreite muss zwischen ${CASE_NUMBER_PADDING_MIN} und ${CASE_NUMBER_PADDING_MAX} Stellen liegen.`;
             }
 
             renderedLength += padding;
@@ -83,7 +83,7 @@ export function validateCaseNumberTemplate(caseNumberTemplate: string | null | u
     }
 
     if (incrementCount !== 1) {
-        return 'Die Formatvorlage für die Vorgangskennung muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten.';
+        return 'Die Formatvorlage für die Vorgangskennung muss genau einen Zählerplatzhalter im Format %I(n) enthalten.';
     }
 
     if (renderedLength > CASE_NUMBER_MAX_RENDERED_LENGTH) {

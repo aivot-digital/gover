@@ -74,7 +74,7 @@ import java.util.stream.Collectors;
 @Service
 public class ProcessNodeService implements EntityService<ProcessNodeEntity, Integer> {
     private static final Logger logger = LoggerFactory.getLogger(ProcessNodeService.class);
-    private static final String UNRESOLVABLE_PROCESS_IDENTITIES_MESSAGE = "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden.";
+    private static final String UNRESOLVABLE_PROCESS_IDENTITIES_MESSAGE = "Die verfügbaren Identitäten konnten nicht ermittelt werden.";
 
     private final ProcessNodeRepository processNodeRepository;
     private final ProcessNodeDefinitionService processNodeProviderService;
@@ -476,7 +476,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         try {
             config = ElementPOJOMapper.mapToPOJO(derivedData.getEffectiveValues(), provider.getNodeConfigurationClass());
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Die Ableitung der Knotenkonfiguration ist fehlgeschlagen: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Ableitung der Konfiguration des Prozesselements ist fehlgeschlagen: %s", e.getMessage());
         }
 
         var details = new ProcessConfigurationDetails<NodeConfig>(
@@ -817,7 +817,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     node.getDataKey(),
                     output.label(),
                     output.description(),
-                    node
+                    node,
+                    output.markdown()
             ));
 
             var mappedProcessDataKey = StringUtils.toNullableTrimmedString(node.getOutputMappings().get(output.key()));
@@ -825,13 +826,16 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 continue;
             }
 
-            currentMetadata.addForwardedProcessDataKey(
+            currentMetadata.addForwardedProcessDataKey(new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
                     mappedProcessDataKey,
                     output.label(),
                     output.description(),
                     node,
-                    null
-            );
+                    null,
+                    null,
+                    null,
+                    output.markdown()
+            ));
         }
 
         if (!provider.getDeadlines(configuration.configuration()).isEmpty()) {
@@ -871,7 +875,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     forwardedKey.origin(),
                     forwardedKey.valueOptions(),
                     forwardedKey.codeListKey(),
-                    forwardedKey.codeListValueMode()
+                    forwardedKey.codeListValueMode(),
+                    forwardedKey.markdown()
             ));
 
             // Wildcard paths need a concrete row binding or an explicit collection result. Neither is part of the
@@ -885,7 +890,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     null,
                     forwardedKey.label(),
                     forwardedKey.subLabel(),
-                    forwardedKey.origin()
+                    forwardedKey.origin(),
+                    forwardedKey.markdown()
             ));
         }
 
@@ -938,7 +944,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         suggestions.put("finished", "Abschlusszeitpunkt");
         suggestions.put("runtime", "Laufzeit");
         suggestions.put("previousProcessNodeId", "Vorherige Element-ID");
-        suggestions.put("previousProcessNodePortKey", "Vorheriger Ausgang");
+        suggestions.put("previousProcessNodePortKey", "Vorheriger Ausgangsport");
         suggestions.put("previousProcessInstanceTaskId", "Vorherige Aufgaben-ID");
         suggestions.forEach((path, label) -> metadata.addInputVariable(new InputVariableSuggestion(
                 InputVariableSource.ElementMetadata,
@@ -998,7 +1004,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     .setProcessVersion(node.getProcessVersion());
 
             if (this.exists(duplicateDataKeyFilter)) {
-                var commonErrorMessage = "Es existiert mindestens ein weiterer Knoten mit dem selben Datenschlüssel. Datenschlüssel müssen eindeutig sein.";
+                var commonErrorMessage = "Mindestens ein weiteres Prozesselement verwendet denselben Datenschlüssel. Datenschlüssel müssen eindeutig sein.";
                 addCommonError(
                         commonErrors,
                         problems,
@@ -1060,9 +1066,9 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
                 if (!edgeExists) {
                     problems.add(
-                            "Es existiert keine Verbindung von diesem Knoten über den Ausgang " +
+                            "Es gibt keine Verbindung von diesem Prozesselement über den Ausgangsport " +
                                     StringUtils.quote(ports.label()) +
-                                    ". Alle Ausgänge müssen mit einer Verbindung zu einem anderen Knoten verbunden sein."
+                                    ". Jeder Ausgangsport muss mit einem anderen Prozesselement verbunden sein."
                     );
                 }
             }
@@ -1072,7 +1078,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             var portKeys = resolvedPorts.ports().stream().map(port -> port.key()).collect(Collectors.toSet());
             for (var edge : processEdgeRepository.findAllByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())) {
                 if (Objects.equals(edge.getFromNodeId(), node.getId()) && !portKeys.contains(edge.getViaPort())) {
-                    problems.add("Die Verbindung über den Ausgang „%s“ verweist auf einen nicht mehr verfügbaren Ausgang.".formatted(edge.getViaPort()));
+                    problems.add("Die Verbindung über den Ausgangsport „%s“ verweist auf einen nicht mehr verfügbaren Ausgangsport.".formatted(edge.getViaPort()));
                 }
             }
         }
@@ -1141,7 +1147,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                         derivedRuntimeElementData,
                         selection.getKey(),
                         incomingMetadata.complete()
-                                ? "Die ausgewählte Prozessidentität " + StringUtils.quote(selection.getValue()) + " ist nicht mehr verfügbar."
+                                ? "Die ausgewählte Identität " + StringUtils.quote(selection.getValue()) + " ist nicht mehr verfügbar."
                                 : UNRESOLVABLE_PROCESS_IDENTITIES_MESSAGE
                 );
                 continue;
@@ -1351,7 +1357,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
             var provider = processNodeProviderService
                     .getProcessNodeDefinition(node)
-                    .orElseThrow(() -> ResponseException.internalServerError("No provider found for node with id " + node.getId()));
+                    .orElseThrow(() -> ResponseException.internalServerError("Für das Prozesselement wurde kein Anbieter gefunden. ID: " + node.getId()));
 
             if (provider.getType() == type) {
                 count++;
@@ -1362,12 +1368,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     private static String createDisabledFormModuleMessage() {
-        return "Die Formularerweiterung ist auf dieser Instanz nicht aktiviert. Prozesselemente dieses Plugins können nicht verwendet werden.";
+        return "Das Formularmodul ist in dieser Instanz nicht aktiviert. Prozesselemente dieses Moduls können nicht verwendet werden.";
     }
 
     private static String createProcessNodeLimitExceededMessage(@Nonnull ProcessNodeType type,
                                                                 int limit) {
-        return "In dieser Prozessversion sind maximal %d Prozesselemente vom Typ %s erlaubt."
+        return "In dieser Prozessversion sind maximal %d Prozesselemente der Kategorie %s erlaubt."
                 .formatted(limit, StringUtils.quote(getProcessNodeTypeLabel(type)));
     }
 
@@ -1375,7 +1381,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         return switch (type) {
             case Trigger -> "Auslöser";
             case Action -> "Aktion";
-            case FlowControl -> "Flusselement";
+            case FlowControl -> "Ablaufsteuerung";
             case Termination -> "Abschluss";
         };
     }

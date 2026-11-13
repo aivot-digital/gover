@@ -44,7 +44,7 @@ public class NoCodeIfOperator extends NoCodeOperator {
                 - **Bedingung wahr:** Wenn die Bewerbung **angenommen** ist, gibt der Operator den Text **„Herzlichen Glückwunsch“** zurück.
                 - **Bedingung falsch:** Wenn die Bewerbung **abgelehnt** ist, gibt der Operator den Text **„Leider abgelehnt“** zurück.
                 
-                # Wahrheitswerte für den „Wenn Dann Sonst“-Operator
+                # Beispiele und Ergebnisse
                 - **WENN wahr DANN Wert1 SONST Wert2** → **Wert1** \s
                 - **WENN falsch DANN Wert1 SONST Wert2** → **Wert2**
                 

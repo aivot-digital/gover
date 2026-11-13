@@ -158,7 +158,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                         component={'h3'}
                         variant="h5"
                     >
-                        Gebührenübersicht
+                        Zahlungsübersicht
                     </Typography>
 
                     <Typography
@@ -168,11 +168,11 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                             mt: 1,
                         }}
                     >
-                        Um Ihre Einreichung bearbeiten zu können, ist eine Bezahlung von Gebühren erforderlich.
+                        Für diesen Vorgang ist eine Zahlung erforderlich.
                         Die Zahlung wird durch den
                         Dienstleister <strong>{costs.paymentProviderName}</strong> abgewickelt.
                         Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den
-                        Vorgang abschließen.
+                        Zahlungsvorgang abschließen.
                     </Typography>
 
                     <Typography
@@ -183,7 +183,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                         }}
                     >
                         <strong>Wichtig:</strong>
-                        &nbsp;Ihre Einreichung wird erst nach erfolgter Zahlung bearbeitet.
+                        &nbsp;Die weitere Verarbeitung wartet auf die Bestätigung der Zahlung.
                     </Typography>
 
                     <AlertComponent
@@ -192,7 +192,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                             maxWidth: '660px',
                             mt: 3,
                         }}
-                        title="Für Ihre Einreichung sind folgende Gebühren zu zahlen"
+                        title="Zahlungsübersicht"
                     >
                         <ul style={{paddingLeft: '20px'}}>
                             {
@@ -210,7 +210,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                             }
                         </ul>
 
-                        Insgesamt zu entrichtende Zahlung: {formatNumToGermanNum(costs.totalCost, 2)} Euro
+                        Gesamtbetrag: {formatNumToGermanNum(costs.totalCost, 2)} Euro
                         inkl. Steuern
                     </AlertComponent>
                 </Box>
@@ -222,7 +222,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                     component={'h3'}
                     variant="h5"
                 >
-                    Schutz vor automatisierten Einreichungen
+                    Schutz vor automatisierten Übermittlungen
                 </Typography>
 
                 <Typography

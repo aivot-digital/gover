@@ -106,7 +106,7 @@ export function CustomLinkDialog(props: CustomLinkDialogProps) {
                         label="Beschreibung"
                         value={request.description ?? ''}
                         onChange={(description) => setRequest((current) => ({...current, description: description ?? null}))}
-                        hint="Eine kurze Einordnung hilft Nutzer:innen, das Ziel des Links zu erkennen."
+                        hint="Eine kurze Einordnung hilft Mitarbeiter:innen, das Ziel des Links zu erkennen."
                         error={attemptedSubmit && descriptionLength > 255 ? 'Die Beschreibung darf höchstens 255 Zeichen lang sein.' : undefined}
                         disabled={props.isBusy}
                     />

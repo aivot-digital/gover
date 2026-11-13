@@ -36,6 +36,7 @@ import de.aivot.prosuna.backend.services.pdf.PdfTemplateAssetService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -112,7 +113,8 @@ class PdfServiceTest {
                 mock(PaymentProviderDefinitionsService.class),
                 httpService,
                 elementDerivationService,
-                themeService
+                themeService,
+                new SimpleMeterRegistry()
         );
 
         injectBaseUrlIntoHTMLMethod = PdfService.class
@@ -193,7 +195,7 @@ class PdfServiceTest {
         var pdfTemplateKey = UUID.randomUUID();
         when(pdfTemplateAssetService.loadTemplateContent(pdfTemplateKey)).thenReturn(Optional.of("""
                 <html>
-                    <head><style th:insert="./form-parts/style.html"></style></head>
+                    <head><style th:replace="~{./form-parts/style.html}"></style></head>
                     <body><h1 data-custom-template th:text="${form.publicTitle}">Titel</h1></body>
                 </html>
                 """));
@@ -232,6 +234,9 @@ class PdfServiceTest {
         var indexHtml = captureSubmittedIndexHtml();
         assertTrue(indexHtml.contains("<title>Antrag auf Beispielleistung</title>"));
         assertFalse(indexHtml.contains("Nicht auswertbar"));
+        // Keep a single <style> block so Chromium loads the regular font instead of rendering normal text in bold.
+        assertEquals(1, indexHtml.split("<style\\b", -1).length - 1);
+        assertEquals(1, indexHtml.split("</style>", -1).length - 1);
     }
 
     @Test

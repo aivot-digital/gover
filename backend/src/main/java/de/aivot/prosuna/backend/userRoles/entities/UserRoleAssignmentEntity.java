@@ -23,7 +23,7 @@ public class UserRoleAssignmentEntity {
     private Integer teamMembershipId;
 
     @Nonnull
-    @NotNull(message = "Die ID der Benutzerrollen muss angegeben werden.")
+    @NotNull(message = "Die ID der Domänenrolle muss angegeben werden.")
     @Column(name = "domain_role_id")
     private Integer userRoleId;
 

@@ -25,9 +25,9 @@ import {
 
 const actorFilters = [
     {label: 'Alle', value: 'all'},
-    {label: 'User', value: 'User'},
-    {label: 'System', value: 'System'},
-    {label: 'Process', value: 'Process'},
+    {label: getActorTypeLabel('User'), value: 'User'},
+    {label: getActorTypeLabel('System'), value: 'System'},
+    {label: getActorTypeLabel('Process'), value: 'Process'},
 ];
 
 const auditLogsListPermissionCheck: GenericListPagePermissionConfig<AuditLogEntity> = {
@@ -153,8 +153,9 @@ export function AuditLogsListPage(): ReactNode {
             value={selectedTriggerTypes}
             onChange={handleTriggerTypeChange}
             size="small"
-            placeholder="z.B. Update"
+            placeholder={`z. B. ${getTriggerTypeLabel('Update')}`}
             suggestions={filterOptions.triggerTypes}
+            getOptionLabel={getTriggerTypeLabel}
         />,
         <ChipInputFieldComponent
             key="actors"
