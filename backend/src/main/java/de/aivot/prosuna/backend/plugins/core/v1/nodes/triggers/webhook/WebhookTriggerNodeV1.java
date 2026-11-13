@@ -276,18 +276,6 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                     field.setOptions(options);
                 });
 
-        // Add processing type select options
-        configLayout
-                .findChild(WebhookTriggerConfigV1.PROCESSING_TYPE_CONFIG_KEY, SelectInputElement.class)
-                .ifPresent(field -> {
-                    var options = List.of(
-                            SelectInputElementOption.of(WebhookTriggerConfigV1.PROCESSING_TYPE_OPTION_AUTOMATIC, "Automatisch"),
-                            SelectInputElementOption.of(WebhookTriggerConfigV1.PROCESSING_TYPE_OPTION_CODE, "Code")
-                    );
-
-                    field.setOptions(options);
-                });
-
         // Set visibility function for request body config group
         configLayout
                 .findChild(WebhookTriggerConfigV1.REQUEST_BODY_CONFIG_GROUP_ID, GroupLayoutElement.class)
@@ -313,20 +301,6 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                             ))
                             .recalculateReferencedIds();
                     group.setVisibility(visibilityFunc);
-
-                    group
-                            .findChild(WebhookTriggerConfigV1.PROCESSING_CODE_CONFIG_KEY)
-                            .ifPresent(codeEditor -> {
-                                // Set visibility function for processing code editor
-                                var visibilityFuncCode = ElementVisibilityFunctions
-                                        .of(new NoCodeExpression(
-                                                NoCodeEqualsOperator.OPERATOR_ID,
-                                                new NoCodeReference(WebhookTriggerConfigV1.PROCESSING_TYPE_CONFIG_KEY),
-                                                new NoCodeStaticValue(WebhookTriggerConfigV1.PROCESSING_TYPE_OPTION_CODE)
-                                        ))
-                                        .recalculateReferencedIds();
-                                codeEditor.setVisibility(visibilityFuncCode);
-                            });
                 });
 
         // Set visibility function for auth config group
