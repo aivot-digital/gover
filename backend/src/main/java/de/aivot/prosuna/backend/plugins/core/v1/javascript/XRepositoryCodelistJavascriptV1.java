@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.javascript;
 
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -50,13 +50,13 @@ public class XRepositoryCodelistJavascriptV1 implements JavascriptFunctionProvid
     @Nonnull
     @Override
     public String getName() {
-        return "XRepository Codelisten";
+        return "XRepository-Codelisten";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Codelisten aus den XRepositories.";
+        return "Diese JavaScript-Funktionsbibliothek ermöglicht den Zugriff auf Codelisten aus den XRepositories.";
     }
 
     @Nonnull
@@ -105,7 +105,7 @@ public class XRepositoryCodelistJavascriptV1 implements JavascriptFunctionProvid
             return ProxyArray.fromArray();
         }
 
-        List<RadioInputElementOption> codeList;
+        List<SelectInputElementOption> codeList;
         try {
             codeList = codeListService
                     .getRadioFieldOptionCodeList(urn);

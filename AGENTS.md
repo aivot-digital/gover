@@ -25,6 +25,7 @@
 
 - Follow the [Aivot contribution guidelines](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md) when asked to branch, commit, or prepare a pull request. Do not switch branches, commit, or publish changes merely because files were edited.
 - New features use `feature/<descriptive-label>` from the current `milestone/X.Y.Z`; bug fixes use `fix/<descriptive-label>` from the current `patch/X.Y.Z`. Target the corresponding base branch with the PR, not `main`. Verify the intended release line instead of guessing it; no direct commits to `main`.
+- Write commit messages (including bodies and footers), PR titles and descriptions, and review comments in English. Retain specific German Prosuna terms or quoted UI text where needed to identify the wording being discussed.
 - Write English commit headers as `type(scope): Subject`, with optional scope, a capitalized imperative subject, and no final period. Types: `build`, `ci`, `docs`, `feat`, `fix`, `ref`, `test`, `meta`; use `revert` for reversals. Example: `fix(permissions): Restrict team updates to authorized resources`.
 - If needed, separate the body with a blank line, explain what and why in imperative form, and wrap it at 80 characters. Put breaking-change details and applicable issue references in the footer; never invent issue or task IDs. Consult the contribution guidelines for PR requirements and revert formatting.
 
@@ -50,6 +51,13 @@
 - `app/src/data/permissions/permission.ts` is generated from the backend permission providers. Never edit it manually; run `npm run generate:permissions` from `app/` after changing provider permissions and include the generated result.
 - After a mutation that can change the current user's effective access, refresh the frontend permission set with the established `useRefreshPermissionSet` flow and broadcast the invalidation when other open tabs can be affected.
 - Cover authorization changes with focused tests for the allowed and denied cases. For scoped permissions, also cover the system-level override, the correct resource grant, and rejection for a different resource or scope.
+
+## German Prosuna Terminology
+
+- Use [GLOSSAR.md](GLOSSAR.md) as the single authoritative terminology source for German Prosuna texts, including UI copy, product emails, documentation, and domain explanations. Apply it also to specific German terms used in otherwise English commit messages, PRs, or reviews; it does not change their language. Keep definitions in the glossary rather than duplicating them in skills or other instructions.
+- Before writing or revising these texts, read the relevant glossary entries and the cross-references needed to understand them. Choose terms according to their meaning rather than applying blanket replacements, and check the finished text against those definitions. Ordinary words remain valid even without a glossary entry.
+- The glossary defines terminology; verify claims about actual functionality against the code. Entries marked `Zielbild` describe an intended future scope and do not establish that those features are already available.
+- Preserve technical identifiers, customer-authored labels, and explicitly requested domain-specific wording. A customer-defined title such as `Antrag` may remain even when generic product copy uses broader terminology.
 
 ## UI Copy
 

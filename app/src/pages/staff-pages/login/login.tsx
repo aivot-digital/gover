@@ -294,7 +294,7 @@ export function Login() {
                                 textAlign: 'center',
                             }}
                         >
-                            Sie werden zum verwendeten Identitätsdienst weitergeleitet.
+                            Sie werden zum verwendeten Identitätsanbieter weitergeleitet.
                         </Typography>
                     </Box>
                 </Box>

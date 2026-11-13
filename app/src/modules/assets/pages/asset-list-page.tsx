@@ -91,8 +91,8 @@ export function AssetListPage() {
     }, [dispatch, parsedStorageProviderId]);
 
     const headerTitle = storageProviderName != null && storageProviderName.length > 0
-        ? `Dateien & Medien - ${storageProviderName}`
-        : 'Dateien & Medien';
+        ? `Dateien und Medien - ${storageProviderName}`
+        : 'Dateien und Medien';
 
     const uploadRoute = parsedStorageProviderId != null
         ? `/assets/providers/${parsedStorageProviderId}/files/new?path=${encodeURIComponent(currentFolderPath)}`
@@ -110,7 +110,7 @@ export function AssetListPage() {
         prompt({
             title: 'Neuer Ordner',
             message: 'Bitte geben Sie den Namen des neuen Ordners ein.',
-            inputLabel: 'Names des Ordners',
+            inputLabel: 'Name des Ordners',
             confirmButtonText: 'Ordner anlegen',
         })
             .then((folderName) => {
@@ -178,7 +178,7 @@ export function AssetListPage() {
                 {
                     label: 'Datei hochladen',
                     icon: <AddOutlinedIcon/>,
-                    tooltip: 'Neues Dokument oder Medieninhalt anlegen',
+                    tooltip: 'Datei hochladen',
                     disabledTooltip: createAssetDisabledTooltip,
                     disabled: !canCreateAssetInCurrentProvider,
                     to: uploadRoute,
@@ -186,20 +186,20 @@ export function AssetListPage() {
                 },
             ],
             helpDialog: {
-                title: 'Hilfe zu Dokumenten & Medieninhalten',
+                title: 'Hilfe zu Dateien und Medien',
                 tooltip: 'Hilfe anzeigen',
                 content: (
                     <>
                         <Typography>
-                            Dateien und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
+                            Dateien und Medien sind Inhalte, die in der Anwendung hochgeladen und
                             verwaltet werden können.
                             In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und
                             bearbeiten.
                         </Typography>
                         <Typography sx={{mt: 2}}>
-                            Sie können die hochgeladenen Dateien u.A. in Formularen verwenden, um z.B. Bilder
+                            Sie können die hochgeladenen Dateien u. a. in Formularen verwenden, um z.B. Bilder
                             oder PDFs einzubinden.
-                            Darüber hinaus können Systemdateien (wie Zertifikate oder Templates) z.B. für die
+                            Darüber hinaus können Systemdateien (wie Zertifikate oder Vorlagen) z.B. für die
                             Konfiguration von
                             Zahlungsdienstleistern oder der Dokumentengenerierung genutzt werden.
                         </Typography>
@@ -438,7 +438,7 @@ export function AssetListPage() {
         return (
             <EmptyDataListPlaceholder
                 title="Keine Dateien vorhanden"
-                description="Dateien sind hochgeladene Anlagen und Medien, die in Formularen, Prozessen oder Konfigurationen verwendet werden können."
+                description="Dateien, die in Formularen, Prozessen und Konfigurationen verwendet werden können."
                 addText={parsedStorageProviderId != null ? "Datei hochladen" : undefined}
                 onAdd={parsedStorageProviderId != null ? () => navigate(uploadRoute) : undefined}
                 addDisabled={!canCreateAssetForCurrentProvider(permissions, parsedStorageProviderId, storageProviderReadOnly)}

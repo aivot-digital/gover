@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.secrets.dtos;
 
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Nonnull;
 import java.util.UUID;
 
@@ -12,7 +13,8 @@ import java.util.UUID;
 public record SecretEntityResponseDTO(
         @Nonnull UUID key,
         @Nonnull String name,
-        @Nonnull String description
+        @Nonnull String description,
+        @Nullable Long lockVersion
 ) {
     /**
      * Get the value of the secret.
@@ -29,7 +31,8 @@ public record SecretEntityResponseDTO(
         return new SecretEntityResponseDTO(
                 entity.getKey(),
                 entity.getName(),
-                entity.getDescription()
+                entity.getDescription(),
+                entity.getLockVersion()
         );
     }
 }

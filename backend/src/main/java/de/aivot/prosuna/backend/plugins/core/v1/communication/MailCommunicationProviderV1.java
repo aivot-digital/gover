@@ -18,8 +18,6 @@ import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFuncti
 import de.aivot.prosuna.backend.elements.models.elements.ElementValueFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
@@ -115,7 +113,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     @Nonnull
     @Override
     public String getDescription() {
-        return "Versendet Nachrichten einschließlich Anhängen an die E-Mail-Adresse einer Identität.";
+        return "Versendet Nachrichten einschließlich Anlagen an die E-Mail-Adresse einer Identität.";
     }
 
     @Nonnull
@@ -138,11 +136,11 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         }
 
         layout
-                .findChild(SENDER_MODE_FIELD_ID, RadioInputElement.class)
+                .findChild(SENDER_MODE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(senderMode -> {
                     senderMode.setOptions(List.of(
-                            RadioInputElementOption.of(SENDER_MODE_DEFAULT, "Standardabsender verwenden"),
-                            RadioInputElementOption.of(SENDER_MODE_CUSTOM, "Eigenen Absender verwenden")
+                            SelectInputElementOption.of(SENDER_MODE_DEFAULT, "Standardabsender verwenden"),
+                            SelectInputElementOption.of(SENDER_MODE_CUSTOM, "Eigenen Absender verwenden")
                     ));
                     senderMode.setValue(new ElementValueFunctions().setNoCode(
                             NoCodeStaticValue.of(SENDER_MODE_DEFAULT)
@@ -236,7 +234,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         if (mappedEmail == null) {
             email.setHint("An diese Adresse werden Nachrichten zu Ihrem Vorgang gesendet.");
         } else {
-            email.setHint("Diese E-Mail-Adresse wurde aus Ihrem Nutzerkonto übernommen und kann hier nicht geändert werden.");
+            email.setHint("Diese E-Mail-Adresse wurde aus Ihrem Konto übernommen und kann hier nicht geändert werden.");
             email.setDisabled(true);
             email.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(mappedEmail)));
         }
@@ -274,7 +272,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
             throw new CommunicationException("Die Testempfängeradresse ist erforderlich.");
         }
         var recipient = rawRecipient.trim();
-        if (!EmailAddressUtils.isValidSingleAddress(recipient)) {
+        if (!EmailAddressUtils.isValidTransportAddress(recipient)) {
             throw new CommunicationException("Die Testempfängeradresse ist ungültig.");
         }
 
@@ -329,7 +327,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         var testMessage = new CommunicationMessage.Builder()
                 .subject("Testnachricht")
                 .body("Dies ist eine Testnachricht.")
-                .htmlBody("<p>Dies ist eine Testnachricht.</p>")
+                .markdownBody("Dies ist eine Testnachricht.")
                 .build();
 
         var result = sendMessage(testContext, testIdentity, testMessage);
@@ -338,7 +336,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         alert.setId("mail-testing-result-alert");
         alert.setAlertType(AlertType.Success);
         alert.setTitle("Testnachricht erfolgreich versendet");
-        alert.setText("Empfänger: %s\nBetreff: %s".formatted(
+        alert.setText("Empfangende Person oder Organisation: %s\nBetreff: %s".formatted(
                 result.get("recipient"),
                 result.get("subject")
         ));
@@ -375,12 +373,12 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         defaultMailCommunicationService.sendMessage(recipient, message, options);
 
         assert message.subject() != null;
-        assert message.htmlBody() != null;
+        assert message.markdownBody() != null;
 
         return Map.of(
                 "recipient", recipient,
                 "subject", message.subject(),
-                "body", message.htmlBody()
+                "body", message.markdownBody()
         );
     }
 
@@ -401,7 +399,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
             var mapped = identity.attributes().get(identityBinding.emailAttribute);
             if (mapped != null) {
                 var trimmed = mapped.trim();
-                if (EmailAddressUtils.isValidSingleAddress(trimmed)) {
+                if (EmailAddressUtils.isValidTransportAddress(trimmed)) {
                     return trimmed;
                 }
             }
@@ -456,7 +454,8 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
 
     @LayoutElementPOJOBinding(id = CONFIG_LAYOUT_ID, type = ElementType.ConfigLayout)
     public static class Config {
-        @InputElementPOJOBinding(id = SENDER_MODE_FIELD_ID, type = ElementType.Radio, properties = {
+        @InputElementPOJOBinding(id = SENDER_MODE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Absender"),
                 @ElementPOJOBindingProperty(
                         key = "hint",
@@ -474,13 +473,13 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     @LayoutElementPOJOBinding(id = DEFAULT_SENDER_GROUP_ID, type = ElementType.GroupLayout)
     public static class DefaultSenderConfig {
         @InputElementPOJOBinding(id = DEFAULT_SENDER_NAME_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "From Name"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absendername"),
                 @ElementPOJOBindingProperty(key = "disabled", boolValue = true),
         })
         public String name;
 
         @InputElementPOJOBinding(id = DEFAULT_SENDER_ADDRESS_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "From Adresse"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absenderadresse"),
                 @ElementPOJOBindingProperty(key = "disabled", boolValue = true),
         })
         public String address;
@@ -490,7 +489,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
     @LayoutElementPOJOBinding(id = CUSTOM_SENDER_GROUP_ID, type = ElementType.GroupLayout)
     public static class CustomSenderConfig {
         @InputElementPOJOBinding(id = CUSTOM_SENDER_NAME_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "From Name"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absendername"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Anzeigename des Absenders."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 255),
@@ -498,7 +497,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
         public String name;
 
         @InputElementPOJOBinding(id = CUSTOM_SENDER_ADDRESS_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "From Adresse"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Absenderadresse"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "E-Mail-Adresse des Absenders."),
                 @ElementPOJOBindingProperty(key = "autocomplete", strValue = "email"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
@@ -510,7 +509,7 @@ public class MailCommunicationProviderV1 implements CommunicationProviderDefinit
                 @ElementPOJOBindingProperty(key = "label", strValue = "Reply-To-Adresse"),
                 @ElementPOJOBindingProperty(
                         key = "hint",
-                        strValue = "Optional. Bleibt das Feld leer, werden Antworten an die From-Adresse gesendet."
+                        strValue = "Optional. Bleibt das Feld leer, werden Antworten an die Absenderadresse gesendet."
                 ),
                 @ElementPOJOBindingProperty(key = "autocomplete", strValue = "email"),
                 @ElementPOJOBindingProperty(key = "required", falseValue = true),

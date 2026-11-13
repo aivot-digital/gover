@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAccessControlRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -58,6 +59,7 @@ public class ProcessInstanceAccessControlService implements EntityService<Proces
         var existing = retrieve(id).orElseThrow(ResponseException::notFound);
         guard.lock(existing.getTargetProcessInstanceId());
         permissions.requireProcessInstancePermission(actor.getId(), existing.getTargetProcessInstanceId(), PROCESS_INSTANCE_UPDATE);
+        LockVersioned.requireCurrent(entity, existing);
         return performUpdate(id, entity, existing);
     }
 

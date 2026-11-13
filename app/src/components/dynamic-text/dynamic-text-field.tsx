@@ -343,9 +343,10 @@ DynamicTextFieldProps
                 <Box
                     sx={{
                         display: 'flex',
-                        alignItems: props.multiline ? 'flex-start' : 'center',
+                        // Growing fields keep the action at the first line, fields with a fixed height center it.
+                        alignItems: hasFixedHeight ? 'center' : 'flex-start',
                         justifyContent: 'center',
-                        pt: props.multiline ? 0.5 : 0,
+                        pt: hasFixedHeight ? 0 : 0.5,
                     }}
                 >
                     <Tooltip

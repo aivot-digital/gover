@@ -34,15 +34,15 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
                 Dieser Operator ist ideal, wenn Sie gezielt Daten aus einer bestimmten Spalte einer Tabelle benötigen, um diese weiterzuverarbeiten oder anzuzeigen.
                 
                 # Anwendungsbeispiel:
-                Angenommen, Sie haben eine Tabelle mit Kundendaten, die Felder wie **„Name“**, **„Alter“** und **„Stadt“** enthält. \s
-                Mit dem Operator **„Werte aus Liste“** können Sie beispielsweise die Spalte **„Name“** extrahieren, um nur die Namen der Kunden zu erhalten:
+                Angenommen, Sie haben eine Tabelle mit Personendaten, die Felder wie **„Name“**, **„Alter“** und **„Stadt“** enthält. \s
+                Mit dem Operator **„Werte aus Liste“** können Sie beispielsweise die Spalte **„Name“** extrahieren, um nur die Namen der Personen zu erhalten:
                 
                 ```text
-                Werte aus Liste Kunden -> Spalte: "Name"
+                Werte aus Liste Personen -> Spalte: "Name"
                 ```
                 
                 **Ergebnis:** \s
-                Die zurückgegebene Liste enthält die Namen der Kunden: `["Anna", "Ben", "Clara"]`.
+                Die zurückgegebene Liste enthält die Namen der Personen: `["Anna", "Ben", "Clara"]`.
                 
                 **Weitere Beispiele:**
                 - Extraktion der Spalte **„Alter“** ergibt: `[25, 30, 22]` \s
