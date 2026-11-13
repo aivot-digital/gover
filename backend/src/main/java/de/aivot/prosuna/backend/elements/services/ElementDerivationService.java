@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.InputElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
@@ -30,10 +31,13 @@ import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
+import de.aivot.prosuna.backend.process.utils.TemplateValueFormatter;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.ElementResolver;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -71,6 +75,7 @@ public class ElementDerivationService {
     private final AuthoredInputValueService authoredInputValueService;
     private final InputVariableResolver inputVariableResolver;
     private final TemplateRenderService templateRenderService;
+    private final AssetSelectionValidationService assetSelectionValidationService;
 
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull BaseElement element, @Nonnull AuthoredElementValues authoredElementValues) {
@@ -97,7 +102,8 @@ public class ElementDerivationService {
             CodeListElementOptionsService codeListElementOptionsService,
             AuthoredInputValueService authoredInputValueService,
             InputVariableResolver inputVariableResolver,
-            TemplateRenderService templateRenderService) {
+            TemplateRenderService templateRenderService,
+            @Nonnull AssetSelectionValidationService assetSelectionValidationService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.noCodeEvaluationService = noCodeEvaluationService;
         this.elementDataTransformService = elementDataTransformService;
@@ -105,6 +111,7 @@ public class ElementDerivationService {
         this.authoredInputValueService = authoredInputValueService;
         this.inputVariableResolver = inputVariableResolver;
         this.templateRenderService = templateRenderService;
+        this.assetSelectionValidationService = assetSelectionValidationService;
     }
 
     /**
@@ -116,7 +123,8 @@ public class ElementDerivationService {
             ElementDataTransformService elementDataTransformService,
             CodeListElementOptionsService codeListElementOptionsService,
             AuthoredInputValueService authoredInputValueService,
-            InputVariableResolver inputVariableResolver) {
+            InputVariableResolver inputVariableResolver,
+            @Nonnull AssetSelectionValidationService assetSelectionValidationService) {
         this(
                 javascriptEngineFactoryService,
                 noCodeEvaluationService,
@@ -124,7 +132,8 @@ public class ElementDerivationService {
                 codeListElementOptionsService,
                 authoredInputValueService,
                 inputVariableResolver,
-                new TemplateRenderService(javascriptEngineFactoryService)
+                new TemplateRenderService(javascriptEngineFactoryService),
+                assetSelectionValidationService
         );
     }
 
@@ -526,7 +535,7 @@ public class ElementDerivationService {
                         .registerElementObject(currentElement)
                         .evaluateCode(override.getJavascriptCode());
             } catch (JavascriptException e) {
-                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Override-Ableitung: " + e.getMessage(), e);
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des JavaScript-Codes für die Override-Ableitung: " + e.getMessage(), e);
             }
 
             // Check if the result is null, which indicates no override was generated
@@ -686,7 +695,7 @@ public class ElementDerivationService {
                         .registerElementObject(currentElement)
                         .evaluateCode(vis.getJavascriptCode());
             } catch (JavascriptException e) {
-                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Sichtbarkeits-Ableitung: " + e.getMessage(), e);
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des JavaScript-Codes für die Sichtbarkeits-Ableitung: " + e.getMessage(), e);
             }
 
             logger.log(currentElement, res);
@@ -1033,7 +1042,7 @@ public class ElementDerivationService {
                 if (!resolution.found()) {
                     throw new IllegalArgumentException("Die referenzierte Variable ist zur Laufzeit nicht verfügbar.");
                 }
-                return ResolvedInputValue.dynamic(resolution.value());
+                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, resolution.value(), variable.reference().markdown()));
             }
 
             if (authoredValue instanceof NoCodeAuthoredInputValue noCode) {
@@ -1053,7 +1062,7 @@ public class ElementDerivationService {
                         createRuntimeAccumulator(computedElementStates, effectiveElementValues),
                         processExecutionData
                 );
-                return ResolvedInputValue.dynamic(result.getValue());
+                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, result.getValue(), false));
             }
 
             if (authoredValue instanceof LowCodeAuthoredInputValue lowCode) {
@@ -1068,7 +1077,7 @@ public class ElementDerivationService {
                         .registerProcessExecutionData(processExecutionData)
                         .registerElementObject(baseElement)
                         .evaluateCode(code);
-                return ResolvedInputValue.dynamic(result.asObject());
+                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, result.asObject(), false));
             }
         } catch (Exception exception) {
             throw new DerivationException(baseElement, "Der dynamische Eingabewert ist ungültig: " + exception.getMessage(), exception);
@@ -1104,13 +1113,39 @@ public class ElementDerivationService {
             }
 
             if (inputModeContext == InputModeEvaluationContext.Runtime) {
-                return templateRenderService.interpolate(processExecutionData, text);
+                return templateRenderService.interpolate(
+                        processExecutionData,
+                        text,
+                        dynamicTextElement.getDynamicTextPolicy().outputFormat()
+                );
             }
 
             return text;
         } catch (RuntimeException exception) {
             throw new DerivationException(element, "Der dynamische Text ist ungültig: " + exception.getMessage(), exception);
         }
+    }
+
+    /**
+     * A whole value from process data or code is inserted without a template, so it is formatted like a
+     * {@code {! ... !}} tag. This keeps, for example, a customer's Markdown link from hiding its target in a message.
+     * A value from a Markdown input becomes plain text where the field can only show text, as with
+     * {@code _text_v1.fromMarkdown} in a template.
+     */
+    @Nullable
+    private static Object formatDynamicTextValue(@Nonnull BaseElement element,
+                                                 @Nullable Object value,
+                                                 boolean markdownValue) {
+        if (element instanceof DynamicTextElement dynamicTextElement
+                && dynamicTextElement.getDynamicTextPolicy() != null
+                && value instanceof String text) {
+            var format = dynamicTextElement.getDynamicTextPolicy().outputFormat();
+            var showsOnlyText = format == TemplateOutputFormat.PlainText || format == TemplateOutputFormat.SingleLineText;
+            return TemplateValueFormatter.formatRaw(format, markdownValue && showsOnlyText
+                    ? MarkdownRenderer.renderPlainText(text)
+                    : text);
+        }
+        return value;
     }
 
     @Nonnull
@@ -1368,6 +1403,9 @@ public class ElementDerivationService {
 
         try {
             inputElement.validate(effectiveValue);
+            if (inputElement instanceof AssetSelectInputElement assetSelect) {
+                assetSelectionValidationService.validate(assetSelect, effectiveValue);
+            }
         } catch (ValidationException e) {
             return ErrorResult.of(e);
         }

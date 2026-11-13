@@ -1,5 +1,4 @@
 import {OperatorInfoProps} from './operator-info-props';
-import ReactMarkdown from 'react-markdown';
 import {NoCodeDataTypeLabels} from '../../data/no-code-data-type';
 import React, {Fragment} from 'react';
 import {Table, TableBody, TableCell, TableContainer, TableRow} from '@mui/material';

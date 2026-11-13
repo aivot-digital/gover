@@ -1,5 +1,12 @@
 package de.aivot.prosuna.backend.elements.services;
 
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
+import de.aivot.prosuna.backend.asset.entities.AssetEntity;
+import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DurationInputElement;
+import de.aivot.prosuna.backend.enums.DurationPrecision;
+
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
@@ -14,6 +21,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
@@ -51,12 +59,19 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.prosuna.backend.nocode.services.NoCodeOperatorProviderService;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
+import de.aivot.prosuna.backend.utils.SpringContext;
+import org.mockito.Mockito;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.StaticApplicationContext;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -75,6 +90,124 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ElementDerivationServiceTest {
+    @Test
+    void derivesDependentRadioPresentationFromAnotherRadioSelection() {
+        var parent = new SelectInputElement().setPresentation(SelectInputPresentation.Radio);
+        parent.setId("parent");
+        parent.setOptions(List.of(SelectInputElementOption.of("a", "A")));
+        var child = new SelectInputElement().setPresentation(SelectInputPresentation.Radio)
+                .setDependsOnSelectFieldId("parent")
+                .setOptions(List.of(new SelectInputElementOption().setValue("one").setLabel("One").setGroup("a"),
+                        new SelectInputElementOption().setValue("two").setLabel("Two").setGroup("b")));
+        child.setId("child");
+        var authored = new AuthoredElementValues();
+        authored.putLiteral("parent", "a");
+        authored.putLiteral("child", "two");
+        var result = derive(createRoot(List.of(parent, child)), authored, new ElementDerivationOptions());
+        assertNull(result.getEffectiveValues().get("child"));
+        authored.putLiteral("child", "one");
+        assertEquals("one", derive(createRoot(List.of(parent, child)), authored, new ElementDerivationOptions()).getEffectiveValues().get("child"));
+    }
+
+    @Test
+    void checksAssetProviderForAuthoredAndDerivedValuesWithoutDiscardingTheKey() {
+        var repository = Mockito.mock(AssetRepository.class);
+        var key = java.util.UUID.randomUUID();
+        Mockito.when(repository.findById(key)).thenReturn(java.util.Optional.of(
+                new AssetEntity().setKey(key).setStorageProviderId(7)));
+        var field = new AssetSelectInputElement()
+                .setStorageProviderId(7);
+        field.setId("asset");
+        var root = createRoot(List.of(field));
+        var values = new AuthoredElementValues().putLiteral("asset", key.toString());
+        var service = createService(repository);
+
+        assertFalse(service.derive(new ElementDerivationRequest(root, values, new ElementDerivationOptions())).hasAnyError());
+        field.setStorageProviderId(8);
+        var rejected = service.derive(new ElementDerivationRequest(root, values, new ElementDerivationOptions()));
+        assertTrue(rejected.hasAnyError());
+        assertEquals(key.toString(), rejected.getEffectiveValues().get("asset"));
+
+        field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(key.toString())));
+        var derived = service.derive(new ElementDerivationRequest(root, new AuthoredElementValues(), new ElementDerivationOptions()));
+        assertTrue(derived.hasAnyError());
+        assertEquals(key.toString(), derived.getEffectiveValues().get("asset"));
+    }
+
+    @Test
+    void durationFormattingSupportsAuthoringAndRuntimeInputModes() {
+        var previousContext = (ApplicationContext) ReflectionTestUtils.getField(SpringContext.class, "context");
+        try (var context = new StaticApplicationContext()) {
+            context.getBeanFactory().registerSingleton("noCodeOperatorProviderService",
+                    new NoCodeOperatorProviderService(List.of(new CommonOperatorsV1(null, null, null))));
+            new SpringContext().setApplicationContext(context);
+            var field = dynamicTextField();
+            var root = createRoot(List.of(field));
+            var values = new AuthoredElementValues();
+            values.put("field", new NoCodeAuthoredInputValue(
+                    NoCodeExpression.of("format-duration", NoCodeStaticValue.of(99000), NoCodeStaticValue.of("hours"))));
+
+            var authoring = derive(root, values, new ElementDerivationOptions(),
+                    new ProcessExecutionData(), InputModeEvaluationContext.Authoring);
+            assertFalse(authoring.hasAnyError());
+            assertTrue(authoring.getElementStates().get("field").isInputValueDeferred());
+
+            var runtime = derive(root, values, new ElementDerivationOptions(),
+                    new ProcessExecutionData(), InputModeEvaluationContext.Runtime);
+            assertFalse(runtime.hasAnyError());
+            assertEquals("27 Stunden 30 Minuten", runtime.getEffectiveValues().get("field"));
+        } finally {
+            new SpringContext().setApplicationContext(previousContext);
+        }
+    }
+
+    @Test
+    void contactFieldsNormalizeAndValidateBothAuthoredAndDerivedValues() {
+        var email = new de.aivot.prosuna.backend.elements.models.elements.form.input.EmailInputElement();
+        email.setId("email");
+        var phone = new de.aivot.prosuna.backend.elements.models.elements.form.input.PhoneNumberInputElement();
+        phone.setId("phone");
+        var root = createRoot(List.of(email, phone));
+        var result = derive(root, new AuthoredElementValues().putLiteral("email", " Person@büro.de ").putLiteral("phone", "+49 30 123456-78"), new ElementDerivationOptions());
+        assertFalse(result.hasAnyError());
+        assertEquals("Person@xn--bro-hoa.de", result.getEffectiveValues().get("email"));
+        assertEquals("+493012345678", result.getEffectiveValues().get("phone"));
+        email.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("name@verwaltung")));
+        phone.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("+49 1234")));
+        result = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+        assertTrue(result.hasAnyError());
+        email.setAllowLocalDomains(true);
+        result = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+        assertFalse(result.hasAnyError());
+        assertEquals("name@verwaltung", result.getEffectiveValues().get("email"));
+        assertEquals("+491234", result.getEffectiveValues().get("phone"));
+        phone.setValidationMode(de.aivot.prosuna.backend.enums.PhoneNumberValidation.Strict);
+        result = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+        assertTrue(result.hasAnyError());
+    }
+
+    @Test
+    void durationFieldsValidateAuthoredAndDerivedSecondsWithoutRounding() {
+        var field = new DurationInputElement().setMinDuration(60L).setMaxDuration(100000L);
+        field.setId("duration");
+        var root = createRoot(List.of(field));
+        for (Object invalid : List.of("invalid", "", -1, 1.5, 75, 100020)) {
+            var result = derive(root, new AuthoredElementValues().putLiteral("duration", invalid), new ElementDerivationOptions());
+            assertTrue(result.hasAnyError(), String.valueOf(invalid));
+        }
+        var result = derive(root, new AuthoredElementValues().putLiteral("duration", 99000), new ElementDerivationOptions());
+        assertFalse(result.hasAnyError());
+        assertEquals(99000, ((Number) result.getEffectiveValues().get("duration")).intValue());
+        field.setPrecision(DurationPrecision.Second);
+        result = derive(root, new AuthoredElementValues().putLiteral("duration", 75), new ElementDerivationOptions());
+        assertFalse(result.hasAnyError());
+        assertEquals(75, ((Number) result.getEffectiveValues().get("duration")).intValue());
+        field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(1.5)));
+        result = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+        assertTrue(result.hasAnyError());
+        assertEquals(1.5, ((Number) result.getEffectiveValues().get("duration")).doubleValue());
+    }
+
     @Test
     void shouldReturnFieldErrorsWhenClearingAPreviouslyValidPaymentPurpose() {
         var field = new PaymentConfigElement();
@@ -350,6 +483,104 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldInsertPrintedValuesIntoMarkdownTemplatesAsLiteralText() {
+        var field = dynamicTextField(new RichTextInputElement(), "message", TemplateOutputFormat.Markdown);
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("message", "**Nachricht:** {{ $.message }}");
+
+        var result = derive(createRoot(List.of(field)), authoredValues, new ElementDerivationOptions(),
+                new ProcessExecutionData().addProcessData("message", "**Danke** für [Antrag](https://evil.example)"),
+                InputModeEvaluationContext.Runtime);
+
+        assertFalse(result.hasAnyError());
+        assertEquals(
+                "**Nachricht:** \\*\\*Danke\\*\\* für \\[Antrag\\](https://evil.example)",
+                result.getEffectiveValues().get("message")
+        );
+    }
+
+    @Test
+    void shouldRevealLinkTargetsOfWholeMarkdownValuesFromProcessDataAndCode() {
+        var markdown = "**Danke** für [Antrag](https://evil.example)";
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("variable", new VariableAuthoredInputValue(
+                new InputVariableReference(InputVariableSource.ProcessData, "message", null)
+        ));
+        authoredValues.put("noCode", new NoCodeAuthoredInputValue(NoCodeStaticValue.of(markdown)));
+        authoredValues.put("lowCode", new LowCodeAuthoredInputValue("'" + markdown + "'"));
+
+        var result = derive(
+                createRoot(List.of(
+                        dynamicTextField(new RichTextInputElement(), "variable", TemplateOutputFormat.Markdown),
+                        dynamicTextField(new RichTextInputElement(), "noCode", TemplateOutputFormat.Markdown),
+                        dynamicTextField(new RichTextInputElement(), "lowCode", TemplateOutputFormat.Markdown)
+                )),
+                authoredValues,
+                new ElementDerivationOptions(),
+                new ProcessExecutionData().addProcessData("message", markdown),
+                InputModeEvaluationContext.Runtime
+        );
+
+        assertFalse(result.hasAnyError());
+        for (var fieldId : List.of("variable", "noCode", "lowCode")) {
+            assertEquals("**Danke** für Antrag ([https://evil.example](https://evil.example))", result.getEffectiveValues().get(fieldId));
+        }
+    }
+
+    @Test
+    void shouldKeepWholeSingleLineValuesFromProcessDataOnOneLine() {
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("subject", new VariableAuthoredInputValue(
+                new InputVariableReference(InputVariableSource.ProcessData, "subject", null)
+        ));
+
+        var result = derive(
+                createRoot(List.of(dynamicTextField(new TextInputElement(), "subject", TemplateOutputFormat.SingleLineText))),
+                authoredValues,
+                new ElementDerivationOptions(),
+                new ProcessExecutionData().addProcessData("subject", "Antrag\r\nBcc: someone@example.org"),
+                InputModeEvaluationContext.Runtime
+        );
+
+        assertFalse(result.hasAnyError());
+        assertEquals("Antrag Bcc: someone@example.org", result.getEffectiveValues().get("subject"));
+    }
+
+    @Test
+    void shouldInsertWholeMarkdownValuesAsTextWhereFieldsOnlyShowText() {
+        // As the rich text editor stores what a customer typed, plus a link from other process data.
+        var stored = "**Danke** für [Antrag](https://evil.example)\n\n5 \\* 3 \\< 4";
+        var authoredValues = new AuthoredElementValues();
+        for (var fieldId : List.of("prompt", "subject", "message", "unmarked")) {
+            authoredValues.put(fieldId, new VariableAuthoredInputValue(
+                    new InputVariableReference(InputVariableSource.ProcessData, "message", null, !fieldId.equals("unmarked"))
+            ));
+        }
+
+        var result = derive(
+                createRoot(List.of(
+                        dynamicTextField(new TextInputElement(), "prompt", TemplateOutputFormat.PlainText),
+                        dynamicTextField(new TextInputElement(), "subject", TemplateOutputFormat.SingleLineText),
+                        dynamicTextField(new RichTextInputElement(), "message", TemplateOutputFormat.Markdown),
+                        dynamicTextField(new TextInputElement(), "unmarked", TemplateOutputFormat.PlainText)
+                )),
+                authoredValues,
+                new ElementDerivationOptions(),
+                new ProcessExecutionData().addProcessData("message", stored),
+                InputModeEvaluationContext.Runtime
+        );
+
+        assertFalse(result.hasAnyError());
+        assertEquals("Danke für Antrag (https://evil.example)\n\n5 * 3 < 4", result.getEffectiveValues().get("prompt"));
+        assertEquals("Danke für Antrag (https://evil.example) 5 * 3 < 4", result.getEffectiveValues().get("subject"));
+        // Markdown fields keep the formatting and only reveal link targets, as with {! !}.
+        var message = (String) result.getEffectiveValues().get("message");
+        assertTrue(message.startsWith("**Danke** für Antrag ([https://evil.example](https://evil.example))"), message);
+        // A reference without the Markdown flag inserts the value as it is stored.
+        assertEquals(stored, result.getEffectiveValues().get("unmarked"));
+    }
+
+    @Test
     void shouldInterpolateDynamicLiteralTextInsideReplicatingRows() {
         var child = dynamicTextField();
         child.setId("message");
@@ -577,6 +808,7 @@ class ElementDerivationServiceTest {
     void shouldValidateEmptyDynamicRowsAsAnEmptyListRatherThanATypeMismatch() {
         var rows = new ReplicatingContainerLayoutElement();
         rows.setId("rows");
+        rows.setMinimumRequiredSets(3);
         rows.setChildren(List.of());
         rows.setInputModePolicy(new InputModePolicy(List.of(InputMode.Literal, InputMode.NoCode), null));
         var values = new AuthoredElementValues();
@@ -592,6 +824,27 @@ class ElementDerivationServiceTest {
                 new ProcessExecutionData(), InputModeEvaluationContext.Runtime);
         assertTrue(required.hasAnyError());
         assertFalse(required.getElementStates().get("rows").getError().contains("nicht in den Typ"));
+    }
+
+    @Test
+    void validatesMinimumCountsForAuthoredAndComputedOptionalCollections() {
+        var table = new de.aivot.prosuna.backend.elements.models.elements.form.input.TableInputElement()
+                .setMinimumRequiredRows(3).setFields(List.of());
+        var rows = new ReplicatingContainerLayoutElement().setMinimumRequiredSets(3);
+        for (var field : List.of(table, rows)) {
+            field.setId("entries");
+            var root = createRoot(List.of(field));
+            for (int count : new int[]{0, 1, 3}) {
+                var entries = java.util.stream.IntStream.range(0, count)
+                        .mapToObj(i -> Map.of("id", "row-" + i, "values", Map.of())).toList();
+                field.setValue(null);
+                var authored = derive(root, new AuthoredElementValues().putLiteral("entries", entries), new ElementDerivationOptions());
+                assertEquals(count == 1, authored.hasAnyError());
+                field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of(entries)));
+                var computed = derive(root, new AuthoredElementValues(), new ElementDerivationOptions());
+                assertEquals(count == 1, computed.hasAnyError());
+            }
+        }
     }
 
     @Test
@@ -1764,6 +2017,21 @@ class ElementDerivationServiceTest {
         return field;
     }
 
+    private static BaseInputElement<?> dynamicTextField(BaseInputElement<?> field,
+                                                        String id,
+                                                        TemplateOutputFormat outputFormat) {
+        field.setId(id);
+        field.setInputModePolicy(new InputModePolicy(
+                List.of(InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode),
+                InputMode.Literal,
+                List.of(InputVariableSource.ProcessData)
+        ));
+        ((DynamicTextElement) field).setDynamicTextPolicy(
+                new DynamicTextPolicy(List.of(InputVariableSource.values()), outputFormat)
+        );
+        return field;
+    }
+
     private static TextInputElement dynamicTextField() {
         var field = new TextInputElement();
         field.setId("field");
@@ -1777,6 +2045,10 @@ class ElementDerivationServiceTest {
     }
 
     private static ElementDerivationService createService() {
+        return createService(Mockito.mock(AssetRepository.class));
+    }
+
+    private static ElementDerivationService createService(AssetRepository assetRepository) {
         return new ElementDerivationService(
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of(new CommonOperatorsV1(
@@ -1790,7 +2062,8 @@ class ElementDerivationServiceTest {
                 new ElementDataTransformService(),
                 new CodeListElementOptionsService(null, null),
                 new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
-                new InputVariableResolver()
+                new InputVariableResolver(),
+                new AssetSelectionValidationService(assetRepository)
         );
     }
 

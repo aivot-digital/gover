@@ -142,8 +142,8 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
 
         // Only the switch is checked, so a default provider that is already read-only can still be edited.
         if (!Boolean.TRUE.equals(existingEntity.getReadOnlyStorage()) && Boolean.TRUE.equals(entity.getReadOnlyStorage())) {
-            testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, existingEntity, "Vorgangsdokumente", "auf schreibgeschützt gesetzt");
-            testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, existingEntity, "Dokument & Medien", "auf schreibgeschützt gesetzt");
+            testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, existingEntity, "Anlagen von Vorgängen", "auf schreibgeschützt gesetzt");
+            testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, existingEntity, "Dateien und Medien", "auf schreibgeschützt gesetzt");
         }
 
         var def = storageProviderDefinitionService
@@ -226,8 +226,8 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                     .badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um einen Systemanbieter handelt");
         }
 
-        testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, entity, "Vorgangsdokumente", "gelöscht");
-        testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, entity, "Dokument & Medien", "gelöscht");
+        testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, entity, "Anlagen von Vorgängen", "gelöscht");
+        testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, entity, "Dateien und Medien", "gelöscht");
 
         // TODO: Check if any file of this storage provider is used in a process or process instance.
 

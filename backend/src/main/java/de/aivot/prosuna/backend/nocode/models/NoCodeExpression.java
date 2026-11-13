@@ -95,14 +95,14 @@ public class NoCodeExpression extends NoCodeOperand {
 
                     subErrors.add(operand.validate());
                 } else {
-                    subErrors.add(new NoCodeOperandError(null, "Ein Leerer Operator ist nicht erlaubt.", List.of()));
+                    subErrors.add(new NoCodeOperandError(null, "Ein leerer Operator ist nicht erlaubt.", List.of()));
                 }
             }
         }
 
         String thisError = null;
         if (StringUtils.isNullOrEmpty(operatorIdentifier)) {
-            thisError = "Ein Leerer Operator ist nicht erlaubt.";
+            thisError = "Ein leerer Operator ist nicht erlaubt.";
         }
 
         var op = SpringContext

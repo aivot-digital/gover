@@ -23,15 +23,20 @@ public class ProcessInstanceAttachmentEntity {
 
     @Nonnull
     @NotNull(message = "Der Dateiname darf nicht null sein.")
-    @NotBlank(message = "Der Dateiname darf nicht leer sein sein.")
+    @NotBlank(message = "Der Dateiname darf nicht leer sein.")
     @Size(max = 255, message = "Der Dateiname darf maximal 255 Zeichen lang sein.")
     private String fileName;
 
     @Nonnull
     @NotNull(message = "Der ursprüngliche Dateiname darf nicht null sein.")
-    @NotBlank(message = "Der ursprüngliche Dateiname darf nicht leer sein sein.")
+    @NotBlank(message = "Der ursprüngliche Dateiname darf nicht leer sein.")
     @Size(max = 255, message = "Der ursprüngliche Dateiname darf maximal 255 Zeichen lang sein.")
     private String originalFileName;
+
+    // Read from the storage index so existing attachments also expose their current size without duplicating it.
+    @Transient
+    @Nullable
+    private Long sizeInBytes;
 
     @Nullable
     @Column(name = "\"group\"")
@@ -59,7 +64,7 @@ public class ProcessInstanceAttachmentEntity {
 
     @Nonnull
     @NotNull(message = "Der Pfad des Speicherindex-Items darf nicht null sein.")
-    @NotBlank(message = "Der Pfad des Speicherindex-Items darf nicht leer sein sein.")
+    @NotBlank(message = "Der Pfad des Speicherindex-Items darf nicht leer sein.")
     private String storagePathFromRoot;
 
     @Nullable
@@ -196,6 +201,16 @@ public class ProcessInstanceAttachmentEntity {
 
     public ProcessInstanceAttachmentEntity setOriginalFileName(@Nonnull String originalFileName) {
         this.originalFileName = originalFileName;
+        return this;
+    }
+
+    @Nullable
+    public Long getSizeInBytes() {
+        return sizeInBytes;
+    }
+
+    public ProcessInstanceAttachmentEntity setSizeInBytes(@Nullable Long sizeInBytes) {
+        this.sizeInBytes = sizeInBytes;
         return this;
     }
 

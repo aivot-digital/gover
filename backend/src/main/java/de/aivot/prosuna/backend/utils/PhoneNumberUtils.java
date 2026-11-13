@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 public final class PhoneNumberUtils {
     private static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
     private static final Pattern E164_PHONE_NUMBER_PATTERN = Pattern.compile("^\\+[1-9]\\d{1,14}$");
+    private static final Pattern PHONE_NUMBER_INPUT_PATTERN = Pattern.compile("\\+[0-9\\s()./\\-]+");
 
     private PhoneNumberUtils() {
     }
@@ -39,6 +40,13 @@ public final class PhoneNumberUtils {
     }
 
     @Nullable
+    public static String formatPhoneNumber(@Nullable String value, boolean national) {
+        var number = parsePhoneNumber(value, ValidationMode.POSSIBLE);
+        return number == null ? null : PHONE_NUMBER_UTIL.format(number, national
+                ? PhoneNumberUtil.PhoneNumberFormat.NATIONAL : PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL);
+    }
+
+    @Nullable
     private static String normalizePhoneNumberToE164(@Nullable String value, @Nonnull ValidationMode validationMode) {
         var phoneNumber = parsePhoneNumber(value, validationMode);
         if (phoneNumber == null) {
@@ -58,7 +66,7 @@ public final class PhoneNumberUtils {
         }
 
         var trimmedValue = value.trim();
-        if (trimmedValue.isEmpty() || !trimmedValue.startsWith("+")) {
+        if (!PHONE_NUMBER_INPUT_PATTERN.matcher(trimmedValue).matches()) {
             return null;
         }
 

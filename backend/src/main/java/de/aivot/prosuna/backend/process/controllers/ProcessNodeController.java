@@ -202,7 +202,7 @@ public class ProcessNodeController {
                         result.getId(),
                         "id"
                 ).withMessage(
-                        "Der Prozessknoten mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        "Das Prozesselement mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(String.valueOf(result.getId())),
                         StringUtils.quote(execUser.getFullName())
                 ).log();
@@ -324,7 +324,7 @@ public class ProcessNodeController {
                         "id"
                 )
                 .withDiff(existingMap, updatedMap).withMessage(
-                        "Der Prozessknoten mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        "Das Prozesselement mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
                         StringUtils.quote(String.valueOf(result.getId())),
                         StringUtils.quote(execUser.getFullName())
                 ).log();
@@ -366,7 +366,7 @@ public class ProcessNodeController {
                         deleted.getId(),
                         "id"
                 ).withMessage(
-                        "Der Prozessknoten mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        "Das Prozesselement mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
                         StringUtils.quote(String.valueOf(deleted.getId())),
                         StringUtils.quote(user.getFullName())
                 ).log();

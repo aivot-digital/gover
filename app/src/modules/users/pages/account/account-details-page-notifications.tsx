@@ -35,7 +35,7 @@ export function AccountDetailsPageNotifications() {
             })
             .catch(err => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Abrufen der Benutzereinstellungen.'));
+                dispatch(showErrorSnackbar('Fehler beim Abrufen der persönlichen Einstellungen.'));
             })
             .finally(() => setIsBusy(false));
     }, [user]);

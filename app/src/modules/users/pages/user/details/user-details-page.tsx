@@ -50,11 +50,11 @@ export function UserDetailsPage() {
                         ) : (
                             <>
                                 <Typography>
-                                    Mitarbeiter:innen sind Benutzer:innen, die Zugriff auf das System haben und die Anwendung nutzen können.
+                                    Mitarbeiter:innen nutzen interne Konten für den Zugriff auf die Bearbeitungsoberfläche.
                                     In dieser Oberfläche können Sie die im System verfügbaren Mitarbeiter:innen einsehen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Die hier gepflegten Basisdaten werden mit dem Identity Provider (IdP) synchron gehalten.
+                                    Die hier gepflegten Basisdaten werden mit dem Identitätsanbieter (IdP) synchron gehalten.
                                     Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in der Verwaltungsoberfläche von Keycloak.
                                 </Typography>
                             </>

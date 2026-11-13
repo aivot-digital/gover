@@ -20,6 +20,7 @@ import de.siegmar.fastcsv.reader.CsvParseException;
 import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRecord;
 import de.siegmar.fastcsv.writer.CsvWriter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     private final AssetService assetService;
     private final StorageService storageService;
     private final TransactionTemplate transaction;
+    private final MeterRegistry meterRegistry;
 
 
     @Autowired
@@ -58,8 +60,10 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             XRepositoryCodeListService xRepositoryCodeListService,
             AssetService assetService,
             StorageService storageService,
-            PlatformTransactionManager transactionManager
+            PlatformTransactionManager transactionManager,
+            MeterRegistry meterRegistry
     ) {
+        this.meterRegistry = meterRegistry;
         this.codeListRepository = codeListRepository;
         this.codeListItemRepository = codeListItemRepository;
         this.vCodeListItemRepository = vCodeListItemRepository;
@@ -174,6 +178,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
 
             var recorded = transaction.execute(status -> recordSync(codeListKey, runId, codeList, importedItems));
             if (Boolean.TRUE.equals(recorded)) {
+                meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "success").increment();
                 return false;
             }
         } catch (Exception e) {
@@ -185,6 +190,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                     Instant.now()
             );
             if (failed == 1) {
+                meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "failed").increment();
                 return false;
             }
         }
@@ -619,7 +625,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         try {
             return UUID.fromString(sourceRef);
         } catch (IllegalArgumentException e) {
-            throw ResponseException.badRequest("Die Asset-Referenz der Codeliste ist keine gültige UUID.", e);
+            throw ResponseException.badRequest("Die Dateireferenz der Codeliste ist keine gültige UUID.", e);
         }
     }
 

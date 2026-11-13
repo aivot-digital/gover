@@ -187,7 +187,7 @@ describe('ApplicationSettings', () => {
         expect(screen.queryByText(
             'Bitte wählen Sie die Systemrolle mit der höchsten Berechtigungsstufe aus.',
         )).not.toBeInTheDocument();
-        expect(getSelect('Standard-Systemrolle für automatische Benutzerimporte')).toHaveAttribute(
+        expect(getSelect('Standard-Systemrolle für automatische Kontoimporte')).toHaveAttribute(
             'aria-disabled',
             'true',
         );
@@ -213,7 +213,7 @@ function renderApplicationSettings() {
 
 async function expectRoleSelections(): Promise<void> {
     await waitFor(() => {
-        expect(getSelect('Standard-Systemrolle für automatische Benutzerimporte'))
+        expect(getSelect('Standard-Systemrolle für automatische Kontoimporte'))
             .toHaveTextContent('Automatischer Import');
         expect(getSelect('Systemrolle mit höchster Berechtigungsstufe'))
             .toHaveTextContent('Administration');

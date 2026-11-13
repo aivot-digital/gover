@@ -78,7 +78,7 @@ export const _StorageProviderSchema = {
         .required('Die Beschreibung des Speicheranbieters ist ein Pflichtfeld.'),
     storageProviderDefinitionKey: yup.string()
         .trim()
-        .required('Der Anbieter des Speicheranbieters ist ein Pflichtfeld.'),
+        .required('Bitte wählen Sie einen Speichertyp aus.'),
     storageProviderDefinitionVersion: yup.number()
         .min(1, 'Die Version des Speicheranbieters muss mindestens 1 sein.')
         .required('Die Version des Speicheranbieters ist ein Pflichtfeld.'),
@@ -379,8 +379,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         : editedStorageProvider.systemProvider
             ? 'Systemanbieter können nicht gelöscht werden.'
             : defaultStorageDeleteDisabled
-                ? 'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.'
-                : 'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dokumente des Speicheranbieters nicht gelöscht werden.';
+                ? 'Dieser Speicheranbieter ist als Standardanbieter für Anlagen von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.'
+                : 'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dateien des Speicheranbieters nicht gelöscht werden.';
     const attributesError = getIndexedFieldError(
         errors,
         'metadataAttributes',
@@ -399,9 +399,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
     if (isDefaultAttachmentStorage) {
         statusTableItems.push({
-            label: 'Standardanbieter für Anhänge von Vorgängen',
+            label: 'Standardanbieter für Anlagen von Vorgängen',
             icon: <HelpIconOutlined color="primary"/>,
-            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Anhänge von Vorgängen konfiguriert und kann nicht gelöscht werden.',
+            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Anlagen von Vorgängen konfiguriert und kann nicht gelöscht werden.',
         });
     }
 
@@ -434,13 +434,13 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 editedStorageProvider.statusMessage != null &&
                 <AlertComponent
                     color="error"
-                    title="Fehler bei der Synchronisation des Speicheranbieters"
+                    title="Fehler bei der Synchronisierung des Speicheranbieters"
                     sx={{
                         mt: 0,
                         mb: 2,
                     }}
                 >
-                    Während der Synchronisation mit dem Speicheranbieter ist ein Fehler aufgetreten.
+                    Während der Synchronisierung mit dem Speicheranbieter ist ein Fehler aufgetreten.
                     Die folgende Fehlermeldung wurde protokolliert:
 
                     <ExpandableCodeBlock
@@ -451,7 +451,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     />
 
                     Bitte beheben Sie das Problem mit dem Speicheranbieter, damit eine ordnungsgemäße Funktion
-                    gewährleistet ist. Bitte starten Sie nach der Behebung des Problems manuell die Synchronisation,
+                    gewährleistet ist. Bitte starten Sie nach der Behebung des Problems manuell die Synchronisierung,
                     damit die Verbindung geprüft und der Fehlerstatus entfernt wird.
                 </AlertComponent>
             }
@@ -615,7 +615,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     }}
                 >
                     <CheckboxFieldComponent
-                        label="Es handelt sich um einen read-only Speicher, von welchem Dateien nur gelesen, aber nicht geschrieben werden können."
+                        label="Es handelt sich um einen schreibgeschützten Speicher, von welchem Dateien nur gelesen, aber nicht geschrieben werden können."
                         value={editedStorageProvider.readOnlyStorage}
                         onChange={handleInputChange('readOnlyStorage')}
                         variant="switch"
@@ -649,10 +649,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         error={errors.maxFileSizeInBytes ?? maxFileSizeApiError ?? undefined}
                         decimalPlaces={2}
                         suffix="MB"
-                        hint="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
+                        hint="Maximale Dateigröße pro Datei. 0 bedeutet: keine zusätzliche Größenbegrenzung durch diesen Speicheranbieter. Systemweite Uploadgrenzen gelten weiterhin."
                         externalAction={
                             <Hint
-                                summary="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."
+                                summary="Maximale Dateigröße pro Datei. 0 bedeutet: keine zusätzliche Größenbegrenzung durch diesen Speicheranbieter. Systemweite Uploadgrenzen gelten weiterhin."
                                 detailsTitle="Maximale Dateigröße"
                                 details={
                                     <>
@@ -666,17 +666,19 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                                             maximale Dateigröße spezifiziert werden.
                                             Die Angabe der maximalen Dateigröße erfolgt in Megabyte* und gilt pro Datei,
                                             welche an den Speicheranbieter von Prosuna übertragen wird.
+                                            0 bedeutet: keine zusätzliche Größenbegrenzung durch diesen Speicheranbieter.
+                                            Systemweite Uploadgrenzen gelten weiterhin.
                                         </Typography>
                                         <Typography
                                             sx={{
                                                 marginBottom: 2
                                             }}
                                         >
-                                            Die maximale Dateigröße wird unter Anderem an den folgenden Stellen
+                                            Die maximale Dateigröße wird unter anderem an den folgenden Stellen
                                             berücksichtigt:
                                             <ul>
-                                                <li>Das Hochladen von Dateien &amp; Medien</li>
-                                                <li>Das Übertragen von Anlagen an einen Prozess</li>
+                                                <li>Das Hochladen von Dateien und Medien</li>
+                                                <li>Das Übertragen von Anlagen an einen Vorgang</li>
                                                 <li>Das Erstellen von Anlagen in einem Vorgang z.B. durch eine
                                                     PDF-Generierung
                                                 </li>
@@ -749,7 +751,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             disabled: inputsDisabled,
                         },
                     ]}
-                    hint="Geben Sie hier die optionale Metadaten-Attribute ein, die für Dateien mitgegeben werden können."
+                    hint="Geben Sie hier die optionalen Metadaten-Attribute ein, die für Dateien mitgegeben werden können."
                     createDefaultRow={() => ({
                         label: '',
                         key: '',
@@ -868,7 +870,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
                     </Typography>
                     <Typography>
-                        Bitte beachten Sie außerdem: Die Ordner und Dokumente des Speicheranbieters
+                        Bitte beachten Sie außerdem: Die Ordner und Dateien des Speicheranbieters
                         werden <strong>nicht</strong> gelöscht.
                     </Typography>
                 </AlertComponent>
@@ -883,12 +885,12 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         resolveSyncPreparation(false);
                     }}
                     onConfirm={handleSyncWithDiscard}
-                    confirmButtonText="Verwerfen und Synchronisieren"
+                    confirmButtonText="Verwerfen und synchronisieren"
                 >
                     <Typography>
                         Es liegen ungespeicherte Änderungen vor. Wenn Sie jetzt synchronisieren, müssen diese zuerst
                         verworfen werden. Wenn Sie die Änderungen behalten möchten, brechen Sie ab und verwenden Sie
-                        anschließend den regulären Speichern-Button.
+                        anschließend die reguläre Schaltfläche „Speichern“.
                     </Typography>
                 </ConfirmDialog>
             }

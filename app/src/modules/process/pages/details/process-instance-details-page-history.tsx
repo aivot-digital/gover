@@ -248,7 +248,7 @@ function InstanceHistory(props: InstanceHistoryProps) {
                 >
                     <Typography>
                         Die voraussichtlichen nächsten Prozesselemente, die dieser Vorgang durchlaufen wird.
-                        Dieser Pfad kann sich durch Verzweigungen in der Modellierung im Verlauf des Vorgangs verändern
+                        Dieser Prozesspfad kann sich durch Verzweigungen in der Modellierung im Verlauf des Vorgangs verändern
                         und dient nur als grober Indikator.
                     </Typography>
                 </Box>
@@ -269,7 +269,7 @@ function InstanceHistory(props: InstanceHistoryProps) {
                 ) : (
                     <Alert severity="info" sx={{mt: 3}}>
                         {result.preview.emptyReason === 'multiple-paths'
-                            ? 'Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Pfaden entschieden werden muss.'
+                            ? 'Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Prozesspfaden entschieden werden muss.'
                             : 'Derzeit sind keine nächsten Schritte vorhersehbar.'}
                     </Alert>
                 )}

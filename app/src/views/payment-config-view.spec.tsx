@@ -108,6 +108,50 @@ vi.mock('../components/rich-text-input-component/rich-text-input-component', asy
     };
 });
 
+vi.mock('../components/dynamic-text/dynamic-text-field', async (importOriginal) => {
+    const React = await import('react');
+    const actual = await importOriginal<typeof import('../components/dynamic-text/dynamic-text-field')>();
+
+    return {
+        ...actual,
+        DynamicTextInputField: React.forwardRef((props: {
+            label: string;
+            value: string | null;
+            onChange: (value: string | null) => void;
+            disabled?: boolean;
+            readOnly?: boolean;
+            error?: string;
+            endAction?: {tooltip?: string; ariaLabel?: string; onClick: () => void};
+        }, ref) => {
+            React.useImperativeHandle(ref, () => ({
+                focus: () => undefined,
+                insertVariableReference: (reference: string) => props.onChange(`${props.value ?? ''}{{ ${reference} }}`),
+            }), [props.onChange, props.value]);
+
+            return React.createElement('div', {}, [
+                React.createElement('textarea', {
+                    key: 'input',
+                    'aria-label': props.label,
+                    value: props.value ?? '',
+                    disabled: Boolean(props.disabled) || Boolean(props.readOnly),
+                    onChange: (event: { target: { value: string } }) => props.onChange(event.target.value === '' ? null : event.target.value),
+                }),
+                props.endAction != null ? React.createElement('button', {
+                    key: 'action',
+                    type: 'button',
+                    'aria-label': props.endAction.ariaLabel ?? props.endAction.tooltip,
+                    onClick: props.endAction.onClick,
+                }, props.endAction.tooltip) : null,
+                props.error != null ? React.createElement('span', {key: 'error'}, props.error) : null,
+            ]);
+        }),
+    };
+});
+
+function openVariablePickerOf(label: string) {
+    return within(screen.getByLabelText(label).parentElement!).getByRole('button', {name: 'Variable referenzieren'});
+}
+
 describe('PaymentConfigView', () => {
     let listAllMock: MockInstance;
     let listDefinitionsMock: MockInstance;
@@ -268,7 +312,7 @@ describe('PaymentConfigView', () => {
         });
         await user.click(screen.getByText('Neue Zahlungskonfiguration'));
 
-        await user.click(screen.getAllByRole('button', {name: 'Variable referenzieren'})[0]);
+        await user.click(openVariablePickerOf('Erfolgsmeldung'));
         await user.click(await screen.findByText('Name der Person'));
         await user.click(screen.getByTestId('use-variable-reference'));
         await waitFor(() => {
@@ -276,7 +320,7 @@ describe('PaymentConfigView', () => {
             expect(screen.getByLabelText('Erfolgsmeldung')).toHaveValue('{{ $.person.name }}');
         });
 
-        await user.click(screen.getAllByRole('button', {name: 'Variable referenzieren'})[1]);
+        await user.click(openVariablePickerOf('Fehlermeldung'));
         await user.click(await screen.findByText('Name der Person'));
         await user.click(screen.getByTestId('use-variable-reference'));
         await waitFor(() => {
@@ -292,11 +336,36 @@ describe('PaymentConfigView', () => {
         }));
     });
 
+    it('inserts values of Markdown inputs into payment texts as plain text', async () => {
+        const setValue = vi.fn();
+        const user = userEvent.setup();
+
+        renderPaymentConfigView({setValue});
+
+        await waitFor(() => {
+            expect(listAllMock).toHaveBeenCalledWith({isEnabled: true});
+        });
+        await user.click(screen.getByText('Neue Zahlungskonfiguration'));
+
+        await user.click(openVariablePickerOf('Verwendungszweck'));
+        await user.click(await screen.findByText('Nachricht'));
+        await user.click(screen.getByTestId('use-variable-reference'));
+        await waitFor(() => {
+            expect(screen.getByLabelText('Verwendungszweck')).toHaveValue('{{ _text_v1.fromMarkdown($.nachricht) }}');
+        });
+
+        await user.click(screen.getByText('Übernehmen'));
+
+        expect(setValue).toHaveBeenCalledWith(expect.objectContaining({
+            purpose: '{{ _text_v1.fromMarkdown($.nachricht) }}',
+        }));
+    });
+
     it('should render top-level error details on payment config fields', async () => {
         renderPaymentConfigView({
             errorDetails: {
                 paymentProviderKey: 'Bitte waehlen Sie einen Anbieter.',
-                purpose: 'Bitte geben Sie einen Buchungstext an.',
+                purpose: 'Bitte geben Sie einen Verwendungszweck an.',
                 description: 'Bitte geben Sie eine Beschreibung an.',
                 successMessage: 'Bitte korrigieren Sie die Erfolgsmeldung.',
                 failureMessage: 'Bitte korrigieren Sie die Fehlermeldung.',
@@ -307,7 +376,7 @@ describe('PaymentConfigView', () => {
         await screen.findByLabelText(/Zahlungsanbieter/);
 
         expect(await screen.findByText('Bitte waehlen Sie einen Anbieter.')).toBeInTheDocument();
-        expect(screen.getByText('Bitte geben Sie einen Buchungstext an.')).toBeInTheDocument();
+        expect(screen.getByText('Bitte geben Sie einen Verwendungszweck an.')).toBeInTheDocument();
         expect(screen.getByText('Bitte geben Sie eine Beschreibung an.')).toBeInTheDocument();
         expect(screen.getByText('Bitte korrigieren Sie die Erfolgsmeldung.')).toBeInTheDocument();
         expect(screen.getByText('Bitte korrigieren Sie die Fehlermeldung.')).toBeInTheDocument();
@@ -563,7 +632,7 @@ describe('PaymentConfigView', () => {
         const setValue = vi.fn();
         renderPaymentConfigView({value: validPaymentConfig(), setValue});
         fireEvent.click(await screen.findByText('Stadtkasse Musterstadt (pmPayment) – Live-System'));
-        fireEvent.change(screen.getByRole('textbox', {name: 'Buchungstext'}), {target: {value: ''}});
+        fireEvent.change(screen.getByRole('textbox', {name: 'Verwendungszweck'}), {target: {value: ''}});
         fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
         expect(setValue).toHaveBeenCalledWith(expect.objectContaining({purpose: null}));
     });
@@ -639,6 +708,11 @@ function renderPaymentConfigView(options?: {
                         source: InputVariableSource.ProcessData,
                         path: 'person.name',
                         label: 'Name der Person',
+                    }, {
+                        source: InputVariableSource.ProcessData,
+                        path: 'nachricht',
+                        label: 'Nachricht',
+                        markdown: true,
                     }],
                 }}
             >

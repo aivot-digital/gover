@@ -34,9 +34,9 @@ public class StorageProviderEntity {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der Definition-Schlüssel des Speicheranbieters darf nicht null sein.")
-    @NotBlank(message = "Der Definition-Schlüssel des Speicheranbieters darf nicht leer sein.")
-    @Size(max = 255, message = "Der Definition-Schlüssel des Speicheranbieters darf maximal 255 Zeichen lang sein.")
+    @NotNull(message = "Der Definitionsschlüssel des Speicheranbieters darf nicht null sein.")
+    @NotBlank(message = "Der Definitionsschlüssel des Speicheranbieters darf nicht leer sein.")
+    @Size(max = 255, message = "Der Definitionsschlüssel des Speicheranbieters darf maximal 255 Zeichen lang sein.")
     private String storageProviderDefinitionKey;
 
     @Nonnull

@@ -98,7 +98,7 @@ function getEventSource(event: ProcessInstanceEventLogEntry): string {
     if (event.triggeringUserName != null && event.triggeringUserName.trim().length > 0) {
         return event.triggeringUserName;
     }
-    return event.triggeringUserId == null ? 'System' : 'Unbekannte Nutzer:in';
+    return event.triggeringUserId == null ? 'System' : 'Unbekannte Person';
 }
 
 export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProps) {
