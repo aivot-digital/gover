@@ -30,12 +30,52 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchO
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
+import dev.fitko.fitconnect.rest.model.event.Event;
+import dev.fitko.fitconnect.rest.model.submission.PublicService;
+import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
+import dev.fitko.fitconnect.sdk.FitConnectSdk;
+import dev.fitko.fitconnect.sdk.api.OutgoingSubmission;
+import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
+import dev.fitko.fitconnect.sdk.api.event.TransferLog;
+import dev.fitko.fitconnect.sdk.clients.OnlineService;
+import dev.fitko.fitconnect.sdk.clients.OnlineServiceCases;
+import dev.fitko.fitconnect.sdk.clients.Organisation;
+import dev.fitko.fitconnect.sdk.clients.OrganisationCases;
+import dev.fitko.fitconnect.sdk.exceptions.FitConnectConfigurationException;
 import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
+import org.bouncycastle.asn1.DERNull;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.operator.ContentSigner;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.lang.reflect.UndeclaredThrowableException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.security.cert.X509Certificate;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Base64;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,12 +84,15 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -60,6 +103,20 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FitConnectZbpCommunicationProviderV1Test {
+    private static final UUID DESTINATION_ID = UUID.randomUUID();
+    private static final UUID SENDER_DESTINATION_ID = UUID.randomUUID();
+    private static final SentSubmission SENT_SUBMISSION = new SentSubmission(
+            DESTINATION_ID,
+            SENDER_DESTINATION_ID,
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            List.of(),
+            new PublicService("ZBP Message Forwarding", "urn:schema-fitko-de:fit-connect:id.bund.de:message_v6"),
+            null,
+            null,
+            null
+    );
+
     private final SecretService secretService = mock(SecretService.class);
     private final AssetContentResolverService assetContentResolverService = mock(AssetContentResolverService.class);
     private final FitConnectZbpCommunicationProviderV1 definition = new FitConnectZbpCommunicationProviderV1(
@@ -228,6 +285,126 @@ class FitConnectZbpCommunicationProviderV1Test {
         assertTrue(privateKey.getRequired());
         assertTrue(clientCertificate.getRequired());
         verifyNoInteractions(secretService);
+    }
+
+    @Test
+    void configLayoutOffersOptionalSenderDestinationType() throws Exception {
+        var field = definition.getConfigLayout().findChild(
+                FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_FIELD_ID,
+                SelectInputElement.class
+        ).orElseThrow();
+
+        assertNotEquals(Boolean.TRUE, field.getRequired());
+        assertEquals(
+                List.of(
+                        FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ADMINISTRATION,
+                        FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE
+                ),
+                field.getOptions().stream().map(SelectInputElementOption::getValue).toList()
+        );
+    }
+
+    @Test
+    void sendsAsOrganisationForAdministrationSenderDestination() throws Exception {
+        var fixture = sendFixture(FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ADMINISTRATION);
+        var organisation = mock(Organisation.class);
+        var cases = mock(OrganisationCases.class);
+        when(fixture.sdk().organisation(SENDER_DESTINATION_ID)).thenReturn(organisation);
+        when(organisation.send(any(OutgoingSubmission.class))).thenReturn(SENT_SUBMISSION);
+        when(organisation.cases()).thenReturn(cases);
+        when(cases.logOf(SENT_SUBMISSION)).thenReturn(transferLog(Event.ACCEPT_SUBMISSION));
+
+        var result = fixture.send();
+
+        assertEquals(SENT_SUBMISSION.submissionId().toString(), result.get("submissionId"));
+        assertEquals("ACCEPTED", result.get("status"));
+        verify(fixture.sdk(), never()).onlineService(any(UUID.class));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE)
+    void sendsAsOnlineServiceForOnlineServiceOrUnsetSenderDestinationType(String senderDestinationType) throws Exception {
+        var fixture = sendFixture(senderDestinationType);
+        var onlineService = mock(OnlineService.class);
+        var cases = mock(OnlineServiceCases.class);
+        when(fixture.sdk().onlineService(SENDER_DESTINATION_ID)).thenReturn(onlineService);
+        when(onlineService.send(any(OutgoingSubmission.class))).thenReturn(SENT_SUBMISSION);
+        when(onlineService.cases()).thenReturn(cases);
+        when(cases.logOf(SENT_SUBMISSION)).thenReturn(transferLog(Event.ACCEPT_SUBMISSION));
+
+        var result = fixture.send();
+
+        assertEquals(SENT_SUBMISSION.submissionId().toString(), result.get("submissionId"));
+        verify(fixture.sdk(), never()).organisation(any(UUID.class));
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"NULL, TEST", "TEST, TEST", "STAGE, STAGE", "PROD, PROD"}, nullValues = "NULL")
+    void sendsInConfiguredEnvironmentAndFallsBackToTest(String environment, String expectedEnvironmentName) throws Exception {
+        var expectedEnvironment = Map.of(
+                "TEST", FitConnectEnvironment.TEST,
+                "STAGE", FitConnectEnvironment.STAGE,
+                "PROD", FitConnectEnvironment.PROD
+        ).get(expectedEnvironmentName);
+        var fixture = sendFixture(FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE);
+        fixture.context().communicationProviderConfiguration().environment = environment;
+        var onlineService = mock(OnlineService.class);
+        var cases = mock(OnlineServiceCases.class);
+        when(fixture.sdk().onlineService(SENDER_DESTINATION_ID)).thenReturn(onlineService);
+        when(onlineService.send(any(OutgoingSubmission.class))).thenReturn(SENT_SUBMISSION);
+        when(onlineService.cases()).thenReturn(cases);
+        when(cases.logOf(SENT_SUBMISSION)).thenReturn(transferLog(Event.ACCEPT_SUBMISSION));
+
+        fixture.send();
+
+        verify(fixture.definition()).createSdk("sender-client", "sender-secret", expectedEnvironment);
+    }
+
+    @Test
+    void configLayoutOffersOptionalEnvironment() throws Exception {
+        var field = definition.getConfigLayout().findChild(
+                FitConnectZbpCommunicationProviderV1.Config.ENVIRONMENT_FIELD_ID,
+                SelectInputElement.class
+        ).orElseThrow();
+
+        assertNotEquals(Boolean.TRUE, field.getRequired());
+        assertEquals(
+                List.of("TEST", "STAGE", "PROD"),
+                field.getOptions().stream().map(SelectInputElementOption::getValue).toList()
+        );
+    }
+
+    @Test
+    void clientCreationFailureKeepsFitConnectMessage() throws Exception {
+        var fixture = sendFixture(FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE);
+        var cause = new FitConnectConfigurationException(
+                "Destination %s is type A, not C — a destination's type is fixed at creation.".formatted(SENDER_DESTINATION_ID)
+        );
+        when(fixture.sdk().onlineService(SENDER_DESTINATION_ID)).thenThrow(cause);
+
+        var exception = assertThrows(CommunicationException.class, fixture::send);
+
+        assertEquals(
+                "Die FIT-Connect-Verbindung für den Zustellpunkt (Sender) „%s“ konnte nicht aufgebaut werden: %s"
+                        .formatted(SENDER_DESTINATION_ID, cause.getMessage()),
+                exception.getMessage()
+        );
+        assertSame(cause, exception.getCause());
+    }
+
+    @Test
+    void sendFailureKeepsFitConnectMessage() throws Exception {
+        var fixture = sendFixture(FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ADMINISTRATION);
+        var organisation = mock(Organisation.class);
+        var cause = new IllegalStateException("Submission rejected by destination");
+        when(fixture.sdk().organisation(SENDER_DESTINATION_ID)).thenReturn(organisation);
+        when(organisation.send(any(OutgoingSubmission.class))).thenThrow(cause);
+
+        var exception = assertThrows(CommunicationException.class, fixture::send);
+
+        assertEquals("Der Versand über FIT-Connect ist fehlgeschlagen: Submission rejected by destination", exception.getMessage());
+        assertSame(cause, exception.getCause());
     }
 
     @Test
@@ -517,6 +694,130 @@ class FitConnectZbpCommunicationProviderV1Test {
         config.senderClientId = clientId;
         config.senderClientSecret = secretKey;
         return config;
+    }
+
+    private SendFixture sendFixture(String senderDestinationType) throws Exception {
+        var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+        var authorKeyPair = keyPairGenerator.generateKeyPair();
+        var privateKeyPem = pem("PRIVATE KEY", authorKeyPair.getPrivate().getEncoded());
+        var certificatePem = pem("CERTIFICATE", selfSignedCertificate(authorKeyPair).getEncoded());
+        when(assetContentResolverService.resolveContent(eq("private-key"), eq(AssetVisibility.Private), anyString()))
+                .thenReturn(privateKeyPem);
+        when(assetContentResolverService.resolveContent(eq("client-cert"), eq(AssetVisibility.Private), anyString()))
+                .thenReturn(certificatePem);
+
+        var secretKey = UUID.randomUUID();
+        var secret = mock(SecretEntity.class);
+        when(secretService.retrieve(secretKey)).thenReturn(Optional.of(secret));
+        when(secretService.decrypt(secret)).thenReturn("sender-secret");
+
+        var config = config("sender-client", secretKey.toString());
+        config.destinationId = DESTINATION_ID.toString();
+        config.senderDestinationId = SENDER_DESTINATION_ID.toString();
+        config.senderDestinationType = senderDestinationType;
+        config.zbpCertificatePrivateKeyAssetKey = "private-key";
+        config.zbpCertificateClientCertAssetKey = "client-cert";
+
+        var bindingConfig = new FitConnectZbpCommunicationProviderV1.IdentityBinding();
+        bindingConfig.bpk2Attribute = "postfach";
+        var context = new CommunicationProviderContext<>(
+                provider(),
+                new IdentityProviderEntity().setType(IdentityProviderType.Custom),
+                mock(CommunicationProviderBindingEntity.class),
+                config,
+                bindingConfig
+        );
+        var identity = new IdentityData(
+                "session-id",
+                "identity-id",
+                IdentityType.IdentityProvider,
+                UUID.randomUUID(),
+                "custom",
+                "provider-user-123",
+                null,
+                Map.of("postfach", UUID.randomUUID().toString()),
+                null,
+                Map.of()
+        );
+
+        var sdk = mock(FitConnectSdk.class);
+        var testDefinition = spy(definition);
+        doReturn(sdk).when(testDefinition).createSdk(eq("sender-client"), eq("sender-secret"), any());
+        return new SendFixture(testDefinition, sdk, context, identity);
+    }
+
+    private record SendFixture(
+            FitConnectZbpCommunicationProviderV1 definition,
+            FitConnectSdk sdk,
+            CommunicationProviderContext<FitConnectZbpCommunicationProviderV1.Config, FitConnectZbpCommunicationProviderV1.IdentityBinding> context,
+            IdentityData identity
+    ) {
+        Map<String, Object> send() throws CommunicationException {
+            return definition.sendMessage(context, identity, new CommunicationMessage.Builder()
+                    .subject("Subject")
+                    .body("Body")
+                    .markdownBody("Body")
+                    .referenceId("9QXA-D0B8-MR9P")
+                    .build());
+        }
+    }
+
+    private static X509Certificate selfSignedCertificate(KeyPair keyPair) throws Exception {
+        var subject = new X500Name("CN=Prosuna Test");
+        var now = Instant.now();
+        var certificate = new JcaX509v3CertificateBuilder(
+                subject,
+                BigInteger.ONE,
+                Date.from(now.minus(1, ChronoUnit.DAYS)),
+                Date.from(now.plus(1, ChronoUnit.DAYS)),
+                subject,
+                keyPair.getPublic()
+        ).build(sha256WithRsaSigner(keyPair.getPrivate()));
+        return new JcaX509CertificateConverter().getCertificate(certificate);
+    }
+
+    // Signs with the JDK because BouncyCastle's JcaContentSignerBuilder fails to load with the transitively mixed bcprov/bcpkix versions.
+    private static ContentSigner sha256WithRsaSigner(PrivateKey privateKey) {
+        var content = new ByteArrayOutputStream();
+        return new ContentSigner() {
+            @Override
+            public AlgorithmIdentifier getAlgorithmIdentifier() {
+                return new AlgorithmIdentifier(PKCSObjectIdentifiers.sha256WithRSAEncryption, DERNull.INSTANCE);
+            }
+
+            @Override
+            public OutputStream getOutputStream() {
+                return content;
+            }
+
+            @Override
+            public byte[] getSignature() {
+                try {
+                    var signature = Signature.getInstance("SHA256withRSA");
+                    signature.initSign(privateKey);
+                    signature.update(content.toByteArray());
+                    return signature.sign();
+                } catch (GeneralSecurityException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        };
+    }
+
+    private static byte[] pem(String type, byte[] der) {
+        var body = Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(der);
+        return "-----BEGIN %s-----\n%s\n-----END %s-----\n".formatted(type, body, type).getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static TransferLog transferLog(Event event) {
+        return new TransferLog(List.of(
+                CaseEvent.builder()
+                        .event(event)
+                        .issueTime(Instant.now())
+                        .problems(List.of())
+                        .build()
+        ));
     }
 
     private static CommunicationProviderEntity provider() {
