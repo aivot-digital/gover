@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.secrets.dtos;
 
 import de.aivot.prosuna.backend.lib.RequestDTO;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
@@ -22,13 +23,17 @@ public record SecretEntityRequestDTO(
 
         @NotNull(message = "Der Wert muss definiert sein")
         @NotBlank(message = "Der Wert darf nicht leer sein")
-        String value
+        String value,
+
+        @Nullable
+        Long lockVersion
 ) implements RequestDTO<SecretEntity> {
         public SecretEntity toEntity() {
                 var entity = new SecretEntity();
                 entity.setName(name);
                 entity.setDescription(description);
                 entity.setValue(value);
+                entity.setLockVersion(lockVersion);
                 return entity;
         }
 }

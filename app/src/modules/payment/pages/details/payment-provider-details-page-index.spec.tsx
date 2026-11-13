@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {PaymentProviderDetailsPageIndex} from './payment-provider-details-page-index';
@@ -27,6 +27,11 @@ const testState = vi.hoisted(() => {
         },
         definitions: [] as Record<string, any>[],
         handleInputPatch: vi.fn(),
+        isNewItem: true,
+        hasNotChanged: true,
+        changedInputs: [] as {field: string, value: unknown}[],
+        dispatch: vi.fn(),
+        update: vi.fn(),
     };
 });
 
@@ -39,7 +44,7 @@ vi.mock('../../../../components/generic-details-page/generic-details-page-contex
         isBusy: false,
         setIsBusy: vi.fn(),
         isEditable: true,
-        isNewItem: true,
+        isNewItem: testState.isNewItem,
     }),
 }));
 
@@ -47,9 +52,9 @@ vi.mock('../../../../hooks/use-form-manager', () => ({
     useFormManager: () => ({
         currentItem: testState.provider,
         errors: {},
-        hasNotChanged: true,
+        hasNotChanged: testState.hasNotChanged,
         handleInputBlur: () => vi.fn(),
-        handleInputChange: () => vi.fn(),
+        handleInputChange: (field: string) => (value: unknown) => testState.changedInputs.push({field, value}),
         handleInputPatch: testState.handleInputPatch,
         validate: vi.fn(() => true),
         reset: vi.fn(),
@@ -61,7 +66,13 @@ vi.mock('../../../../hooks/use-change-blocker-2', () => ({
 }));
 
 vi.mock('../../../../hooks/use-app-dispatch', () => ({
-    useAppDispatch: () => vi.fn(),
+    useAppDispatch: () => testState.dispatch,
+}));
+
+vi.mock('../../payment-providers-api-service', () => ({
+    PaymentProvidersApiService: class {
+        update = testState.update;
+    },
 }));
 
 vi.mock('../../../../providers/confirm-provider', () => ({
@@ -79,6 +90,11 @@ describe('PaymentProviderDetailsPageIndex', () => {
         testState.provider.config = {};
         testState.definitions = [testState.definition];
         testState.handleInputPatch.mockReset();
+        testState.isNewItem = true;
+        testState.hasNotChanged = true;
+        testState.changedInputs = [];
+        testState.dispatch.mockReset();
+        testState.update.mockReset();
     });
 
     it('shows the selected definition documentation', () => {
@@ -138,5 +154,49 @@ describe('PaymentProviderDetailsPageIndex', () => {
         fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Version'}));
         expect(screen.getByRole('option', {name: 'Version 1'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: 'Version 2'})).toBeInTheDocument();
+    });
+
+    it('reports a lock version conflict without enabling the payment provider again', async () => {
+        const message = 'Der Datensatz wurde zwischenzeitlich geändert. Laden Sie ihn bitte neu, bevor Sie Ihre Änderungen erneut speichern.';
+        testState.isNewItem = false;
+        testState.hasNotChanged = false;
+        testState.update.mockRejectedValue({
+            status: 409,
+            message,
+            details: {reason: 'lock_version_conflict'},
+            displayableToUser: true,
+        });
+
+        render(
+            <MemoryRouter>
+                <PaymentProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+        fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
+
+        await waitFor(() => expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({message}),
+        })));
+        expect(testState.changedInputs).not.toContainEqual(expect.objectContaining({field: 'isEnabled'}));
+    });
+
+    it('enables the payment provider again when published forms still use it', async () => {
+        testState.isNewItem = false;
+        testState.hasNotChanged = false;
+        testState.update.mockRejectedValue({
+            status: 409,
+            message: 'Der Zahlungsanbieter wird noch verwendet.',
+            details: null,
+            displayableToUser: true,
+        });
+
+        render(
+            <MemoryRouter>
+                <PaymentProviderDetailsPageIndex/>
+            </MemoryRouter>,
+        );
+        fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
+
+        await waitFor(() => expect(testState.changedInputs).toContainEqual({field: 'isEnabled', value: true}));
     });
 });

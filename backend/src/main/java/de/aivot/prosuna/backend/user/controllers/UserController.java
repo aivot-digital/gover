@@ -21,11 +21,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -235,6 +238,12 @@ public class UserController {
         try {
             result = userService
                     .update(id, newUser);
+        } catch (ResponseException e) {
+            // An outdated lock version keeps its 409, so clients can tell a conflict from a failed save.
+            throw e.getStatus() == HttpStatus.CONFLICT ? e : ResponseException.badRequest("Fehler beim Speichern der Mitarbeiter:in", e);
+        } catch (OptimisticLockingFailureException | OptimisticLockException e) {
+            // The GlobalExceptionHandler answers a concurrent commit with 409.
+            throw e;
         } catch (Exception e) {
             throw ResponseException.badRequest("Fehler beim Speichern der Mitarbeiter:in", e);
         }

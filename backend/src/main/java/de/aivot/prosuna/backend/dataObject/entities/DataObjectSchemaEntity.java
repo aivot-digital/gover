@@ -2,6 +2,8 @@ package de.aivot.prosuna.backend.dataObject.entities;
 
 import de.aivot.prosuna.backend.core.converters.GroupLayoutConverter;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
@@ -11,7 +13,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "data_object_schemas")
-public class DataObjectSchemaEntity {
+public class DataObjectSchemaEntity implements LockVersioned {
     @Id
     @Nonnull
     @Column(length = 64)
@@ -43,6 +45,11 @@ public class DataObjectSchemaEntity {
     @Nonnull
     @Column(columnDefinition = "varchar(64)[]")
     private List<String> displayFields;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     @PrePersist
     public void prePersist() {
@@ -152,6 +159,17 @@ public class DataObjectSchemaEntity {
 
     public DataObjectSchemaEntity setDisplayFields(@Nonnull List<String> displayFields) {
         this.displayFields = displayFields;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public DataObjectSchemaEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 
