@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.identity.converters.IdentityScopesConverter;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.models.IdentityAdditionalParameter;
 import de.aivot.prosuna.backend.identity.models.IdentityAttributeMapping;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.persistence.*;
 
 import jakarta.annotation.Nonnull;
@@ -32,7 +33,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "identity_providers")
-public class IdentityProviderEntity {
+public class IdentityProviderEntity implements LockVersioned {
     @Id
     @Nonnull
     @Column(length = 36, columnDefinition = "uuid")
@@ -108,6 +109,11 @@ public class IdentityProviderEntity {
 
     @Nullable
     private String pkceMethod;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // Equals and HashCode
 
@@ -333,6 +339,17 @@ public class IdentityProviderEntity {
 
     public IdentityProviderEntity setPkceMethod(@Nullable String pkceMethod) {
         this.pkceMethod = pkceMethod;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public IdentityProviderEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

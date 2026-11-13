@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.xrepository.models.*;
 import de.aivot.prosuna.backend.xrepository.services.XRepositoryCodeListService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -45,6 +46,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class CodeListServiceTest {
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private static final Instant STALE_BEFORE = Instant.parse("2030-05-01T11:00:00Z");
 
     @ParameterizedTest
@@ -54,7 +56,8 @@ class CodeListServiceTest {
         var codeListItemRepository = mock(CodeListItemRepository.class);
         var vCodeListItemRepository = mock(VCodeListItemRepository.class);
         var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository,
-                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class), transactionManager());
+                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                new SimpleMeterRegistry());
         var codeList = createManualCodeList()
                 .setColumns(List.of("Zusatz", "Anzeigename", "Schlüssel"))
                 .setLabelColumnIndex(labelColumnIndex)
@@ -103,7 +106,8 @@ class CodeListServiceTest {
         var codeListItemRepository = mock(CodeListItemRepository.class);
         var vCodeListItemRepository = mock(VCodeListItemRepository.class);
         var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository,
-                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class), transactionManager());
+                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                new SimpleMeterRegistry());
         var codeList = createManualCodeList()
                 .setColumns(List.of("Zusatz", "Anzeigename", "Schlüssel"))
                 .setLabelColumnIndex(labelColumnIndex)
@@ -137,7 +141,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
         var codeList = new CodeListEntity()
                 .setKey("test")
                 .setId(0)
@@ -165,7 +169,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
         var codeList = createManualCodeList().setKey("new");
 
         assertThrows(ResponseException.class, () -> service.create(codeList));
@@ -181,7 +185,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
         var codeList = createManualCodeList().setKey("a/b");
 
         assertThrows(ResponseException.class, () -> service.create(codeList));
@@ -197,7 +201,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
 
         when(xRepositoryCodeListService.getCodeList("urn:test")).thenReturn(createXRepositoryCodeList());
 
@@ -212,7 +216,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
         var assetKey = UUID.randomUUID();
         var asset = new AssetEntity()
                 .setKey(assetKey)
@@ -238,7 +242,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
         var assetKey = UUID.randomUUID();
         var asset = new AssetEntity()
                 .setKey(assetKey)
@@ -262,7 +266,8 @@ class CodeListServiceTest {
         var codeListItemRepository = mock(CodeListItemRepository.class);
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var service = new CodeListService(codeListRepository, codeListItemRepository, mock(VCodeListItemRepository.class),
-                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager());
+                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                new SimpleMeterRegistry());
         var current = createCodeList();
         var claimedRun = claims(codeListRepository, current);
 
@@ -301,7 +306,8 @@ class CodeListServiceTest {
         var codeListItemRepository = mock(CodeListItemRepository.class);
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var service = new CodeListService(codeListRepository, codeListItemRepository, mock(VCodeListItemRepository.class),
-                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager());
+                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                meterRegistry);
         var current = createCodeList();
         var claimedRun = claims(codeListRepository, current);
 
@@ -318,6 +324,8 @@ class CodeListServiceTest {
         verify(codeListRepository).failSync(eq("test"), eq(claimedRun.getFirst()), argThat(message -> message.contains("mehrfach")), any());
         verify(codeListRepository, never()).save(any());
         assertEquals(List.of(), current.getColumns());
+
+        assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "failed").count());
     }
 
     @Test
@@ -327,7 +335,8 @@ class CodeListServiceTest {
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
         var service = new CodeListService(codeListRepository, codeListItemRepository, mock(VCodeListItemRepository.class),
-                mock(XRepositoryCodeListService.class), assetService, storageService, transactionManager());
+                mock(XRepositoryCodeListService.class), assetService, storageService, transactionManager(),
+                meterRegistry);
         var assetKey = UUID.randomUUID();
         var current = createAssetCodeList(assetKey);
         var asset = new AssetEntity()
@@ -362,6 +371,8 @@ class CodeListServiceTest {
         assertEquals(List.of("code", "name"), current.getColumns());
         assertEquals(List.of("001", "Berlin"), savedItems.getFirst().getColumns());
         assertEquals(List.of("002", "Hamburg"), savedItems.get(1).getColumns());
+
+        assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "success").count());
     }
 
     @Test
@@ -370,7 +381,8 @@ class CodeListServiceTest {
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
         var service = new CodeListService(codeListRepository, mock(CodeListItemRepository.class), mock(VCodeListItemRepository.class),
-                mock(XRepositoryCodeListService.class), assetService, storageService, transactionManager());
+                mock(XRepositoryCodeListService.class), assetService, storageService, transactionManager(),
+                new SimpleMeterRegistry());
         var assetKey = UUID.randomUUID();
         var current = createAssetCodeList(assetKey);
         var asset = new AssetEntity()
@@ -400,7 +412,8 @@ class CodeListServiceTest {
         var codeListItemRepository = mock(CodeListItemRepository.class);
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var service = new CodeListService(codeListRepository, codeListItemRepository, mock(VCodeListItemRepository.class),
-                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager());
+                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                new SimpleMeterRegistry());
         var current = createCodeList().setSyncKeepOutdated(true);
         claims(codeListRepository, current);
 
@@ -421,7 +434,8 @@ class CodeListServiceTest {
         var codeListRepository = mock(CodeListRepository.class);
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var service = new CodeListService(codeListRepository, mock(CodeListItemRepository.class), mock(VCodeListItemRepository.class),
-                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager());
+                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                new SimpleMeterRegistry());
 
         assertFalse(service.syncCodeList("test", STALE_BEFORE));
 
@@ -436,7 +450,8 @@ class CodeListServiceTest {
         var codeListItemRepository = mock(CodeListItemRepository.class);
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var service = new CodeListService(codeListRepository, codeListItemRepository, mock(VCodeListItemRepository.class),
-                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager());
+                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                new SimpleMeterRegistry());
         var current = createCodeList();
         var claimedRun = claims(codeListRepository, current);
 
@@ -465,7 +480,8 @@ class CodeListServiceTest {
         var codeListItemRepository = mock(CodeListItemRepository.class);
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var service = new CodeListService(codeListRepository, codeListItemRepository, mock(VCodeListItemRepository.class),
-                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager());
+                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                new SimpleMeterRegistry());
         var current = createCodeList();
         claims(codeListRepository, current);
         var otherRun = UUID.randomUUID();
@@ -490,7 +506,8 @@ class CodeListServiceTest {
         var codeListRepository = mock(CodeListRepository.class);
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var service = new CodeListService(codeListRepository, mock(CodeListItemRepository.class), mock(VCodeListItemRepository.class),
-                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager());
+                xRepositoryCodeListService, mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                new SimpleMeterRegistry());
         var claimedRun = claims(codeListRepository, createCodeList());
 
         when(codeListRepository.findById("test")).thenReturn(Optional.of(createCodeList()));
@@ -506,7 +523,8 @@ class CodeListServiceTest {
     void requestSyncStoresTheRequestWithTheCodeList() {
         var codeListRepository = mock(CodeListRepository.class);
         var service = new CodeListService(codeListRepository, mock(CodeListItemRepository.class), mock(VCodeListItemRepository.class),
-                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class), transactionManager());
+                mock(XRepositoryCodeListService.class), mock(AssetService.class), mock(StorageService.class), transactionManager(),
+                new SimpleMeterRegistry());
         when(codeListRepository.requestSync(eq("test"), eq(true), any())).thenReturn(1);
 
         assertTrue(service.requestSync("test", true));
@@ -522,7 +540,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
         var codeList = createManualCodeList();
 
         when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
@@ -554,7 +572,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
         var codeList = createManualCodeList()
                 .setColumns(List.of("old"))
                 .setValueColumnIndex(0)
@@ -596,7 +614,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
         var codeList = createManualCodeList();
 
         when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
@@ -622,7 +640,7 @@ class CodeListServiceTest {
         var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
         var assetService = mock(AssetService.class);
         var storageService = mock(StorageService.class);
-        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager());
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService, transactionManager(), new SimpleMeterRegistry());
         var codeList = createCodeList();
 
         when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
