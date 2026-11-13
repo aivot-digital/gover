@@ -11,7 +11,8 @@ public record UserRoleResponseDTO(
         String description,
         List<String> permissions,
         Instant created,
-        Instant updated
+        Instant updated,
+        Long lockVersion
 ) {
     public static UserRoleResponseDTO fromEntity(UserRoleEntity entity) {
         return new UserRoleResponseDTO(
@@ -20,7 +21,8 @@ public record UserRoleResponseDTO(
                 entity.getDescription(),
                 entity.getPermissions(),
                 entity.getCreated(),
-                entity.getUpdated()
+                entity.getUpdated(),
+                entity.getLockVersion()
         );
     }
 }

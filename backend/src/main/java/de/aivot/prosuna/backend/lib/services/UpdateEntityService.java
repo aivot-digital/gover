@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.lib.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import org.springframework.http.HttpStatus;
 
 import jakarta.annotation.Nonnull;
@@ -15,6 +16,7 @@ public interface UpdateEntityService<T, I> extends RetrieveEntityService<T, I> {
         if (existingEntity.isEmpty()) {
             throw new ResponseException(HttpStatus.NOT_FOUND, "Entity not found");
         } else {
+            LockVersioned.requireCurrent(entity, existingEntity.get());
             return performUpdate(id, entity, existingEntity.get());
         }
     }

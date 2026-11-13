@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.process.converters.ProcessNodeDeadlinesConverter
 import de.aivot.prosuna.backend.process.utils.ProcessNodeDataKeyUtils;
 import jakarta.validation.Valid;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -21,7 +22,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "process_nodes")
-public class ProcessNodeEntity {
+public class ProcessNodeEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "process_nodes_id_seq";
     @Id
     @Nonnull
@@ -100,6 +101,11 @@ public class ProcessNodeEntity {
 
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Properties
 
@@ -360,6 +366,17 @@ public class ProcessNodeEntity {
 
     public ProcessNodeEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public ProcessNodeEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

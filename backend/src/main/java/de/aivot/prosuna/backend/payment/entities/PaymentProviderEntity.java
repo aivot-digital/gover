@@ -2,6 +2,8 @@ package de.aivot.prosuna.backend.payment.entities;
 
 import de.aivot.prosuna.backend.core.converters.AuthoredElementValuesConverter;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +14,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "payment_providers")
-public class PaymentProviderEntity {
+public class PaymentProviderEntity implements LockVersioned {
     @Id
     @Nonnull
     @NotNull
@@ -52,6 +54,11 @@ public class PaymentProviderEntity {
     @Column(columnDefinition = "jsonb")
     @Convert(converter = AuthoredElementValuesConverter.class)
     private AuthoredElementValues config;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Constructors
 
@@ -176,6 +183,17 @@ public class PaymentProviderEntity {
 
     public PaymentProviderEntity setConfig(@Nonnull AuthoredElementValues config) {
         this.config = config;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public PaymentProviderEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 
