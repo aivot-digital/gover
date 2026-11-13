@@ -36,6 +36,8 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
     @Override
     public DataObjectSchemaEntity create(@Nonnull DataObjectSchemaEntity entity) throws ResponseException {
         validateSchemaConfig(entity.getIdGen(), entity.getSchema());
+        // A lock version from the request would make Spring Data look for a row that does not exist yet.
+        entity.setLockVersion(null);
 
         return dataObjectRepository.save(entity);
     }

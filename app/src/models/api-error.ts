@@ -7,6 +7,7 @@ export interface ApiError {
 
 export const API_ERROR_REASON_NETWORK_UNREACHABLE = 'network_unreachable';
 export const API_ERROR_REASON_TIMEOUT = 'timeout';
+export const API_ERROR_REASON_LOCK_VERSION_CONFLICT = 'lock_version_conflict';
 
 export async function createApiError(response: Response): Promise<ApiError> {
     // Try to parse the error response as json
@@ -60,6 +61,14 @@ function hasApiErrorReason(error: any, reason: string): boolean {
         !Array.isArray(error.details) &&
         error.details.reason === reason
     );
+}
+
+/**
+ * The record was changed after it was loaded, so the save was rejected.
+ * The message of the error asks the person to reload the record and is meant to be shown as is.
+ */
+export function isLockVersionConflictError(error: any): error is ApiError {
+    return hasApiErrorReason(error, API_ERROR_REASON_LOCK_VERSION_CONFLICT) && error.status === 409;
 }
 
 export function isApiUnreachableError(error: any): boolean {
