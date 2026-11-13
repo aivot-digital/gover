@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.process.entities;
 
 import de.aivot.prosuna.backend.core.converters.JsonObjectConverter;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -13,7 +15,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "process_test_configs")
-public class ProcessTestConfigEntity {
+public class ProcessTestConfigEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "process_test_configs_id_seq";
     @Id
     @Nonnull
@@ -28,11 +30,11 @@ public class ProcessTestConfigEntity {
     private String name;
 
     @Nonnull
-    @NotNull(message = "Die ID der Prozessdefinition darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Version der Prozessdefinition darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion darf nicht null sein.")
     private Integer processVersion;
 
     @Nonnull
@@ -46,6 +48,11 @@ public class ProcessTestConfigEntity {
 
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Constructors
 
@@ -173,6 +180,17 @@ public class ProcessTestConfigEntity {
 
     public ProcessTestConfigEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public ProcessTestConfigEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

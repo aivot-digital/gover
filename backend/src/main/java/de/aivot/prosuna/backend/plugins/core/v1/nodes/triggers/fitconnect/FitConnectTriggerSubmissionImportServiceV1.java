@@ -244,7 +244,7 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
                                                @Nonnull ReceivedSubmission submission) throws ResponseException, IOException {
         var attachmentSet = processInstanceAttachmentSetService.create(
                 new ProcessInstanceAttachmentSetEntity()
-                        .setName("FIT-Connect-Anhänge")
+                        .setName("FIT-Connect-Anlagen")
                         .setDataKey(node.getDataKey())
                         .setProcessInstanceId(instance.getId())
                         .setProcessInstanceTaskId(null)

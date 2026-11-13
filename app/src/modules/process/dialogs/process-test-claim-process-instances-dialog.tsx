@@ -152,7 +152,7 @@ export function ProcessTestClaimProcessInstancesDialog(props: ProcessTestClaimPr
                         <Typography sx={{
                             color: "text.secondary"
                         }}>
-                            Für diese Ansicht ist kein Testanspruch verfügbar.
+                            Für diese Ansicht ist keine Testsitzung verfügbar.
                         </Typography> :
                         <TableContainer
                             sx={{

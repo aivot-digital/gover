@@ -36,7 +36,7 @@ const PROCESS_NODE_TYPE_ORDER = [
 const PROCESS_NODE_TYPE_PLURAL_LABELS: Record<ProcessNodeType, string> = {
     [ProcessNodeType.Trigger]: 'Auslöser',
     [ProcessNodeType.Action]: 'Aktionen',
-    [ProcessNodeType.FlowControl]: 'Flusselemente',
+    [ProcessNodeType.FlowControl]: 'Ablaufsteuerung',
     [ProcessNodeType.Termination]: 'Abschlüsse',
 };
 
@@ -253,7 +253,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                     inputRef={searchInputRef}
                     label="Prozesselement suchen"
                     ariaLabel="Prozesselement suchen"
-                    placeholder="Name, Beschreibung oder Plugin durchsuchen"
+                    placeholder="Name, Beschreibung oder Erweiterung durchsuchen"
                     value={search}
                     onChange={setSearch}
                     debounce={120}

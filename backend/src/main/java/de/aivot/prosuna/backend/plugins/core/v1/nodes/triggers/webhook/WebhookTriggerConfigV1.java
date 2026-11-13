@@ -117,8 +117,8 @@ public class WebhookTriggerConfigV1 {
     public static class WebhookRequestBodyConfig {
         @Nullable
         @InputElementPOJOBinding(id = REQUEST_BODY_TYPE_CONFIG_KEY, type = ElementType.Select, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Request Body Typ"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Typ des Request Bodys, der für den Webhook verwendet werden soll."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Typ des Anfrageinhalts"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Typ des Anfrageinhalts, der für den Webhook verwendet werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String requestBodyType;

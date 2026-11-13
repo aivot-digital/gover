@@ -105,7 +105,7 @@ describe('FileUploadComponent', () => {
         const group = screen.getByRole('group', {name: 'Anlage – optional'});
         expect(group).toHaveAccessibleDescription('Es kann genau eine Datei hinterlegt werden.');
         expect(screen.getByRole('button', {name: 'antrag.pdf entfernen'})).toBeInTheDocument();
-        expect(getComputedStyle(document.querySelector('[data-file-upload-list-item]')!).minHeight)
+        expect(getComputedStyle(screen.getByRole('listitem')).minHeight)
             .toBe('50px');
     });
 

@@ -266,12 +266,12 @@ export const PermissionGroupAccordion = React.memo(function PermissionGroupAccor
 
                                     <CopyToClipboardButton
                                         text={permission}
-                                        tooltip="Permission-Key kopieren"
-                                        ariaLabel="Permission-Key kopieren"
+                                        tooltip="Berechtigungsschlüssel kopieren"
+                                        ariaLabel="Berechtigungsschlüssel kopieren"
                                         size="small"
                                         disabled={isBusy}
                                         icon={<ContentCopy fontSize="inherit"/>}
-                                        successMessage="Permission-Key kopiert."
+                                        successMessage="Berechtigungsschlüssel kopiert."
                                         errorMessage="Kopieren nicht möglich."
                                     />
                                 </Stack>

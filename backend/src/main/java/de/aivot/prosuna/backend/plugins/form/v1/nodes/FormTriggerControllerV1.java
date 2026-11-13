@@ -1104,7 +1104,7 @@ public class FormTriggerControllerV1 {
 
         return vDepartmentShadowedService
                 .retrieve(context.process().getDepartmentId())
-                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für die Zahlungsbestätigung gefunden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Keine Organisationseinheit für die Zahlungsbestätigung gefunden."));
     }
 
     @Nullable

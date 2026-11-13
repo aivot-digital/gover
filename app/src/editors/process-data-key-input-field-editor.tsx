@@ -55,7 +55,7 @@ export function ProcessDataKeyInputFieldEditor(props: BaseEditorProps<ProcessDat
                             disableWildCards,
                         });
                     }}
-                    hint="Verhindert Prozessdaten-Schlüssel mit Sternchen."
+                    hint="Verhindert Datenschlüssel mit Sternchen."
                     disabled={!editable}
                 />
             </Grid>
@@ -76,8 +76,8 @@ export function ProcessDataKeyInputFieldEditor(props: BaseEditorProps<ProcessDat
                     }}
                     options={scopeOptions}
                     disabled={!editable}
-                    emptyStatePlaceholder="Keine vorherigen Prozessdaten-Schlüssel-Felder verfügbar"
-                    hint="Beschränkt die Auswahl auf untergeordnete Schlüssel des hier gewählten Prozessdaten-Schlüssels."
+                    emptyStatePlaceholder="Keine vorherigen Datenschlüssel-Felder verfügbar"
+                    hint="Beschränkt die Auswahl auf untergeordnete Schlüssel des hier gewählten Datenschlüssels."
                 />
             </Grid>
         </Grid>

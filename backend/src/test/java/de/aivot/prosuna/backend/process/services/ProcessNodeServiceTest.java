@@ -39,6 +39,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.models.InputVariableSuggestion;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
@@ -75,7 +76,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -181,12 +184,12 @@ class ProcessNodeServiceTest {
 
         node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
-                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgangsport")));
         org.mockito.Mockito.verify(processEdgeRepository, org.mockito.Mockito.never()).delete(any(ProcessEdgeEntity.class));
         assertEquals("processing_overdue", edge.getViaPort());
         node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(null, true)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
-                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgangsport")));
     }
 
     @Test
@@ -372,6 +375,32 @@ class ProcessNodeServiceTest {
                 variable.source() == InputVariableSource.ProtectedProcessData &&
                         variable.path().equals("caseNumber")
         ));
+    }
+
+    @Test
+    void incomingMetadata_ShouldMarkMarkdownOutputsAndTheirMappedProcessDataKeys() throws Exception {
+        var nodeA = createNode(1, "a");
+        nodeA.getOutputMappings().put("result", "plain");
+        nodeA.getOutputMappings().put("content", "mail.content");
+        var targetNode = createNode(2, "target");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(targetNode, nodeA));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, nodeA.getId(), targetNode.getId())));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
+
+        var markdownByVariable = result.inputVariables()
+                .stream()
+                .filter(variable -> Set.of("result", "content", "plain", "mail.content").contains(variable.path()))
+                .collect(Collectors.toMap(variable -> variable.source() + ":" + variable.path(), InputVariableSuggestion::markdown));
+        assertEquals(Map.of(
+                "ElementData:result", false,
+                "ElementData:content", true,
+                "ProcessData:plain", false,
+                "ProcessData:mail.content", true
+        ), markdownByVariable);
     }
 
     // Blank output mappings never reach the key filter, so only non-blank invalid keys exercise it here.
@@ -1055,7 +1084,7 @@ class ProcessNodeServiceTest {
 
         var exception = assertThrows(ResponseException.class, () -> formService.validateNewProcessNodeBatch(List.of(createFormNode())));
 
-        assertTrue(exception.getMessage().contains("Formularerweiterung"));
+        assertTrue(exception.getMessage().contains("Formularmodul"));
     }
 
     @Test
@@ -1348,6 +1377,13 @@ class ProcessNodeServiceTest {
                             "Result",
                             "Mapped test result.",
                             "string"
+                    ),
+                    new ProcessNodeOutput(
+                            "content",
+                            "Content",
+                            "Markdown test content.",
+                            "string",
+                            true
                     )
             );
         }
@@ -1473,7 +1509,7 @@ class ProcessNodeServiceTest {
                 .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
 
         var problems = service.validate(targetNode, provider, false).orElseThrow();
-        var expectedError = "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar.";
+        var expectedError = "Die ausgewählte Identität „missing-identity“ ist nicht mehr verfügbar.";
 
         assertEquals(List.of("Identity: " + expectedError), problems.problems());
         assertEquals(
@@ -1505,7 +1541,7 @@ class ProcessNodeServiceTest {
                 .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
 
         var problems = service.validate(targetNode, provider, false).orElseThrow();
-        var expectedError = "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden.";
+        var expectedError = "Die verfügbaren Identitäten konnten nicht ermittelt werden.";
 
         assertEquals(List.of("Identity: " + expectedError), problems.problems());
         assertEquals(
@@ -1539,7 +1575,7 @@ class ProcessNodeServiceTest {
         var problems = service.validate(targetNode, provider, false).orElseThrow();
 
         assertEquals(
-                List.of("Identity: Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden."),
+                List.of("Identity: Die verfügbaren Identitäten konnten nicht ermittelt werden."),
                 problems.problems()
         );
     }
@@ -1588,7 +1624,7 @@ class ProcessNodeServiceTest {
         var problems = service.validate(targetNode, provider, false).orElseThrow();
 
         assertEquals(
-                "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar. Provider error.",
+                "Die ausgewählte Identität „missing-identity“ ist nicht mehr verfügbar. Provider error.",
                 problems
                         .derivedRuntimeElementData()
                         .getElementStates()
