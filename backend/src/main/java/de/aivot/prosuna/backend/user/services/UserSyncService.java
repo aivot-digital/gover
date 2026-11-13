@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.models.KeycloakUser;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,13 +29,16 @@ public class UserSyncService {
     private final UserRepository userRepository;
     private final KeyCloakApiService keycloakApiService;
     private final ImportedUserSystemRoleService importedUserSystemRoleService;
+    private final MeterRegistry meterRegistry;
 
     @Autowired
     public UserSyncService(AuditService auditService,
                            UserRepository userRepository,
                            KeyCloakApiService keycloakApiService,
-                           ImportedUserSystemRoleService importedUserSystemRoleService) {
-        this.auditService = auditService.createScopedAuditService(UserSyncService.class, "Benutzer");
+                           ImportedUserSystemRoleService importedUserSystemRoleService,
+                           MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        this.auditService = auditService.createScopedAuditService(UserSyncService.class, "Mitarbeiter:innen");
 
         this.userRepository = userRepository;
         this.keycloakApiService = keycloakApiService;
@@ -176,6 +180,7 @@ public class UserSyncService {
             failureMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
             syncFailure = e;
         } finally {
+            meterRegistry.counter("prosuna.sync.runs", "type", "user", "outcome", success ? "success" : "failed").increment();
             if (failureMessage != null || !syncedUsers.isEmpty()) {
                 var metadata = new LinkedHashMap<String, Object>();
                 metadata.put("startedAt", startedAt);
@@ -193,14 +198,14 @@ public class UserSyncService {
                         .setTriggerType("UserSync")
                         .setMessage(success
                                 ? String.format(
-                                "Die Benutzersynchronisierung wurde erfolgreich abgeschlossen: %d von %d Benutzer:innen importiert oder aktualisiert, %d als im IdP gelöscht markiert, %d zur Systemrolle mit höchster Berechtigungsstufe befördert.",
+                                "Die Synchronisierung der Konten wurde abgeschlossen: %d von %d Konten importiert oder aktualisiert, %d im Identitätsanbieter gelöschte Konten markiert und %d Konten der Systemrolle mit der höchsten Berechtigungsstufe zugeordnet.",
                                 importedOrUpdatedCount,
                                 totalUsersFromIdp,
                                 deletedInIdpCount,
                                 promotedToMostPrivilegedRoleCount
                         )
                                 : String.format(
-                                "Die Benutzersynchronisierung ist fehlgeschlagen: %s",
+                                "Die Synchronisierung der Konten ist fehlgeschlagen: %s",
                                 failureMessage != null ? failureMessage : "Unbekannter Fehler"
                         ))
                         .setMetadata(metadata).log();

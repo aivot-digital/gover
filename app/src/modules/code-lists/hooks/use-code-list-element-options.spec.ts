@@ -8,13 +8,24 @@ import {CodeListValueMode} from '../enums/code-list-value-mode';
 import {useCodeListElementOptions, useCodeListOptions} from './use-code-list-element-options';
 
 describe('useCodeListElementOptions', () => {
+    it('does not request text suggestions that reference editors do not use', () => {
+        const get = vi.spyOn(BaseApiService.prototype, 'get');
+        const element = {
+            ...generateElementWithDefaultValues(ElementType.Text),
+            optionsSource: OptionsSourceType.CodeList,
+            codeListKey: 'cities',
+        };
+        const {result} = renderHook(() => useCodeListElementOptions([element]));
+        expect(get).not.toHaveBeenCalled();
+        expect(result.current.size).toBe(0);
+    });
+
     afterEach(() => {
         vi.restoreAllMocks();
     });
 
     it.each([
         [ElementType.Select, 'select'],
-        [ElementType.Radio, 'radio'],
         [ElementType.MultiCheckbox, 'multi-checkbox'],
     ] as const)('loads %s options from the matching public endpoint', async (type, endpoint) => {
         const get = vi.spyOn(BaseApiService.prototype, 'get').mockResolvedValue([
@@ -83,7 +94,7 @@ describe('useCodeListElementOptions', () => {
 
     it('keeps options from successful requests when another codelist cannot be loaded', async () => {
         vi.spyOn(BaseApiService.prototype, 'get').mockImplementation(async (path) => {
-            if (path.includes('/radio/')) {
+            if (path.includes('/categories/')) {
                 throw new Error('Unavailable');
             }
             return [{label: 'Berlin', value: 'BE'}];
@@ -95,7 +106,7 @@ describe('useCodeListElementOptions', () => {
             codeListKey: 'states',
         };
         const radioElement = {
-            ...generateElementWithDefaultValues(ElementType.Radio),
+            ...generateElementWithDefaultValues(ElementType.Select),
             id: 'category',
             optionsSource: OptionsSourceType.CodeList,
             codeListKey: 'categories',

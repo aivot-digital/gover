@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
@@ -75,6 +75,20 @@ function renderView(overrides: Partial<BaseViewProps<ReplicatingContainerLayout,
 }
 
 describe('ReplicatingContainerView', () => {
+    it('allows clearing an optional collection below its minimum', async () => {
+        const user = userEvent.setup();
+        const props = renderView({element: {...element, minimumRequiredSets: 3}});
+        await user.click(screen.getByRole('button', {name: 'Datensatz löschen'}));
+        expect(props.setValue).not.toHaveBeenCalled();
+        await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: 'Löschen'}));
+        expect(props.setValue).toHaveBeenCalledWith(null, ['addresses', 'street']);
+    });
+
+    it('explains that an optional minimum applies only when entries are provided', () => {
+        renderView({element: {...element, minimumRequiredSets: 3}, value: null});
+        expect(screen.getByText(/Bei Eingabe mindestens 3 Datensätze erforderlich/)).toBeVisible();
+        expect(screen.getByRole('group', {name: 'Adressen – optional'})).not.toHaveAttribute('aria-invalid', 'true');
+    });
     it('forwards external actions from the input-mode context without disabling them', () => {
         renderView({
             inputModeLiteralContext: {
@@ -126,7 +140,7 @@ describe('ReplicatingContainerView', () => {
         expect(collection).toHaveAttribute('aria-invalid', 'true');
         expect(collection).toHaveAccessibleDescription('Mindestens zwei Adressen sind erforderlich.');
         expect(screen.getByRole('alert')).toHaveTextContent('Mindestens zwei Adressen sind erforderlich.');
-        expect(screen.getByText(/Mindestens 2 Datensätze sind erforderlich/)).toBeInTheDocument();
+        expect(screen.getByText(/Mindestens 2 Datensätze erforderlich/)).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: 'Datensatz hinzufügen'}));
 

@@ -63,4 +63,6 @@ public interface ProcessRepository extends JpaRepository<ProcessEntity, Integer>
     boolean existsBySlug(@Nonnull String slug);
 
     boolean existsBySlugAndIdIsNot(@Nonnull String slug, @Nonnull Integer id);
+
+    long countByPublishedVersionIsNotNull();
 }

@@ -149,6 +149,21 @@ class ProcessNodeControllerTest {
     }
 
     @Test
+    void partialConfigSaveRejectsOutdatedLockVersion() throws ResponseException {
+        mockAuthenticatedUser();
+        when(processNodeService.retrieve(7)).thenReturn(Optional.of(createNode().setLockVersion(3L)));
+        var submittedNode = createNode()
+                .setConfiguration(new AuthoredElementValues())
+                .setLockVersion(2L);
+
+        var exception = assertThrows(ResponseException.class,
+                () -> createController().update(jwt, 7, submittedNode, List.of("title"), null));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        verify(processNodeService, never()).update(any(), any(ProcessNodeEntity.class));
+    }
+
+    @Test
     void deriveUiDefinitionRejectsUnsavedUiDefinitionWithoutUpdatePermission() throws ResponseException {
         mockAuthenticatedUser();
         when(processNodeService.retrieve(7)).thenReturn(Optional.of(createNode()));

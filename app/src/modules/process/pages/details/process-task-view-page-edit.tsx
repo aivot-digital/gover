@@ -473,7 +473,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     return;
                 }
 
-                dispatch(showApiErrorSnackbar(err, 'Die Vorgangsanhänge konnten nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Vorgangsanlagen konnten nicht geladen werden.'));
                 if (!isReload) {
                     setTaskAttachments([]);
                     setTaskAttachmentSets([]);
@@ -531,7 +531,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                 URL.revokeObjectURL(objectUrl);
             } catch (error) {
-                dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
+                dispatch(showApiErrorSnackbar(error, 'Die Anlage konnte nicht heruntergeladen werden.'));
             }
         },
         [dispatch],
@@ -543,7 +543,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             if (previewWindow == null) {
                 dispatch(
                     showErrorSnackbar(
-                        'Der Anhang konnte nicht geöffnet werden. Bitte erlauben Sie Pop-ups für diese Seite.',
+                        'Die Anlage konnte nicht geöffnet werden. Bitte erlauben Sie Pop-ups für diese Seite.',
                     ),
                 );
                 return;
@@ -551,7 +551,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             previewWindow.opener = null;
             previewWindow.document.title = attachment.fileName;
-            previewWindow.document.body.textContent = 'Anhang wird geladen...';
+            previewWindow.document.body.textContent = 'Anlage wird geladen …';
 
             try {
                 const blob = await new BaseApiService().getBlob(
@@ -564,7 +564,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 const previewMediaType = getPreviewableAttachmentMediaType(blob.type);
                 if (previewMediaType == null) {
                     previewWindow.close();
-                    dispatch(showWarningSnackbar('Dieser Dateityp kann nicht in der Vorschau angezeigt werden. Der Anhang wird stattdessen heruntergeladen.'));
+                    dispatch(showWarningSnackbar('Dieser Dateityp kann nicht in der Vorschau angezeigt werden. Die Anlage wird stattdessen heruntergeladen.'));
                     await handleDownloadAttachment(attachment);
                     return;
                 }
@@ -577,7 +577,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }, 60_000);
             } catch (error) {
                 previewWindow.close();
-                dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht angezeigt werden.'));
+                dispatch(showApiErrorSnackbar(error, 'Die Anlage konnte nicht angezeigt werden.'));
             }
         },
         [dispatch, handleDownloadAttachment],
@@ -617,7 +617,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
         dispatch(
             setLoadingMessage({
-                message: `Verarbeite Aktion: ${evt.label}`,
+                message: `Aktion wird verarbeitet: ${evt.label}`,
                 blocking: true,
                 estimatedTime: 500,
             }),

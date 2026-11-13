@@ -1,5 +1,9 @@
 package de.aivot.prosuna.backend.plugins.core.v1.operators;
 
+import de.aivot.prosuna.backend.plugins.core.v1.operators.duration.NoCodeCreateDurationOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.duration.NoCodeConvertDurationOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.duration.NoCodeFormatDurationOperator;
+
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
@@ -67,22 +71,22 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
     @Nonnull
     @Override
     public String getName() {
-        return "Allgemeine Operatoren";
+        return "Allgemeine No-Code-Operatoren";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Modul enthält allgemeine Operatoren.";
+        return "Diese Sammlung enthält allgemeine No-Code-Operatoren.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Stellt die grundlegenden Operatoren für den No-Code-Ausdruckseditor von Prosuna bereit.
+                Diese Sammlung stellt die grundlegenden Operatoren für den No-Code-Ausdruckseditor von Prosuna bereit.
 
-                Enthalten sind Operatoren für boolesche Logik, Vergleiche, Datums- und Zeitwerte, Listen, Mathematik, Objekte, Telefonnummern, Geheimnisse, Texte und Benutzerdaten. Sie können miteinander kombiniert werden, um Werte ohne eigenen Programmcode zu prüfen, umzuwandeln und zu berechnen.
+                Enthalten sind Operatoren für boolesche Logik, Vergleiche, Datums- und Zeitwerte, Listen, Mathematik, Objekte, Telefonnummern, Geheimnisse, Texte und Daten zu Mitarbeiter:innen. Sie können miteinander kombiniert werden, um Werte ohne eigenen Programmcode zu prüfen, umzuwandeln und zu berechnen.
                 """;
     }
 
@@ -127,6 +131,11 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.TIME),
                 new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.DATETIME),
 
+                // Duration
+                new NoCodeCreateDurationOperator(),
+                new NoCodeConvertDurationOperator(),
+                new NoCodeFormatDurationOperator(),
+
                 // List
                 new NoCodeListAvgOperator(),
                 new NoCodeListConcatOperator(),
@@ -155,6 +164,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodePhoneNumberIsValidOperator(),
                 new NoCodePhoneNumberIsPossibleOperator(),
                 new NoCodePhoneNumberNormalizeOperator(),
+                new NoCodePhoneNumberFormatOperator(),
 
                 // Secrets
                 new NoCodeSecretsGetOperator(secretService),

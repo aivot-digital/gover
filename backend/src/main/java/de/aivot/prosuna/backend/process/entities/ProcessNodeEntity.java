@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.process.converters.ProcessNodeDeadlinesConverter
 import de.aivot.prosuna.backend.process.utils.ProcessNodeDataKeyUtils;
 import jakarta.validation.Valid;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -21,7 +22,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "process_nodes")
-public class ProcessNodeEntity {
+public class ProcessNodeEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "process_nodes_id_seq";
     @Id
     @Nonnull
@@ -30,11 +31,11 @@ public class ProcessNodeEntity {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Die ID der Prozessdefinition darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Version der Prozessdefinition darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion darf nicht null sein.")
     private Integer processVersion;
 
     @Nullable
@@ -46,20 +47,20 @@ public class ProcessNodeEntity {
     private String description;
 
     @Nonnull
-    @NotBlank(message = "Der Data-Key darf nicht leer sein.")
-    @NotNull(message = "Der Data-Key darf nicht null sein.")
-    @Size(min = 1, max = 32, message = "Der Data-Key muss zwischen 1 und 32 Zeichen lang sein.")
+    @NotBlank(message = "Der Datenschlüssel darf nicht leer sein.")
+    @NotNull(message = "Der Datenschlüssel darf nicht null sein.")
+    @Size(min = 1, max = 32, message = "Der Datenschlüssel muss zwischen 1 und 32 Zeichen lang sein.")
     @Pattern(regexp = ProcessNodeDataKeyUtils.REGEX, message = ProcessNodeDataKeyUtils.FORMAT_ERROR)
     private String dataKey;
 
     @Nonnull
-    @NotBlank(message = "Der Schlüssel der Prozessknoten-Definition darf nicht leer sein.")
-    @NotNull(message = "Der Schlüssel der Prozessknoten-Definition darf nicht null sein.")
-    @Size(min = 1, max = 128, message = "Der Schlüssel der Prozessknoten-Definition muss zwischen 1 und 128 Zeichen lang sein.")
+    @NotBlank(message = "Der Schlüssel der Prozesselement-Definition darf nicht leer sein.")
+    @NotNull(message = "Der Schlüssel der Prozesselement-Definition darf nicht null sein.")
+    @Size(min = 1, max = 128, message = "Der Schlüssel der Prozesselement-Definition muss zwischen 1 und 128 Zeichen lang sein.")
     private String processNodeDefinitionKey;
 
     @Nonnull
-    @NotNull(message = "Die Version  der Prozessknoten-Definition darf nicht null sein.")
+    @NotNull(message = "Die Version der Prozesselement-Definition darf nicht null sein.")
     private Integer processNodeDefinitionVersion;
 
     @Nonnull
@@ -69,7 +70,7 @@ public class ProcessNodeEntity {
     private AuthoredElementValues configuration;
 
     @Nonnull
-    @NotNull(message = "Die Input-Mappings dürfen nicht null sein.")
+    @NotNull(message = "Die Zuordnungen der Ausgangsdaten dürfen nicht null sein.")
     @Convert(converter = JsonObjectConverter.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> outputMappings;
@@ -100,6 +101,11 @@ public class ProcessNodeEntity {
 
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Properties
 
@@ -360,6 +366,17 @@ public class ProcessNodeEntity {
 
     public ProcessNodeEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public ProcessNodeEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

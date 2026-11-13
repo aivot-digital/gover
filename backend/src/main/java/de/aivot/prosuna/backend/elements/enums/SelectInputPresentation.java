@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import de.aivot.prosuna.backend.lib.models.Identifiable;
 
 public enum SelectInputPresentation implements Identifiable<String> {
+    Radio("radio"),
     Dropdown("dropdown"),
     Combobox("combobox");
 

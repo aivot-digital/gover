@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.elements.services.AssetSelectionValidationService;
+import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
@@ -42,6 +44,7 @@ import de.aivot.prosuna.backend.process.repositories.VPotentialProcessInstanceAc
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
+import org.mockito.Mockito;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -572,7 +575,8 @@ class DataChangeActionNodeV1Test {
                 new ElementDataTransformService(),
                 new CodeListElementOptionsService(null, null),
                 new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
-                new InputVariableResolver()
+                new InputVariableResolver(),
+                new AssetSelectionValidationService(Mockito.mock(AssetRepository.class))
         );
     }
 

@@ -1164,7 +1164,7 @@ export function ExtensionsSummary() {
                 }}
             >
                 Erweiterungen und Komponenten zeigen den zusätzlich installierten Funktionsumfang.
-                Weitere Versionen weist auf parallel vorhandene ältere
+                Die Kennzahl „Weitere Versionen“ weist auf parallel vorhandene ältere
                 Versionen von Komponenten hin. Veraltete Einträge markieren Erweiterungen oder
                 Komponenten, die bei Updates oder Bereinigungen geprüft werden sollten.
             </Typography>

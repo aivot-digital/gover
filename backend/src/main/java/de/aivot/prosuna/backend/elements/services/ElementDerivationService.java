@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.InputElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
@@ -74,6 +75,7 @@ public class ElementDerivationService {
     private final AuthoredInputValueService authoredInputValueService;
     private final InputVariableResolver inputVariableResolver;
     private final TemplateRenderService templateRenderService;
+    private final AssetSelectionValidationService assetSelectionValidationService;
 
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull BaseElement element, @Nonnull AuthoredElementValues authoredElementValues) {
@@ -100,7 +102,8 @@ public class ElementDerivationService {
             CodeListElementOptionsService codeListElementOptionsService,
             AuthoredInputValueService authoredInputValueService,
             InputVariableResolver inputVariableResolver,
-            TemplateRenderService templateRenderService) {
+            TemplateRenderService templateRenderService,
+            @Nonnull AssetSelectionValidationService assetSelectionValidationService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.noCodeEvaluationService = noCodeEvaluationService;
         this.elementDataTransformService = elementDataTransformService;
@@ -108,6 +111,7 @@ public class ElementDerivationService {
         this.authoredInputValueService = authoredInputValueService;
         this.inputVariableResolver = inputVariableResolver;
         this.templateRenderService = templateRenderService;
+        this.assetSelectionValidationService = assetSelectionValidationService;
     }
 
     /**
@@ -119,7 +123,8 @@ public class ElementDerivationService {
             ElementDataTransformService elementDataTransformService,
             CodeListElementOptionsService codeListElementOptionsService,
             AuthoredInputValueService authoredInputValueService,
-            InputVariableResolver inputVariableResolver) {
+            InputVariableResolver inputVariableResolver,
+            @Nonnull AssetSelectionValidationService assetSelectionValidationService) {
         this(
                 javascriptEngineFactoryService,
                 noCodeEvaluationService,
@@ -127,7 +132,8 @@ public class ElementDerivationService {
                 codeListElementOptionsService,
                 authoredInputValueService,
                 inputVariableResolver,
-                new TemplateRenderService(javascriptEngineFactoryService)
+                new TemplateRenderService(javascriptEngineFactoryService),
+                assetSelectionValidationService
         );
     }
 
@@ -288,6 +294,7 @@ public class ElementDerivationService {
             elementState.setVisible(isVisible);
 
             var childRowValuesAlreadyResolved = valuesAlreadyResolved;
+            Runnable deferredContainerValidation = null;
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
                 // Customers cannot fill disabled or technical inputs. When their input is derived, values sent for such
                 // inputs anyway are ignored. The input takes its value from trusted server data, such as the process data
@@ -353,23 +360,36 @@ public class ElementDerivationService {
                 }
                 effectiveElementValues.put(currentElement.getId(), effectiveValue);
 
-                var err = resolvedValue.skipValueValidation() ? null : deriveError(
-                        javascriptEngine,
-                        rootElement,
-                        inputElement,
-                        authoredElementValues,
-                        effectiveElementValues,
-                        computedElementStates,
-                        processExecutionData,
-                        options,
-                        effectiveValue,
-                        elementState,
-                        logger
-                );
+                if (!resolvedValue.skipValueValidation()) {
+                    var validatedValue = effectiveValue;
+                    Runnable validation = () -> {
+                        var err = deriveError(
+                                javascriptEngine,
+                                rootElement,
+                                inputElement,
+                                authoredElementValues,
+                                effectiveElementValues,
+                                computedElementStates,
+                                processExecutionData,
+                                options,
+                                validatedValue,
+                                elementState,
+                                logger
+                        );
 
-                if (err != null) {
-                    elementState.setError(err.error);
-                    elementState.setErrorDetails(err.errorDetails);
+                        if (err != null) {
+                            elementState.setError(err.error);
+                            elementState.setErrorDetails(err.errorDetails);
+                        }
+                    };
+
+                    // Until its rows are derived, a container's value still holds the authored input-mode envelopes of
+                    // their inputs. Its validation therefore runs after the rows, so it reads their effective values.
+                    if (inputElement instanceof ReplicatingContainerLayoutElement) {
+                        deferredContainerValidation = validation;
+                    } else {
+                        validation.run();
+                    }
                 }
             }
 
@@ -447,6 +467,10 @@ public class ElementDerivationService {
                     if (!elementState.isAuthoredValueAdopted()) {
                         clearAuthoredValueAdoption(elementState.getSubStates());
                     }
+                }
+
+                if (deferredContainerValidation != null) {
+                    deferredContainerValidation.run();
                 }
             } else if (actualElement instanceof LayoutElement<?> layoutElement) {
                 var children = layoutElement.getChildren();
@@ -529,7 +553,7 @@ public class ElementDerivationService {
                         .registerElementObject(currentElement)
                         .evaluateCode(override.getJavascriptCode());
             } catch (JavascriptException e) {
-                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Override-Ableitung: " + e.getMessage(), e);
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des JavaScript-Codes für die Override-Ableitung: " + e.getMessage(), e);
             }
 
             // Check if the result is null, which indicates no override was generated
@@ -689,7 +713,7 @@ public class ElementDerivationService {
                         .registerElementObject(currentElement)
                         .evaluateCode(vis.getJavascriptCode());
             } catch (JavascriptException e) {
-                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Sichtbarkeits-Ableitung: " + e.getMessage(), e);
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des JavaScript-Codes für die Sichtbarkeits-Ableitung: " + e.getMessage(), e);
             }
 
             logger.log(currentElement, res);
@@ -1397,6 +1421,9 @@ public class ElementDerivationService {
 
         try {
             inputElement.validate(effectiveValue);
+            if (inputElement instanceof AssetSelectInputElement assetSelect) {
+                assetSelectionValidationService.validate(assetSelect, effectiveValue);
+            }
         } catch (ValidationException e) {
             return ErrorResult.of(e);
         }

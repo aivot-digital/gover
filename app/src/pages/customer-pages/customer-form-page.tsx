@@ -276,7 +276,7 @@ export function CustomerFormPage() {
                 }
             }
 
-            errorMessage = 'Die Anhänge konnten nicht für das Absenden vorbereitet werden.';
+            errorMessage = 'Die Anlagen konnten nicht für das Absenden vorbereitet werden.';
             const formData = new FormData();
             formData.append('inputs', JSON.stringify(values));
 
@@ -754,7 +754,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                     }}
                                 >
                                     Für dieses Formular ist eine Identität erforderlich. Wählen Sie für jeden als verpflichtend
-                                    gekennzeichneten Eintrag ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.
+                                    gekennzeichneten Eintrag ein Konto oder, sofern angeboten, eine E-Mail-Adresse aus.
                                 </Typography>
                             )
                             : (
@@ -764,7 +764,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                         maxWidth: 680,
                                     }}
                                 >
-                                    Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können
+                                    Sie können ein Konto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können
                                     Sie das Formular ohne Identitätsangabe ausfüllen.
                                 </Typography>
                             )

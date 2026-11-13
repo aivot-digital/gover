@@ -23,6 +23,7 @@ import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.data.domain.Sort;
@@ -83,6 +84,7 @@ public class CommunicationProviderManagementService {
     public CommunicationProviderEntity updateProvider(@Nonnull Integer id,
                                                        @Nonnull CommunicationProviderEntity update) throws ResponseException {
         var existing = providerRepository.findByIdForUpdate(id).orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent(update, existing);
         if (!Objects.equals(existing.getCommunicationProviderDefinitionKey(), update.getCommunicationProviderDefinitionKey())
                 || !Objects.equals(existing.getCommunicationProviderDefinitionVersion(), update.getCommunicationProviderDefinitionVersion())) {
             throw ResponseException.badRequest("Definition und Version eines Kommunikationsanbieters können nach der Erstellung nicht geändert werden.");
@@ -143,9 +145,10 @@ public class CommunicationProviderManagementService {
         var provider = getProviderForUpdate(reference.getCommunicationProviderId());
         var identityProvider = getIdentityProviderForUpdate(reference.getIdentityProviderKey());
         var existing = bindingRepository.findByIdForUpdate(id).orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent(update, existing);
         if (!Objects.equals(existing.getIdentityProviderKey(), update.getIdentityProviderKey())
                 || !Objects.equals(existing.getCommunicationProviderId(), update.getCommunicationProviderId())) {
-            throw ResponseException.badRequest("Nutzerkonto- und Kommunikationsanbieter einer Anbindung können nach der Erstellung nicht geändert werden.");
+            throw ResponseException.badRequest("Identitäts- und Kommunikationsanbieter einer Anbindung können nach der Erstellung nicht geändert werden.");
         }
         existing.setName(update.getName());
         existing.setDescription(update.getDescription());
