@@ -19,9 +19,9 @@ export enum ProcessNodeExecutionType {
 }
 
 export const ProcessNodeExecutionTypeLabels: Record<ProcessNodeExecutionType, string> = {
-    [ProcessNodeExecutionType.Automatic]: 'Automatisiert',
-    [ProcessNodeExecutionType.Manual]: 'Manuell',
-    [ProcessNodeExecutionType.SemiAutomatic]: 'Teilautomatisiert',
+    [ProcessNodeExecutionType.Automatic]: 'Automatische Ausführung',
+    [ProcessNodeExecutionType.Manual]: 'Manuelle Ausführung',
+    [ProcessNodeExecutionType.SemiAutomatic]: 'Teilautomatisierte Ausführung',
 };
 
 export const ProcessNodeExecutionTypeColors: Record<ProcessNodeExecutionType, string> = {

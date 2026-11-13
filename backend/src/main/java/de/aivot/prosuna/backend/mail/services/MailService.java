@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.mail.services;
 
+import de.aivot.prosuna.backend.communication.utils.EmailAddressUtils;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.config.services.UserConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
@@ -20,8 +21,10 @@ import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.activation.DataSource;
 import jakarta.activation.FileDataSource;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
@@ -61,6 +64,7 @@ public class MailService {
     private final MailLogoService mailLogoService;
     private final UserService userService;
     private final UserConfigService userConfigService;
+    private final MeterRegistry meterRegistry;
 
     @Value("${spring.mail.host}")
     private String mailHost;
@@ -75,7 +79,9 @@ public class MailService {
             DepartmentMembershipService departmentMembershipService,
             MailLogoService mailLogoService,
             UserService userService,
-            UserConfigService userConfigService) {
+            UserConfigService userConfigService,
+            MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.prosunaConfig = prosunaConfig;
         this.mailSender = mailSender;
         this.systemConfigService = systemConfigService;
@@ -375,7 +381,7 @@ public class MailService {
             Optional<Collection<MailAttachmentBytes>> attachmentBytes,
             MailSendOptions options
     ) throws MessagingException, MailException, ResponseException {
-        InternetAddress[] mailToList = InternetAddress.parse(to);
+        InternetAddress[] mailToList = parseRecipientAddresses(to);
 
         MimeMessage message = mailSender.createMimeMessage();
 
@@ -387,13 +393,13 @@ public class MailService {
         if (cc.isPresent()) {
             message.setRecipients(
                     Message.RecipientType.CC,
-                    InternetAddress.parse(cc.get())
+                    parseRecipientAddresses(cc.get())
             );
         }
         if (bcc.isPresent()) {
             message.setRecipients(
                     Message.RecipientType.BCC,
-                    InternetAddress.parse(bcc.get())
+                    parseRecipientAddresses(bcc.get())
             );
         }
 
@@ -442,7 +448,13 @@ public class MailService {
         }
 
         if (!mailHost.isEmpty()) {
-            mailSender.send(message);
+            try {
+                mailSender.send(message);
+            } catch (RuntimeException exception) {
+                meterRegistry.counter("prosuna.mails", "outcome", "failed").increment();
+                throw exception;
+            }
+            meterRegistry.counter("prosuna.mails", "outcome", "sent").increment();
         }
     }
 
@@ -544,4 +556,26 @@ public class MailService {
 
         return context;
     }
+
+    @Nonnull
+    static InternetAddress[] parseRecipientAddresses(@Nonnull String value) throws MessagingException {
+        var addresses = InternetAddress.parse(value, true);
+        for (var address : addresses) {
+            if (address.isGroup()) {
+                var group = address.getAddress();
+                var colon = group.indexOf(':');
+                var members = parseRecipientAddresses(group.substring(colon + 1, group.lastIndexOf(';')));
+                var normalizedMembers = InternetAddress.toString(members);
+                address.setAddress(group.substring(0, colon + 1) + (normalizedMembers == null ? "" : normalizedMembers) + ";");
+                continue;
+            }
+            try {
+                address.setAddress(EmailAddressUtils.normalizeTransportAddress(address.getAddress()));
+            } catch (IllegalArgumentException exception) {
+                throw new MessagingException("Die E-Mail-Adresse einer empfangenden Person ist ungültig.", exception);
+            }
+        }
+        return addresses;
+    }
+
 }

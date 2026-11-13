@@ -34,7 +34,8 @@ public record ProcessNodeResponseDTO(
         @Nonnull Instant updated,
         @Nonnull List<ProcessNodePort> ports,
         @Nonnull List<String> portResolutionProblems,
-        @Nonnull List<ProcessNodeDeadlineDefinition> deadlineDefinitions
+        @Nonnull List<ProcessNodeDeadlineDefinition> deadlineDefinitions,
+        @Nullable Long lockVersion
 ) {
     @Nonnull
     public static ProcessNodeResponseDTO of(@Nonnull ProcessNodeEntity node, @Nonnull ProcessNodePortResolution resolution) {
@@ -56,7 +57,8 @@ public record ProcessNodeResponseDTO(
                 node.getSavedWithErrors(),
                 node.getCreated(),
                 node.getUpdated(),
-                resolution.ports(), resolution.problems(), resolution.deadlineDefinitions()
+                resolution.ports(), resolution.problems(), resolution.deadlineDefinitions(),
+                node.getLockVersion()
         );
     }
 }

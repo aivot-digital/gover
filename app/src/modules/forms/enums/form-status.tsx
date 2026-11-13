@@ -19,9 +19,9 @@ export const FormStatusLabels: Record<FormStatus, string> = {
 };
 
 export const FormStatusDescriptions: Record<FormStatus, string> = {
-    [FormStatus.Drafted]: 'Das Formular befindet sich im Entwurfsmodus und ist für Kunden nicht zugänglich.',
-    [FormStatus.Published]: 'Das Formular ist veröffentlicht und für Kunden zugänglich.',
-    [FormStatus.Revoked]: 'Das Formular wurde zurückgezogen und ist für Kunden nicht mehr zugänglich.',
+    [FormStatus.Drafted]: 'Das Formular befindet sich im Entwurfsmodus und ist für Beteiligte nicht zugänglich.',
+    [FormStatus.Published]: 'Das Formular ist veröffentlicht und für Beteiligte zugänglich.',
+    [FormStatus.Revoked]: 'Das Formular wurde zurückgezogen und ist für Beteiligte nicht mehr zugänglich.',
 };
 
 export const FormStatusColors: Record<FormStatus, 'success' | 'warning' | 'error' | 'info'> = {

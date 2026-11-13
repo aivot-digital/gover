@@ -75,7 +75,7 @@ export function MarketplaceModuleInfoTable(props: MarketplaceModuleInfoTableProp
                         </TableRow>
                         <TableRow>
                             <TableCell>
-                                Datenfeld Id
+                                Datenfeld-ID
                             </TableCell>
                             <TableCell>
                                 {

@@ -59,7 +59,7 @@ export function MailProcessingNotice() {
                             sx={{ml: 0.5, fontSize: '1em', verticalAlign: '-0.125em'}}
                         />
                     </Link>
-                    {' '}stellt eine Testadresse bereit und bewertet die dorthin gesendete Nachricht u. A.
+                    {' '}stellt eine Testadresse bereit und bewertet die dorthin gesendete Nachricht u. a.
                     hinsichtlich Spam- und Authentifizierungsmerkmalen. Tragen Sie die Testadresse dafür oben als
                     Empfängeradresse ein.
                 </li>

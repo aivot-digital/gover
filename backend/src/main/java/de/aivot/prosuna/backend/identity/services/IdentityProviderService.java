@@ -101,14 +101,14 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
         } catch (HttpConnectionException e) {
             throw ResponseException.internalServerError(
                     e,
-                    "Der Endpoint %s konnte nicht erreicht werden. Bitte überprüfen Sie den Endpoint.",
+                    "Der Endpunkt %s konnte nicht erreicht werden. Bitte überprüfen Sie den Endpunkt.",
                     uri.toString()
             );
         }
 
         if (response.statusCode() != 200) {
             throw ResponseException.conflict(
-                    "Der Endpoint %s hat den Status %d zurückgegeben. Bitte überprüfen Sie den Endpoint.",
+                    "Der Endpunkt %s hat den Status %d zurückgegeben. Bitte überprüfen Sie den Endpunkt.",
                     uri.toString(),
                     response.statusCode()
             );
@@ -124,7 +124,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
         } catch (JacksonException e) {
             throw ResponseException.internalServerError(
                     e,
-                    "Der Endpoint %s hat eine ungültige Antwort zurückgegeben. Bitte überprüfen Sie den Endpoint.",
+                    "Der Endpunkt %s hat eine ungültige Antwort zurückgegeben. Bitte überprüfen Sie den Endpunkt.",
                     uri.toString()
             );
         }
@@ -157,6 +157,8 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     public IdentityProviderEntity create(@Nonnull IdentityProviderEntity entity) throws ResponseException {
         // Set default values
         entity.setKey(UUID.randomUUID());
+        // A lock version from the request would make Spring Data look for a row that does not exist yet.
+        entity.setLockVersion(null);
         entity.setType(IdentityProviderType.Custom);
 
         cleanClientSecretKey(entity);
@@ -285,6 +287,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
             // Copy fix values
             updatedEntity.setKey(existingEntity.getKey());
             updatedEntity.setType(existingEntity.getType());
+            updatedEntity.setLockVersion(existingEntity.getLockVersion());
 
             cleanClientSecretKey(updatedEntity);
             cleanIconAssetKey(updatedEntity);

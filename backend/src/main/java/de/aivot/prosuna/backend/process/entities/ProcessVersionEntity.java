@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.process.entities;
 import de.aivot.prosuna.backend.process.enums.CaseNumberType;
 import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -18,28 +19,28 @@ import java.time.Instant;
 @Entity
 @Table(name = "process_versions")
 @IdClass(ProcessVersionEntityId.class)
-public class ProcessVersionEntity {
+public class ProcessVersionEntity implements LockVersioned {
     public static final int MAX_INSTANCE_DEADLINE_DAYS = 3652;
 
     @Id
     @Nonnull
-    @NotNull(message = "Die ID der Prozessdefinition darf nicht null sein.")
+    @NotNull(message = "Die ID des Prozesses darf nicht null sein.")
     private Integer processId;
 
     @Id
     @Nonnull
-    @NotNull(message = "Die Version der Prozessdefinition darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion darf nicht null sein.")
     private Integer processVersion;
 
     @Nonnull
-    @NotNull(message = "Der Status der Prozessdefinition-Version darf nicht null sein.")
+    @NotNull(message = "Der Status der Prozessversion darf nicht null sein.")
     @Column(columnDefinition = "int2")
     private ProcessVersionStatus status;
 
     @Nonnull
-    @NotNull(message = "Der öffentliche Title der Prozessdefinition-Version darf nicht null sein.")
-    @NotBlank(message = "Der öffentliche Title der Prozessdefinition-Version darf nicht leer sein.")
-    @Length(min=3, max = 96, message = "Der öffentliche Title der Prozessdefinition-Version muss zwischen 3 und 96 Zeichen lang sein.")
+    @NotNull(message = "Der öffentliche Titel der Prozessversion darf nicht null sein.")
+    @NotBlank(message = "Der öffentliche Titel der Prozessversion darf nicht leer sein.")
+    @Length(min=3, max = 96, message = "Der öffentliche Titel der Prozessversion muss zwischen 3 und 96 Zeichen lang sein.")
     private String publicTitle;
 
     @Nonnull
@@ -107,6 +108,11 @@ public class ProcessVersionEntity {
 
     @Nullable
     private Instant revoked;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Constructors
 
@@ -396,6 +402,17 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setProcessSpecificAccessibilityStatement(@Nullable String processSpecificAccessibilityStatement) {
         this.processSpecificAccessibilityStatement = processSpecificAccessibilityStatement;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public ProcessVersionEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

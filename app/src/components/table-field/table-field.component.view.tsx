@@ -178,7 +178,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
             tooltip: 'Tabellenzeile hinzufügen',
             ariaLabel: 'Tabellenzeile hinzufügen',
             onClick: handleAddRow,
-            disabled: isDisabled || isBusy || (element.maximumRows != null && rows.length >= element.maximumRows),
+            disabled: isDisabled || isBusy || (element.maximumRows != null && element.maximumRows > 0 && rows.length >= element.maximumRows),
         },
         {
             icon: <Delete/>,
