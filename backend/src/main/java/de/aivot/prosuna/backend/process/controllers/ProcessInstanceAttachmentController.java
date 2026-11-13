@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceAttachmentFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
+import de.aivot.prosuna.backend.process.utils.ProcessInstanceAttachmentContentResponseUtils;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,18 +23,11 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.InvalidMediaTypeException;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
-import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -44,19 +38,6 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessInstanceAttachmentController {
-    /**
-     * Media types that browsers display without executing active content. All other attachments are served as
-     * downloads with a generic media type.
-     */
-    private static final Set<MediaType> INLINE_MEDIA_TYPES = Set.of(
-            MediaType.APPLICATION_PDF,
-            MediaType.IMAGE_PNG,
-            MediaType.IMAGE_JPEG,
-            MediaType.IMAGE_GIF,
-            new MediaType("image", "webp"),
-            MediaType.TEXT_PLAIN
-    );
-
     // Attachments are created only through validated form and task execution flows and share the lifecycle of their
     // process instance. They cannot be moved, replaced, or deleted independently through this controller.
     private final UserService userService;
@@ -176,34 +157,7 @@ public class ProcessInstanceAttachmentController {
         var inputStream = storageService
                 .getDocumentContent(attachment.getStorageProviderId(), attachment.getStoragePathFromRoot());
 
-        MediaType mediaType;
-        try {
-            var mimeType = URLConnection.guessContentTypeFromName(attachment.getFileName());
-            mediaType = mimeType != null ? MediaType.parseMediaType(mimeType) : MediaType.APPLICATION_OCTET_STREAM;
-        } catch (InvalidMediaTypeException e) {
-            mediaType = MediaType.APPLICATION_OCTET_STREAM;
-        }
-
-        // Attachments can originate from external senders, for example through webhooks or FIT-Connect. Browsers
-        // must therefore never interpret active content such as HTML, SVG or XML on the application origin.
-        var inlineAllowed = isInlineMediaType(mediaType);
-        if (!inlineAllowed) {
-            mediaType = MediaType.APPLICATION_OCTET_STREAM;
-        }
-
-        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
-        var contentDispositionType = download || !inlineAllowed ? "attachment" : "inline";
-        var contentDisposition = ContentDisposition
-                .builder(contentDispositionType)
-                .filename(attachment.getFileName(), StandardCharsets.UTF_8)
-                .build();
-        responseBuilder.header("Content-Disposition", contentDisposition.toString());
-
-        return responseBuilder.body(new InputStreamResource(inputStream));
-    }
-
-    private static boolean isInlineMediaType(@Nonnull MediaType mediaType) {
-        return INLINE_MEDIA_TYPES.contains(new MediaType(mediaType.getType(), mediaType.getSubtype()));
+        return ProcessInstanceAttachmentContentResponseUtils.createContentResponse(attachment, download, inputStream);
     }
 
 }

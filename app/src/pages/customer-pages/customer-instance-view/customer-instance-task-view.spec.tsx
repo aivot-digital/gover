@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
     dispatch: vi.fn(),
     elementDerivationProps: undefined as any,
     removableAttachmentKeys: undefined as ReadonlySet<string> | undefined,
+    downloadAttachment: undefined as ((attachmentKey: string) => Promise<Blob>) | undefined,
     invalidateInstanceTasks: vi.fn(),
     navigate: vi.fn(),
     refreshInstanceStatus: vi.fn(),
@@ -50,10 +51,12 @@ vi.mock('../../../utils/with-delay', () => ({
 
 vi.mock('../../../modules/elements/components/element-derivation-context', async () => {
     const {useRemovableFileUploadAttachments} = await import('../../../components/file-upload-field/removable-file-upload-attachments-context');
+    const {useFileUploadAttachmentDownload} = await import('../../../components/file-upload-field/file-upload-attachment-download-context');
 
     return {ElementDerivationContext: function ElementDerivationContextMock(props: any) {
         mocks.elementDerivationProps = props;
         mocks.removableAttachmentKeys = useRemovableFileUploadAttachments();
+        mocks.downloadAttachment = useFileUploadAttachmentDownload();
 
         return (
             <div>
@@ -95,6 +98,7 @@ describe('CustomerInstanceTaskView', () => {
         mocks.dispatch.mockReset();
         mocks.elementDerivationProps = undefined;
         mocks.removableAttachmentKeys = undefined;
+        mocks.downloadAttachment = undefined;
         mocks.invalidateInstanceTasks.mockReset();
         mocks.navigate.mockReset();
         mocks.refreshInstanceStatus.mockReset().mockResolvedValue(createInstanceStatus());
@@ -476,6 +480,20 @@ describe('CustomerInstanceTaskView', () => {
         await user.click(await screen.findByRole('button', {name: 'Daten einreichen'}));
 
         await waitFor(() => expect(mocks.removableAttachmentKeys).toEqual(new Set(['own'])));
+    });
+
+    it('downloads the stored attachments of the upload fields through the public task endpoint', async () => {
+        const blob = new Blob(['content']);
+        const getBlob = vi.spyOn(CustomerTaskViewApiService.prototype, 'getBlob').mockResolvedValue(blob);
+
+        render(<CustomerInstanceTaskView/>);
+        await waitFor(() => expect(mocks.downloadAttachment).toBeDefined());
+
+        await expect(mocks.downloadAttachment!('stored/key')).resolves.toBe(blob);
+        expect(getBlob).toHaveBeenCalledWith(
+            '/api/public/processes/instance-key/tasks/task-key/attachments/stored%2Fkey/file/?download=true',
+            {skipAuthCheck: true, doNotHandleStatusCodes: true},
+        );
     });
 
     it('uses the same event metadata and handler for inline events', async () => {

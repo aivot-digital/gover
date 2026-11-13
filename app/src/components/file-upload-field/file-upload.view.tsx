@@ -7,8 +7,8 @@ import {BaseViewProps} from '../../views/base-view';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
-import {BaseApiService} from '../../services/base-api-service';
 import {FileUploadFieldLayout, type FileUploadListItemAction} from './file-upload-field-layout';
+import {useFileUploadAttachmentDownload} from './file-upload-attachment-download-context';
 import {useRemovableFileUploadAttachments} from './removable-file-upload-attachments-context';
 
 const PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX = 'process-instance-attachment:';
@@ -38,6 +38,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
 
     const dispatch = useAppDispatch();
     const removableAttachmentKeys = useRemovableFileUploadAttachments();
+    const downloadAttachment = useFileUploadAttachmentDownload();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isDraggedOver, setIsDraggedOver] = useState(false);
@@ -88,7 +89,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         }
 
         try {
-            const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachmentKey)}/file/?download=true`);
+            const blob = await downloadAttachment(attachmentKey);
             const objectUrl = URL.createObjectURL(blob);
 
             const link = document.createElement('a');
