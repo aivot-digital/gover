@@ -101,9 +101,10 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     }
 
     // Holds the lock of the list, so entries saved meanwhile cannot bypass the check of a changed key column.
+    // ResponseException is checked, so without the rollback rule a rejected update would still flush its changes.
     @Nonnull
     @Override
-    @Transactional
+    @Transactional(rollbackFor = ResponseException.class)
     public CodeListEntity update(@Nonnull String key, @Nonnull CodeListEntity entity) throws ResponseException {
         var existingEntity = codeListRepository
                 .findByKeyForUpdate(key)
@@ -269,7 +270,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     }
 
     @Nonnull
-    @Transactional
+    @Transactional(rollbackFor = ResponseException.class)
     public CodeListEntity importCSV(@Nonnull String codeListKey,
                                     @Nonnull InputStream inputStream) throws ResponseException {
         var codeList = lockManualCodeList(codeListKey);
@@ -307,7 +308,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     }
 
     @Nonnull
-    @Transactional
+    @Transactional(rollbackFor = ResponseException.class)
     public CodeListItemEntity createItem(@Nonnull String codeListKey, @Nonnull CodeListItemEntity item) throws ResponseException {
         var codeList = lockManualCodeList(codeListKey);
         var codeListId = requireInternalId(codeList);
@@ -328,7 +329,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     }
 
     @Nonnull
-    @Transactional
+    @Transactional(rollbackFor = ResponseException.class)
     public CodeListItemEntity updateItem(@Nonnull String codeListKey,
                                          @Nonnull Long itemId,
                                          @Nonnull CodeListItemEntity item) throws ResponseException {
