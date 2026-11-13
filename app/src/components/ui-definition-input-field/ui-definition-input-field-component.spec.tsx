@@ -11,6 +11,7 @@ import {type AuthoredElementValues, getLiteralElementValue, literalAuthoredValue
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type TextFieldElement} from '../../models/elements/form/input/text-field-element';
+import {SelectFieldPresentation} from '../../models/elements/form/input/select-field-presentation';
 
 const recalculateReferencedIds = vi.hoisted(() => vi.fn(async (element: unknown) => element));
 
@@ -59,6 +60,45 @@ vi.mock('../element-tree-2/element-tree', () => ({
 }));
 
 describe('UiDefinitionInputFieldComponent', () => {
+    it('opens legacy radio definitions as Select and emits the canonical definition only on apply', async () => {
+        const user = userEvent.setup();
+        const value = JSON.parse(JSON.stringify({
+            ...generateElementWithDefaultValues(ElementType.GroupLayout),
+            id: 'root',
+            children: [{
+                id: 'contact', type: 11, label: 'Kontaktweg', destinationKey: 'contactMethod',
+                options: [{value: 'email', label: 'E-Mail'}, {value: 'post', label: 'Post'}],
+            }],
+        })) as GroupLayout;
+        const onChange = vi.fn();
+        render(<UiDefinitionInputFieldComponent
+            label="Testoberfläche"
+            value={value}
+            onChange={onChange}
+            displayContext={ElementDisplayContext.StaffFacing}
+            onDerive={async () => ({
+                effectiveValues: {contact: 'email'},
+                elementStates: {root: {visible: true}, contact: {visible: true}},
+            })}
+        />);
+
+        await user.click(screen.getByRole('button', {name: 'Bearbeiten'}));
+        expect(await screen.findByRole('radio', {name: 'E-Mail'})).toBeChecked();
+        expect(screen.getByRole('radio', {name: 'Post'})).not.toBeChecked();
+        expect(onChange).not.toHaveBeenCalled();
+
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            id: 'root',
+            children: [expect.objectContaining({
+                id: 'contact', type: ElementType.Select, presentation: SelectFieldPresentation.Radio,
+                destinationKey: 'contactMethod',
+                options: [{value: 'email', label: 'E-Mail'}, {value: 'post', label: 'Post'}],
+            })],
+        }));
+        expect(value.children![0].type).toBe(11);
+    });
+
     it('validates current inputs and modeling only on request and clears edited errors in both places', async () => {
         const user = userEvent.setup();
         const value: GroupLayout = {

@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.security;
 
 import de.aivot.prosuna.backend.user.entities.UserApiKeyEntity;
 import de.aivot.prosuna.backend.user.repositories.UserApiKeyRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.oauth2.jwt.BadJwtException;
@@ -21,7 +22,8 @@ class ApiKeyJwtDecoderTest {
 
     private final JwtDecoder keycloakDecoder = mock(JwtDecoder.class);
     private final UserApiKeyRepository userApiKeyRepository = mock(UserApiKeyRepository.class);
-    private final ApiKeyJwtDecoder decoder = new ApiKeyJwtDecoder(keycloakDecoder, userApiKeyRepository);
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private final ApiKeyJwtDecoder decoder = new ApiKeyJwtDecoder(keycloakDecoder, userApiKeyRepository, meterRegistry);
 
     @Test
     void hashesAsLowercaseHexSha256() {
@@ -40,6 +42,9 @@ class ApiKeyJwtDecoderTest {
         assertEquals(USER_ID, jwt.getSubject());
         assertEquals(expiration, jwt.getExpiresAt());
         verifyNoInteractions(keycloakDecoder);
+
+        assertEquals(1, apiKeyRequests("valid"));
+        assertEquals(0, apiKeyRequests("invalid"));
     }
 
     @Test
@@ -49,6 +54,9 @@ class ApiKeyJwtDecoderTest {
 
         assertSame(keycloakJwt, decoder.decode("keycloak-token"));
         verifyNoInteractions(userApiKeyRepository);
+
+        assertEquals(0, apiKeyRequests("valid"));
+        assertEquals(0, apiKeyRequests("invalid"));
     }
 
     @Test
@@ -57,6 +65,9 @@ class ApiKeyJwtDecoderTest {
         when(userApiKeyRepository.findByKeyHashOfActiveUser(anyString())).thenReturn(Optional.empty());
 
         assertThrows(BadJwtException.class, () -> decoder.decode(API_KEY));
+
+        assertEquals(1, apiKeyRequests("invalid"));
+        assertEquals(0, apiKeyRequests("valid"));
     }
 
     @Test
@@ -64,6 +75,9 @@ class ApiKeyJwtDecoderTest {
         givenApiKey(Instant.now().minusSeconds(1));
 
         assertThrows(BadJwtException.class, () -> decoder.decode(API_KEY));
+
+        assertEquals(1, apiKeyRequests("invalid"));
+        assertEquals(0, apiKeyRequests("valid"));
     }
 
     @Test
@@ -75,6 +89,10 @@ class ApiKeyJwtDecoderTest {
         assertNull(ApiKeyJwtDecoder.resolveApiKey(requestWithAuthorization("Bearer keycloak-token")));
         assertNull(ApiKeyJwtDecoder.resolveApiKey(requestWithAuthorization("Basic " + API_KEY)));
         assertNull(ApiKeyJwtDecoder.resolveApiKey(new MockHttpServletRequest()));
+    }
+
+    private double apiKeyRequests(String outcome) {
+        return meterRegistry.counter("prosuna.api.key.requests", "outcome", outcome).count();
     }
 
     private void givenApiKey(Instant expiration) {

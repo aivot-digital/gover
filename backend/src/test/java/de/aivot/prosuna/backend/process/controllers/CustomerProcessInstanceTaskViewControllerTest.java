@@ -13,6 +13,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConf
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
+import de.aivot.prosuna.backend.elements.services.AssetSelectionValidationService;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
@@ -153,7 +154,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         var response = fixture.controller().retrieve(fixture.procAccess(), fixture.taskAccess(), null, null);
 
         var confirmation = response.layout().findChild("form-request-completed-9", AlertContentElement.class).orElseThrow();
-        assertEquals("Daten eingereicht", confirmation.getTitle());
+        assertEquals("Angaben übermittelt", confirmation.getTitle());
         assertEquals(AlertType.Success, confirmation.getAlertType());
         assertEquals(1, response.layout().getChildren().size());
         assertTrue(response.data().isEmpty());
@@ -1629,7 +1630,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private final List<ElementDerivationRequest> requests = new LinkedList<>();
 
         private TestElementDerivationService(EffectiveElementValues effectiveValues) {
-            super(null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null);
             this.effectiveValues = effectiveValues;
         }
 
@@ -1641,7 +1642,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
                     new ElementDataTransformService(),
                     new CodeListElementOptionsService(null, null),
                     new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
-                    new InputVariableResolver()
+                    new InputVariableResolver(),
+                    mock(AssetSelectionValidationService.class)
             );
             this.effectiveValues = null;
         }

@@ -65,7 +65,7 @@ describe('ProcessNodeEditorOutputsTab', () => {
         expect(target).toHaveValue('');
         expect(target).not.toBeRequired();
         expect(target).not.toHaveAccessibleName(/Details/);
-        expect(target).toHaveAccessibleDescription(/Ergebnis.*Das Ergebnis des Elements.*über die Elementdaten zur Verfügung.*zusätzlich in den Vorgangsdaten bereitstellen.*Zielpfad ein/);
+        expect(target).toHaveAccessibleDescription(/Ergebnis.*Das Ergebnis des Elements.*über die Elementdaten zur Verfügung.*zusätzlich in den Vorgangsdaten bereit.*jeweiligen Zielpfad ein/);
         expect(screen.getByText(resultOutput.description)).toBeInTheDocument();
         expect(within(outputSection).getByText('Pfad in den Elementdaten:')).toBeInTheDocument();
         expect(within(outputSection).getByText('_.copy_field.result')).toBeInTheDocument();

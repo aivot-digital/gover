@@ -31,10 +31,10 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
     @Override
     public String getDescription() {
         return """
-                ### **Operator: "Durchschnitt aus Liste"**
+                ### **Operator: "Durchschnitt einer Liste"**
                 
                 # Beschreibung:
-                Der Operator **„Durchschnitt aus Liste“** berechnet den Durchschnitt (Mittelwert) aller numerischen Werte innerhalb einer Liste. \s
+                Der Operator **„Durchschnitt einer Liste“** berechnet den Durchschnitt (Mittelwert) aller numerischen Werte innerhalb einer Liste. \s
                 Er wird verwendet, um den Durchschnittswert einer Sammlung von Zahlen zu ermitteln.
                 
                 Die Berechnung erfolgt durch: \s
@@ -42,10 +42,10 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben eine Liste mit Bewertungen: `[4, 5, 3, 4]`. \s
-                Mit dem Operator **„Durchschnitt aus Liste“** können Sie den Durchschnitt berechnen:
+                Mit dem Operator **„Durchschnitt einer Liste“** können Sie den Durchschnitt berechnen:
                 
                 ```text
-                Durchschnitt aus Liste Bewertungen
+                Durchschnitt einer Liste Bewertungen
                 ```
                 
                 **Ergebnis:** \s
@@ -57,8 +57,8 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
                 - Liste der Werte: `[10, 20, 30]` → **Ergebnis:** `20` \s
                 - Leere Liste: `[]` → **Ergebnis:** `0` (Standardwert, falls Liste leer ist)
                 
-                # Wann verwenden Sie den Operator „Durchschnitt aus Liste“?
-                Verwenden Sie **„Durchschnitt aus Liste“**, wenn Sie:
+                # Wann verwenden Sie den Operator „Durchschnitt einer Liste“?
+                Verwenden Sie **„Durchschnitt einer Liste“**, wenn Sie:
                 - Den Mittelwert von numerischen Werten berechnen möchten (z. B. Durchschnittsnote, Durchschnittsumsatz). \s
                 - Analysen oder Statistiken benötigen, die Durchschnittswerte erfordern. \s
                 - Daten aus einer Tabelle oder Liste zusammenfassen, um Trends oder Muster zu erkennen.

@@ -27,9 +27,9 @@ public class CommunicationProviderEntity implements LockVersioned {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der Definition-Schlüssel des Kommunikationsanbieters darf nicht null sein.")
-    @NotBlank(message = "Der Definition-Schlüssel des Kommunikationsanbieters darf nicht leer sein.")
-    @Size(max = 255, message = "Der Definition-Schlüssel des Kommunikationsanbieters darf maximal 255 Zeichen lang sein.")
+    @NotNull(message = "Der Definitionsschlüssel des Kommunikationsanbieters darf nicht null sein.")
+    @NotBlank(message = "Der Definitionsschlüssel des Kommunikationsanbieters darf nicht leer sein.")
+    @Size(max = 255, message = "Der Definitionsschlüssel des Kommunikationsanbieters darf maximal 255 Zeichen lang sein.")
     private String communicationProviderDefinitionKey;
 
     @Nonnull

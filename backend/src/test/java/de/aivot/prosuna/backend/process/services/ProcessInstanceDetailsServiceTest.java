@@ -47,7 +47,7 @@ class ProcessInstanceDetailsServiceTest {
         var definition = mock(de.aivot.prosuna.backend.process.models.ProcessNodeDefinition.class);
         when(definition.getKey()).thenReturn("test.manual");
         when(definition.getComponentKey()).thenReturn("manual");
-        when(definition.getName()).thenReturn("Manuelle Aufgabe");
+        when(definition.getName()).thenReturn("Freie Aufgabe");
         when(definition.getAbstract()).thenReturn("Allgemeine Prüfung");
         when(definitions.getProcessNodeDefinition(node)).thenReturn(Optional.of(definition));
 
@@ -55,7 +55,7 @@ class ProcessInstanceDetailsServiceTest {
         assertSame(task, result.task());
         assertEquals("Prüfung", result.process().internalTitle());
         assertEquals("Unterlagen prüfen", result.node().name());
-        assertEquals("Manuelle Aufgabe", result.provider().name());
+        assertEquals("Freie Aufgabe", result.provider().name());
         var json = de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper().valueToTree(result);
         assertEquals(java.util.Set.of("id", "internalTitle"), json.get("process").propertyNames());
         assertEquals(java.util.Set.of("name", "description"), json.get("node").propertyNames());

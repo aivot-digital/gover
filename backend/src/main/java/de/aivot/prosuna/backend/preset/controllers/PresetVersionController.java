@@ -367,7 +367,7 @@ public class PresetVersionController {
                 .orElseThrow(ResponseException::notFound);
 
         if (presetVersion.getStatus() == PresetStatus.Revoked) {
-            throw ResponseException.conflict("Die Version ist bereits widerrufen.");
+            throw ResponseException.conflict("Die Version ist bereits zurückgezogen.");
         }
 
         presetVersion.setStatus(PresetStatus.Revoked);

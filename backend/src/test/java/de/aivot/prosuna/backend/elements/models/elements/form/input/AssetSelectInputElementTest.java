@@ -54,6 +54,7 @@ class AssetSelectInputElementTest {
                 .setPlaceholder("Zertifikat auswählen")
                 .setDialogTitle("Client-Zertifikat auswählen")
                 .setAllowedMimeTypes(List.of("application/x-pem-file"))
+                .setStorageProviderId(7)
                 .setAssetVisibility(AssetVisibility.Private);
 
         var serialized = JsonMapperFactory.getInstance().writeValueAsString(element);
@@ -64,5 +65,20 @@ class AssetSelectInputElementTest {
         assertEquals("Client-Zertifikat auswählen", selector.getDialogTitle());
         assertEquals(List.of("application/x-pem-file"), selector.getAllowedMimeTypes());
         assertEquals(AssetVisibility.Private, selector.getAssetVisibility());
+        assertEquals(7, selector.getStorageProviderId());
+    }
+
+    @Test
+    void legacyElementsRemainUnrestrictedAndProviderIsPartOfEquality() throws Exception {
+        var mapper = JsonMapperFactory.getInstance();
+        var original = new AssetSelectInputElement();
+        var json = mapper.readTree(mapper.writeValueAsString(original));
+        ((tools.jackson.databind.node.ObjectNode) json).remove("storageProviderId");
+        var legacy = mapper.treeToValue(json, AssetSelectInputElement.class);
+        assertEquals(null, legacy.getStorageProviderId());
+        var equivalent = mapper.treeToValue(json, AssetSelectInputElement.class);
+        assertEquals(equivalent, legacy);
+        legacy.setStorageProviderId(7);
+        assertFalse(equivalent.equals(legacy));
     }
 }

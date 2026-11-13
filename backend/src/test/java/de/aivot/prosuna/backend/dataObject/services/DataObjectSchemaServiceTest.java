@@ -37,8 +37,8 @@ class DataObjectSchemaServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, createError.getStatus());
         assertEquals(HttpStatus.BAD_REQUEST, updateError.getStatus());
         assertEquals(schema == null
-                ? "Bitte legen Sie ein Datenschema mit mindestens einem Datenfeld fest."
-                : "Das Datenschema muss mindestens ein Datenfeld enthalten.", createError.getMessage());
+                ? "Bitte legen Sie eine UI-Definition mit mindestens einem Eingabefeld fest."
+                : "Die UI-Definition muss mindestens ein Eingabefeld enthalten.", createError.getMessage());
         assertEquals(createError.getMessage(), updateError.getMessage());
         assertSame(existingSchema, existing.getSchema());
         assertEquals("Test", existing.getName());

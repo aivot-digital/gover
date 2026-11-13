@@ -5,7 +5,7 @@
 * Java JDK 25
 * Docker v27.3.1+ and Docker Compose v2.29.7+
 * Apache Maven v3.9.9+
-* Node.js v22.0.0+
+* Node.js v26.7.0+
 * Git v2.46.2+
 
 ## 2 Setting up a development environment
@@ -18,18 +18,18 @@ We recommend using the Windows Subsystem for Linux (WSL) for a better developmen
 
 The project contains the following modules and directories:
 
-- `./`: The project root
-- `./app`: The frontend application for both staff and customers
-- `./backend/src`: The source code of the Spring Boot backend application
-- `./backend/mails`: The module that contains the mail templates
-- `./development`: The module that contains the development setup
-    - `./development/compose.yml`: The docker compose file for all local development services
-    - `./development/prosuna.env`: An environment file containing the environment variables for the Prosuna application
-    - `./development/examples`: A directory with example datasets to populate the local database with
-- `./default-assets`: The directory that contains the default assets for the Prosuna service, such as default templates
+* `./`: The project root
+* `./app`: The frontend application for both staff and customers
+* `./backend/src`: The source code of the Spring Boot backend application
+* `./backend/mails`: The module that contains the mail templates
+* `./development`: The module that contains the development setup
+  * `./development/compose.yml`: The docker compose file for all local development services
+  * `./development/prosuna.env`: An environment file containing the environment variables for the Prosuna application
+  * `./development/examples`: A directory with example datasets to populate the local database with
+* `./default-assets`: The directory that contains the default assets for the Prosuna service, such as default templates
   for PDFs
-- `./container`: The directory contains additional files for the container image
-- `./tools`: The directory contains additional tools for installing a prosuna instance
+* `./container`: The directory contains additional files for the container image
+* `./tools`: The directory contains additional tools for installing a prosuna instance
 
 ### 2.1 Getting started
 
@@ -39,16 +39,17 @@ The following steps will guide you through the process of setting up the develop
 1. Clone this repository with
 
    ```bash
-   git clone https://github.com/aivot-digital/gover.git ./gover
+   git clone https://github.com/aivot-digital/gover.git ./prosuna
    ```
 
-2. Change into the `prosuna` directory
+2. Change into the `prosuna` repository directory
 
    ```bash
-   cd gover
+   cd prosuna
    ```
 
 After cloning the repository and changing into the project directory, you can follow the steps below to set up the development environment and start working on the project.
+Run all commands below from the repository root (`prosuna/`), including commands in additional terminals.
 Make sure to follow the steps in the given order, as some steps depend on the successful completion of previous steps.
 
 ### 2.2 Start the development services
@@ -67,19 +68,19 @@ This command will spin up all necessary services in detached mode, allowing you 
 
 The docker compose file includes the following services:
 
-- `prosuna-database`: A PostgreSQL database for storing the Prosuna application data
-- `antivirus`: A ClamAV antivirus service for scanning uploaded files for viruses
-- `cache`: A Redis instance for caching and session management
-- `pdf-printer`: A Gotenberg instance for converting documents to PDF format
-- `s3-object-storage`: A MinIO instance for storing uploaded files
-- `s3-object-storage-setup`: A helper service for setting up the MinIO instance with the necessary buckets and keys
-- `smtp`: A Mailpit instance for capturing outgoing emails from the application and providing a web interface to view
+* `prosuna-database`: A PostgreSQL database for storing the Prosuna application data
+* `antivirus`: A ClamAV antivirus service for scanning uploaded files for viruses
+* `cache`: A Redis instance for caching and session management
+* `pdf-printer`: A Gotenberg instance for converting documents to PDF format
+* `s3-object-storage`: A MinIO instance for storing uploaded files
+* `s3-object-storage-setup`: A helper service for setting up the MinIO instance with the necessary buckets and keys
+* `smtp`: A Mailpit instance for capturing outgoing emails from the application and providing a web interface to view
   them
-- `keycloak-database`: A PostgreSQL database for storing the keycloak application data
-- `keycloak`: A Keycloak instance for handling authentication and authorization
-- `keycloak-setup`: A helper service for setting up the Keycloak instance with the necessary realms, clients, and users
-- `message-broker`: A RabbitMQ instance for handling asynchronous tasks in the application
-- `reverse-proxy`: A Caddy instance for reverse proxying the running services all under a single domain `http://localhost:9595`
+* `keycloak-database`: A PostgreSQL database for storing the keycloak application data
+* `keycloak`: A Keycloak instance for handling authentication and authorization
+* `keycloak-setup`: A helper service for setting up the Keycloak instance with the necessary realms, clients, and users
+* `message-broker`: A RabbitMQ instance for handling asynchronous tasks in the application
+* `reverse-proxy`: A Caddy instance for reverse proxying the running services all under a single domain `http://localhost:9595`
 
 You can find more information about accessing the services in section 3 below.
 
@@ -106,12 +107,12 @@ docker compose -f ./development/compose.yml logs -f s3-object-storage-setup
 ### 2.3 Compile the mail templates
 
 The backend application uses mail templates for sending emails to users.
-These templates are located in the `./mails` module and need to be compiled before starting the backend application.
+These templates are located in the `./backend/mails` module and need to be compiled before starting the backend application.
 To compile the mail templates, you need to have Node.js and npm installed on your machine.
 
 ```bash
-npm install --prefix ./mails 
-npm run build:dev --prefix ./mails
+npm ci --prefix ./backend/mails
+npm run build:dev --prefix ./backend/mails
 ```
 
 ### 2.4 Start the backend application
@@ -124,7 +125,7 @@ The following commands work in Linux, macOS terminal shells, and Windows WSL:
 set -a
 . ./development/prosuna.env
 set +a
-mvn spring-boot:run
+mvn --file ./backend/pom.xml spring-boot:run
 ```
 
 These commands load the environment variables from `./development/prosuna.env` into your current shell session and then start the Spring Boot application.
@@ -174,8 +175,8 @@ You can find these credentials in the `./development/compose.yml` file under `se
 
 MinIO exposes two ports to the host machine.
 
-- Port `9000` is for accessing the MinIO API.
-- Port `9001` is for accessing the MinIO Web Console.
+* Port `9000` is for accessing the MinIO API.
+* Port `9001` is for accessing the MinIO Web Console.
 
 You can access the MinIO web interface at [http://localhost:9001](http://localhost:9001) with the following credentials:
 
@@ -249,29 +250,29 @@ Make sure to save the new password and the OTP secret in a secure place, as you 
 
 **Important distinction:**
 
-- `superuser` is a Keycloak administration user.
-- `superuser` is used for the Keycloak admin console only. It is not automatically a Prosuna administrator.
-- Prosuna authenticates its own users against the Keycloak realm configured by `PROSUNA_KEYCLOAK_OIDC_REALM`.
-- In the default development setup, `PROSUNA_KEYCLOAK_OIDC_REALM` is set to `staff`.
-- Because of this, only users from the `staff` realm can log into the Prosuna staff app directly and be imported as Prosuna users.
-- The Prosuna bootstrap administrator is therefore a Prosuna application user from the `staff` realm, not a special Keycloak admin-console account.
-- The `customer` realm is used for customer identity provider integration and is not used for direct Prosuna staff login.
-- A user is promoted to the configured Prosuna system role with the highest permission level only when all of the following are true:
-  - the user is imported into Prosuna by user synchronization or by logging into Prosuna
-  - the user comes from the `staff` realm
-  - the user's e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`
-  - no active Prosuna user holds that system role
-- The role with the highest permission level defaults to `Superadministrator:in` and can be changed under the general application settings.
-- In the default development setup, these values are different:
-  - the Keycloak admin user `superuser` has the e-mail `mail@example.com`
-  - `PROSUNA_BOOTSTRAP_ADMIN_MAIL` in `./development/prosuna.env` is set to `admin@example.com`
+* `superuser` is a Keycloak administration user.
+* `superuser` is used for the Keycloak admin console only. It is not automatically a Prosuna administrator.
+* Prosuna authenticates its own users against the Keycloak realm configured by `PROSUNA_KEYCLOAK_OIDC_REALM`.
+* In the default development setup, `PROSUNA_KEYCLOAK_OIDC_REALM` is set to `staff`.
+* Because of this, only users from the `staff` realm can log into the Prosuna staff app directly and be imported as Prosuna users.
+* The Prosuna bootstrap administrator is therefore a Prosuna application user from the `staff` realm, not a special Keycloak admin-console account.
+* The `customer` realm is used for customer identity provider integration and is not used for direct Prosuna staff login.
+* A user is promoted to the configured Prosuna system role with the highest permission level only when all of the following are true:
+  * the user is imported into Prosuna by user synchronization or by logging into Prosuna
+  * the user comes from the `staff` realm
+  * the user's e-mail address matches `PROSUNA_BOOTSTRAP_ADMIN_MAIL`
+  * no active Prosuna user holds that system role
+* The role with the highest permission level defaults to `Superadministrator:in` and can be changed under the general application settings.
+* In the default development setup, these values are different:
+  * the Keycloak admin user `superuser` has the e-mail `mail@example.com`
+  * `PROSUNA_BOOTSTRAP_ADMIN_MAIL` in `./development/prosuna.env` is set to `admin@example.com`
 
 Because of this, the default Keycloak user `superuser` does not become the bootstrap Prosuna administrator.
 
 The Keycloak Setup Helper creates the following realms:
 
-- `staff`: This realm is for the staff users of the Prosuna service.
-- `customer`: This realm is for the integration of customer identity providers such as the **BundID** or **Mein Unternehmenskonto**.
+* `staff`: This realm is for the staff users of the Prosuna service.
+* `customer`: This realm is for the integration of customer identity providers such as the **BundID** or **Mein Unternehmenskonto**.
 
 #### 3.5.1 Creating a Staff User
 
@@ -316,7 +317,7 @@ Afterwards, the three process queues are no longer used and can be deleted in th
 ## 4 Development
 
 Changes to the app will be hot-reloaded automatically.
-Changes to the mails module require a rebuild by running `npm run build:dev --prefix ./mails` again.
+Changes to the `backend/mails` module require a rebuild by running `npm run build:dev --prefix ./backend/mails` again from the repository root.
 Changes to the backend require a restart of the Prosuna application.
 
 ## 5 View API Documentation

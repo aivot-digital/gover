@@ -49,12 +49,12 @@ public class DepartmentEntity implements LockVersioned {
 
     @Nullable
     @Column(length = 255)
-    @Length(max = 255, message = "Die technische Support E-Mail-Adresse darf maximal 255 Zeichen lang sein")
+    @Length(max = 255, message = "Die E-Mail-Adresse für den technischen Support darf maximal 255 Zeichen lang sein")
     private String technicalSupportEmail;
 
     @Nullable
     @Column(length = 96)
-    @Length(max = 96, message = "Die technische Support Telefonnummer darf maximal 96 Zeichen lang sein")
+    @Length(max = 96, message = "Die Telefonnummer für den technischen Support darf maximal 96 Zeichen lang sein")
     private String technicalSupportPhone;
 
     @Nullable
@@ -63,12 +63,12 @@ public class DepartmentEntity implements LockVersioned {
 
     @Nullable
     @Column(length = 255)
-    @Length(max = 255, message = "Die fachliche Support E-Mail-Adresse darf maximal 255 Zeichen lang sein")
+    @Length(max = 255, message = "Die E-Mail-Adresse für den fachlichen Support darf maximal 255 Zeichen lang sein")
     private String specialSupportEmail;
 
     @Nullable
     @Column(length = 96)
-    @Length(max = 96, message = "Die fachliche Support Telefonnummer darf maximal 96 Zeichen lang sein")
+    @Length(max = 96, message = "Die Telefonnummer für den fachlichen Support darf maximal 96 Zeichen lang sein")
     private String specialSupportPhone;
 
     @Nullable

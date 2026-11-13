@@ -32,7 +32,7 @@ export function CommunicationProviderDetailsPage() {
                         content: (
                             <Typography variant="body1">
                                 Kommunikationsanbieter verbinden Prosuna mit Versanddiensten wie E-Mail oder
-                                FIT-Connect. Sie versenden Nachrichten und – sofern unterstützt – Anhänge an Identitäten.
+                                FIT-Connect. Sie versenden Nachrichten und - sofern unterstützt - Anlagen an Identitäten.
                                 Die technische Konfiguration wird anschließend passenden Identitätsanbietern als
                                 Kommunikationsweg zugeordnet.
                             </Typography>

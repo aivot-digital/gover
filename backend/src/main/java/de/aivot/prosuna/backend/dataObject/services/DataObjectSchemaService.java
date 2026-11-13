@@ -90,10 +90,10 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
 
     private void validateSchemaConfig(@Nonnull String idGen, @Nullable GroupLayoutElement schema) throws ResponseException {
         if (schema == null) {
-            throw ResponseException.badRequest("Bitte legen Sie ein Datenschema mit mindestens einem Datenfeld fest.");
+            throw ResponseException.badRequest("Bitte legen Sie eine UI-Definition mit mindestens einem Eingabefeld fest.");
         }
         if (!containsDataField(schema)) {
-            throw ResponseException.badRequest("Das Datenschema muss mindestens ein Datenfeld enthalten.");
+            throw ResponseException.badRequest("Die UI-Definition muss mindestens ein Eingabefeld enthalten.");
         }
 
         switch (idGen) {
@@ -130,7 +130,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                 var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(idGen).matches();
 
                 if (!startPatternPresent && !endPatternPresent) {
-                    throw ResponseException.badRequest("Das Format des gewählten ID-Typs ist ungültig. Bitte stellen Sie sicher, dass der ID-Typ mit „%I[0-9]“ beginnt oder endet.");
+                    throw ResponseException.badRequest("Die Formatvorlage muss mit einem Zählerplatzhalter wie „%I4“ beginnen oder enden, zum Beispiel „OBJ-%I4“.");
                 }
                 break;
         }

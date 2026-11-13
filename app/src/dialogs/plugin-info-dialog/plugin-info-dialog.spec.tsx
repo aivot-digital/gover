@@ -20,7 +20,7 @@ describe('PluginInfoDialog', () => {
     it('renders plugin metadata, links and a Markdown deprecation notice', () => {
         render(<PluginInfoDialog open plugin={plugin} onClose={vi.fn()}/>);
 
-        expect(screen.getByRole('dialog', {name: 'Plugin-Informationen'})).toBeInTheDocument();
+        expect(screen.getByRole('dialog', {name: 'Informationen zur Erweiterung'})).toBeInTheDocument();
         expect(screen.getByText('Test-Plugin')).toBeInTheDocument();
         expect(screen.getByText('Version 2.3.4')).toBeInTheDocument();
         expect(screen.getByText('Veraltet')).toBeInTheDocument();
