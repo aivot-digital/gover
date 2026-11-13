@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.xrepository.models.XRepositoryCodeList;
 import de.aivot.prosuna.backend.xrepository.services.XRepositoryCodeListService;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.siegmar.fastcsv.reader.CsvParseException;
 import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRecord;
@@ -77,6 +78,8 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     @Override
     public CodeListEntity create(@Nonnull CodeListEntity entity) throws ResponseException {
         entity.setId(null);
+        // A lock version from the request would make Spring Data look for a row that does not exist yet.
+        entity.setLockVersion(null);
         entity.setCreated(Instant.now());
         entity.setUpdated(Instant.now());
         normalizeCodeList(entity);
@@ -325,6 +328,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         var existingItem = codeListItemRepository
                 .findByIdAndCodeListId(itemId, codeListId)
                 .orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent(item, existingItem);
 
         existingItem.setColumns(normalizeItemColumns(codeList, item.getColumns()));
         codeListItemRepository.save(existingItem);

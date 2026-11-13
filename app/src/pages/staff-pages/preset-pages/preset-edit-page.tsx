@@ -13,6 +13,7 @@ import {
     showLoadingSnackbar,
     showSuccessSnackbar,
 } from '../../../slices/snackbar-slice';
+import {isLockVersionConflictError} from '../../../models/api-error';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import DoneAllOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/DoneAll';
@@ -205,7 +206,7 @@ export function PresetEditPage() {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Vorlage konnte nicht gespeichert werden'));
+                dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Vorlage konnte nicht gespeichert werden'));
             });
     }, [canUpdatePreset, preset]);
 
@@ -310,7 +311,7 @@ export function PresetEditPage() {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Vorlage konnte nicht gespeichert werden'));
+                dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Vorlage konnte nicht gespeichert werden'));
             })
             .finally(() => {
                 setIsDeriving(false);

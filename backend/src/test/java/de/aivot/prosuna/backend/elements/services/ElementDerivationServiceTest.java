@@ -608,6 +608,28 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldValidateReplicatingContainerAgainstTheEffectiveValuesOfItsRows() {
+        var child = new TextInputElement();
+        child.setId("name");
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(List.of(child));
+        rows.setValidation(new ElementValidationFunctions().setJavascriptCode(JavascriptCode.of(
+                "'Datensatz: ' + JSON.stringify(ctx.effectiveValues.rows[0].values) + ', Zustände: ' + ctx.elementStates.rows.subStates.length"
+        )));
+        var rowValues = new AuthoredElementValues();
+        rowValues.putLiteral("name", "Ada");
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.putLiteral("rows", List.of(
+                new ReplicatingContainerLayoutElementValue().setId("row-1").setValues(rowValues)
+        ));
+
+        var result = derive(createRoot(List.of(rows)), authoredValues, new ElementDerivationOptions());
+
+        assertEquals("Datensatz: {\"name\":\"Ada\"}, Zustände: 1", result.getElementStates().get("rows").getError());
+    }
+
+    @Test
     void shouldPreserveDeferredStateInsideReplicatingContainerRows() {
         var amount = dynamicNumberField();
         amount.setId("amount");

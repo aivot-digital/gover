@@ -71,6 +71,9 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     @Nonnull
     @Override
     public DataObjectItemEntity create(@Nonnull DataObjectItemEntity entity) throws ResponseException {
+        // A lock version from the request would make Spring Data look for a row that does not exist yet.
+        entity.setLockVersion(null);
+
         var schema = dataObjectSchemaRepository
                 .findById(entity.getSchemaKey())
                 .orElseThrow(ResponseException::badRequest);
