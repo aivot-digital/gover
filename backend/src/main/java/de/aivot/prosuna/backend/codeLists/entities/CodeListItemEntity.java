@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.codeLists.entities;
 
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
@@ -7,10 +8,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "code_list_items")
-public class CodeListItemEntity {
+public class CodeListItemEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "code_list_items_id_seq";
 
     @Id
@@ -27,6 +29,11 @@ public class CodeListItemEntity {
     private Instant created;
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     @PrePersist
     public void prePersist() {
@@ -123,6 +130,17 @@ public class CodeListItemEntity {
 
     public CodeListItemEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public CodeListItemEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 }

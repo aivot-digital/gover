@@ -63,26 +63,26 @@ class CodeListServiceTransactionTest {
                         column_mappings varchar(4000), key_column_key varchar(255), status smallint,
                         status_message varchar(255), sync_keep_outdated boolean, sync_run_id uuid,
                         sync_started timestamp with time zone, last_sync timestamp with time zone,
-                        created timestamp with time zone, updated timestamp with time zone
+                        created timestamp with time zone, updated timestamp with time zone, lock_version bigint
                     )
                     """);
             sql("drop table if exists code_list_items");
             sql("""
                     create table code_list_items (
                         id bigint primary key, code_list_id integer, columns varchar array,
-                        created timestamp with time zone, updated timestamp with time zone
+                        created timestamp with time zone, updated timestamp with time zone, lock_version bigint
                     )
                     """);
             // Two rows share the name "Berlin", so the name cannot become the key column. Source type 0 is Manual.
             sql("""
                     insert into code_lists values ('cities', 7, 0, '', 'Städte', '', array['code', 'name'],
                         '[{"key":"code","name":"Code","index":1},{"key":"name","name":"Name","index":2}]', 'code', 2,
-                        null, false, null, null, null, current_timestamp, current_timestamp)
+                        null, false, null, null, null, current_timestamp, current_timestamp, 0)
                     """);
             sql("""
                     insert into code_list_items values
-                        (1, 7, array['001', 'Berlin'], current_timestamp, current_timestamp),
-                        (2, 7, array['002', 'Berlin'], current_timestamp, current_timestamp)
+                        (1, 7, array['001', 'Berlin'], current_timestamp, current_timestamp, 0),
+                        (2, 7, array['002', 'Berlin'], current_timestamp, current_timestamp, 0)
                     """);
         });
     }

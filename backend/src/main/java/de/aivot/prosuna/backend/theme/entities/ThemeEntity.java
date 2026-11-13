@@ -5,10 +5,11 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
 import java.util.UUID;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "themes")
-public class ThemeEntity {
+public class ThemeEntity implements LockVersioned {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "themes_id_seq")
     @SequenceGenerator(name = "themes_id_seq", allocationSize = 1)
@@ -45,6 +46,11 @@ public class ThemeEntity {
     @Nullable
     @Column(columnDefinition = "uuid")
     private UUID faviconKey;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Constructors
 
@@ -164,6 +170,17 @@ public class ThemeEntity {
 
     public ThemeEntity setFaviconKey(@Nullable UUID faviconKey) {
         this.faviconKey = faviconKey;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public ThemeEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 
