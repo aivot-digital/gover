@@ -16,14 +16,30 @@ import java.util.List;
  *                                   can be used. {@code null} disables the additional identity check.
  * @param requiredNewIdentitySlot    A new process identity that can be collected in this view and made available to
  *                                   downstream process nodes. {@code null} disables the new identity slot.
+ * @param trustedData                The data from stable sources such as configuration and process data, without values
+ *                                   the customer saved. Disabled and technical inputs take their values from it, because
+ *                                   customers cannot change them. Rows are matched by their ID, so rows must have the
+ *                                   same IDs each time the view is built.
  */
 public record ProcessNodeCustomerView(
         @Nonnull GroupLayoutElement layout,
         @Nonnull List<TaskViewEvent> events,
         @Nonnull AuthoredElementValues data,
         @Nullable String requiredExistingIdentityId,
-        @Nullable IdentityConfigElementSlot requiredNewIdentitySlot
+        @Nullable IdentityConfigElementSlot requiredNewIdentitySlot,
+        @Nonnull AuthoredElementValues trustedData
 ) {
+    /**
+     * Create a customer task view whose data contains no values the customer saved, so it is the trusted data as well.
+     */
+    public ProcessNodeCustomerView(@Nonnull GroupLayoutElement layout,
+                                   @Nonnull List<TaskViewEvent> events,
+                                   @Nonnull AuthoredElementValues data,
+                                   @Nullable String requiredExistingIdentityId,
+                                   @Nullable IdentityConfigElementSlot requiredNewIdentitySlot) {
+        this(layout, events, data, requiredExistingIdentityId, requiredNewIdentitySlot, data);
+    }
+
     public ProcessNodeCustomerView(@Nonnull GroupLayoutElement layout,
                                    @Nonnull List<TaskViewEvent> events,
                                    @Nonnull AuthoredElementValues data,
@@ -101,7 +117,8 @@ public record ProcessNodeCustomerView(
                 events,
                 mergedData,
                 requiredExistingIdentityId,
-                requiredNewIdentitySlot
+                requiredNewIdentitySlot,
+                initialData
         );
     }
 }

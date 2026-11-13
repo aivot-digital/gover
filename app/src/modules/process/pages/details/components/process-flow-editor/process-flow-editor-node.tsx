@@ -28,6 +28,9 @@ import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import {ProcessInstanceTaskApiService} from '../../../../services/process-instance-task-api-service';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
+import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
+import {useHasProcessInstancePermission} from '../../../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../../../data/permissions/permission';
 import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import Error from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
@@ -284,6 +287,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             isDangerous: true,
             onClick: () => {
                 void confirm({
+                    isDestructive: true,
                     title: 'Prozesselement löschen',
                     children: (
                         <Typography>
@@ -307,6 +311,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         ];
     }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onSelectNode, onShowNodeProviderDetails, onStartCloneNode, onStartReplaceNode, provider]);
     const shouldRenderMenuButtonSlot = menuItems.length > 0 && (editable || associatedTask == null);
+    const canRerunTask = useHasProcessInstancePermission(runtimeData?.instance.id, Permission.PROCESS_INSTANCE_RESTART_FAILED);
 
     const runtimeMenuItems: ProcessActionMenuItem[] = useMemo(() => {
         const items: ProcessActionMenuItem[] = [];
@@ -327,7 +332,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
             if (associatedTask.status == ProcessTaskStatus.AwaitingPayment || associatedTask.status == ProcessTaskStatus.AwaitingCustomer) {
                 items.push({
-                    label: 'Aufgabe für Nutzer:in aufrufen',
+                    label: 'Aufgabe für Beteiligte aufrufen',
                     icon: ModuleIcons.tasks,
                     href: `/process/${runtimeData?.instance.accessKey}/tasks/${associatedTask.accessKey}`,
                     newTab: true,
@@ -337,20 +342,24 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 });
             }
 
-            if (associatedTask.status == ProcessTaskStatus.Failed) {
+            if (associatedTask.status == ProcessTaskStatus.Failed && canRerunTask) {
                 items.push({
-                    label: 'Aufgabe neu starten',
+                    label: 'Aufgabe erneut ausführen',
                     icon: <Replay/>,
                     onClick: () => {
                         dispatch(setLoadingMessage({
                             blocking: true,
-                            message: 'Starte Aufgabe neu',
+                            message: 'Erneute Ausführung der Aufgabe wird angefordert',
                             estimatedTime: 500,
                         }));
                         new ProcessInstanceTaskApiService()
                             .rerunFailedTask(associatedTask.id)
                             .then(() => {
+                                dispatch(showSuccessSnackbar('Die erneute Ausführung der Aufgabe wurde angefordert.'));
                                 onReloadRuntimeData();
+                            })
+                            .catch((error) => {
+                                dispatch(showApiErrorSnackbar(error, 'Die erneute Ausführung der Aufgabe konnte nicht angefordert werden.'));
                             })
                             .finally(() => {
                                 dispatch(clearLoadingMessage());
@@ -364,7 +373,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         }
 
         return items;
-    }, [associatedTask]);
+    }, [associatedTask, canRerunTask, dispatch, onReloadRuntimeData]);
 
     // Connecting/disconnecting ports and toggling the edit-mode action chip changes the effective
     // handle geometry. React Flow does not always pick that up from pure React re-renders.
@@ -691,6 +700,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             <IconButton
                                 size="small"
                                 color="primary"
+                                aria-label="Aktionen zur Aufgabe"
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     event.preventDefault();

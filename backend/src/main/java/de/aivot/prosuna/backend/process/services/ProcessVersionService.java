@@ -3,13 +3,17 @@ package de.aivot.prosuna.backend.process.services;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.process.models.ProcessNodeProblems;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessRetentionTime;
 import de.aivot.prosuna.backend.process.models.ProcessVersionProblems;
+import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -29,16 +33,19 @@ import java.util.Optional;
 public class ProcessVersionService implements EntityService<ProcessVersionEntity, ProcessVersionEntityId> {
 
     private final ProcessVersionRepository processDefinitionVersionRepository;
+    private final ProcessRepository processDefinitionRepository;
     private final ProcessNodeService processNodeService;
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final CaseNumberGeneratorService caseNumberGeneratorService;
 
     @Autowired
     public ProcessVersionService(ProcessVersionRepository processDefinitionVersionRepository,
+                                 ProcessRepository processDefinitionRepository,
                                  ProcessNodeService processNodeService,
                                  ProcessNodeDefinitionService processNodeDefinitionService,
                                  CaseNumberGeneratorService caseNumberGeneratorService) {
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
+        this.processDefinitionRepository = processDefinitionRepository;
         this.processNodeService = processNodeService;
         this.processNodeDefinitionService = processNodeDefinitionService;
         this.caseNumberGeneratorService = caseNumberGeneratorService;
@@ -58,6 +65,9 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
 
         // Set the new version number to be one greater than the latest version number
         entity.setProcessVersion(latestVersionNumber + 1);
+        // Imported and copied versions carry the lock version of their source, which would make Spring Data
+        // look for a row that does not exist yet.
+        entity.setLockVersion(null);
 
         return processDefinitionVersionRepository
                 .save(entity);
@@ -146,8 +156,13 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         return validate(entity, null);
     }
 
+    // Deliberately not one transaction: node validation reports failed derivation queries as node problems, and a
+    // failed query would abort a shared transaction for all following nodes. The process loads once and is passed on.
     public ProcessVersionProblems validate(@Nonnull ProcessVersionEntity entity,
                                           @Nullable UserEntity user) throws ResponseException {
+        var process = processDefinitionRepository
+                .findById(entity.getProcessId())
+                .orElseThrow(ResponseException::badRequest);
         var nodes = processNodeService
                 .findAllByProcessIdAndProcessVersion(entity.getProcessId(), entity.getProcessVersion());
 
@@ -158,7 +173,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
                     .getProcessNodeDefinition(node)
                     .orElseThrow(() -> ResponseException.internalServerError("No provider found for node with id " + node.getId()));
 
-            processNodeService.validate(node, provider, true, user)
+            val(node, provider, user, process, entity)
                     .ifPresent(nodeProblems::add);
         }
 
@@ -220,8 +235,13 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     private void validateInstanceDeadlineConfiguration(@Nonnull ProcessVersionEntity entity) throws ResponseException {
         var days = entity.getInstanceDeadlineDays();
         if (days != null && (days < 1 || days > ProcessVersionEntity.MAX_INSTANCE_DEADLINE_DAYS)) {
-            throw ResponseException.badRequest("Die Bearbeitungsdauer muss zwischen 1 und 3.652 Tagen liegen.");
+            throw ResponseException.badRequest("Die Bearbeitungsfrist muss zwischen 1 und 3.652 Tagen liegen.");
         }
+    }
+
+    private <NodeConfig> Optional<ProcessNodeProblems> val(ProcessNodeEntity node, ProcessNodeDefinition<NodeConfig> provider, UserEntity user, ProcessEntity process, ProcessVersionEntity processVersion) throws ResponseException {
+        return processNodeService
+                .validate(node, provider, true, user, process, processVersion);
     }
 
     public Optional<ProcessVersionEntity> getLatestVersion(Integer processDefinitionId) {

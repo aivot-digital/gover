@@ -36,6 +36,9 @@ services:
     network_mode: host
     environment:
       API_PORT: 9191
+      # Like the examples, deny Chromium every URL except the local Prosuna URL and temporary render files. This
+      # version enforces the allow-list on every request; CHROMIUM_DENY_PRIVATE_IPS needs Gotenberg 8.32 or later.
+      CHROMIUM_ALLOW_LIST: "^(http://localhost:9595/|file:///tmp/)"
 
   s3-object-storage:
     image: docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
@@ -90,7 +93,7 @@ services:
       - "5433:5432"
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.7.4.0
     restart: unless-stopped
     depends_on:
       - keycloak-database
@@ -110,7 +113,7 @@ services:
       KC_FEATURES: "transient-users,update-email,hostname:v2"
 
   keycloak-setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.28
     depends_on:
       - keycloak
     environment:

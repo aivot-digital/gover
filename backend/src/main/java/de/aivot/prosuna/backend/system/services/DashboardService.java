@@ -136,7 +136,7 @@ public class DashboardService {
     }
 
     @Nonnull
-    private DashboardOverviewDTO.TaskSummary getTaskSummary(@Nonnull UserEntity user) {
+    public DashboardOverviewDTO.TaskSummary getTaskSummary(@Nonnull UserEntity user) {
         var permission = ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ;
         var hasSystemAccess = permissionService.hasSystemPermission(user.getId(), permission);
         var tasks = taskRepository.findDashboardTasks(

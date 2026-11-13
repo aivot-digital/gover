@@ -7,9 +7,9 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Map;
@@ -23,16 +23,16 @@ public class ProcessTaskExecutionService {
     private final ProcessInstanceTaskRepository tasks;
     private final ProcessTaskDeadlineService deadlines;
     private final TransactionTemplate transaction;
-    private final EntityManager entityManager;
 
     public ProcessTaskExecutionService(@Nonnull ProcessInstanceRepository instances, @Nonnull ProcessInstanceTaskRepository tasks,
-                                        @Nonnull ProcessTaskDeadlineService deadlines, @Nonnull PlatformTransactionManager transactionManager,
-                                        @Nonnull EntityManager entityManager) {
+                                        @Nonnull ProcessTaskDeadlineService deadlines, @Nonnull PlatformTransactionManager transactionManager) {
         this.instances = instances;
         this.tasks = tasks;
         this.deadlines = deadlines;
         this.transaction = new TransactionTemplate(transactionManager);
-        this.entityManager = entityManager;
+        // Callers recheck state after waiting for the instance lock. Under REPEATABLE READ, their snapshot would
+        // predate the previous lock holder's commit, so they would miss its changes, e.g. an already created task.
+        this.transaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
 
     @Nullable
@@ -72,9 +72,6 @@ public class ProcessTaskExecutionService {
         return inInstance(instanceId, () -> {
             var instance = instances.findById(instanceId).orElseThrow(ResponseException::notFound);
             var task = tasks.findById(taskId).orElseThrow(ResponseException::notFound);
-            // Open EntityManager in View can retain entities loaded before we acquired the instance lock.
-            entityManager.refresh(instance);
-            entityManager.refresh(task);
             if (!instanceId.equals(task.getProcessInstanceId())) throw ResponseException.notFound();
             authorization.run();
             deadlines.expireIfDue(instance, task);

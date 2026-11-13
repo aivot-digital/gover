@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.storage.converters.StorageProviderMetadataAttrib
 import de.aivot.prosuna.backend.storage.enums.StorageProviderStatus;
 import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
 import de.aivot.prosuna.backend.storage.models.StorageProviderMetadataAttribute;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -15,14 +16,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OptimisticLock;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "storage_providers")
-public class StorageProviderEntity {
+public class StorageProviderEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "storage_providers_id_seq";
 
     @Id
@@ -33,9 +36,9 @@ public class StorageProviderEntity {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der Definition-Schlüssel des Speicheranbieters darf nicht null sein.")
-    @NotBlank(message = "Der Definition-Schlüssel des Speicheranbieters darf nicht leer sein.")
-    @Size(max = 255, message = "Der Definition-Schlüssel des Speicheranbieters darf maximal 255 Zeichen lang sein.")
+    @NotNull(message = "Der Definitionsschlüssel des Speicheranbieters darf nicht null sein.")
+    @NotBlank(message = "Der Definitionsschlüssel des Speicheranbieters darf nicht leer sein.")
+    @Size(max = 255, message = "Der Definitionsschlüssel des Speicheranbieters darf maximal 255 Zeichen lang sein.")
     private String storageProviderDefinitionKey;
 
     @Nonnull
@@ -58,11 +61,15 @@ public class StorageProviderEntity {
     @Column(columnDefinition = "int2")
     private StorageProviderType type;
 
+    // Sync bookkeeping and the update timestamp do not raise the lock version, so a finished sync
+    // does not make open edit forms outdated. Content changes by a sync still do.
+    @OptimisticLock(excluded = true)
     @Nonnull
     @NotNull(message = "Der Status des Speicheranbieters darf nicht null sein.")
     @Column(columnDefinition = "int2")
     private StorageProviderStatus status;
 
+    @OptimisticLock(excluded = true)
     @Nullable
     @Size(max = 4096, message = "Die Statusnachricht des Speicheranbieters darf maximal 4096 Zeichen lang sein.")
     private String statusMessage;
@@ -100,14 +107,32 @@ public class StorageProviderEntity {
     @Convert(converter = StorageProviderMetadataAttributesConverter.class)
     private List<StorageProviderMetadataAttribute> metadataAttributes;
 
+    // The run that claimed the requested synchronization and when it started. Only this run records its result.
+    @OptimisticLock(excluded = true)
+    @Nullable
+    @JsonIgnore
+    private UUID syncRunId;
+
+    @OptimisticLock(excluded = true)
+    @Nullable
+    @JsonIgnore
+    private Instant syncStarted;
+
+    @OptimisticLock(excluded = true)
     @Nullable
     private Instant lastSync;
 
     @Nonnull
     private Instant created;
 
+    @OptimisticLock(excluded = true)
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Signals
 
@@ -173,12 +198,12 @@ public class StorageProviderEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         StorageProviderEntity that = (StorageProviderEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(readOnlyStorage, that.readOnlyStorage) && Objects.equals(testProvider, that.testProvider) && Objects.equals(configuration, that.configuration) && Objects.equals(maxFileSizeInBytes, that.maxFileSizeInBytes) && Objects.equals(systemProvider, that.systemProvider) && Objects.equals(metadataAttributes, that.metadataAttributes) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
+        return Objects.equals(id, that.id) && Objects.equals(storageProviderDefinitionKey, that.storageProviderDefinitionKey) && Objects.equals(storageProviderDefinitionVersion, that.storageProviderDefinitionVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && type == that.type && status == that.status && Objects.equals(statusMessage, that.statusMessage) && Objects.equals(readOnlyStorage, that.readOnlyStorage) && Objects.equals(testProvider, that.testProvider) && Objects.equals(configuration, that.configuration) && Objects.equals(maxFileSizeInBytes, that.maxFileSizeInBytes) && Objects.equals(systemProvider, that.systemProvider) && Objects.equals(metadataAttributes, that.metadataAttributes) && Objects.equals(syncRunId, that.syncRunId) && Objects.equals(syncStarted, that.syncStarted) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, readOnlyStorage, testProvider, configuration, maxFileSizeInBytes, systemProvider, metadataAttributes, lastSync, created, updated);
+        return Objects.hash(id, storageProviderDefinitionKey, storageProviderDefinitionVersion, name, description, type, status, statusMessage, readOnlyStorage, testProvider, configuration, maxFileSizeInBytes, systemProvider, metadataAttributes, syncRunId, syncStarted, lastSync, created, updated);
     }
 
     // endregion
@@ -335,6 +360,26 @@ public class StorageProviderEntity {
         return lastSync;
     }
 
+    @Nullable
+    public UUID getSyncRunId() {
+        return syncRunId;
+    }
+
+    public StorageProviderEntity setSyncRunId(@Nullable UUID syncRunId) {
+        this.syncRunId = syncRunId;
+        return this;
+    }
+
+    @Nullable
+    public Instant getSyncStarted() {
+        return syncStarted;
+    }
+
+    public StorageProviderEntity setSyncStarted(@Nullable Instant syncStarted) {
+        this.syncStarted = syncStarted;
+        return this;
+    }
+
     public StorageProviderEntity setLastSync(@Nullable Instant lastSync) {
         this.lastSync = lastSync;
         return this;
@@ -357,6 +402,17 @@ public class StorageProviderEntity {
 
     public StorageProviderEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public StorageProviderEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

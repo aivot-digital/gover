@@ -1,3 +1,6 @@
+import {useState} from 'react';
+import {fireEvent} from '@testing-library/react';
+import {copyToClipboardText} from '../utils/copy-to-clipboard';
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,6 +9,9 @@ import {
     ProcessDataKeyInputComponent,
 } from './process-data-key-input-field-view';
 import {type ProcessNodeDefinitionMetadataForwardedProcessDataKey} from '../modules/process/entities/process-node-definition-metadata';
+
+vi.mock('../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+vi.mock('../utils/copy-to-clipboard', () => ({copyToClipboardText: vi.fn().mockResolvedValue(true)}));
 
 describe('createProcessDataKeySuggestions', () => {
     it('should keep the existing root behavior and hide wildcard keys', () => {
@@ -247,3 +253,32 @@ function hint(
         } as ProcessNodeDefinitionMetadataForwardedProcessDataKey['origin'],
     };
 }
+
+describe('process data path validation', () => {
+    it('validates on blur and revalidates while correcting without rewriting references', () => {
+        function Harness() {
+            const [value, setValue] = useState<string | null>(null);
+            return <ProcessDataKeyInputComponent label="Pfad" value={value} onChange={setValue}/>;
+        }
+        render(<Harness/>);
+        const input = screen.getByRole('textbox', {name: /Pfad/});
+        fireEvent.change(input, {target: {value: 'person.'}});
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+        fireEvent.blur(input);
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        fireEvent.change(input, {target: {value: 'person.Name'}});
+        expect(input).toHaveValue('person.Name');
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+        fireEvent.change(input, {target: {value: 'items[2147483648]'}});
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('copies the complete scoped path while keeping only its relative value', async () => {
+        const onChange = vi.fn();
+        render(<ProcessDataKeyInputComponent label="Pfad" value="Name" onChange={onChange} prefix="people[*]." readOnly/>);
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Pfad kopieren'}));
+        expect(copyToClipboardText).toHaveBeenCalledWith('$.people[*].Name');
+        expect(onChange).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', {name: 'Vorgangsdatenpfad leeren'})).not.toBeInTheDocument();
+    });
+});

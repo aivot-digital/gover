@@ -53,13 +53,13 @@ public class DefaultStorageAssetsSystemConfigDefinition implements SystemConfigD
     @Nonnull
     @Override
     public String getLabel() {
-        return "Standard Speicheranbieter für Assets";
+        return "Standard-Speicheranbieter für Dateien und Medien";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Legt den Standard Speicheranbieter fest, der für das Speichern von Assets verwendet wird.";
+        return "Legt den Standard-Speicheranbieter fest, der für das Speichern von Dateien und Medien verwendet wird.";
     }
 
     @Nonnull
@@ -71,6 +71,12 @@ public class DefaultStorageAssetsSystemConfigDefinition implements SystemConfigD
     @Nullable
     @Override
     public String parseValueFromDB(@Nonnull String value) throws ResponseException {
+        // Without a stored value, the config falls back to an empty value. This is the case if the local storage
+        // providers were not seeded and no administrator has selected a default provider yet.
+        if (value.isBlank()) {
+            return null;
+        }
+
         try {
             Integer.parseInt(value);
         } catch (NumberFormatException e) {

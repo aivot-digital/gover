@@ -223,6 +223,49 @@ public abstract class NoCodeOperator {
         }
     }
 
+    /**
+     * Checks whether a value equals the reference after casting it to the type of the reference.
+     * <p>
+     * A number is compared by its value with another number or with text that is a number, in either order.
+     * {@link BigDecimal#equals} also compares the scale, number fields keep their configured decimal places, and the
+     * no-code editor stores constants as text, which may also precede a number field. Integer casts would also drop
+     * decimals. Other values keep the cast to the type of the reference.
+     */
+    public boolean isEqualToReference(@Nullable Object referenceObject, @Nullable Object objectToCompare) {
+        if (referenceObject instanceof Number || objectToCompare instanceof Number) {
+            var referenceNumber = toExactNumber(referenceObject);
+            var comparedNumber = toExactNumber(objectToCompare);
+            if (referenceNumber != null && comparedNumber != null) {
+                return referenceNumber.compareTo(comparedNumber) == 0;
+            }
+        }
+
+        return Objects.equals(referenceObject, castToTypeOfReference(referenceObject, objectToCompare));
+    }
+
+    /**
+     * The exact value of a number or of text that is a number, otherwise null. The value is not rescaled like in
+     * {@link #castToNumber}, because text such as "1e999999999" would then expand to an enormous number.
+     */
+    @Nullable
+    private static BigDecimal toExactNumber(@Nullable Object value) {
+        return switch (value) {
+            case Integer integerValue -> BigDecimal.valueOf(integerValue);
+            case Long longValue -> BigDecimal.valueOf(longValue);
+            case BigDecimal decimalValue -> decimalValue;
+            case Double doubleValue when Double.isFinite(doubleValue) -> BigDecimal.valueOf(doubleValue);
+            case Float floatValue when Float.isFinite(floatValue) -> new BigDecimal(floatValue.toString());
+            case String text -> {
+                try {
+                    yield new BigDecimal(text.trim());
+                } catch (NumberFormatException ignored) {
+                    yield null;
+                }
+            }
+            case null, default -> null;
+        };
+    }
+
     @Nonnull
     public Boolean castToBoolean(@Nullable Object value) {
         if (value == null) {

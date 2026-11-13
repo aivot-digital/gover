@@ -47,7 +47,8 @@
         <springdoc.version>3.1.0</springdoc.version>
         <commonmark.version>0.30.0</commonmark.version>
         <fastcsv.version>4.4.0</fastcsv.version>
-        <fitconnect.version>4.0.0-rc.2</fitconnect.version>
+        <fitconnect.version>4.0.0</fitconnect.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
         <spring-ai.version>2.0.1</spring-ai.version>
     </properties>
 
@@ -74,10 +75,33 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- MinIO pulls bcprov 1.84, the FIT-Connect SDK needs bcpkix and bcutil 1.86; mixed versions miss classes at runtime. -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcutil-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
+        <!-- Converts internationalized domain names in email addresses to their ASCII representation
+             for address validation and mail delivery. -->
+        <dependency>
+            <groupId>com.ibm.icu</groupId>
+            <artifactId>icu4j</artifactId>
+            <version>78.3</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -113,6 +137,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -318,16 +346,6 @@
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark-ext-autolink</artifactId>
-            <version>${commonmark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.commonmark</groupId>
-            <artifactId>commonmark-ext-footnotes</artifactId>
-            <version>${commonmark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.commonmark</groupId>
-            <artifactId>commonmark-ext-gfm-tables</artifactId>
             <version>${commonmark.version}</version>
         </dependency>
         <dependency>

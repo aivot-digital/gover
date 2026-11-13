@@ -5,6 +5,7 @@ import type {TaskViewEvent} from '../services/process-instance-task-api-service'
 
 export interface CustomerTaskExistingIdentitySlot {
     id: string;
+    title?: string | null;
     isReady: boolean;
     identityProvider: IdentityProviderOption;
 }
@@ -18,12 +19,15 @@ export interface ReadyCustomerTaskView extends CustomerTaskIdentityRequirements 
     layout: GroupLayout;
     data: AuthoredElementValues;
     events: TaskViewEvent[];
+    // The stored uploads of the task, which its upload fields may remove.
+    removableAttachmentKeys: string[];
 }
 
 export interface BlockedCustomerTaskView extends CustomerTaskIdentityRequirements {
     layout: null;
     data: null;
     events: null;
+    removableAttachmentKeys: null;
 }
 
 export type CustomerTaskViewResponse = ReadyCustomerTaskView | BlockedCustomerTaskView;

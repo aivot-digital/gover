@@ -33,20 +33,41 @@ describe('NoCodeOperandEditorStaticValue', () => {
         const control = input.closest('.MuiInputBase-root')! as HTMLElement;
         expect(field.querySelector('label')).toHaveAttribute('for', input.id);
         expect(control).not.toContainElement(field.querySelector('label'));
-        expect(input).toHaveAccessibleDescription('Status auswählen oder einen eigenen Wert eingeben.');
+        expect(input).toHaveAccessibleDescription(
+            'Status auswählen oder einen eigenen Wert eingeben. Der Wert entspricht der Auswahloption „Erledigt“.',
+        );
         // This is an editable literal: option labels describe suggestions, not the stored expression value.
         expect(input).toHaveValue('done');
 
         await user.clear(input);
+        expect(screen.queryByText(/^Der Wert entspricht/)).not.toBeInTheDocument();
         await user.click(input);
         await user.click(screen.getByRole('option', {name: /Offen/}));
         expect(onChange).toHaveBeenLastCalledWith({type: 'NoCodeStaticValue', value: 'open'});
         expect(input).toHaveValue('open');
+        expect(input).toHaveAccessibleDescription(/Der Wert entspricht der Auswahloption „Offen“\.$/);
         await user.clear(input);
         await user.type(input, 'custom');
         expect(onChange).toHaveBeenLastCalledWith({type: 'NoCodeStaticValue', value: 'custom'});
         expect(input).toHaveValue('custom');
+        expect(input).toHaveAccessibleDescription(/Der Wert entspricht keiner Auswahloption\.$/);
         await user.click(within(control).getByRole('button', {name: 'Diesen festen Wert mit einem Ausdruck verknüpfen'}));
         expect(onAddEnclosingExpression).toHaveBeenCalledOnce();
+    });
+
+    it('confirms a match without repeating a label that equals the value', () => {
+        render(
+            <NoCodeOperandEditorStaticValue
+                label="Sprache"
+                desiredType={NoCodeDataType.String}
+                value={{type: 'NoCodeStaticValue', value: 'Deutsch'}}
+                options={[{label: 'Deutsch', value: 'Deutsch'}]}
+                onChange={vi.fn()}
+                onAddEnclosingExpression={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByRole('combobox', {name: /^Sprache/}))
+            .toHaveAccessibleDescription('Der Wert entspricht einer Auswahloption.');
     });
 });

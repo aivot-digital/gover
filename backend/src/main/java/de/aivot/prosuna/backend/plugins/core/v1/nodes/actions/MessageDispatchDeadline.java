@@ -9,7 +9,7 @@ final class MessageDispatchDeadline {
             "messageDispatch", "Versand der Nachricht",
             "Zeit für die Vorbereitung und den Versand der Nachricht.",
             new ProcessNodePort("message_dispatch_overdue", "Fristüberschreitung: Nachrichtenversand",
-                    "Fortsetzung nach Überschreitung der harten Frist für den Nachrichtenversand."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für den Nachrichtenversand beendet wurde."));
 
     private MessageDispatchDeadline() {
     }

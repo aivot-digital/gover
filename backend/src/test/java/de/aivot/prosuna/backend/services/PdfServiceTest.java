@@ -1,6 +1,9 @@
 package de.aivot.prosuna.backend.services;
 
+import de.aivot.prosuna.backend.config.entities.SystemConfigEntity;
+import de.aivot.prosuna.backend.enums.XBezahldienstPaymentMethod;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.repositories.VDepartmentShadowedRepository;
@@ -18,6 +21,7 @@ import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.prosuna.backend.pdf.models.PrintableFormPdfData;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
 import de.aivot.prosuna.backend.plugins.form.v1.nodes.FormTriggerConfigV1;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -28,10 +32,16 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.services.pdf.PdfLogoService;
+import de.aivot.prosuna.backend.services.pdf.PdfTemplateAssetService;
+import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.util.MultiValueMap;
@@ -68,6 +78,8 @@ class PdfServiceTest {
     private GotenbergConfig gotenbergConfig;
     private HttpService httpService;
     private PdfLogoService pdfLogoService;
+    private PdfTemplateAssetService pdfTemplateAssetService;
+    private SystemConfigService systemConfigService;
     private Method injectBaseUrlIntoHTMLMethod;
     private Method resolvePdfDepartmentMethod;
 
@@ -83,14 +95,17 @@ class PdfServiceTest {
         gotenbergConfig = mock(GotenbergConfig.class);
         httpService = mock(HttpService.class);
         pdfLogoService = mock(PdfLogoService.class);
+        pdfTemplateAssetService = mock(PdfTemplateAssetService.class);
+        systemConfigService = mock(SystemConfigService.class);
 
         pdfService = new PdfService(
                 gotenbergConfig,
-                mock(SystemConfigService.class),
+                systemConfigService,
                 vDepartmentShadowedRepository,
                 processRepository,
                 processVersionRepository,
                 pdfLogoService,
+                pdfTemplateAssetService,
                 prosunaConfig,
                 mock(PaymentTransactionRepository.class),
                 mock(IdentityProviderRepository.class),
@@ -98,7 +113,8 @@ class PdfServiceTest {
                 mock(PaymentProviderDefinitionsService.class),
                 httpService,
                 elementDerivationService,
-                themeService
+                themeService,
+                new SimpleMeterRegistry()
         );
 
         injectBaseUrlIntoHTMLMethod = PdfService.class
@@ -129,6 +145,7 @@ class PdfServiceTest {
         var paymentInformation = new XBezahldienstePaymentInformation();
         paymentInformation.setTransactionId("transaction-1");
         paymentInformation.setTransactionTimestamp("2026-09-14T10:00:00Z");
+        paymentInformation.setPaymentMethod(XBezahldienstPaymentMethod.CREDITCARD);
         var transaction = new PaymentTransactionEntity()
                 .setPaymentRequest(paymentRequest)
                 .setPaymentInformation(paymentInformation);
@@ -160,7 +177,66 @@ class PdfServiceTest {
                 .orElseThrow();
 
         assertTrue(indexHtml.contains("src=\"" + logoDataUrl + "\""));
+        assertTrue(indexHtml.contains("Datum der Zahlung"));
+        assertFalse(indexHtml.contains("Rechnungsdatum"));
+        assertTrue(indexHtml.contains("Kreditkarte"));
+        var footerHtml = parts.get("files").stream()
+                .filter(ByteArrayResource.class::isInstance).map(ByteArrayResource.class::cast)
+                .filter(part -> "footer.html".equals(part.getFilename()))
+                .findFirst().map(part -> new String(part.getByteArray(), StandardCharsets.UTF_8)).orElseThrow();
+        assertTrue(footerHtml.contains("pageNumber"));
+        assertTrue(footerHtml.contains("totalPages"));
+        assertFalse(footerHtml.contains("Example Street"));
         assertFalse(indexHtml.contains("/api/public/assets/"));
+    }
+
+    @Test
+    void generatePrintableForm_RendersTheSelectedCustomTemplate() throws Exception {
+        var pdfTemplateKey = UUID.randomUUID();
+        when(pdfTemplateAssetService.loadTemplateContent(pdfTemplateKey)).thenReturn(Optional.of("""
+                <html>
+                    <head><style th:replace="~{./form-parts/style.html}"></style></head>
+                    <body><h1 data-custom-template th:text="${form.publicTitle}">Titel</h1></body>
+                </html>
+                """));
+        mockPrintableFormDependencies();
+
+        pdfService.generatePrintableForm(
+                createPrintableForm(pdfTemplateKey),
+                new ThemeEntity(),
+                new VDepartmentShadowedEntity().setName("Example Department"),
+                null,
+                null
+        );
+
+        var indexHtml = captureSubmittedIndexHtml();
+        assertTrue(indexHtml.contains("<h1 data-custom-template>Antrag auf Beispielleistung</h1>"));
+        // The bundled fragments remain available to custom templates that are based on the bundled form template.
+        assertFalse(indexHtml.contains("<style></style>"));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"<p th:text=\"${\">Nicht auswertbar</p>"})
+    void generatePrintableForm_UsesTheBundledTemplateWithoutUsableCustomTemplate(String customTemplate) throws Exception {
+        var pdfTemplateKey = UUID.randomUUID();
+        when(pdfTemplateAssetService.loadTemplateContent(pdfTemplateKey)).thenReturn(Optional.ofNullable(customTemplate));
+        mockPrintableFormDependencies();
+
+        pdfService.generatePrintableForm(
+                createPrintableForm(pdfTemplateKey),
+                new ThemeEntity(),
+                new VDepartmentShadowedEntity().setName("Example Department"),
+                null,
+                null
+        );
+
+        var indexHtml = captureSubmittedIndexHtml();
+        assertTrue(indexHtml.contains("<title>Antrag auf Beispielleistung</title>"));
+        assertFalse(indexHtml.contains("Nicht auswertbar"));
+        // Keep a single <style> block so Chromium loads the regular font instead of rendering normal text in bold.
+        assertEquals(1, indexHtml.split("<style\\b", -1).length - 1);
+        assertEquals(1, indexHtml.split("</style>", -1).length - 1);
     }
 
     @Test
@@ -268,5 +344,40 @@ class PdfServiceTest {
     private VDepartmentShadowedEntity invokeResolvePdfDepartment(FormLayoutElement form,
                                                                  Integer processId) throws Exception {
         return (VDepartmentShadowedEntity) resolvePdfDepartmentMethod.invoke(pdfService, form, processId);
+    }
+
+    private void mockPrintableFormDependencies() throws Exception {
+        @SuppressWarnings("unchecked")
+        HttpResponse<byte[]> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("%PDF".getBytes(StandardCharsets.UTF_8));
+        when(gotenbergConfig.getHost()).thenReturn("gotenberg");
+        when(gotenbergConfig.getPort()).thenReturn("3000");
+        when(httpService.postMultipart(any(), any())).thenReturn(response);
+        when(elementDerivationService.derive(any(), any(), any())).thenReturn(DerivedRuntimeElementData.empty());
+        when(systemConfigService.retrieve(ProviderNameSystemConfigDefinition.KEY))
+                .thenReturn(new SystemConfigEntity().setValue("Example Provider"));
+    }
+
+    private static PrintableFormPdfData createPrintableForm(UUID pdfTemplateKey) {
+        return new PrintableFormPdfData()
+                .setPublicTitle("Antrag auf Beispielleistung")
+                .setRootElement(new FormLayoutElement().setPublicTitle("Antrag auf Beispielleistung"))
+                .setPdfTemplateKey(pdfTemplateKey);
+    }
+
+    private String captureSubmittedIndexHtml() throws Exception {
+        var multipartCaptor = ArgumentCaptor.forClass(MultipartUtils.MultipartBodyPublisher.class);
+        verify(httpService).postMultipart(any(), multipartCaptor.capture());
+        @SuppressWarnings("unchecked")
+        var parts = (MultiValueMap<String, Object>) multipartCaptor.getValue().build();
+        return parts.get("files")
+                .stream()
+                .filter(ByteArrayResource.class::isInstance)
+                .map(ByteArrayResource.class::cast)
+                .filter(part -> "index.html".equals(part.getFilename()))
+                .findFirst()
+                .map(part -> new String(part.getByteArray(), StandardCharsets.UTF_8))
+                .orElseThrow();
     }
 }

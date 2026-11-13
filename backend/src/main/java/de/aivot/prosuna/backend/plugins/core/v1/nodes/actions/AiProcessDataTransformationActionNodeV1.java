@@ -15,6 +15,7 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
@@ -188,7 +189,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                 new ProcessNodePort(
                         SUCCESS_PORT,
                         "Vorgangsdaten transformiert",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Vorgangsdaten erfolgreich transformiert wurden."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Vorgangsdaten erfolgreich transformiert wurden."
                 )
         );
     }
@@ -198,10 +199,10 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
                 new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell.", "string"),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Abschlussgrund", "Der Grund, aus dem die Erzeugung der ersten KI-Antwort beendet wurde.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der KI-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION),
-                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Prozessdatenobjekts.", "Array<string>")
+                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Vorgangsdatenobjekts.", "Array<string>")
         );
     }
 
@@ -215,7 +216,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                 && StringUtils.isNullOrEmpty(configuration.prompt)) {
             return Map.of(
                     AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID,
-                    List.of("Das Prompt muss angegeben werden.")
+                    List.of("Der Prompt muss angegeben werden.")
             );
         }
         return null;
@@ -236,7 +237,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var renderedPrompt = configuration.prompt;
         if (StringUtils.isNullOrEmpty(renderedPrompt)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Das Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
+                    "Der Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
             );
         }
 
@@ -404,6 +405,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
          */
         @InputElementPOJOBinding(id = PROMPT_FIELD_ID, type = ElementType.RichTextInput,
                 dynamicText = true,
+                // The prompt goes to a language model, not to a Markdown renderer.
+                dynamicTextFormat = TemplateOutputFormat.PlainText,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Prompt"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Prompt-Vorlage mit Template-Ausdrücken. Die Vorlage wird vor der KI-Anfrage mit den aktuellen Vorgangsdaten gerendert."),

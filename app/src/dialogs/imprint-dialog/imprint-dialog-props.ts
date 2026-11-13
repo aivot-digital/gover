@@ -4,7 +4,7 @@ import {ProcessVersionEntity} from '../../modules/process/entities/process-versi
 
 export interface ImprintDialogProps extends DialogProps {
     form?: FormLayoutElement;
-    version?: ProcessVersionEntity;
+    version?: Pick<ProcessVersionEntity, 'imprintDepartmentId'>;
     departmentId?: number | null;
     onHide: () => void;
     isListingPage?: boolean;

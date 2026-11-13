@@ -10,6 +10,14 @@
     <mj-selector path=".email-signature-section">
         <mj-html-attribute name="th:if">${mailSignature != null}</mj-html-attribute>
     </mj-selector>
+    <!-- Append only theme colors so compiled MJML typography, spacing and neutral fallbacks remain authoritative. -->
+    <mj-selector path=".primary-action td, .communication-action td">
+        <mj-html-attribute name="th:bgcolor">${mailActionBackgroundColor} ?: _</mj-html-attribute>
+        <mj-html-attribute name="th:styleappend">${mailActionBackgroundColor != null ? 'border-color:' + mailActionBackgroundColor + ';background:' + mailActionBackgroundColor + ';' : ''}</mj-html-attribute>
+    </mj-selector>
+    <mj-selector path=".primary-action a, .communication-action a">
+        <mj-html-attribute name="th:styleappend">${mailActionBackgroundColor != null ? 'background:' + mailActionBackgroundColor + ';color:' + mailActionTextColor + ';' : ''}</mj-html-attribute>
+    </mj-selector>
 </mj-html-attributes>
 
 <mj-attributes>

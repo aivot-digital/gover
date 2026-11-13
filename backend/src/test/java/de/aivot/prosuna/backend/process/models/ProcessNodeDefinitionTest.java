@@ -383,6 +383,25 @@ class ProcessNodeDefinitionTest {
     }
 
     @Test
+    void customerViewOf_KeepsSavedDataOutOfTheTrustedData() {
+        var context = customerContext(
+                Map.of(
+                        ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY,
+                        new AuthoredElementValues().putLiteral("field", "saved")
+                ),
+                Map.of(),
+                Map.of()
+        );
+        var initialData = new AuthoredElementValues();
+        initialData.putLiteral("field", "initial");
+
+        var view = ProcessNodeCustomerView.of(context, new GroupLayoutElement(), List.of(), initialData);
+
+        assertEquals("saved", view.data().getLiteral("field"));
+        assertEquals("initial", view.trustedData().getLiteral("field"));
+    }
+
+    @Test
     void customerViewOf_PreservesRequiredIdentityWhenMergingSavedData() {
         var context = customerContext(
                 Map.of(

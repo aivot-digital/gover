@@ -28,7 +28,7 @@ export function isFormLayoutElement(obj: any): obj is FormLayoutElement {
     return obj != null && obj.type === ElementType.FormLayout;
 }
 
-export function resolveFormNodeName(layout: FormLayoutElement | undefined | null, processVersion: ProcessVersionEntity): string {
+export function resolveFormNodeName(layout: FormLayoutElement | undefined | null, processVersion: Pick<ProcessVersionEntity, 'publicTitle'>): string {
     if (layout != null && isStringNotNullOrEmpty(layout.publicTitle)) {
         return layout.publicTitle!;
     }
@@ -36,7 +36,7 @@ export function resolveFormNodeName(layout: FormLayoutElement | undefined | null
     return processVersion.publicTitle;
 }
 
-export function resolveFormNodeTabTitle(layout: FormLayoutElement | undefined | null, processVersion: ProcessVersionEntity): string {
+export function resolveFormNodeTabTitle(layout: FormLayoutElement | undefined | null, processVersion: Pick<ProcessVersionEntity, 'publicTitle'>): string {
     if (layout != null && isStringNotNullOrEmpty(layout.tabTitle)) {
         return layout.tabTitle!;
     }

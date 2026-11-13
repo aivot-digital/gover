@@ -15,6 +15,18 @@ describe('MetaElement', () => {
         AppConfig.faviconUrl = originalFaviconUrl;
     });
 
+    it.each([undefined, '', '   '])('falls back to Prosuna for a missing operator prefix (%s)', titlePrefix => {
+        expect(renderToStaticMarkup(<MetaElement titlePrefix={titlePrefix} title="Fristen"/>))
+            .toContain('<title>Prosuna - Fristen</title>');
+    });
+
+    it('preserves the shared title format with a configured operator', () => {
+        expect(renderToStaticMarkup(<MetaElement titlePrefix=" Bad Musterstadt " title="Fristen"/>))
+            .toContain('<title>Bad Musterstadt - Fristen</title>');
+        expect(renderToStaticMarkup(<MetaElement titlePrefix="Bad Musterstadt"/>))
+            .toContain('<title>Bad Musterstadt</title>');
+    });
+
     it('uses the Prosuna favicon for an explicitly media-less theme', () => {
         const html = renderToStaticMarkup(<MetaElement faviconUrl={null}/>);
 

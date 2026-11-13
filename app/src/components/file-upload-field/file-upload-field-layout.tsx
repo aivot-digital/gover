@@ -6,10 +6,10 @@ import React, {
     type ReactNode,
     type RefObject,
 } from 'react';
-import {alpha, Box, Button, IconButton, type SxProps, type Theme, Tooltip, Typography} from '@mui/material';
+import {alpha, Box, Button, type IconButtonProps, type SxProps, type Theme, Typography} from '@mui/material';
 import UploadFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
 import {pluralize} from '../../utils/humanization-utils';
-import {getFileTypeIconForFile} from '../../utils/file-type-icon';
+import {FileList} from '../file-list/file-list';
 import {
     FormField,
     type FormFieldControlContext,
@@ -170,102 +170,41 @@ export function FileUploadInputArea(props: FileUploadInputAreaProps) {
     );
 }
 
+export interface FileUploadListItemAction {
+    label: string;
+    icon: ReactNode;
+    color?: IconButtonProps['color'];
+    disabled?: boolean;
+    onAction: () => void;
+}
+
 export interface FileUploadListItem {
     key: string;
     name: string;
     size: string;
     contentType?: string | null;
     detail?: string;
-    actionLabel: string;
-    actionIcon: ReactNode;
-    actionDisabled?: boolean;
-    onAction: () => void;
+    actions: FileUploadListItemAction[];
 }
 
 export function FileUploadFileList({items}: {items: FileUploadListItem[]}) {
-    if (items.length === 0) {
-        return null;
-    }
-
     return (
-        <Box
-            role="list"
-            sx={{
-                mb: 1,
-                overflow: 'hidden',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1,
-            }}
-        >
-            {
-                items.map((item, index) => (
-                    <Box
-                        role="listitem"
-                        data-file-upload-list-item
-                        key={item.key}
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: 'auto minmax(0, 1fr) auto',
-                            alignItems: 'center',
-                            gap: 1,
-                            minHeight: FormFieldTokens.groupedControlRowMinHeight,
-                            px: 1.5,
-                            py: 0.5,
-                            borderTop: index === 0 ? 0 : '1px solid',
-                            borderColor: 'divider',
-                        }}
-                    >
-                        {getFileTypeIconForFile(item.name, item.contentType, {
-                            fontSize: 'small',
-                            sx: {flexShrink: 0, color: 'text.secondary'},
-                        })}
-
-                        <Box sx={{minWidth: 0}}>
-                            <Typography
-                                variant="body2"
-                                title={item.name}
-                                noWrap
-                                sx={{
-                                    display: 'block',
-                                    maxWidth: '100%',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    fontWeight: 500,
-                                    lineHeight: 1.35,
-                                }}
-                            >
-                                {item.name}
-                            </Typography>
-                            <Typography
-                                component="div"
-                                variant="caption"
-                                sx={{
-                                    color: "text.secondary",
-                                    overflowWrap: 'anywhere',
-                                    lineHeight: 1.2,
-                                }}>
-                                {item.size}{item.detail != null ? ` · ${item.detail}` : ''}
-                            </Typography>
-                        </Box>
-
-                        <Tooltip title={item.actionLabel} arrow>
-                            <span>
-                                <IconButton
-                                    size="small"
-                                    aria-label={item.actionLabel}
-                                    onClick={item.onAction}
-                                    disabled={item.actionDisabled}
-                                >
-                                    {item.actionIcon}
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    </Box>
-                ))
-            }
-        </Box>
+        <FileList
+            sx={{mb: 1}}
+            items={items.map(item => ({
+                key: item.key,
+                name: item.name,
+                contentType: item.contentType,
+                secondaryText: [item.size, item.detail].filter(Boolean).join(' · '),
+                actions: item.actions.map(action => ({
+                    label: action.label,
+                    icon: action.icon,
+                    color: action.color,
+                    onClick: action.onAction,
+                    disabled: action.disabled,
+                })),
+            }))}
+        />
     );
 }
 
@@ -287,7 +226,7 @@ export interface FileUploadFieldLayoutProps extends FormFieldLayoutProps {
 
 export function FileUploadFieldLayout(props: FileUploadFieldLayoutProps) {
     const hasError = props.error != null && props.error.length > 0;
-    const countHint = getFileCountHint(props.fileCount, props.minFiles, props.maxFiles);
+    const countHint = getFileCountHint(props.fileCount, props.minFiles, props.maxFiles, props.required);
     const hasHint = props.hint != null && props.hint.length > 0;
     const hasHelperContent = hasError || hasHint || countHint != null;
     const helperContent = hasHelperContent ? (
@@ -295,6 +234,7 @@ export function FileUploadFieldLayout(props: FileUploadFieldLayoutProps) {
             error={hasError ? props.error : undefined}
             hint={!hasError ? props.hint : undefined}
             fileCount={props.fileCount}
+            required={props.required}
             minFiles={props.minFiles}
             maxFiles={props.maxFiles}
         />
@@ -345,6 +285,7 @@ export function FileUploadFieldLayout(props: FileUploadFieldLayoutProps) {
 }
 
 interface FileUploadHelperProps {
+    required?: boolean;
     error?: string;
     hint?: string | null;
     fileCount: number;
@@ -353,7 +294,7 @@ interface FileUploadHelperProps {
 }
 
 export function FileUploadHelper(props: FileUploadHelperProps) {
-    const countHint = getFileCountHint(props.fileCount, props.minFiles, props.maxFiles);
+    const countHint = getFileCountHint(props.fileCount, props.minFiles, props.maxFiles, props.required);
 
     if (props.error == null && props.hint == null && countHint == null) {
         return null;
@@ -397,7 +338,12 @@ export function getFileCountHint(
     fileCount: number,
     minFiles?: number | null,
     maxFiles?: number | null,
+    required = false,
 ): string | null {
+    if (!required && fileCount === 0 && minFiles != null && minFiles > 0) {
+        return `Bei Eingabe mindestens ${minFiles} ${pluralize(minFiles, 'Datei', 'Dateien')}`;
+    }
+
     if (maxFiles != null && maxFiles > 0) {
         const qualifier = minFiles === maxFiles ? '' : 'max. ';
         return `${fileCount} von ${qualifier}${maxFiles} ${pluralize(maxFiles, 'Datei', 'Dateien')}`;

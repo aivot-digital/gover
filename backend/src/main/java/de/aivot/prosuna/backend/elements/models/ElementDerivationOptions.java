@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.elements.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -18,6 +19,20 @@ public class ElementDerivationOptions {
     private List<String> skipOverridesForElementIds = new LinkedList<>();
     @Nonnull
     private List<String> skipValuesForElementIds = new LinkedList<>();
+    /**
+     * Ignores values sent for disabled and technical inputs, which customers cannot fill. Set only on the server for
+     * input from customers, never from request data, so a client cannot switch it off.
+     */
+    @JsonIgnore
+    private boolean ignoreAuthoredValuesOfNonEditableInputs = false;
+    /**
+     * Values from stable server sources that disabled and technical inputs take instead of the ignored values, for
+     * example the process data a customer task is prefilled with. Without them, those inputs get their computed value
+     * or none. Set only on the server.
+     */
+    @JsonIgnore
+    @Nullable
+    private AuthoredElementValues trustedAuthoredValues;
 
     // region copy
 
@@ -47,6 +62,9 @@ public class ElementDerivationOptions {
         } else {
             copy.skipValuesForElementIds.addAll(skipValuesForElementIds);
         }
+
+        copy.ignoreAuthoredValuesOfNonEditableInputs = ignoreAuthoredValuesOfNonEditableInputs;
+        copy.trustedAuthoredValues = trustedAuthoredValues;
 
         return copy;
     }
@@ -137,6 +155,29 @@ public class ElementDerivationOptions {
 
     public ElementDerivationOptions setSkipValuesForElementIds(@Nullable List<String> skipValuesForElementIds) {
         this.skipValuesForElementIds = Objects.requireNonNullElseGet(skipValuesForElementIds, LinkedList::new);
+        return this;
+    }
+
+    @JsonIgnore
+    public boolean isIgnoreAuthoredValuesOfNonEditableInputs() {
+        return ignoreAuthoredValuesOfNonEditableInputs;
+    }
+
+    @JsonIgnore
+    public ElementDerivationOptions setIgnoreAuthoredValuesOfNonEditableInputs(boolean ignoreAuthoredValuesOfNonEditableInputs) {
+        this.ignoreAuthoredValuesOfNonEditableInputs = ignoreAuthoredValuesOfNonEditableInputs;
+        return this;
+    }
+
+    @JsonIgnore
+    @Nullable
+    public AuthoredElementValues getTrustedAuthoredValues() {
+        return trustedAuthoredValues;
+    }
+
+    @JsonIgnore
+    public ElementDerivationOptions setTrustedAuthoredValues(@Nullable AuthoredElementValues trustedAuthoredValues) {
+        this.trustedAuthoredValues = trustedAuthoredValues;
         return this;
     }
 }

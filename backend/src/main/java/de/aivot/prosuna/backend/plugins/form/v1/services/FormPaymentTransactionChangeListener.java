@@ -7,12 +7,12 @@ import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.prosuna.backend.payment.models.PaymentTransactionChangeListener;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.services.ProcessNodeExecutionLoggerFactory;
-import de.aivot.prosuna.backend.process.workers.ProcessWorker;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 import de.aivot.prosuna.backend.utils.specification.SpecificationBuilderJsonEquals;
 import jakarta.annotation.Nonnull;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -22,14 +22,14 @@ import java.util.List;
 @Component
 public class FormPaymentTransactionChangeListener implements PaymentTransactionChangeListener {
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
-    private final RabbitTemplate rabbitTemplate;
+    private final ProcessWorkRequestService workRequests;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
 
     public FormPaymentTransactionChangeListener(ProcessInstanceTaskRepository processInstanceTaskRepository,
-                                                RabbitTemplate rabbitTemplate,
+                                                ProcessWorkRequestService workRequests,
                                                 ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
-        this.rabbitTemplate = rabbitTemplate;
+        this.workRequests = workRequests;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
     }
 
@@ -64,13 +64,11 @@ public class FormPaymentTransactionChangeListener implements PaymentTransactionC
 
     private void resume(@Nonnull List<ProcessInstanceTaskEntity> tasks) {
         for (ProcessInstanceTaskEntity task : tasks) {
-            rabbitTemplate.convertAndSend(
-                    ProcessWorker.RESUME_WORK_ON_INSTANCE_QUEUE,
-                    new ProcessWorker.ResumeWorkWorkerPayload(
-                            task.getProcessInstanceId(),
-                            task.getId(),
-                            task.getProcessNodeId()
-                    ));
+            // Ended tasks are not resumed; only a task ended by its deadline records the late notification.
+            if (task.getStatus().isTerminal() && task.getStatus() != ProcessTaskStatus.DeadlineExceeded) {
+                continue;
+            }
+            workRequests.enqueueResume(task.getProcessInstanceId(), task.getId());
         }
     }
 

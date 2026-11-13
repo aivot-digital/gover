@@ -17,8 +17,8 @@ clamav_image="docker.io/clamav/clamav:1.5.4-debian"
 redis_image="registry.opencode.de/open-code/oci/redis:8.2.3"
 gotenberg_image="docker.io/gotenberg/gotenberg:8.30.1-chromium"
 rabbitmq_image="dhi.io/rabbitmq:4.2"
-keycloak_image="ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3"
-keycloak_setup_image="ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24"
+keycloak_image="ghcr.io/aivot-digital/keycloak-egov-plugins:26.7.4.0"
+keycloak_setup_image="ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.28"
 caddy_image="dhi.io/caddy:2"
 prosuna_image="ghcr.io/aivot-digital/gover-next:5.0.0-alpha-71"
 
@@ -63,7 +63,7 @@ done
 
 # Manually configured environment variables that require user input
 ask_for_env=(
-  "HOSTNAME Der Hostname unter dem Prosuna erreichbar ist"
+  "HOSTNAME Geben Sie den Hostnamen ein, unter dem Prosuna erreichbar sein soll"
 )
 
 # Process the manually configured environment variables and prompt the user for input if they are not already set in the .env file
@@ -72,7 +72,7 @@ for env in "${ask_for_env[@]}"; do
   description="${env#* }"
 
   if ! grep -q "^${key}=" .env 2>/dev/null; then
-    read -rp "Bitte geben Sie den Wert für ${description} (${key}) ein: " value
+    read -rp "${description} (${key}): " value
     echo "${key}=${value}" >> .env
   fi
 done
@@ -163,8 +163,6 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: \${RABBITMQ_USERNAME}
       RABBITMQ_DEFAULT_PASS: \${RABBITMQ_PASSWORD}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - prosuna-network
 
@@ -314,7 +312,6 @@ services:
 volumes:
   prosuna_pg_data:
   keycloak_pg_data:
-  rabbitmq_data:
   prosuna_app_data:
   caddy_data:
 

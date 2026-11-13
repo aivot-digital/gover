@@ -41,6 +41,7 @@ import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import AutoDelete from "@aivot/mui-material-symbols-400-n25-outlined/AutoDelete";
+import {ProcessTaskDeadlineValue} from '../../components/process-task-deadline-value';
 
 export function ProcessInstanceDetailsPageIndex() {
     const sectionId = useId();
@@ -285,7 +286,7 @@ export function ProcessInstanceDetailsPageIndex() {
                                         {
                                             label: 'Fälligkeit (spätestens)',
                                             icon: <Acute />,
-                                            children: formatDateTimeWithRelative(task.deadline, 'Nicht festgelegt'),
+                                            children: <ProcessTaskDeadlineValue task={task}/>,
                                         },
                                     ]}
                                 />

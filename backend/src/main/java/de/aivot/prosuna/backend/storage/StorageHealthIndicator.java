@@ -88,7 +88,7 @@ public class StorageHealthIndicator implements HealthIndicator {
             // If a storage provider definition is missing, the health check should be down, because this is a misconfiguration and the sysadmin needs to add the corresponding plugin again.
             if (def == null) {
                 var msg = String.format(
-                        "Der Speicheranbieter %s referenziert eine nicht vorhandene Anbieterdefinition %s Version %d. Bitte stellen Sie sicher, dass das entsprechende Plugin wieder installiert wird.",
+                        "Der Speicheranbieter %s referenziert eine nicht vorhandene Anbieterdefinition %s Version %d. Bitte stellen Sie sicher, dass die entsprechende Erweiterung wieder installiert wird.",
                         StringUtils.quote(provider.getName()),
                         StringUtils.quote(provider.getStorageProviderDefinitionKey()),
                         provider.getStorageProviderDefinitionVersion()
@@ -117,7 +117,7 @@ public class StorageHealthIndicator implements HealthIndicator {
                 // If so, the health check should fail because this is a critical component and the system cannot function properly if the process attachments cannot be stored.
                 // For all non default attachment storages just drop a hint
                 if (defaultAttachmentStorage != null && defaultAttachmentStorage.equals(provider.getId().toString())) {
-                    msg += " Dieser Speicheranbieter ist als Standard-Speicheranbieter für Anhänge von Vorgängen konfiguriert. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.";
+                    msg += " Dieser Speicheranbieter ist als Standard-Speicheranbieter für Anlagen von Vorgängen konfiguriert. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.";
 
                     providerDetail.put("error", msg);
                     hasErrors = true;
@@ -136,20 +136,22 @@ public class StorageHealthIndicator implements HealthIndicator {
 
         // Create the builder for the health check result based on the errors and hints collected during the checks.
         // If errors exist, the component is down. If hints exist the component is afflicted. If no errors and no hints exist, the component is simply up.
+        // A missing default attachment storage is only a hint: without seeded local storage providers, administrators
+        // select it after the first start, which a down health check would prevent by keeping the application from starting.
         Health.Builder builder;
-        if (hasErrors || defaultAttachmentStorage == null || !defaultAttachmentsProviderIsPresent) {
+        if (hasErrors || (defaultAttachmentStorage != null && !defaultAttachmentsProviderIsPresent)) {
             builder = Health.down();
-        } else if (hasHints) {
+        } else if (hasHints || defaultAttachmentStorage == null) {
             builder = Health.unknown();
         } else {
             builder = Health.up();
         }
 
         if (defaultAttachmentStorage == null) {
-            builder.withDetail("error", "Der Standard-Speicheranbieter für Anhänge von Vorgängen ist nicht konfiguriert. Bitte konfigurieren Sie einen Speicheranbieter als Standard-Speicheranbieter für Anhänge von Vorgängen.");
+            builder.withDetail("hint", "Der Standard-Speicheranbieter für Anlagen von Vorgängen ist nicht konfiguriert. Bis Sie einen Speicheranbieter als Standard-Speicheranbieter für Anlagen von Vorgängen auswählen, können Vorgänge keine Anlagen speichern.");
         } else if (!defaultAttachmentsProviderIsPresent) {
             builder.withDetail("error", String.format(
-                    "Der Standard-Speicheranbieter für Anhänge von Vorgängen (ID: %s) ist nicht vorhanden. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.",
+                    "Der Standard-Speicheranbieter für Anlagen von Vorgängen (ID: %s) ist nicht vorhanden. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.",
                     defaultAttachmentStorage
             ));
         }

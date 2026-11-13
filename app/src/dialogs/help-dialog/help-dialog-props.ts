@@ -4,7 +4,7 @@ import {ProcessVersionEntity} from '../../modules/process/entities/process-versi
 
 export interface HelpDialogProps extends DialogProps {
     form?: FormLayoutElement;
-    version?: ProcessVersionEntity;
+    version?: Pick<ProcessVersionEntity, 'publicTitle' | 'technicalSupportDepartmentId' | 'legalSupportDepartmentId'>;
     technicalSupportDepartmentId?: number | null;
     legalSupportDepartmentId?: number | null;
     onHide: () => void;

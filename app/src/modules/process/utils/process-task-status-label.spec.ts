@@ -4,7 +4,7 @@ import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../enums/process-task-
 import {getProcessTaskStatusDisplay} from './process-task-status-label';
 
 const applicant: IdentityData = {
-    identityId: 'applicant', title: ' Antragstellende ', sessionId: 'session', type: 'Email',
+    identityId: 'applicant', title: ' Antragstellende ', type: 'Email',
     emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
     uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
 };
@@ -46,7 +46,7 @@ describe('task status display', () => {
 
     it.each([null, undefined, '', '   '])('keeps the generic status without an assigned identity (%s)', assignedCustomerIdentityId => {
         expect(getProcessTaskStatusDisplay({...waiting, assignedCustomerIdentityId}, identities)).toEqual({
-            identityLabel: null, label: 'Wartet auf Nutzer:in', systemLabel: 'Wartet auf Nutzer:in', tooltip: undefined,
+            identityLabel: null, label: 'Wartet auf Rückmeldung', systemLabel: 'Wartet auf Rückmeldung', tooltip: undefined,
         });
     });
 

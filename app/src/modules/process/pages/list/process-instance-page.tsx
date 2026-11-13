@@ -18,6 +18,8 @@ import {ProcessInstanceStatusIcon} from '../../components/process-instance-statu
 import {processListColumns} from '../../components/process-list-columns';
 import {useListFilter} from '../../../../components/generic-list/use-list-filter';
 import {ProcessListFilterMenu} from '../../components/process-list-filter-menu';
+import {useStaffEvent} from '../../../staff-events/hooks/use-staff-event';
+import {PROCESS_INSTANCE_STAFF_EVENT_TYPE} from '../../data/process-instance-staff-event-type';
 
 const filters: GenericListFilter[] = [
     {
@@ -57,10 +59,14 @@ export function ProcessInstanceListPage() {
         listRef.current?.refresh();
         refreshOptions();
     }, [refreshOptions]);
+    useStaffEvent({
+        type: PROCESS_INSTANCE_STAFF_EVENT_TYPE,
+        onEvent: refresh,
+    });
     const columns = useMemo(() => processListColumns<ProcessInstanceListEntry>(false, refresh), [refresh]);
     const fetchFilterCounts = useCallback<FetchListFilterCounts>(
-        ({signal}) => new ProcessListApiService().instancesCounts(signal),
-        [],
+        ({signal}) => new ProcessListApiService().instancesCounts({assignee}, signal),
+        [assignee],
     );
     const fetch = useCallback(
         async (options: GenericListPropsFetchOptions<ProcessInstanceListEntry>) => {
@@ -125,7 +131,7 @@ export function ProcessInstanceListPage() {
                                     sx={{mb: 2}}
                                 >
                                     Ein Vorgang ist die konkrete Ausführung eines Prozesses, zum Beispiel die
-                                    Bearbeitung eines eingereichten Antrags. Der Prozess legt fest, welche Schritte
+                                    Bearbeitung übermittelter Angaben. Der Prozess legt fest, welche Schritte
                                     erforderlich sind und wie sie zusammenhängen. In einem Vorgang können mehrere
                                     Aufgaben entstehen, die unterschiedlichen Personen zugewiesen sind.
                                 </Typography>

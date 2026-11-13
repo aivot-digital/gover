@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {cleanup, fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {ProcessListActions} from './process-list-actions';
 import {ProcessInstanceListEntry, ProcessTaskListEntry} from '../entities/process-list';
@@ -36,10 +36,22 @@ const allPermissions = [
     Permission.PROCESS_INSTANCE_REASSIGN,
     Permission.PROCESS_INSTANCE_EDIT_TASK,
     Permission.PROCESS_INSTANCE_UPDATE,
+    Permission.PROCESS_INSTANCE_RESTART_FAILED,
     Permission.PROCESS_INSTANCE_DELETE,
     Permission.PROCESS_DEFINITION_READ,
 ];
-function grant(scope: 'system' | 'instance', id = 17) {
+const failedTask: ProcessTaskListEntry = {
+    ...instance,
+    id: 23,
+    processInstanceId: 17,
+    status: ProcessTaskStatus.Failed,
+    taskName: 'Prüfen',
+    taskType: null,
+    description: null,
+    assignedCustomerIdentityLabel: null,
+    deadline: null,
+};
+function grant(scope: 'system' | 'instance', id = 17, permissions = allPermissions) {
     access.permissions = {
         departmentPermissions: [],
         teamPermissions: [],
@@ -52,7 +64,7 @@ function grant(scope: 'system' | 'instance', id = 17) {
                           id: 'grant',
                           userId: 'me',
                           processInstanceId: id,
-                          permissions: allPermissions,
+                          permissions,
                       },
                   ]
                 : [],
@@ -61,7 +73,7 @@ function grant(scope: 'system' | 'instance', id = 17) {
                 ? [
                       {
                           userId: 'me',
-                          permissions: allPermissions,
+                          permissions,
                       },
                   ]
                 : [],
@@ -98,7 +110,7 @@ describe('Process list actions', () => {
         showActions();
         expect(screen.getByRole('menuitem', {name: 'Vorgang zuweisen'})).toBeInTheDocument();
         expect(screen.queryByRole('menuitem', {name: 'Vorgang löschen'})).not.toBeInTheDocument();
-        expect(screen.getByRole('menuitem', {name: 'Erneut starten'})).toBeInTheDocument();
+        expect(screen.getByRole('menuitem', {name: 'Fehlgeschlagenen Vorgang fortsetzen'})).toBeInTheDocument();
         if (scope === 'system') {
             expect(screen.getByRole('menuitem', {name: 'Im Prozessmodell ansehen'})).toHaveAttribute(
                 'href',
@@ -112,7 +124,26 @@ describe('Process list actions', () => {
         grant('instance', 18);
         showActions();
         expect(screen.queryByRole('menuitem', {name: 'Vorgang zuweisen'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('menuitem', {name: 'Erneut starten'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Fehlgeschlagenen Vorgang fortsetzen'})).not.toBeInTheDocument();
+    });
+    it.each(['instance', 'system'] as const)(
+        'offers restarting failed instances and tasks with only the restart permission as %s grant',
+        (scope) => {
+            grant(scope, 17, [Permission.PROCESS_INSTANCE_RESTART_FAILED]);
+            showActions();
+            expect(screen.getByRole('menuitem', {name: 'Fehlgeschlagenen Vorgang fortsetzen'})).toBeInTheDocument();
+            cleanup();
+            showActions(failedTask);
+            expect(screen.getByRole('menuitem', {name: 'Aufgabe erneut ausführen'})).toBeInTheDocument();
+        },
+    );
+    it('does not offer restarts with only the permissions to edit instances and tasks', () => {
+        grant('instance', 17, [Permission.PROCESS_INSTANCE_UPDATE, Permission.PROCESS_INSTANCE_EDIT_TASK]);
+        showActions();
+        expect(screen.queryByRole('menuitem', {name: 'Fehlgeschlagenen Vorgang fortsetzen'})).not.toBeInTheDocument();
+        cleanup();
+        showActions(failedTask);
+        expect(screen.queryByRole('menuitem', {name: 'Aufgabe erneut ausführen'})).not.toBeInTheDocument();
     });
     it.each([ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted])(
         'does not offer assignment for %s instances despite system permission',
@@ -146,6 +177,6 @@ describe('Process list actions', () => {
             '/processes/10/versions/2/?instanceId=17',
         );
         expect(screen.queryByRole('menuitem', {name: 'Aufgabe zuweisen'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('menuitem', {name: 'Erneut starten'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Aufgabe erneut ausführen'})).not.toBeInTheDocument();
     });
 });

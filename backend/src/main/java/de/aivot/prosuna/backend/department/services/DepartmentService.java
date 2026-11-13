@@ -111,6 +111,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
         entity.setCreated(existingDepartment.getCreated());
         entity.setUpdated(Instant.now());
         entity.setDepth(existingDepartment.getDepth());
+        entity.setLockVersion(existingDepartment.getLockVersion());
         validateParentHierarchy(id, entity.getParentDepartmentId());
 
         // Check theme existence and set to null if not exists

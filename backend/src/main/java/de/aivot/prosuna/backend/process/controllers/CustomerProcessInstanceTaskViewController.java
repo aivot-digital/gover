@@ -435,7 +435,7 @@ public class CustomerProcessInstanceTaskViewController {
                 .orElseThrow(ResponseException::notFound);
         var department = vDepartmentShadowedService
                 .retrieve(process.getDepartmentId())
-                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für die Zahlungsbestätigung gefunden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Keine Organisationseinheit für die Zahlungsbestätigung gefunden."));
         var logoAssetKey = resolvePaymentConfirmationLogoAssetKey(department);
 
         byte[] pdfBytes;
@@ -516,9 +516,6 @@ public class CustomerProcessInstanceTaskViewController {
     ) throws ResponseException {
         requireActiveCustomerTask(taskViewData.task());
 
-        var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
-        var logger = context.getLogger();
-
         ProcessInstanceTaskEntity previousTask;
         if (taskViewData.task.getPreviousProcessNodeId() != null) {
             previousTask = processInstanceTaskService
@@ -531,19 +528,31 @@ public class CustomerProcessInstanceTaskViewController {
             previousTask = null;
         }
 
-        var customerView = resolveCustomerTaskView(taskViewData, context);
+        var customerView = resolveCustomerTaskView(
+                taskViewData,
+                createCustomerContext(taskViewData, identitySessionId, queryParameters)
+        );
         var identityState = customerTaskIdentityService.requireAuthenticatedIdentity(
                 taskViewData.instance(),
                 taskViewData.node(),
                 customerView,
                 identitySessionId
         );
+        // A task that invites a new identity has no assigned identity until it is completed. The history of this
+        // submission names the identity the customer has just authenticated instead.
+        var context = createCustomerContext(
+                taskViewData,
+                identitySessionId,
+                queryParameters,
+                resolveLoggedIdentityId(taskViewData.task(), identityState)
+        );
+        var logger = context.getLogger();
         var layout = customerView.layout();
 
         var cleanEvent = resolveValidCustomerEvent(layout, customerView.events(), rawEvent);
 
         if (rawEvent != null && cleanEvent == null) {
-            throw ResponseException.badRequest("Invalid event: " + rawEvent);
+            throw ResponseException.badRequest("Ungültige Aktion: " + rawEvent);
         }
 
         AuthoredElementValues inputs;
@@ -554,9 +563,17 @@ public class CustomerProcessInstanceTaskViewController {
         } catch (JacksonException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
+
+        // Derive before storing the uploaded files, so only upload fields whose value the derivation takes store theirs.
+        var submittedElementData = deriveCustomerInputs(customerView, inputs, taskViewData.processExecutionData());
+        if (submittedElementData.hasAnyError()) {
+            throw ResponseException.badRequest("Bitte prüfen Sie Ihre Angaben und korrigieren Sie die angezeigten Fehler.", submittedElementData);
+        }
+
         inputs = fileUploadMultipartInputService.normalizeInputs(
                 layout,
                 inputs,
+                submittedElementData.getElementStates(),
                 files,
                 fileUris,
                 taskViewData.instance.getId(),
@@ -564,16 +581,10 @@ public class CustomerProcessInstanceTaskViewController {
                 null
         ).inputs();
 
-        var derivedElementData = elementDerivationService.derive(
-                new ElementDerivationRequest(
-                        layout,
-                        inputs,
-                        new ElementDerivationOptions()
-                )
-        );
-
+        // The provider receives the stored attachments instead of the transient files.
+        var derivedElementData = deriveCustomerInputs(customerView, inputs, taskViewData.processExecutionData());
         if (derivedElementData.hasAnyError()) {
-            throw ResponseException.badRequest("Es ist ein Fehler beim Ableiten der Eingabedaten aufgetreten. Bitte überprüfen Sie Ihre Eingaben.", derivedElementData);
+            throw ResponseException.badRequest("Bitte prüfen Sie Ihre Angaben und korrigieren Sie die angezeigten Fehler.", derivedElementData);
         }
 
         Optional<ProcessNodeExecutionResult> res;
@@ -603,6 +614,7 @@ public class CustomerProcessInstanceTaskViewController {
 
         if (res.isEmpty()) {
             return createTaskViewResponse(
+                    taskViewData,
                     identityState,
                     layout,
                     inputs,
@@ -671,10 +683,31 @@ public class CustomerProcessInstanceTaskViewController {
         );
 
         return createTaskViewResponse(
+                taskViewData,
                 updatedIdentityState,
                 updatedView.layout(),
                 updatedView.data(),
                 updatedView.events()
+        );
+    }
+
+    /**
+     * Expressions of the form may read the process data, so derive with the same data as the preview does. Disabled
+     * and technical inputs keep the values the server prefilled, whatever the customer sends for them.
+     */
+    @Nonnull
+    private DerivedRuntimeElementData deriveCustomerInputs(@Nonnull ProcessNodeCustomerView customerView,
+                                                           @Nonnull AuthoredElementValues inputs,
+                                                           @Nonnull ProcessExecutionData processExecutionData) {
+        return elementDerivationService.derive(
+                new ElementDerivationRequest(
+                        customerView.layout(),
+                        inputs,
+                        new ElementDerivationOptions()
+                                .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                                .setTrustedAuthoredValues(customerView.trustedData()),
+                        processExecutionData
+                )
         );
     }
 
@@ -746,7 +779,9 @@ public class CustomerProcessInstanceTaskViewController {
                 customerTaskView.layout(),
                 authoredElementValues,
                 new ElementDerivationOptions()
-                        .setSkipErrorsForElementIds(skipErrorsFor),
+                        .setSkipErrorsForElementIds(skipErrorsFor)
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
+                        .setTrustedAuthoredValues(customerTaskView.trustedData()),
                 taskViewData.processExecutionData()
         );
 
@@ -767,6 +802,7 @@ public class CustomerProcessInstanceTaskViewController {
                 identitySessionId
         );
         return createTaskViewResponse(
+                taskViewData,
                 identityState,
                 customerView.layout(),
                 customerView.data(),
@@ -776,24 +812,35 @@ public class CustomerProcessInstanceTaskViewController {
 
     @Nonnull
     private TaskViewResponse createTaskViewResponse(
+            @Nonnull TaskViewData<?> taskViewData,
             @Nonnull CustomerTaskIdentityService.CustomerTaskIdentityState identityState,
             @Nonnull GroupLayoutElement layout,
             @Nonnull AuthoredElementValues data,
             @Nonnull List<TaskViewEvent> events
-    ) {
+    ) throws ResponseException {
         TaskViewExistingIdentitySlot existingIdentitySlot = null;
         if (identityState.existingIdentity() != null) {
             existingIdentitySlot = new TaskViewExistingIdentitySlot(
                     identityState.existingIdentity().id(),
+                    identityState.existingIdentity().title(),
                     identityState.existingIdentity().isReady(),
                     identityState.existingIdentity().identityProvider()
             );
         }
 
+        var removableAttachmentKeys = identityState.isReady()
+                ? fileUploadMultipartInputService.findRemovableAttachmentKeys(
+                        layout,
+                        taskViewData.instance().getId(),
+                        taskViewData.task().getId()
+                )
+                : null;
+
         return new TaskViewResponse(
                 identityState.isReady() ? layout : null,
                 identityState.isReady() ? data : null,
                 identityState.isReady() ? events : null,
+                removableAttachmentKeys,
                 identityState.newIdentitySlot(),
                 existingIdentitySlot
         );
@@ -816,12 +863,28 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable String identitySessionId,
             @Nullable Map<String, List<String>> queryParameters
     ) {
+        return createCustomerContext(
+                taskViewData,
+                identitySessionId,
+                queryParameters,
+                taskViewData.task().getAssignedCustomerIdentityId()
+        );
+    }
+
+    @Nonnull
+    private <NodeConfig> ProcessNodeExecutionContextUICustomer<NodeConfig> createCustomerContext(
+            @Nonnull TaskViewData<NodeConfig> taskViewData,
+            @Nullable String identitySessionId,
+            @Nullable Map<String, List<String>> queryParameters,
+            @Nullable String loggedIdentityId
+    ) {
+        // The history names an identity of the process, never the session ID of the customer's browser, which is a secret.
         var logger = processNodeExecutionLoggerFactory
                 .create(
                         taskViewData.instance().getId(),
                         taskViewData.task().getId(),
                         null,
-                        identitySessionId
+                        loggedIdentityId
                 );
 
         return new ProcessNodeExecutionContextUICustomer<>(
@@ -836,6 +899,15 @@ public class CustomerProcessInstanceTaskViewController {
         );
     }
 
+    @Nullable
+    private static String resolveLoggedIdentityId(@Nonnull ProcessInstanceTaskEntity task,
+                                                  @Nonnull CustomerTaskIdentityService.CustomerTaskIdentityState identityState) {
+        if (task.getAssignedCustomerIdentityId() != null) {
+            return task.getAssignedCustomerIdentityId();
+        }
+        return identityState.newIdentity() == null ? null : identityState.newIdentity().identityId();
+    }
+
     @Nonnull
     private <NodeConfig> ProcessNodeCustomerView resolveCustomerTaskView(
             @Nonnull TaskViewData<NodeConfig> taskViewData,
@@ -844,7 +916,7 @@ public class CustomerProcessInstanceTaskViewController {
         if (taskViewData.task().getStatus() == ProcessTaskStatus.DeadlineExceeded) {
             var alert = new AlertContentElement()
                     .setTitle("Frist überschritten")
-                    .setText("Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.")
+                    .setText("Die Bearbeitungsfrist ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.")
                     .setAlertType(AlertType.Error);
             alert.setId("deadline-exceeded");
             var layout = new GroupLayoutElement();
@@ -913,7 +985,7 @@ public class CustomerProcessInstanceTaskViewController {
                 node, provider, null, false, processExecutionData
         );
         if (cfgRes.derivedRuntimeElementData().hasAnyError()) {
-            throw ResponseException.internalServerError("Die dynamische Knotenkonfiguration konnte nicht aufgelöst werden.");
+            throw ResponseException.internalServerError("Die dynamische Konfiguration des Prozesselements konnte nicht aufgelöst werden.");
         }
 
         return new TaskViewData<>(
@@ -1043,6 +1115,8 @@ public class CustomerProcessInstanceTaskViewController {
      * @param layout               The layout, or {@code null} while an identity requirement blocks access.
      * @param data                 The authored data, or {@code null} while an identity requirement blocks access.
      * @param events               The available events, or {@code null} while an identity requirement blocks access.
+     * @param removableAttachmentKeys The task's own stored uploads, which its upload fields may remove, or {@code null}
+     *                                while an identity requirement blocks access. Other attachments stay protected.
      * @param newIdentitySlot      The new identity slot, or {@code null} if none is configured.
      * @param existingIdentitySlot The existing provider identity requirement, or {@code null} if none applies.
      */
@@ -1054,6 +1128,8 @@ public class CustomerProcessInstanceTaskViewController {
             @Nullable
             List<TaskViewEvent> events,
             @Nullable
+            List<UUID> removableAttachmentKeys,
+            @Nullable
             IdentitySlotResponseDTO newIdentitySlot,
             @Nullable
             TaskViewExistingIdentitySlot existingIdentitySlot
@@ -1064,6 +1140,8 @@ public class CustomerProcessInstanceTaskViewController {
     public record TaskViewExistingIdentitySlot(
             @Nonnull
             String id,
+            @Nullable
+            String title,
             boolean isReady,
             @Nonnull
             IdentityProviderOptionResponseDTO identityProvider

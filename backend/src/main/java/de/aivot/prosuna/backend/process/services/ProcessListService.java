@@ -106,7 +106,8 @@ public class ProcessListService {
     }
 
     @Nonnull
-    public Map<String, Long> counts(@Nonnull String userId, @Nullable Long instanceId, boolean tasks) throws ResponseException {
+    public Map<String, Long> counts(@Nonnull String userId, @Nullable Long instanceId, @Nullable String assignee,
+                                    boolean tasks) throws ResponseException {
         var access = access(userId, instanceId);
         var now = Instant.now();
         var cb = em.getCriteriaBuilder();
@@ -121,8 +122,10 @@ public class ProcessListService {
             selections.add(cb.count(cb.<Integer>selectCase().when(category, 1)
                     .otherwise((Integer) null)).alias(view));
         }
-        // Tab counts describe the whole readable list scope, independently of search and secondary filters.
-        var scope = new ProcessListFilter(null, "all", null, null, instanceId, "all", null);
+        // Tab counts describe the readable list scope, independently of search and secondary filters. They follow the
+        // assignment filter, because the task list shows only the user's own tasks by default and would otherwise
+        // count tasks it does not list, such as failed tasks that never got an assignee.
+        var scope = new ProcessListFilter(null, "all", null, null, instanceId, assignee, null);
         var conditions = new ArrayList<>(Arrays.asList(predicates(cb, roots, scope, userId, access, now)));
         // Historical rows need no counters. Limit aggregation to the categories actually displayed.
         conditions.add(cb.or(categories.toArray(Predicate[]::new)));

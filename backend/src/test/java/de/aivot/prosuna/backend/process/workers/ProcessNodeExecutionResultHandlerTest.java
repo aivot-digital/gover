@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
@@ -202,7 +203,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Daten ergänzen")
                 .body("Bitte ergänzen")
-                .htmlBody("Bitte ergänzen")
+                .markdownBody("Bitte ergänzen")
                 .signatureDepartment(signatureDepartment)
                 .referenceId("stale-reference")
                 .build();
@@ -267,7 +268,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Daten ergänzen")
                                         .body("Bitte ergänzen")
-                                        .htmlBody("Bitte ergänzen")
+                                        .markdownBody("Bitte ergänzen")
                                         .build()
                         ))
         ));
@@ -320,7 +321,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Daten ergänzen")
                                         .body("Bitte ergänzen")
-                                        .htmlBody("Bitte ergänzen")
+                                        .markdownBody("Bitte ergänzen")
                                         .build()
                         ))
         );
@@ -390,6 +391,22 @@ class ProcessNodeExecutionResultHandlerTest {
     }
 
     @Test
+    void handleResult_DeletesTheRemovedUploadsOfTheCompletedTask() throws Exception {
+        var versions = mock(ProcessVersionRepository.class);
+        when(versions.findById(any())).thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(7).setProcessVersion(1)));
+        var attachmentService = mock(ProcessInstanceAttachmentService.class);
+        var handler = createCompletionHandler(new ArrayList<>(), new ArrayList<>(), versions, attachmentService);
+        var task = processInstanceTask(null);
+        var user = new UserEntity().setId("staff-user");
+
+        handler.handleResult(new RecordingProcessNodeExecutionLogger(), user,
+                new TestProcessNodeDefinition("Complete process"), new AuthoredElementValues(), processNode("Complete process"),
+                processInstance(), task, null, new ProcessNodeExecutionResultInstanceCompleted());
+
+        verify(attachmentService).deleteRemovedUploadsOfTask(task, "staff-user");
+    }
+
+    @Test
     void handleResult_PrefersExplicitRetentionDateAndAllowsUnconfiguredDraft() throws Exception {
         var versions = mock(ProcessVersionRepository.class);
         when(versions.findById(ProcessVersionEntityId.of(7, 1))).thenReturn(Optional.of(new ProcessVersionEntity()
@@ -449,7 +466,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .callToActions(List.of(new CommunicationMessageCallToAction("Open", "https://example.test/task")))
                 .timestamp(Instant.parse("2026-01-01T12:00:00Z"))
                 .attachments(List.of(mock(CommunicationMessageAttachment.class)))
@@ -508,7 +525,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var sentMessage = messageCaptor.getValue();
         assertEquals(message.subject(), sentMessage.subject());
         assertEquals(message.body(), sentMessage.body());
-        assertEquals(message.htmlBody(), sentMessage.htmlBody());
+        assertEquals(message.markdownBody(), sentMessage.markdownBody());
         assertEquals(message.callToActions(), sentMessage.callToActions());
         assertEquals(message.timestamp(), sentMessage.timestamp());
         assertEquals(message.attachments(), sentMessage.attachments());
@@ -563,7 +580,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var messageDetails = (Map<String, Object>) event.details().get("message");
         assertEquals("Subject", messageDetails.get("subject"));
         assertEquals("Body", messageDetails.get("body"));
-        assertEquals("Body", messageDetails.get("htmlBody"));
+        assertEquals("Body", messageDetails.get("markdownBody"));
         assertEquals(processInstance.getCaseNumber(), messageDetails.get("referenceId"));
         assertNull(messageDetails.get("sendingUser"));
         assertEquals(
@@ -584,7 +601,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Payment")
                 .body("Please pay")
-                .htmlBody("Please pay")
+                .markdownBody("Please pay")
                 .build();
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class))).thenReturn(Map.of());
         when(communicationService.describeDeliveryChannel(identity)).thenReturn("Servicekonto");
@@ -657,7 +674,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class)))
                 .thenThrow(new CommunicationException("Versand fehlgeschlagen"));
@@ -725,7 +742,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Subject")
                                         .body("Body")
-                                        .htmlBody("Body")
+                                        .markdownBody("Body")
                                         .build(),
                                 null
                         ))
@@ -771,7 +788,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Subject")
                                         .body("Body")
-                                        .htmlBody("Body")
+                                        .markdownBody("Body")
                                         .build(),
                                 null
                         ))
@@ -814,7 +831,7 @@ class ProcessNodeExecutionResultHandlerTest {
                                 new CommunicationMessage.Builder()
                                         .subject("Subject")
                                         .body("Body")
-                                        .htmlBody("Body")
+                                        .markdownBody("Body")
                                         .build(),
                                 null
                         ))
@@ -839,7 +856,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .signatureDepartment(new VDepartmentShadowedEntity().setId(departmentId).setName("Bürgerbüro"))
                 .build();
 
@@ -1215,15 +1232,22 @@ class ProcessNodeExecutionResultHandlerTest {
         var versions = mock(ProcessVersionRepository.class);
         when(versions.findById(any())).thenReturn(Optional.of(new ProcessVersionEntity().setProcessId(7).setProcessVersion(1)));
         return createHandler(savedTasks, users, mailService, communicationService, savedInstances,
-                processService, departmentService, versions);
+                processService, departmentService, versions, mock(ProcessInstanceAttachmentService.class));
     }
 
     private static ProcessNodeExecutionResultHandler createCompletionHandler(List<ProcessInstanceTaskEntity> savedTasks,
                                                                               List<ProcessInstanceEntity> savedInstances,
                                                                               ProcessVersionRepository versions) {
+        return createCompletionHandler(savedTasks, savedInstances, versions, mock(ProcessInstanceAttachmentService.class));
+    }
+
+    private static ProcessNodeExecutionResultHandler createCompletionHandler(List<ProcessInstanceTaskEntity> savedTasks,
+                                                                              List<ProcessInstanceEntity> savedInstances,
+                                                                              ProcessVersionRepository versions,
+                                                                              ProcessInstanceAttachmentService attachmentService) {
         return createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), null, savedInstances,
                 new TestProcessService(Optional.of(process())),
-                new TestDepartmentService(department()), versions);
+                new TestDepartmentService(department()), versions, attachmentService);
     }
 
     private static ProcessNodeExecutionResultHandler createHandler(List<ProcessInstanceTaskEntity> savedTasks,
@@ -1233,7 +1257,8 @@ class ProcessNodeExecutionResultHandlerTest {
                                                                    List<ProcessInstanceEntity> savedInstances,
                                                                    ProcessService processService,
                                                                    DepartmentService departmentService,
-                                                                   ProcessVersionRepository versions) {
+                                                                   ProcessVersionRepository versions,
+                                                                   ProcessInstanceAttachmentService attachmentService) {
         var assignments = mock(ProcessAssignmentService.class);
         try {
             doAnswer(invocation -> {
@@ -1260,7 +1285,8 @@ class ProcessNodeExecutionResultHandlerTest {
                 departmentService,
                 null,
                 null,
-                null
+                null,
+                attachmentService
         );
     }
 

@@ -1,5 +1,5 @@
 import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
-import {Box, ThemeProvider, useTheme} from '@mui/material';
+import {Typography, Box, ThemeProvider, useTheme} from '@mui/material';
 import {Outlet, useNavigate, useParams} from 'react-router-dom';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
@@ -16,7 +16,7 @@ import {setErrorMessage} from '../../../slices/shell-slice';
 import {isApiError} from '../../../models/api-error';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {CustomerInstanceViewHeader} from "./customer-instance-view-header";
-import {SnackbarProvider} from "../../../providers/snackbar-provider";
+import {SnackbarTheme} from '../../../providers/snackbar-provider';
 import {useAppSelector} from "../../../hooks/use-app-selector";
 import {createAppTheme} from "../../../theming/themes";
 import {BaseTheme} from "../../../theming/base-theme";
@@ -35,6 +35,11 @@ export interface CustomerInstanceViewOutletContext {
     taskIsActive: boolean;
 }
 
+interface LoadedInstanceStatus {
+    status: ProcessInstanceStatusResponse;
+    taskAccessKey: string | undefined;
+}
+
 export function CustomerInstanceView() {
     const {
         instanceAccessKey = '',
@@ -48,10 +53,28 @@ export function CustomerInstanceView() {
     const navigate = useNavigate();
     const baseTheme = useTheme();
 
-    const [instanceStatus, setInstanceStatus] = useState<ProcessInstanceStatusResponse | null | 'failed'>(null);
+    const [loadedInstanceStatus, setLoadedInstanceStatus] = useState<LoadedInstanceStatus | null | 'failed'>(null);
     const statusRequestGenerationRef = useRef(0);
 
     const metaDialog = useAppSelector((state) => state.app.showDialog);
+
+    const instanceStatus = useMemo<ProcessInstanceStatusResponse | null | 'failed'>(() => {
+        if (loadedInstanceStatus == null || loadedInstanceStatus === 'failed') {
+            return loadedInstanceStatus;
+        }
+
+        // A status only lists the tasks visible for the task route it was requested for. Keep showing the instance
+        // while the status of a newly selected task is pending, but treat its tasks as not loaded yet, so the tasks
+        // of the previous route cannot redirect away from the new one.
+        if (loadedInstanceStatus.taskAccessKey !== taskAccessKey) {
+            return {
+                ...loadedInstanceStatus.status,
+                tasks: null,
+            };
+        }
+
+        return loadedInstanceStatus.status;
+    }, [loadedInstanceStatus, taskAccessKey]);
 
     const resolvedTheme = useMemo(() => {
         if (instanceStatus == null || instanceStatus === 'failed') {
@@ -65,10 +88,13 @@ export function CustomerInstanceView() {
         const requestGeneration = ++statusRequestGenerationRef.current;
         try {
             const status = await new CustomerTaskViewApiService()
-                .getInstanceStatus(instanceAccessKey);
+                .getInstanceStatus(instanceAccessKey, taskAccessKey);
 
             if (requestGeneration === statusRequestGenerationRef.current) {
-                setInstanceStatus(status);
+                setLoadedInstanceStatus({
+                    status,
+                    taskAccessKey,
+                });
             }
         } catch (error) {
             if (requestGeneration === statusRequestGenerationRef.current) {
@@ -77,7 +103,7 @@ export function CustomerInstanceView() {
 
             // A newer status request or an explicit invalidation already superseded this request.
         }
-    }, [instanceAccessKey]);
+    }, [instanceAccessKey, taskAccessKey]);
 
     const fetchInstanceStatus = useCallback(() => {
         void refreshInstanceStatus()
@@ -93,20 +119,23 @@ export function CustomerInstanceView() {
                         status: isApiError(error) ? error.status : 500,
                     }));
                 }
-                setInstanceStatus('failed');
+                setLoadedInstanceStatus('failed');
             });
     }, [dispatch, refreshInstanceStatus]);
 
     const invalidateInstanceTasks = useCallback(() => {
         statusRequestGenerationRef.current += 1;
-        setInstanceStatus((currentStatus) => {
+        setLoadedInstanceStatus((currentStatus) => {
             if (currentStatus == null || currentStatus === 'failed') {
                 return currentStatus;
             }
 
             return {
                 ...currentStatus,
-                tasks: null,
+                status: {
+                    ...currentStatus.status,
+                    tasks: null,
+                },
             };
         });
     }, []);
@@ -171,7 +200,7 @@ export function CustomerInstanceView() {
 
     return (
         <ThemeProvider theme={resolvedTheme}>
-            <SnackbarProvider>
+            <SnackbarTheme theme={resolvedTheme}>
                 {/* Own the surface above the outlet so identity steps, task content and empty states stay consistent. */}
                 <Box sx={{
                     backgroundColor: getCustomerPageSurfaceColor,
@@ -190,25 +219,28 @@ export function CustomerInstanceView() {
                             titlePrefix={AppConfig.providerName}
                             faviconUrl={instanceStatus.theme.faviconUrl}
                         >
-                            {
-                                instanceStatus.tasks == null &&
-                                <LoadingPlaceholder/>
-                            }
+                            {/* PageWrapper owns the horizontal gutters; keep all task states aligned with the header. */}
+                            <Box sx={{py: {xs: 3, md: 5}}}>
+                                {
+                                    instanceStatus.tasks == null &&
+                                    <LoadingPlaceholder/>
+                                }
 
-                            {
-                                instanceStatus.tasks != null && !selectedTaskExists && activeCustomerTasks.length === 0 &&
-                                <NoTaskToDoPlaceholder/>
-                            }
+                                {
+                                    instanceStatus.tasks != null && !selectedTaskExists && activeCustomerTasks.length === 0 &&
+                                    <NoTaskToDoPlaceholder/>
+                                }
 
-                            {
-                                instanceStatus.tasks != null && activeCustomerTasks.length > 0 && !selectedTaskExists &&
-                                <LoadingPlaceholder/>
-                            }
+                                {
+                                    instanceStatus.tasks != null && activeCustomerTasks.length > 0 && !selectedTaskExists &&
+                                    <LoadingPlaceholder/>
+                                }
 
-                            {
-                                instanceStatus.tasks != null && selectedTaskExists &&
-                                <Outlet context={outletContext}/>
-                            }
+                                {
+                                    instanceStatus.tasks != null && selectedTaskExists &&
+                                    <Outlet context={outletContext}/>
+                                }
+                            </Box>
                         </PageWrapper>
                     </Box>
 
@@ -241,7 +273,7 @@ export function CustomerInstanceView() {
                     technicalSupportDepartmentId={instanceStatus.technicalSupportDepartmentId}
                     legalSupportDepartmentId={instanceStatus.legalSupportDepartmentId}
                 />
-            </SnackbarProvider>
+            </SnackbarTheme>
         </ThemeProvider>
     );
 }
@@ -249,7 +281,10 @@ export function CustomerInstanceView() {
 function NoTaskToDoPlaceholder() {
     return (
         <Box>
-            Freuen Sie sich. Es gibt für Sie nichts zu tun!
+            <Typography component="h2" variant="h4">Aktuell nichts zu bearbeiten</Typography>
+            <Typography sx={{mt: 1}}>
+                Für diesen Vorgang ist hier derzeit kein weiterer Schritt verfügbar.
+            </Typography>
         </Box>
     );
 }

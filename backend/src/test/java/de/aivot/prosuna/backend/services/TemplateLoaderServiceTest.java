@@ -1,5 +1,10 @@
 package de.aivot.prosuna.backend.services;
 
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DurationInputElement;
+import de.aivot.prosuna.backend.enums.DurationPrecision;
+import de.aivot.prosuna.backend.enums.DurationLargestUnit;
+import java.math.BigDecimal;
+
 import de.aivot.prosuna.backend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DateTimeInputElement;
@@ -31,21 +36,215 @@ import de.aivot.prosuna.backend.services.pdf.MarkdownDialect;
 import de.aivot.prosuna.backend.services.pdf.PdfElement;
 import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
 import org.junit.jupiter.api.Test;
+import org.thymeleaf.exceptions.TemplateInputException;
 import org.thymeleaf.templatemode.TemplateMode;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TemplateLoaderServiceTest {
+
+    @Test
+    void durationFieldRendersThroughDispatcherAndSupportsBlankPrint() {
+        var field = new DurationInputElement().setPrecision(DurationPrecision.Second);
+        field.setLabel("Aufwand");
+        field.setRequired(true);
+        var pdfElement = new PdfElement(field, BigDecimal.valueOf(99015), List.of());
+        var html = new TemplateLoaderService().processTemplate(
+                "form-parts/element-dispatcher.html",
+                Map.of("base", createBaseContext(FormPdfScope.Staff), "child", pdfElement),
+                TemplateMode.HTML);
+        assertTrue(html.contains("27 Stunden 30 Minuten 15 Sekunden"));
+        assertTrue(html.contains("Aufwand"));
+        var blank = new TemplateLoaderService().processTemplate(
+                "form-parts/element-dispatcher.html",
+                Map.of("base", createBaseContext(FormPdfScope.Blank), "child", pdfElement),
+                TemplateMode.HTML);
+        assertTrue(blank.contains("Stunden / Minuten / Sekunden"));
+        assertTrue(blank.contains("Pflichtangabe"));
+        assertFalse(blank.contains("27 Stunden"));
+        field.setLargestUnit(DurationLargestUnit.Day);
+        var withDays = new TemplateLoaderService().processTemplate(
+                "form-parts/element-dispatcher.html",
+                Map.of("base", createBaseContext(FormPdfScope.Staff), "child", pdfElement),
+                TemplateMode.HTML);
+        assertTrue(withDays.contains("1 Tag 3 Stunden 30 Minuten 15 Sekunden"));
+        for (var precision : DurationPrecision.values()) {
+            field.setPrecision(precision);
+            var blankDays = new TemplateLoaderService().processTemplate(
+                    "form-parts/element-dispatcher.html",
+                    Map.of("base", createBaseContext(FormPdfScope.Blank), "child", pdfElement),
+                    TemplateMode.HTML);
+            assertTrue(blankDays.contains("Tage / Stunden / Minuten"));
+            assertEquals(precision == DurationPrecision.Second, blankDays.contains(" / Sekunden"));
+        }
+    }
+
+    @Test
+    void processTemplate_DoesNotResolveTemplatesFromAssetStorage() throws IOException {
+        // The default local asset storage is rooted at ./data/assets/. Files stored there must never become templates.
+        var assetDirectory = Path.of("data", "assets");
+        var createdDirectories = new LinkedList<Path>();
+        for (var directory = assetDirectory; directory != null && !Files.exists(directory); directory = directory.getParent()) {
+            createdDirectories.addFirst(directory);
+        }
+        Files.createDirectories(assetDirectory);
+        var templateName = "template-loader-test-" + UUID.randomUUID() + ".html";
+        var assetFile = assetDirectory.resolve(templateName);
+        Files.writeString(assetFile, "<p>Vorlage aus den Dateien & Medien</p>");
+
+        try {
+            assertThrows(
+                    TemplateInputException.class,
+                    () -> new TemplateLoaderService().processTemplate(templateName, Map.of(), TemplateMode.HTML)
+            );
+        } finally {
+            Files.deleteIfExists(assetFile);
+            var directories = createdDirectories.descendingIterator();
+            while (directories.hasNext()) {
+                Files.deleteIfExists(directories.next());
+            }
+        }
+    }
+
+    @Test
+    void processTemplateContent_RendersContentWithTemplateDataAndBundledFragments() {
+        var html = new TemplateLoaderService().processTemplateContent(
+                """
+                        <style th:replace="~{./form-parts/style.html}"></style>
+                        <h1 th:text="${title}">Titel</h1>
+                        """,
+                Map.of(
+                        "title", "Antrag auf Beispielleistung",
+                        "base", createBaseContext(FormPdfScope.Blank)
+                ),
+                TemplateMode.HTML
+        );
+
+        assertTrue(html.contains("<h1>Antrag auf Beispielleistung</h1>"));
+        assertFalse(html.contains("<style></style>"));
+        assertEquals(1, html.split("<style\\b", -1).length - 1);
+        assertEquals(1, html.split("</style>", -1).length - 1);
+    }
+
+    @Test
+    void processTemplate_DoesNotResolveTemplatesOutsideTheTemplateDirectories() throws IOException {
+        try (var outsideFiles = OutsideTemplateFiles.create()) {
+            for (var templateName : outsideFiles.traversingTemplateNames()) {
+                assertThrows(
+                        TemplateInputException.class,
+                        () -> new TemplateLoaderService().processTemplate(templateName, Map.of(), TemplateMode.HTML),
+                        templateName
+                );
+            }
+        }
+    }
+
+    @Test
+    void processTemplateContent_DoesNotIncludeFilesOutsideTheTemplateDirectories() throws IOException {
+        try (var outsideFiles = OutsideTemplateFiles.create()) {
+            for (var templateName : outsideFiles.traversingTemplateNames()) {
+                assertThrows(
+                        TemplateInputException.class,
+                        () -> new TemplateLoaderService().processTemplateContent(
+                                "<div th:insert=\"~{" + templateName + "}\"></div>",
+                                Map.of(),
+                                TemplateMode.HTML
+                        ),
+                        templateName
+                );
+            }
+        }
+    }
+
+    @Test
+    void processTemplateContent_DoesNotIncludeBundledTemplatesOutsideTheFormFragments() {
+        assertThrows(
+                TemplateInputException.class,
+                () -> new TemplateLoaderService().processTemplateContent(
+                        "<div th:insert=\"~{pp_form_header.html}\"></div>",
+                        Map.of(),
+                        TemplateMode.HTML
+                )
+        );
+    }
+
+    @Test
+    void normalizeTemplateName_RejectsNamesThatCouldLeaveTheTemplateDirectory() {
+        assertEquals("form-parts/style.html", TemplateLoaderService.normalizeTemplateName("./form-parts//style.html"));
+        assertNull(TemplateLoaderService.normalizeTemplateName("form-parts/../form.html"));
+        assertNull(TemplateLoaderService.normalizeTemplateName("..\\application.yml"));
+        assertNull(TemplateLoaderService.normalizeTemplateName("./"));
+        assertNull(TemplateLoaderService.normalizeTemplateName(null));
+    }
+
+    /**
+     * Files that template names with parent segments would reach: one in the working directory next to
+     * {@code ./templates/} and one in the default local asset storage, and a resource on the classpath next to the
+     * bundled templates.
+     */
+    private record OutsideTemplateFiles(
+            Path workingDirectoryFile,
+            Path assetFile,
+            List<Path> createdDirectories
+    ) implements AutoCloseable {
+        static OutsideTemplateFiles create() throws IOException {
+            var createdDirectories = new ArrayList<Path>();
+            // The file resolver can only follow parent segments if ./templates/ exists, as on installations with overrides.
+            createDirectories(Path.of("templates"), createdDirectories);
+            var assetDirectory = Path.of("data", "assets");
+            createDirectories(assetDirectory, createdDirectories);
+
+            var fileName = "template-loader-test-" + UUID.randomUUID() + ".html";
+            var workingDirectoryFile = Files.writeString(Path.of(fileName), "<p>Datei außerhalb der Vorlagen</p>");
+            var assetFile = Files.writeString(assetDirectory.resolve(fileName), "<p>Vorlage aus den Dateien & Medien</p>");
+            return new OutsideTemplateFiles(workingDirectoryFile, assetFile, createdDirectories);
+        }
+
+        List<String> traversingTemplateNames() {
+            return List.of(
+                    "../" + workingDirectoryFile.getFileName(),
+                    "./form-parts/../../" + workingDirectoryFile.getFileName(),
+                    "../data/assets/" + assetFile.getFileName(),
+                    "../application.yml"
+            );
+        }
+
+        @Override
+        public void close() throws IOException {
+            Files.deleteIfExists(workingDirectoryFile);
+            Files.deleteIfExists(assetFile);
+            for (var directory : createdDirectories.reversed()) {
+                Files.deleteIfExists(directory);
+            }
+        }
+
+        private static void createDirectories(Path directory, List<Path> createdDirectories) throws IOException {
+            var missingDirectories = new LinkedList<Path>();
+            for (var current = directory; current != null && !Files.exists(current); current = current.getParent()) {
+                missingDirectories.addFirst(current);
+            }
+            Files.createDirectories(directory);
+            createdDirectories.addAll(missingDirectories);
+        }
+    }
 
     @Test
     void checkboxTemplate_RendersHintOnlyOnceInBlankPrint() {
@@ -91,6 +290,35 @@ class TemplateLoaderServiceTest {
     }
 
     @Test
+    void richTextFieldTemplate_RendersMaximumLengthOnlyInBlankPrint() {
+        var element = new RichTextInputElement()
+                .setMaxCharacters(2000);
+        element.setLabel("Beschreibung");
+
+        var blankHtml = new TemplateLoaderService().processTemplate(
+                "form-parts/elements/rich-text-field.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "element", element,
+                        "value", ""
+                ),
+                TemplateMode.HTML
+        );
+        var customerHtml = new TemplateLoaderService().processTemplate(
+                "form-parts/elements/rich-text-field.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Customer),
+                        "element", element,
+                        "value", "Text"
+                ),
+                TemplateMode.HTML
+        );
+
+        assertTrue(blankHtml.contains("<span>2000</span>"));
+        assertFalse(customerHtml.contains("<span>2000</span>"));
+    }
+
+    @Test
     void markdownDialect_RendersFrontendGfmFeatures() {
         var html = new MarkdownDialect().render("""
                 ~Einfach~
@@ -109,13 +337,11 @@ class TemplateLoaderServiceTest {
         assertTrue(html.contains("<del>Einfach</del>"));
         assertTrue(html.contains("href=\"https://example.org/path\""));
         assertTrue(html.contains(">https://example.org/path<"));
-        assertTrue(html.contains("<table>"));
-        assertTrue(html.contains("<th>Spalte A</th>"));
-        assertTrue(html.contains("<td>Wert 1</td>"));
-        assertTrue(html.contains("<sup"));
-        assertTrue(html.contains("Fussnote"));
-        assertFalse(html.contains("| Spalte A |"));
-        assertFalse(html.contains("[^1]"));
+        assertTrue(html.contains("| Spalte A | Spalte B |<br />"));
+        assertTrue(html.contains("<p>Referenz[^1]</p>"));
+        assertTrue(html.contains("<p>[^1]: Fussnote</p>"));
+        assertFalse(html.contains("<table"));
+        assertFalse(html.contains("<sup"));
     }
 
     @Test
@@ -144,8 +370,8 @@ class TemplateLoaderServiceTest {
                 TemplateMode.HTML
         );
 
-        assertTrue(html.contains("Zuständige Stelle"));
-        assertTrue(html.contains("Bewirtschaftende Stelle"));
+        assertTrue(html.contains("Verantwortliche Stelle"));
+        assertTrue(html.contains("Betreuende Stelle"));
         assertTrue(html.contains("Responsible Street 1"));
         assertTrue(html.contains("Managing Street 2"));
         assertFalse(html.contains("Responsible Department Name"));
@@ -268,7 +494,7 @@ class TemplateLoaderServiceTest {
 
         var html = renderBlankForm(rootElement);
 
-        assertTrue(html.contains("Hinweise zur Einreichung des ausgefüllten Antrages"));
+        assertTrue(html.contains("Hinweise zur Übermittlung des ausgefüllten Formulars"));
         assertTrue(html.contains("<strong>postalisch</strong>"));
         assertFalse(html.contains("Unterschrift"));
     }
@@ -293,6 +519,30 @@ class TemplateLoaderServiceTest {
         assertTrue(html.contains("<strong>Wichtig</strong>"));
         assertTrue(html.contains("<li>Punkt A</li>"));
         assertFalse(html.contains("- Punkt A"));
+    }
+
+    @Test
+    void generalInformationTemplate_RendersDeadlinesAndThePrivacyLinkAsText() {
+        var introductionStep = new IntroductionStepElement()
+                .setExpiring("<b>Bis 31.12.</b>\n<img src=x onerror=alert(1)>");
+        var form = new PrintableFormPdfData()
+                .setSlug("test-form")
+                .setRootElement(new FormLayoutElement().setChildren(List.of(introductionStep)));
+        var html = new TemplateLoaderService().processTemplate(
+                "form-parts/allgemeine-informationen.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "form", form,
+                        "step", new PdfElement(introductionStep, null, List.of())
+                ),
+                TemplateMode.HTML
+        );
+
+        // The form shows deadlines as plain text, so the PDF must neither render nor run HTML from them.
+        assertTrue(html.contains("&lt;b&gt;Bis 31.12.&lt;/b&gt;\n&lt;img src=x onerror=alert(1)&gt;"));
+        assertFalse(html.contains("<b>"));
+        assertFalse(html.contains("<img src=x"));
+        assertTrue(html.contains(">https://prosuna.example/test-form?dialog=privacy</a>"));
     }
 
     @Test
@@ -352,6 +602,7 @@ class TemplateLoaderServiceTest {
         chipInputElement.setLabel("Schlagwörter");
         chipInputElement.setMinItems(2);
         chipInputElement.setMaxItems(5);
+        chipInputElement.setMaxItemLength(30);
 
         var mapPointElement = new MapPointInputElement()
                 .setLabel("Position");
@@ -385,9 +636,11 @@ class TemplateLoaderServiceTest {
         );
 
         assertTrue(dateTimeHtml.contains("TT.MM.JJJJ HH:MM:SS"));
-        assertTrue(chipInputHtml.contains("Mehrere Einträge bitte kommasepariert nacheinander notieren."));
+        assertTrue(chipInputHtml.contains("Trennen Sie mehrere Einträge durch Kommas."));
         assertTrue(chipInputHtml.contains("Mindestens"));
         assertTrue(chipInputHtml.contains("Maximal"));
+        assertTrue(chipInputHtml.contains("Zeichen je Eintrag"));
+        assertTrue(chipInputHtml.contains(">30</span>"));
         assertTrue(mapPointHtml.contains("Adresse oder Koordinaten"));
     }
 

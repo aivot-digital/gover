@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.enums;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.*;
@@ -32,7 +33,7 @@ public enum ElementType implements Identifiable<Integer> {
     Number(8, "Zahl", "Erfasst Zahlenwerte und Mengenangaben."),
     ReplicatingContainerLayout(9, "Strukturierte Listeneingabe", "Wiederholt eine Elementgruppe mehrfach."),
     RichText(10, "Fließtext", "Zeigt formatierten Fließtext an."),
-    Radio(11, "Einzelauswahl (Optionsfelder)", "Ermöglicht genau eine Auswahl per Optionsfeld."),
+    // 11 is reserved for legacy radio definitions, normalized during deserialization.
     Select(12, "Einzelauswahl", "Ermöglicht genau eine Auswahl aus vorgegebenen Optionen."),
     Spacer(13, "Abstand", "Erzeugt gezielten Abstand zwischen Inhalten."),
     Table(14, "Tabelle", "Erfasst strukturierte Daten in Tabellenform."),
@@ -151,6 +152,9 @@ public enum ElementType implements Identifiable<Integer> {
             "Organisationseinheiten-Auswahl",
             "Wählt eine bestehende Organisationseinheit aus und speichert die ID der Organisationseinheit. Auswählbar sind alle Organisationseinheiten, auf die der Nutzer zugriff hat."
             ),
+    Duration(55, "Zeitdauer", "Erfasst, wie lange etwas dauert, zum Beispiel eine Tätigkeit oder die Nutzung eines Geräts."),
+    PhoneNumber(56, "Telefonnummer", "Erfasst Telefonnummern mit Ländervorwahl und integrierter Prüfung."),
+    Email(57, "E-Mail-Adresse", "Erfasst eine E-Mail-Adresse und prüft ihre Schreibweise."),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -164,7 +168,6 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_Number = "8";
     public static final String ID_ReplicatingContainer = "9";
     public static final String ID_RichText = "10";
-    public static final String ID_Radio = "11";
     public static final String ID_Select = "12";
     public static final String ID_Spacer = "13";
     public static final String ID_Table = "14";
@@ -208,10 +211,21 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_SecretSelectInput = "52";
     public static final String ID_AssetSelectInput = "53";
     public static final String ID_DepartmentSelectInput = "54";
+    public static final String ID_Duration = "55";
+    public static final String ID_PhoneNumber = "56";
+    public static final String ID_Email = "57";
 
     private final Integer key;
     private final String displayName;
     private final String description;
+
+    @JsonCreator
+    @Nonnull
+    public static ElementType fromKey(@Nonnull Integer key) {
+        // Type constraints in old UI-definition fields may also reference the retired id.
+        if (key == 11) return Select;
+        return findElement(key).orElseThrow(() -> new IllegalArgumentException("Unknown element type: " + key));
+    }
 
     ElementType(
             Integer id,
@@ -263,12 +277,14 @@ public enum ElementType implements Identifiable<Integer> {
             case Number -> new NumberInputElement();
             case ReplicatingContainerLayout -> new ReplicatingContainerLayoutElement();
             case RichText -> new RichTextContentElement();
-            case Radio -> new RadioInputElement();
             case Select -> new SelectInputElement();
             case Spacer -> new SpacerContentElement();
             case Table -> new TableInputElement();
             case Text -> new TextInputElement();
             case Time -> new TimeInputElement();
+            case Duration -> new DurationInputElement();
+            case PhoneNumber -> new PhoneNumberInputElement();
+            case Email -> new EmailInputElement();
             case IntroductionStep -> new IntroductionStepElement();
             case SubmitStep -> new SubmitStepElement();
             case SummaryStep -> new SummaryStepElement();

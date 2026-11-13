@@ -130,7 +130,7 @@ describe('FormIdentitySelectionControls', () => {
         const user = userEvent.setup();
 
         expect(screen.getByText(
-            'Bitte wählen Sie einen der nachfolgend angebotenen Kommunikationswege aus. Sie werden ausschließlich über den ausgewählten Kommunikationsweg kontaktiert. Die Angaben werden nur für die Kommunikation im Rahmen dieses Vorgangs verwendet.',
+            'Bitte wählen Sie einen der nachfolgend angebotenen Kommunikationswege aus. Sie werden vorrangig über den gewählten Kommunikationsweg kontaktiert. Andere Kontaktwege sind möglich.',
         )).toBeInTheDocument();
         await user.click(screen.getByRole('radio', {name: /Postfach/}));
         await waitFor(() => expect(deriveCommunication).toHaveBeenCalledWith('applicant', 20, {}, ['ALL']));
@@ -208,7 +208,7 @@ describe('FormIdentitySelectionControls', () => {
         }), {clearIdentity});
         const user = userEvent.setup();
 
-        await user.click(screen.getByRole('button', {name: 'Identität entfernen'}));
+        await user.click(screen.getByRole('button', {name: 'Auswahl ändern'}));
 
         await waitFor(() => expect(clearIdentity).toHaveBeenCalledWith('applicant'));
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
@@ -218,5 +218,23 @@ describe('FormIdentitySelectionControls', () => {
             communication: null,
             availableIdentityProviders: [expect.objectContaining({isAuthenticatedWithThis: false})],
         }));
+    });
+
+    it('explains a failed selection change without claiming the identity was removed', async () => {
+        const clearIdentity = vi.fn().mockRejectedValue(new Error('Network error'));
+        const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const {onChange} = renderControls(slot({identityType: 'Email', emailAddress: 'customer@example.test', isReady: true}), {clearIdentity});
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole('button', {name: 'Auswahl ändern'}));
+
+        await waitFor(() => expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({
+                message: 'Die Auswahl konnte nicht geändert werden. Bitte versuchen Sie es erneut.',
+            }),
+        })));
+        expect(onChange).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', {name: 'Auswahl ändern'})).toBeEnabled();
+        errorLog.mockRestore();
     });
 });

@@ -16,10 +16,12 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.xrepository.models.XRepositoryCodeList;
 import de.aivot.prosuna.backend.xrepository.services.XRepositoryCodeListService;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.siegmar.fastcsv.reader.CsvParseException;
 import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRecord;
 import de.siegmar.fastcsv.writer.CsvWriter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +29,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,6 +49,8 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     private final XRepositoryCodeListService xRepositoryCodeListService;
     private final AssetService assetService;
     private final StorageService storageService;
+    private final TransactionTemplate transaction;
+    private final MeterRegistry meterRegistry;
 
 
     @Autowired
@@ -54,20 +60,26 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             VCodeListItemRepository vCodeListItemRepository,
             XRepositoryCodeListService xRepositoryCodeListService,
             AssetService assetService,
-            StorageService storageService
+            StorageService storageService,
+            PlatformTransactionManager transactionManager,
+            MeterRegistry meterRegistry
     ) {
+        this.meterRegistry = meterRegistry;
         this.codeListRepository = codeListRepository;
         this.codeListItemRepository = codeListItemRepository;
         this.vCodeListItemRepository = vCodeListItemRepository;
         this.xRepositoryCodeListService = xRepositoryCodeListService;
         this.assetService = assetService;
         this.storageService = storageService;
+        this.transaction = new TransactionTemplate(transactionManager);
     }
 
     @Nonnull
     @Override
     public CodeListEntity create(@Nonnull CodeListEntity entity) throws ResponseException {
         entity.setId(null);
+        // A lock version from the request would make Spring Data look for a row that does not exist yet.
+        entity.setLockVersion(null);
         entity.setCreated(Instant.now());
         entity.setUpdated(Instant.now());
         normalizeCodeList(entity);
@@ -131,33 +143,80 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         return codeListRepository.exists(specification);
     }
 
-    public void syncCodeList(String codeListKey, boolean keepOutdated) {
-        var codeList = codeListRepository
-                .findById(codeListKey)
-                .orElse(null);
+    /**
+     * Requests a synchronization of a list with a synchronized source. The request is stored with the list, so it
+     * survives a lost broker message. Returns whether a request was recorded.
+     */
+    public boolean requestSync(@Nonnull String codeListKey, boolean keepOutdated) {
+        return codeListRepository.requestSync(codeListKey, keepOutdated, Instant.now()) == 1;
+    }
 
-        if (codeList == null) {
-            return;
+    /**
+     * Runs a requested synchronization. Only one run can claim a request, so duplicate messages do nothing. The
+     * source is read without holding locks; the result is recorded under a lock and only while this run still owns
+     * the synchronization. If the list was changed or requested again in the meantime, or a run that started after
+     * {@code staleBefore} took it over, the result is discarded. Returns whether the list must be published again,
+     * because a newer request is pending.
+     */
+    public boolean syncCodeList(@Nonnull String codeListKey, @Nonnull Instant staleBefore) {
+        var runId = UUID.randomUUID();
+        if (codeListRepository.claimSync(codeListKey, runId, Instant.now(), staleBefore) != 1) {
+            return false;
         }
-
-        if (!isSyncable(codeList)) {
-            return;
-        }
-
-        markSyncing(codeList);
 
         try {
-            switch (codeList.getSourceType()) {
-                case XRepository -> syncXRepository(codeList, keepOutdated);
-                case Asset -> syncAsset(codeList, keepOutdated);
-                case Manual, Plugin -> {
-                    return;
-                }
+            var codeList = codeListRepository
+                    .findById(codeListKey)
+                    .orElse(null);
+
+            if (codeList == null) {
+                return false;
             }
-            markSynced(codeList);
+
+            var importedItems = switch (codeList.getSourceType()) {
+                case XRepository -> fetchXRepositoryItems(codeList);
+                case Asset -> fetchAssetItems(codeList);
+                case Manual, Plugin -> null;
+            };
+
+            var recorded = transaction.execute(status -> recordSync(codeListKey, runId, codeList, importedItems));
+            if (Boolean.TRUE.equals(recorded)) {
+                meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "success").increment();
+                return false;
+            }
         } catch (Exception e) {
-            markSyncFailed(codeList, e.getMessage());
+            var message = e.getMessage();
+            var failed = codeListRepository.failSync(
+                    codeListKey,
+                    runId,
+                    message == null || message.isBlank() ? "Die Synchronisierung ist fehlgeschlagen." : message,
+                    Instant.now()
+            );
+            if (failed == 1) {
+                meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "failed").increment();
+                return false;
+            }
         }
+
+        // A newer request superseded this run. Releasing it lets the pending request be claimed.
+        codeListRepository.releaseSync(codeListKey, runId);
+        return true;
+    }
+
+    @Nonnull
+    public List<String> findPendingSyncKeys(@Nonnull Instant requestedBefore) {
+        return codeListRepository.findPendingSyncKeys(requestedBefore);
+    }
+
+    /** Records that a pending request is published again. Returns whether this caller may publish it. */
+    public boolean claimSyncRedispatch(@Nonnull String codeListKey, @Nonnull Instant requestedBefore, @Nonnull Instant now) {
+        return codeListRepository.claimSyncRedispatch(codeListKey, requestedBefore, now) == 1;
+    }
+
+    /** Returns synchronizations whose run started before {@code startedBefore} and is considered interrupted. */
+    @Nonnull
+    public List<String> findInterruptedSyncKeys(@Nonnull Instant startedBefore) {
+        return codeListRepository.findInterruptedSyncKeys(startedBefore);
     }
 
     @Nonnull
@@ -269,6 +328,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         var existingItem = codeListItemRepository
                 .findByIdAndCodeListId(itemId, codeListId)
                 .orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent(item, existingItem);
 
         existingItem.setColumns(normalizeItemColumns(codeList, item.getColumns()));
         codeListItemRepository.save(existingItem);
@@ -284,7 +344,51 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         codeListItemRepository.delete(existingItem);
     }
 
-    private void syncXRepository(CodeListEntity codeListEntity, boolean keepOutdated) throws ResponseException {
+    /**
+     * Records the result of a synchronization run in one transaction. Returns false without changes if the run no
+     * longer owns the synchronization.
+     */
+    private boolean recordSync(@Nonnull String codeListKey,
+                               @Nonnull UUID runId,
+                               @Nonnull CodeListEntity fetchedCodeList,
+                               @Nullable List<CodeListItemEntity> importedItems) {
+        var codeList = codeListRepository
+                .findByKeyForUpdate(codeListKey)
+                .orElse(null);
+
+        if (codeList == null || codeList.getStatus() != CodeListStatus.Syncing || !runId.equals(codeList.getSyncRunId())) {
+            return false;
+        }
+
+        try {
+            if (importedItems != null) {
+                codeList
+                        .setColumns(fetchedCodeList.getColumns())
+                        .setValueColumnIndex(fetchedCodeList.getValueColumnIndex())
+                        .setLabelColumnIndex(fetchedCodeList.getLabelColumnIndex());
+
+                if (codeList.getSyncKeepOutdated()) {
+                    upsertItems(codeList, importedItems);
+                } else {
+                    replaceItems(codeList, importedItems);
+                }
+            }
+        } catch (ResponseException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+
+        codeListRepository.save(codeList
+                .setStatus(CodeListStatus.Synced)
+                .setStatusMessage(null)
+                .setLastSync(Instant.now())
+                .setSyncRunId(null)
+                .setSyncStarted(null));
+        return true;
+    }
+
+    /** Reads the source into the detached list, which receives the source's columns. */
+    @Nonnull
+    private List<CodeListItemEntity> fetchXRepositoryItems(@Nonnull CodeListEntity codeListEntity) throws ResponseException {
         var xRepositoryCodeList = xRepositoryCodeListService.getCodeList(codeListEntity.getSourceRef());
         var columnRefs = extractColumnRefs(xRepositoryCodeList);
 
@@ -300,19 +404,15 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
 
         codeListEntity.setColumns(columnRefs);
         validateCodeListColumns(codeListEntity);
-        codeListRepository.save(codeListEntity);
 
         var importedItems = extractItems(codeListEntity, xRepositoryCodeList, columnRefs);
         validateUniqueItemValues(codeListEntity, importedItems);
-
-        if (keepOutdated) {
-            upsertItems(codeListEntity, importedItems);
-        } else {
-            replaceItems(codeListEntity, importedItems);
-        }
+        return importedItems;
     }
 
-    private void syncAsset(CodeListEntity codeListEntity, boolean keepOutdated) throws ResponseException {
+    /** Reads the source into the detached list, which receives the source's columns. */
+    @Nonnull
+    private List<CodeListItemEntity> fetchAssetItems(@Nonnull CodeListEntity codeListEntity) throws ResponseException {
         var assetKey = parseAssetKey(codeListEntity.getSourceRef());
         var asset = assetService
                 .retrieve(assetKey)
@@ -333,13 +433,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         }
 
         validateUniqueItemValues(codeListEntity, importedItems);
-        codeListRepository.save(codeListEntity);
-
-        if (keepOutdated) {
-            upsertItems(codeListEntity, importedItems);
-        } else {
-            replaceItems(codeListEntity, importedItems);
-        }
+        return importedItems;
     }
 
     private void replaceItems(@Nonnull CodeListEntity codeListEntity,
@@ -535,7 +629,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         try {
             return UUID.fromString(sourceRef);
         } catch (IllegalArgumentException e) {
-            throw ResponseException.badRequest("Die Asset-Referenz der Codeliste ist keine gültige UUID.", e);
+            throw ResponseException.badRequest("Die Dateireferenz der Codeliste ist keine gültige UUID.", e);
         }
     }
 
@@ -659,28 +753,6 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     private boolean isSyncable(@Nonnull CodeListEntity codeListEntity) {
         return codeListEntity.getSourceType() == CodeListSourceType.XRepository ||
                 codeListEntity.getSourceType() == CodeListSourceType.Asset;
-    }
-
-    private void markSyncing(@Nonnull CodeListEntity codeListEntity) {
-        codeListEntity
-                .setStatus(CodeListStatus.Syncing)
-                .setStatusMessage(null);
-        codeListRepository.save(codeListEntity);
-    }
-
-    private void markSynced(@Nonnull CodeListEntity codeListEntity) {
-        codeListEntity
-                .setStatus(CodeListStatus.Synced)
-                .setStatusMessage(null)
-                .setLastSync(Instant.now());
-        codeListRepository.save(codeListEntity);
-    }
-
-    private void markSyncFailed(@Nonnull CodeListEntity codeListEntity, @Nullable String message) {
-        codeListEntity
-                .setStatus(CodeListStatus.SyncFailed)
-                .setStatusMessage(message == null || message.isBlank() ? "Die Synchronisierung ist fehlgeschlagen." : message);
-        codeListRepository.save(codeListEntity);
     }
 
     @Nonnull

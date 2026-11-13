@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.projections.DashboardTaskCountsProjection;
 import de.aivot.prosuna.backend.process.projections.ProcessTaskAssignmentProjection;
 import de.aivot.prosuna.backend.process.projections.ProcessTaskRestartProjection;
+import de.aivot.prosuna.backend.process.projections.ProcessTaskStatusCountProjection;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -45,6 +46,10 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
     List<ProcessInstanceTaskEntity> findAllByProcessInstanceId(Long processInstanceId);
 
     boolean existsByPreviousProcessInstanceTaskId(Long previousProcessInstanceTaskId);
+
+    boolean existsByRestartForTaskId(Long restartForTaskId);
+
+    boolean existsByProcessInstanceId(Long processInstanceId);
 
     @Nonnull
     @Query("""
@@ -126,4 +131,19 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
     List<ProcessInstanceTaskEntity> getLatestTasksByProcessInstanceId(@Param("processInstanceId") Long processInstanceId);
 
     long countAllByStatusIs(ProcessTaskStatus status);
+
+    /**
+     * Counts the open tasks of real instances. The statuses are literals, because Postgres can only match them to the
+     * partial index {@code idx_process_instance_tasks_open_status} if they are known when the query is planned.
+     */
+    @Nonnull
+    @Query(value = """
+            SELECT task.status AS status, COUNT(*) AS total
+            FROM process_instance_tasks task
+            JOIN process_instances instance ON instance.id = task.process_instance_id
+            WHERE task.status IN (0, 1, 6, 7, 8, 9)
+              AND instance.created_for_test_claim_id IS NULL
+            GROUP BY task.status
+            """, nativeQuery = true)
+    List<ProcessTaskStatusCountProjection> countOpenTasksOfRealInstancesByStatus();
 }

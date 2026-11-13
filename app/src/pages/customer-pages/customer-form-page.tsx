@@ -28,20 +28,21 @@ import {
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     ElementDerivationResponse,
-    getLiteralElementValue,
 } from '../../models/element-data';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../slices/shell-slice';
 import {isApiError} from '../../models/api-error';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {BaseApiService} from '../../services/base-api-service';
 import {CustomerInputService} from '../../services/customer-input-service';
-import {SnackbarProvider} from 'notistack';
+import {SnackbarTheme} from '../../providers/snackbar-provider';
 import {MetaElement} from '../../components/meta-element/meta-element';
 import {setCurrentStep} from '../../slices/stepper-slice';
 import {FormHeaderComponent} from '../../components/form/form-header-component';
-import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
-import {ProcessEntity} from '../../modules/process/entities/process-entity';
-import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import type {
+    PublicFormNodeDTO,
+    PublicFormProcessDTO,
+    PublicFormVersionDTO,
+} from '../../modules/forms/dtos/public-form-response-dto';
 import {HelpDialog, HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
@@ -49,9 +50,7 @@ import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessib
 import {RootComponentFooter} from '../../components/form/root-component-footer';
 import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
 import {SUBMIT_EVENT} from '../../components/form/root.component.view';
-import {FileUploadElementItem, isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
-import {walkAuthoredElementValues} from '../../utils/element-data-utils';
-import {ElementType} from '../../data/element-type/element-type';
+import {collectTransientFileUploadItems} from '../../utils/element-data-utils';
 import {Submitted} from '../../components/submitted/submitted';
 import {DialogSearchParam, TestClaimSearchParam} from '../../modules/forms/constants/form-trigger-search-params';
 import {
@@ -72,7 +71,7 @@ import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info'
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {PaymentRequestOverview} from '../../modules/payment/components/payment-request-overview';
-import {showApiErrorSnackbar, showWarningSnackbar} from '../../slices/snackbar-slice';
+import {showApiErrorSnackbar} from '../../slices/snackbar-slice';
 import {useConfirm} from '../../providers/confirm-provider';
 import {InstantIso} from '../../utils/temporal-types';
 import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
@@ -82,9 +81,9 @@ import type {CustomerShellOutletContext} from '../../shells/customer/customer-sh
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
-    node: ProcessNodeEntity;
-    process: ProcessEntity;
-    version: ProcessVersionEntity;
+    node: PublicFormNodeDTO;
+    process: PublicFormProcessDTO;
+    version: PublicFormVersionDTO;
     identitySlots: IdentitySlot[];
 }
 
@@ -197,9 +196,7 @@ export function CustomerFormPage() {
         process,
         version,
     } = data ?? {};
-    const configuredFormSlug = node == null
-        ? undefined
-        : getLiteralElementValue<string>(node.configuration, 'formSlug');
+    const configuredFormSlug = node?.formSlug ?? undefined;
 
     useEffect(() => {
         if (process == null || node == null || version == null || configuredFormSlug == null) {
@@ -241,7 +238,7 @@ export function CustomerFormPage() {
         return createAppTheme(theme, BaseTheme, baseTheme.palette.mode);
     }, [baseTheme, theme]);
 
-    const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
+    const handleSubmitEvent = async (values: AuthoredElementValues, event: string, submittedDerivedData?: DerivedRuntimeElementData) => {
         if (event !== SUBMIT_EVENT || layoutElement == null || node == null || process == null || version == null) {
             return;
         }
@@ -274,21 +271,17 @@ export function CustomerFormPage() {
                 });
 
                 if (!proceedWithPaymentRequirements) {
-                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
+                    // The closed confirmation leaves the completed form available for editing.
                     return;
                 }
             }
 
-            errorMessage = 'Die Anhänge konnten nicht für das Absenden vorbereitet werden.';
+            errorMessage = 'Die Anlagen konnten nicht für das Absenden vorbereitet werden.';
             const formData = new FormData();
             formData.append('inputs', JSON.stringify(values));
 
-            const files: FileUploadElementItem[] = [];
-            walkAuthoredElementValues(layoutElement, values, (element, value) => {
-                if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
-                    files.push(...value);
-                }
-            });
+            // The backend discards the files of hidden upload fields, so they are not sent.
+            const files = collectTransientFileUploadItems(layoutElement, values, submittedDerivedData);
 
             for (const file of files) {
                 const response = await fetch(file.uri);
@@ -392,7 +385,7 @@ export function CustomerFormPage() {
 
     return (
         <ThemeProvider theme={resolvedTheme}>
-            <SnackbarProvider>
+            <SnackbarTheme theme={resolvedTheme}>
                 <MetaElement
                     faviconUrl={formFaviconUrl}
                     title={layoutElement.tabTitle ?? layoutElement.publicTitle ?? ''}
@@ -410,8 +403,6 @@ export function CustomerFormPage() {
                 >
                     <FormHeaderComponent
                         form={layoutElement}
-                        node={node}
-                        process={process}
                         version={version}
                         logoUrl={formLogoUrl}
                         logoUrlDark={formLogoUrlDark}
@@ -523,16 +514,14 @@ export function CustomerFormPage() {
                             startedProcessAccessKey={startedProcessAccessInfo.processInstanceAccessKey}
                             paymentRequired={startedProcessAccessInfo.paymentRequired}
                             formElement={layoutElement}
-                            node={node}
-                            process={process}
-                            version={version}
+                            processSlug={process.slug}
+                            formSlug={resolvedFormSlug}
+                            processVersion={version.processVersion}
                         />
                     }
 
                     <RootComponentFooter
                         form={layoutElement}
-                        node={node}
-                        process={process}
                         version={version}
                         logoUrl={formLogoUrl}
                         logoUrlDark={formLogoUrlDark}
@@ -566,7 +555,7 @@ export function CustomerFormPage() {
                     form={layoutElement}
                     version={version}
                 />
-            </SnackbarProvider>
+            </SnackbarTheme>
         </ThemeProvider>
     );
 }
@@ -765,7 +754,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                     }}
                                 >
                                     Für dieses Formular ist eine Identität erforderlich. Wählen Sie für jeden als verpflichtend
-                                    gekennzeichneten Eintrag ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.
+                                    gekennzeichneten Eintrag ein Konto oder, sofern angeboten, eine E-Mail-Adresse aus.
                                 </Typography>
                             )
                             : (
@@ -775,7 +764,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                         maxWidth: 680,
                                     }}
                                 >
-                                    Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können
+                                    Sie können ein Konto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können
                                     Sie das Formular ohne Identitätsangabe ausfüllen.
                                 </Typography>
                             )

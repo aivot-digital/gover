@@ -3,6 +3,12 @@ import {describe, expect, it} from 'vitest';
 import {FileUploadFileList, FileUploadHelper} from './file-upload-field-layout';
 
 describe('FileUploadHelper', () => {
+    it('clarifies optional minimums for empty uploads', () => {
+        const {rerender} = render(<FileUploadHelper fileCount={0} minFiles={3} maxFiles={3} />);
+        expect(screen.getByText('Bei Eingabe mindestens 3 Dateien')).toBeVisible();
+        rerender(<FileUploadHelper fileCount={0} minFiles={3} required />);
+        expect(screen.getByText('Mindestens 3 Dateien')).toBeVisible();
+    });
     it('should present a maximum file count as a limit rather than a target', () => {
         render(
             <FileUploadHelper
@@ -37,9 +43,11 @@ describe('FileUploadFileList', () => {
                     key: 'file',
                     name: fileName,
                     size: '51.01 MB',
-                    actionLabel: 'Datei entfernen',
-                    actionIcon: <span />,
-                    onAction: () => undefined,
+                    actions: [{
+                        label: 'Datei entfernen',
+                        icon: <span />,
+                        onAction: () => undefined,
+                    }],
                 }]}
             />,
         );

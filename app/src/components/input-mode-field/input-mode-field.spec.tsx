@@ -5,7 +5,8 @@ import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {InputModeField, type InputModeValue, type InputModeVariable} from './input-mode-field';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {InputMode, InputVariableSource} from '../../models/input-mode';
+import {InputMode, InputVariableSource, TemplateOutputFormat} from '../../models/input-mode';
+import {type DynamicTextInsertion} from '../dynamic-text/dynamic-text-metadata';
 import {BaseTheme} from '../../theming/base-theme';
 import {createDefaultAppTheme} from '../../theming/themes';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
@@ -14,6 +15,8 @@ vi.mock('../../hooks/use-api', () => {
     const api = {};
     return {useApi: () => api};
 });
+
+vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
 
 vi.mock('../code-editor/code-editor', () => ({
     CodeEditor: ({ariaLabel, value, readOnly, onChange}: {
@@ -46,6 +49,14 @@ const variables: InputModeVariable[] = [
         origin: 'Vorgang',
         source: InputVariableSource.ProtectedProcessData,
     },
+    {
+        id: 'message',
+        label: 'Nachricht',
+        path: 'nachricht',
+        origin: 'Formulareingang',
+        source: InputVariableSource.ProcessData,
+        markdown: true,
+    },
 ];
 
 function createInitialValue(): InputModeValue<string> {
@@ -54,7 +65,9 @@ function createInitialValue(): InputModeValue<string> {
 
 function Harness(props: {
     initialValue?: InputModeValue<string>;
-    onInsertVariable?: (variable: InputModeVariable) => void;
+    onChange?: (value: InputModeValue<string>) => void;
+    onInsertVariable?: (variable: InputModeVariable, insertion: DynamicTextInsertion) => void;
+    dynamicTextOutputFormat?: TemplateOutputFormat;
     error?: string;
     required?: boolean;
     disabled?: boolean;
@@ -71,7 +84,10 @@ function Harness(props: {
             label="Inkrement"
             variables={variables}
             value={value}
-            onChange={setValue}
+            onChange={(next) => {
+                setValue(next);
+                props.onChange?.(next);
+            }}
             onInsertVariable={props.onInsertVariable}
             error={props.error}
             required={props.required}
@@ -81,6 +97,7 @@ function Harness(props: {
             allowedModes={props.allowedModes}
             allowedVariableSources={props.allowedVariableSources}
             dynamicTextVariableSources={props.dynamicTextVariableSources}
+            dynamicTextOutputFormat={props.dynamicTextOutputFormat}
             renderLiteral={({value: literal, onChange, variableInsertAction, fieldProps}) => (
                 <>
                     <TextFieldComponent
@@ -221,6 +238,22 @@ describe('InputModeField', () => {
         expect(summary).toHaveTextContent('$.warenkorb.gesamtbetrag');
     });
 
+    it('remembers that a referenced variable holds Markdown', async () => {
+        const user = userEvent.setup();
+        const handleChange = vi.fn();
+        render(<Harness onChange={handleChange}/>);
+
+        await selectMode(user, 'Variable');
+        await user.click(screen.getByRole('button', {name: /Inkrement: Keine Variable referenziert/}));
+        await user.click(await screen.findByLabelText(/^Nachricht/));
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(handleChange.mock.lastCall?.[0]).toEqual({
+            type: InputMode.Variable,
+            reference: {source: InputVariableSource.ProcessData, path: 'nachricht', markdown: true},
+        });
+    });
+
     it('groups the primary and cancel actions before the clear action', async () => {
         const user = userEvent.setup();
         render(<Harness/>);
@@ -268,7 +301,44 @@ describe('InputModeField', () => {
         await user.click(await screen.findByText('Aktenzeichen des Vorgangs'));
         await user.click(screen.getByTestId('use-variable-reference'));
 
-        expect(handleInsertVariable).toHaveBeenCalledWith(variables[2]);
+        expect(handleInsertVariable).toHaveBeenCalledWith(variables[2], 'text');
+    });
+
+    it('offers formatted insertion only for Markdown fields', async () => {
+        const user = userEvent.setup();
+        const handleInsertVariable = vi.fn();
+        render(<Harness onInsertVariable={handleInsertVariable} dynamicTextOutputFormat={TemplateOutputFormat.Markdown}/>);
+
+        await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
+        await user.click(await screen.findByText('Aktenzeichen des Vorgangs'));
+        await user.click(screen.getByRole('radio', {name: 'Mit Formatierung'}));
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(handleInsertVariable).toHaveBeenCalledWith(variables[2], 'markdown');
+    });
+
+    it('inserts suggested Markdown inputs with formatting by default', async () => {
+        const user = userEvent.setup();
+        const handleInsertVariable = vi.fn();
+        render(<Harness onInsertVariable={handleInsertVariable} dynamicTextOutputFormat={TemplateOutputFormat.Markdown}/>);
+
+        await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
+        await user.click(await screen.findByText('Nachricht'));
+        expect(screen.getByRole('radio', {name: 'Mit Formatierung'})).toBeChecked();
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(handleInsertVariable).toHaveBeenCalledWith(variables[3], 'markdown');
+    });
+
+    it.each([TemplateOutputFormat.Html, TemplateOutputFormat.SingleLineText, undefined])
+    ('inserts text without asking for %s fields', async (outputFormat) => {
+        const user = userEvent.setup();
+        render(<Harness onInsertVariable={vi.fn()} dynamicTextOutputFormat={outputFormat}/>);
+
+        await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
+
+        expect(await screen.findByText('Aktenzeichen des Vorgangs')).toBeInTheDocument();
+        expect(screen.queryByRole('radio', {name: 'Mit Formatierung'})).not.toBeInTheDocument();
     });
 
     it('applies dynamic-text source restrictions independently from variable mappings', async () => {

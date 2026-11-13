@@ -1,6 +1,7 @@
 import {type UiDefinitionInputFieldElementItem} from '../../../models/elements/form/input/ui-definition-input-field-element';
 import {type ProcessNodeWrite} from './process-node-entity';
 import {type InputVariableSuggestion} from '../../../models/input-mode';
+import {type CodeListValueMode} from '../../code-lists/enums/code-list-value-mode';
 
 export interface ProcessNodeDefinitionMetadata {
     reusableUiDefinitions: ProcessNodeDefinitionMetadataReusableUiDefinition[];
@@ -39,6 +40,15 @@ export interface ProcessNodeDefinitionMetadataForwardedProcessDataKey {
     label: string;
     subLabel: string | null;
     origin: ProcessNodeWrite;
+    valueOptions?: ProcessNodeDefinitionMetadataValueOption[] | null;
+    // Set instead of valueOptions when the options come from a code list, which clients load themselves.
+    codeListKey?: string | null;
+    codeListValueMode?: CodeListValueMode | null;
+}
+
+export interface ProcessNodeDefinitionMetadataValueOption {
+    value: string;
+    label: string;
 }
 
 export interface ProcessNodeDefinitionMetadataForwardedIdentity {

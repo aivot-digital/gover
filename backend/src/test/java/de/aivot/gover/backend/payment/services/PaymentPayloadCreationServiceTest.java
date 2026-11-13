@@ -12,6 +12,9 @@ import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,6 +23,18 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PaymentPayloadCreationServiceTest {
+    @ParameterizedTest
+    @ValueSource(strings = {"Suite 2", "Suite 2\nBuilding A", "Suite 2\r\nBuilding A", "Suite 2\rBuilding A"})
+    void shouldPreserveMappedAddressLines(String addressLine) throws PaymentException {
+        var request = createService().createRequest(requestorConfig(new PaymentConfigElementValueRequestorMapping(
+                PaymentConfigElementValueRequestorMapping.RequestorSourceType.FixPerson,
+                null, null, null, null, null, null, null, "addressLine", null, null, null
+        )), null, new ProcessExecutionData().addProcessData("addressLine", addressLine)).orElseThrow();
+
+        assertEquals(addressLine.contains("Building A") ? List.of("Suite 2", "Building A") : List.of("Suite 2"),
+                request.getRequestor().getAddress().getAddressLine());
+    }
+
     @Test
     void shouldCreatePaymentRequestFromFixedItemAndRequestorMapping() throws PaymentException {
         var processData = new ProcessExecutionData().addProcessData(Map.of(
@@ -159,7 +174,19 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
         assertNull(requestor.getOrganizationName());
-        assertNotNull(requestor.getAddress());
+        assertNull(requestor.getAddress());
+    }
+
+    @Test
+    void shouldNotAddAnEmptyAddressWhenOnlyTheFirstNameIsMapped() throws PaymentException {
+        var request = createService().createRequest(requestorConfig(new PaymentConfigElementValueRequestorMapping(
+                PaymentConfigElementValueRequestorMapping.RequestorSourceType.FixPerson,
+                null, "firstName", null, null, null, null, null, null, null, null, null
+        )), null, new ProcessExecutionData().addProcessData("firstName", "Ada")).orElseThrow();
+
+        assertEquals("Ada", request.getRequestor().getFirstName());
+        assertNull(request.getRequestor().getName());
+        assertNull(request.getRequestor().getAddress());
     }
 
     @Test
@@ -218,7 +245,7 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getName());
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
-        assertNotNull(requestor.getAddress());
+        assertNull(requestor.getAddress());
     }
 
     @Test
@@ -282,7 +309,7 @@ class PaymentPayloadCreationServiceTest {
         assertNull(requestor.getFirstName());
         assertNull(requestor.getGender());
         assertNull(requestor.getOrganizationName());
-        assertNotNull(requestor.getAddress());
+        assertNull(requestor.getAddress());
     }
 
     @Test
@@ -382,6 +409,100 @@ class PaymentPayloadCreationServiceTest {
 
         assertEquals(new BigDecimal("0.03"), request.getPaymentItems().getFirst().getTotalPrice());
         assertEquals(new BigDecimal("0.03"), request.getTotal());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "7.1234,  7.1234, 712.34, 10712.34",
+            "0.0001,  0.0001, 0.01,   10000.01",
+            "7.12344, 7.1234, 712.34, 10712.34",
+            "7.12345, 7.1235, 712.35, 10712.35"
+    })
+    void shouldPreserveFourDecimalTaxRatesInPaymentPayload(
+            BigDecimal taxRate,
+            BigDecimal expectedTaxRate,
+            BigDecimal expectedTax,
+            BigDecimal expectedTotal
+    ) throws PaymentException {
+        var config = new PaymentConfigElementValue(
+                null,
+                "Purpose",
+                "Description",
+                false,
+                null,
+                List.of(new PaymentConfigElementValueItem(
+                        PaymentConfigElementValueItem.IdType.Predefined,
+                        "fee",
+                        "Fee",
+                        "FEE",
+                        PaymentConfigElementValueItem.CostType.FixedCosts,
+                        new BigDecimal("10000.00"),
+                        null,
+                        null,
+                        null,
+                        PaymentConfigElementValueItem.QuantityType.FixedQuantity,
+                        1L,
+                        null,
+                        null,
+                        null,
+                        taxRate,
+                        null
+                )),
+                null,
+                null
+        );
+
+        var request = createService().createRequest(config, null, new ProcessExecutionData()).orElseThrow();
+        var item = request.getPaymentItems().getFirst();
+        var providerItem = item.toXBezahldienstePaymentItem().orElseThrow();
+
+        assertAll(
+                () -> assertEquals(expectedTaxRate, item.getTaxRate()),
+                () -> assertEquals(expectedTaxRate, providerItem.getTaxRate()),
+                () -> assertEquals(expectedTax, providerItem.getTotalTaxAmount()),
+                () -> assertEquals(expectedTotal, request.getTotal()),
+                () -> assertEquals(request.getTotal(), providerItem.getBruttoAmount())
+        );
+    }
+
+    @Test
+    void shouldInsertProcessDataAsTextForThePaymentProvider() throws PaymentException {
+        var config = new PaymentConfigElementValue(
+                null,
+                "Antrag von {{ $.name }}",
+                "Für {{ $.name }}",
+                false,
+                null,
+                List.of(new PaymentConfigElementValueItem(
+                        PaymentConfigElementValueItem.IdType.Predefined,
+                        "fee",
+                        "Gebühr für {{ $.name }}",
+                        "AZ {{ $.name }}",
+                        PaymentConfigElementValueItem.CostType.FixedCosts,
+                        BigDecimal.TEN,
+                        null,
+                        null,
+                        null,
+                        PaymentConfigElementValueItem.QuantityType.FixedQuantity,
+                        1L,
+                        null,
+                        null,
+                        null,
+                        BigDecimal.ZERO,
+                        null
+                )),
+                null,
+                null
+        );
+        var processData = new ProcessExecutionData().addProcessData("name", "O'Brien & Söhne\nGmbH");
+
+        var payload = createService().createRequest(config, null, processData).orElseThrow();
+
+        // Payment providers receive plain text. Only the descriptions keep their line breaks.
+        assertEquals("Antrag von O'Brien & Söhne GmbH", payload.getPurpose());
+        assertEquals("Für O'Brien & Söhne\nGmbH", payload.getDescription());
+        assertEquals("AZ O'Brien & Söhne GmbH", payload.getPaymentItems().getFirst().getReference());
+        assertEquals("Gebühr für O'Brien & Söhne\nGmbH", payload.getPaymentItems().getFirst().getDescription());
     }
 
     @Test

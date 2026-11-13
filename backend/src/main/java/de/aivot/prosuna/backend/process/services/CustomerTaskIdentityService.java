@@ -67,6 +67,8 @@ public class CustomerTaskIdentityService {
             var provider = requiredExistingIdentity.provider();
             existingIdentityState = new ExistingIdentityState(
                     requiredExistingIdentity.identityId(),
+                    // Only the configured identity label is exposed before the account has been confirmed.
+                    requiredExistingIdentity.identity().title(),
                     isReady,
                     new IdentityProviderOptionResponseDTO(
                             provider.getKey(),
@@ -133,7 +135,7 @@ public class CustomerTaskIdentityService {
                                             @Nonnull String origin) throws ResponseException {
         var requiredIdentity = resolveRequiredProviderIdentity(processInstance, processNodeCustomerView);
         if (requiredIdentity == null) {
-            throw ResponseException.badRequest("Für diese Aufgabe ist keine Anmeldung mit einem Nutzerkonto erforderlich.");
+            throw ResponseException.badRequest("Für diese Aufgabe ist keine Anmeldung mit einem Konto erforderlich.");
         }
 
         return identityService.createRedirectURL(
@@ -199,7 +201,7 @@ public class CustomerTaskIdentityService {
         var requiredIdentity = processIdentities == null ? null : processIdentities.get(requiredIdentityId);
         if (requiredIdentity == null) {
             throw ResponseException.internalServerError(
-                    "Die für die Kundenaufgabe erforderliche Identität ist im Vorgang nicht vorhanden."
+                    "Die für diese Aufgabe erforderliche Identität ist im Vorgang nicht vorhanden."
             );
         }
 
@@ -211,7 +213,7 @@ public class CustomerTaskIdentityService {
                 || requiredIdentity.uniqueIdFromIdentityProvider() == null
                 || requiredIdentity.uniqueIdFromIdentityProvider().isBlank()) {
             throw ResponseException.internalServerError(
-                    "Die für die Kundenaufgabe erforderliche Anbieteridentität ist unvollständig."
+                    "Die für diese Aufgabe erforderliche Anbieteridentität ist unvollständig."
             );
         }
 
@@ -284,6 +286,7 @@ public class CustomerTaskIdentityService {
 
     public record ExistingIdentityState(
             @Nonnull String id,
+            @Nullable String title,
             boolean isReady,
             @Nonnull IdentityProviderOptionResponseDTO identityProvider
     ) {

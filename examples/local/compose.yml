@@ -9,7 +9,7 @@ name: prosuna
 services:
   # Prosuna backend API and the central network endpoint for the local stack.
   prosuna_api:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-147
     restart: unless-stopped
     command: serve
     depends_on:
@@ -82,7 +82,7 @@ services:
   # Prosuna web application. Sharing the API network namespace makes both containers
   # available through the prosuna_api host while keeping their ports private.
   prosuna_app:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-147
     restart: unless-stopped
     command: web
     network_mode: "service:prosuna_api"
@@ -114,7 +114,7 @@ services:
   # Development identity provider. start-dev and the fixed bootstrap credentials are
   # intentionally convenient and must never be copied to a production deployment.
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.7.4.0
     restart: unless-stopped
     depends_on:
       - keycloak_database
@@ -140,7 +140,7 @@ services:
   # Waits for Keycloak, then creates the Prosuna realms, clients, and managed admin.
   # The managed admin credentials come from .env; bootstrap_admin is only used during setup.
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.28
     restart: on-failure
     depends_on:
       - keycloak
@@ -226,15 +226,14 @@ services:
     networks:
       - mail
 
-  # Durable message broker for background jobs.
+  # Message broker for background jobs. Pending work is stored in the database, so the
+  # broker needs no volume and may start empty.
   rabbitmq:
     image: docker.io/library/rabbitmq:4-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: prosuna
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - prosuna
 
@@ -243,13 +242,6 @@ services:
   caddy:
     image: docker.io/library/caddy:2-alpine
     restart: unless-stopped
-    depends_on:
-      prosuna_api:
-        condition: service_healthy
-        restart: true
-      prosuna_app:
-        condition: service_healthy
-        restart: true
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:Z
     ports:
@@ -265,7 +257,6 @@ volumes:
   prosuna_database_data:
   keycloak_database_data:
   mailpit_data:
-  rabbitmq_data:
 
 
 # Networks keep databases and infrastructure services reachable only by the containers

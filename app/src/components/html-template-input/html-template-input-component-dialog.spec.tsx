@@ -13,6 +13,9 @@ import {
 import {HtmlTemplateInputComponentDialog} from './html-template-input-component-dialog';
 import type {VStorageIndexItemWithAssetEntity} from '../../modules/storage/entities/storage-index-item-entity';
 
+// The variable picker's copy action uses the app dispatch; this dialog test renders without a Redux store.
+vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 describe('HtmlTemplateInputComponentDialog', () => {
     afterEach(() => {
         vi.restoreAllMocks();
@@ -73,6 +76,66 @@ describe('HtmlTemplateInputComponentDialog', () => {
         await waitFor(() => {
             expect(onChangeSlots).toHaveBeenCalledWith({
                 message: expect.stringContaining('{{ $.person.name }}'),
+            });
+        });
+    });
+
+    it('inserts a Markdown value into the edited text slot as plain text', async () => {
+        const template = `
+            <div
+                data-slot="subject"
+                data-slot-type="text"
+                data-slot-label="Betreff"
+            ></div>
+        `;
+        vi.spyOn(AssetsApiService.prototype, 'downloadContentInStorageProvider')
+            .mockResolvedValue({text: async () => template} as Blob);
+        const onChangeSlots = vi.fn();
+        const user = userEvent.setup();
+        const rootElement = generateElementWithDefaultValues(ElementType.GroupLayout);
+
+        render(
+            <ViewDispatcherContextProvider value={{
+                mode: ViewDispatcherMode.Viewer,
+                rootElement,
+                allElements: [rootElement],
+                rootAuthoredElementValues: {},
+                rootDerivedData: createDerivedRuntimeElementData(),
+                inputModeVariables: [{
+                    source: InputVariableSource.ProcessData,
+                    path: 'nachricht',
+                    label: 'Nachricht',
+                    markdown: true,
+                }],
+            }}>
+                <HtmlTemplateInputComponentDialog
+                    open
+                    label="Brief"
+                    asset={{pathFromRoot: '/template.html', storageProviderId: 1} as VStorageIndexItemWithAssetEntity}
+                    slots={{}}
+                    onChangeSlots={onChangeSlots}
+                    onClose={vi.fn()}
+                />
+            </ViewDispatcherContextProvider>,
+        );
+
+        const iframe = await screen.findByTitle('Brief Vorschau') as HTMLIFrameElement;
+        iframe.contentWindow!.document.body.innerHTML = template;
+        fireEvent.load(iframe);
+        fireEvent.click(iframe.contentWindow!.document.querySelector('[data-slot]')!);
+
+        await user.click(await screen.findByRole('button', {name: 'Variable referenzieren'}));
+        await user.click(await screen.findByText('Nachricht'));
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        await waitFor(() => {
+            expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
+        });
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+
+        await waitFor(() => {
+            expect(onChangeSlots).toHaveBeenCalledWith({
+                subject: '{{ _text_v1.fromMarkdown($.nachricht) }}',
             });
         });
     });

@@ -203,7 +203,7 @@ vi.mock('../../../components/developer-tools/developer-tools', () => ({
             type="button"
             onClick={() => onElementDataChange({field: 'imported'})}
         >
-            Element-Daten importieren
+            Formulareingaben importieren
         </button>
     ),
 }));
@@ -396,7 +396,7 @@ describe('FormNodeEditorPage error handling', () => {
         mocks.devToolsTab = 0;
         await renderLoadedEditor();
 
-        fireEvent.click(screen.getByRole('button', {name: 'Element-Daten importieren'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Formulareingaben importieren'}));
 
         expect(mocks.replaceAuthoredElementValues).toHaveBeenCalledOnce();
         expect(mocks.replaceAuthoredElementValues).toHaveBeenCalledWith({field: 'imported'});
@@ -488,7 +488,7 @@ describe('FormNodeEditorPage error handling', () => {
 
         fireEvent.click(screen.getByRole('button', {name: 'Testformular absenden'}));
 
-        await waitFor(() => expectSnackbar('Die Anhänge konnten nicht für das Absenden vorbereitet werden.'));
+        await waitFor(() => expectSnackbar('Die Anlagen konnten nicht für das Absenden vorbereitet werden.'));
         expect(FormTriggerApiService.prototype.submitForm).not.toHaveBeenCalled();
         expectActionTypeNotDispatched('shell/setLoadingMessage');
     });

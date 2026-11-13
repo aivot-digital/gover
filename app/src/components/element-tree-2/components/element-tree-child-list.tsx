@@ -90,6 +90,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
     const {
         editable,
         displayContext,
+        registerNewElement,
     } = useElementTreeContext();
 
     const {
@@ -258,7 +259,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                     }}
                     variant="outlined"
                 >
-                    <em>Keine Element vorhanden</em>
+                    <em>Keine Elemente vorhanden</em>
                 </Paper>
             ),
         })
@@ -361,6 +362,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                 parentElement={parents[parents.length - 1]}
                 allParents={parents}
                 title={addElementDialogTitle}
+                onCreateElement={(element) => registerNewElement?.(element.id)}
                 onAddElements={(elements) => {
                     const updatedValue = [...value, ...elements];
                     onChange(updatedValue as T[]);

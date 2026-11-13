@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
+import de.aivot.prosuna.backend.process.utils.ProcessNodeDataKeyUtils;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
@@ -12,6 +13,7 @@ import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessIdentityIdInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.PaymentConfigElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -37,6 +39,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.models.InputVariableSuggestion;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
@@ -50,6 +53,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
@@ -72,7 +76,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -98,6 +104,7 @@ class ProcessNodeServiceTest {
     private ProcessEdgeRepository processEdgeRepository;
     private ProcessRepository processRepository;
     private ProcessVersionRepository processVersionRepository;
+    private ProcessTestClaimRepository processTestClaimRepository;
     private ElementDerivationService elementDerivationService;
     private IdentityCommunicationAvailabilityService identityCommunicationAvailabilityService;
     private ProsunaConfig prosunaConfig;
@@ -111,6 +118,7 @@ class ProcessNodeServiceTest {
         processEdgeRepository = mock(ProcessEdgeRepository.class);
         processRepository = mock(ProcessRepository.class);
         processVersionRepository = mock(ProcessVersionRepository.class);
+        processTestClaimRepository = mock(ProcessTestClaimRepository.class);
         elementDerivationService = mock(ElementDerivationService.class);
         identityCommunicationAvailabilityService = mock(IdentityCommunicationAvailabilityService.class);
         prosunaConfig = new ProsunaConfig();
@@ -157,7 +165,7 @@ class ProcessNodeServiceTest {
                 permissionService,
                 new ProcessNodePortResolver(jakarta.validation.Validation.buildDefaultValidatorFactory().getValidator()),
                 new ProcessNodePortResolutionCache(de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper()),
-                new ProcessVersionDraftGuard(processVersionRepository)
+                new ProcessVersionDraftGuard(processVersionRepository, processTestClaimRepository)
         );
     }
 
@@ -176,12 +184,12 @@ class ProcessNodeServiceTest {
 
         node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, false)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
-                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgangsport")));
         org.mockito.Mockito.verify(processEdgeRepository, org.mockito.Mockito.never()).delete(any(ProcessEdgeEntity.class));
         assertEquals("processing_overdue", edge.getViaPort());
         node.setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(null, true)));
         assertTrue(service.validate(node, provider, true).orElseThrow().problems().stream()
-                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgang")));
+                .anyMatch(problem -> problem.contains("nicht mehr verfügbaren Ausgangsport")));
     }
 
     @Test
@@ -369,6 +377,32 @@ class ProcessNodeServiceTest {
         ));
     }
 
+    @Test
+    void incomingMetadata_ShouldMarkMarkdownOutputsAndTheirMappedProcessDataKeys() throws Exception {
+        var nodeA = createNode(1, "a");
+        nodeA.getOutputMappings().put("result", "plain");
+        nodeA.getOutputMappings().put("content", "mail.content");
+        var targetNode = createNode(2, "target");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(targetNode, nodeA));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, nodeA.getId(), targetNode.getId())));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(targetNode);
+
+        var markdownByVariable = result.inputVariables()
+                .stream()
+                .filter(variable -> Set.of("result", "content", "plain", "mail.content").contains(variable.path()))
+                .collect(Collectors.toMap(variable -> variable.source() + ":" + variable.path(), InputVariableSuggestion::markdown));
+        assertEquals(Map.of(
+                "ElementData:result", false,
+                "ElementData:content", true,
+                "ProcessData:plain", false,
+                "ProcessData:mail.content", true
+        ), markdownByVariable);
+    }
+
     // Blank output mappings never reach the key filter, so only non-blank invalid keys exercise it here.
     @ParameterizedTest
     @ValueSource(strings = {"person-name", "people..name", "people[", "people[2147483648]", "[0].name"})
@@ -453,6 +487,33 @@ class ProcessNodeServiceTest {
         assertEquals(List.of("person.name", "people[0].name"), result.inputVariables().stream()
                 .filter(variable -> variable.source() == InputVariableSource.ProcessData)
                 .map(variable -> variable.path()).toList());
+    }
+
+    @Test
+    void incomingMetadata_ShouldPreserveValueSourcesOfCanonicalizedDataKeys() throws Exception {
+        var source = createNode(1, "source");
+        var target = createNode(2, "target");
+        var metadata = ProcessNodeDefinitionMetadata.empty()
+                .addForwardedProcessDataKey(new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
+                        " languages ", "Sprachen", null, source, null, "languages",
+                        ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.CodeListValueMode.LabelOnly))
+                .addForwardedProcessDataKey("status", "Status", null, source, List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")));
+        useMetadataProvider(metadata, ProcessNodeType.Action);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(source, target));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2)));
+
+        var result = service.getIncomingProcessNodeDefinitionMetadata(target);
+
+        assertEquals(List.of(
+                new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
+                        "languages", "Sprachen", null, source, null, "languages",
+                        ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.CodeListValueMode.LabelOnly),
+                new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("status", "Status", null, source, List.of(
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")), null, null)
+        ), result.forwardedProcessDataKeys());
     }
 
     @Test
@@ -698,6 +759,63 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void validate_ShouldListPaymentConfigurationDetailsIndividually() throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Nonnull
+            @Override
+            public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
+                var field = new PaymentConfigElement();
+                field.setId("payment");
+                field.setLabel("Zahlung");
+                var layout = new ConfigLayoutElement();
+                layout.setId("configuration");
+                layout.addChild(field);
+                return layout;
+            }
+        };
+        var data = new DerivedRuntimeElementData();
+        data.getElementStates().put("payment", new ComputedElementState().setError("Konfiguration fehlerhaft.")
+                .setErrorDetails(Map.of("messages", List.of("Beschreibung fehlt.", "Zahlungsposition 2: Betrag fehlt."))));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class))).thenReturn(data);
+
+        var problems = service.validate(createNode(1, "a"), provider, false).orElseThrow();
+
+        assertEquals(List.of("Zahlung: Beschreibung fehlt.", "Zahlung: Zahlungsposition 2: Betrag fehlt."), problems.problems());
+    }
+
+    @Test
+    void validate_ShouldKeepProviderErrorsInConfigurationSummaries() throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Nonnull
+            @Override
+            public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
+                var field = new PaymentConfigElement();
+                field.setId("payment");
+                field.setLabel("Zahlung");
+                var layout = new ConfigLayoutElement();
+                layout.setId("configuration");
+                layout.addChild(field);
+                return layout;
+            }
+            @Override
+            public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeConfigurationValidationContext<TestNodeConfig> context) {
+                return Map.of("payment", List.of("Provider error."));
+            }
+        };
+        var data = new DerivedRuntimeElementData();
+        data.getElementStates().put("payment", new ComputedElementState().setError("Konfiguration fehlerhaft.")
+                .setErrorDetails(Map.of("description", "Beschreibung fehlt.", "messages", List.of("Beschreibung fehlt.", "Zahlungsposition 2: Betrag fehlt."))));
+        when(elementDerivationService.derive(any(), any(InputModeEvaluationContext.class))).thenReturn(data);
+
+        var problems = service.validate(createNode(1, "a"), provider, false).orElseThrow();
+
+        assertEquals(List.of("Zahlung: Beschreibung fehlt.", "Zahlung: Zahlungsposition 2: Betrag fehlt.", "Zahlung: Provider error."), problems.problems());
+        var details = (Map<?, ?>) data.getElementStates().get("payment").getErrorDetails();
+        assertEquals("Beschreibung fehlt.", details.get("description"));
+        assertEquals(List.of("Beschreibung fehlt.", "Zahlungsposition 2: Betrag fehlt.", "Provider error."), details.get("messages"));
+    }
+
+    @Test
     void validate_ShouldNotTreatADeferredDynamicValueAsMissing() throws Exception {
         var derivedData = new DerivedRuntimeElementData();
         derivedData.getElementStates().put(
@@ -764,6 +882,30 @@ class ProcessNodeServiceTest {
         assertTrue(exception.getMessage().contains("maximal 1"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"name-2", "1name", "person.name", "items[0]", "", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
+    void rejectsInvalidDataKeysBeforeCreatingUpdatingOrImportingNodes(String key) {
+        var node = createNode(2, key);
+        var existing = createNode(2, "existing");
+        var expectedMessage = ProcessNodeDataKeyUtils.getValidationError(key);
+
+        assertEquals(expectedMessage, assertThrows(ResponseException.class, () -> service.create(node)).getMessage());
+        assertEquals(expectedMessage, assertThrows(ResponseException.class,
+                () -> service.performUpdate(2, node, existing)).getMessage());
+        assertEquals(expectedMessage, assertThrows(ResponseException.class,
+                () -> service.validateNewProcessNodeBatch(List.of(node))).getMessage());
+        assertEquals("existing", existing.getDataKey());
+        verify(processNodeRepository, never()).saveAndFlush(any());
+        verify(processNodeRepository, never()).save(any());
+    }
+
+    @Test
+    void reportsAnInvalidDataKeyInProcessValidation() throws Exception {
+        var problems = service.validate(createNode(1, "name-2"), new HintingTestNodeDefinition(), false).orElseThrow();
+
+        assertEquals(List.of(ProcessNodeDataKeyUtils.FORMAT_ERROR), problems.commonErrors().get("dataKey"));
+    }
+
     @Test
     void createReportsOnlyDataKeyCollisionsAsRetryable() {
         var node = createNode(2, "existing");
@@ -823,6 +965,78 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void writes_ShouldRejectAddingAndRemovingNodesOfDraftWithTestClaim() {
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.create(createNode(3, "new")));
+        assertConflict(() -> service.performDelete(existingNode));
+
+        verify(processNodeRepository, never()).saveAndFlush(any(ProcessNodeEntity.class));
+        verify(processNodeRepository, never()).delete(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performUpdate_ShouldEditNodesOfDraftWithTestClaim() throws Exception {
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
+        when(processNodeRepository.save(any(ProcessNodeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var existingNode = createNode(2, "existing");
+        var changedNode = createNode(2, "changed").setName("Changed node");
+        changedNode.getConfiguration().putLiteral("branch", "approved");
+
+        var result = service.performUpdate(2, changedNode, existingNode);
+
+        assertEquals("changed", result.getDataKey());
+        assertEquals("Changed node", result.getName());
+        assertEquals("approved", result.getConfiguration().getLiteral("branch"));
+        verify(processNodeRepository).save(existingNode);
+    }
+
+    @Test
+    void performUpdate_ShouldRejectReplacingNodeTypeOfDraftWithTestClaim() {
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
+        var existingNode = createNode(2, "existing");
+
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing")
+                .setProcessNodeDefinitionKey("test.process.initial-configuration-node"), existingNode));
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing")
+                .setProcessNodeDefinitionVersion(2), existingNode));
+
+        assertEquals("test.process.hint-node", existingNode.getProcessNodeDefinitionKey());
+        assertEquals(1, existingNode.getProcessNodeDefinitionVersion());
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+    }
+
+    @Test
+    void performUpdate_ShouldReplaceNodeTypeOfDraftWithoutTestClaim() throws Exception {
+        when(processNodeRepository.save(any(ProcessNodeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var existingNode = createNode(2, "existing");
+
+        var result = service.performUpdate(2, createNode(2, "existing")
+                .setProcessNodeDefinitionKey("test.process.initial-configuration-node"), existingNode);
+
+        assertEquals("test.process.initial-configuration-node", result.getProcessNodeDefinitionKey());
+        verify(processNodeRepository).save(existingNode);
+    }
+
+    @Test
+    void performUpdate_ShouldRejectMovingNodesIntoOrOutOfDraftWithTestClaim() {
+        var testedVersion = PROCESS_VERSION + 1;
+        when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, testedVersion)))
+                .thenReturn(Optional.of(createProcessVersion().setProcessVersion(testedVersion)));
+        when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, testedVersion)).thenReturn(true);
+        var draftNode = createNode(2, "existing");
+        var testedNode = createNode(3, "tested").setProcessVersion(testedVersion);
+
+        assertConflict(() -> service.performUpdate(2, createNode(2, "existing").setProcessVersion(testedVersion), draftNode));
+        assertConflict(() -> service.performUpdate(3, createNode(3, "tested"), testedNode));
+
+        assertEquals(PROCESS_VERSION, draftNode.getProcessVersion());
+        assertEquals(testedVersion, testedNode.getProcessVersion());
+        verify(processNodeRepository, never()).save(any(ProcessNodeEntity.class));
+    }
+
+    @Test
     void create_ShouldAllowNegativeNodeTypeLimit() throws Exception {
         prosunaConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, -1));
         when(processNodeRepository.saveAndFlush(any(ProcessNodeEntity.class)))
@@ -870,7 +1084,7 @@ class ProcessNodeServiceTest {
 
         var exception = assertThrows(ResponseException.class, () -> formService.validateNewProcessNodeBatch(List.of(createFormNode())));
 
-        assertTrue(exception.getMessage().contains("Formularerweiterung"));
+        assertTrue(exception.getMessage().contains("Formularmodul"));
     }
 
     @Test
@@ -1163,6 +1377,13 @@ class ProcessNodeServiceTest {
                             "Result",
                             "Mapped test result.",
                             "string"
+                    ),
+                    new ProcessNodeOutput(
+                            "content",
+                            "Content",
+                            "Markdown test content.",
+                            "string",
+                            true
                     )
             );
         }
@@ -1288,7 +1509,7 @@ class ProcessNodeServiceTest {
                 .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
 
         var problems = service.validate(targetNode, provider, false).orElseThrow();
-        var expectedError = "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar.";
+        var expectedError = "Die ausgewählte Identität „missing-identity“ ist nicht mehr verfügbar.";
 
         assertEquals(List.of("Identity: " + expectedError), problems.problems());
         assertEquals(
@@ -1320,7 +1541,7 @@ class ProcessNodeServiceTest {
                 .thenReturn(derivedRuntimeElementData, DerivedRuntimeElementData.empty());
 
         var problems = service.validate(targetNode, provider, false).orElseThrow();
-        var expectedError = "Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden.";
+        var expectedError = "Die verfügbaren Identitäten konnten nicht ermittelt werden.";
 
         assertEquals(List.of("Identity: " + expectedError), problems.problems());
         assertEquals(
@@ -1354,7 +1575,7 @@ class ProcessNodeServiceTest {
         var problems = service.validate(targetNode, provider, false).orElseThrow();
 
         assertEquals(
-                List.of("Identity: Die verfügbaren Prozessidentitäten konnten nicht ermittelt werden."),
+                List.of("Identity: Die verfügbaren Identitäten konnten nicht ermittelt werden."),
                 problems.problems()
         );
     }
@@ -1403,7 +1624,7 @@ class ProcessNodeServiceTest {
         var problems = service.validate(targetNode, provider, false).orElseThrow();
 
         assertEquals(
-                "Die ausgewählte Prozessidentität „missing-identity“ ist nicht mehr verfügbar. Provider error.",
+                "Die ausgewählte Identität „missing-identity“ ist nicht mehr verfügbar. Provider error.",
                 problems
                         .derivedRuntimeElementData()
                         .getElementStates()

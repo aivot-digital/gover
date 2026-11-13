@@ -25,10 +25,13 @@ import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownTemplateValues;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
+import de.aivot.prosuna.backend.payment.models.PaymentItem;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
@@ -42,6 +45,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
@@ -85,9 +89,9 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
     private static final ProcessNodeDeadlineDefinition PAYMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
             "payment", "Zahlung",
-            "Zeit für die Kund:in zur Zahlung ab Versand der Zahlungsaufforderung.",
+            "Zeit zur Zahlung ab Versand der Zahlungsaufforderung.",
             new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Zahlung."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Zahlung beendet wurde."));
 
     public static final String NODE_KEY = "payment_request";
 
@@ -164,7 +168,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         return "Es wurde " + summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID))
                 + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT)) + " zur Zahlung aufgefordert und" + summary.delivery() + " informiert."
                 + " Die Zahlung wurde" + (timestamp(paidAt).isEmpty() ? summary.completedAt() : summary.at(paidAt)) + " bestätigt."
-                + detail("Zahlungszweck", summary.data(OUTPUT_PAYMENT_PURPOSE))
+                + detail("Verwendungszweck", summary.data(OUTPUT_PAYMENT_PURPOSE))
                 + detail("Beschreibung", summary.data(OUTPUT_PAYMENT_DESCRIPTION))
                 + detail("Gesamtbetrag (Euro)", summary.data(OUTPUT_PAYMENT_TOTAL) instanceof Number total
                         ? NumberUtils.formatGermanNumber(new BigDecimal(total.toString()), 2) : summary.data(OUTPUT_PAYMENT_TOTAL))
@@ -187,7 +191,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                     .map(item -> "- " + text(item.getDescription()) + ": "
                             + NumberUtils.formatGermanNumber(item.getTotalPrice(), 2) + " Euro"
                             + (item.getTaxRate().signum() > 0
-                            ? " (inkl. " + NumberUtils.formatGermanNumber(item.getTaxRate(), 2) + " % Steuern)" : ""))
+                            ? " (inkl. " + formatTaxRate(item.getTaxRate()) + " % Steuern)" : ""))
                     .collect(Collectors.joining("\n"));
             return section("Zahlungspositionen", items);
         } catch (RuntimeException ignored) {
@@ -238,16 +242,16 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Fordert eine Online-Zahlung von einer dritten Person an.";
+        return "Fordert eine Online-Zahlung von Beteiligten an und wartet auf deren Abschluss.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine Online-Zahlung und sendet den Zahlungslink über den für eine Prozessidentität ausgewählten Kommunikationsweg.
+                Erstellt eine Online-Zahlung und sendet den Zahlungslink über die Kommunikationsanbindung der konfigurierten Identität. Bei automatischer Ausführung werden Betreff und Nachricht aus den Nachrichtenbausteinen erzeugt, bei teilautomatisierter Ausführung bearbeitet die zuständige Person sie vor dem Versand in einer Mitarbeitendenaufgabe.
 
-                Betreff und Nachricht werden entweder automatisch aus Vorlagen erzeugt oder vor dem Versand durch eine Mitarbeiter:in bearbeitet. Anschließend wartet das Prozesselement auf den erfolgreichen Abschluss der Zahlung.
+                Der Vorgang wartet, bis die Zahlung erfolgreich abgeschlossen ist, und wird dann über den Ausgangsport „Zahlung erfolgreich“ fortgesetzt. Schlägt die Zahlung fehl oder wird sie abgebrochen, schlägt die Aufgabe fehl. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
                 """;
     }
 
@@ -293,7 +297,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 new ProcessNodePort(
                         PORT_PAID,
                         "Zahlung erfolgreich",
-                        "Der Prozess wird fortgesetzt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
+                        "Der Vorgang wird fortgesetzt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
                 )
         );
     }
@@ -305,7 +309,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 new ProcessNodeOutput(
                         OUTPUT_RECIPIENT_IDENTITY_ID,
                         "Identität",
-                        "Die ID der Prozessidentität, an die die Zahlungsaufforderung gesendet wurde.",
+                        "Die ID der Identität, an die die Zahlungsaufforderung gesendet wurde.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -328,8 +332,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_PURPOSE,
-                        "Buchungszweck",
-                        "Der gerenderte Buchungszweck der Zahlungsanforderung.",
+                        "Verwendungszweck",
+                        "Der gerenderte Verwendungszweck der Zahlungsanforderung.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -459,7 +463,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         StringUtils.quote(context.getThisNode().resolveName(this))
                 ));
 
@@ -521,7 +525,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     ) throws ResponseException, ProcessNodeExecutionException {
         if (!STAFF_TASK_SEND_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
+                    "Das Ereignis %s wird von diesem Prozesselement nicht unterstützt.",
                     StringUtils.quote(event)
             );
         }
@@ -529,7 +533,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var configuration = context.getConfigurationOfExecutingNode();
         if (!SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Zahlungsaufforderung kann nur im manuellen Ausführungsmodus über eine Aufgabe versendet werden."
+                    "Die Zahlungsaufforderung kann nur bei teilautomatisierter Ausführung über eine Mitarbeitendenaufgabe versendet werden."
             );
         }
 
@@ -752,7 +756,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 || StringUtils.toNullableTrimmedString(content.subject) == null
                 || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den manuellen Versand müssen Vorlagen für Betreff und Nachrichtentext konfiguriert sein."
+                    "Für den teilautomatisierten Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
             );
         }
         return content;
@@ -873,8 +877,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         resolvedConfiguration.recipientIdentityId(),
                         new CommunicationMessage.Builder()
                                 .subject(subject)
-                                .body(content)
-                                .htmlBody(content)
+                                .body(MarkdownRenderer.renderPlainText(content))
+                                .markdownBody(content)
                                 .callToActions(List.of(new CommunicationMessageCallToAction(
                                         "Zahlung durchführen",
                                         paymentUrl
@@ -894,7 +898,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD);
         if (paymentPayloadData == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Für die manuelle Zahlungsaufforderung wurde keine vorberechnete Zahlung in den Laufzeitdaten gefunden."
+                    "Für die teilautomatisierte Zahlungsaufforderung wurde keine vorberechnete Zahlung in den Laufzeitdaten gefunden."
             );
         }
         if (paymentPayloadData instanceof PaymentPayload paymentPayload) {
@@ -906,7 +910,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         } catch (RuntimeException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
-                    "Die vorberechnete Zahlung der manuellen Zahlungsaufforderung konnte nicht gelesen werden."
+                    "Die vorberechnete Zahlung der teilautomatisierten Zahlungsaufforderung konnte nicht gelesen werden."
             );
         }
     }
@@ -924,14 +928,15 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     private static String createPaymentInformationMarkdown(@Nonnull PaymentPayload paymentPayload) {
+        // Purpose and descriptions can come from process data, including customer input, so they are shown as typed.
         var itemMarkdown = paymentPayload
                 .getPaymentItems()
                 .stream()
                 .map(item -> "- %s: %s Euro%s".formatted(
-                        item.getDescription(),
+                        MarkdownTemplateValues.escapeText(item.getDescription()),
                         NumberUtils.formatGermanNumber(item.getTotalPrice(), 2),
                         item.getTaxRate().signum() > 0
-                                ? " inkl. %s %% Steuern".formatted(NumberUtils.formatGermanNumber(item.getTaxRate(), 2))
+                                ? " inkl. %s %% Steuern".formatted(formatTaxRate(item.getTaxRate()))
                                 : ""
                 ))
                 .collect(Collectors.joining("\n"));
@@ -943,7 +948,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         return """
                 # Zahlungsinformationen
 
-                **Buchungstext:** %s
+                **Verwendungszweck:** %s
 
                 **Beschreibung:** %s
 
@@ -953,12 +958,18 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
                 **Gesamtbetrag:** %s Euro%s
                 """.formatted(
-                paymentPayload.getPurpose(),
-                paymentPayload.getDescription(),
+                MarkdownTemplateValues.escapeText(paymentPayload.getPurpose()),
+                MarkdownTemplateValues.escapeText(paymentPayload.getDescription()),
                 itemMarkdown,
                 NumberUtils.formatGermanNumber(paymentPayload.getTotal(), 2),
                 includesTaxes ? " inkl. Steuern" : ""
         );
+    }
+
+    // Show every configured tax rate decimal so staff see the rate that was used for the calculation.
+    @Nonnull
+    private static String formatTaxRate(@Nonnull BigDecimal taxRate) {
+        return NumberUtils.formatGermanNumber(taxRate, 2, PaymentItem.TAX_RATE_SCALE);
     }
 
     @Nonnull
@@ -1032,7 +1043,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .addProcessData(context.getThisTask().getProcessData());
 
         try {
-            return templateRenderService.interpolate(processExecutionData, template);
+            // The message is shown as Markdown on the payment status page.
+            return templateRenderService.interpolate(processExecutionData, template, TemplateOutputFormat.Markdown);
         } catch (RuntimeException e) {
             throw ResponseException.internalServerError(
                     e,

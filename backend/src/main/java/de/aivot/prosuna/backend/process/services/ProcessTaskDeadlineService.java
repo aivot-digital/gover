@@ -8,10 +8,13 @@ import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.workers.ProcessTaskDeadlineResultHandler;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class ProcessTaskDeadlineService {
@@ -26,11 +29,14 @@ public class ProcessTaskDeadlineService {
     private final ProcessNodeExecutionLoggerFactory loggers;
     private final ProcessTaskDeadlineResultHandler handler;
     private final BusinessTime time;
+    private final MeterRegistry meterRegistry;
 
     public ProcessTaskDeadlineService(@Nonnull ProcessNodeRepository nodes, @Nonnull ProcessNodeService nodeService,
                                       @Nonnull ProcessEdgeRepository edges, @Nonnull ProcessInstanceRepository instances,
                                       @Nonnull ProcessInstanceTaskRepository tasks, @Nonnull ProcessNodeExecutionLoggerFactory loggers,
-                                      @Nonnull ProcessTaskDeadlineResultHandler handler, @Nonnull BusinessTime time) {
+                                      @Nonnull ProcessTaskDeadlineResultHandler handler, @Nonnull BusinessTime time,
+                                      MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.nodes = nodes;
         this.nodeService = nodeService;
         this.edges = edges;
@@ -69,13 +75,19 @@ public class ProcessTaskDeadlineService {
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation("Die aktive Frist wird vom Prozesselement nicht angeboten."));
             var port = resolution.ports().stream()
                     .filter(candidate -> task.getDeadlineKey().equals(candidate.deadlineKey())).findFirst()
-                    .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation("Für die aktive harte Frist fehlt der Ausgang."));
+                    .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation("Für die automatische Beendigung bei Fristüberschreitung fehlt der Ausgangsport."));
             var edge = edges.findByFromNodeIdAndViaPort(node.getId(), port.key()).orElseThrow(() ->
-                    new ProcessNodeExecutionExceptionBrokenImplementation("Für den Fristausgang „%s“ fehlt die Verbindung.", port.label()));
+                    new ProcessNodeExecutionExceptionBrokenImplementation("Für den Ausgangsport bei Fristüberschreitung „%s“ fehlt die Verbindung.", port.label()));
             if (nodes.findById(edge.getToNodeId()).isEmpty()) {
                 throw new ProcessNodeExecutionExceptionBrokenImplementation("Das Ziel des Fristausgangs wurde nicht gefunden.");
             }
             handler.handle(task, definition, edge, now, logger);
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    meterRegistry.counter("prosuna.process.task.deadlines.exceeded").increment();
+                }
+            });
         } catch (ProcessNodeExecutionExceptionBrokenImplementation exception) {
             task.setStatus(ProcessTaskStatus.Failed).setFinished(now);
             instance.setStatus(ProcessInstanceStatus.Failed);

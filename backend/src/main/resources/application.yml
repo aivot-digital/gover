@@ -40,6 +40,10 @@ spring:
     hikari:
       minimum-idle: ${PROSUNA_DB_MIN_IDLE:5}
       maximum-pool-size: ${PROSUNA_DB_MAX_POOL_SIZE:10}
+      # JPA runs on this pool. Transactions without an explicit isolation level run at REPEATABLE READ.
+      # Keep auto-commit enabled: Hikari does not commit the connection-init-sql otherwise, so new connections would wait
+      # in the pool inside an open transaction and the first rollback would undo the time zone.
+      transaction-isolation: TRANSACTION_REPEATABLE_READ
       # PostgreSQL current_date and timestamp rendering follow the session timezone.
       # Initialize every pooled connection explicitly so they cannot inherit a host default.
       connection-init-sql: "set time zone '${PROSUNA_TIMEZONE:Europe/Berlin}'"
@@ -49,8 +53,9 @@ spring:
       # Prevent hibernate from modifying the database schema
       # This is handled by Flyway instead
       ddl-auto: validate
-    # Close the hibernate session at the end of a transaction to prevent lazy loading issues
-    open-in-view: true
+    # Close the persistence context when each transaction or repository call ends, not at the end of the request.
+    # Open-in-view would hold a pooled connection for the rest of the request and share entity state between transactions.
+    open-in-view: false
     # Debug SQL
     # showSql: true
     # Pretty print SQL
@@ -64,13 +69,6 @@ spring:
         type:
           # Fix for Hibernate 6 to map Java Duration to PostgreSQL interval type
           preferred_duration_jdbc_type: INTERVAL_SECOND
-        connection:
-          url: "jdbc:postgresql://${PROSUNA_DB_HOST}:${PROSUNA_DB_PORT}/${PROSUNA_DB_DATABASE}?stringtype=unspecified"
-          username: "${PROSUNA_DB_USERNAME}"
-          password: "${PROSUNA_DB_PASSWORD}"
-          autocommit: false
-          isolation: TRANSACTION_REPEATABLE_READ
-          pool_size: ${spring.datasource.hikari.maximum-pool-size}
 
   jackson:
     datatype:
@@ -99,6 +97,14 @@ spring:
   flyway:
     # Enable flyway for database migrations
     enabled: true
+    # Migrate on a separate unpooled connection at PostgreSQL's default READ COMMITTED isolation. Flyway waits for its
+    # advisory lock within the migration transaction; under the pool's REPEATABLE READ, an instance that waited would not
+    # see the migrations another instance applied meanwhile.
+    # Flyway derives the URL from the datasource, so the credentials and session setup are taken from it as well.
+    user: "${spring.datasource.username}"
+    password: "${spring.datasource.password}"
+    init-sqls:
+      - "${spring.datasource.hikari.connection-init-sql}"
     # Add the option to allow flyway to operate on databases with some preexisting schema
     # This is useful when working with managed Azure PostgreSQL databases
     baselineVersion: ${PROSUNA_DB_BASELINE_VERSION:0}
@@ -136,18 +142,28 @@ spring:
     password: "${PROSUNA_RABBITMQ_PASSWORD}"
 
 management:
+  server:
+    # The actuator exposes health and metrics, so this port must not be published. A blank address fails at startup
+    # if the port equals server.port, because Spring Boot only allows an address on a separate management port.
+    port: "${PROSUNA_MANAGEMENT_SERVER_PORT:9090}"
+    address: "${PROSUNA_MANAGEMENT_SERVER_ADDRESS:0.0.0.0}"
+
   endpoints:
     access:
       default: none
     web:
       base-path: /api/actuator
       exposure:
-        include: "*"
+        include: "health,prometheus"
 
   endpoint:
     health:
+      probes:
+        enabled: true
       access: read_only
       show-details: when_authorized
+    prometheus:
+      access: read_only
 
   health:
     diskspace:
@@ -203,7 +219,28 @@ prosuna:
   process-task-deadlines:
     check-interval: "${PROSUNA_PROCESS_TASK_DEADLINES_CHECK_INTERVAL:PT30S}"
     batch-size: "${PROSUNA_PROCESS_TASK_DEADLINES_BATCH_SIZE:100}"
-    redispatch-interval: "${PROSUNA_PROCESS_TASK_DEADLINES_REDISPATCH_INTERVAL:PT5M}"
+  # Pending process work is stored in the database; RabbitMQ only carries wake-up signals.
+  # Requests that are still pending after the redispatch interval are published again.
+  process-work:
+    dispatch-interval: "${PROSUNA_PROCESS_WORK_DISPATCH_INTERVAL:PT30S}"
+    redispatch-interval: "${PROSUNA_PROCESS_WORK_REDISPATCH_INTERVAL:PT5M}"
+    batch-size: "${PROSUNA_PROCESS_WORK_BATCH_SIZE:100}"
+    # Consumers lock the process instance, so work on the same instance never runs concurrently.
+    concurrency: "${PROSUNA_PROCESS_WORK_CONCURRENCY:4}"
+  # Synchronization requests of code lists and storage providers are stored in the database.
+  # Requests still pending after the sweep interval are published again. A synchronization that
+  # started more than the stale threshold ago is considered interrupted, e.g. by a restart, and is
+  # taken over; the threshold must exceed the longest synchronization.
+  background-sync:
+    sweep-interval: "${PROSUNA_BACKGROUND_SYNC_SWEEP_INTERVAL:PT5M}"
+    stale-threshold: "${PROSUNA_BACKGROUND_SYNC_STALE_THRESHOLD:PT1H}"
+  # Initial data is seeded on startup if it does not exist yet.
+  seeding:
+    # Seeds local storage providers for documents, media and process attachments below ./data and selects them as
+    # defaults. Disable this for deployments without a local disk shared by all instances, e.g. Kubernetes. The
+    # read-only provider for the shipped system documents is seeded either way.
+    local-storage-providers:
+      enabled: "${PROSUNA_SEEDING_LOCAL_STORAGE_PROVIDERS_ENABLED:true}"
   prosunaHostname: "${PROSUNA_HOSTNAME}"
   timezone: "${PROSUNA_TIMEZONE:Europe/Berlin}"
   fromMail: "${PROSUNA_FROM_MAIL}"

@@ -141,7 +141,7 @@ describe('Process lists', () => {
             ),
         );
         await waitFor(() => expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenCalledWith(
-            undefined, expect.any(AbortSignal),
+            {instanceId: undefined, assignee: 'mine'}, expect.any(AbortSignal),
         ));
         expect(await screen.findByRole('tab', {name: 'Offene Aufgaben 4'})).toHaveAttribute('aria-selected', 'true');
         expect(screen.getByRole('tab', {name: 'Alle Aufgaben'})).toBeInTheDocument();
@@ -162,10 +162,11 @@ describe('Process lists', () => {
                 }),
             ),
         );
+        // The tab counts follow the assignment, so they never count tasks that the list hides.
         await waitFor(() => expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenLastCalledWith(
-            undefined, expect.any(AbortSignal),
+            {instanceId: undefined, assignee: 'all'}, expect.any(AbortSignal),
         ));
-        expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenCalledTimes(1);
+        expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenCalledTimes(2);
         expect(fetch.mock.calls.filter((call) => call[4].assignee === 'all').every((call) => call[0] === 0)).toBe(true);
         fireEvent.click(screen.getByRole('tab', {name: /Überfällige Aufgaben/}));
         await waitFor(() =>
@@ -208,7 +209,7 @@ describe('Process lists', () => {
             ),
         );
         await waitFor(() => expect(ProcessListApiService.prototype.tasksCounts).toHaveBeenCalledWith(
-            17, expect.any(AbortSignal),
+            {instanceId: 17, assignee: 'all'}, expect.any(AbortSignal),
         ));
         expect(ProcessListApiService.prototype.options).toHaveBeenCalledWith(true, 17);
         expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute('data-field', 'icon');
@@ -248,7 +249,7 @@ describe('Process lists', () => {
             ),
         );
         await waitFor(() => expect(ProcessListApiService.prototype.instancesCounts).toHaveBeenCalledWith(
-            expect.any(AbortSignal),
+            {assignee: 'all'}, expect.any(AbortSignal),
         ));
         expect(await screen.findByRole('tab', {name: 'Laufende Vorgänge 6'})).toHaveAttribute('aria-selected', 'true');
         expect(screen.getByRole('tab', {name: 'Fehlerhafte Vorgänge 2'})).toBeInTheDocument();
@@ -271,7 +272,7 @@ describe('Process lists', () => {
             ),
         );
         await waitFor(() => expect(ProcessListApiService.prototype.instancesCounts).toHaveBeenLastCalledWith(
-            expect.any(AbortSignal),
+            {assignee: 'all'}, expect.any(AbortSignal),
         ));
         expect(ProcessListApiService.prototype.instancesCounts).toHaveBeenCalledTimes(1);
         expect(screen.getByLabelText('URL')).not.toHaveTextContent('processVersion');

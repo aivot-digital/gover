@@ -41,13 +41,13 @@ public class ListingPageDisabledLinkSystemConfigDefinition implements SystemConf
     @Nonnull
     @Override
     public String getLabel() {
-        return "Link zu einem externen Formularverzeichnis deaktivieren";
+        return "Link zum Formularverzeichnis ausblenden";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Deaktiviert den Verweis auf ein extern bereitgestelltes Formularverzeichnis.";
+        return "Blendet den Link „Weitere Formulare“ aus, unabhängig davon, ob er auf das interne oder ein externes Verzeichnis verweist.";
     }
 
     @Nonnull

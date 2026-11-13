@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.InputElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
@@ -21,7 +22,6 @@ import de.aivot.prosuna.backend.elements.models.input.LiteralAuthoredInputValue;
 import de.aivot.prosuna.backend.elements.models.input.LowCodeAuthoredInputValue;
 import de.aivot.prosuna.backend.elements.models.input.NoCodeAuthoredInputValue;
 import de.aivot.prosuna.backend.elements.models.input.VariableAuthoredInputValue;
-import de.aivot.prosuna.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -31,10 +31,13 @@ import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
+import de.aivot.prosuna.backend.process.utils.TemplateValueFormatter;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.utils.ElementResolver;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -44,11 +47,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.type.TypeReference;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Centralizes runtime derivation for form elements so the rest of the system can work with one consistent interpretation of a form definition.
@@ -58,7 +64,7 @@ import java.util.Objects;
  * logic and accidentally observing different runtime states for the same form data.
  * <p>
  * The service also preserves contextual behavior for replicated containers. Child rows derive their own values and errors against row-local data, while still being able to
- * reference root-level state when expressions or dependent selects need it.
+ * reference root-level state when expressions need it. Dependent selects read their referenced select from the row, a surrounding row or the form level, whichever contains it.
  */
 @Service
 public class ElementDerivationService {
@@ -69,6 +75,7 @@ public class ElementDerivationService {
     private final AuthoredInputValueService authoredInputValueService;
     private final InputVariableResolver inputVariableResolver;
     private final TemplateRenderService templateRenderService;
+    private final AssetSelectionValidationService assetSelectionValidationService;
 
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull BaseElement element, @Nonnull AuthoredElementValues authoredElementValues) {
@@ -95,7 +102,8 @@ public class ElementDerivationService {
             CodeListElementOptionsService codeListElementOptionsService,
             AuthoredInputValueService authoredInputValueService,
             InputVariableResolver inputVariableResolver,
-            TemplateRenderService templateRenderService) {
+            TemplateRenderService templateRenderService,
+            @Nonnull AssetSelectionValidationService assetSelectionValidationService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.noCodeEvaluationService = noCodeEvaluationService;
         this.elementDataTransformService = elementDataTransformService;
@@ -103,6 +111,7 @@ public class ElementDerivationService {
         this.authoredInputValueService = authoredInputValueService;
         this.inputVariableResolver = inputVariableResolver;
         this.templateRenderService = templateRenderService;
+        this.assetSelectionValidationService = assetSelectionValidationService;
     }
 
     /**
@@ -114,7 +123,8 @@ public class ElementDerivationService {
             ElementDataTransformService elementDataTransformService,
             CodeListElementOptionsService codeListElementOptionsService,
             AuthoredInputValueService authoredInputValueService,
-            InputVariableResolver inputVariableResolver) {
+            InputVariableResolver inputVariableResolver,
+            @Nonnull AssetSelectionValidationService assetSelectionValidationService) {
         this(
                 javascriptEngineFactoryService,
                 noCodeEvaluationService,
@@ -122,7 +132,8 @@ public class ElementDerivationService {
                 codeListElementOptionsService,
                 authoredInputValueService,
                 inputVariableResolver,
-                new TemplateRenderService(javascriptEngineFactoryService)
+                new TemplateRenderService(javascriptEngineFactoryService),
+                assetSelectionValidationService
         );
     }
 
@@ -170,12 +181,14 @@ public class ElementDerivationService {
         // These contain metainformation about elements.
         var computedElementStates = new ComputedElementStates();
 
+        var selectDependencies = SelectDependencies.of(request.element());
+
         derive(
                 javascriptEngine,
                 request.element(),
                 request.element(),
-                request.authoredElementValues(),
-                effectiveElementValues,
+                new ValueScope(null, null, effectiveElementValues, computedElementStates),
+                selectDependencies,
                 request.processExecutionData(),
                 request.authoredElementValues(),
                 effectiveElementValues,
@@ -187,6 +200,8 @@ public class ElementDerivationService {
                 inputModeContext,
                 false
         );
+
+        checkDeferredSelectDependencies(selectDependencies);
 
         return new DerivedRuntimeElementData(
                 effectiveElementValues,
@@ -208,8 +223,8 @@ public class ElementDerivationService {
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
             @Nonnull BaseElement currentElement,
-            @Nonnull AuthoredElementValues rootAuthoredElementValues,
-            @Nonnull EffectiveElementValues rootEffectiveElementValues,
+            @Nonnull ValueScope scope,
+            @Nonnull SelectDependencies selectDependencies,
             @Nonnull ProcessExecutionData processExecutionData,
             @Nonnull AuthoredElementValues authoredElementValues,
             @Nonnull EffectiveElementValues effectiveElementValues,
@@ -279,18 +294,29 @@ public class ElementDerivationService {
             elementState.setVisible(isVisible);
 
             var childRowValuesAlreadyResolved = valuesAlreadyResolved;
+            Runnable deferredContainerValidation = null;
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
-                var hasAuthoredValue = authoredElementValues
+                // Customers cannot fill disabled or technical inputs. When their input is derived, values sent for such
+                // inputs anyway are ignored. The input takes its value from trusted server data, such as the process data
+                // a task is prefilled with, or else the computed value or no value, as if the input was untouched.
+                // Rows a container computed on the server are no customer input, so their values are kept.
+                var protectedInput = options.isIgnoreAuthoredValuesOfNonEditableInputs()
+                        && !valuesAlreadyResolved
+                        && isNonEditableInput(inputElement);
+                var valueSource = protectedInput
+                        ? options.getTrustedAuthoredValues()
+                        : authoredElementValues;
+                var hasAuthoredValue = valueSource != null && valueSource
                         .containsKey(currentElement.getId());
-                var authoredValue = authoredElementValues
+                var authoredValue = valueSource == null ? null : valueSource
                         .getOrDefault(currentElement.getId(), null);
 
                 var resolvedValue = deriveEffectiveValue(
                         javascriptEngine,
                         rootElement,
                         inputElement,
-                        rootAuthoredElementValues,
-                        rootEffectiveElementValues,
+                        scope,
+                        selectDependencies,
                         authoredElementValues,
                         effectiveElementValues,
                         computedElementStates,
@@ -304,6 +330,10 @@ public class ElementDerivationService {
                         inputModeContext,
                         valuesAlreadyResolved
                 );
+                // Callers persist request data, such as uploaded files, only for inputs that take their authored value.
+                elementState.setAuthoredValueAdopted(!protectedInput
+                        && !valuesAlreadyResolved
+                        && elementState.getValueSource() == EffectiveValueSource.Authored);
                 var effectiveValue = resolvedValue.value();
                 // Node-specific authoring validation receives null for dynamic values. Preserve why the value is
                 // absent so it can defer only value-dependent checks instead of treating the field as empty.
@@ -330,23 +360,36 @@ public class ElementDerivationService {
                 }
                 effectiveElementValues.put(currentElement.getId(), effectiveValue);
 
-                var err = resolvedValue.skipValueValidation() ? null : deriveError(
-                        javascriptEngine,
-                        rootElement,
-                        inputElement,
-                        authoredElementValues,
-                        effectiveElementValues,
-                        computedElementStates,
-                        processExecutionData,
-                        options,
-                        effectiveValue,
-                        elementState,
-                        logger
-                );
+                if (!resolvedValue.skipValueValidation()) {
+                    var validatedValue = effectiveValue;
+                    Runnable validation = () -> {
+                        var err = deriveError(
+                                javascriptEngine,
+                                rootElement,
+                                inputElement,
+                                authoredElementValues,
+                                effectiveElementValues,
+                                computedElementStates,
+                                processExecutionData,
+                                options,
+                                validatedValue,
+                                elementState,
+                                logger
+                        );
 
-                if (err != null) {
-                    elementState.setError(err.error);
-                    elementState.setErrorDetails(err.errorDetails);
+                        if (err != null) {
+                            elementState.setError(err.error);
+                            elementState.setErrorDetails(err.errorDetails);
+                        }
+                    };
+
+                    // Until its rows are derived, a container's value still holds the authored input-mode envelopes of
+                    // their inputs. Its validation therefore runs after the rows, so it reads their effective values.
+                    if (inputElement instanceof ReplicatingContainerLayoutElement) {
+                        deferredContainerValidation = validation;
+                    } else {
+                        validation.run();
+                    }
                 }
             }
 
@@ -362,6 +405,7 @@ public class ElementDerivationService {
                 // Test if the child data is a list of child data sets.
                 if (rawEffectiveChildDataSetList instanceof List<?> effectiveChildDataSetList) {
                     var effectiveRows = new LinkedList<EffectiveReplicatingContainerLayoutElementValue>();
+                    var claimedTrustedRowIds = new HashSet<String>();
                     // Iterate through the list of all child data sets.
                     for (var itemIndex = 0; itemIndex < effectiveChildDataSetList.size(); itemIndex++) {
                         var rawEffectiveChildDataSet = effectiveChildDataSetList.get(itemIndex);
@@ -379,18 +423,30 @@ public class ElementDerivationService {
                             // Row-local effective values must be rebuilt from visible descendants only.
                             var childEffectiveElementValues = new EffectiveElementValues();
 
+                            var rowOptions = childOptions;
+                            if (childOptions.getTrustedAuthoredValues() != null) {
+                                rowOptions = childOptions
+                                        .copyForUseInChild(replicatingContainer.getId())
+                                        .setTrustedAuthoredValues(findTrustedRowValues(
+                                                childOptions.getTrustedAuthoredValues().getLiteral(replicatingContainer.getId()),
+                                                effectiveChildDataSet.getId(),
+                                                claimedTrustedRowIds
+                                        ));
+                            }
+
                             for (var currentChildElement : replicatingContainer.getChildren()) {
                                 derive(
                                         javascriptEngine,
                                         rootElement,
                                         currentChildElement,
-                                        rootAuthoredElementValues,
-                                        rootEffectiveElementValues,
+                                        new ValueScope(scope, replicatingContainer.getId(), childEffectiveElementValues,
+                                                childItemElementStates),
+                                        selectDependencies,
                                         processExecutionData,
                                         childAuthoredElementValues,
                                         childEffectiveElementValues,
                                         childItemElementStates,
-                                        childOptions,
+                                        rowOptions,
                                         isVisible,
                                         identities,
                                         logger,
@@ -405,6 +461,16 @@ public class ElementDerivationService {
                         }
                     }
                     effectiveElementValues.put(replicatingContainer.getId(), effectiveRows);
+
+                    // Rows that do not come from the authored value, such as the trusted rows of a protected
+                    // container, contain no authored value of their inputs either.
+                    if (!elementState.isAuthoredValueAdopted()) {
+                        clearAuthoredValueAdoption(elementState.getSubStates());
+                    }
+                }
+
+                if (deferredContainerValidation != null) {
+                    deferredContainerValidation.run();
                 }
             } else if (actualElement instanceof LayoutElement<?> layoutElement) {
                 var children = layoutElement.getChildren();
@@ -413,8 +479,8 @@ public class ElementDerivationService {
                             javascriptEngine,
                             rootElement,
                             child,
-                            rootAuthoredElementValues,
-                            rootEffectiveElementValues,
+                            scope,
+                            selectDependencies,
                             processExecutionData,
                             authoredElementValues,
                             effectiveElementValues,
@@ -487,7 +553,7 @@ public class ElementDerivationService {
                         .registerElementObject(currentElement)
                         .evaluateCode(override.getJavascriptCode());
             } catch (JavascriptException e) {
-                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Override-Ableitung: " + e.getMessage(), e);
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des JavaScript-Codes für die Override-Ableitung: " + e.getMessage(), e);
             }
 
             // Check if the result is null, which indicates no override was generated
@@ -647,7 +713,7 @@ public class ElementDerivationService {
                         .registerElementObject(currentElement)
                         .evaluateCode(vis.getJavascriptCode());
             } catch (JavascriptException e) {
-                throw new DerivationException(currentElement, "Fehler bei der Ausführung des Javascript-Codes für die Sichtbarkeits-Ableitung: " + e.getMessage(), e);
+                throw new DerivationException(currentElement, "Fehler bei der Ausführung des JavaScript-Codes für die Sichtbarkeits-Ableitung: " + e.getMessage(), e);
             }
 
             logger.log(currentElement, res);
@@ -693,6 +759,48 @@ public class ElementDerivationService {
     }
 
     /**
+     * Finds the trusted values of a replicating container row by its ID, so they stay with their row when the customer
+     * removes or reorders rows. A row without a trusted counterpart, for example one the customer added, gets none.
+     * Only the first row with an ID gets its trusted values. The browser never sends a row ID twice, so later rows with
+     * the same ID are copies made to repeat protected values, such as an approved amount, and are treated as added rows.
+     */
+    @Nonnull
+    private static AuthoredElementValues findTrustedRowValues(@Nullable Object trustedRows,
+                                                              @Nullable String rowId,
+                                                              @Nonnull Set<String> claimedRowIds) {
+        if (rowId != null && trustedRows instanceof List<?> rows && claimedRowIds.add(rowId)) {
+            for (var row : rows) {
+                if (row instanceof ReplicatingContainerLayoutElementValue trustedRow
+                        && rowId.equals(trustedRow.getId())
+                        && trustedRow.getValues() != null) {
+                    return trustedRow.getValues();
+                }
+            }
+        }
+
+        return new AuthoredElementValues();
+    }
+
+    private static void clearAuthoredValueAdoption(@Nullable List<ComputedElementSubState> subStates) {
+        if (subStates == null) {
+            return;
+        }
+
+        for (var subState : subStates) {
+            for (var state : subState.getStates().values()) {
+                state.setAuthoredValueAdopted(false);
+                clearAuthoredValueAdoption(state.getSubStates());
+            }
+        }
+    }
+
+    private static boolean isNonEditableInput(@Nonnull InputElement<?> inputElement) {
+        return Boolean.TRUE.equals(inputElement.getDisabled())
+                || (inputElement instanceof BaseInputElement<?> baseInputElement
+                && Boolean.TRUE.equals(baseInputElement.getTechnical()));
+    }
+
+    /**
      * Chooses the effective value that should drive rendering, submission and validation for one input element.
      * <p>
      * User-authored data wins whenever it is present on an enabled field because preserving explicit user intent is more important than re-computing a default. Derived values are
@@ -710,8 +818,8 @@ public class ElementDerivationService {
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
             @Nonnull InputElement<?> inputElement,
-            @Nonnull AuthoredElementValues rootAuthoredElementValues,
-            @Nonnull EffectiveElementValues rootEffectiveElementValues,
+            @Nonnull ValueScope scope,
+            @Nonnull SelectDependencies selectDependencies,
             @Nonnull AuthoredElementValues authoredElementValues,
             @Nonnull EffectiveElementValues effectiveElementValues,
             @Nonnull ComputedElementStates computedElementStates,
@@ -807,13 +915,12 @@ public class ElementDerivationService {
                 return resolvedAuthoredValue;
             }
             var sanitizedValue = sanitizeSelectEffectiveValue(
-                    rootElement,
                     inputElement,
                     authoredEffectiveValue,
-                    rootAuthoredElementValues,
-                    rootEffectiveElementValues,
-                    authoredElementValues,
-                    effectiveElementValues
+                    scope,
+                    selectDependencies,
+                    elementState,
+                    options
             );
             effectiveElementValues.put(inputElement.getId(), sanitizedValue);
             elementState.setValueSource(EffectiveValueSource.Authored);
@@ -844,13 +951,12 @@ public class ElementDerivationService {
                 logger.log(baseElement, res);
 
                 var sanitizedValue = sanitizeSelectEffectiveValue(
-                        rootElement,
                         inputElement,
                         res.asObject(),
-                        rootAuthoredElementValues,
-                        rootEffectiveElementValues,
-                        authoredElementValues,
-                        effectiveElementValues
+                        scope,
+                        selectDependencies,
+                        elementState,
+                        options
                 );
                 effectiveElementValues.put(inputElement.getId(), sanitizedValue);
                 elementState.setValueSource(EffectiveValueSource.Derived);
@@ -872,13 +978,12 @@ public class ElementDerivationService {
                         .getValue();
 
                 var sanitizedValue = sanitizeSelectEffectiveValue(
-                        rootElement,
                         inputElement,
                         derivedValue,
-                        rootAuthoredElementValues,
-                        rootEffectiveElementValues,
-                        authoredElementValues,
-                        effectiveElementValues
+                        scope,
+                        selectDependencies,
+                        elementState,
+                        options
                 );
                 effectiveElementValues.put(inputElement.getId(), sanitizedValue);
                 elementState.setValueSource(EffectiveValueSource.Derived);
@@ -955,7 +1060,7 @@ public class ElementDerivationService {
                 if (!resolution.found()) {
                     throw new IllegalArgumentException("Die referenzierte Variable ist zur Laufzeit nicht verfügbar.");
                 }
-                return ResolvedInputValue.dynamic(resolution.value());
+                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, resolution.value(), variable.reference().markdown()));
             }
 
             if (authoredValue instanceof NoCodeAuthoredInputValue noCode) {
@@ -975,7 +1080,7 @@ public class ElementDerivationService {
                         createRuntimeAccumulator(computedElementStates, effectiveElementValues),
                         processExecutionData
                 );
-                return ResolvedInputValue.dynamic(result.getValue());
+                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, result.getValue(), false));
             }
 
             if (authoredValue instanceof LowCodeAuthoredInputValue lowCode) {
@@ -990,7 +1095,7 @@ public class ElementDerivationService {
                         .registerProcessExecutionData(processExecutionData)
                         .registerElementObject(baseElement)
                         .evaluateCode(code);
-                return ResolvedInputValue.dynamic(result.asObject());
+                return ResolvedInputValue.dynamic(formatDynamicTextValue(baseElement, result.asObject(), false));
             }
         } catch (Exception exception) {
             throw new DerivationException(baseElement, "Der dynamische Eingabewert ist ungültig: " + exception.getMessage(), exception);
@@ -1026,13 +1131,39 @@ public class ElementDerivationService {
             }
 
             if (inputModeContext == InputModeEvaluationContext.Runtime) {
-                return templateRenderService.interpolate(processExecutionData, text);
+                return templateRenderService.interpolate(
+                        processExecutionData,
+                        text,
+                        dynamicTextElement.getDynamicTextPolicy().outputFormat()
+                );
             }
 
             return text;
         } catch (RuntimeException exception) {
             throw new DerivationException(element, "Der dynamische Text ist ungültig: " + exception.getMessage(), exception);
         }
+    }
+
+    /**
+     * A whole value from process data or code is inserted without a template, so it is formatted like a
+     * {@code {! ... !}} tag. This keeps, for example, a customer's Markdown link from hiding its target in a message.
+     * A value from a Markdown input becomes plain text where the field can only show text, as with
+     * {@code _text_v1.fromMarkdown} in a template.
+     */
+    @Nullable
+    private static Object formatDynamicTextValue(@Nonnull BaseElement element,
+                                                 @Nullable Object value,
+                                                 boolean markdownValue) {
+        if (element instanceof DynamicTextElement dynamicTextElement
+                && dynamicTextElement.getDynamicTextPolicy() != null
+                && value instanceof String text) {
+            var format = dynamicTextElement.getDynamicTextPolicy().outputFormat();
+            var showsOnlyText = format == TemplateOutputFormat.PlainText || format == TemplateOutputFormat.SingleLineText;
+            return TemplateValueFormatter.formatRaw(format, markdownValue && showsOnlyText
+                    ? MarkdownRenderer.renderPlainText(text)
+                    : text);
+        }
+        return value;
     }
 
     @Nonnull
@@ -1086,16 +1217,18 @@ public class ElementDerivationService {
      * Dependent selects are valid only relative to the currently selected option of another select. A previously chosen option may stop belonging to the active group after the
      * referenced select changes. Returning {@code null} in that case forces the runtime state to reflect the currently available option set instead of silently preserving an
      * impossible selection.
+     * <p>
+     * A referenced select that is placed after the dependent select is not derived yet. Its check runs once the whole tree is derived, see
+     * {@link #checkDeferredSelectDependencies(SelectDependencies)}.
      */
     @Nullable
     private Object sanitizeSelectEffectiveValue(
-            @Nonnull BaseElement rootElement,
             @Nonnull InputElement<?> inputElement,
             @Nullable Object effectiveValue,
-            @Nonnull AuthoredElementValues rootAuthoredElementValues,
-            @Nonnull EffectiveElementValues rootEffectiveElementValues,
-            @Nonnull AuthoredElementValues authoredElementValues,
-            @Nonnull EffectiveElementValues effectiveElementValues
+            @Nonnull ValueScope scope,
+            @Nonnull SelectDependencies selectDependencies,
+            @Nonnull ComputedElementState elementState,
+            @Nonnull ElementDerivationOptions options
     ) {
         if (!(inputElement instanceof SelectInputElement selectField)) {
             return effectiveValue;
@@ -1105,25 +1238,32 @@ public class ElementDerivationService {
             return effectiveValue;
         }
 
-        var selectedValue = selectField.formatValue(effectiveValue);
+        // String values are trimmed before they are validated. Check the trimmed value, so that a padded value of an option of another group does not skip the group check.
+        var formattedValue = selectField.formatValue(effectiveValue);
+        var selectedValue = formattedValue == null ? null : formattedValue.trim();
         if (selectedValue == null || !selectField.containsOptionValue(selectedValue)) {
             return effectiveValue;
         }
 
-        var referencedSelectField = resolveReferencedSelectField(rootElement, selectField.getDependsOnSelectFieldId());
+        var referencedSelectField = selectDependencies.selects().get(selectField.getDependsOnSelectFieldId());
         if (referencedSelectField == null) {
             return effectiveValue;
         }
 
-        var referencedValue = resolveReferencedSelectValue(
-                referencedSelectField,
-                authoredElementValues,
-                effectiveElementValues,
-                rootAuthoredElementValues,
-                rootEffectiveElementValues
-        );
+        var referencedScope = selectDependencies.findScope(scope, referencedSelectField.getId());
+        if (referencedScope != null && !referencedScope.elementStates().containsKey(referencedSelectField.getId())) {
+            selectDependencies.deferredChecks().add(new DeferredSelectCheck(
+                    selectField,
+                    selectedValue,
+                    referencedSelectField,
+                    referencedScope,
+                    elementState,
+                    reportsErrors(inputElement, options)
+            ));
+            return selectedValue;
+        }
 
-        if (selectField.containsOptionValueForGroup(selectedValue, referencedValue)) {
+        if (selectField.containsOptionValueForGroup(selectedValue, resolveReferencedSelectValue(referencedSelectField, referencedScope))) {
             return selectedValue;
         }
 
@@ -1131,58 +1271,113 @@ public class ElementDerivationService {
     }
 
     /**
-     * Resolves the select element that governs the current dependent select.
+     * Reads the value of a referenced select from the scope that contains it: the current row, a surrounding row or the form level.
      * <p>
-     * The lookup starts at the form root rather than the current branch because dependency references are id-based and should remain stable even when authors rearrange the layout
-     * hierarchy around the fields.
+     * Only derived values count. A hidden select has none, and a protected disabled or technical select carries its trusted value. Values that a client submits for such a select,
+     * or places into another scope under its ID, therefore cannot make an option of another group valid.
      */
     @Nullable
-    private SelectInputElement resolveReferencedSelectField(
-            @Nonnull BaseElement rootElement,
-            @Nullable String referencedElementId
-    ) {
-        if (StringUtils.isNullOrEmpty(referencedElementId)) {
+    private static String resolveReferencedSelectValue(@Nonnull SelectInputElement referencedSelectField,
+                                                       @Nullable ValueScope referencedScope) {
+        if (referencedScope == null) {
             return null;
         }
 
-        return ElementFlattenUtils
-                .flattenElements(rootElement)
-                .stream()
-                .filter(SelectInputElement.class::isInstance)
-                .map(SelectInputElement.class::cast)
-                .filter(element -> Objects.equals(element.getId(), referencedElementId))
-                .findFirst()
-                .orElse(null);
+        return referencedSelectField.formatValue(referencedScope.effectiveValues().get(referencedSelectField.getId()));
     }
 
     /**
-     * Reads the controlling select value from the nearest meaningful scope.
+     * Checks dependent selects against referenced selects that are placed after them, once the whole tree is derived.
      * <p>
-     * Replicated rows need local dependencies to win over root-level data, otherwise one row could accidentally validate itself against another row's selection. The fallback order
-     * therefore prefers row-local effective data, then row-local authored data, and only then falls back to root-level state. A present null value stops that fallback because it
-     * represents an explicit clear in the nearer scope.
+     * Elements after a dependent select may already have used its value, so a mismatch blocks the submission with an error instead of clearing the value afterwards.
      */
-    @Nullable
-    private String resolveReferencedSelectValue(
-            @Nonnull SelectInputElement referencedSelectField,
-            @Nonnull AuthoredElementValues authoredElementValues,
-            @Nonnull EffectiveElementValues effectiveElementValues,
-            @Nonnull AuthoredElementValues rootAuthoredElementValues,
-            @Nonnull EffectiveElementValues rootEffectiveElementValues
-    ) {
-        var referencedElementId = referencedSelectField.getId();
-        Object rawValue;
-        if (effectiveElementValues.containsKey(referencedElementId)) {
-            rawValue = effectiveElementValues.get(referencedElementId);
-        } else if (authoredElementValues.containsKey(referencedElementId)) {
-            rawValue = authoredInputValueService.unwrapLiteral(authoredElementValues.get(referencedElementId));
-        } else if (rootEffectiveElementValues.containsKey(referencedElementId)) {
-            rawValue = rootEffectiveElementValues.get(referencedElementId);
-        } else {
-            rawValue = authoredInputValueService.unwrapLiteral(rootAuthoredElementValues.get(referencedElementId));
+    private static void checkDeferredSelectDependencies(@Nonnull SelectDependencies selectDependencies) {
+        for (var check : selectDependencies.deferredChecks()) {
+            var referencedValue = resolveReferencedSelectValue(check.referencedSelect(), check.referencedScope());
+            if (!check.reportErrors()
+                    || check.dependentState().getError() != null
+                    || check.dependentSelect().containsOptionValueForGroup(check.selectedValue(), referencedValue)) {
+                continue;
+            }
+
+            var referencedLabel = check.referencedSelect().getLabel();
+            check.dependentState().setError(StringUtils.isNullOrEmpty(referencedLabel)
+                    ? "Die ausgewählte Option passt nicht zur Auswahl im übergeordneten Auswahlfeld. Wählen Sie eine passende Option aus."
+                    : "Die ausgewählte Option passt nicht zur Auswahl im Feld " + StringUtils.quote(referencedLabel.trim()) + ". Wählen Sie eine passende Option aus.");
+        }
+    }
+
+    /** Errors follow {@link #deriveError}: technical inputs are not shown to people, so they never report errors. */
+    private static boolean reportsErrors(@Nonnull InputElement<?> inputElement, @Nonnull ElementDerivationOptions options) {
+        return !options.containsSkipErrors(inputElement.getId())
+                && !(inputElement instanceof BaseInputElement<?> baseInputElement && Boolean.TRUE.equals(baseInputElement.getTechnical()));
+    }
+
+    /**
+     * The derived values and element states of the form level or of one replicating container row.
+     *
+     * @param parent      the scope that contains this one, or {@code null} for the form level
+     * @param containerId the ID of the replicating container of the row, or {@code null} for the form level
+     */
+    private record ValueScope(@Nullable ValueScope parent,
+                              @Nullable String containerId,
+                              @Nonnull EffectiveElementValues effectiveValues,
+                              @Nonnull ComputedElementStates elementStates) {
+    }
+
+    /**
+     * The select dependencies of one derivation: the selects by ID, the replicating container whose rows contain each element ({@code null} for the form level) and the checks
+     * that run once the whole tree is derived.
+     */
+    private record SelectDependencies(@Nonnull Map<String, SelectInputElement> selects,
+                                      @Nonnull Map<String, String> containerIds,
+                                      @Nonnull List<DeferredSelectCheck> deferredChecks) {
+        @Nonnull
+        private static SelectDependencies of(@Nonnull BaseElement rootElement) {
+            var selectDependencies = new SelectDependencies(new HashMap<>(), new HashMap<>(), new LinkedList<>());
+            selectDependencies.collect(rootElement, null);
+            return selectDependencies;
         }
 
-        return referencedSelectField.formatValue(rawValue);
+        private void collect(@Nonnull BaseElement element, @Nullable String containerId) {
+            containerIds.putIfAbsent(element.getId(), containerId);
+            if (element instanceof SelectInputElement select) {
+                selects.putIfAbsent(select.getId(), select);
+            }
+
+            if (element instanceof LayoutElement<?> layoutElement) {
+                // The children of a replicating container belong to its rows, not to the scope of the container.
+                var childContainerId = element instanceof ReplicatingContainerLayoutElement ? element.getId() : containerId;
+                for (var child : layoutElement.getChildren()) {
+                    collect(child, childContainerId);
+                }
+            }
+        }
+
+        /** Finds the scope that contains the element among the given scope and its parents. Elements of other rows have none. */
+        @Nullable
+        private ValueScope findScope(@Nonnull ValueScope scope, @Nullable String elementId) {
+            if (!containerIds.containsKey(elementId)) {
+                return null;
+            }
+
+            var containerId = containerIds.get(elementId);
+            for (var candidate = scope; candidate != null; candidate = candidate.parent()) {
+                if (Objects.equals(candidate.containerId(), containerId)) {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    private record DeferredSelectCheck(@Nonnull SelectInputElement dependentSelect,
+                                       @Nonnull String selectedValue,
+                                       @Nonnull SelectInputElement referencedSelect,
+                                       @Nonnull ValueScope referencedScope,
+                                       @Nonnull ComputedElementState dependentState,
+                                       boolean reportErrors) {
     }
 
     /**
@@ -1226,6 +1421,9 @@ public class ElementDerivationService {
 
         try {
             inputElement.validate(effectiveValue);
+            if (inputElement instanceof AssetSelectInputElement assetSelect) {
+                assetSelectionValidationService.validate(assetSelect, effectiveValue);
+            }
         } catch (ValidationException e) {
             return ErrorResult.of(e);
         }

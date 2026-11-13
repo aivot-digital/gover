@@ -4,6 +4,9 @@ import {describe, expect, it, vi} from 'vitest';
 import {NoCodeOperandEditorProcessDataReference} from './no-code-operand-editor-process-data-reference';
 import {type NoCodeOperand} from '../../../models/functions/no-code-expression';
 
+// The data path's copy action uses the app dispatch; these editor tests render without a Redux store.
+vi.mock('../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 describe('NoCodeOperandEditorProcessDataReference', () => {
     it.each([
         {type: 'NoCodeProcessDataReference', path: 'warenkorb.anzahl'},

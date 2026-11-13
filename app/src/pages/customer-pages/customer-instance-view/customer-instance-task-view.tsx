@@ -3,6 +3,7 @@ import {Alert, Box, Button, Grid, Paper, Typography} from '@mui/material';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
 import {Chip} from '../../../components/chip/chip';
+import {RemovableFileUploadAttachmentsProvider} from '../../../components/file-upload-field/removable-file-upload-attachments-context';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {isApiError} from '../../../models/api-error';
@@ -24,6 +25,7 @@ import type {IdentitySelectionApi} from '../../../modules/identity/models/identi
 import type {IdentitySlot} from '../../../modules/identity/models/identity-slot';
 import {TaskViewEventButtons} from '../../../modules/process/components/task-view-event-buttons';
 import {isTaskDeadlineExceededError} from '../../../modules/process/utils/task-deadline-error';
+import {collectTaskViewFileUploads} from '../../../modules/process/utils/task-view-file-uploads';
 import {
     hasCustomerTaskIdentityRequirements,
     hasCustomerTaskViewContent,
@@ -236,7 +238,7 @@ export function CustomerInstanceTaskView() {
 
     const handleTaskViewEvent = useCallback(async (event: TaskViewEvent, values: AuthoredElementValues): Promise<void> => {
         dispatch(setLoadingMessage({
-            message: `Verarbeite Aktion: ${event.label}`,
+            message: `Aktion wird verarbeitet: ${event.label}`,
             blocking: true,
             estimatedTime: 500,
         }));
@@ -244,9 +246,12 @@ export function CustomerInstanceTaskView() {
         latestAuthoredValuesRef.current = values;
 
         try {
+            const files = taskView != null && taskView !== 'failed' && hasCustomerTaskViewContent(taskView)
+                ? await collectTaskViewFileUploads(taskView.layout, values, (derivableValues) => handleDerive(derivableValues, ['ALL']))
+                : [];
             const updatedTaskView = await withDelay(
                 new ProcessInstanceTaskApiService()
-                    .putCustomerTaskView(instanceAccessKey, taskAccessKey, values, event.event),
+                    .putCustomerTaskView(instanceAccessKey, taskAccessKey, values, files, event.event),
                 500,
             );
 
@@ -287,12 +292,14 @@ export function CustomerInstanceTaskView() {
     }, [
         dispatch,
         handleDeadlineExceeded,
+        handleDerive,
         handleRequiredIdentityAuthentication,
         instanceAccessKey,
         invalidateInstanceTasks,
         navigate,
         refreshInstanceStatus,
         taskAccessKey,
+        taskView,
     ]);
 
     const handleEventClick = useCallback(async (event: TaskViewEvent): Promise<void> => {
@@ -315,8 +322,12 @@ export function CustomerInstanceTaskView() {
         setEditedAuthoredValues(values);
     }, []);
 
+    const removableAttachmentKeys = useMemo<ReadonlySet<string>>(() => new Set(
+        taskView != null && taskView !== 'failed' ? taskView.removableAttachmentKeys ?? [] : [],
+    ), [taskView]);
+
     if (deadlineExceeded) {
-        return <Alert severity="error">Die Bearbeitungsfrist dieser Aufgabe ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
+        return <Alert severity="error">Die Bearbeitungsfrist ist abgelaufen. Eine Bearbeitung ist nicht mehr möglich.</Alert>;
     }
 
     if (taskView == null) {
@@ -356,17 +367,19 @@ export function CustomerInstanceTaskView() {
 
     return (
         <Box>
-            <ElementDerivationContext
-                element={taskView.layout}
-                authoredElementValues={authoredValues}
-                onAuthoredElementValuesChange={handleAuthoredValuesChange}
-                computedErrors={derivedErrors?.elementStates}
-                onDerive={(values, derivationOptions) => handleDerive(values, derivationOptions.skipErrorsForElementIds)}
-                onEvent={taskIsActive ? handleInlineEvent : undefined}
-                taskViewMode="customer"
-                showErrorSummary
-                readOnly={!taskIsActive}
-            />
+            <RemovableFileUploadAttachmentsProvider value={removableAttachmentKeys}>
+                <ElementDerivationContext
+                    element={taskView.layout}
+                    authoredElementValues={authoredValues}
+                    onAuthoredElementValuesChange={handleAuthoredValuesChange}
+                    computedErrors={derivedErrors?.elementStates}
+                    onDerive={(values, derivationOptions) => handleDerive(values, derivationOptions.skipErrorsForElementIds)}
+                    onEvent={taskIsActive ? handleInlineEvent : undefined}
+                    taskViewMode="customer"
+                    showErrorSummary
+                    readOnly={!taskIsActive}
+                />
+            </RemovableFileUploadAttachmentsProvider>
 
             {
                 taskIsActive &&
@@ -514,32 +527,35 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
         }
     };
 
+    const existingIdentityTitle = existingIdentitySlot?.title?.trim();
+    const existingIdentityLabel = existingIdentityTitle || 'Bestehende Identität';
+    const accountInstruction = existingIdentityTitle
+        ? `Melden Sie sich mit dem Konto an, das Sie für „${existingIdentityTitle}“ in diesem Vorgang verwendet haben.`
+        : 'Melden Sie sich mit dem Konto an, das Sie für diese Identität in diesem Vorgang verwendet haben.';
     let introduction: string;
     if (existingIdentitySlot != null && newIdentitySlot != null) {
-        introduction = 'Bestätigen Sie die Empfängeridentität dieser Aufgabe und vervollständigen Sie die weitere Identitätsangabe.';
+        introduction = existingIdentityReady
+            ? 'Ihre bestehende Identität ist bestätigt. Vervollständigen Sie die weitere Identitätsangabe, um fortzufahren.'
+            : 'Bestätigen Sie Ihre bestehende Identität und vervollständigen Sie die weitere Identitätsangabe.';
     } else if (existingIdentitySlot != null) {
-        introduction = 'Für diese Aufgabe ist eine erneute Anmeldung erforderlich. Melden Sie sich mit dem Nutzerkonto an, an das diese Aufgabe gesendet wurde.';
+        introduction = existingIdentityReady
+            ? 'Ihre Identität ist bestätigt. Wählen Sie „Fortfahren“, um zum nächsten Schritt zu gelangen.'
+            : 'Um fortzufahren, bestätigen Sie bitte Ihre Identität.';
     } else if (newIdentitySlot?.isRequired) {
-        introduction = 'Für diese Aufgabe ist eine Identität erforderlich. Wählen Sie ein Nutzerkonto oder, sofern angeboten, eine E-Mail-Adresse aus.';
+        introduction = 'Um fortzufahren, wählen Sie ein Konto oder, sofern angeboten, eine E-Mail-Adresse aus.';
     } else {
-        introduction = 'Sie können ein Nutzerkonto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie die Aufgabe ohne Identitätsangabe bearbeiten.';
+        introduction = 'Sie können ein Konto oder eine angebotene E-Mail-Adresse verwenden. Alternativ können Sie ohne Identitätsangabe fortfahren.';
+    }
+    if (existingIdentitySlot != null && !existingIdentityReady && !wrongExistingAccount) {
+        introduction += ` ${accountInstruction}`;
     }
 
     return (
-        <Box
-            sx={{
-                maxWidth: 1200,
-                mx: 'auto',
-                py: {
-                    xs: 3,
-                    md: 5,
-                },
-            }}
-        >
+        <Box>
             <Grid container spacing={3}>
                 <Grid size={{xs: 12, md: 10, lg: 8}} sx={{mb: 2}}>
-                    <Typography variant="h2" component="div">
-                        Identität auswählen
+                    <Typography variant="h2" component="h2">
+                        {existingIdentitySlot != null ? 'Identität bestätigen' : 'Identität auswählen'}
                     </Typography>
                     <Typography sx={{mt: 1, maxWidth: 680}}>
                         {introduction}
@@ -574,8 +590,8 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                                     mt: 0.25,
                                 }}
                             >
-                                <Typography variant="h4" component="h2">
-                                    Empfängeridentität
+                                <Typography variant="h4" component="h3">
+                                    {existingIdentityLabel}
                                 </Typography>
                                 <Chip
                                     mode="soft"
@@ -589,10 +605,12 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                                 wrongExistingAccount &&
                                 <Alert severity="error" sx={{mt: 2}}>
                                     <Typography variant="subtitle2" component="div">
-                                        Falsches Nutzerkonto
+                                        Anderes Konto erforderlich
                                     </Typography>
-                                    Das verwendete Nutzerkonto gehört nicht zur Empfängeridentität dieser Aufgabe.
-                                    Melden Sie sich mit dem richtigen Nutzerkonto an.
+                                    {existingIdentityTitle
+                                        ? `Das verwendete Konto gehört nicht zu „${existingIdentityTitle}“. `
+                                        : 'Das verwendete Konto gehört nicht zur erforderlichen Identität. '}
+                                    {accountInstruction}
                                 </Alert>
                             }
 
@@ -615,6 +633,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                         <IdentitySlotCard
                             ref={controlsRef}
                             slot={newIdentitySlot}
+                            headingComponent="h3"
                             api={identitySelectionApi}
                             saveMode="deferred"
                             beforeIdentityProviderStart={handleIdentityProviderStart}
@@ -642,7 +661,7 @@ function TaskIdentityPlaceholder(props: TaskIdentityPlaceholderProps) {
                         {
                             canContinueWithoutAuthentication
                                 ? 'Ohne Anmeldung fortfahren'
-                                : 'Mit Aufgabe fortfahren'
+                                : 'Fortfahren'
                         }
                     </Button>
                 </Grid>

@@ -19,9 +19,12 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthoredInputValueServiceTest {
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
@@ -101,6 +104,10 @@ class AuthoredInputValueServiceTest {
                   "variable": {
                     "type": "Variable",
                     "reference": {"source": "ProcessData", "path": "person.name"}
+                  },
+                  "markdownVariable": {
+                    "type": "Variable",
+                    "reference": {"source": "ProcessData", "path": "message", "markdown": true}
                   }
                 }
                 """;
@@ -111,6 +118,9 @@ class AuthoredInputValueServiceTest {
         var variable = assertInstanceOf(VariableAuthoredInputValue.class, values.get("variable"));
         assertEquals(InputVariableSource.ProcessData, variable.reference().source());
         assertEquals("person.name", variable.reference().path());
+        // References stored before the flag existed are not Markdown.
+        assertFalse(variable.reference().markdown());
+        assertTrue(assertInstanceOf(VariableAuthoredInputValue.class, values.get("markdownVariable")).reference().markdown());
     }
 
     @Test
@@ -135,6 +145,46 @@ class AuthoredInputValueServiceTest {
         var row = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, rows.getFirst());
         assertEquals("row-1", row.getId());
         assertEquals("Ada", row.getValues().getLiteral("name"));
+    }
+
+    @Test
+    void shouldAssignTheSameRowIdsToRowsBuiltTwiceFromTheSameData() {
+        var amount = new TextInputElement();
+        amount.setId("amount");
+        var items = new ReplicatingContainerLayoutElement();
+        items.setId("items");
+        items.setChildren(List.of(amount));
+        var positions = new ReplicatingContainerLayoutElement();
+        positions.setId("positions");
+        positions.setChildren(List.of(items));
+        var root = new GroupLayoutElement();
+        root.setId("root");
+        root.setChildren(List.of(positions));
+        Map<String, Object> effectiveValues = Map.of("positions", List.of(
+                Map.of("id", "random-1", "values", Map.of("items", List.of(Map.of("id", "random-2", "values", Map.of("amount", "1"))))),
+                Map.of("id", "random-3", "values", Map.of("items", List.of(Map.of("id", "random-4", "values", Map.of("amount", "2")))))
+        ));
+
+        var first = service.toLiteralAuthoredElementValues(root, effectiveValues);
+        service.assignPositionalRowIds(root, first);
+        var second = service.toLiteralAuthoredElementValues(root, effectiveValues);
+        service.assignPositionalRowIds(root, second);
+
+        var firstRows = assertInstanceOf(List.class, first.getLiteral("positions"));
+        var secondRows = assertInstanceOf(List.class, second.getLiteral("positions"));
+        var firstRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, firstRows.get(0));
+        var secondRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, firstRows.get(1));
+        assertNotEquals("random-1", firstRow.getId());
+        assertNotEquals(firstRow.getId(), secondRow.getId());
+        assertEquals(firstRow.getId(), assertInstanceOf(ReplicatingContainerLayoutElementValue.class, secondRows.get(0)).getId());
+        assertEquals(secondRow.getId(), assertInstanceOf(ReplicatingContainerLayoutElementValue.class, secondRows.get(1)).getId());
+        var firstNestedRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class,
+                assertInstanceOf(List.class, firstRow.getValues().getLiteral("items")).getFirst());
+        var secondNestedRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class,
+                assertInstanceOf(List.class, secondRow.getValues().getLiteral("items")).getFirst());
+        assertNotEquals("random-2", firstNestedRow.getId());
+        assertNotEquals(firstNestedRow.getId(), secondNestedRow.getId());
+        assertEquals("1", firstNestedRow.getValues().getLiteral("amount"));
     }
 
     @Test

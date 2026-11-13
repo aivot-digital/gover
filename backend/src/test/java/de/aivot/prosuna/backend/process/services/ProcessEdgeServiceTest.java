@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import de.aivot.prosuna.backend.process.repositories.ProcessEdgeRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ class ProcessEdgeServiceTest {
     private static final Integer PROCESS_ID = 12;
     private static final Integer PUBLISHED_VERSION = 1;
     private static final Integer DRAFT_VERSION = 2;
+    private static final Integer TESTED_DRAFT_VERSION = 3;
 
     private ProcessEdgeRepository edgeRepository;
     private ProcessEdgeService service;
@@ -39,18 +41,25 @@ class ProcessEdgeServiceTest {
         edgeRepository = mock(ProcessEdgeRepository.class);
         var nodeService = mock(ProcessNodeService.class);
         var versionRepository = mock(ProcessVersionRepository.class);
-        service = new ProcessEdgeService(edgeRepository, nodeService, new ProcessVersionDraftGuard(versionRepository));
+        var testClaimRepository = mock(ProcessTestClaimRepository.class);
+        service = new ProcessEdgeService(edgeRepository, nodeService, new ProcessVersionDraftGuard(versionRepository, testClaimRepository));
 
         when(versionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, PUBLISHED_VERSION)))
                 .thenReturn(Optional.of(version(PUBLISHED_VERSION, ProcessVersionStatus.Published)));
         when(versionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, DRAFT_VERSION)))
                 .thenReturn(Optional.of(version(DRAFT_VERSION, ProcessVersionStatus.Drafted)));
+        when(versionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, TESTED_DRAFT_VERSION)))
+                .thenReturn(Optional.of(version(TESTED_DRAFT_VERSION, ProcessVersionStatus.Drafted)));
+        when(testClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, TESTED_DRAFT_VERSION))
+                .thenReturn(true);
 
-        // Nodes 1 and 2 belong to the published version, nodes 3 and 4 to the draft.
+        // Nodes 1 and 2 belong to the published version, nodes 3 and 4 to the draft, nodes 5 and 6 to the tested draft.
         when(nodeService.retrieve(1)).thenReturn(Optional.of(node(1, PUBLISHED_VERSION)));
         when(nodeService.retrieve(2)).thenReturn(Optional.of(node(2, PUBLISHED_VERSION)));
         when(nodeService.retrieve(3)).thenReturn(Optional.of(node(3, DRAFT_VERSION)));
         when(nodeService.retrieve(4)).thenReturn(Optional.of(node(4, DRAFT_VERSION)));
+        when(nodeService.retrieve(5)).thenReturn(Optional.of(node(5, TESTED_DRAFT_VERSION)));
+        when(nodeService.retrieve(6)).thenReturn(Optional.of(node(6, TESTED_DRAFT_VERSION)));
         when(nodeService.resolvePorts(any(ProcessNodeEntity.class))).thenReturn(new ProcessNodePortResolution(List.of(
                 new ProcessNodePort("default", "Standard", "Fortsetzung"),
                 new ProcessNodePort("other", "Alternative", "Fortsetzung"),
@@ -139,6 +148,38 @@ class ProcessEdgeServiceTest {
 
         verify(edgeRepository, never()).delete(publishedEdge);
         verify(edgeRepository).delete(draftEdge);
+    }
+
+    @Test
+    void create_RejectsEdgeInDraftWithTestClaim() {
+        assertStatus(HttpStatus.CONFLICT,
+                () -> service.create(new ProcessEdgeEntity(null, PROCESS_ID, TESTED_DRAFT_VERSION, 5, 6, "default")));
+
+        verify(edgeRepository, never()).save(any(ProcessEdgeEntity.class));
+    }
+
+    @Test
+    void performUpdate_RejectsEdgeOfDraftWithTestClaim() {
+        var existing = new ProcessEdgeEntity(9, PROCESS_ID, TESTED_DRAFT_VERSION, 5, 6, "default");
+
+        assertStatus(HttpStatus.CONFLICT, () -> service.performUpdate(
+                9,
+                new ProcessEdgeEntity(9, PROCESS_ID, TESTED_DRAFT_VERSION, 6, 5, "other"),
+                existing
+        ));
+
+        assertEquals(5, existing.getFromNodeId());
+        assertEquals("default", existing.getViaPort());
+        verify(edgeRepository, never()).save(any(ProcessEdgeEntity.class));
+    }
+
+    @Test
+    void performDelete_RejectsEdgeOfDraftWithTestClaim() {
+        var testedEdge = new ProcessEdgeEntity(9, PROCESS_ID, TESTED_DRAFT_VERSION, 5, 6, "default");
+
+        assertStatus(HttpStatus.CONFLICT, () -> service.performDelete(testedEdge));
+
+        verify(edgeRepository, never()).delete(any(ProcessEdgeEntity.class));
     }
 
     @Test

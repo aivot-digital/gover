@@ -11,9 +11,11 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElem
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownTemplateValues;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
@@ -40,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
@@ -78,7 +81,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         return "Die KI-Anfrage wurde erfolgreich ausgeführt."
                 + detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL))
                 + detail("Kurzbeschreibung", context.thisNode().getDescription())
-                + section("Antwort der KI", summary.data(OUTPUT_COMPLETION));
+                // The answer can repeat customer input from the prompt, so its links must not hide their target.
+                + section("Antwort der KI", MarkdownTemplateValues.revealLinkTargets(Objects.toString(summary.data(OUTPUT_COMPLETION), null)));
     }
 
     @Nonnull
@@ -120,7 +124,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet einen Prompt an das zentral konfigurierte KI-Modell und stellt die Antwort als Knotenausgänge bereit.";
+        return "Sendet einen Prompt an das zentral konfigurierte KI-Modell und stellt die Antwort in den Elementdaten bereit.";
     }
 
     @Nonnull
@@ -161,7 +165,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                 new ProcessNodePort(
                         SUCCESS_PORT,
                         "KI-Antwort erhalten",
-                        "Der Prozess wird hier fortgesetzt, nachdem die KI-Antwort erfolgreich abgerufen wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die KI-Antwort erfolgreich abgerufen wurde."
                 )
         );
     }
@@ -172,7 +176,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         return List.of(
                 new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der Anfragetext für das KI-Modell.", "string"),
                 new ProcessNodeOutput(OUTPUT_COMPLETION, "Completion", "Die erste erzeugte Completion als Text.", "string"),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Abschlussgrund", "Der Grund, aus dem die Erzeugung der ersten KI-Antwort beendet wurde.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
                 new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der KI-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION)
         );
@@ -188,7 +192,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                 && StringUtils.isNullOrEmpty(configuration.prompt)) {
             return Map.of(
                     AiCompletionActionNodeConfig.PROMPT_FIELD_ID,
-                    List.of("Das Prompt muss angegeben werden.")
+                    List.of("Der Prompt muss angegeben werden.")
             );
         }
         return null;
@@ -209,7 +213,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         var renderedPrompt = configuration.prompt;
         if (StringUtils.isNullOrEmpty(renderedPrompt)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Das Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
+                    "Der Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
             );
         }
 
@@ -296,6 +300,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
          */
         @InputElementPOJOBinding(id = PROMPT_FIELD_ID, type = ElementType.RichTextInput,
                 dynamicText = true,
+                // The prompt goes to a language model, not to a Markdown renderer.
+                dynamicTextFormat = TemplateOutputFormat.PlainText,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Prompt"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Prompt-Vorlage mit Template-Ausdrücken. Die Vorlage wird vor der KI-Anfrage mit den aktuellen Vorgangsdaten gerendert."),

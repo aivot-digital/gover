@@ -1,3 +1,4 @@
+import {generateDataKey} from '../../../utils/data-key-input';
 import {formatProcessDataPath, parseProcessDataPath} from '../../../utils/process-data-path';
 import {Typography} from '@mui/material';
 import React, {type ReactNode} from 'react';
@@ -75,7 +76,7 @@ export function collectHttpMappingProblems(current: ElementWithParents, allEleme
                     </Typography>
                     <Typography>
                         Dies kann zu Problemen bei der Datenverarbeitung führen. Bitte passen Sie die Schlüssel an, um
-                        Überschneidungen zu vermeiden oder stellen Sie sicher, dass nicht beide Elemente gleichzeitig
+                        Überschneidungen zu vermeiden, oder stellen Sie sicher, dass nicht beide Elemente gleichzeitig
                         verwendet werden.
                     </Typography>
                 </>,
@@ -174,4 +175,18 @@ function describeDestinationKeyOverlap(elementDestinationKey: string, otherEleme
     }
 
     return ' Die Schlüssel können auf denselben Pfad zeigen.';
+}
+
+/** Automatic names avoid known collisions; manually selected shared paths remain valid. */
+export function suggestDestinationKey(title: string | null | undefined, current: ElementWithParents, allElements: ElementWithParents[]): string | null {
+    const base = generateDataKey(title);
+    if (base == null || !isAnyInputElement(current.element)) return null;
+    for (let index = 1; index <= allElements.length + 2; index++) {
+        const candidate = index === 1 ? base : `${base}_${index}`;
+        if (collectHttpMappingProblems({...current, element: {...current.element, destinationKey: candidate}}, allElements).length === 0) {
+            return candidate;
+        }
+    }
+    // An overlapping ancestor path cannot be resolved by renaming this field. Keep the warning visible.
+    return base;
 }

@@ -7,7 +7,7 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import jakarta.annotation.Nullable;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public record PaymentConfigElementValueRequestorMapping(
@@ -44,12 +44,12 @@ public record PaymentConfigElementValueRequestorMapping(
 ) {
 
     public Map<String, Object> performValidation() {
-        var errors = new HashMap<String, Object>();
+        var errors = new LinkedHashMap<String, Object>();
 
         validateDestinationKeys(errors);
 
         if (requestorSourceType == null) {
-            errors.put("requestorSourceType", "Es muss eine Quelle für die Antragsteller-Zuweisung ausgewählt werden.");
+            errors.put("requestorSourceType", "Es muss eine Quelle für die Zuordnung der zahlenden Person oder Organisation ausgewählt werden.");
             return errors;
         }
 
@@ -80,7 +80,7 @@ public record PaymentConfigElementValueRequestorMapping(
         }
 
         if (!ProcessDataValueUtils.isValidDestinationKey(destinationKey, false, false)) {
-            errors.put(fieldKey, label + " muss ein gültiger Prozessdaten-Schlüssel sein.");
+            errors.put(fieldKey, label + " muss ein gültiger Datenschlüssel sein.");
         }
     }
 

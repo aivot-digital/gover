@@ -64,7 +64,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
             "dataEntry", "Dateneingabe",
             "Zeit für die Eingabe oder Änderung der Daten.",
             new ProcessNodePort("data_entry_overdue", "Fristüberschreitung: Dateneingabe",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Dateneingabe."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Dateneingabe beendet wurde."));
 
     public static final String NODE_KEY = "data_change";
 
@@ -145,16 +145,16 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Erlaubt einer Mitarbeiter:in, Daten in einer Prosuna-UI zu ändern, hinzuzufügen oder zu entfernen.";
+        return "Erstellt eine Mitarbeitendenaufgabe zum Prüfen und Anpassen der Vorgangsdaten über eine UI-Definition.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine zugewiesene Prosuna-Aufgabe, in der eine Mitarbeiter:in Vorgangsdaten prüfen und bearbeiten kann.
+                Erstellt eine Mitarbeitendenaufgabe, in der die zuständige Person Vorgangsdaten über die konfigurierte UI-Definition prüft und anpasst; die Formularelemente sind mit den aktuellen Vorgangsdaten vorbelegt. Die zuständige Person wird aus dem konfigurierten Personenkreis ermittelt. Der Vorgang wartet, bis sie die Änderungen übernimmt. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
 
-                Die angezeigte Oberfläche und der zulässige Personenkreis werden über die Elementkonfiguration bestimmt. Nach der Bestätigung werden die erfassten Änderungen in die Vorgangsdaten übernommen; erfasste Daten, Vermerk und Bearbeitungsinformationen stehen zusätzlich als Ausgänge zur Verfügung.
+                Beim Abschluss werden die Angaben aus Formularelementen mit Datenschlüssel in die Vorgangsdaten übernommen. Optional kann ein Änderungsvermerk erfasst werden.
                 """;
     }
 
@@ -167,7 +167,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
             layout = ElementPOJOMapper.createFromPOJO(DataChangeActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für den Datenänderungs-Knoten: %s",
+                    "Fehler beim Erstellen des Konfigurations-Layouts für das Datenänderungselement: %s",
                     e.getMessage()
             );
         }
@@ -215,7 +215,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 new ProcessNodePort(
                         PORT_OUTPUT,
                         "Datenänderung übernommen",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Datenänderung übernommen wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Datenänderung übernommen wurde."
                 )
         );
     }
@@ -227,7 +227,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Bearbeitete Daten",
-                        "Die final übernommenen Daten aus der konfigurierten Prosuna-UI im Payload-Format.",
+                        "Die final übernommenen Daten aus der konfigurierten Oberfläche im Payload-Format.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
@@ -285,7 +285,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement '%s' konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement '%s' konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         context.getThisNode().getName() != null ? context.getThisNode().getName() : getName()
                 ));
 
@@ -397,7 +397,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 .convertValue(rawElement, BaseElement.class);
 
         if (!(copy instanceof GroupLayoutElement copiedElement)) {
-            throw new IllegalStateException("Configured data-change UI is not a group layout.");
+            throw new IllegalStateException("Die konfigurierte Oberfläche für die Datenänderung ist keine Gruppierung.");
         }
 
         return copiedElement;
@@ -447,7 +447,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
         @InputElementPOJOBinding(id = DATA_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bearbeitbare Daten"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Prosuna-UI, mit der die Mitarbeiter:in die Vorgangsdaten bearbeiten kann."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine UI-Definition für die Bearbeitung der Vorgangsdaten."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public GroupLayoutElement dataDefinition;

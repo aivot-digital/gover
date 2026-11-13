@@ -550,10 +550,13 @@ function AiChatSession(props: AiChatWindowProps & {sessionKey: string}) {
                             size: humanizeFileSize(attachment.size),
                             contentType: attachment.type || null,
                             detail: 'Nur für diese Nachricht',
-                            actionLabel: 'Datei entfernen',
-                            actionIcon: <Delete/>,
-                            actionDisabled: isThinking,
-                            onAction: () => setAttachment(null),
+                            actions: [{
+                                label: 'Datei entfernen',
+                                icon: <Delete/>,
+                                color: 'error',
+                                disabled: isThinking,
+                                onAction: () => setAttachment(null),
+                            }],
                         }]}/>
                     )}
                     {attachmentError != null && (

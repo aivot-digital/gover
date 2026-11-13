@@ -1,3 +1,4 @@
+import {sortThemesByName} from '../../../themes/utils/sort-themes-by-name';
 import {CaseNumberType} from '../../enums/case-number-type';
 import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
 import {Alert, Box, Grid, Skeleton, Stack} from '@mui/material';
@@ -105,7 +106,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
     const isEditable = version.status === ProcessStatus.Drafted;
     const caseNumberType = draft.caseNumberType;
     const themeOptions = useMemo<SelectFieldComponentOption[]>(() => {
-        return (themes ?? []).map((theme) => ({
+        return sortThemesByName(themes ?? []).map((theme) => ({
             value: theme.id.toString(),
             label: theme.name,
         }));
@@ -195,7 +196,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             return undefined;
         }
         if (!Number.isInteger(value) || value < 1 || value > MAX_INSTANCE_DEADLINE_DAYS) {
-            return `Die Bearbeitungsdauer muss zwischen 1 und ${formatNumToGermanNum(MAX_INSTANCE_DEADLINE_DAYS)} Tagen liegen.`;
+            return `Die Bearbeitungsfrist muss zwischen 1 und ${formatNumToGermanNum(MAX_INSTANCE_DEADLINE_DAYS)} Tagen liegen.`;
         }
         return undefined;
     }, [draft.instanceDeadlineDays, isEditable]);
@@ -395,8 +396,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginTop
                 maxWidth={680}
             >
-                Diese Angaben gelten nur für die aktuell geöffnete Prozessversion und werden erst wirksam, wenn diese
-                Version veröffentlicht wird.
+                Die Angaben gelten für diese Prozessversion. Im Testmodus werden gespeicherte Änderungen bereits
+                verwendet; für die öffentliche Nutzung gelten sie nach der Veröffentlichung.
             </ElementEditorSectionHeader>
 
             {!isEditable && (
@@ -443,8 +444,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginBottom
                 maxWidth={680}
             >
-                Die Frist beginnt mit dem Eingang eines Vorgangs und wird in Kalendertagen gezählt. Ab der Hälfte der
-                Frist wird der Vorgang als bald fällig hervorgehoben, nach Fristablauf als überschritten. Eine
+                Die Frist beginnt mit dem Eingang eines Vorgangs und wird in Kalendertagen gezählt. Sobald 75 % der
+                Frist verstrichen sind, wird der Vorgang als bald fällig hervorgehoben, nach Fristablauf als überschritten. Eine
                 Überschreitung hat keine Auswirkungen auf den Prozessablauf. Fristen einzelner Aufgaben gelten
                 unabhängig davon.
             </ElementEditorSectionHeader>
@@ -452,9 +453,9 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
             <Box sx={{maxWidth: 680}}>
                 <NumberFieldComponent
                     key={`instance-deadline-${numberInputRevision}`}
-                    label="Bearbeitungsdauer"
+                    label="Bearbeitungsfrist"
                     hint="Ohne Angabe gilt für Vorgänge dieser Prozessversion keine Bearbeitungsfrist."
-                    suffix="Tage"
+                    suffix={draft.instanceDeadlineDays === 1 ? 'Tag' : 'Tage'}
                     value={draft.instanceDeadlineDays}
                     onChange={(value) => {
                         setDraft({...draft, instanceDeadlineDays: value ?? null});
@@ -475,8 +476,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 maxWidth={680}
             >
                 Nach Abschluss eines Vorgangs bleibt dieser für die angegebene Dauer gespeichert.
-                Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anhänge gelöscht.
-                In Abschluss-Elementen kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
+                Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anlagen gelöscht.
+                In Prozesselementen der Kategorie Abschluss kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
                 Vor der Veröffentlichung muss eine Aufbewahrungsfrist festgelegt sein.
             </ElementEditorSectionHeader>
 
@@ -521,7 +522,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginBottom
                 maxWidth={680}
             >
-                Das ausgewählte Erscheinungsbild gilt für alle Formulare dieser Prozessversion.
+                Das ausgewählte Erscheinungsbild gilt für die Formulare und Ansichten für Beteiligte dieser Prozessversion.
             </ElementEditorSectionHeader>
 
             <Box
@@ -547,7 +548,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         }}
                         externalAction={
                             <Hint
-                                summary="Sie können ein abweichendes Erscheinungsbild für alle Formulare dieser Prozessversion auswählen."
+                                summary="Sie können ein abweichendes Erscheinungsbild für die Formulare und Ansichten für Beteiligte dieser Prozessversion auswählen."
                                 detailsTitle="Erscheinungsbild"
                                 details={
                                     <>
@@ -558,18 +559,18 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                                         <ol>
                                             <li>Das Erscheinungsbild der Prozessversion</li>
                                             <li>
-                                                Das Erscheinungsbild der zuständigen Organisationseinheit (Nur in
+                                                Das Erscheinungsbild der verantwortlichen Organisationseinheit (nur in
                                                 Formularen)
                                             </li>
                                             <li>
-                                                Das Erscheinungsbild der bewirtschaftenden Organisationseinheit (Nur in
+                                                Das Erscheinungsbild der betreuenden Organisationseinheit (nur in
                                                 Formularen)
                                             </li>
-                                            <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
+                                            <li>Das Erscheinungsbild der verwaltenden Organisationseinheit</li>
                                             <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
                                         </ol>
                                         <p>
-                                            Das Erscheinungsbild legt Farben, Logo und Favicon aller Formulare der
+                                            Das Erscheinungsbild legt Farben, Logo und Favicon der Formulare und Ansichten für Beteiligte dieser
                                             Prozessversion fest.
                                         </p>
                                     </>
@@ -663,7 +664,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                     <RichTextInputComponent
                         label="Prozessspezifischer Teil der Datenschutzerklärung"
                         value={draft.processSpecificPrivacyStatement}
-                        hint="Beschreiben Sie hier die prozessspezifischen Datenschutzinformationen nach Art. 13 DSGVO, insbesondere konkret verarbeitete Daten, Zwecke, Rechtsgrundlagen, Empfänger, Speicherdauer und zuständige Stellen."
+                        hint="Beschreiben Sie hier die prozessspezifischen Datenschutzinformationen nach Art. 13 DSGVO, insbesondere konkret verarbeitete Daten, Zwecke, Rechtsgrundlagen, Empfänger, Speicherdauer und verantwortliche Stellen."
                         onChange={(value) => {
                             setDraft({
                                 ...draft,

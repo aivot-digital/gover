@@ -52,6 +52,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -114,11 +115,11 @@ class ProcessNodeDefinitionSummariesTest {
         return Stream.of(
                 Arguments.of(ApprovalActionNodeV1.class, "Die Freigabe wurde am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ erteilt."),
                 Arguments.of(DataChangeActionNodeV1.class, "Die Vorgangsdaten wurden am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ geändert."),
-                Arguments.of(ManualActionNodeV1.class, "Die manuelle Aufgabe wurde am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ abgeschlossen."),
+                Arguments.of(ManualActionNodeV1.class, "Die freie Aufgabe wurde am 01.10.2026 um 10:00:00 Uhr durch „Ada Beispiel“ abgeschlossen."),
                 Arguments.of(CounterActionNodeV1.class, "Der Zähler „counter“ wurde um 3 erhöht."), 
                 Arguments.of(CommunicationMessageActionNodeV1.class, "Die Nachricht wurde am 01.10.2026 um 09:00:00 Uhr erfolgreich versendet."),
                 Arguments.of(EMailActionNodeV1.class, "Die E-Mail-Nachricht wurde am 01.10.2026 um 12:00:00 Uhr erfolgreich versendet."),
-                Arguments.of(FormRequestActionNodeV1.class, "Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 Uhr zur Einreichung von Daten aufgefordert und über E\\-Mail informiert. Die angeforderten Daten wurden am 01.10.2026 um 11:00:00 Uhr durch die Identität „customer“ eingereicht."),
+                Arguments.of(FormRequestActionNodeV1.class, "Es wurde die Identität „customer“ am 01.10.2026 um 09:00:00 Uhr zur Übermittlung von Angaben aufgefordert und über E\\-Mail informiert. Die angeforderten Angaben wurden am 01.10.2026 um 11:00:00 Uhr durch die Identität „customer“ übermittelt."),
                 Arguments.of(PaymentRequestActionNodeV1.class, "Die Zahlung wurde am 01.10.2026 um 11:00:00 Uhr bestätigt."),
                 Arguments.of(InstanceAssignmentActionNodeV1.class, "Der Vorgang wurde „Ida Beispiel“ durch „Ada Beispiel“ zugewiesen."),
                 Arguments.of(InstanceUnassignmentActionNodeV1.class, "Die Zuweisung des Vorgangs an „Ida Beispiel“ wurde aufgehoben."),
@@ -305,6 +306,23 @@ class ProcessNodeDefinitionSummariesTest {
         assertEquals(typed, summary(definition, config));
     }
 
+    @Test
+    void paymentListsPositionsWithAllFourTaxRateDecimals() throws Exception {
+        var item = new PaymentItem();
+        item.setDescription("Gebühr");
+        item.setQuantity(1L);
+        item.setNetPrice(new BigDecimal("10000.00"));
+        item.setTaxRate(new BigDecimal("7.1234"));
+        var runtime = new HashMap<>(task.getRuntimeData());
+        runtime.put("paymentPayload", new PaymentPayload().setPaymentItems(List.of(item)));
+        task.setRuntimeData(runtime);
+        task.getNodeData().put("paymentTotal", item.getTotalPrice());
+
+        var markdown = summary(instantiate(PaymentRequestActionNodeV1.class), new PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig());
+
+        assertTrue(markdown.contains("Gebühr: 10.712,34 Euro (inkl. 7,1234 % Steuern)"), markdown);
+    }
+
     @ParameterizedTest
     @CsvSource({"Antragstellende, Antragstellende", "'  Titel *A*  ', Titel \\*A\\*", ", customer", "'', customer", "'   ', customer"})
     void allIdentitySummariesUseTheTitleOrIdWithoutRepeatingTheId(String title, String expected) throws Exception {
@@ -333,6 +351,14 @@ class ProcessNodeDefinitionSummariesTest {
         assertTrue(markdown.contains("**Kurzbeschreibung**\n\nPrüfung \\*A\\*"));
         assertTrue(markdown.endsWith("\n\n**Antwort der KI**\n\n" + response));
         assertFalse(markdown.contains("Nicht Teil der Antwort"));
+    }
+
+    @Test
+    void aiSummaryShowsTheTargetOfLinksInTheResponse() throws Exception {
+        // A prompt that includes customer input can make the model repeat a link whose text hides its target.
+        task.getNodeData().put("completion", "Bitte **jetzt** [bestätigen](https://evil.example).");
+        var markdown = summary(new AiCompletionActionNodeV1(ChatClient.builder(mock(ChatModel.class))), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
+        assertTrue(markdown.endsWith("\n\n**Antwort der KI**\n\nBitte **jetzt** bestätigen ([https://evil.example](https://evil.example))."));
     }
 
     @ParameterizedTest

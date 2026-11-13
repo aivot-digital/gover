@@ -23,9 +23,6 @@ import {ElementType} from '../../data/element-type/element-type';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
-import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
-import {ProcessEntity} from '../../modules/process/entities/process-entity';
-import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 import {FormDepartmentAddresses} from '../form-department-addresses/form-department-addresses';
 import {
     CustomerTaskViewApiService,
@@ -34,15 +31,14 @@ import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-a
 import {downloadBlobFile} from '../../utils/download-utils';
 import {ProcessTaskStatus} from '../../modules/process/enums/process-task-status';
 import {ProcessInstanceStatus} from '../../modules/process/enums/process-instance-status';
-import {getLiteralElementValue} from '../../models/element-data';
 
 interface SubmittedProps {
     startedProcessAccessKey: string;
     paymentRequired: boolean;
     formElement: FormLayoutElement;
-    node: ProcessNodeEntity;
-    process: ProcessEntity;
-    version: ProcessVersionEntity;
+    processSlug: string;
+    formSlug: string | null;
+    processVersion: number;
 }
 
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
@@ -66,11 +62,11 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 export function Submitted(props: SubmittedProps) {
     const {
         formElement,
-        node,
+        formSlug,
         paymentRequired,
-        process,
+        processSlug,
+        processVersion,
         startedProcessAccessKey,
-        version,
     } = props;
 
     const theme = useTheme();
@@ -83,6 +79,11 @@ export function Submitted(props: SubmittedProps) {
     const [formTaskAccessKey, setFormTaskAccessKey] = useState<string>();
     const [processFailed, setProcessFailed] = useState(false);
     const [isPrintDownloadPending, setIsPrintDownloadPending] = useState(false);
+    const [preparationError, setPreparationError] = useState<string>();
+    const [preparationDelayed, setPreparationDelayed] = useState(false);
+    const [preparationAttempt, setPreparationAttempt] = useState(0);
+    const [paymentReady, setPaymentReady] = useState(false);
+    const [formTaskCompleted, setFormTaskCompleted] = useState(false);
     const SubmittedStatusIcon = processFailed ? ErrorOutlineOutlinedIcon : CheckCircleTwoToneIcon;
 
     useEffect(() => {
@@ -101,68 +102,71 @@ export function Submitted(props: SubmittedProps) {
     const dispatch = useAppDispatch();
 
     useEffect(() => {
-        const trimmedAccessKey = startedProcessAccessKey.trim();
+        const accessKey = startedProcessAccessKey.trim();
         setFormTaskAccessKey(undefined);
         setProcessFailed(false);
+        setPreparationError(undefined);
+        setPreparationDelayed(false);
+        setPaymentReady(false);
+        setFormTaskCompleted(false);
 
-        if (trimmedAccessKey.length === 0) {
+        if (accessKey.length === 0) {
+            setPreparationError('Der Status Ihres Vorgangs konnte nicht abgerufen werden.');
             return;
         }
 
-        let isCancelled = false;
-        let intervalId: ReturnType<typeof setInterval> | undefined;
+        let cancelled = false;
+        let pollTimer: ReturnType<typeof setTimeout> | undefined;
+        // A slow preparation is not proof of a failed submission or payment.
+        const preparationTimer = setTimeout(() => {
+            cancelled = true;
+            clearTimeout(pollTimer);
+            setPreparationDelayed(true);
+        }, 30_000);
 
-        const fetchFirstTask = () => {
-            new CustomerTaskViewApiService()
-                .getInstanceStatus(trimmedAccessKey)
-                .then((res) => {
-                    if (isCancelled) {
-                        return;
-                    }
+        const fetchFirstTask = async () => {
+            try {
+                const response = await new CustomerTaskViewApiService().getInstanceStatus(accessKey);
+                if (cancelled) {
+                    return;
+                }
 
-                    const firstTask = res.tasks?.[0];
-                    if (res.status === ProcessInstanceStatus.Failed) {
-                        setProcessFailed(true);
-                        setFormTaskAccessKey(firstTask?.accessKey);
-                        if (intervalId != null) {
-                            clearInterval(intervalId);
-                        }
-                        return;
-                    }
-
-                    const isPrintReady = firstTask?.status === ProcessTaskStatus.AwaitingPayment ||
-                        firstTask?.status === ProcessTaskStatus.Completed;
-                    if (isPrintReady) {
-                        setFormTaskAccessKey(firstTask.accessKey);
-                        if (intervalId != null) {
-                            clearInterval(intervalId);
-                        }
-                    }
-                })
-                .catch((err) => {
-                    console.error(err);
-
-                    if (isCancelled) {
-                        return;
-                    }
-
-                    if (intervalId != null) {
-                        clearInterval(intervalId);
-                    }
-                    dispatch(showErrorSnackbar('Die Druckversion konnte nicht vorbereitet werden. Bitte versuchen Sie es später erneut.'));
-                });
-        };
-
-        fetchFirstTask();
-        intervalId = setInterval(fetchFirstTask, 1000);
-
-        return () => {
-            isCancelled = true;
-            if (intervalId != null) {
-                clearInterval(intervalId);
+                const task = response.tasks?.[0];
+                const failed = response.status === ProcessInstanceStatus.Failed ||
+                    response.status === ProcessInstanceStatus.Aborted ||
+                    task?.status === ProcessTaskStatus.Failed ||
+                    task?.status === ProcessTaskStatus.Aborted ||
+                    task?.status === ProcessTaskStatus.DeadlineExceeded;
+                const ready = task?.status === ProcessTaskStatus.AwaitingPayment || task?.status === ProcessTaskStatus.Completed;
+                if (failed || ready) {
+                    setProcessFailed(failed);
+                    // Keep the submitted PDF accessible even if later processing has failed.
+                    setFormTaskAccessKey(task?.accessKey);
+                    setPaymentReady(!failed && task?.status === ProcessTaskStatus.AwaitingPayment);
+                    // Completion also covers submissions whose calculated payment has no positive positions.
+                    // It does not prove that money was paid.
+                    setFormTaskCompleted(task?.status === ProcessTaskStatus.Completed);
+                    clearTimeout(preparationTimer);
+                    return;
+                }
+                // Schedule after the response so slow requests cannot overlap and overwrite newer results.
+                pollTimer = setTimeout(fetchFirstTask, 1000);
+            } catch {
+                if (cancelled) {
+                    return;
+                }
+                clearTimeout(preparationTimer);
+                setPreparationError('Der Status Ihres Vorgangs konnte nicht abgerufen werden. Bitte prüfen Sie den Status erneut.');
             }
         };
-    }, [dispatch, startedProcessAccessKey]);
+
+        void fetchFirstTask();
+        return () => {
+            cancelled = true;
+            clearTimeout(pollTimer);
+            clearTimeout(preparationTimer);
+        };
+    }, [startedProcessAccessKey, preparationAttempt]);
 
     const [email, setEmail] = useState('');
     const [privacy, setPrivacy] = useState(false);
@@ -172,30 +176,29 @@ export function Submitted(props: SubmittedProps) {
     const setMailErrorWithSnackbar = useSetMailErrorWithSnackbar(setMailError);
     const [mailSent, setMailSent] = useState(false);
     const [showMailSentDialog, setShowMailSentDialog] = useState(false);
-    const paymentTaskPath = processFailed || formTaskAccessKey == null ?
+    const paymentTaskPath = !paymentReady || formTaskAccessKey == null ?
         undefined :
         `/process/${encodeURIComponent(startedProcessAccessKey.trim())}/tasks/${encodeURIComponent(formTaskAccessKey)}`;
 
     const downloadSubmittedPrint = (): void => {
-        const formSlug = getLiteralElementValue<string>(node.configuration, 'formSlug');
-        if (typeof formSlug !== 'string' || formSlug.trim().length === 0 || formTaskAccessKey == null) {
+        if (formSlug == null || formSlug.trim().length === 0 || formTaskAccessKey == null) {
             return;
         }
 
         setIsPrintDownloadPending(true);
         new FormTriggerApiService()
             .downloadSubmittedSummaryPdf(
-                process.slug,
+                processSlug,
                 formSlug.trim(),
                 startedProcessAccessKey,
                 formTaskAccessKey,
-                version.processVersion,
+                processVersion,
             )
             .then((blob) => {
-                downloadBlobFile('Antrag.pdf', blob);
+                downloadBlobFile('Angaben.pdf', blob);
             })
             .catch(() => {
-                dispatch(showErrorSnackbar('Der Antrag konnte nicht als PDF heruntergeladen werden. Bitte versuchen Sie es später erneut.'));
+                dispatch(showErrorSnackbar('Die Kopie Ihrer Angaben konnte nicht als PDF heruntergeladen werden. Bitte versuchen Sie es später erneut.'));
             })
             .finally(() => {
                 setIsPrintDownloadPending(false);
@@ -221,13 +224,13 @@ export function Submitted(props: SubmittedProps) {
                                 setMailErrorWithSnackbar('Es konnte keine E-Mail an diese Adresse verschickt werden.');
                                 setMailSent(false);
                             } else if (err.status === 403) {
-                                setMailErrorWithSnackbar('Die Zugriffsfrist für diesen Antrag ist bereits abgelaufen. Bitte wenden Sie sich an die zuständige Dienststelle.');
+                                setMailErrorWithSnackbar('Die Zugriffsfrist für diesen Vorgang ist bereits abgelaufen. Bitte wenden Sie sich an die verantwortliche Stelle. Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.');
                             } else if (err.status === 404) {
-                                setMailErrorWithSnackbar('Der Antrag konnte nicht gefunden werden.');
+                                setMailErrorWithSnackbar('Der Vorgang konnte nicht gefunden werden.');
                             } else if (err.status === 409) {
                                 setMailErrorWithSnackbar('Sie hatten bereits zu viele Fehlversuche.');
                             } else if (err.status === 406) {
-                                setMailErrorWithSnackbar('Sie haben bereits eine E-Mail für diesen Antrag verschickt.');
+                                setMailErrorWithSnackbar('Sie haben bereits eine E-Mail für diesen Vorgang verschickt.');
                             } else {
                                 console.error(err);
                                 dispatch(showErrorSnackbar('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
@@ -286,13 +289,14 @@ export function Submitted(props: SubmittedProps) {
 
             {
                 processFailed &&
+                !formTaskCompleted &&
                 <AlertComponent
                     color="error"
-                    title="Ihr Antrag konnte nicht verarbeitet werden"
+                    title="Ihre Angaben konnten nicht weiterverarbeitet werden"
                     sx={{my: 0, mb: 4}}
                 >
-                    Bei der Verarbeitung Ihres Antrags ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
-                    zuständige Stelle. Die Kontaktdaten finden Sie unten.
+                    Bei der weiteren Verarbeitung Ihrer Angaben ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
+                    verantwortliche Stelle. Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.
                 </AlertComponent>
             }
 
@@ -314,11 +318,11 @@ export function Submitted(props: SubmittedProps) {
                         >
                             <AlertComponent
                                 color="warning"
-                                title="Bitte bezahlen Sie die für Ihren Antrag anfallenden Gebühren"
+                                title="Bitte schließen Sie die Zahlung ab"
                                 sx={{my: 0}}
                             >
                                 <p>
-                                    Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
+                                    Für diesen Vorgang ist eine Zahlung erforderlich.
                                     Die Zahlung wird durch den
                                     Dienstleister <strong>{status.paymentProviderName}</strong> abgewickelt.
                                     Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben
@@ -326,7 +330,7 @@ export function Submitted(props: SubmittedProps) {
                                 </p>
                                 <p>
                                     <strong>Wichtig:</strong>
-                                    &nbsp;Ihr Antrag wird erst nach erfolgter Zahlung bearbeitet.
+                                    &nbsp;Die weitere Verarbeitung wartet auf die Bestätigung der Zahlung.
                                 </p>
                             </AlertComponent>
                         </Grid>
@@ -387,16 +391,13 @@ export function Submitted(props: SubmittedProps) {
                 status.paymentDone &&
                 <AlertComponent
                     color="success"
-                    title="Bezahlung erfolgreich abgeschlossen"
+                    title="Zahlung abgeschlossen"
                     sx={{
                         my: 0,
                         mb: 4,
                     }}
                 >
-                    Sie haben Ihre Gebühren erfolgreich online bezahlt.
-                    Der Antrag wird nach Bestätigung durch den Zahlungs&shy;dienstleister (in der Regel innerhalb
-                    weniger Minuten) für die weitere Bearbeitung freigegeben.
-                    Vielen Dank!
+                    Die Zahlung wurde erfolgreich abgeschlossen.
                 </AlertComponent>
             }
             {
@@ -404,15 +405,16 @@ export function Submitted(props: SubmittedProps) {
                 status.paymentFailed &&
                 <AlertComponent
                     color="error"
-                    title="Bezahlung fehlgeschlagen"
+                    title="Zahlung fehlgeschlagen"
                     sx={{
                         my: 0,
                         mb: 4,
                     }}
                 >
-                    Die Bezahlung der Gebühren ist fehlgeschlagen. Bitte wenden Sie sich an die zuständige Dienststelle.
+                    Die Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die verantwortliche Stelle.
+                    Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.
                     <br/>
-                    Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung
+                    Bitte geben Sie zur Zuordnung Ihres Vorgangs folgende Kennung
                     an: {status.submissionId}.
                 </AlertComponent>
             }
@@ -435,55 +437,55 @@ export function Submitted(props: SubmittedProps) {
                 formElement={formElement}
                 variant="grid"
             />
-            {
-                paymentRequired &&
-                <Box
-                    sx={{
-                        mt: 4,
-                        maxWidth: 800,
-                    }}
+            {(preparationError != null || preparationDelayed) && (
+                <AlertComponent
+                    color={preparationError != null ? 'error' : 'info'}
+                    title={preparationError != null ? 'Status nicht verfügbar' : 'Die Vorbereitung dauert länger'}
+                    sx={{mt: 4, maxWidth: 800}}
                 >
-                    <AlertComponent
-                        color="warning"
-                        title="Zahlung erforderlich"
-                        sx={{my: 0}}
-                    >
-                        <p>
-                            Für Ihren Antrag ist eine Zahlung erforderlich. Öffnen Sie die Zahlungsaufgabe, um
-                            fortzufahren.
-                        </p>
-
-                        {
-                            paymentTaskPath == null ?
-                                <Button
-                                    variant="contained"
-                                    disabled
-                                    startIcon={
-                                        processFailed ?
-                                            <PaymentOutlinedIcon sx={{marginTop: '-2px'}}/> :
-                                            <CircularProgress
-                                                color="inherit"
-                                                size={18}
-                                            />
-                                    }
-                                >
-                                    {processFailed ? 'Zahlung nicht verfügbar' : 'Zahlung wird vorbereitet'}
-                                </Button> :
-                                <Button
-                                    component="a"
-                                    variant="contained"
-                                    href={paymentTaskPath}
-                                    disabled={processFailed}
-                                    startIcon={<PaymentOutlinedIcon
-                                        sx={{marginTop: '-2px'}}
-                                    />}
-                                >
-                                    Zur Zahlung
-                                </Button>
-                        }
-                    </AlertComponent>
+                    <Typography variant="body2">
+                        {preparationError ?? 'Die Vorbereitung ist noch nicht abgeschlossen. Sie können den Status erneut prüfen. Sie müssen Ihre Angaben dafür nicht erneut übermitteln.'}
+                    </Typography>
+                    {startedProcessAccessKey.trim().length > 0 && (
+                        <Button sx={{mt: 2}} onClick={() => setPreparationAttempt((attempt) => attempt + 1)}>
+                            Status erneut prüfen
+                        </Button>
+                    )}
+                </AlertComponent>
+            )}
+            {paymentRequired && (
+                <Box sx={{mt: 4, maxWidth: 800}}>
+                    <Typography component="h3" variant="h5">
+                        Zahlung
+                    </Typography>
+                    <Typography variant="body2" sx={{mt: 1, mb: 2}}>
+                        {formTaskCompleted
+                            ? 'Für diese Übermittlung ist keine weitere Zahlung erforderlich.'
+                            : processFailed
+                                ? 'Die Zahlung steht wegen des Verarbeitungsfehlers derzeit nicht zur Verfügung.'
+                                : paymentReady
+                                    ? 'Für diesen Vorgang ist eine Zahlung erforderlich. Sie können jetzt zur Zahlung wechseln.'
+                                    : preparationError != null || preparationDelayed
+                                        ? 'Bitte prüfen Sie den Status, um festzustellen, ob die Zahlung bereitsteht.'
+                                        : 'Die Zahlung für Ihren Vorgang wird vorbereitet. Sobald die Schaltfläche aktiv ist, können Sie zur Zahlung wechseln.'}
+                    </Typography>
+                    {!formTaskCompleted && (paymentTaskPath != null ? (
+                        <Button component="a" variant="contained" href={paymentTaskPath} startIcon={<PaymentOutlinedIcon/>}>
+                            Zur Zahlung
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="contained"
+                            disabled
+                            startIcon={!processFailed && preparationError == null && !preparationDelayed
+                                ? <CircularProgress color="inherit" size={18} aria-hidden="true"/>
+                                : <PaymentOutlinedIcon/>}
+                        >
+                            {processFailed || preparationError != null || preparationDelayed ? 'Zahlung nicht verfügbar' : 'Zahlung wird vorbereitet'}
+                        </Button>
+                    ))}
                 </Box>
-            }
+            )}
             {
                 (status == null || !status.accessExpired) &&
                 <Grid
@@ -504,7 +506,7 @@ export function Submitted(props: SubmittedProps) {
                             component="h3"
                             variant="h5"
                         >
-                            Antrag als PDF herunterladen
+                            Angaben als PDF herunterladen
                         </Typography>
                         <Typography
                             sx={{
@@ -513,15 +515,13 @@ export function Submitted(props: SubmittedProps) {
                             }}
                             variant={'body2'}
                         >
-                            Über die Schaltfläche “Antrag als PDF herunterladen” können Sie sich den von Ihnen
-                            eingereichten
-                            Antrag als PDF herunterladen.
+                            Hier können Sie eine Kopie Ihrer übermittelten Angaben als PDF herunterladen.
                         </Typography>
 
                         <Button
                             variant="contained"
                             startIcon={
-                                isPrintDownloadPending ?
+                                isPrintDownloadPending || (formTaskAccessKey == null && !processFailed && preparationError == null && !preparationDelayed) ?
                                     <CircularProgress
                                         color="inherit"
                                         size={18}
@@ -536,8 +536,8 @@ export function Submitted(props: SubmittedProps) {
                         >
                             {
                                 formTaskAccessKey == null ?
-                                    processFailed ? 'PDF nicht verfügbar' : 'PDF wird vorbereitet' :
-                                    'Antrag als PDF herunterladen'
+                                    processFailed || preparationError != null || preparationDelayed ? 'PDF nicht verfügbar' : 'PDF wird vorbereitet' :
+                                    'Angaben als PDF herunterladen'
                             }
                         </Button>
                     </Grid>
@@ -553,7 +553,7 @@ export function Submitted(props: SubmittedProps) {
                                 component="h3"
                                 variant="h5"
                             >
-                                Antrag per E-Mail erhalten
+                                Kopie der Angaben per E-Mail erhalten
                             </Typography>
 
                             <Typography
@@ -563,9 +563,7 @@ export function Submitted(props: SubmittedProps) {
                                 }}
                                 variant={'body2'}
                             >
-                                Lassen Sie sich Ihren eingereichten Antrag durch das Ausfüllen des folgenden Formulars an
-                                die
-                                von Ihnen angegebene E-Mail-Adresse zusenden.
+                                Sie können sich eine Kopie Ihrer Angaben an die folgende E-Mail-Adresse senden lassen.
                             </Typography>
 
                             <TextFieldComponent
@@ -581,7 +579,7 @@ export function Submitted(props: SubmittedProps) {
                             />
 
                             <CheckboxFieldComponent
-                                label="Ich erteile mein Einverständnis, dass der Antrag per unverschlüsselter E-Mail versandt wird."
+                                label="Ich bin damit einverstanden, dass eine Kopie meiner Angaben per E-Mail ohne Ende-zu-Ende-Verschlüsselung versandt wird."
                                 value={privacy}
                                 onChange={setPrivacy}
                                 error={privacyError}
@@ -598,7 +596,7 @@ export function Submitted(props: SubmittedProps) {
                                 size={'large'}
                                 disabled={status.copySent || mailSent}
                             >
-                                Antrag per E-Mail erhalten
+                                Kopie der Angaben per E-Mail erhalten
                             </Button>
                         </Grid>
                     }
@@ -616,17 +614,15 @@ export function Submitted(props: SubmittedProps) {
                         color="warning"
                         title="Zugriff abgelaufen"
                     >
-                        Aus Sicherheitsgründen ist der Zugriff auf Ihren eingereichten Antrag nicht mehr möglich. Dies
-                        passiert im Regelfall, wenn zu viel Zeit zwischen der Einreichung des Antrages und dem Bezahlen
-                        der Gebühren vergeht.
-                        Sollten Sie die von Ihnen eingereichten Antragsunterlagen inklusive des Zahlungsbelegs für Ihre
-                        Unterlagen wünschen, wenden Sie sich bitte an den Fachlichen Support auf der <Link
+                        Der Zugriff auf Ihre übermittelten Angaben ist abgelaufen.
+                        Wenn Sie eine Kopie Ihrer Angaben oder einen Zahlungsbeleg benötigen, wenden Sie sich bitte
+                        an den fachlichen Support. Öffnen Sie „<Link
                         onClick={() => {
                             dispatch(showDialog(HelpDialogId));
                         }}
-                    >Hilfe-Seite</Link>.
+                    >Hilfe</Link>“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.
                         <br/>
-                        Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung
+                        Bitte geben Sie zur Zuordnung Ihres Vorgangs folgende Kennung
                         an: {status.submissionId}.
                     </AlertComponent>
                 </Box>
@@ -646,7 +642,7 @@ export function Submitted(props: SubmittedProps) {
                 variant={'body2'}
             >
                 Ihre Rückmeldung wird anonym an uns übertragen und hilft uns
-                bei der Verbesserung unserer Anträge &amp; Prozesse. Vielen Dank!
+                bei der Verbesserung unserer Formulare und Prozesse. Vielen Dank!
             </Typography>
             <Box
                 sx={{
@@ -675,7 +671,7 @@ export function Submitted(props: SubmittedProps) {
                     setShowMailSentDialog(false);
                 }}
             >
-                Eine E-Mail mit dem eingereichten Antrag wurde an die
+                Eine Kopie Ihrer Angaben wurde an die
                 angegebene <span style={{whiteSpace: 'nowrap'}}>E-Mail-Adresse</span> versendet.
             </InfoDialog>
         </Container>

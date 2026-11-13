@@ -4,22 +4,35 @@ import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
+import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.steps.BaseStepElement;
+import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
+import de.aivot.prosuna.backend.elements.services.AssetSelectionValidationService;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
+import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationLogger;
 import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
 import de.aivot.prosuna.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.identity.services.IdentitySlotService;
+import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
@@ -29,11 +42,15 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
 import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessTestClaimFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
+import de.aivot.prosuna.backend.process.cache.entities.ProcessSubmissionCacheEntity;
+import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.process.utils.ProcessSubmissionCookieUtils;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderService;
@@ -43,6 +60,7 @@ import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.util.*;
@@ -75,11 +93,17 @@ class FormTriggerControllerV1SubmitTest {
         assertEquals(startedProcessAccessKey, result.startedProcessAccessKey());
         assertClearsIdentityCookie(response);
         verify(fixture.identityService()).getIdentityDataMap("identity-session-id", fixture.processNodeId());
+        // The submitted identities must not stay usable through the session once the instance holds them.
+        verify(fixture.identityService()).clearIdentitySession("identity-session-id", fixture.processNodeId());
+        var derivationRequestCaptor = ArgumentCaptor.forClass(ElementDerivationRequest.class);
         verify(fixture.elementDerivationService(), times(2)).derive(
-                any(ElementDerivationRequest.class),
+                derivationRequestCaptor.capture(),
                 same(identities),
                 any(ElementDerivationLogger.class)
         );
+        // Both derivations of the customer's input must ignore values for disabled and technical inputs.
+        assertTrue(derivationRequestCaptor.getAllValues().stream()
+                .allMatch(request -> request.derivationOptions().isIgnoreAuthoredValuesOfNonEditableInputs()));
         verify(fixture.elementDataTransformService()).buildPayload(
                 any(FormLayoutElement.class),
                 same(derivedRuntimeElementData.getEffectiveValues()),
@@ -88,7 +112,7 @@ class FormTriggerControllerV1SubmitTest {
         var createdInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
         verify(fixture.processInstanceService()).create(createdInstanceCaptor.capture());
         var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
-        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        verify(fixture.processInstanceService()).save(updatedInstanceCaptor.capture());
         assertEquals(
                 Map.of("mapped", "payload"),
                 updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_PAYLOAD)
@@ -97,6 +121,169 @@ class FormTriggerControllerV1SubmitTest {
                 createdInstanceCaptor.getValue().getStarted(),
                 updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_STARTED)
         );
+        var releasedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), releasedInstanceCaptor.capture());
+        assertEquals(ProcessInstanceStatus.Created, releasedInstanceCaptor.getValue().getStatus());
+    }
+
+    @Test
+    void submitShouldStoreUploadsWithTheElementStatesOfTheSubmittedInputs() throws Exception {
+        var submittedElementData = new DerivedRuntimeElementData();
+        var normalizedElementData = new DerivedRuntimeElementData();
+        var fixture = createFixture(submittedElementData, new IdentityDataMap(), UUID.randomUUID().toString());
+        when(fixture.elementDerivationService().derive(
+                any(ElementDerivationRequest.class),
+                any(IdentityDataMap.class),
+                any(ElementDerivationLogger.class)
+        )).thenReturn(submittedElementData, normalizedElementData);
+
+        fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                new MockHttpServletResponse()
+        );
+
+        // Only upload fields whose value the derivation of the submission takes may store their files.
+        verify(fixture.fileUploadMultipartInputService()).normalizeInputs(
+                any(FormLayoutElement.class),
+                any(AuthoredElementValues.class),
+                same(submittedElementData.getElementStates()),
+                isNull(),
+                isNull(),
+                eq(1L),
+                isNull(),
+                isNull()
+        );
+        verify(fixture.elementDataTransformService()).buildPayload(
+                any(FormLayoutElement.class),
+                same(normalizedElementData.getEffectiveValues()),
+                same(normalizedElementData.getElementStates())
+        );
+    }
+
+    @Test
+    void submitShouldBindTheSubmittingBrowserToTheStartedInstance() throws Exception {
+        var startedProcessAccessKey = UUID.randomUUID().toString();
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), startedProcessAccessKey);
+        var response = new MockHttpServletResponse();
+
+        fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        );
+
+        verify(fixture.processSubmissionBindingService()).bind(1L);
+        var cookie = response.getCookie(ProcessSubmissionCookieUtils.PROCESS_SUBMISSION_COOKIE_NAME);
+        assertNotNull(cookie);
+        assertEquals("submission-secret", cookie.getValue());
+        assertEquals("/api/public/processes/" + startedProcessAccessKey + "/", cookie.getPath());
+        assertEquals(ProcessSubmissionCacheEntity.TIME_TO_LIVE_SECONDS, cookie.getMaxAge());
+        assertEquals("Strict", cookie.getAttribute("SameSite"));
+        assertTrue(cookie.getSecure());
+        assertTrue(cookie.isHttpOnly());
+    }
+
+    @Test
+    void submitShouldFailTheInstanceWhenTheSubmittingBrowserCannotBeBound() throws Exception {
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), UUID.randomUUID().toString());
+        doThrow(new IllegalStateException("Redis is unavailable"))
+                .when(fixture.processSubmissionBindingService())
+                .bind(1L);
+        var writes = recordSavedInstances(fixture.processInstanceService(), null);
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        ));
+
+        // The instance must never be released to the process worker, so submitting again cannot create a duplicate.
+        assertEquals(List.of(new InstanceWrite(ProcessInstanceStatus.Failed, Map.of())), writes);
+        verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));
+        assertEquals(0, response.getCookies().length);
+        // The identities stay in the session, so the customer can submit again without identifying again.
+        verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
+    }
+
+    @Test
+    void submitShouldFailTheInstanceWhenTheDatabaseRejectsThePayload() throws Exception {
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), UUID.randomUUID().toString());
+        // PostgreSQL rejects e.g. a NUL character in a jsonb value.
+        var writes = recordSavedInstances(
+                fixture.processInstanceService(),
+                new DataIntegrityViolationException("unsupported Unicode escape sequence")
+        );
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        ));
+
+        // The failure write carries no payload, so the rejected payload cannot keep the instance paused.
+        assertEquals(List.of(new InstanceWrite(ProcessInstanceStatus.Failed, Map.of())), writes);
+        verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));
+        assertEquals(0, response.getCookies().length);
+        // The identities stay in the session, so the customer can submit again without identifying again.
+        verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
+    }
+
+    @Test
+    void submitShouldFailTheInstanceWhenTheIdentitySessionCannotBeCleared() throws Exception {
+        var fixture = createFixture(new DerivedRuntimeElementData(), new IdentityDataMap(), UUID.randomUUID().toString());
+        doThrow(new IllegalStateException("Redis is unavailable"))
+                .when(fixture.identityService())
+                .clearIdentitySession("identity-session-id", fixture.processNodeId());
+        var writes = recordSavedInstances(fixture.processInstanceService(), null);
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                "{}",
+                null,
+                null,
+                response
+        ));
+
+        // The payload was already stored when clearing the identities failed. The failure write drops it, so a staff
+        // restart cannot run this instance next to the one the customer starts by submitting again.
+        assertEquals(2, writes.size());
+        assertEquals(ProcessInstanceStatus.Paused, writes.getFirst().status());
+        assertFalse(writes.getFirst().initialPayload().isEmpty());
+        assertEquals(new InstanceWrite(ProcessInstanceStatus.Failed, Map.of()), writes.getLast());
+        verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));
+        assertEquals(0, response.getCookies().length);
     }
 
     @Test
@@ -122,13 +309,90 @@ class FormTriggerControllerV1SubmitTest {
         ));
 
         assertEquals(0, response.getCookies().length);
+        verify(fixture.identityService(), never()).clearIdentitySession(any(), any());
         verify(fixture.identityService()).getIdentityDataMap("identity-session-id", fixture.processNodeId());
         verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
         verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));
     }
 
+    @Test
+    void submitShouldStoreTemplateTagsTypedByTheCustomerAsText() throws Exception {
+        var message = new RichTextInputElement();
+        message.setId("message");
+        message.setDestinationKey("nachricht");
+        // Form definitions are stored as JSON, so a field can carry a dynamic text policy. Customer input must still
+        // never be evaluated as a template, or a customer could copy process data into their own submission.
+        message.setDynamicTextPolicy(new DynamicTextPolicy());
+        var step = new GenericStepElement();
+        step.setId("step");
+        step.setChildren(new LinkedList<BaseFormElement>(List.of(message)));
+        var form = new FormLayoutElement().setPublicTitle("Example form");
+        form.setId("root");
+        form.setChildren(new LinkedList<BaseStepElement>(List.of(step)));
+
+        var typed = """
+                Mein Antrag: {{ $.secret }}
+
+                {! $.secret !}{% if $.secret %}ja{% endif %}""";
+        var fixture = createFixture(
+                form,
+                createElementDerivationService(),
+                new ElementDataTransformService(),
+                new IdentityDataMap(),
+                UUID.randomUUID().toString()
+        );
+
+        fixture.controller().submit(
+                null,
+                fixture.processSlug(),
+                fixture.formSlug(),
+                null,
+                "identity-session-id",
+                JsonMapperFactory.getInstance().writeValueAsString(new AuthoredElementValues().putLiteral("message", typed)),
+                null,
+                null,
+                new MockHttpServletResponse()
+        );
+
+        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        var initialPayload = updatedInstanceCaptor.getValue().getInitialPayload();
+        assertEquals(Map.of("nachricht", typed), initialPayload.get(FormTriggerNodeV1.DATA_KEY_PAYLOAD));
+        assertEquals(typed, assertInstanceOf(Map.class, initialPayload.get(FormTriggerNodeV1.DATA_KEY_UNMAPPED)).get("message"));
+    }
+
     private SubmitFixture createFixture(
             DerivedRuntimeElementData derivedRuntimeElementData,
+            IdentityDataMap identities,
+            String startedProcessAccessKey
+    ) throws ResponseException {
+        var elementDerivationService = mock(ElementDerivationService.class);
+        when(elementDerivationService.derive(
+                any(ElementDerivationRequest.class),
+                same(identities),
+                any(ElementDerivationLogger.class)
+        )).thenReturn(derivedRuntimeElementData);
+
+        var elementDataTransformService = mock(ElementDataTransformService.class);
+        when(elementDataTransformService.buildPayload(
+                any(FormLayoutElement.class),
+                any(EffectiveElementValues.class),
+                any(ComputedElementStates.class)
+        )).thenReturn(Map.of("mapped", "payload"));
+
+        return createFixture(
+                new FormLayoutElement().setPublicTitle("Example form"),
+                elementDerivationService,
+                elementDataTransformService,
+                identities,
+                startedProcessAccessKey
+        );
+    }
+
+    private SubmitFixture createFixture(
+            FormLayoutElement formLayout,
+            ElementDerivationService elementDerivationService,
+            ElementDataTransformService elementDataTransformService,
             IdentityDataMap identities,
             String startedProcessAccessKey
     ) throws ResponseException {
@@ -176,7 +440,7 @@ class FormTriggerControllerV1SubmitTest {
 
         var triggerConfig = new FormTriggerConfigV1();
         triggerConfig.formSlug = formSlug;
-        triggerConfig.formLayout = new FormLayoutElement().setPublicTitle("Example form");
+        triggerConfig.formLayout = formLayout;
 
         when(processNodeService.deriveConfiguration(eq(node), eq(provider), isNull(), eq(true)))
                 .thenReturn(new ProcessNodeService.ProcessConfigurationDetails<>(
@@ -191,13 +455,6 @@ class FormTriggerControllerV1SubmitTest {
         var identityService = mock(IdentityService.class);
         when(identityService.getIdentityDataMap("identity-session-id", node.getId())).thenReturn(identities);
 
-        var elementDerivationService = mock(ElementDerivationService.class);
-        when(elementDerivationService.derive(
-                any(ElementDerivationRequest.class),
-                same(identities),
-                any(ElementDerivationLogger.class)
-        )).thenReturn(derivedRuntimeElementData);
-
         var processInstanceService = mock(ProcessInstanceService.class);
         when(processInstanceService.create(any(ProcessInstanceEntity.class))).thenAnswer(invocation -> {
             var entity = invocation.getArgument(0, ProcessInstanceEntity.class);
@@ -209,30 +466,32 @@ class FormTriggerControllerV1SubmitTest {
         when(processInstanceService.update(eq(1L), any(ProcessInstanceEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(1, ProcessInstanceEntity.class));
 
-        var elementDataTransformService = mock(ElementDataTransformService.class);
-        when(elementDataTransformService.buildPayload(
-                any(FormLayoutElement.class),
-                any(EffectiveElementValues.class),
-                any(ComputedElementStates.class)
-        )).thenReturn(Map.of("mapped", "payload"));
-
         var fileUploadMultipartInputService = mock(FileUploadMultipartInputService.class);
+        // Without uploads, the normalized inputs are the submitted ones.
         when(fileUploadMultipartInputService.normalizeInputs(
                 any(FormLayoutElement.class),
                 any(AuthoredElementValues.class),
+                any(ComputedElementStates.class),
                 isNull(),
                 isNull(),
                 eq(1L),
                 isNull(),
                 isNull()
-        )).thenReturn(new FileUploadMultipartInputService.NormalizationResult(
-                new AuthoredElementValues(),
+        )).thenAnswer(invocation -> new FileUploadMultipartInputService.NormalizationResult(
+                invocation.getArgument(1, AuthoredElementValues.class),
                 List.of()
         ));
 
         var processTestClaimService = mock(ProcessTestClaimService.class);
         when(processTestClaimService.retrieve(any(ProcessTestClaimFilter.class)))
                 .thenReturn(Optional.empty());
+
+        var processSubmissionBindingService = mock(ProcessSubmissionBindingService.class);
+        when(processSubmissionBindingService.bind(1L)).thenReturn("submission-secret");
+
+        var processNodeExecutionLoggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
+        when(processNodeExecutionLoggerFactory.create(eq(1L), isNull(), isNull(), isNull()))
+                .thenReturn(mock(ProcessNodeExecutionLogger.class));
 
         var controller = new FormTriggerControllerV1(
                 mock(ProsunaConfig.class),
@@ -256,7 +515,7 @@ class FormTriggerControllerV1SubmitTest {
                 mock(StorageService.class),
                 fileUploadMultipartInputService,
                 elementDataTransformService,
-                mock(ProcessNodeExecutionLoggerFactory.class),
+                processNodeExecutionLoggerFactory,
                 provider,
                 identityService,
                 mock(PaymentPayloadCreationService.class),
@@ -264,7 +523,8 @@ class FormTriggerControllerV1SubmitTest {
                 mock(PaymentProviderRepository.class),
                 mock(PdfService.class),
                 mock(PaymentProviderDefinitionsService.class),
-                mock(IdentitySlotService.class)
+                mock(IdentitySlotService.class),
+                processSubmissionBindingService
         );
 
         return new SubmitFixture(
@@ -275,7 +535,21 @@ class FormTriggerControllerV1SubmitTest {
                 identityService,
                 elementDerivationService,
                 elementDataTransformService,
-                processInstanceService
+                processInstanceService,
+                processSubmissionBindingService,
+                fileUploadMultipartInputService
+        );
+    }
+
+    private static ElementDerivationService createElementDerivationService() {
+        return new ElementDerivationService(
+                new JavascriptEngineFactoryService(List.of()),
+                new NoCodeEvaluationService(List.of()),
+                new ElementDataTransformService(),
+                new CodeListElementOptionsService(null, null),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
+                new InputVariableResolver(),
+                mock(AssetSelectionValidationService.class)
         );
     }
 
@@ -294,6 +568,25 @@ class FormTriggerControllerV1SubmitTest {
         assertTrue(cookie.isHttpOnly());
     }
 
+    private record InstanceWrite(ProcessInstanceStatus status, Map<String, Object> initialPayload) {
+    }
+
+    // The controller saves the same instance object more than once, so each write is recorded as it happens.
+    // A given rejection is thrown for every write that carries a payload, like a database rejecting it.
+    private static List<InstanceWrite> recordSavedInstances(ProcessInstanceService processInstanceService,
+                                                            RuntimeException payloadRejection) {
+        var writes = new ArrayList<InstanceWrite>();
+        when(processInstanceService.save(any(ProcessInstanceEntity.class))).thenAnswer(invocation -> {
+            var instance = invocation.getArgument(0, ProcessInstanceEntity.class);
+            if (payloadRejection != null && !instance.getInitialPayload().isEmpty()) {
+                throw payloadRejection;
+            }
+            writes.add(new InstanceWrite(instance.getStatus(), new HashMap<>(instance.getInitialPayload())));
+            return instance;
+        });
+        return writes;
+    }
+
     private record SubmitFixture(
             FormTriggerControllerV1 controller,
             String processSlug,
@@ -302,7 +595,9 @@ class FormTriggerControllerV1SubmitTest {
             IdentityService identityService,
             ElementDerivationService elementDerivationService,
             ElementDataTransformService elementDataTransformService,
-            ProcessInstanceService processInstanceService
+            ProcessInstanceService processInstanceService,
+            ProcessSubmissionBindingService processSubmissionBindingService,
+            FileUploadMultipartInputService fileUploadMultipartInputService
     ) {
     }
 }

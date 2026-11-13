@@ -4,6 +4,7 @@ import {ComputedElementValueSource, createDerivedRuntimeElementData, literalAuth
 import {
     applyElementErrorSuppressions,
     collectChangedElementErrorSuppressionTargets,
+    collectTransientFileUploadItems,
     mapAuthoredElementValues,
     mergeElementErrorSuppressionTargets,
     normalizeReplicatingContainerValues,
@@ -873,5 +874,86 @@ describe('replicating container row values', () => {
                 },
             ]),
         });
+    });
+});
+
+describe('collectTransientFileUploadItems', () => {
+    const upload = {
+        id: 'upload',
+        type: ElementType.FileUpload,
+    } as AnyElement;
+    const rowUpload = {
+        id: 'rowUpload',
+        type: ElementType.FileUpload,
+    } as AnyElement;
+    const rows = {
+        id: 'rows',
+        type: ElementType.ReplicatingContainer,
+        children: [rowUpload],
+    } as AnyElement;
+    const root = {
+        id: 'root',
+        type: ElementType.GroupLayout,
+        children: [upload, rows],
+    } as AnyElement;
+
+    const transientFile = {name: 'transient.pdf', size: 1, uri: 'blob:transient'};
+    const storedFile = {name: 'stored.pdf', size: 2, uri: 'process-instance-attachment:stored'};
+    const firstRowFile = {name: 'first.pdf', size: 3, uri: 'blob:first'};
+    const secondRowFile = {name: 'second.pdf', size: 4, uri: 'blob:second'};
+
+    const authoredValues = {
+        upload: literalAuthoredValue([transientFile, storedFile]),
+        rows: literalAuthoredValue([
+            {id: 'row-1', values: {rowUpload: literalAuthoredValue([firstRowFile])}},
+            {id: 'row-1', values: {rowUpload: literalAuthoredValue([secondRowFile])}},
+        ]),
+    };
+
+    it('should collect the transient items of all upload fields without derived data', () => {
+        expect(collectTransientFileUploadItems(root, authoredValues)).toEqual([transientFile, firstRowFile, secondRowFile]);
+    });
+
+    it('should leave out the items of hidden upload fields and of rows of hidden containers', () => {
+        const derivedData = createDerivedRuntimeElementData({
+            elementStates: {
+                upload: {visible: false},
+                rows: {visible: false},
+            },
+        });
+
+        expect(collectTransientFileUploadItems(root, authoredValues, derivedData)).toEqual([]);
+    });
+
+    it('should match row states by position, so rows sharing an ID stay apart', () => {
+        const derivedData = createDerivedRuntimeElementData({
+            elementStates: {
+                upload: {visible: true},
+                rows: {
+                    visible: true,
+                    subStates: [
+                        {id: 'row-1', states: {rowUpload: {visible: false}}},
+                        {id: 'row-1', states: {rowUpload: {visible: true}}},
+                    ],
+                },
+            },
+        });
+
+        expect(collectTransientFileUploadItems(root, authoredValues, derivedData)).toEqual([transientFile, secondRowFile]);
+    });
+
+    it('should collect the items of rows whose state does not match the row', () => {
+        const derivedData = createDerivedRuntimeElementData({
+            elementStates: {
+                rows: {
+                    visible: true,
+                    subStates: [
+                        {id: 'other-row', states: {rowUpload: {visible: false}}},
+                    ],
+                },
+            },
+        });
+
+        expect(collectTransientFileUploadItems(root, authoredValues, derivedData)).toEqual([transientFile, firstRowFile, secondRowFile]);
     });
 });

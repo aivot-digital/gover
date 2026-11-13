@@ -14,6 +14,9 @@ import {
 } from '../components/view-dispatcher/view-dispatcher.context';
 import {IdentityConfigView} from './identity-config-view';
 
+// The variable picker's copy action uses the app dispatch; these view tests render without a Redux store.
+vi.mock('../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 vi.mock('../modules/identity/identity-providers-api-service', () => ({
     IdentityProvidersApiService: class {
         listAll() {
@@ -23,8 +26,9 @@ vi.mock('../modules/identity/identity-providers-api-service', () => ({
 }));
 
 describe('IdentityConfigView', () => {
-    it('limits a required identity configuration to one slot', async () => {
+    it('lists identity and provider errors directly at the field', async () => {
         const user = userEvent.setup();
+        const setValue = vi.fn();
         const element = {
             type: ElementType.IdentityConfigElement,
             id: 'new-identities',
@@ -47,7 +51,54 @@ describe('IdentityConfigView', () => {
                             isOptional: false,
                             options: [],
                         }]}
-                        setValue={vi.fn()}
+                        setValue={setValue}
+                        onBlur={vi.fn()}
+                        errors={['Titel fehlt. Schlüssel ist ungültig.']}
+                        errorDetails={{messages: ['Titel fehlt.', 'Schlüssel ist ungültig.']}}
+                        isBusy={false}
+                        isDeriving={false}
+                        authoredElementValues={{}}
+                        onAuthoredElementValuesChange={vi.fn()}
+                        derivedData={createDerivedRuntimeElementData()}
+                        onDerive={async () => createDerivedRuntimeElementData()}
+                        onEvent={async () => undefined}
+                        onResetErrors={vi.fn()}
+                        suppressErrors={false}
+                        derivationTriggerIdQueue={[]}
+                    />
+                </ConfirmProvider>
+            </TestViewDispatcherProvider>,
+        );
+
+        const errors = within(await screen.findByRole('alert')).getAllByRole('listitem');
+        expect(errors.map((item) => item.textContent)).toEqual(['Titel fehlt.', 'Schlüssel ist ungültig.']);
+    });
+    it('limits a required identity configuration to one slot', async () => {
+        const user = userEvent.setup();
+        const setValue = vi.fn();
+        const element = {
+            type: ElementType.IdentityConfigElement,
+            id: 'new-identities',
+            label: 'Neue Identität',
+            required: true,
+            maxSlots: 1,
+            optionalSlotsAllowed: false,
+        } as IdentityConfigElement;
+
+        render(
+            <TestViewDispatcherProvider>
+                <ConfirmProvider>
+                    <IdentityConfigView
+                        element={element}
+                        value={[{
+                            id: 'representative',
+                            title: 'Vertretung',
+                            description: null,
+                            allowsMail: true,
+                            isOptional: false,
+                            options: [],
+                        }]}
+                        setValue={setValue}
                         onBlur={vi.fn()}
                         errors={null}
                         isBusy={false}
@@ -84,6 +135,21 @@ describe('IdentityConfigView', () => {
         dialog.getByRole('switch', {name: 'E-Mail-Adresse zulassen'}).focus();
         await user.tab();
         expect(key).toHaveFocus();
+        await user.clear(title);
+        await user.click(dialog.getByRole('button', {name: 'Übernehmen'}));
+        expect(title).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByRole('dialog')).toBeVisible();
+        expect(dialog.getAllByText('Geben Sie einen Titel für die Identität an.').length).toBeGreaterThan(0);
+        expect(setValue).not.toHaveBeenCalled();
+
+        await user.type(title, 'Vertretung');
+        await user.click(dialog.getByRole('switch', {name: 'E-Mail-Adresse zulassen'}));
+        await user.click(dialog.getByRole('button', {name: 'Übernehmen'}));
+        expect(setValue).toHaveBeenCalledWith([expect.objectContaining({
+            title: 'Vertretung',
+            allowsMail: false,
+            options: [],
+        })]);
     });
 
     it('exposes the identity list as one field group without including its action in the name', async () => {
@@ -236,12 +302,11 @@ describe('IdentityConfigView', () => {
         fireEvent.click(viewButton);
 
         expect(screen.getByText('Identität ansehen')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Variable referenzieren'})).toBeDisabled();
         expect(screen.getAllByRole('button', {name: 'Schließen'})).toHaveLength(2);
         expect(screen.queryByRole('button', {name: 'Übernehmen'})).not.toBeInTheDocument();
     });
 
-    it('inserts a variable reference into an identity description', async () => {
+    it('offers no variables in identity descriptions', async () => {
         const setValue = vi.fn();
         const user = userEvent.setup();
         const element = {
@@ -286,20 +351,10 @@ describe('IdentityConfigView', () => {
         const editButton = screen.getByText('Antragstellende Person').closest('button')!;
         await waitFor(() => expect(editButton).toBeEnabled());
         await user.click(editButton);
-        await user.click(await screen.findByRole('button', {name: 'Variable referenzieren'}));
-        await user.click(await screen.findByText('Name der Person'));
-        await user.click(screen.getByTestId('use-variable-reference'));
-        await waitFor(() => {
-            expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
-        });
-        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
 
-        expect(setValue).toHaveBeenCalledWith([
-            expect.objectContaining({
-                id: 'applicant',
-                description: expect.stringContaining('{{ $.person.name }}'),
-            }),
-        ]);
+        // Customers see the description as written, so it must not offer variables that are never filled in.
+        expect(await screen.findByRole('textbox', {name: 'Beschreibung – optional'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
     });
 });
 

@@ -119,9 +119,16 @@ export class CustomerTaskViewApiService extends BaseApiService {
         };
     }
 
-    public async getInstanceStatus(instanceAccessKey: string): Promise<ProcessInstanceStatusResponse> {
+    /**
+     * The status only lists the task of the passed access key and, for the browser that submitted the instance, its
+     * first task. The tasks of other participants of the instance are never listed.
+     */
+    public async getInstanceStatus(instanceAccessKey: string, taskAccessKey?: string): Promise<ProcessInstanceStatusResponse> {
         return await this.get<ProcessInstanceStatusResponse>(`/api/public/processes/${instanceAccessKey}/`, {
             skipAuthCheck: true,
+            query: {
+                task: taskAccessKey,
+            },
         });
     }
 

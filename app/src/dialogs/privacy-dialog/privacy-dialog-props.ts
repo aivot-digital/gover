@@ -4,7 +4,7 @@ import {ProcessVersionEntity} from '../../modules/process/entities/process-versi
 
 export interface PrivacyDialogProps extends DialogProps {
     form?: FormLayoutElement;
-    version?: ProcessVersionEntity;
+    version?: Pick<ProcessVersionEntity, 'privacyDepartmentId' | 'processSpecificPrivacyStatement'>;
     departmentId?: number | null;
     onHide: () => void;
     isListingPage?: boolean;

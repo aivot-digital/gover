@@ -1,5 +1,5 @@
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
-import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import Mail from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
 import {
     Alert,
@@ -125,6 +125,7 @@ export const FormIdentitySelectionControls = forwardRef<
     }, [api, dispatch, emailAddress, replaceSlot, slot.id]);
 
     const handleClear = async () => {
+        // Reset this form's selection only; the session at the identity provider remains active.
         setBusy(true);
         try {
             await api.clearIdentity(slot.id);
@@ -140,7 +141,7 @@ export const FormIdentitySelectionControls = forwardRef<
                 })),
             });
         } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Die Identität konnte nicht entfernt werden.'));
+            dispatch(showApiErrorSnackbar(error, 'Die Auswahl konnte nicht geändert werden. Bitte versuchen Sie es erneut.'));
         } finally {
             setBusy(false);
         }
@@ -377,7 +378,7 @@ export const FormIdentitySelectionControls = forwardRef<
 
             {slot.identityType === 'IdentityProvider' && communication == null &&
                 <Alert severity="warning">
-                    Für dieses Nutzerkonto steht derzeit kein Kommunikationsweg zur Verfügung.
+                    Für dieses Konto steht derzeit kein Kommunikationsweg zur Verfügung.
                 </Alert>}
 
             {
@@ -388,8 +389,7 @@ export const FormIdentitySelectionControls = forwardRef<
 
                     <Typography>
                         Bitte wählen Sie einen der nachfolgend angebotenen Kommunikationswege aus. Sie werden
-                        ausschließlich über den ausgewählten Kommunikationsweg kontaktiert. Die Angaben werden nur für
-                        die Kommunikation im Rahmen dieses Vorgangs verwendet.
+                        vorrangig über den gewählten Kommunikationsweg kontaktiert. Andere Kontaktwege sind möglich.
                     </Typography>
 
                     <FormControl>
@@ -454,13 +454,13 @@ export const FormIdentitySelectionControls = forwardRef<
                 slot.identityType != null &&
                 <Button
                     variant="text"
-                    color="error"
-                    startIcon={<Delete/>}
+                    color="inherit"
+                    startIcon={<SwapHoriz/>}
                     onClick={() => void handleClear()}
                     disabled={busy}
                     sx={{alignSelf: 'flex-start'}}
                 >
-                    Identität entfernen
+                    Auswahl ändern
                 </Button>
             }
         </Stack>

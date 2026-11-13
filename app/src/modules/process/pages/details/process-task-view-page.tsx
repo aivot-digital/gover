@@ -11,7 +11,11 @@ import {Chip} from '../../../../components/chip/chip';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {type ProcessTaskDetails} from '../../entities/process-task-details';
-import {ProcessTaskStatus, ProcessTaskStatusColors} from '../../enums/process-task-status';
+import {
+    isProcessTaskEditableByStaff,
+    ProcessTaskStatus,
+    ProcessTaskStatusColors,
+} from '../../enums/process-task-status';
 import {getProcessTaskStatusDisplay} from '../../utils/process-task-status-label';
 import {createStaffPath} from '../../../../utils/url-path-utils';
 import {KnownProviderIcons} from '../../data/known-provider-icons';
@@ -39,6 +43,8 @@ export function getProcessTaskBasePath(instanceId: number | string, taskId: numb
 export function getProcessTaskEditPath(instanceId: number | string, taskId: number | string): string {
     return `${getProcessTaskBasePath(instanceId, taskId)}/edit`;
 }
+
+export const PROCESS_TASK_NOT_EDITABLE_MESSAGE = 'Diese Aufgabe kann in ihrem aktuellen Status nicht bearbeitet werden.';
 
 export function getProcessTaskCommunicationPath(instanceId: number | string, taskId: number | string): string {
     return `${getProcessTaskBasePath(instanceId, taskId)}/communication`;
@@ -221,6 +227,11 @@ export function ProcessTaskViewPage() {
                         requiredPermission: {
                             permission: Permission.PROCESS_INSTANCE_EDIT_TASK,
                         },
+                        isDisabled: (item) => !isProcessTaskEditableByStaff(item?.task.status),
+                        // Without a loaded item, the missing-permission tooltip remains the relevant explanation.
+                        disabledTooltip: (item) => item != null && !isProcessTaskEditableByStaff(item.task.status)
+                            ? PROCESS_TASK_NOT_EDITABLE_MESSAGE
+                            : undefined,
                     },
                     {
                         path: '/tasks/:instanceId/:taskId/communication',

@@ -12,11 +12,22 @@ export enum ProcessTaskStatus {
     DeadlineExceeded = 'DeadlineExceeded',
 }
 
+// Mirrors the backend staff task view, which rejects tasks outside these statuses.
+const StaffEditableProcessTaskStatuses: ReadonlySet<ProcessTaskStatus> = new Set([
+    ProcessTaskStatus.Running,
+    ProcessTaskStatus.InProgress,
+    ProcessTaskStatus.AwaitingStaff,
+]);
+
+export function isProcessTaskEditableByStaff(status: ProcessTaskStatus | null | undefined): boolean {
+    return status != null && StaffEditableProcessTaskStatuses.has(status);
+}
+
 export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
     [ProcessTaskStatus.Running]: 'Gestartet',
     [ProcessTaskStatus.Paused]: 'Pausiert',
     [ProcessTaskStatus.AwaitingPayment]: 'Wartet auf Zahlungsbestätigung',
-    [ProcessTaskStatus.AwaitingCustomer]: 'Wartet auf Nutzer:in',
+    [ProcessTaskStatus.AwaitingCustomer]: 'Wartet auf Rückmeldung',
     [ProcessTaskStatus.Completed]: 'Abgeschlossen',
     [ProcessTaskStatus.Aborted]: 'Abgebrochen',
     [ProcessTaskStatus.Failed]: 'Fehlgeschlagen',

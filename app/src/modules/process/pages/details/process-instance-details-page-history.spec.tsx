@@ -144,7 +144,7 @@ async function renderHistory(
 describe('Process instance history preview', () => {
     const identities: ProcessInstanceDetails['instance']['identities'] = {
         applicant: {
-            identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+            identityId: 'applicant', title: 'Antragstellende', type: 'Email',
             emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
             uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
         },
@@ -358,7 +358,7 @@ describe('Process instance history preview', () => {
 
     it('explains the open choice of an active action with multiple ports', async () => {
         await renderHistory([node(1, 'Freigabe', 'approval', ['next', 'rejected']), node(2, 'Versand')], [edge(1, 2)], [task(1, 1)]);
-        expect(screen.getByRole('alert')).toHaveTextContent('Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Pfaden entschieden werden muss.');
+        expect(screen.getByRole('alert')).toHaveTextContent('Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Prozesspfaden entschieden werden muss.');
         expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
     });
 
@@ -371,7 +371,7 @@ describe('Process instance history preview', () => {
 
         if (strict) {
             expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
-            expect(screen.getByRole('alert')).toHaveTextContent(/mehreren möglichen Pfaden/);
+            expect(screen.getByRole('alert')).toHaveTextContent(/mehreren möglichen Prozesspfaden/);
         } else {
             expect(screen.getByRole('listitem')).toHaveTextContent(/^Versand:/);
         }
@@ -385,7 +385,7 @@ describe('Process instance history preview', () => {
         expect(summary.querySelector('[title]')).toHaveAttribute('title', `1. ${name.trim()}: ${description}`);
     });
 
-    it('renders the complete AI response with lists, tables and code', async () => {
+    it('renders the complete AI response with lists and code, and tables as text', async () => {
         const user = userEvent.setup();
         await renderHistory([node(1, 'KI-Anfrage')], [], [{
             ...task(1, 1, ProcessTaskStatus.Completed),
@@ -394,7 +394,8 @@ describe('Process instance history preview', () => {
         await user.click(screen.getByRole('button', {name: 'Alle aufklappen'}));
         const details = within(screen.getByRole('region', {name: /^1\. KI-Anfrage:/}));
         expect(details.getAllByRole('listitem')).toHaveLength(2);
-        expect(details.getByRole('table')).toHaveTextContent('Ergebnis');
+        expect(details.queryByRole('table')).not.toBeInTheDocument();
+        expect(details.getByText(/\| Ergebnis \| 42 \|/)).toBeVisible();
         expect(details.getByText('{"ergebnis": 42}').tagName).toBe('CODE');
         expect(details.getByText('Letzter Absatz.')).toBeVisible();
         expect(details.queryByRole('alert')).not.toBeInTheDocument();
@@ -512,61 +513,45 @@ describe('Process instance history preview', () => {
         const started = '2026-10-01T10:00:00Z';
         const deadline = '2026-10-03T10:00:00Z';
 
-        it.each([
-            {now: '2026-10-02T09:59:59.999Z', color: 'Default', label: 'Frist'},
-            {now: '2026-10-02T10:00:00Z', color: 'Default', label: 'Frist'},
-            {now: '2026-10-02T10:00:00.001Z', color: 'Warning', label: 'Frist'},
-            {now: deadline, color: 'Warning', label: 'Frist'},
-            {now: '2026-10-03T10:00:00.001Z', color: 'Error', label: 'Abgelaufen'},
-        ])('shows $label in $color at $now', async ({now, color, label}) => {
-            vi.spyOn(Date, 'now').mockReturnValue(Date.parse(now));
-            await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1), started, deadline}]);
-
-            const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
-            expect(summary).toHaveAccessibleName(new RegExp(`${label}: 03\\.10\\.2026 um 12:00 Uhr`));
-            expect(summary.querySelector('.MuiChip-root')).toHaveClass(`MuiChip-color${color}`);
-        });
-
         describe.each([
+            ProcessTaskStatus.Running,
             ProcessTaskStatus.InProgress,
             ProcessTaskStatus.AwaitingStaff,
             ProcessTaskStatus.Paused,
             ProcessTaskStatus.AwaitingCustomer,
             ProcessTaskStatus.AwaitingPayment,
-        ])('open task with status %s', (status) => {
+        ])('active task with status %s', status => {
             it.each([
-                {now: '2026-10-02T09:59:59.999Z', color: 'Default', label: 'Frist'},
-                {now: '2026-10-02T12:00:00Z', color: 'Warning', label: 'Frist'},
-                {now: '2026-10-04T10:00:00Z', color: 'Error', label: 'Abgelaufen'},
-            ])('shows $label in $color', async ({now, color, label}) => {
+                {now: '2026-10-02T09:59:59.999Z', exceeded: false},
+                {now: '2026-10-02T22:00:00Z', exceeded: false},
+                {now: '2026-10-03T09:59:59.999Z', exceeded: false},
+                {now: deadline, exceeded: true},
+                {now: '2026-10-04T10:00:00Z', exceeded: true},
+            ])('shows a deadline or an exceeded badge at $now', async ({now, exceeded}) => {
                 vi.spyOn(Date, 'now').mockReturnValue(Date.parse(now));
                 await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1, status), started, deadline}]);
-
                 const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
-                expect(summary).toHaveAccessibleName(new RegExp(`${label}: 03\\.10\\.2026 um 12:00 Uhr`));
-                expect(summary.querySelector('.MuiChip-root')).toHaveClass(`MuiChip-color${color}`);
+                const chip = summary.querySelector('.MuiChip-root');
+                expect(chip).toHaveTextContent(exceeded ? 'Frist überschritten' : 'Frist: 03.10.2026 um 12:00 Uhr');
+                expect(summary).not.toHaveAccessibleName(/Bald fällig|Abgelaufen/);
             });
         });
 
-        describe.each(['2026-10-04T10:00:00Z', '2027-10-04T10:00:00Z'])('completed tasks viewed at %s', (now) => {
+        describe.each(['2026-10-04T10:00:00Z', '2027-10-04T10:00:00Z'])('completed tasks viewed at %s', now => {
             it.each([
-                {finished: '2026-10-02T12:00:00Z', color: 'Success', label: 'Frist eingehalten'},
-                {finished: deadline, color: 'Success', label: 'Frist eingehalten'},
-                {finished: '2026-10-03T10:00:00.001Z', color: 'Error', label: 'Abgelaufen'},
-            ])('shows $label without a timestamp when finished at $finished', async ({finished, color, label}) => {
+                {finished: '2026-10-02T12:00:00Z', exceeded: false},
+                {finished: deadline, exceeded: false},
+                {finished: '2026-10-03T10:00:00.001Z', exceeded: true},
+            ])('only marks a missed deadline when finished at $finished', async ({finished, exceeded}) => {
                 vi.spyOn(Date, 'now').mockReturnValue(Date.parse(now));
                 await renderHistory([node(1, 'Prüfung')], [], [{
-                    ...task(1, 1, ProcessTaskStatus.Completed),
-                    started,
-                    deadline,
-                    finished,
+                    ...task(1, 1, ProcessTaskStatus.Completed), started, deadline, finished,
                 }]);
-
                 const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
-                expect(summary).toHaveAccessibleName(`1. Prüfung: ${label}`);
                 const chip = summary.querySelector('.MuiChip-root');
-                expect(chip).toHaveTextContent(new RegExp(`^${label}$`));
-                expect(chip).toHaveClass(`MuiChip-color${color}`);
+                if (exceeded) expect(chip).toHaveTextContent(/^Frist überschritten$/);
+                else expect(chip).toBeNull();
+                expect(summary).not.toHaveAccessibleName(/Frist eingehalten|Abgelaufen/);
             });
         });
 
@@ -574,22 +559,22 @@ describe('Process instance history preview', () => {
             ProcessTaskStatus.Completed,
             ProcessTaskStatus.Aborted,
             ProcessTaskStatus.Failed,
-        ])('keeps an inactive %s task without a completion timestamp neutral', async (status) => {
+        ])('does not infer an exceeded deadline for an inactive %s task without a completion time', async status => {
             vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-04T10:00:00Z'));
             await renderHistory([node(1, 'Prüfung')], [], [{...task(1, 1, status), started, deadline}]);
-
             const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
-            expect(summary).toHaveAccessibleName(/Frist: 03\.10\.2026 um 12:00 Uhr/);
-            expect(summary.querySelector('.MuiChip-root')).toHaveClass('MuiChip-colorDefault');
+            expect(summary.querySelector('.MuiChip-root')).toHaveTextContent('Frist: 03.10.2026 um 12:00 Uhr');
+            expect(summary).not.toHaveAccessibleName(/Frist überschritten|Frist eingehalten/);
+        });
+
+        it('marks automatic termination even if the deadline timestamp is unavailable', async () => {
+            await renderHistory([node(1, 'Prüfung')], [], [task(1, 1, ProcessTaskStatus.DeadlineExceeded)]);
+            const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
+            expect(summary.querySelector('.MuiChip-root')).toHaveTextContent('Frist überschritten');
         });
 
         it('omits deadline chips for tasks without a deadline and upcoming steps', async () => {
-            await renderHistory(
-                [node(1, 'Prüfung'), node(2, 'Nächster Schritt')],
-                [edge(1, 2)],
-                [task(1, 1)],
-            );
-
+            await renderHistory([node(1, 'Prüfung'), node(2, 'Nächster Schritt')], [edge(1, 2)], [task(1, 1)]);
             for (const summary of [screen.getByRole('button', {name: /^1\. Prüfung:/}), screen.getByRole('listitem')]) {
                 expect(summary.querySelector('.MuiChip-root')).toBeNull();
                 expect(summary).not.toHaveAccessibleName(/Frist|Abgelaufen/);
@@ -783,7 +768,7 @@ describe('Process instance history preview', () => {
         );
 
         expect(screen.getByRole('alert')).toHaveTextContent(scenario === 'multiple edges'
-            ? 'Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Pfaden entschieden werden muss.'
+            ? 'Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Prozesspfaden entschieden werden muss.'
             : 'Derzeit sind keine nächsten Schritte vorhersehbar.');
         expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
     });

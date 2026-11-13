@@ -33,6 +33,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 @EnableRedisRepositories(basePackages = {
         "de.aivot.prosuna.backend.ai.cache.repositories",
         "de.aivot.prosuna.backend.identity.cache.repositories",
+        "de.aivot.prosuna.backend.process.cache.repositories",
 })
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class ProsunaBackendApplication {

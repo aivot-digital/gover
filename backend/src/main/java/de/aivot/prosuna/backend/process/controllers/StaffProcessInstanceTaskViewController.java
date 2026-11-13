@@ -44,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK;
@@ -133,20 +134,14 @@ public class StaffProcessInstanceTaskViewController {
         var layout = staffView.layout();
 
         if (layout instanceof BaseElement rootElement) {
-            var destinationKeyIndex = ElementReferenceUtils
-                    .buildDestinationKeyIndex(rootElement);
-
-            ElementStreamUtils
-                    .applyAction(
-                            rootElement,
-                            element -> element.recalculateReferencedIds(destinationKeyIndex)
-                    );
+            ElementReferenceUtils.recalculateReferencedIds(rootElement);
         }
 
         return new TaskViewResponse(
                 layout,
                 staffView.data(),
-                staffView.events()
+                staffView.events(),
+                findRemovableAttachmentKeys(layout, taskViewData)
         );
     }
 
@@ -195,8 +190,9 @@ public class StaffProcessInstanceTaskViewController {
                 taskId
         );
 
+        // The history names the staff member; the identity session ID of the browser is a secret and is not logged.
         var logger = processNodeExecutionLoggerFactory
-                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), identitySessionId);
+                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), null);
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,
@@ -232,7 +228,7 @@ public class StaffProcessInstanceTaskViewController {
         var cleanEvent = resolveValidStaffEvent(rootLayout, staffView.events(), rawEvent);
 
         if (rawEvent != null && cleanEvent == null) {
-            throw ResponseException.badRequest("Invalid event: " + rawEvent);
+            throw ResponseException.badRequest("Ungültige Aktion: " + rawEvent);
         }
 
         AuthoredElementValues inputs;
@@ -243,30 +239,31 @@ public class StaffProcessInstanceTaskViewController {
         } catch (JacksonException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
+        // Derive before storing the uploaded files, so only upload fields whose value the derivation takes store theirs.
+        // Auto-saves keep incomplete drafts, so only events are validated.
+        var derivedElementData = elementDerivationService.derive(
+                new ElementDerivationRequest(
+                        rootLayout,
+                        inputs,
+                        new ElementDerivationOptions(),
+                        taskViewData.processExecutionData()
+                )
+        );
+
+        if (cleanEvent != null && derivedElementData.hasAnyError()) {
+            throw ResponseException.badRequest(derivedElementData);
+        }
+
         inputs = fileUploadMultipartInputService.normalizeInputs(
                 rootLayout,
                 inputs,
+                derivedElementData.getElementStates(),
                 files,
                 fileUris,
                 taskViewData.instance().getId(),
                 taskViewData.task().getId(),
                 user.getId()
         ).inputs();
-
-        if (cleanEvent != null) {
-            var derivedElementData = elementDerivationService.derive(
-                    new ElementDerivationRequest(
-                            rootLayout,
-                            inputs,
-                            new ElementDerivationOptions(),
-                            taskViewData.processExecutionData()
-                    )
-            );
-
-            if (derivedElementData.hasAnyError()) {
-                throw ResponseException.badRequest(derivedElementData);
-            }
-        }
 
         Optional<ProcessNodeExecutionResult> res;
         try {
@@ -310,10 +307,30 @@ public class StaffProcessInstanceTaskViewController {
                 .provider
                 .getStaffTaskView(context);
 
+        // The task view replaces its layout with this one, so dependencies must resolve as for the initially loaded layout.
+        if (updatedView.layout() instanceof BaseElement updatedRootElement) {
+            ElementReferenceUtils.recalculateReferencedIds(updatedRootElement);
+        }
+
         return new TaskViewResponse(
                 updatedView.layout(),
                 updatedView.data(),
-                updatedView.events()
+                updatedView.events(),
+                findRemovableAttachmentKeys(updatedView.layout(), taskViewData)
+        );
+    }
+
+    @Nonnull
+    private List<UUID> findRemovableAttachmentKeys(@Nonnull LayoutElement<?> layout,
+                                                   @Nonnull TaskViewData<?> taskViewData) throws ResponseException {
+        if (!(layout instanceof BaseElement rootLayout)) {
+            return List.of();
+        }
+
+        return fileUploadMultipartInputService.findRemovableAttachmentKeys(
+                rootLayout,
+                taskViewData.instance().getId(),
+                taskViewData.task().getId()
         );
     }
 
@@ -437,7 +454,7 @@ public class StaffProcessInstanceTaskViewController {
                 processExecutionData
         );
         if (cfgRes.derivedRuntimeElementData().hasAnyError()) {
-            throw ResponseException.internalServerError("Die dynamische Knotenkonfiguration konnte nicht aufgelöst werden.");
+            throw ResponseException.internalServerError("Die dynamische Konfiguration des Prozesselements konnte nicht aufgelöst werden.");
         }
 
         return new TaskViewData<>(
@@ -476,7 +493,10 @@ public class StaffProcessInstanceTaskViewController {
             @Nonnull
             AuthoredElementValues data,
             @Nonnull
-            List<TaskViewEvent> events
+            List<TaskViewEvent> events,
+            // The task's own stored uploads, which its upload fields may remove. Other attachments stay protected.
+            @Nonnull
+            List<UUID> removableAttachmentKeys
     ) {
 
     }

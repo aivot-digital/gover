@@ -4,7 +4,7 @@ import {ProcessVersionEntity} from '../../modules/process/entities/process-versi
 
 export interface AccessibilityDialogProps extends DialogProps {
     form?: FormLayoutElement;
-    version?: ProcessVersionEntity;
+    version?: Pick<ProcessVersionEntity, 'accessibilityDepartmentId' | 'processSpecificAccessibilityStatement'>;
     departmentId?: number | null;
     onHide: () => void;
     isListingPage?: boolean;

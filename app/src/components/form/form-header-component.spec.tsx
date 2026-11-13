@@ -4,9 +4,6 @@ import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {FormHeaderComponent} from './form-header-component';
 import type {FormLayoutElement} from '../../models/elements/form-layout-element';
-import type {ProcessEntity} from '../../modules/process/entities/process-entity';
-import type {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
-import type {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 
 vi.mock('../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => vi.fn(),
@@ -72,12 +69,10 @@ function createHeader(theme: ReturnType<typeof createTheme>, logoUrl: string | n
         <ThemeProvider theme={theme}>
             <FormHeaderComponent
                 form={{publicTitle: 'Testformular'} as FormLayoutElement}
-                node={{} as ProcessNodeEntity}
-                process={{} as ProcessEntity}
                 version={{
                     publicTitle: 'Testformular',
                     updated: '2026-09-14T10:00:00Z',
-                } as ProcessVersionEntity}
+                }}
                 logoUrl={logoUrl}
                 logoUrlDark={null}
                 onDeleteFormData={vi.fn()}

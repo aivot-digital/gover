@@ -40,12 +40,12 @@ public class ProcessDataKeyInputElement extends BaseInputElement<String> impleme
         }
 
         if (!ProcessDataValueUtils.isValidDestinationKey(value, false, true)) {
-            throw new ValidationException(this, "Verwenden Sie einen Vorgangsdatenpfad wie person.name, items[0].name oder items[*].name.");
+            throw new ValidationException(this, "Verwenden Sie einen Datenpfad wie person.name, items[0].name oder items[*].name.");
         }
 
         if (Boolean.TRUE.equals(disableWildCards)) {
             if (value.contains("*")) {
-                throw new ValidationException(this, "Der Prozessdaten-Schlüssel darf keine Sternchen enthalten, da Wildcards deaktiviert sind.");
+                throw new ValidationException(this, "Der Datenschlüssel darf keine Sternchen enthalten, da Wildcards deaktiviert sind.");
             }
         }
     }

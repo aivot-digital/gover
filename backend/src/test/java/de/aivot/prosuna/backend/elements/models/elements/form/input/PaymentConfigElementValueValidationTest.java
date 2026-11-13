@@ -13,11 +13,49 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PaymentConfigElementValueValidationTest {
+    @Test
+    void shouldReportClearedPurposeAsAConfigurationError() {
+        var exception = assertThrows(ValidationException.class, () -> new PaymentConfigElement().performValidation(
+                new PaymentConfigElementValue(UUID.randomUUID(), null, "Description", false, null, List.of(fixedItem()), null, null)));
+        assertEquals(Map.of("purpose", "Geben Sie einen Verwendungszweck an.",
+                "messages", List.of("Geben Sie einen Verwendungszweck an.")), exception.getErrorDetails());
+    }
+
+    @Test
+    void shouldAcceptTagsAndOverlongTexts() {
+        assertDoesNotThrow(() -> new PaymentConfigElement().performValidation(new PaymentConfigElementValue(
+                UUID.randomUUID(), "Gebuehr {{ $.aktenzeichen }}", "Gebühr für Ihren Antrag, Nr. {! $.nummer !} " + "x".repeat(300),
+                false, null, List.of(fixedItem()), null, null)));
+    }
+
+    @Test
+    void shouldNameTypedCharactersThatAreNotTransmitted() {
+        var exception = assertThrows(ValidationException.class, () -> new PaymentConfigElement().performValidation(new PaymentConfigElementValue(
+                UUID.randomUUID(), "Gebühr (Antrag) {{ $.nummer }}", "Kosten: 10\u00A0€ {% if $.eilig %}sofort!{% endif %}",
+                false, null, List.of(fixedItem()), null, null)));
+
+        assertEquals("Der Buchungstext enthält Zeichen, die nicht übertragen werden: „ü“, „(“, „)“. Erlaubt sind Buchstaben ohne Umlaute, ß und Akzente, Ziffern, Leerzeichen, Binde- und Unterstriche.",
+                ((Map<?, ?>) exception.getErrorDetails()).get("purpose"));
+        assertEquals("Die Beschreibung enthält Zeichen, die nicht übertragen werden: „:“, U+00A0, „€“, „!“. Erlaubt sind Buchstaben, auch mit Umlaut oder Akzent, ß, Ziffern, Leerzeichen, Binde- und Unterstriche, Kommas und Punkte.",
+                ((Map<?, ?>) exception.getErrorDetails()).get("description"));
+    }
+
+    @Test
+    void shouldKeepNestedErrorsInFieldOrder() {
+        var paymentItem = new PaymentConfigElementValueItem(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        assertEquals(List.of("description", "reference", "idType", "costType", "quantityType", "fixedTaxRate"),
+                List.copyOf(paymentItem.performValidation().keySet()));
+        var requestor = new PaymentConfigElementValueRequestorMapping(null, "invalid-key", "invalid-key", null, null, null, null, null, null, null, null, null);
+        assertEquals(List.of("lastNameDestinationKey", "firstNameDestinationKey", "requestorSourceType"),
+                List.copyOf(requestor.performValidation().keySet()));
+    }
+
     @Test
     void shouldValidateFixedPaymentItem() {
         assertEquals(Map.of(), fixedItem().performValidation());
@@ -231,6 +269,7 @@ class PaymentConfigElementValueValidationTest {
         assertEquals(2, itemErrors.size());
         assertNull(itemErrors.get(0));
         assertEquals(Map.of("fixedCosts", "Feste Kosten müssen angegeben werden."), itemErrors.get(1));
+        assertEquals(List.of("Zahlungsposition 2: Feste Kosten müssen angegeben werden."), errorDetails.get("messages"));
     }
 
     @Test
@@ -385,7 +424,7 @@ class PaymentConfigElementValueValidationTest {
     @Test
     void shouldRejectInvalidRequestorMappings() {
         assertEquals(
-                Map.of("requestorSourceType", "Es muss eine Quelle für die Antragsteller-Zuweisung ausgewählt werden."),
+                Map.of("requestorSourceType", "Es muss eine Quelle für die Zuordnung der zahlenden Person oder Organisation ausgewählt werden."),
                 new PaymentConfigElementValueRequestorMapping(
                         null,
                         "requestor.lastName",
@@ -422,7 +461,7 @@ class PaymentConfigElementValueValidationTest {
 
         assertEquals(
                 Map.ofEntries(
-                        Map.entry("lastNameDestinationKey", "Nachname muss ein gültiger Prozessdaten-Schlüssel sein."),
+                        Map.entry("lastNameDestinationKey", "Nachname muss ein gültiger Datenschlüssel sein."),
                         Map.entry("isOrganizationDestinationKey", "Ist Organisation muss zugewiesen werden.")
                 ),
                 new PaymentConfigElementValueRequestorMapping(

@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.dtos.ElementDerivationResponse;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
@@ -50,6 +51,7 @@ import de.aivot.prosuna.backend.process.filters.ProcessNodeFilter;
 import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.process.utils.ProcessSubmissionCookieUtils;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
@@ -119,6 +121,7 @@ public class FormTriggerControllerV1 {
     private final PdfService pdfService;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final IdentitySlotService identitySlotService;
+    private final ProcessSubmissionBindingService processSubmissionBindingService;
 
     @Autowired
     public FormTriggerControllerV1(ProsunaConfig prosunaConfig,
@@ -150,7 +153,8 @@ public class FormTriggerControllerV1 {
                                    PaymentProviderRepository paymentProviderRepository,
                                    PdfService pdfService,
                                    PaymentProviderDefinitionsService paymentProviderDefinitionsService,
-                                   IdentitySlotService identitySlotService) {
+                                   IdentitySlotService identitySlotService,
+                                   ProcessSubmissionBindingService processSubmissionBindingService) {
         this.prosunaConfig = prosunaConfig;
         this.elementDerivationService = elementDerivationService;
         this.assetService = assetService;
@@ -181,6 +185,7 @@ public class FormTriggerControllerV1 {
         this.pdfService = pdfService;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.identitySlotService = identitySlotService;
+        this.processSubmissionBindingService = processSubmissionBindingService;
     }
 
     @GetMapping("")
@@ -215,11 +220,14 @@ public class FormTriggerControllerV1 {
             }
         });
 
+        // Only return what the customer form needs. The node configuration in particular contains the unfiltered form
+        // layout, including the steps hidden above until the required identity is present, function code and internal
+        // notes of the process.
         return new RetrieveResponse(
                 formLayout,
-                node,
-                process,
-                processVersion,
+                new PublicFormNode(node.getId(), config.configuration().formSlug),
+                new PublicFormProcess(process.getSlug()),
+                PublicFormVersion.of(processVersion),
                 identitySlots
         );
     }
@@ -345,14 +353,67 @@ public class FormTriggerControllerV1 {
             @Nonnull
             FormLayoutElement layoutElement,
             @Nonnull
-            ProcessNodeEntity node,
+            PublicFormNode node,
             @Nonnull
-            ProcessEntity process,
+            PublicFormProcess process,
             @Nonnull
-            ProcessVersionEntity version,
+            PublicFormVersion version,
             @Nonnull
             List<IdentitySlotResponseDTO> identitySlots
     ) {
+    }
+
+    public record PublicFormNode(
+            @Nonnull
+            Integer id,
+            @Nullable
+            String formSlug
+    ) {
+    }
+
+    public record PublicFormProcess(
+            @Nonnull
+            String slug
+    ) {
+    }
+
+    public record PublicFormVersion(
+            @Nonnull
+            Integer processVersion,
+            @Nonnull
+            String publicTitle,
+            @Nonnull
+            Instant updated,
+            @Nullable
+            Integer legalSupportDepartmentId,
+            @Nullable
+            Integer technicalSupportDepartmentId,
+            @Nullable
+            Integer imprintDepartmentId,
+            @Nullable
+            Integer privacyDepartmentId,
+            @Nullable
+            Integer accessibilityDepartmentId,
+            @Nullable
+            String processSpecificPrivacyStatement,
+            @Nullable
+            String processSpecificAccessibilityStatement
+    ) {
+        @Nonnull
+        public static PublicFormVersion of(@Nonnull ProcessVersionEntity version) {
+            return new PublicFormVersion(
+                    version.getProcessVersion(),
+                    version.getPublicTitle(),
+                    version.getUpdated(),
+                    version.getLegalSupportDepartmentId(),
+                    version.getTechnicalSupportDepartmentId(),
+                    version.getImprintDepartmentId(),
+                    version.getPrivacyDepartmentId(),
+                    version.getAccessibilityDepartmentId(),
+                    version.getProcessSpecificPrivacyStatement(),
+                    version.getProcessSpecificAccessibilityStatement()
+            );
+        }
     }
 
     @Nonnull
@@ -437,7 +498,8 @@ public class FormTriggerControllerV1 {
                 .setSkipValuesForElementIds(List.of())
                 .setSkipOverridesForElementIds(List.of())
                 .setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS))
-                .setSkipVisibilitiesForElementIds(List.of());
+                .setSkipVisibilitiesForElementIds(List.of())
+                .setIgnoreAuthoredValuesOfNonEditableInputs(true);
 
         var request = new ElementDerivationRequest(
                 config.formLayout,
@@ -515,7 +577,8 @@ public class FormTriggerControllerV1 {
                 .setSkipValuesForElementIds(skipValuesFor)
                 .setSkipOverridesForElementIds(skipOverridesFor)
                 .setSkipErrorsForElementIds(skipErrorsFor)
-                .setSkipVisibilitiesForElementIds(skipVisibilitiesFor);
+                .setSkipVisibilitiesForElementIds(skipVisibilitiesFor)
+                .setIgnoreAuthoredValuesOfNonEditableInputs(true);
 
         var request = new ElementDerivationRequest(
                 config.configuration().formLayout,
@@ -573,10 +636,12 @@ public class FormTriggerControllerV1 {
 
         // Perform derivation
         var logger = new ElementDerivationLogger();
+        // Customers must not fill disabled or technical inputs, for example a computed fee, with their own values.
         var derivationRequest = new ElementDerivationRequest(
                 config.configuration().formLayout,
                 inputs,
                 new ElementDerivationOptions()
+                        .setIgnoreAuthoredValuesOfNonEditableInputs(true)
         );
         var derivedRuntimeElementData = elementDerivationService
                 .derive(derivationRequest, identities, logger);
@@ -603,18 +668,24 @@ public class FormTriggerControllerV1 {
             identities.computeIfPresent(slot.id(), (id, identity) -> identity.withTitle(slot.title()));
         }
 
-        var processInstance = startProcess(
+        var startedProcess = startProcess(
                 testClaim,
                 config.configuration().formLayout,
                 node,
                 inputs,
+                derivedRuntimeElementData.getElementStates(),
                 files,
                 fileUris,
-                identities
+                identities,
+                identitySessionId
         );
 
         response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
-        return new FormTriggerSubmissionStatusResponseV1(processInstance.getAccessKey());
+        response.addCookie(ProcessSubmissionCookieUtils.createSubmissionCookie(
+                startedProcess.instance().getAccessKey(),
+                startedProcess.submissionSecret()
+        ));
+        return new FormTriggerSubmissionStatusResponseV1(startedProcess.instance().getAccessKey());
     }
 
     void testCaptchaReplayProtection(@Nonnull FormLayoutElement form,
@@ -645,13 +716,16 @@ public class FormTriggerControllerV1 {
                 .orElse(null);
     }
 
-    private ProcessInstanceEntity startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
-                                               @Nonnull FormLayoutElement form,
-                                               @Nonnull ProcessNodeEntity nodeEntity,
-                                               @Nonnull AuthoredElementValues inputs,
-                                               @Nullable MultipartFile[] files,
-                                               @Nullable List<String> fileUris,
-                                               @Nonnull IdentityDataMap identities) throws ResponseException {
+    @Nonnull
+    private StartedProcess startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
+                                        @Nonnull FormLayoutElement form,
+                                        @Nonnull ProcessNodeEntity nodeEntity,
+                                        @Nonnull AuthoredElementValues inputs,
+                                        @Nonnull ComputedElementStates elementStates,
+                                        @Nullable MultipartFile[] files,
+                                        @Nullable List<String> fileUris,
+                                        @Nonnull IdentityDataMap identities,
+                                        @Nullable String identitySessionId) throws ResponseException {
         var startedAt = Instant.now();
         var instance = new ProcessInstanceEntity(
                 null,
@@ -677,10 +751,13 @@ public class FormTriggerControllerV1 {
         var createdInstance = processInstanceService
                 .create(instance);
 
+        String submissionSecret;
         try {
+            // Only upload fields whose value the derivation of the submission takes store their files.
             var normalizationResult = fileUploadMultipartInputService.normalizeInputs(
                     form,
                     inputs,
+                    elementStates,
                     files,
                     fileUris,
                     createdInstance.getId(),
@@ -693,6 +770,7 @@ public class FormTriggerControllerV1 {
                             form,
                             normalizedInputs,
                             new ElementDerivationOptions()
+                                    .setIgnoreAuthoredValuesOfNonEditableInputs(true)
                     ),
                     identities,
                     new ElementDerivationLogger()
@@ -728,11 +806,30 @@ public class FormTriggerControllerV1 {
             // TODO: Apply TimeZone here
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_STARTED, startedAt);
 
-            createdInstance
-                    .setInitialPayload(initialPayload)
-                    .setStatus(ProcessInstanceStatus.Created);
+            // Bind the submitting browser while the instance is still paused. If the binding fails, the instance is
+            // marked as failed instead of being processed without the submitter receiving its access key, so the
+            // submitter can submit again without creating a duplicate.
+            submissionSecret = processSubmissionBindingService.bind(createdInstance.getId());
+
+            // Store the payload while the instance is still paused, so a payload the database rejects marks the instance
+            // as failed below while the identities stay in the session. update() copies only selected fields and would
+            // drop the payload.
+            processInstanceService.save(createdInstance.setInitialPayload(initialPayload));
+
+            // The instance holds the identities now. Remove them from the session as the last step before the instance
+            // is released, so the session ID cannot be used to submit the form again with the same identities. If any
+            // step fails before, the identities stay in the session for another attempt.
+            identityService.clearIdentitySession(identitySessionId, nodeEntity.getId());
+
+            createdInstance.setStatus(ProcessInstanceStatus.Created);
         } catch (Exception e) {
-            createdInstance.setStatus(ProcessInstanceStatus.Failed);
+            // Drop a payload that was already stored when marking the instance as failed. The submitter did not receive
+            // the access key and submits again, so restarting this instance would duplicate the case; a restart refuses
+            // an instance without initial data. update() would keep the stored payload, so the full state is saved, and
+            // a payload the database rejected is not sent again.
+            createdInstance
+                    .setInitialPayload(new HashMap<>())
+                    .setStatus(ProcessInstanceStatus.Failed);
 
             var logger = processNodeExecutionLoggerFactory
                     .create(
@@ -743,7 +840,7 @@ public class FormTriggerControllerV1 {
                     );
             logger.logException(e);
 
-            processInstanceService.update(createdInstance.getId(), createdInstance);
+            processInstanceService.save(createdInstance);
 
             if (e instanceof ResponseException responseException) {
                 throw responseException;
@@ -752,7 +849,10 @@ public class FormTriggerControllerV1 {
             throw ResponseException.internalServerError(e);
         }
 
-        return processInstanceService.update(createdInstance.getId(), createdInstance);
+        return new StartedProcess(
+                processInstanceService.update(createdInstance.getId(), createdInstance),
+                submissionSecret
+        );
     }
 
     @GetMapping("theme/")
@@ -1004,7 +1104,7 @@ public class FormTriggerControllerV1 {
 
         return vDepartmentShadowedService
                 .retrieve(context.process().getDepartmentId())
-                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für die Zahlungsbestätigung gefunden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Keine Organisationseinheit für die Zahlungsbestätigung gefunden."));
     }
 
     @Nullable
@@ -1103,6 +1203,12 @@ public class FormTriggerControllerV1 {
         return userService
                 .fromJWT(jwt)
                 .orElse(null);
+    }
+
+    private record StartedProcess(
+            @Nonnull ProcessInstanceEntity instance,
+            @Nonnull String submissionSecret
+    ) {
     }
 
     private record ResolvedFormTriggerContext(

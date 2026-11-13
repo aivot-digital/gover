@@ -95,6 +95,7 @@ function createTaskView(data: AuthoredElementValues): TaskView {
         layout,
         data,
         events: [],
+        removableAttachmentKeys: [],
     };
 }
 
@@ -150,6 +151,25 @@ describe('ProcessTaskViewPageEdit autosave', () => {
 
         expect(screen.getByRole('alert')).toHaveTextContent('Eine Bearbeitung ist nicht mehr möglich.');
         expect(getTaskView).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ProcessTaskStatus.AwaitingCustomer,
+        ProcessTaskStatus.AwaitingPayment,
+        ProcessTaskStatus.Paused,
+        ProcessTaskStatus.Completed,
+    ])('does not load an editable view for a task with status %s', async (status) => {
+        testState.item.task.status = status;
+        const getTaskView = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getStaffTaskView');
+        const router = createMemoryRouter([{path: '/', element: <ProcessTaskViewPageEdit/>}]);
+        render(<RouterProvider router={router}/>);
+
+        expect(screen.getByRole('alert')).toHaveTextContent(
+            'Diese Aufgabe kann in ihrem aktuellen Status nicht bearbeitet werden.',
+        );
+        expect(screen.queryByRole('button', {name: 'Werte ändern'})).not.toBeInTheDocument();
+        expect(getTaskView).not.toHaveBeenCalled();
+        expect(testState.dispatch).not.toHaveBeenCalled();
     });
 
     it('stops autosave and refreshes the task when its deadline expires', async () => {
@@ -226,7 +246,7 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         });
 
         expect(putTaskView).toHaveBeenCalledOnce();
-        expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues);
+        expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues, []);
         expect(screen.getByText('Eingaben wurden zwischengespeichert')).toBeInTheDocument();
         expect(testState.refresh).toHaveBeenCalledOnce();
     });
@@ -323,7 +343,7 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         });
 
         expect(putTaskView).toHaveBeenCalledOnce();
-        expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues);
+        expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues, []);
         expect(screen.getByText('Zielseite')).toBeInTheDocument();
         expect(screen.queryByText('Ungespeicherte Eingaben')).not.toBeInTheDocument();
     });
@@ -385,7 +405,7 @@ describe('ProcessTaskViewPageEdit attachment preview', () => {
             expect(previewWindow.location.replace).not.toHaveBeenCalled();
             expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
                 payload: expect.objectContaining({
-                    message: 'Dieser Dateityp kann nicht in der Vorschau angezeigt werden. Der Anhang wird stattdessen heruntergeladen.',
+                    message: 'Dieser Dateityp kann nicht in der Vorschau angezeigt werden. Die Anlage wird stattdessen heruntergeladen.',
                     severity: SnackbarSeverity.Warning,
                 }),
             }));

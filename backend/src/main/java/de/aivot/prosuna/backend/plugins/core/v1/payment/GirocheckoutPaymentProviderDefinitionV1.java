@@ -38,6 +38,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -79,13 +80,13 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
     @Nonnull
     @Override
     public String getName() {
-        return "GiroCheckout Zahlungsanbieter";
+        return "GiroCheckout-Zahlungsanbieter";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Zahlungsanbieter GiroCheckout für Zahlungen über GiroPay, Sofortüberweisung, PayPal und Kreditkarte.";
+        return "Bindet GiroCheckout zur Abwicklung der für Ihre Anbindung freigeschalteten Zahlungsarten an.";
     }
 
     @Nonnull
@@ -94,7 +95,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         return """
                 Integriert den Zahlungsdienstleister GiroCheckout in die Zahlungsabwicklung von Prosuna.
 
-                Die Komponente erstellt Zahlungsanfragen für die von GiroCheckout unterstützten Zahlarten GiroPay, Sofortüberweisung, PayPal und Kreditkarte. Rückmeldungen des Dienstleisters werden in den Prosuna-Zahlungsstatus übernommen und können im weiteren Prozess verarbeitet werden.
+                Die Komponente erstellt Zahlungsanforderungen für die in Ihrer Anbindung freigeschalteten Zahlungsarten. Rückmeldungen des Dienstleisters werden in den Prosuna-Zahlungsstatus übernommen und können im weiteren Prozess verarbeitet werden.
                 """;
     }
 
@@ -183,7 +184,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
         auditService.create()
                 .withSystem()
-                .setMessage("Eine Zahlungsanfrage wurde an GiroCheckout übermittelt.")
+                .setMessage("Eine Zahlungsanforderung wurde an GiroCheckout übermittelt.")
                 .setMetadata(Map.of(
                         "paymentProviderKey", String.valueOf(paymentProviderEntity.getKey()),
                         "paymentProviderName", paymentProviderEntity.getName(),
@@ -221,7 +222,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
             transaction = objectMapper
                     .readValue(response.body(), GiroPaymentStartResponse.class);
         } catch (JacksonException e) {
-            throw new PaymentSerializationException(e, "Failed to deserialize response body", response.body(), paymentProviderEntity);
+            throw new PaymentSerializationException(e, "Die Antwort des Zahlungsanbieters konnte nicht verarbeitet werden.", response.body(), paymentProviderEntity);
         }
 
         if (transaction.getRc() != 0) {
@@ -268,7 +269,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new PaymentException(
                     e,
-                    "Failed to generate hash for callback response for provider %s (%s)",
+                    "Der Prüfwert für die Callback-Antwort des Zahlungsanbieters %s (%s) konnte nicht erzeugt werden.",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey()
             );
@@ -282,6 +283,16 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
             );
         }
 
+        // The hash only proves that GiroCheckout signed the result, not for which transaction. GiroCheckout appends the
+        // signed result to the redirect URL of the payer, so the result of one transaction must not settle another.
+        if (!isResultOfTransaction(callbackResponse, paymentTransaction)) {
+            throw new PaymentException(
+                    "Die Callback-Antwort des Zahlungsanbieters %s (%s) gehört nicht zu dieser Zahlungstransaktion.",
+                    paymentProviderEntity.getName(),
+                    paymentProviderEntity.getKey()
+            );
+        }
+
         var updatedPaymentInformation = callbackResponse.toXBezahldienstePaymentInformation(paymentTransaction.getPaymentInformation());
 
         paymentTransaction.setPaymentInformation(updatedPaymentInformation);
@@ -289,6 +300,24 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         return paymentTransaction;
     }
 
+
+    private static boolean isResultOfTransaction(@Nonnull GiroPayCallbackResponse callbackResponse,
+                                                 @Nonnull XBezahldienstePaymentTransaction paymentTransaction) {
+        var paymentRequest = paymentTransaction.getPaymentRequest();
+        var paymentInformation = paymentTransaction.getPaymentInformation();
+        if (paymentRequest == null
+                || paymentInformation == null
+                || paymentRequest.getGrosAmount() == null
+                || callbackResponse.getGcMerchantTxId() == null
+                || callbackResponse.getGcReference() == null) {
+            return false;
+        }
+
+        return callbackResponse.getGcMerchantTxId().equals(paymentRequest.getRequestId())
+                && callbackResponse.getGcReference().equals(paymentInformation.getTransactionId())
+                && callbackResponse.getGcAmount() == GiroPayPaymentRequest.toCents(paymentRequest.getGrosAmount())
+                && Objects.equals(callbackResponse.getGcCurrency(), paymentRequest.getCurrency());
+    }
 
     @Nonnull
     private String getPasswordSecret(

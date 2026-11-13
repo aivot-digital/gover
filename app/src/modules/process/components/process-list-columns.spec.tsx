@@ -106,7 +106,7 @@ describe('Process list columns', () => {
 
         it.each([
             {deadline: '2026-09-24T12:30:00Z', status: 'Frist überschritten'},
-            {deadline: '2026-09-26T13:30:00Z', status: 'Bald fällig'},
+            {deadline: '2026-09-25T13:30:00Z', status: 'Bald fällig'},
         ])('names the $status state in the tooltip and for screen readers', async ({deadline, status}) => {
             renderCell({...tracked, deadline}, 'deadline');
             const date = screen.getByText(/Uhr/);
@@ -116,7 +116,7 @@ describe('Process list columns', () => {
             expect(screen.getByRole('tooltip')).toHaveTextContent(` · ${status}`);
         });
 
-        it('does not highlight a deadline before half of the period has passed', async () => {
+        it('does not highlight a deadline before 75% of the period has passed', async () => {
             renderCell({...tracked, deadline: '2026-09-30T13:30:00Z'}, 'deadline');
             const date = screen.getByText('30.09.2026 – 15:30 Uhr');
 
@@ -162,7 +162,7 @@ describe('Process list columns', () => {
         it.each([null, '', '   '])('uses the generic status when the identity label is %s', assignedCustomerIdentityLabel => {
             renderCell({...awaitingTask, assignedCustomerIdentityLabel}, 'status');
 
-            expect(screen.getByText('Wartet auf Nutzer:in')).toBeInTheDocument();
+            expect(screen.getByText('Wartet auf Rückmeldung')).toBeInTheDocument();
         });
 
         it('shows a custom status and explains the identity in the system status tooltip', async () => {

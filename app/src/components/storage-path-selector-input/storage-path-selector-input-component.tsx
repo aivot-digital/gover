@@ -1,3 +1,4 @@
+import {createOptionFilter} from '../select-field/option-search';
 import {
     Autocomplete,
     Box,
@@ -313,6 +314,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                                 <Autocomplete
                                     id={providerField.controlId}
                                     options={providers}
+                                    filterOptions={createOptionFilter((option: typeof providers[number]) => [option.name, option.type == null ? undefined : StorageProviderTypeLabels[option.type]])}
                                     loading={isLoadingProviders}
                                     disabled={disabled || busy}
                                     readOnly={readOnly || busy}
@@ -320,7 +322,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                                     isOptionEqualToValue={(option, selectedOption) => option.id === selectedOption.id}
                                     getOptionLabel={(option) => option.name}
                                     getOptionDisabled={(option) => !allowReadOnlyStorageProviders && option.readOnlyStorage === true}
-                                    noOptionsText={allowedTypes.length === 0 ? 'Keine Speicheranbieter-Typen zugelassen' : 'Keine Speicheranbieter verfügbar'}
+                                    noOptionsText={allowedTypes.length === 0 ? 'Keine Speicheranbieter-Typen zugelassen' : providers.length > 0 ? 'Keine passenden Speicheranbieter gefunden' : 'Keine Speicheranbieter verfügbar'}
                                     onChange={handleProviderChange}
                                     sx={{
                                         '& .MuiInputBase-root': formFieldInputRootSx,

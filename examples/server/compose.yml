@@ -12,7 +12,7 @@ services:
   # Prosuna backend API. Infrastructure services remain on private Docker networks;
   # only Caddy can route public requests to this container.
   prosuna_api:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-147
     restart: unless-stopped
     command: serve
     depends_on:
@@ -91,7 +91,7 @@ services:
 
   # Prosuna web application. Caddy serves it at / and /staff after the API is healthy.
   prosuna_app:
-    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-131
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-beta-147
     restart: unless-stopped
     command: web
     depends_on:
@@ -124,7 +124,7 @@ services:
   # Production Keycloak identity provider. Caddy terminates HTTPS, so Keycloak listens
   # internally over HTTP and trusts the forwarded proxy headers.
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.3
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.7.4.0
     restart: unless-stopped
     depends_on:
       - keycloak_database
@@ -154,7 +154,7 @@ services:
   # Waits for Keycloak, then creates the required realms, clients, and managed admin.
   # It exits after successful configuration and restarts only when setup fails.
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.24
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.28
     restart: on-failure
     depends_on:
       - keycloak
@@ -225,21 +225,22 @@ services:
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
       CHROMIUM_DENY_PUBLIC_IPS: "true"
-      # Required: PROSUNA_HOSTNAME_REGEX is the hostname without scheme, with dots escaped
-      # for a regular expression, for example prosuna\\.example\\.org.
-      CHROMIUM_ALLOW_LIST: "^(https://${PROSUNA_HOSTNAME_REGEX}/|file:///tmp/)"
+      # Required: PROSUNA_HOSTNAME_REGEX is the hostname without scheme, with each dot
+      # escaped by a single backslash, for example prosuna\.example\.org. Gotenberg also
+      # checks each HTTPS connection as https://<host>:443, hence the optional port.
+      CHROMIUM_ALLOW_LIST: "^(https://${PROSUNA_HOSTNAME_REGEX}(:443)?(/|$$)|file:///tmp/)"
     networks:
       - prosuna
 
-  # Durable message broker for background jobs. Its data must be included in backups.
+  # Message broker for background jobs. It holds no state that needs to be persisted or
+  # backed up: pending work is stored in the database, and Prosuna publishes it again when
+  # the broker starts empty.
   rabbitmq:
     image: docker.io/library/rabbitmq:4-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: prosuna
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - prosuna
 
@@ -248,13 +249,6 @@ services:
   caddy:
     image: docker.io/library/caddy:2-alpine
     restart: unless-stopped
-    depends_on:
-      prosuna_api:
-        condition: service_healthy
-        restart: true
-      prosuna_app:
-        condition: service_healthy
-        restart: true
     environment:
       PROSUNA_HOSTNAME: ${PROSUNA_HOSTNAME}
     volumes:
@@ -271,12 +265,11 @@ services:
 
 
 # Back up all named volumes regularly. The database and prosuna_data volumes contain
-# critical application data; RabbitMQ and both Caddy volumes preserve operational state.
+# critical application data; both Caddy volumes preserve operational state.
 volumes:
   prosuna_data:
   prosuna_database_data:
   keycloak_database_data:
-  rabbitmq_data:
   caddy_data:
   caddy_config:
 

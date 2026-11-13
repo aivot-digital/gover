@@ -3,11 +3,10 @@ import type {AuthoredElementValues} from '../../../models/element-data';
 import type {ListFilterCounts, SortOrder} from '../../../components/generic-list/generic-list-props';
 import type {QueryParams} from '../../../services/base-api-service';
 import {BaseApiService} from '../../../services/base-api-service';
-import type {ProcessEntity} from '../../process/entities/process-entity';
 import type {ProcessNodeEntity} from '../../process/entities/process-node-entity';
-import type {ProcessVersionEntity} from '../../process/entities/process-version-entity';
 import type {ResolvedThemeDTO} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
+import type {PublicFormListItemDTO} from '../dtos/public-form-response-dto';
 import type {IdentityCommunicationState, IdentitySlot} from '../../identity/models/identity-slot';
 import type {IdentitySelectionApi} from '../../identity/models/identity-selection-api';
 
@@ -25,16 +24,6 @@ export type FormTriggerSortField =
     keyof Pick<ProcessNodeEntity, 'id' | 'name' | 'processId' | 'processVersion' | 'dataKey' | 'savedWithErrors' | 'updated'>;
 
 export type FormTriggerConfiguration = AuthoredElementValues;
-
-export interface FormTriggerNodeEntity extends Omit<ProcessNodeEntity, 'configuration'> {
-    configuration: FormTriggerConfiguration;
-}
-
-export interface FormTriggerListItem {
-    process: ProcessEntity;
-    version: ProcessVersionEntity;
-    node: FormTriggerNodeEntity;
-}
 
 export interface FormTriggerSubmissionStatusResponseV1 {
     startedProcessAccessKey: string;
@@ -262,14 +251,14 @@ export class FormTriggerApiService extends BaseApiService {
         sort?: FormTriggerSortField | FormTriggerSortField[],
         order?: SortOrder,
         filters?: Partial<FormTriggerFilter>,
-    ): Promise<Page<FormTriggerListItem>> {
-        return await this.get<Page<FormTriggerListItem>>('/api/public/forms/', {
+    ): Promise<Page<PublicFormListItemDTO>> {
+        return await this.get<Page<PublicFormListItemDTO>>('/api/public/forms/', {
             query: this.buildListQuery(page, limit, sort, order, filters),
             skipAuthCheck: true,
         });
     }
 
-    public async listPublicAll(filters?: Partial<FormTriggerFilter>): Promise<Page<FormTriggerListItem>> {
+    public async listPublicAll(filters?: Partial<FormTriggerFilter>): Promise<Page<PublicFormListItemDTO>> {
         return await this.listPublic(0, 999, undefined, undefined, filters);
     }
 

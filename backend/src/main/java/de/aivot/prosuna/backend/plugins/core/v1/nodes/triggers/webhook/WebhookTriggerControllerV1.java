@@ -231,7 +231,7 @@ public class WebhookTriggerControllerV1 {
                 .findAll(specBuilder.build());
 
         if (res.isEmpty()) {
-            throw ResponseException.notFound("Kein Webhook-Knoten mit dem angegebenen Slug gefunden.");
+            throw ResponseException.notFound("Kein Webhook-Auslöser mit dem angegebenen URL-Segment gefunden.");
         }
 
         return res;
@@ -322,8 +322,15 @@ public class WebhookTriggerControllerV1 {
                 }
             }
 
+            // The initial payload becomes node data that staff and later nodes can read, so the credentials of the call
+            // are left out. Form data payloads are built from the request parameters, which include the token parameter.
+            var usesTokenParameter = usesTokenParameter(config);
+            var storedPayload = usesTokenParameter && isFormDataWebhook(config)
+                    ? withoutKey(payload, AUTH_TOKEN_QUERY_PARAM)
+                    : payload;
+
             var initialPayload = new HashMap<String, Object>();
-            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD, payload);
+            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_PAYLOAD, storedPayload);
             initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> {
                 var attachmentData = new LinkedHashMap<String, Object>();
                 attachmentData.put("key", a.getKey());
@@ -341,11 +348,14 @@ public class WebhookTriggerControllerV1 {
             requestData.put("headers", Collections
                     .list(request.getHeaderNames())
                     .stream()
+                    .filter(headerName -> !isCredentialHeader(headerName))
                     .collect(Collectors.toMap(
                             headerName -> headerName,
                             headerName -> Collections.list(request.getHeaders(headerName))
                     )));
-            requestData.put("queryParameters", request.getParameterMap());
+            requestData.put("queryParameters", usesTokenParameter
+                    ? withoutKey(request.getParameterMap(), AUTH_TOKEN_QUERY_PARAM)
+                    : request.getParameterMap());
             initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_REQUEST, requestData);
 
             initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_STARTED, startedAt);
@@ -354,13 +364,42 @@ public class WebhookTriggerControllerV1 {
                     .setInitialPayload(initialPayload)
                     .setStatus(ProcessInstanceStatus.Created);
 
-            processInstanceService.update(createdInstance.getId(), createdInstance);
+            // Save the whole instance: update() copies only selected fields and would drop the initial payload. The
+            // failure path below keeps update(), so a payload the database rejects cannot block marking it as failed.
+            processInstanceService.save(createdInstance);
         } catch (Exception e) {
             // TODO: Log the exception
             createdInstance.setStatus(ProcessInstanceStatus.Failed);
             processInstanceService.update(createdInstance.getId(), createdInstance);
             throw e;
         }
+    }
+
+    private static boolean isCredentialHeader(@Nonnull String headerName) {
+        return HttpHeaders.AUTHORIZATION.equalsIgnoreCase(headerName)
+                || HttpHeaders.PROXY_AUTHORIZATION.equalsIgnoreCase(headerName)
+                || HttpHeaders.COOKIE.equalsIgnoreCase(headerName);
+    }
+
+    /**
+     * Matches the webhooks whose token parameter {@link #checkAuthentication} compares with the configured token.
+     */
+    private static boolean usesTokenParameter(@Nonnull WebhookTriggerConfigV1 config) {
+        return !Boolean.FALSE.equals(config.authRequired)
+                && config.authConfig != null
+                && WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM.equals(config.authConfig.authMethod);
+    }
+
+    private static boolean isFormDataWebhook(@Nonnull WebhookTriggerConfigV1 config) {
+        return config.requestBodyConfig != null
+                && WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM.equals(config.requestBodyConfig.requestBodyType);
+    }
+
+    @Nonnull
+    private static <V> Map<String, V> withoutKey(@Nonnull Map<String, V> values, @Nonnull String key) {
+        var copy = new LinkedHashMap<>(values);
+        copy.remove(key);
+        return copy;
     }
 
     @Nonnull
@@ -499,7 +538,7 @@ public class WebhookTriggerControllerV1 {
     private WebhookTriggerConfigV1 getWebhookConfig(@Nonnull ProcessNodeEntity nodeEntity) throws ResponseException {
         var provider = processNodeDefinitionService
                 .getProcessNodeDefinition(nodeEntity)
-                .orElseThrow(() -> ResponseException.internalServerError("Die Definition des Webhook-Trigger-Knotens konnte nicht gefunden werden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Die Definition des Webhook-Auslösers konnte nicht gefunden werden."));
 
         var derivedConfiguration = processNodeService
                 .deriveConfiguration(nodeEntity, provider, null, true);
@@ -514,46 +553,58 @@ public class WebhookTriggerControllerV1 {
             return;
         }
 
-        if (config.authConfig == null) {
-            return;
-        }
-
-        if (config.authConfig.authMethod == null) {
+        // Publishing validates the authentication settings, but drafts run through a test claim are not validated.
+        // Incomplete settings must therefore reject calls instead of skipping the check or matching empty credentials.
+        if (config.authConfig == null || StringUtils.isNullOrEmpty(config.authConfig.authMethod)) {
+            if (Boolean.TRUE.equals(config.authRequired)) {
+                throw incompleteAuthenticationException();
+            }
             return;
         }
 
         switch (config.authConfig.authMethod) {
             case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC:
+                if (StringUtils.isNullOrEmpty(config.authConfig.authUsername) || StringUtils.isNullOrEmpty(config.authConfig.authPassword)) {
+                    throw incompleteAuthenticationException();
+                }
                 if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                    throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Auslöser.");
                 }
                 var base64Credentials = authHeader.substring("Basic ".length());
                 var credentials = StringUtils.decodeBase64String(base64Credentials).split(":", 2);
                 if (credentials.length != 2 ||
                         !credentials[0].equals(config.authConfig.authUsername) ||
                         !credentials[1].equals(config.authConfig.authPassword)) {
-                    throw ResponseException.unauthorized("Ungültiger Benutzername oder Passwort für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Der Benutzername oder das Passwort ist ungültig für den Webhook-Auslöser.");
                 }
                 break;
             /* Bearer is removed, because it clashed with the default spring boot jwt bearer token handling
             case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER:
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                    throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Auslöser.");
                 }
                 var token = authHeader.substring("Bearer ".length());
                 if (!token.equals(config.authConfig.authToken)) {
-                    throw ResponseException.unauthorized("Ungültiger Token für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Ungültiges Token für den Webhook-Auslöser.");
                 }
                 break;
              */
             case WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM:
+                if (StringUtils.isNullOrEmpty(config.authConfig.authToken)) {
+                    throw incompleteAuthenticationException();
+                }
                 if (tokenQueryParam == null || !tokenQueryParam.equals(config.authConfig.authToken)) {
-                    throw ResponseException.unauthorized("Ungültiger Token für den Webhook-Trigger-Knoten.");
+                    throw ResponseException.unauthorized("Ungültiges Token für den Webhook-Auslöser.");
                 }
                 break;
             default:
-                throw ResponseException.internalServerError("Die Authentifizierungsmethode des Webhook-Trigger-Knotens ist ungültig.");
+                throw ResponseException.internalServerError("Die Authentifizierungsmethode des Webhook-Auslösers ist ungültig.");
         }
+    }
+
+    @Nonnull
+    private static ResponseException incompleteAuthenticationException() {
+        return ResponseException.internalServerError("Die Authentifizierung des Webhook-Auslösers ist nicht vollständig eingerichtet.");
     }
 
     public record Response(String message) {
@@ -563,6 +614,6 @@ public class WebhookTriggerControllerV1 {
     private ProcessEntity getProcess(String processSlug) throws ResponseException {
         return processService
                 .retrieveBySlugOrHistory(processSlug)
-                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen Slug gefunden."));
+                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen URL-Namespace gefunden."));
     }
 }

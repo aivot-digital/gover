@@ -38,6 +38,7 @@ export function Hint(props: HintProps) {
                     {
                         props.label == null &&
                         <IconButton
+                            aria-label={props.ariaLabel ?? props.detailsTitle}
                             size="small"
                             sx={{
                                 color: props.isError ? 'error.main' : '#a6a6a6',

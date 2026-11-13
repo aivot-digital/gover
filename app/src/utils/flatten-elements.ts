@@ -21,6 +21,30 @@ export function flattenElements(elem: AnyElement, skipReplicatingChildren?: bool
     return res;
 }
 
+/**
+ * Finds the replicating container whose rows contain the element. Returns null for an element outside of any rows and
+ * undefined if the tree does not contain the element.
+ */
+export function findReplicatingContainerId(elem: AnyElement, elementId: string, containerId: string | null = null): string | null | undefined {
+    if (elem.id === elementId) {
+        return containerId;
+    }
+
+    if (!isAnyElementWithChildren(elem)) {
+        return undefined;
+    }
+
+    const childContainerId = elem.type === ElementType.ReplicatingContainer ? elem.id : containerId;
+    for (const child of elem.children ?? []) {
+        const foundContainerId = findReplicatingContainerId(child, elementId, childContainerId);
+        if (foundContainerId !== undefined) {
+            return foundContainerId;
+        }
+    }
+
+    return undefined;
+}
+
 export interface ElementWithParents {
     element: AnyElement;
     parents: AnyElement[];

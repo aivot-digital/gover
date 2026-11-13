@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutEleme
 import de.aivot.prosuna.backend.identity.controllers.IdentityController;
 import de.aivot.prosuna.backend.identity.services.IdentityService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -86,7 +87,7 @@ public class ProcessNodeController {
                 : requestedDataKey;
 
         for (var copyIndex = 2; copyIndex < 10_000; copyIndex++) {
-            var suffix = "-%d".formatted(copyIndex);
+            var suffix = "_%d".formatted(copyIndex);
             var truncatedBase = normalizedBase.length() > 32 - suffix.length()
                     ? normalizedBase.substring(0, 32 - suffix.length())
                     : normalizedBase;
@@ -202,7 +203,7 @@ public class ProcessNodeController {
                         result.getId(),
                         "id"
                 ).withMessage(
-                        "Der Prozessknoten mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        "Das Prozesselement mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(String.valueOf(result.getId())),
                         StringUtils.quote(execUser.getFullName())
                 ).log();
@@ -286,6 +287,9 @@ public class ProcessNodeController {
                 .convertValue(existing, Map.class);
 
         if (onlyConfigSave != null) {
+            // The request is replaced by the loaded node below, so its lock version is checked here.
+            LockVersioned.requireCurrent(updateDTO, existing);
+
             var conf = new AuthoredElementValues();
             conf.putAll(existing.getConfiguration());
             for (String key : onlyConfigSave) {
@@ -324,7 +328,7 @@ public class ProcessNodeController {
                         "id"
                 )
                 .withDiff(existingMap, updatedMap).withMessage(
-                        "Der Prozessknoten mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        "Das Prozesselement mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
                         StringUtils.quote(String.valueOf(result.getId())),
                         StringUtils.quote(execUser.getFullName())
                 ).log();
@@ -366,7 +370,7 @@ public class ProcessNodeController {
                         deleted.getId(),
                         "id"
                 ).withMessage(
-                        "Der Prozessknoten mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        "Das Prozesselement mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
                         StringUtils.quote(String.valueOf(deleted.getId())),
                         StringUtils.quote(user.getFullName())
                 ).log();

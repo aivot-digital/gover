@@ -1,21 +1,25 @@
 package de.aivot.prosuna.backend.codeLists.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListSourceType;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListStatus;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.OptimisticLock;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "code_lists")
-public class CodeListEntity {
+public class CodeListEntity implements LockVersioned {
     @Id
     @Nonnull
     @Column(length = 255)
@@ -41,16 +45,41 @@ public class CodeListEntity {
     private Integer valueColumnIndex;
     @Nonnull
     private Integer labelColumnIndex;
+    // Sync bookkeeping and the update timestamp do not raise the lock version, so a finished sync
+    // does not make open edit forms outdated. Content changes by a sync still do.
+    @OptimisticLock(excluded = true)
     @Nonnull
     private CodeListStatus status;
+    @OptimisticLock(excluded = true)
     @Nullable
     private String statusMessage;
+    // The option of the requested synchronization, so a request that is published again keeps it.
+    @OptimisticLock(excluded = true)
+    @Nonnull
+    @JsonIgnore
+    private Boolean syncKeepOutdated;
+    // The run that claimed the requested synchronization and when it started. Only this run records its result.
+    @OptimisticLock(excluded = true)
+    @Nullable
+    @JsonIgnore
+    private UUID syncRunId;
+    @OptimisticLock(excluded = true)
+    @Nullable
+    @JsonIgnore
+    private Instant syncStarted;
+    @OptimisticLock(excluded = true)
     @Nullable
     private Instant lastSync;
     @Nonnull
     private Instant created;
+    @OptimisticLock(excluded = true)
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     @PrePersist
     public void prePersist() {
@@ -75,6 +104,9 @@ public class CodeListEntity {
         if (status == null) {
             status = CodeListStatus.SyncPending;
         }
+        if (syncKeepOutdated == null) {
+            syncKeepOutdated = false;
+        }
         var now = Instant.now();
         created = now;
         updated = now;
@@ -92,13 +124,14 @@ public class CodeListEntity {
         return Objects.equals(key, that.key) && Objects.equals(id, that.id) && sourceType == that.sourceType && Objects.equals(sourceRef, that.sourceRef) &&
                 Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(columns, that.columns) &&
                 Objects.equals(valueColumnIndex, that.valueColumnIndex) && Objects.equals(labelColumnIndex, that.labelColumnIndex) && status == that.status &&
-                Objects.equals(statusMessage, that.statusMessage) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) &&
+                Objects.equals(statusMessage, that.statusMessage) && Objects.equals(syncKeepOutdated, that.syncKeepOutdated) && Objects.equals(syncRunId, that.syncRunId) &&
+                Objects.equals(syncStarted, that.syncStarted) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) &&
                 Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, id, sourceType, sourceRef, name, description, columns, valueColumnIndex, labelColumnIndex, status, statusMessage, lastSync, created, updated);
+        return Objects.hash(key, id, sourceType, sourceRef, name, description, columns, valueColumnIndex, labelColumnIndex, status, statusMessage, syncKeepOutdated, syncRunId, syncStarted, lastSync, created, updated);
     }
 
     @Nonnull
@@ -211,6 +244,36 @@ public class CodeListEntity {
         return this;
     }
 
+    @Nonnull
+    public Boolean getSyncKeepOutdated() {
+        return syncKeepOutdated;
+    }
+
+    public CodeListEntity setSyncKeepOutdated(@Nonnull Boolean syncKeepOutdated) {
+        this.syncKeepOutdated = syncKeepOutdated;
+        return this;
+    }
+
+    @Nullable
+    public UUID getSyncRunId() {
+        return syncRunId;
+    }
+
+    public CodeListEntity setSyncRunId(@Nullable UUID syncRunId) {
+        this.syncRunId = syncRunId;
+        return this;
+    }
+
+    @Nullable
+    public Instant getSyncStarted() {
+        return syncStarted;
+    }
+
+    public CodeListEntity setSyncStarted(@Nullable Instant syncStarted) {
+        this.syncStarted = syncStarted;
+        return this;
+    }
+
     @Nullable
     public Instant getLastSync() {
         return lastSync;
@@ -238,6 +301,17 @@ public class CodeListEntity {
 
     public CodeListEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public CodeListEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 }

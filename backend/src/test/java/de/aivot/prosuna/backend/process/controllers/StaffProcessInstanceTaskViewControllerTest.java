@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationOptions;
 import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -18,6 +19,9 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
@@ -72,6 +76,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
@@ -309,6 +314,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertEquals("", elementDerivationService.lastRequest.authoredElementValues().getLiteral("requiredField"));
         assertFalse(provider.eventInvoked);
         assertFalse(fixture.task().getRuntimeData().containsKey(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
+        assertNull(fixture.fileUploadMultipartInputService().receivedElementStates);
     }
 
     @Test
@@ -332,7 +338,9 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         assertEquals("", response.data().getLiteral("requiredField"));
         assertFalse(provider.eventInvoked);
-        assertNull(elementDerivationService.lastRequest);
+        // The derivation only decides which upload fields store their files; its errors do not block the draft.
+        assertEquals("", elementDerivationService.lastRequest.authoredElementValues().getLiteral("requiredField"));
+        assertSame(elementDerivationService.result.getElementStates(), fixture.fileUploadMultipartInputService().receivedElementStates);
         var savedDraft = assertInstanceOf(AuthoredElementValues.class,
                 fixture.task().getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
         assertEquals("", savedDraft.getLiteral("requiredField"));
@@ -360,7 +368,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
-        assertEquals("Invalid event: unknown", ex.getMessage());
+        assertEquals("Ungültige Aktion: unknown", ex.getMessage());
         assertFalse(provider.eventInvoked);
         assertNull(elementDerivationService.lastRequest);
         assertFalse(fixture.task().getRuntimeData().containsKey(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
@@ -388,6 +396,41 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertEquals("inline-complete", fixture.task().getRuntimeData().get("event"));
         assertEquals("staff-root", assertInstanceOf(BaseElement.class, response.layout()).getId());
         assertEquals("staff-root", elementDerivationService.lastRequest.element().getId());
+    }
+
+    @Test
+    void retrieveAndUpdateResponsesNameTheStoredUploadsOfTheTaskThatItsUploadFieldsMayRemove() throws ResponseException {
+        var fixture = createFixture(new InlineStaffTaskProcessNodeDefinition(null), new TestElementDerivationService());
+        var upload = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        fixture.fileUploadMultipartInputService().removableAttachmentKeys = List.of(upload);
+
+        var retrieved = fixture.controller().retrieve(fixture.jwt(), fixture.instance().getId(), fixture.task().getId());
+        var updated = fixture.controller().update(fixture.jwt(), fixture.instance().getId(), fixture.task().getId(),
+                "{}", null, null, null, null);
+
+        assertEquals(List.of(upload), retrieved.removableAttachmentKeys());
+        assertEquals(List.of(upload), updated.removableAttachmentKeys());
+        assertEquals(fixture.task().getId(), fixture.fileUploadMultipartInputService().removableAttachmentsTaskId);
+    }
+
+    @Test
+    void retrieveAndEventResponsesResolveProcessDataReferencesToTheInputsWritingThem() throws ResponseException {
+        var fixture = createFixture(new InlineStaffTaskProcessNodeDefinition(null), new TestElementDerivationService());
+
+        var retrieved = fixture.controller().retrieve(fixture.jwt(), fixture.instance().getId(), fixture.task().getId());
+        var updated = fixture.controller().update(
+                fixture.jwt(),
+                fixture.instance().getId(),
+                fixture.task().getId(),
+                "{}",
+                null,
+                null,
+                "inline-complete",
+                null
+        );
+
+        assertEquals(List.of("brand"), visibilityReferencesOf(retrieved, "audiOnly"));
+        assertEquals(List.of("brand"), visibilityReferencesOf(updated, "audiOnly"));
     }
 
     @Test
@@ -459,6 +502,12 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
         assertFalse(loggedInsideTransaction.get());
         verify(logger).logException(failure);
+    }
+
+    private static List<String> visibilityReferencesOf(StaffProcessInstanceTaskViewController.TaskViewResponse response,
+                                                       String elementId) {
+        var element = response.layout().findChild(elementId).orElseThrow();
+        return List.copyOf(element.getVisibility().getReferencedIds());
     }
 
     private static StaffTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
@@ -576,6 +625,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(Map.of());
 
+        var fileUploadMultipartInputService = new PassthroughTaskViewMultipartInputService();
         var controller = new StaffProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -585,19 +635,20 @@ class StaffProcessInstanceTaskViewControllerTest {
                 new TestUserService(user),
                 loggerFactory,
                 elementDerivationService,
-                new PassthroughTaskViewMultipartInputService(),
+                fileUploadMultipartInputService,
                 new TestProcessDataService(),
                 execution
         );
 
-        return new StaffTaskControllerFixture(jwt, instance, task, controller);
+        return new StaffTaskControllerFixture(jwt, instance, task, controller, fileUploadMultipartInputService);
     }
 
     private record StaffTaskControllerFixture(
             Jwt jwt,
             ProcessInstanceEntity instance,
             ProcessInstanceTaskEntity task,
-            StaffProcessInstanceTaskViewController controller
+            StaffProcessInstanceTaskViewController controller,
+            PassthroughTaskViewMultipartInputService fileUploadMultipartInputService
     ) {
     }
 
@@ -666,7 +717,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -757,7 +808,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private DerivedRuntimeElementData result = new DerivedRuntimeElementData(new EffectiveElementValues(), new ComputedElementStates());
 
         private TestElementDerivationService() {
-            super(null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null);
         }
 
         @Override
@@ -775,6 +826,10 @@ class StaffProcessInstanceTaskViewControllerTest {
     }
 
     private static final class PassthroughTaskViewMultipartInputService extends FileUploadMultipartInputService {
+        private ComputedElementStates receivedElementStates;
+        private List<UUID> removableAttachmentKeys = List.of();
+        private Long removableAttachmentsTaskId;
+
         private PassthroughTaskViewMultipartInputService() {
             super(null, null, null);
         }
@@ -782,12 +837,22 @@ class StaffProcessInstanceTaskViewControllerTest {
         @Override
         public NormalizationResult normalizeInputs(BaseElement layout,
                                                    AuthoredElementValues inputs,
+                                                   ComputedElementStates elementStates,
                                                    MultipartFile[] files,
                                                    List<String> fileUris,
                                                    Long processInstanceId,
                                                    Long processInstanceTaskId,
                                                    String uploadedByUserId) {
+            receivedElementStates = elementStates;
             return new NormalizationResult(inputs, List.of());
+        }
+
+        @Override
+        public List<UUID> findRemovableAttachmentKeys(BaseElement layout,
+                                                      Long processInstanceId,
+                                                      Long processInstanceTaskId) {
+            removableAttachmentsTaskId = processInstanceTaskId;
+            return removableAttachmentKeys;
         }
     }
 
@@ -978,9 +1043,21 @@ class StaffProcessInstanceTaskViewControllerTest {
                     .setStaffTaskEvent("inline-complete");
             linkButton.setId("inline-button");
 
+            var brandField = new TextInputElement();
+            brandField.setId("brand");
+            brandField.setDestinationKey("vehicle.brand");
+
+            var audiField = new TextInputElement();
+            audiField.setId("audiOnly");
+            audiField.setVisibility(ElementVisibilityFunctions.of(NoCodeExpression.of(
+                    "equals",
+                    new NoCodeProcessDataReference("vehicle.brand"),
+                    NoCodeStaticValue.of("Audi")
+            )));
+
             var layout = new GroupLayoutElement();
             layout.setId("staff-root");
-            layout.setChildren(List.of(linkButton));
+            layout.setChildren(List.of(linkButton, brandField, audiField));
             return ProcessNodeStaffView.of(context, layout, List.of(), new AuthoredElementValues());
         }
 

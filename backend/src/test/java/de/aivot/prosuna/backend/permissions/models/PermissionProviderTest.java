@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.permissions.models;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.prosuna.backend.permissions.permissions.PermissionSetPermissionProvider;
+import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.teams.permissions.TeamPermissionProvider;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
@@ -36,6 +37,19 @@ class PermissionProviderTest {
                 .anyMatch(node -> TeamPermissionProvider.TEAM_CREATE.equals(node.asText())));
         assertNotNull(json.get("domainRoleAssignmentHint"));
         assertTrue(json.has("systemRoleAssignmentHint"));
+    }
+
+    @Test
+    void shouldAllowDomainRoleAssignmentOfFailedProcessInstanceRestarts() {
+        var json = objectMapper.valueToTree(new ProcessInstancePermissionProvider());
+
+        assertTrue(json.get("supportsDomainRoleAssignment").asBoolean());
+        assertTrue(StreamSupport
+                .stream(json.get("permissions").spliterator(), false)
+                .anyMatch(node -> ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED.equals(node.get("permission").asText())));
+        assertTrue(StreamSupport
+                .stream(json.get("excludedFromDomainRoleAssignment").spliterator(), false)
+                .noneMatch(node -> ProcessInstancePermissionProvider.PROCESS_INSTANCE_RESTART_FAILED.equals(node.asText())));
     }
 
     @Test

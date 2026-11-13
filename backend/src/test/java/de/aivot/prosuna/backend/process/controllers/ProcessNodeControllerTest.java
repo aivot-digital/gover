@@ -39,6 +39,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.util.Map;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -78,6 +79,7 @@ class ProcessNodeControllerTest {
                 .setDeadlines(Map.of("processing", new ProcessNodeDeadlineConfiguration(3, strict)));
         var nodes = mock(ProcessNodeService.class);
         when(nodes.retrieve(7)).thenReturn(Optional.of(source));
+        when(nodes.getAllUsedDataKeys(20, 1)).thenReturn(Set.of("source", "source_2"));
         when(nodes.create(any())).thenAnswer(invocation -> ((ProcessNodeEntity) invocation.getArgument(0)).setId(8));
         when(nodes.resolvePorts(any())).thenReturn(new ProcessNodePortResolution(List.of(), List.of()));
         var definitions = mock(ProcessNodeDefinitionService.class);
@@ -103,6 +105,7 @@ class ProcessNodeControllerTest {
 
         assertEquals(strict, result.deadlines().get("processing").strict());
         assertEquals(3, result.deadlines().get("processing").days());
+        assertEquals("source_3", result.dataKey());
         assertEquals(20, result.processId());
         assertEquals(1, result.processVersion());
     }
@@ -124,7 +127,7 @@ class ProcessNodeControllerTest {
                 .setId(99)
                 .setProcessId(42)
                 .setProcessVersion(9)
-                .setDataKey("updated-key");
+                .setDataKey("updated_key");
 
         var result = controller.update(jwt, 7, submittedNode, null, null);
 
@@ -137,12 +140,27 @@ class ProcessNodeControllerTest {
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
         verify(processNodeRepository).existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(
-                "updated-key",
+                "updated_key",
                 7,
                 12,
                 5
         );
         verify(processNodeService).update(7, submittedNode);
+    }
+
+    @Test
+    void partialConfigSaveRejectsOutdatedLockVersion() throws ResponseException {
+        mockAuthenticatedUser();
+        when(processNodeService.retrieve(7)).thenReturn(Optional.of(createNode().setLockVersion(3L)));
+        var submittedNode = createNode()
+                .setConfiguration(new AuthoredElementValues())
+                .setLockVersion(2L);
+
+        var exception = assertThrows(ResponseException.class,
+                () -> createController().update(jwt, 7, submittedNode, List.of("title"), null));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        verify(processNodeService, never()).update(any(), any(ProcessNodeEntity.class));
     }
 
     @Test
@@ -273,7 +291,7 @@ class ProcessNodeControllerTest {
                 .setId(7)
                 .setProcessId(12)
                 .setProcessVersion(5)
-                .setDataKey("existing-key");
+                .setDataKey("existing_key");
     }
 
     private static ProcessNodeUiDefinitionDerivationRequest createRequest(GroupLayoutElement uiDefinition) {

@@ -1,9 +1,15 @@
 package de.aivot.prosuna.backend.process.models;
 
+import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
+import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -12,15 +18,19 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.StepperLayoutEle
 import de.aivot.prosuna.backend.elements.models.elements.layout.TabLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.CodeListValueMode;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,6 +54,28 @@ class ProcessNodeDefinitionMetadataTest {
         var keys = ProcessNodeDefinitionMetadata.empty().withLayout(root, origin())
                 .forwardedProcessDataKeys().stream().map(ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey).toList();
         assertTrue(keys.contains("people[*].addresses[*].value"));
+    }
+
+    @Test
+    void withLayout_ShouldMarkValuesOfMarkdownInputs() {
+        var name = textInput("name");
+        name.setDestinationKey("name");
+        var message = new RichTextInputElement();
+        message.setId("message");
+        message.setDestinationKey("message");
+        var root = new GroupLayoutElement();
+        root.setId("root");
+        root.setChildren(List.of(name, message));
+
+        var markdownByKey = ProcessNodeDefinitionMetadata.empty().withLayout(root, origin())
+                .forwardedProcessDataKeys()
+                .stream()
+                .collect(Collectors.toMap(
+                        ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::processDataKey,
+                        ProcessNodeDefinitionMetadata.ForwardedProcessDataKey::markdown
+                ));
+
+        assertEquals(Map.of("name", false, "message", true), markdownByKey);
     }
 
     private static final Pattern ELEMENT_ID_PATTERN = Pattern.compile("^[a-z][a-zA-Z0-9_]*$");
@@ -313,6 +345,99 @@ class ProcessNodeDefinitionMetadataTest {
                 .writeValueAsString(metadata);
 
         assertTrue(json.contains("\"isMultifile\":true"));
+    }
+
+    @Test
+    void withLayout_ShouldForwardCodeListKeyInsteadOfValueOptions() {
+        var radio = new SelectInputElement().setPresentation(SelectInputPresentation.Radio);
+        radio.setId("rd_status");
+        radio.setDestinationKey("status");
+        radio.setOptionsSource(OptionsSourceType.CodeList);
+        radio.setCodeListKey(" marital_status ");
+        radio.setOptions(List.of(SelectInputElementOption.of("stale", "Veraltet")));
+
+        var chipInput = new ChipInputElement();
+        chipInput.setId("ch_languages");
+        chipInput.setDestinationKey("languages");
+        chipInput.setOptionsSource(OptionsSourceType.CodeList);
+        chipInput.setCodeListKey("languages");
+
+        var forwardedKeys = ProcessNodeDefinitionMetadata
+                .empty()
+                .withLayout(group("gp_code_lists", radio, chipInput), origin())
+                .forwardedProcessDataKeys();
+
+        var radioKey = forwardedKeys.get(0);
+        assertEquals("marital_status", radioKey.codeListKey());
+        assertEquals(CodeListValueMode.ValueAndLabel, radioKey.codeListValueMode());
+        assertNull(radioKey.valueOptions());
+
+        var chipInputKey = forwardedKeys.get(1);
+        assertEquals("languages", chipInputKey.codeListKey());
+        assertEquals(CodeListValueMode.LabelOnly, chipInputKey.codeListValueMode());
+        assertNull(chipInputKey.valueOptions());
+    }
+
+    @Test
+    void withLayout_ShouldForwardManualValueOptionsWithoutCodeListKey() {
+        var select = new SelectInputElement();
+        select.setId("sl_status");
+        select.setDestinationKey("status");
+        select.setOptionsSource(OptionsSourceType.Manual);
+        select.setCodeListKey("unused");
+        select.setOptions(List.of(SelectInputElementOption.of("1", "Ledig")));
+
+        var forwardedKey = ProcessNodeDefinitionMetadata
+                .empty()
+                .withLayout(group("gp_manual", select), origin())
+                .forwardedProcessDataKeys()
+                .getFirst();
+
+        assertEquals(
+                List.of(new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")),
+                forwardedKey.valueOptions()
+        );
+        assertNull(forwardedKey.codeListKey());
+        assertNull(forwardedKey.codeListValueMode());
+    }
+
+    @Test
+    void withLayout_ShouldNotForwardBlankCodeListKey() {
+        var select = new SelectInputElement();
+        select.setId("sl_unconfigured");
+        select.setDestinationKey("unconfigured");
+        select.setOptionsSource(OptionsSourceType.CodeList);
+        select.setCodeListKey("  ");
+
+        var forwardedKey = ProcessNodeDefinitionMetadata
+                .empty()
+                .withLayout(group("gp_unconfigured", select), origin())
+                .forwardedProcessDataKeys()
+                .getFirst();
+
+        assertNull(forwardedKey.codeListKey());
+        assertNull(forwardedKey.codeListValueMode());
+        assertNull(forwardedKey.valueOptions());
+    }
+
+    @Test
+    void forwardedProcessDataKey_ShouldSerializeCodeListValueModeByName() throws Exception {
+        var chipInput = new ChipInputElement();
+        chipInput.setId("ch_languages");
+        chipInput.setDestinationKey("languages");
+        chipInput.setOptionsSource(OptionsSourceType.CodeList);
+        chipInput.setCodeListKey("languages");
+
+        var metadata = ProcessNodeDefinitionMetadata
+                .empty()
+                .withLayout(group("gp_languages", chipInput), origin());
+
+        var json = JsonMapperFactory
+                .getInstance()
+                .writeValueAsString(metadata.forwardedProcessDataKeys().getFirst());
+
+        assertTrue(json.contains("\"codeListKey\":\"languages\""));
+        assertTrue(json.contains("\"codeListValueMode\":\"LabelOnly\""));
     }
 
     private static void assertSectionHeadline(GroupLayoutElement sectionGroup, String expectedTitle) {

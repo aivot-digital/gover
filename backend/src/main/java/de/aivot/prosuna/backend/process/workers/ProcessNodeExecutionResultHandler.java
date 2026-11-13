@@ -22,9 +22,11 @@ import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
@@ -34,7 +36,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,7 +46,7 @@ import java.util.*;
 public class ProcessNodeExecutionResultHandler {
     private static final Logger logger = LoggerFactory.getLogger(ProcessNodeExecutionResultHandler.class);
 
-    private final RabbitTemplate rabbitTemplate;
+    private final ProcessWorkRequestService workRequestService;
     private final CommunicationService communicationService;
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessVersionRepository processVersionRepository;
@@ -61,10 +62,11 @@ public class ProcessNodeExecutionResultHandler {
     private final BusinessTime businessTime;
     private final DepartmentService departmentService;
     private final ProcessInstanceMailService processInstanceMailService;
+    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
 
     @Autowired
     public ProcessNodeExecutionResultHandler(ProcessAssignmentService assignmentService,
-                                             RabbitTemplate rabbitTemplate,
+                                             ProcessWorkRequestService workRequestService,
                                              CommunicationService communicationService,
                                              ProcessInstanceRepository processInstanceRepository,
                                              ProcessVersionRepository processVersionRepository,
@@ -77,9 +79,10 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessService processService,
                                              DepartmentService departmentService, ProcessInstanceMailService processInstanceMailService,
                                              ProcessNodeService processNodeService,
-                                             BusinessTime businessTime) {
+                                             BusinessTime businessTime,
+                                             ProcessInstanceAttachmentService processInstanceAttachmentService) {
         this.assignmentService = assignmentService;
-        this.rabbitTemplate = rabbitTemplate;
+        this.workRequestService = workRequestService;
         this.communicationService = communicationService;
         this.processInstanceRepository = processInstanceRepository;
         this.processVersionRepository = processVersionRepository;
@@ -94,6 +97,7 @@ public class ProcessNodeExecutionResultHandler {
         this.businessTime = businessTime;
         this.departmentService = departmentService;
         this.processInstanceMailService = processInstanceMailService;
+        this.processInstanceAttachmentService = processInstanceAttachmentService;
     }
 
     public <NodeConfig> void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
@@ -234,7 +238,7 @@ public class ProcessNodeExecutionResultHandler {
             }
             default -> throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
-                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine unbekanntes Ergebnisklasse erzeugt: %s.
+                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine unbekannte Ergebnisklasse erzeugt: %s.
                             Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
                             """,
                     StringUtils.quote(provider.getName()),
@@ -384,7 +388,7 @@ public class ProcessNodeExecutionResultHandler {
         if (!(executionResult instanceof ProcessNodeExecutionResultTaskCompleted)
                 && !(executionResult instanceof ProcessNodeExecutionResultInstanceCompleted)) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    "Neue Prozessidentitäten dürfen nur beim Abschluss einer Aufgabe oder eines Vorgangs übernommen werden."
+                    "Neue Identitäten dürfen nur beim Abschluss einer Aufgabe oder eines Vorgangs übernommen werden."
             );
         }
 
@@ -394,12 +398,12 @@ public class ProcessNodeExecutionResultHandler {
             var identity = entry.getValue();
             if (identity == null || !Objects.equals(entry.getKey(), identity.identityId())) {
                 throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Eine neue Prozessidentität besitzt keine konsistente Identitäts-ID."
+                        "Eine neue Identität besitzt keine konsistente Identitäts-ID."
                 );
             }
             if (processIdentities != null && processIdentities.containsKey(entry.getKey())) {
                 throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Die neue Prozessidentität %s existiert bereits im Vorgang.",
+                        "Die neue Identität %s existiert bereits im Vorgang.",
                         StringUtils.quote(entry.getKey())
                 );
             }
@@ -448,7 +452,7 @@ public class ProcessNodeExecutionResultHandler {
         var message = new CommunicationMessage.Builder()
                 .subject(originalMessage.subject())
                 .body(originalMessage.body())
-                .htmlBody(originalMessage.htmlBody())
+                .markdownBody(originalMessage.markdownBody())
                 .callToActions(originalMessage.callToActions())
                 .timestamp(originalMessage.timestamp())
                 .attachments(originalMessage.attachments())
@@ -514,7 +518,7 @@ public class ProcessNodeExecutionResultHandler {
         var messageDetails = new LinkedHashMap<String, Object>();
         messageDetails.put("subject", message.subject());
         messageDetails.put("body", message.body());
-        messageDetails.put("htmlBody", message.htmlBody());
+        messageDetails.put("markdownBody", message.markdownBody());
         messageDetails.put("referenceId", message.referenceId());
         messageDetails.put("sendingUser", createSendingUserDetails(message.sendingUser()));
         messageDetails.put("sendingDepartment", createSendingDepartmentDetails(message.sendingDepartment()));
@@ -1050,7 +1054,7 @@ public class ProcessNodeExecutionResultHandler {
             var communicationRequest = context.result.getCommunicationRequest();
             if (communicationRequest == null || communicationRequest.recipientEmailAddress() == null) {
                 throw new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Eine Kundenaufgabe ohne Prozessidentität benötigt eine Einladung per E-Mail."
+                        "Eine Aufgabe für Beteiligte ohne Identität benötigt eine Einladung per E-Mail."
                 );
             }
 
@@ -1062,7 +1066,7 @@ public class ProcessNodeExecutionResultHandler {
                     true,
                     true,
                     "Aufgabe per E-Mail zugewiesen",
-                    "Die Aufgabe %s wurde per E-Mail an %s eingeladen.",
+                    "Zur Bearbeitung der Aufgabe %s wurde eine Einladung an %s versendet.",
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
                     StringUtils.quote(communicationRequest.recipientEmailAddress())
             );
@@ -1144,10 +1148,18 @@ public class ProcessNodeExecutionResultHandler {
                     true,
                     false,
                     "Eingaben für " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " gespeichert",
-                    "Für die Aufgabe %s wurden durch die zugewiesen Mitarbeiter:in Eingaben abgespeichert.",
+                    "Für die Aufgabe %s wurden durch die zugewiesene Mitarbeiter:in Eingaben abgespeichert.",
                     StringUtils.quote(context.currentNode.resolveName(context.provider))
             );
         }
+    }
+
+    /** Deletes the files that were removed from the upload fields of the task before it completed. */
+    private void deleteRemovedUploads(@Nonnull HandlerContext<?, ?> context) {
+        processInstanceAttachmentService.deleteRemovedUploadsOfTask(
+                context.processInstanceTask,
+                context.triggeringUser != null ? context.triggeringUser.getId() : null
+        );
     }
 
     private void handleTaskComplete(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskCompleted> context) throws ProcessNodeExecutionException {
@@ -1158,6 +1170,7 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         context.processInstanceTask.setFinished(Instant.now());
         applyDataLayersAndStatusOverride(context, true);
+        deleteRemovedUploads(context);
 
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
         var updateInstance = !context.additionalIdentities.isEmpty()
@@ -1169,15 +1182,6 @@ public class ProcessNodeExecutionResultHandler {
         } else {
             ensureInstanceRunning(context.processInstance);
         }
-
-        var nextPayload = new ProcessWorker.DoWorkWorkerPayload(
-                context.processInstance.getId(),
-                context.processInstanceTask.getId(),
-                context.currentNode.getId(),
-                context.result.getViaPort(),
-                outEdge.getToNodeId(),
-                null
-        );
 
         var nextNode = processNodeRepository
                 .findById(outEdge.getToNodeId())
@@ -1195,7 +1199,7 @@ public class ProcessNodeExecutionResultHandler {
                     "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde durch die Mitarbeiter:in %s abgeschlossen.
-                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Für die ausgehende Verbindung wird der Ausgangsport %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
@@ -1211,7 +1215,7 @@ public class ProcessNodeExecutionResultHandler {
                     "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " abgeschlossen",
                     """
                             Die Aufgabe für das Prozesselement %s wurde abgeschlossen.
-                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Für die ausgehende Verbindung wird der Ausgangsport %s verwendet.
                             Das nächste Prozesselement ist %s.
                             """,
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
@@ -1220,7 +1224,12 @@ public class ProcessNodeExecutionResultHandler {
             );
         }
 
-        rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
+        workRequestService.enqueueTransition(
+                context.processInstance.getId(),
+                context.processInstanceTask.getId(),
+                context.result.getViaPort(),
+                outEdge.getToNodeId()
+        );
     }
 
     private <C> CompletionPath requireCompletionPath(@Nonnull HandlerContext<C, ?> context,
@@ -1236,7 +1245,7 @@ public class ProcessNodeExecutionResultHandler {
                 .filter(candidate -> candidate.key().equals(viaPort))
                 .findFirst()
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein ausgehender Port mit dem Schlüssel %s bereitgestellt.",
+                        "Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein Ausgangsport mit dem Schlüssel %s bereitgestellt.",
                         StringUtils.quote(currentNode.resolveName(provider)),
                         StringUtils.quote(provider.getName()),
                         StringUtils.quote(viaPort)
@@ -1245,11 +1254,11 @@ public class ProcessNodeExecutionResultHandler {
         if (port.deadlineKey() != null
                 && (task.getDeadline() == null || !port.deadlineKey().equals(task.getDeadlineKey()))) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    "Der Ausgang „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
+                    "Der Ausgangsport „%s“ gehört nicht zur aktiven Frist dieser Aufgabe.", port.label());
         }
         var edge = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(currentNode.getId(), viaPort)
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Für das Prozesselement %s wurde kein ausgehender Pfad für den Port %s definiert. Bitte prüfen Sie den Aufbau Ihres Prozessmodells.",
+                        "Für das Prozesselement %s wurde keine Verbindung für den Ausgangsport %s definiert. Bitte prüfen Sie den Aufbau Ihrer Prozessdefinition.",
                         StringUtils.quote(currentNode.resolveName(provider)),
                         StringUtils.quote(port.label())
                 ));
@@ -1266,6 +1275,7 @@ public class ProcessNodeExecutionResultHandler {
         context.processInstanceTask.setStatus(ProcessTaskStatus.Completed);
         context.processInstanceTask.setFinished(completionTime);
         applyDataLayersAndStatusOverride(context, true);
+        deleteRemovedUploads(context);
 
         applyAdditionalIdentities(context.processInstance, context.additionalIdentities);
         context.processInstance.setStatus(ProcessInstanceStatus.Completed);
@@ -1414,7 +1424,7 @@ public class ProcessNodeExecutionResultHandler {
                 }
             } catch (IllegalArgumentException | IllegalStateException e) {
                 throw new IllegalStateException(
-                        "Das Ausgabe-Mapping '%s' fuer den Knotenausgang '%s' ist ungueltig: %s"
+                        "Die Datenzuordnung „%s“ für den Ausgangswert „%s“ ist ungültig: %s"
                                 .formatted(targetFieldPath, nodeProviderOutput.key(), e.getMessage()),
                         e
                 );

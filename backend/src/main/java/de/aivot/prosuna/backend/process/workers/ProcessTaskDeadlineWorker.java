@@ -1,67 +1,37 @@
 package de.aivot.prosuna.backend.process.workers;
 
 import de.aivot.prosuna.backend.core.services.BusinessTime;
-import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
-import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
-import de.aivot.prosuna.backend.process.repositories.ProcessTaskDeadlineContinuationRepository;
 import de.aivot.prosuna.backend.process.services.ProcessTaskDeadlineService;
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.UnexpectedRollbackException;
 
-import java.time.Duration;
-import java.util.List;
-
+/**
+ * Expires tasks whose hard deadline has passed. Expiry requests the continuation as process work, which
+ * {@link ProcessWorkRequestWorker} runs.
+ */
 @Service
 public class ProcessTaskDeadlineWorker {
-    public static final String CONTINUATION_QUEUE = "process-task-deadline-continuation-queue";
     private static final Logger logger = LoggerFactory.getLogger(ProcessTaskDeadlineWorker.class);
-    // Paused and failed instances only hold their continuations, so they are published once the instance runs again.
-    // Completed and aborted instances are still published, so the consumer discards their entries.
-    static final List<ProcessInstanceStatus> DISPATCHABLE_INSTANCE_STATUSES = List.of(ProcessInstanceStatus.Running,
-            ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted);
     private final ProcessInstanceTaskRepository tasks;
-    private final ProcessInstanceRepository instances;
-    private final ProcessTaskDeadlineContinuationRepository continuations;
     private final ProcessTaskExecutionService execution;
-    private final ProcessWorker worker;
-    private final RabbitTemplate rabbit;
     private final BusinessTime time;
     private final int batchSize;
-    private final Duration redispatchInterval;
 
-    public ProcessTaskDeadlineWorker(@Nonnull ProcessInstanceTaskRepository tasks, @Nonnull ProcessInstanceRepository instances,
-                                      @Nonnull ProcessTaskDeadlineContinuationRepository continuations,
-                                      @Nonnull ProcessTaskExecutionService execution, @Nonnull ProcessWorker worker,
-                                      @Nonnull RabbitTemplate rabbit, @Nonnull BusinessTime time,
-                                      @Value("${prosuna.process-task-deadlines.batch-size:100}") int batchSize,
-                                      @Value("${prosuna.process-task-deadlines.redispatch-interval:PT5M}") Duration redispatchInterval) {
+    public ProcessTaskDeadlineWorker(@Nonnull ProcessInstanceTaskRepository tasks,
+                                     @Nonnull ProcessTaskExecutionService execution, @Nonnull BusinessTime time,
+                                     @Value("${prosuna.process-task-deadlines.batch-size:100}") int batchSize) {
         this.tasks = tasks;
-        this.instances = instances;
-        this.continuations = continuations;
         this.execution = execution;
-        this.worker = worker;
-        this.rabbit = rabbit;
         this.time = time;
         this.batchSize = Math.max(1, batchSize);
-        this.redispatchInterval = redispatchInterval;
     }
-
-    @Bean
-    @Nonnull
-    public Queue deadlineContinuationQueue() { return new Queue(CONTINUATION_QUEUE, true); }
 
     @Scheduled(fixedDelayString = "${prosuna.process-task-deadlines.check-interval:PT30S}")
     public void checkDeadlines() {
@@ -81,63 +51,5 @@ public class ProcessTaskDeadlineWorker {
             // Keyset pagination also advances past tasks that turned out not to be due and isolated failures.
             afterId = ids.getLast();
         }
-    }
-
-    @Scheduled(fixedDelayString = "${prosuna.process-task-deadlines.check-interval:PT30S}")
-    public void dispatchContinuations() {
-        var now = time.now();
-        // A published ID stays queued until it is consumed. Publishing it again is only a fallback for entries that
-        // remain pending, e.g. after a lost message or a held continuation, and must not pile up duplicates.
-        var dispatchedBefore = now.minus(redispatchInterval);
-        long afterId = 0;
-        while (true) {
-            var pending = continuations.findDispatchable(afterId, dispatchedBefore, DISPATCHABLE_INSTANCE_STATUSES,
-                    PageRequest.of(0, batchSize));
-            if (pending.isEmpty()) return;
-            for (var continuation : pending) {
-                try {
-                    rabbit.convertAndSend(CONTINUATION_QUEUE, continuation.getId());
-                    continuations.markDispatched(continuation.getId(), now);
-                } catch (Exception exception) {
-                    logger.warn("Could not dispatch deadline continuation {}", continuation.getId(), exception);
-                }
-            }
-            afterId = pending.getLast().getId();
-        }
-    }
-
-    @RabbitListener(queues = CONTINUATION_QUEUE)
-    public void continueAfterDeadline(@Nonnull Long continuationId) throws Exception {
-        var pending = continuations.findById(continuationId);
-        if (pending.isEmpty()) return;
-        var instanceId = pending.get().getProcessInstanceId();
-        try {
-            continueAfterDeadlineLocked(instanceId, continuationId);
-        } catch (UnexpectedRollbackException exception) {
-            // The continuation stays pending; the failed instance stops repeating the same rolled-back work.
-            worker.recordRolledBackExecution(instanceId, null, exception);
-        }
-    }
-
-    private void continueAfterDeadlineLocked(@Nonnull Long instanceId, @Nonnull Long continuationId) throws ResponseException {
-        execution.inInstance(instanceId, () -> {
-            // A concurrent consumer may have consumed this message while this consumer waited for the lock.
-            var current = continuations.findById(continuationId);
-            if (current.isEmpty()) return null;
-            var continuation = current.get();
-            var instance = instances.findById(continuation.getProcessInstanceId()).orElseThrow();
-            if (instance.getStatus() == ProcessInstanceStatus.Completed || instance.getStatus() == ProcessInstanceStatus.Aborted) {
-                continuations.delete(continuation);
-                return null;
-            }
-            if (instance.getStatus() != ProcessInstanceStatus.Running) return null;
-            if (!tasks.existsByPreviousProcessInstanceTaskId(continuation.getTaskId())) {
-                worker.doWorkAfterDeadline(new ProcessWorker.DoWorkWorkerPayload(instance.getId(), continuation.getTaskId(),
-                        continuation.getFromNodeId(), continuation.getViaPort(), continuation.getToNodeId(), null));
-            }
-            // Keep the request if the target definition failed before a child task could be created.
-            if (tasks.existsByPreviousProcessInstanceTaskId(continuation.getTaskId())) continuations.delete(continuation);
-            return null;
-        });
     }
 }

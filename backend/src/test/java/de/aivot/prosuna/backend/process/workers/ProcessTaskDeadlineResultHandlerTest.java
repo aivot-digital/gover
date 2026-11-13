@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
@@ -45,7 +46,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 
 import java.time.Instant;
 import java.util.List;
@@ -85,9 +86,10 @@ class ProcessTaskDeadlineResultHandlerTest {
             .setProcessInstanceId(1L).setStatus(ProcessTaskStatus.Running).setDeadline(PREVIOUS_DEADLINE).setDeadlineKey("preparation");
     private final UserEntity assignee = new UserEntity().setId("staff").setFullName("Anna Beispiel");
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(
-            assignments, mock(RabbitTemplate.class), communication, mock(ProcessInstanceRepository.class), versions, tasks,
+            assignments, mock(ProcessWorkRequestService.class), communication, mock(ProcessInstanceRepository.class), versions, tasks,
             edges, users, mail, mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class),
-            processes, departments, null, nodes, new BusinessTime(ZoneId.of("Europe/Berlin"), clock));
+            processes, departments, null, nodes, new BusinessTime(ZoneId.of("Europe/Berlin"), clock),
+            mock(ProcessInstanceAttachmentService.class));
 
     @BeforeEach
     void setup() throws Exception {
@@ -192,7 +194,7 @@ class ProcessTaskDeadlineResultHandlerTest {
     void unknownDeadlineIsRejectedBeforeCommunicationOrAssignment() {
         var result = ProcessNodeExecutionResultTaskAssigned.of("staff").setNewDeadlineKey("unknown")
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest("customer",
-                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").htmlBody("Nachricht").build()));
+                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").markdownBody("Nachricht").build()));
         assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
         verifyNoInteractions(tasks, events, communication, assignments, mail);
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
@@ -205,7 +207,7 @@ class ProcessTaskDeadlineResultHandlerTest {
         when(communication.sendMessage(any(), any())).thenThrow(new CommunicationException("Delivery failed"));
         var result = ProcessNodeExecutionResultTaskAssignedCustomer.of("customer").setNewDeadlineKey("customer")
                 .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest("customer",
-                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").htmlBody("Nachricht").build()));
+                        new CommunicationMessage.Builder().subject("Betreff").body("Nachricht").markdownBody("Nachricht").build()));
         assertThrows(ProcessNodeExecutionException.class, () -> handle(result));
         assertEquals(PREVIOUS_DEADLINE, task.getDeadline());
         assertEquals("preparation", task.getDeadlineKey());

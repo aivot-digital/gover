@@ -60,7 +60,7 @@ export function CommunicationProvidersListPage() {
             content: (
                 <Typography variant="body1">
                     Kommunikationsanbieter verbinden Prosuna mit Versanddiensten wie E-Mail oder FIT-Connect. Sie
-                    versenden Nachrichten und – sofern unterstützt – Anhänge an Identitäten. Die technische
+                    versenden Nachrichten und - sofern unterstützt - Anlagen an Identitäten. Die technische
                     Konfiguration wird anschließend passenden Identitätsanbietern als Kommunikationsweg zugeordnet.
                 </Typography>
             ),
@@ -152,7 +152,7 @@ export function CommunicationProvidersListPage() {
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<CommunicationProvider>) => (
         <EmptyDataListPlaceholder
             title="Keine Kommunikationsanbieter vorhanden"
-            description="Kommunikationsanbieter verbinden Prosuna mit Versanddiensten für Nachrichten an Kund:innen."
+            description="Kommunikationsanbieter verbinden Prosuna mit Versanddiensten für Nachrichten an Personen."
             addText="Neuen Kommunikationsanbieter anlegen"
             onAdd={() => navigate('/communication-providers/new')}
             addDisabled={!permissions.canCreate}

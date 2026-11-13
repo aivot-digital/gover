@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {type ReactNode, useCallback, useContext, useMemo, useState} from 'react';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -21,6 +21,11 @@ import {
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
+import {
+    ViewDispatcherContext,
+    ViewDispatcherContextProvider,
+    type ViewDispatcherRowScope,
+} from '../view-dispatcher/view-dispatcher.context';
 import {generateUUIDv7} from '../../utils/id-utils';
 import {FormFieldGroup, type FormFieldGroupContext} from '../form-field';
 
@@ -59,7 +64,10 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         return false;
     }, [element, isBusy, isDeriving, props.inputModeLiteralContext?.fieldProps]);
 
-    const minRequiredSets = element.required === true ? (element.minimumRequiredSets ?? 1) : 0;
+    const minimumSets = Math.max(0, element.minimumRequiredSets ?? 0);
+    // Optional collections must remain clearable, even while their non-empty value is below the validation minimum.
+    const minRequiredSets = element.required === true ? Math.max(1, minimumSets) : 0;
+    const displayedMinimumSets = Math.max(minimumSets, minRequiredSets);
     const hasEntries = (value?.length ?? 0) > 0;
     const isAddDisabled = isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets);
     const shouldShowEmptyState = !hasEntries;
@@ -123,6 +131,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                     >
                         {(value ?? []).map((val: ReplicatingContainerElementValue, valueIndex: number) => {
                             const rowValues = resolveAuthoredReplicatingContainerElementValues(val) ?? {};
+                            const rowDerivedData = resolveReplicatingContainerItemDerivedData(element, derivedData, valueIndex);
                             const rowKey = val.id ?? valueIndex;
                             const itemLabelId = `${fieldContext.groupId}-item-${valueIndex}-label`;
                             const itemLabel = stringOrDefault(element.headlineTemplate, 'Datensatz #')
@@ -187,7 +196,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                 }}
                                             >
                                                 <Button
-                                                    color="inherit"
+                                                    color="error"
                                                     variant="text"
                                                     size="small"
                                                     startIcon={<Delete sx={{fontSize: 16}}/>}
@@ -199,15 +208,10 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                         minHeight: 24,
                                                         px: 0.75,
                                                         py: 0.25,
-                                                        color: 'text.secondary',
                                                         fontSize: '0.75rem',
                                                         lineHeight: 1.2,
                                                         '& .MuiButton-startIcon': {
                                                             mr: 0.5,
-                                                        },
-                                                        '&:hover': {
-                                                            color: 'error.main',
-                                                            backgroundColor: 'action.hover',
                                                         },
                                                     }}
                                                 >
@@ -221,26 +225,32 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                         spacing={2}
                                         sx={{mt: 0}}
                                     >
-                                        {(children ?? []).map((child) => (
-                                            <ViewDispatcherComponent
-                                                {...props}
-                                                key={child.id}
-                                                element={child}
-                                                isBusy={isDisabled}
-                                                authoredElementValues={rowValues}
-                                                derivedData={resolveReplicatingContainerItemDerivedData(element, derivedData, valueIndex)}
-                                                onAuthoredElementValuesChange={(data, triggeringElementIds) => {
-                                                    const newValue = (value ?? [])
-                                                        .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
-                                                    setValue(newValue, triggeringElementIds);
-                                                }}
-                                                onElementBlur={(data, triggeringElementIds) => {
-                                                    const newValue = (value ?? [])
-                                                        .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
-                                                    onBlur(newValue, triggeringElementIds);
-                                                }}
-                                            />
-                                        ))}
+                                        <ReplicatingContainerRowScope
+                                            containerId={element.id}
+                                            authoredElementValues={rowValues}
+                                            derivedData={rowDerivedData}
+                                        >
+                                            {(children ?? []).map((child) => (
+                                                <ViewDispatcherComponent
+                                                    {...props}
+                                                    key={child.id}
+                                                    element={child}
+                                                    isBusy={isDisabled}
+                                                    authoredElementValues={rowValues}
+                                                    derivedData={rowDerivedData}
+                                                    onAuthoredElementValuesChange={(data, triggeringElementIds) => {
+                                                        const newValue = (value ?? [])
+                                                            .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
+                                                        setValue(newValue, triggeringElementIds);
+                                                    }}
+                                                    onElementBlur={(data, triggeringElementIds) => {
+                                                        const newValue = (value ?? [])
+                                                            .map((v, i) => i === valueIndex ? updateReplicatingContainerElementValues(v, data) : v);
+                                                        onBlur(newValue, triggeringElementIds);
+                                                    }}
+                                                />
+                                            ))}
+                                        </ReplicatingContainerRowScope>
                                     </Grid>
                                 </Box>
                             );
@@ -256,9 +266,9 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             >
                                 <Typography variant="body2" color="text.secondary">
                                     Keine Datensätze vorhanden.{' '}
-                                    {minRequiredSets > 0 && (
+                                    {displayedMinimumSets > 0 && (
                                         <>
-                                            Mindestens {minRequiredSets} {minRequiredSets === 1 ? 'Datensatz ist' : 'Datensätze sind'} erforderlich.
+                                            {element.required ? 'Mindestens' : 'Bei Eingabe mindestens'} {displayedMinimumSets} {displayedMinimumSets === 1 ? 'Datensatz' : 'Datensätze'} erforderlich.
                                         </>
                                     )}
                                 </Typography>
@@ -289,6 +299,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
             </FormFieldGroup>
 
             <ConfirmDialog
+                isDestructive
                 title="Möchten Sie diesen Datensatz wirklich löschen?"
                 onConfirm={confirmDelete}
                 onCancel={() => setConfirmDelete(undefined)}
@@ -297,6 +308,37 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                 Bedarf erneut eingeben. Möchten Sie den Datensatz wirklich löschen?
             </ConfirmDialog>
         </>
+    );
+}
+
+interface ReplicatingContainerRowScopeProps extends ViewDispatcherRowScope {
+    children: ReactNode;
+}
+
+/**
+ * Lets the fields of a row read the values of this row and of the rows around it, e.g. a dependent select whose
+ * referenced select belongs to a surrounding row.
+ */
+function ReplicatingContainerRowScope(props: ReplicatingContainerRowScopeProps) {
+    const {
+        children,
+        ...rowScope
+    } = props;
+    const context = useContext(ViewDispatcherContext);
+
+    if (context == null) {
+        return <>{children}</>;
+    }
+
+    return (
+        <ViewDispatcherContextProvider
+            value={{
+                ...context,
+                rowScopes: [...(context.rowScopes ?? []), rowScope],
+            }}
+        >
+            {children}
+        </ViewDispatcherContextProvider>
     );
 }
 

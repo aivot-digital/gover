@@ -32,6 +32,7 @@ vi.mock('./process-task-view-page', () => ({
     getProcessTaskNodeIcon: () => null,
     getProcessTaskProcessPath: () => null,
     getProcessTaskEditPath: () => '/edit',
+    PROCESS_TASK_NOT_EDITABLE_MESSAGE: 'Diese Aufgabe kann in ihrem aktuellen Status nicht bearbeitet werden.',
 }));
 
 function createItem(): ProcessTaskDetailsPageItem {
@@ -84,7 +85,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         item.task.assignedCustomerIdentityId = 'applicant';
         item.instance!.identities = {
             applicant: {
-                identityId: 'applicant', title: 'Antragstellende', sessionId: 'session', type: 'Email',
+                identityId: 'applicant', title: 'Antragstellende', type: 'Email',
                 emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
                 uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
             },
@@ -99,7 +100,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
     it.each([
         ['Prüfung', 'Prüfung'],
         [' Prüfung ', 'Prüfung'],
-        ['Manuelle Aufgabe', '„Prüfung“ · Manuelle Aufgabe'],
+        ['Freie Aufgabe', '„Prüfung“ · Freie Aufgabe'],
         ['', 'Prüfung'],
     ])('shows the task element name and provider label without duplication (%s)', (typeLabel, expected) => {
         const item = createItem();
@@ -145,6 +146,41 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         ).toBeTruthy();
     });
 
+    it.each([
+        ProcessTaskStatus.Running,
+        ProcessTaskStatus.InProgress,
+        ProcessTaskStatus.AwaitingStaff,
+    ])('links to task editing while the task has staff status %s', (status) => {
+        const item = createItem();
+        item.task.status = status;
+        renderItem(item);
+
+        const edit = screen.getByRole('link', {name: 'Aufgabe bearbeiten'});
+        expect(edit).toHaveAttribute('href', '/edit');
+        expect(edit).not.toHaveAttribute('aria-disabled');
+    });
+
+    it.each([
+        ProcessTaskStatus.AwaitingCustomer,
+        ProcessTaskStatus.AwaitingPayment,
+        ProcessTaskStatus.Paused,
+        ProcessTaskStatus.Completed,
+        ProcessTaskStatus.DeadlineExceeded,
+    ])('disables task editing for status %s and explains why', async (status) => {
+        const item = createItem();
+        item.task.status = status;
+        const user = userEvent.setup();
+        renderItem(item);
+
+        const edit = screen.getByRole('link', {name: 'Aufgabe bearbeiten'});
+        expect(edit).toHaveAttribute('aria-disabled', 'true');
+        expect(edit).toHaveAttribute('tabindex', '-1');
+        await user.hover(edit.parentElement!);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
+            'Diese Aufgabe kann in ihrem aktuellen Status nicht bearbeitet werden.',
+        );
+    });
+
     it('shows the instance deadline with its state separately from the task deadline', () => {
         const item = createItem();
         const hour = 60 * 60 * 1000;
@@ -155,7 +191,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         const instance = within(screen.getByRole('region', {name: 'Angaben zum Vorgang'}));
         const status = within(screen.getByRole('region', {name: 'Stand der Aufgabe'}));
         expect(instance.getByRole('row', {name: /^Bearbeitungsfrist des Vorgangs /})).toHaveTextContent('Frist überschritten');
-        expect(status.getByRole('row', {name: /Fälligkeit/})).toHaveTextContent('Nicht festgelegt');
+        expect(status.getByRole('row', {name: /Fälligkeit/})).toHaveTextContent('Keine aktive Frist');
     });
 
     it('shows the task status independently of the instance and omits absent optional metadata', () => {
@@ -186,7 +222,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         item.instance!.identities = {
             differentMapKey: {
                 identityId: 'external',
-                sessionId: 'session',
+               
                 type: 'Email',
                 emailAddress: 'erika@example.org',
                 attributes: {
@@ -227,7 +263,7 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         item.instance!.identities = {
             external: {
                 identityId: 'external',
-                sessionId: 'session',
+               
                 type: 'Email',
                 emailAddress: 'erika@example.org',
                 attributes: {},

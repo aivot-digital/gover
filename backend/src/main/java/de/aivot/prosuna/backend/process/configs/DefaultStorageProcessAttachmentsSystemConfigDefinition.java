@@ -61,13 +61,13 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
     @Nonnull
     @Override
     public String getLabel() {
-        return "Standard Speicheranbieter für Anhängen von Vorgängen";
+        return "Standard-Speicheranbieter für Anlagen von Vorgängen";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Legt den Standard Speicheranbieter fest, der für das Speichern von Anhängen von Vorgängen verwendet wird.";
+        return "Legt den Standard-Speicheranbieter fest, der für das Speichern von Anlagen von Vorgängen verwendet wird.";
     }
 
     @Nonnull
@@ -79,6 +79,12 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
     @Nullable
     @Override
     public String parseValueFromDB(@Nonnull String value) throws ResponseException {
+        // Without a stored value, the config falls back to an empty value. This is the case if the local storage
+        // providers were not seeded and no administrator has selected a default provider yet.
+        if (value.isBlank()) {
+            return null;
+        }
+
         try {
             Integer.parseInt(value);
         } catch (NumberFormatException e) {

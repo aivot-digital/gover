@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "process_instance_attachment_sets")
+@EntityListeners(ProcessInstanceStaffEventListener.class)
 public class ProcessInstanceAttachmentSetEntity {
     private static final String ID_SEQUENCE_NAME = "process_instance_attachment_sets_id_seq";
 

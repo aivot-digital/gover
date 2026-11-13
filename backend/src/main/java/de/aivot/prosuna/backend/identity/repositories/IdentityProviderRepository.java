@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.identity.repositories;
 
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
+import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +16,6 @@ public interface IdentityProviderRepository extends JpaRepository<IdentityProvid
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select identityProvider from IdentityProviderEntity identityProvider where identityProvider.key = :key")
     Optional<IdentityProviderEntity> findByKeyForUpdate(@Param("key") UUID key);
+
+    boolean existsByTypeAndIsTestProvider(IdentityProviderType type, Boolean isTestProvider);
 }

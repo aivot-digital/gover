@@ -40,10 +40,13 @@ import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.prosuna.backend.services.pdf.PdfElementsGenerator;
 import de.aivot.prosuna.backend.services.pdf.PdfLogoService;
+import de.aivot.prosuna.backend.services.pdf.PdfTemplateAssetService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
@@ -57,7 +60,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.time.Instant;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -69,6 +71,7 @@ public class PdfService {
     private final GotenbergConfig gotenbergConfig;
     private final SystemConfigService systemConfigService;
     private final PdfLogoService pdfLogoService;
+    private final PdfTemplateAssetService pdfTemplateAssetService;
     private final ProsunaConfig prosunaConfig;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final IdentityProviderRepository identityProviderRepository;
@@ -80,6 +83,7 @@ public class PdfService {
     private final ProcessRepository processRepository;
     private final ProcessVersionRepository processVersionRepository;
     private final ThemeService themeService;
+    private final MeterRegistry meterRegistry;
 
     @Autowired
     public PdfService(GotenbergConfig gotenbergConfig,
@@ -88,16 +92,20 @@ public class PdfService {
                       ProcessRepository processRepository,
                       ProcessVersionRepository processVersionRepository,
                       PdfLogoService pdfLogoService,
+                      PdfTemplateAssetService pdfTemplateAssetService,
                       ProsunaConfig prosunaConfig,
                       PaymentTransactionRepository paymentTransactionRepository,
                       IdentityProviderRepository identityProviderRepository,
                       PaymentProviderRepository paymentProviderRepository,
                       PaymentProviderDefinitionsService paymentProviderDefinitionsService,
                       HttpService httpService,
-                      ElementDerivationService elementDerivationService, ThemeService themeService) {
+                      ElementDerivationService elementDerivationService, ThemeService themeService,
+                      MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.pdfLogoService = pdfLogoService;
+        this.pdfTemplateAssetService = pdfTemplateAssetService;
         this.prosunaConfig = prosunaConfig;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.identityProviderRepository = identityProviderRepository;
@@ -263,7 +271,6 @@ public class PdfService {
         dto.put("caseNumber", caseNumber);
         dto.put("logoDataUrl", pdfLogoService.resolveDataUrl(logoAssetKey).orElse(null));
         dto.put("department", department);
-        dto.put("generatedAt", Instant.now().toString());
 
         var contentHtml = loadTemplate("payment-confirmation/form-trigger-payment-confirmation.html", dto);
         var footerHtml = loadTemplate("payment-confirmation/form-trigger-payment-confirmation-footer.html", dto);
@@ -400,9 +407,6 @@ public class PdfService {
     }
 
     private static final String GOTENBERG_ARG_FILE = "files";
-    private static final String GOTENBERG_ARG_INDEX = "index";
-    private static final String GOTENBERG_ARG_HEADER = "header";
-    private static final String GOTENBERG_ARG_FOOTER = "footer";
     private static final String GOTENBERG_ARG_PAPER_HEIGHT = "paperHeight";
     private static final String GOTENBERG_ARG_PAPER_WIDTH = "paperWidth";
     private static final String GOTENBERG_ARG_MARGIN_TOP = "marginTop";
@@ -435,9 +439,6 @@ public class PdfService {
 
         var multipart = new MultipartUtils.MultipartBodyPublisher()
                 .addPart(GOTENBERG_ARG_FILE, GOTENBERG_VAL_INDEX, contentHtml)
-                .addPart(GOTENBERG_ARG_INDEX, GOTENBERG_VAL_INDEX)
-                .addPart(GOTENBERG_ARG_HEADER, GOTENBERG_VAL_HEADER)
-                .addPart(GOTENBERG_ARG_FOOTER, GOTENBERG_VAL_FOOTER)
                 .addPart(GOTENBERG_ARG_PAPER_HEIGHT, GOTENBERG_VAL_PAPER_HEIGHT)
                 .addPart(GOTENBERG_ARG_PAPER_WIDTH, GOTENBERG_VAL_PAPER_WIDTH)
                 .addPart(GOTENBERG_ARG_MARGIN_TOP, GOTENBERG_VAL_MARGIN_TOP)
@@ -455,34 +456,50 @@ public class PdfService {
 
         var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 
-        HttpResponse<byte[]> response;
+        var sample = Timer.start(meterRegistry);
+        var outcome = "failed";
         try {
-            response = httpService.postMultipart(convertUri, multipart);
-        } catch (HttpConnectionException e) {
-            throw new IOException("Failed to generate PDF with Gotenberg.", e);
-        }
+            HttpResponse<byte[]> response;
+            try {
+                response = httpService.postMultipart(convertUri, multipart);
+            } catch (HttpConnectionException e) {
+                throw new IOException("Failed to generate PDF with Gotenberg.", e);
+            }
 
-        if (response.statusCode() != 200) {
-            throw new IOException("Failed to generate PDF with Gotenberg. Status: " + response.statusCode());
-        }
+            if (response.statusCode() != 200) {
+                throw new IOException("Failed to generate PDF with Gotenberg. Status: " + response.statusCode());
+            }
 
-        return response.body();
+            outcome = "success";
+            return response.body();
+        } finally {
+            sample.stop(meterRegistry.timer("prosuna.pdf.generation", "outcome", outcome));
+        }
     }
 
+    /**
+     * Renders the custom PDF template selected for the form. Falls back to the bundled form template if no template is
+     * selected or the selected template cannot be loaded or rendered, so the PDF of a submission is always generated.
+     */
     private String loadContentTemplate(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) {
-        if (pdfTemplateKey != null) {
+        var customTemplate = pdfTemplateAssetService.loadTemplateContent(pdfTemplateKey);
+        if (customTemplate.isPresent()) {
             try {
-                var res = loadTemplate(pdfTemplateKey.toString(), dto);
-                if (StringUtils.isNotNullOrEmpty(res)) {
-                    return res;
+                var result = new TemplateLoaderService()
+                        .processTemplateContent(
+                                customTemplate.get(),
+                                dto,
+                                TemplateMode.HTML
+                        );
+                if (StringUtils.isNotNullOrEmpty(result)) {
+                    return result;
                 }
-                return loadTemplate("form.html", dto);
             } catch (Exception e) {
-                return loadTemplate("form.html", dto);
+                logger.warn("Could not render custom PDF template {}: {}", pdfTemplateKey, e.getMessage());
+                logger.debug("Custom PDF template rendering failure", e);
             }
-        } else {
-            return loadTemplate("form.html", dto);
         }
+        return loadTemplate("form.html", dto);
     }
 
     private String loadTemplate(String templateName, Map<String, Object> data) {

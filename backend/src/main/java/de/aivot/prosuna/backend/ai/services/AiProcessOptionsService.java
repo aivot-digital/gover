@@ -103,7 +103,6 @@ public class AiProcessOptionsService {
         List<?> values;
         var resolved = codeLists.resolve(input);
         if (resolved instanceof SelectInputElement select) values = Objects.requireNonNullElse(select.getOptions(), List.of());
-        else if (resolved instanceof RadioInputElement radio) values = Objects.requireNonNullElse(radio.getOptions(), List.of());
         else if (resolved instanceof MultiCheckboxInputElement multi) values = Objects.requireNonNullElse(multi.getOptions(), List.of());
         else if (resolved instanceof ChipInputElement chip) values = Objects.requireNonNullElse(chip.getSuggestions(), List.of());
         else if (input instanceof DomainAndUserSelectInputElement domain) values = assignees(scope, domain.getAllowedTypes(), domain.getProcessAccessConstraint());

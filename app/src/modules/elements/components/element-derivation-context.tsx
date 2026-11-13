@@ -50,6 +50,7 @@ import {
     ViewDispatcherContextProvider,
     ViewDispatcherMode,
 } from '../../../components/view-dispatcher/view-dispatcher.context';
+import {type ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {deepEquals} from '../../../utils/equality-utils';
 import {type InputVariableSuggestion} from '../../../models/input-mode';
@@ -77,12 +78,17 @@ interface ElementDerivationContextProps {
         derivationOptions: ElementDerivationOptions,
         abort?: AbortSignal,
     ) => Promise<DerivedRuntimeElementData>;
-    onEvent?: (values: AuthoredElementValues, event: string) => Promise<boolean | void>;
+    /**
+     * Handles an event of the form. The derived data belongs to exactly the given values, because they are derived
+     * right before the event is handled.
+     */
+    onEvent?: (values: AuthoredElementValues, event: string, derivedData: DerivedRuntimeElementData) => Promise<boolean | void>;
     mode?: ViewDispatcherMode;
     disableValidation?: boolean;
     disableVisibilities?: boolean;
     highlightedElementId?: string | null;
     taskViewMode?: TaskViewMode | null;
+    displayContext?: ElementDisplayContext | null;
     inputModesEnabled?: boolean;
     inputModeVariables?: InputVariableSuggestion[];
     deriveOnMount?: boolean;
@@ -161,6 +167,7 @@ export const ElementDerivationContext = forwardRef<
         disableVisibilities = false,
         highlightedElementId,
         taskViewMode = null,
+        displayContext = null,
         inputModesEnabled = false,
         inputModeVariables = [],
         deriveOnMount = true,
@@ -451,6 +458,7 @@ export const ElementDerivationContext = forwardRef<
                     showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
                     highlightedElementId: highlightedElementId,
                     taskViewMode,
+                    displayContext,
                     inputModesEnabled,
                     inputModeVariables,
                     readOnly,
@@ -475,7 +483,7 @@ export const ElementDerivationContext = forwardRef<
                             .then((derived) => {
                                 setInternalDerivedData(derived);
                                 if (!hasAnyErrorRecursively(derived.elementStates) && onEvent != null) {
-                                    return onEvent(normalizedData, event);
+                                    return onEvent(normalizedData, event, derived);
                                 }
                                 return false;
                             });

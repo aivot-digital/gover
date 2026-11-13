@@ -22,6 +22,13 @@ public class GiroPayPaymentRequest {
     private String urlNotify;
     private String hash;
 
+    /**
+     * Converts an amount to the cents that GiroCheckout expects and reports back.
+     */
+    public static int toCents(BigDecimal amount) {
+        return amount.multiply(BigDecimal.valueOf(100)).intValue();
+    }
+
     public static GiroPayPaymentRequest valueOf(XBezahldienstePaymentRequest xRequest, String merchantId, String projectId, String giroPayPassword, String notifyUrl) {
         var gRequest = new GiroPayPaymentRequest();
 
@@ -32,7 +39,7 @@ public class GiroPayPaymentRequest {
         gRequest.setProjectId(projectIdInt);
 
         gRequest.setMerchantTxId(xRequest.getRequestId());
-        gRequest.setAmount(xRequest.getGrosAmount().multiply(BigDecimal.valueOf(100)).intValue()); // Convert to cents
+        gRequest.setAmount(toCents(xRequest.getGrosAmount()));
         gRequest.setCurrency(xRequest.getCurrency());
         gRequest.setPurpose(xRequest.getPurpose());
 

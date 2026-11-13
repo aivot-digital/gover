@@ -20,9 +20,9 @@ import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {ElementWidthSelector} from '../../element-width-selector/element-width-selector';
 import {normalizeElementWeight} from '../../../utils/element-widths';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
-import {ProcessDataKeyInputComponent} from '../../../views/process-data-key-input-field-view';
+import {DataKeyDefinitionField} from '../../data-key-definition-field/data-key-definition-field';
 import {isGroupLayout} from '../../../models/elements/form/layout/group-layout';
-import {collectHttpMappingProblems} from './element-tree-editor-content-tab-properties-utils';
+import {collectHttpMappingProblems, suggestDestinationKey} from './element-tree-editor-content-tab-properties-utils';
 
 const summaryLayoutHiddenElementSpecificPropertyTypes = new Set<ElementType>([
     ElementType.ChipInput,
@@ -44,6 +44,11 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
 
     const {
         currentElement,
+        originalElement,
+        dataKeyUnlocked = false,
+        onUnlockDataKey,
+        onLockDataKey,
+        dataKeyValidationRequested,
         onChangeCurrentElement,
         parents,
     } = useElementTreeEditorContext<T>();
@@ -67,7 +72,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
             return undefined;
         }
 
-        return 'Mindestens ein übergeordnetes Strukturiertes Listeneingabe-Element hat noch keinen Datenschlüssel.';
+        return 'Mindestens eine übergeordnete Feldgruppe für mehrere Einträge hat noch keinen Datenschlüssel.';
     }, [replicatingParents]);
 
     const replicatingParentDestinationKeyPrefix = useMemo(() => {
@@ -161,10 +166,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     {
                         showInputTitleField &&
                         <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
-                            }}
+                            size={{xs: 12, lg: 6}}
                         >
                             <TextFieldComponent
                                 value={currentElement.label}
@@ -182,6 +184,31 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     }
 
                     {
+                        isAnyInputElement(currentElement) && displayContext !== ElementDisplayContext.DataObjectSchema &&
+                        <Grid size={{xs: 12, lg: 6}}>
+                            <DataKeyDefinitionField
+                                key={currentElement.id}
+                                value={currentElement.destinationKey}
+                                persistedValue={originalElement != null && isAnyInputElement(originalElement)
+                                    ? originalElement.destinationKey : currentElement.destinationKey}
+                                source={currentElement.label}
+                                onChange={(destinationKey) => onChangeCurrentElement({...currentElement, destinationKey} as T)}
+                                unlocked={dataKeyUnlocked}
+                                onUnlock={() => onUnlockDataKey?.()}
+                                onLock={() => onLockDataKey?.()}
+                                disabled={!editable}
+                                prefix={replicatingParentDestinationKeyPrefix}
+                                error={replicatingParentDestinationKeyError}
+                                validationRequested={dataKeyValidationRequested}
+                                resolveGeneratedKey={(key) => suggestDestinationKey(key, {element: currentElement, parents}, allElements) ?? key}
+                            />
+                            {httpKeyProblems.length > 0 && <AlertComponent title="Warnungen zu Ihrem gewählten Datenschlüssel" color="warning">
+                                <ul>{httpKeyProblems.map((problem, index) => <li key={index}>{problem}</li>)}</ul>
+                            </AlertComponent>}
+                        </Grid>
+                    }
+
+                    {
                         showElementWidthSelector &&
                         <Grid
                             size={{
@@ -190,7 +217,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                             }}
                         >
                             <ElementWidthSelector
-                                label="Breite des Elements in der Darstellung"
+                                label="Breite (Darstellung)"
                                 elementType={currentElement.type}
                                 value={currentElement.weight}
                                 onChange={(weight) => {
@@ -222,7 +249,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         hint: val,
                                     });
                                 }}
-                                hint="Geben Sie hier zusätzliche Hinweise zur Eingabe für Antragstellende an (optional, wird unter dem Eingabefeld angezeigt)."
+                                hint="Geben Sie bei Bedarf Hinweise für ausfüllende Personen an. Sie werden unter dem Formularelement angezeigt."
                                 disabled={!editable}
                             />
                         </Grid>
@@ -255,7 +282,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                     technical: false,
                                 });
                             }}
-                            hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
+                            hint="Pflichtangaben müssen von den ausfüllenden Personen ausgefüllt werden."
                             disabled={!editable || Boolean(currentElement.disabled) || Boolean(currentElement.technical)}
                         />
                     </Grid>
@@ -345,73 +372,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                 </AlertComponent>
             }
 
-            {
-                isAnyInputElement(currentElement) &&
-                displayContext != ElementDisplayContext.DataObjectSchema &&
-                <>
-                    <ElementEditorSectionHeader
-                        title="Datenzuordnung im Prozess"
-                        sx={{mt: 8}}
-                    >
-                        Legt fest, unter welchem Datenschlüssel der Wert dieses Feldes in den Vorgangsdaten gespeichert
-                        und ggf. aus vorhandenen Vorgangsdaten vorbelegt wird. Ohne Datenschlüssel wird der Wert unter
-                        der ID des Feldes ausschließlich in den Elementdaten gespeichert. Werte können unter Nutzung
-                        einer Punktnotation in verschachtelte Datenstrukturen geschrieben und gelesen werden (z. B.
-                        „person.vorname“).
-                    </ElementEditorSectionHeader>
-
-                    <Grid
-                        container
-                        columnSpacing={4}
-                    >
-                        <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
-                                xl: 6,
-                            }}
-                        >
-                            <ProcessDataKeyInputComponent
-                                label="Datenschlüssel"
-                                value={currentElement.destinationKey}
-                                onChange={(val) => {
-                                    onChangeCurrentElement({
-                                        ...currentElement,
-                                        destinationKey: val,
-                                    } as T);
-                                }}
-                                disabled={!editable}
-                                disableWildCards={true}
-                                prefix={replicatingParentDestinationKeyPrefix}
-                                error={replicatingParentDestinationKeyError}
-                            />
-                        </Grid>
-                    </Grid>
-
-                    {
-                        httpKeyProblems.length > 0 &&
-                        <AlertComponent
-                            title="Warnungen zu Ihrem gewählten Datenschlüssel"
-                            color="warning"
-                        >
-                            <ul>
-                                {
-                                    httpKeyProblems
-                                        .map((problem, index) => (
-                                            <li key={index}>
-                                                <Typography>
-                                                    {problem}
-                                                </Typography>
-                                            </li>
-                                        ))
-                                }
-                            </ul>
-                        </AlertComponent>
-                    }
-
-                </>
-            }
-
             <ElementEditorSectionHeader
                 title="Weitere Angaben zum Element"
                 sx={{mt: 8}}
@@ -491,19 +451,19 @@ function getTabDescription(type: ElementType) {
         case ElementType.IntroductionStep:
             return {
                 title: 'Eigenschaften für den Abschnitt „Allgemeine Informationen“',
-                description: 'Dieser Abschnitt dient der Einführung des Antragstellers in das Formular – z. B. mit einleitenden Informationen und einem Überblick über wichtige Eckdaten wie mögliche Gebühren.',
+                description: 'Dieser Abschnitt führt ausfüllende Personen in das Formular ein, zum Beispiel mit Informationen zu benötigten Dokumenten und möglichen Kosten.',
                 isElement: false,
             };
         case ElementType.SummaryStep:
             return {
                 title: 'Eigenschaften für den Abschnitt „Zusammenfassung“',
-                description: 'Hier wird dem Antragstellenden eine Übersicht der bisherigen Eingaben angezeigt.',
+                description: 'Hier erhalten ausfüllende Personen eine Übersicht ihrer bisherigen Angaben.',
                 isElement: false,
             };
         case ElementType.SubmitStep:
             return {
-                title: 'Eigenschaften für den Abschnitt „Absenden des Antrages“',
-                description: 'In diesem Schritt wird der Antrag final geprüft und abgesendet. Darüber hinaus können hier weitere Informationen angegeben werden, z. B. zur Bearbeitung des Antrages.',
+                title: 'Eigenschaften für den Abschnitt „Abschließende Informationen und Captcha“',
+                description: 'Dieser Abschnitt zeigt abschließende Hinweise zur Übermittlung und zum weiteren Ablauf. Hier erfolgt auch die Captcha-Prüfung.',
                 isElement: false,
             };
         case ElementType.Step:

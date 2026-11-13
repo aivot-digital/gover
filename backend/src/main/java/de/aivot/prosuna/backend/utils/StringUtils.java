@@ -6,7 +6,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
+import java.security.SecureRandom;
 
 public class StringUtils {
     public static String truncate(String string, int length) {
@@ -88,12 +88,14 @@ public class StringUtils {
     }
 
     private static final String RANDOM_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    // Random strings are used as secrets, for example as PKCE code verifiers and test claim access keys, so they must
+    // not be predictable.
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     public static String randomString(int length) {
         var result = new StringBuilder();
-        var random = new Random();
         for (int i = 0; i < length; i++) {
-            result.append(RANDOM_CHARACTERS.charAt(random.nextInt(RANDOM_CHARACTERS.length())));
+            result.append(RANDOM_CHARACTERS.charAt(RANDOM.nextInt(RANDOM_CHARACTERS.length())));
         }
         return result.toString();
     }

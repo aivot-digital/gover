@@ -26,7 +26,7 @@ export function ConstraintDialog({ open, onClose, message, solutionText, links }
                     </Typography>
                 ) : (
                     <Typography variant="body2" sx={{ mt: 2 }}>
-                        Um das Problem zu lösen, gehe zu:
+                        Öffnen Sie zur Behebung des Problems die folgenden Seiten:
                     </Typography>
                 )}
 

@@ -1,4 +1,6 @@
-import {Box, Button, Grid, Stack, Typography} from '@mui/material';
+import {getConfigurationErrorMessages} from '../utils/configuration-error-utils';
+import {ConfigurationErrorList} from './configuration-error-list';
+import {Box, Button, Chip, Grid, Stack, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import {BaseViewProps} from './base-view';
@@ -12,7 +14,7 @@ import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountC
 import {generateId} from '../utils/id-utils';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
-import {RichTextInputWithVariablePicker} from '../components/rich-text-input-component/rich-text-input-with-variable-picker';
+import {RichTextInputComponent} from '../components/rich-text-input-component/rich-text-input-component';
 import {IdentityProviderType} from '../modules/identity/enums/identity-provider-type';
 import {DialogList, DialogListPropsDialogContentComponent} from '../components/dialog-list/dialog-list';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
@@ -30,6 +32,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
         value,
         setValue,
         errors,
+        errorDetails,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -71,12 +74,11 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
     }, [providers, element.optionalSlotsAllowed]);
 
     const shouldShowEmptyState = (value?.length ?? 0) === 0;
-    const errorText = [
-        errors?.join(' '),
-        providersError,
-    ]
-        .filter((part) => part != null && part.length > 0)
-        .join(' ');
+    const messages = [
+        ...getConfigurationErrorMessages(element.type, errors, errorDetails),
+        ...(providersError ? [providersError] : []),
+    ];
+    const errorContent = messages.length > 0 ? <ConfigurationErrorList messages={messages}/> : undefined;
 
     const handleAddSlot = () => {
         if (element.maxSlots != null && element.maxSlots > 0 && (value?.length ?? 0) >= element.maxSlots) {
@@ -128,7 +130,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
             id={element.id}
             label={element.label ?? ''}
             hint={element.hint}
-            error={errorText || undefined}
+            error={errorContent}
             required={element.required ?? false}
             readOnly={isReadOnly}
             busy={isFieldBusy}
@@ -205,6 +207,8 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                         title={getIdentityDisplayName}
                         subTitle={(i) => getIdentityConfigSubtitle(i, isReadOnly || isFieldBusy)}
                         dialogContentComponent={Component}
+                        validate={validateIdentityTitle}
+                        hasError={(item) => Object.keys(validateIdentityTitle(item)).length > 0}
                         onDialogSave={handleSlotChanged}
                         onDelete={handleDelete}
                         readOnly={isReadOnly}
@@ -222,13 +226,15 @@ function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[], optionalSl
         item: IdentityConfigElementSlot,
         onChange: (item: IdentityConfigElementSlot) => void,
         readOnly?: boolean,
-        busy?: boolean
+        busy?: boolean;
+        validationErrors?: Record<string, string>;
     }) => (
         <IdentityConfigSlot
             item={props.item}
             onChange={props.onChange}
             providers={providers}
             optionalSlotsAllowed={optionalSlotsAllowed}
+            validationErrors={props.validationErrors}
             disabled={props.readOnly || props.busy}
         />
     );
@@ -259,6 +265,7 @@ function IdentityConfigSlot(props: {
     disabled?: boolean;
     providers: IdentityProviderListDTO[];
     optionalSlotsAllowed: boolean;
+    validationErrors?: Record<string, string>;
 }) {
     const {
         item,
@@ -286,6 +293,7 @@ function IdentityConfigSlot(props: {
                     <Grid size={{xs: 12}}>
                         <TextFieldComponent
                             label="Titel"
+                            error={props.validationErrors?.title}
                             hint="Dieser Titel wird der ausfüllenden Person angezeigt."
                             value={item.title}
                             onChange={(val) => {
@@ -303,7 +311,9 @@ function IdentityConfigSlot(props: {
                     </Grid>
 
                     <Grid size={{xs: 12}}>
-                        <RichTextInputWithVariablePicker
+                        {/* Customers see the description as written, so it offers no variables. In a form, no process
+                            data exists yet when the description is shown. */}
+                        <RichTextInputComponent
                             label="Beschreibung"
                             hint="Optionale Beschreibung, die der ausfüllenden Person angezeigt wird. Sie kann erklären, warum eine Anmeldung mit dieser Identität sinnvoll oder notwendig ist."
                             value={item.description}
@@ -524,7 +534,8 @@ function ProviderOption(props: {
         >
             <CheckboxFieldComponent
                 label={provider.name}
-                hint={provider.isTestProvider ? 'Es handelt sich um einen vor-produktiven Identitätsanbieter.' : undefined}
+                labelAction={provider.isTestProvider ? <Chip label="Testsystem" size="small" color="info" variant="outlined"/> : undefined}
+                hint={provider.isTestProvider ? 'Dieser Identitätsanbieter ist für Tests vorgesehen.' : undefined}
                 value={selected}
                 onChange={handleToggle}
                 variant="switch"
@@ -568,4 +579,8 @@ function ProviderOption(props: {
             }
         </Stack>
     );
+}
+
+function validateIdentityTitle(item: IdentityConfigElementSlot): Record<string, string> {
+    return item.title?.trim() ? {} : {title: 'Geben Sie einen Titel für die Identität an.'};
 }

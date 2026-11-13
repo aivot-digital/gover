@@ -62,7 +62,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
             "processing", "Bearbeitung",
             "Zeit für die Bearbeitung der Aufgabe.",
             new ProcessNodePort("processing_overdue", "Fristüberschreitung: Bearbeitung",
-                    "Fortsetzung nach Überschreitung der harten Frist für die Bearbeitung."));
+                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Bearbeitung beendet wurde."));
 
     public static final String NODE_KEY = "manual_action";
 
@@ -102,7 +102,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<ManualActionNodeV1.ManualActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         var configuration = context.configurationOfExecutingNode();
-        return "Die manuelle Aufgabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " abgeschlossen."
+        return "Die freie Aufgabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " abgeschlossen."
                 + section("Beschreibung der Aufgabe", configuration.taskDescription)
                 + section("Vermerk", summary.data(OUTPUT_REMARK));
     }
@@ -140,22 +140,22 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     @Nonnull
     @Override
     public String getName() {
-        return "Manuelle Aktion ausführen";
+        return "Freie Aufgabe";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Eine frei definierte, manuelle Aufgabe, welche durch eine Mitarbeiter:in (z. B. in einem dritten System) ausgeführt wird.";
+        return "Erstellt eine frei beschriebene Mitarbeitendenaufgabe für einen Arbeitsschritt innerhalb oder außerhalb von Prosuna.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine frei definierbare Aufgabe für eine Mitarbeiter:in, um einen manuellen Arbeitsschritt innerhalb oder außerhalb von Prosuna zu bestätigen.
+                Erstellt eine Mitarbeitendenaufgabe mit einer frei formulierten Aufgabenbeschreibung, etwa für einen Arbeitsschritt in einem Fachsystem. Die zuständige Person wird aus dem konfigurierten Personenkreis ermittelt. Der Vorgang wartet, bis sie die Aufgabe abschließt. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
 
-                Aufgabenbeschreibung, zuständiger Personenkreis und eine optionale Prosuna-Oberfläche werden konfiguriert. Nach der Bestätigung setzt das Element den Prozess fort und stellt erfasste Daten, Vermerk sowie Bearbeitungszeitpunkt und bearbeitende Person als Ausgänge bereit.
+                Optional kann eine UI-Definition hinterlegt werden. Formularelemente mit Datenschlüssel werden mit den entsprechenden Vorgangsdaten vorbelegt; ihre Angaben werden beim Abschluss in die Vorgangsdaten übernommen. Zusätzlich kann die zuständige Person einen Vermerk erfassen.
                 """;
     }
 
@@ -168,7 +168,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
             layout = ElementPOJOMapper.createFromPOJO(ManualActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für die manuelle Aktion: %s",
+                    "Fehler beim Erstellen des Konfigurations-Layouts für die freie Aufgabe: %s",
                     e.getMessage()
             );
         }
@@ -184,7 +184,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 .findChild(ManualActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID, AssignmentContextInputElement.class)
                 .ifPresent(element -> {
                     element.setHeadline("Verantwortlicher Personenkreis");
-                    element.setText("Definieren Sie den Personenkreis, der diese manuelle Aktion bearbeiten und bestätigen darf.");
+                    element.setText("Definieren Sie den Personenkreis, aus dem die zuständige Person für diese Aufgabe ermittelt wird.");
                     element.setPlaceholder("Organisationseinheit, Team oder Mitarbeiter:in suchen");
                     element.setAllowedTypes(List.of("orgUnit", "team", "user"));
                     element.setProcessAccessConstraint(new DomainAndUserSelectProcessAccessConstraint()
@@ -221,8 +221,8 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         return List.of(
                 new ProcessNodePort(
                         PORT_OUTPUT,
-                        "Aktion bestätigt",
-                        "Der Prozess wird hier fortgesetzt, nachdem die manuelle Aktion bestätigt wurde."
+                        "Aufgabe abgeschlossen",
+                        "Der Vorgang wird hier fortgesetzt, nachdem die freie Aufgabe abgeschlossen wurde."
                 )
         );
     }
@@ -234,31 +234,31 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
                         "Erfasste Daten",
-                        "Die über die optionale Prosuna-UI bestätigten oder erfassten Daten im Payload-Format.",
+                        "Die beim Abschluss übernommenen Angaben aus Formularelementen mit Datenschlüssel.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
                         "Vermerk",
-                        "Der optionale interne Vermerk zur bestätigten manuellen Aktion.",
+                        "Der optionale interne Vermerk zur abgeschlossenen freien Aufgabe.",
                         "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die manuelle Aktion bestätigt hat.",
+                        "Die Kennung des Kontos der Person, die die freie Aufgabe abgeschlossen hat.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_AT,
                         "Bearbeitet am",
-                        "Der Zeitstempel der Bestätigung im ISO-Format.",
+                        "Der Zeitstempel des Aufgabenabschlusses im ISO-Format.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
-                        "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Werte nach Element-ID",
+                        "Die Werte der Formularelemente unter ihrer jeweiligen Element-ID, unabhängig von einem Datenschlüssel.",
                         "Record<string, unknown>"
                 )
         );
@@ -292,7 +292,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement '%s' konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement '%s' konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
                         context.getThisNode().getName() != null ? context.getThisNode().getName() : getName()
                 ));
 
@@ -370,7 +370,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         var remarkField = new RichTextInputElement();
         remarkField.setId(TASK_VIEW_REMARK_FIELD_ID);
         remarkField.setLabel("Vermerk");
-        remarkField.setHint("Optionaler interner Vermerk zur durchgeführten manuellen Aktion.");
+        remarkField.setHint("Optionaler interner Vermerk zur durchgeführten freien Aufgabe.");
         remarkField.setRequired(false);
         remarkField.setWeight(6.0);
         children.add(remarkField);
@@ -408,14 +408,14 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
             throws ProcessNodeExecutionExceptionInvalidConfiguration {
         if (rawTaskDescription == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für die manuelle Aktion muss eine Aufgabenbeschreibung definiert sein."
+                    "Für die freie Aufgabe muss eine Aufgabenbeschreibung definiert sein."
             );
         }
 
         var taskDescription = rawTaskDescription.toString();
         if (taskDescription.isBlank()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für die manuelle Aktion muss eine Aufgabenbeschreibung definiert sein."
+                    "Für die freie Aufgabe muss eine Aufgabenbeschreibung definiert sein."
             );
         }
 
@@ -437,14 +437,14 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die konfigurierte Prosuna-UI der manuellen Aktion ist ungültig: %s",
+                    "Die konfigurierte UI-Definition der freien Aufgabe ist ungültig: %s",
                     e.getMessage()
             );
         }
 
         if (!(element instanceof GroupLayoutElement uiDefinition)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die konfigurierte Prosuna-UI der manuellen Aktion muss mit einer Gruppe beginnen."
+                    "Die konfigurierte UI-Definition der freien Aufgabe muss mit einer Gruppe beginnen."
             );
         }
 
@@ -459,7 +459,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 assignmentContext.getDomainAndUserSelection() == null ||
                 assignmentContext.getDomainAndUserSelection().isEmpty()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für die manuelle Aktion muss ein Personenkreis definiert sein."
+                    "Für die freie Aufgabe muss ein Personenkreis definiert sein."
             );
         }
 
@@ -473,7 +473,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 .convertValue(rawElement, BaseElement.class);
 
         if (!(copy instanceof GroupLayoutElement copiedElement)) {
-            throw new IllegalStateException("Configured manual-action UI is not a group layout.");
+            throw new IllegalStateException("Die konfigurierte Oberfläche für die freie Aufgabe ist keine Gruppierung.");
         }
 
         return copiedElement;
@@ -558,21 +558,21 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Aufgabenbeschreibung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die manuelle Handlung, die außerhalb des Systems ausgeführt und bestätigt werden soll."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie den Arbeitsschritt, dessen Erledigung mit dem Abschluss dieser Aufgabe bestätigt werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String taskDescription;
 
         @InputElementPOJOBinding(id = UI_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Daten zu dieser Aufgabe"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Modellieren Sie eine Prosuna-UI, wenn zur Aufgabe Daten angezeigt oder erfasst werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Modellieren Sie eine UI-Definition, wenn zur Aufgabe Daten angezeigt oder erfasst werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public GroupLayoutElement uiDefinition;
 
         @InputElementPOJOBinding(id = ASSIGNMENT_CONTEXT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, der diese Aufgabe bearbeiten darf."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, aus dem die zuständige Person für diese Aufgabe ermittelt wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public Object assignmentContext;

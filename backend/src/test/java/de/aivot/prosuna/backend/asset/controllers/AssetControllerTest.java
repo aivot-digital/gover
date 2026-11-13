@@ -31,10 +31,12 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Map;
@@ -42,7 +44,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -481,5 +485,51 @@ class AssetControllerTest {
         assertEquals(expectedPage, result);
         verify(permissionService).requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
         verify(storageIndexItemWithAssetService).searchIndexItems(42, "readme", contentTypes, false, PageRequest.of(0, 20));
+    }
+
+    @Test
+    void downloadFileContent_ServesActiveContentAsSandboxedAttachment() throws Exception {
+        mockFileContent("/folder/page.html", "text/html");
+
+        var response = assetController.downloadFileContent(jwt, 42, false, request);
+
+        var headers = response.getHeaders();
+        assertEquals("text/html", headers.getContentType().toString());
+        assertTrue(headers.getFirst(HttpHeaders.CONTENT_DISPOSITION).startsWith("attachment;"));
+        assertEquals(
+                "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+                headers.getFirst("Content-Security-Policy")
+        );
+        verify(permissionService).requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+    }
+
+    @Test
+    void downloadFileContent_DisplaysPassiveContentInline() throws Exception {
+        mockFileContent("/folder/document.pdf", "application/pdf");
+
+        var response = assetController.downloadFileContent(jwt, 42, false, request);
+
+        var headers = response.getHeaders();
+        assertTrue(headers.getFirst(HttpHeaders.CONTENT_DISPOSITION).startsWith("inline;"));
+        assertFalse(headers.containsHeader("Content-Security-Policy"));
+    }
+
+    private void mockFileContent(String filePath, String mimeType) throws Exception {
+        var storageProvider = new StorageProviderEntity()
+                .setId(42)
+                .setType(StorageProviderType.Assets);
+        var indexItem = new VStorageIndexItemWithAssetEntity()
+                .setStorageProviderId(42)
+                .setPathFromRoot(filePath)
+                .setFilename(filePath.substring(filePath.lastIndexOf('/') + 1))
+                .setMimeType(mimeType);
+
+        when(storageProviderService.retrieve(42)).thenReturn(Optional.of(storageProvider));
+        when(request.getRequestURL())
+                .thenReturn(new StringBuffer("http://localhost/api/assets/42/files-content" + filePath));
+        when(storageIndexItemWithAssetRepository.findById(VStorageIndexItemWithAssetEntityId.of(42, filePath)))
+                .thenReturn(Optional.of(indexItem));
+        when(storageService.getDocumentContent(42, filePath))
+                .thenReturn(new ByteArrayInputStream(new byte[0]));
     }
 }
