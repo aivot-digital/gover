@@ -819,12 +819,23 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                 throw ResponseException.badRequest("Manuelle Codelisten benötigen mindestens eine Spalte.");
             }
 
-            // The cells of manual lists are identified by the column keys, so a CSV export can be imported again.
+            // A bound column keeps its source identifier, e.g. an untrimmed CSV header, since the next import matches
+            // columns through it. Only a column without one is identified by its key.
             var size = Math.max(columns.size(), indexes.stream().max(Integer::compareTo).orElse(0));
             var manualColumns = new ArrayList<>(Collections.nCopies(size, ""));
             for (var mapping : mappings) {
-                if (mapping.index() != null) {
-                    manualColumns.set(mapping.index() - 1, mapping.key());
+                if (mapping.index() != null && mapping.index() <= columns.size()) {
+                    manualColumns.set(mapping.index() - 1, columns.get(mapping.index() - 1));
+                }
+            }
+            for (var mapping : mappings) {
+                if (mapping.index() != null && manualColumns.get(mapping.index() - 1).isEmpty()) {
+                    // The header of an exported CSV must stay unique, so it can be imported again.
+                    var column = mapping.key();
+                    for (var suffix = 2; manualColumns.contains(column); suffix++) {
+                        column = mapping.key() + "_" + suffix;
+                    }
+                    manualColumns.set(mapping.index() - 1, column);
                 }
             }
             codeListEntity.setColumns(manualColumns);

@@ -202,7 +202,7 @@ class CodeListServiceTest {
     }
 
     @Test
-    void updateOfAManualListAppendsNewColumnsAndFollowsRenamedKeys() throws Exception {
+    void updateOfAManualListAppendsNewColumnsAndKeepsTheSourceColumnsOfRenamedKeys() throws Exception {
         var existing = createManualCodeList();
         when(codeListRepository.findById("test")).thenReturn(Optional.of(existing));
         when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -215,10 +215,47 @@ class CodeListServiceTest {
                 ))
                 .setKeyColumnKey("code"));
 
-        assertEquals(List.of("code", "label", "extra"), updated.getColumns());
+        assertEquals(List.of("code", "name", "extra"), updated.getColumns());
         assertEquals("Bezeichnung", updated.getColumnMappings().get(1).name());
         // The key column stays at the same position, so the stored rows need no check.
         verify(codeListItemRepository, never()).findAllByCodeListIdOrderByIdAsc(any());
+    }
+
+    @Test
+    void updateOfAManualListGivesANewColumnAUniqueSourceColumn() throws Exception {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // The key "name" moves to a new column, while the stored cells of the second column keep their identifier.
+        var updated = service.update("test", createManualCodeList().setColumnMappings(List.of(
+                new CodeListColumnMapping("code", "Code", 1),
+                new CodeListColumnMapping("label", "Bezeichnung", 2),
+                new CodeListColumnMapping("name", "Name", 3)
+        )));
+
+        assertEquals(List.of("code", "name", "name_2"), updated.getColumns());
+    }
+
+    @Test
+    void savingAManualListKeepsTheMappingsOfItsNextCsvImport() throws Exception {
+        var codeList = createManualCodeList();
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var content = """
+                code, name
+                001,Berlin
+                """;
+
+        var imported = service.importCSV("test", csv(content));
+        var mappings = imported.getColumnMappings();
+        service.update("test", createManualCodeList()
+                .setDescription("Neue Beschreibung")
+                .setColumnMappings(mappings)
+                .setKeyColumnKey(imported.getKeyColumnKey()));
+        var importedAgain = service.importCSV("test", csv(content));
+
+        assertEquals(List.of("code", " name"), importedAgain.getColumns());
+        assertEquals(mappings, importedAgain.getColumnMappings());
     }
 
     @Test
