@@ -45,7 +45,7 @@ export function PluginInfoDialog(props: PluginInfoDialogProps): ReactNode {
             scroll="paper"
         >
             <DialogTitleWithClose onClose={props.onClose}>
-                Plugin-Informationen
+                Informationen zur Erweiterung
             </DialogTitleWithClose>
 
             {

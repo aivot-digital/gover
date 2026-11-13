@@ -1,5 +1,5 @@
 import {DialogProps} from '@mui/material/Dialog';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {ProcessNodeProblems} from '../entities/process-node-problems';
 import {ProcessEntity} from '../entities/process-entity';
 import {ProcessVersionEntity} from '../entities/process-version-entity';
@@ -22,6 +22,7 @@ interface ProcessPublishDialogProps {
     version: ProcessVersionEntity;
     availableNodeProviders: ProcessNodeProvider[];
     onPublish: (publishedVersion: ProcessVersionEntity) => void;
+    onNodeProblems?: (nodeProblems: ProcessNodeProblems[]) => void;
     onClose: () => void;
 }
 
@@ -31,6 +32,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
         version,
         availableNodeProviders,
         onPublish,
+        onNodeProblems,
         ...rest
     } = props;
 
@@ -39,6 +41,9 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
     const renderVersion = useRetainedDialogValue(rest.open, version);
     const renderAvailableNodeProviders = useRetainedDialogValue(rest.open, availableNodeProviders);
     const renderOnPublish = useRetainedDialogValue(rest.open, onPublish);
+    // Read the latest callback without re-running the validation when the parent passes a new function.
+    const onNodeProblemsRef = useRef(onNodeProblems);
+    onNodeProblemsRef.current = onNodeProblems;
 
     const canPublish = useHasProcessPermission(renderProcess.id, Permission.PROCESS_DEFINITION_PUBLISH_LOCAL);
     const replacesPublishedVersion = renderProcess.publishedVersion != null && renderProcess.publishedVersion !== renderVersion.processVersion;
@@ -75,6 +80,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
                 if (isActive) {
                     setVersionProblems(problems.versionProblems);
                     setAllNodeProblems(problems.nodeProblems);
+                    onNodeProblemsRef.current?.(problems.nodeProblems);
                 }
             })
             .catch((err) => {
@@ -150,7 +156,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
                     {
                         !canPublish &&
                         <InsufficientPermissionAlert
-                            message="Sie verfügen nicht über die notwendige Berechtigung um diese Prozessversion zu veröffentlichen."
+                            message="Sie verfügen nicht über die notwendige Berechtigung, um diese Prozessversion zu veröffentlichen."
                             requiredPermissions={[
                                 Permission.PROCESS_DEFINITION_PUBLISH_LOCAL,
                             ]}

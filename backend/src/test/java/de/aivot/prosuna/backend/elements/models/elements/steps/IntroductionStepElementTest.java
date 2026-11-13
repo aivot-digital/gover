@@ -11,12 +11,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IntroductionStepElementTest {
     @Test
-    void performValidationShouldExposePrivacyConsentLabel() {
+    void performValidationShouldExposePrivacyAcknowledgementLabel() {
         var introductionStepElement = new IntroductionStepElement();
 
         var exception = assertThrows(ValidationException.class, () -> introductionStepElement.performValidation(false));
 
-        assertEquals("Bitte akzeptieren Sie die Hinweise zum Datenschutz.", exception.getMessage());
-        assertEquals(Map.of("label", "Datenschutzrechtliche Einwilligung"), exception.getErrorDetails());
+        assertEquals("Bitte bestätigen Sie, dass Sie die Hinweise zum Datenschutz zur Kenntnis genommen haben.", exception.getMessage());
+        assertEquals(Map.of("label", "Kenntnisnahme der Datenschutzhinweise"), exception.getErrorDetails());
     }
 }

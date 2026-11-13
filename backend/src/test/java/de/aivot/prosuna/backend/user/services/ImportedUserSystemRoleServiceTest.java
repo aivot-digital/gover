@@ -59,7 +59,7 @@ class ImportedUserSystemRoleServiceTest {
         var exception = assertThrows(ResponseException.class, service::getDefaultSystemRoleId);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
-        assertEquals("Die konfigurierte Standard-Systemrolle für automatische Benutzerimporte existiert nicht.", exception.getTitle());
+        assertEquals("Die konfigurierte Standard-Systemrolle für automatische Kontoimporte existiert nicht.", exception.getTitle());
     }
 
     @Test

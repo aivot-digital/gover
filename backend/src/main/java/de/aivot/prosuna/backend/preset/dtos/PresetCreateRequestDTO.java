@@ -16,7 +16,7 @@ public record PresetCreateRequestDTO(
         @Nonnull
         @NotNull(message = "Der Titel darf nicht null sein.")
         @NotBlank(message = "Der Titel darf nicht leer sein.")
-        @Size(min = 3, max = 255, message = "Der Titel muss mindestens 3 Zeichen lang sein, maximal aber 255 Zeichen lang sein.")
+        @Size(min = 3, max = 255, message = "Der Titel muss zwischen 3 und 255 Zeichen lang sein.")
         String title,
 
         @Nonnull

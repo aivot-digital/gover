@@ -78,7 +78,7 @@ export function StaffShellError(props: StaffShellErrorProps) {
                         actionDashboard={true}
                     >
                         {
-                            error.message || 'Bitte prüfen Sie ihre Internetverbindung und versuchen Sie es erneut.'
+                            error.message || 'Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.'
                         }
                     </ErrorDetails>
                 }

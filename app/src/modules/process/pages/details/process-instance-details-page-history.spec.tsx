@@ -358,7 +358,7 @@ describe('Process instance history preview', () => {
 
     it('explains the open choice of an active action with multiple ports', async () => {
         await renderHistory([node(1, 'Freigabe', 'approval', ['next', 'rejected']), node(2, 'Versand')], [edge(1, 2)], [task(1, 1)]);
-        expect(screen.getByRole('alert')).toHaveTextContent('Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Pfaden entschieden werden muss.');
+        expect(screen.getByRole('alert')).toHaveTextContent('Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Prozesspfaden entschieden werden muss.');
         expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
     });
 
@@ -371,7 +371,7 @@ describe('Process instance history preview', () => {
 
         if (strict) {
             expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
-            expect(screen.getByRole('alert')).toHaveTextContent(/mehreren möglichen Pfaden/);
+            expect(screen.getByRole('alert')).toHaveTextContent(/mehreren möglichen Prozesspfaden/);
         } else {
             expect(screen.getByRole('listitem')).toHaveTextContent(/^Versand:/);
         }
@@ -768,7 +768,7 @@ describe('Process instance history preview', () => {
         );
 
         expect(screen.getByRole('alert')).toHaveTextContent(scenario === 'multiple edges'
-            ? 'Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Pfaden entschieden werden muss.'
+            ? 'Derzeit sind keine nächsten Schritte vorhersehbar, da noch zwischen mehreren möglichen Prozesspfaden entschieden werden muss.'
             : 'Derzeit sind keine nächsten Schritte vorhersehbar.');
         expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
     });

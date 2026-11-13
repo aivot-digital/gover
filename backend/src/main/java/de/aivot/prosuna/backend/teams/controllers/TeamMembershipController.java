@@ -133,7 +133,7 @@ public class TeamMembershipController {
                 "userId", result.getUserId(),
                 "roleIds", roleIds
         )).withMessage(
-                "Die Teamzugehörigkeit mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s erstellt.",
+                "Die Teammitgliedschaft mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s erstellt.",
                 StringUtils.quote(String.valueOf(result.getId())),
                 StringUtils.quote(String.valueOf(result.getTeamId())),
                 StringUtils.quote(result.getUserId()),
@@ -203,7 +203,7 @@ public class TeamMembershipController {
                 "teamId", result.getTeamId(),
                 "userId", result.getUserId()
         )).withMessage(
-                "Die Teamzugehörigkeit mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                "Die Teammitgliedschaft mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s aktualisiert.",
                 StringUtils.quote(String.valueOf(result.getId())),
                 StringUtils.quote(String.valueOf(result.getTeamId())),
                 StringUtils.quote(result.getUserId()),
@@ -246,7 +246,7 @@ public class TeamMembershipController {
                 "teamId", deleted.getTeamId(),
                 "userId", deleted.getUserId()
         )).withMessage(
-                "Die Teamzugehörigkeit mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s gelöscht.",
+                "Die Teammitgliedschaft mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s gelöscht.",
                 StringUtils.quote(String.valueOf(deleted.getId())),
                 StringUtils.quote(String.valueOf(deleted.getTeamId())),
                 StringUtils.quote(deleted.getUserId()),

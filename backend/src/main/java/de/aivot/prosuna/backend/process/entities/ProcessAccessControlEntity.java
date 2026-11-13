@@ -6,10 +6,11 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 import java.util.List;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "process_access_controls")
-public class ProcessAccessControlEntity {
+public class ProcessAccessControlEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "process_access_controls_id_seq";
 
     @Id
@@ -35,6 +36,11 @@ public class ProcessAccessControlEntity {
 
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Signales
 
@@ -120,6 +126,17 @@ public class ProcessAccessControlEntity {
 
     public ProcessAccessControlEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public ProcessAccessControlEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

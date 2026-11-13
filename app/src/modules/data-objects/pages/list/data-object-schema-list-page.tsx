@@ -1,3 +1,4 @@
+import {normalizeElementDefinition} from '../../../../utils/normalize-element-definition';
 import {
     GenericListPage,
     type GenericListPagePermissionConfig,
@@ -41,6 +42,7 @@ export function DataObjectSchemaListPage() {
                 if (importedSchema == null) {
                     return;
                 }
+                importedSchema = {...importedSchema, schema: normalizeElementDefinition(importedSchema.schema)};
                 const importUUID = uuid4();
                 sessionStorage.setItem(`import/${importUUID}`, JSON.stringify(importedSchema));
                 navigate('/data-models/new', {

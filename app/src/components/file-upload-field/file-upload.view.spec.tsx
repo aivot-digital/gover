@@ -25,6 +25,8 @@ describe('FileUploadView', () => {
         expect(screen.getByRole('button', {name: 'antrag.pdf herunterladen'})).toBeEnabled();
         expect(screen.queryByRole('button', {name: 'antrag.pdf entfernen'})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'nachweis.pdf herunterladen'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'nachweis.pdf herunterladen'})).not.toHaveClass('MuiIconButton-colorError');
+        expect(screen.getByRole('button', {name: 'nachweis.pdf entfernen'})).toHaveClass('MuiIconButton-colorError');
         expect(screen.queryByRole('button', {name: 'foto.png herunterladen'})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'foto.png entfernen'})).toBeEnabled();
 

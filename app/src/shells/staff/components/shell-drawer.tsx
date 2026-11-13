@@ -239,7 +239,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
             },
             {
                 ...drawerModuleIcon('assets'),
-                label: 'Dateien & Medien',
+                label: 'Dateien und Medien',
                 to: '/assets',
                 requiredSystemPermission: Permission.ASSET_READ,
             },
@@ -396,7 +396,7 @@ export function ShellDrawer() {
             })
             .catch((err) => {
                 setAssetStorageProviderItems([]);
-                dispatch(showApiErrorSnackbar(err, 'Die Liste der Asset-Speicheranbieter konnte nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Dateien und Medien konnte nicht geladen werden.'));
             })
             .finally(() => {
                 setIsLoadingAssetStorageProviders(false);
@@ -484,7 +484,7 @@ export function ShellDrawer() {
                     };
                 }
 
-                if (item.label !== 'Dateien & Medien') {
+                if (item.label !== 'Dateien und Medien') {
                     return item;
                 }
 
@@ -498,7 +498,7 @@ export function ShellDrawer() {
                         ? assetStorageProviderItems
                         : [{
                             ...drawerModuleIcon('storage'),
-                            label: 'Keine Asset-Speicheranbieter',
+                            label: 'Keine Speicheranbieter für Dateien und Medien',
                             disabled: true,
                         }];
 

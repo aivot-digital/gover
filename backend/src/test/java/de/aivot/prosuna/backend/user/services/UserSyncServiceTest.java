@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import de.aivot.prosuna.backend.user.services.ImportedUserSystemRoleService;
 import de.aivot.prosuna.backend.user.services.KeyCloakApiService;
 import de.aivot.prosuna.backend.user.services.UserSyncService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -30,7 +31,7 @@ class UserSyncServiceTest {
         var auditService = mock(AuditService.class);
         var scopedAuditService = mock(ScopedAuditService.class);
         var auditLogPayload = mock(AuditLogPayload.class);
-        when(auditService.createScopedAuditService(UserSyncService.class, "Benutzer")).thenReturn(scopedAuditService);
+        when(auditService.createScopedAuditService(UserSyncService.class, "Mitarbeiter:innen")).thenReturn(scopedAuditService);
         when(scopedAuditService.create()).thenReturn(auditLogPayload);
         when(auditLogPayload.withSystem()).thenReturn(auditLogPayload);
         when(auditLogPayload.setTriggerType(anyString())).thenReturn(auditLogPayload);
@@ -70,14 +71,18 @@ class UserSyncServiceTest {
         when(keycloakApiService.listUsers()).thenReturn(List.of(keycloakUser));
         when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        var meterRegistry = new SimpleMeterRegistry();
         var service = new UserSyncService(
                 auditService,
                 userRepository,
                 keycloakApiService,
-                importedUserSystemRoleService
+                importedUserSystemRoleService,
+                meterRegistry
         );
 
         service.syncUsers();
+
+        assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "user", "outcome", "success").count());
 
         var captor = ArgumentCaptor.forClass(UserEntity.class);
         verify(userRepository).save(captor.capture());

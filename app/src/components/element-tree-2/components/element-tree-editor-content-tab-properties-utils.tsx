@@ -76,7 +76,7 @@ export function collectHttpMappingProblems(current: ElementWithParents, allEleme
                     </Typography>
                     <Typography>
                         Dies kann zu Problemen bei der Datenverarbeitung führen. Bitte passen Sie die Schlüssel an, um
-                        Überschneidungen zu vermeiden oder stellen Sie sicher, dass nicht beide Elemente gleichzeitig
+                        Überschneidungen zu vermeiden, oder stellen Sie sicher, dass nicht beide Elemente gleichzeitig
                         verwendet werden.
                     </Typography>
                 </>,

@@ -8,6 +8,8 @@ import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.workers.ProcessTaskDeadlineResultHandler;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,6 +23,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -47,11 +51,14 @@ class ProcessTaskDeadlineServiceTest {
             .setDeadlines(Map.of("customer", new ProcessNodeDeadlineConfiguration(2, true)));
     private final ProcessNodeDeadlineDefinition definition = new ProcessNodeDeadlineDefinition("customer", "Antwort der Kund:in",
             "Zeit für die Antwort", new ProcessNodePort("customer_overdue", "Antwort überfällig", "Fortsetzung"));
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private final ProcessTaskDeadlineService service = new ProcessTaskDeadlineService(nodes, nodeService, edges, instances,
-            tasks, loggers, new ProcessTaskDeadlineResultHandler(tasks, workRequests, attachments), time);
+            tasks, loggers, new ProcessTaskDeadlineResultHandler(tasks, workRequests, attachments), time,
+            meterRegistry);
 
     @BeforeEach
     void setup() {
+        TransactionSynchronizationManager.initSynchronization();
         when(clock.instant()).thenReturn(DEADLINE);
         when(nodes.findById(3)).thenReturn(Optional.of(node));
         when(nodes.findById(4)).thenReturn(Optional.of(new ProcessNodeEntity().setId(4)));
@@ -60,6 +67,21 @@ class ProcessTaskDeadlineServiceTest {
         when(edges.findByFromNodeIdAndViaPort(3, "customer_overdue")).thenReturn(Optional.of(new ProcessEdgeEntity()
                 .setFromNodeId(3).setToNodeId(4).setViaPort("customer_overdue")));
         when(loggers.create(1L, 2L, null, null)).thenReturn(new ProcessNodeExecutionLogger(1L, 2L, null, null, events));
+    }
+
+    @AfterEach
+    void clearSynchronization() {
+        TransactionSynchronizationManager.clearSynchronization();
+    }
+
+    @Test
+    void countsExceededDeadlineOnlyAfterTheCommit() {
+        service.expireIfDue(instance, task);
+
+        var counter = meterRegistry.counter("prosuna.process.task.deadlines.exceeded");
+        assertEquals(0, counter.count());
+        TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+        assertEquals(1, counter.count());
     }
 
     @ParameterizedTest

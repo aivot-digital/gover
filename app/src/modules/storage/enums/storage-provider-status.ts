@@ -6,7 +6,7 @@ export enum StorageProviderStatus {
 }
 
 export const StorageProviderStatusLabels: Record<StorageProviderStatus, string> = {
-    [StorageProviderStatus.SyncPending]: 'Synchronisation ausstehend',
+    [StorageProviderStatus.SyncPending]: 'Synchronisierung ausstehend',
     [StorageProviderStatus.Syncing]: 'Synchronisierung läuft',
     [StorageProviderStatus.Synced]: 'Synchronisiert',
     [StorageProviderStatus.SyncFailed]: 'Synchronisierung fehlgeschlagen',

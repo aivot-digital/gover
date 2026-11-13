@@ -2,11 +2,14 @@ package de.aivot.prosuna.backend;
 
 import de.aivot.prosuna.backend.exceptions.UserFriendlyResponseStatusException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.models.dtos.ApiErrorDto;
 import de.aivot.prosuna.backend.mail.services.ExceptionMailService;
 import io.sentry.Sentry;
+import jakarta.persistence.OptimisticLockException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
@@ -73,6 +76,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(apiError);
     }
 
+    // Another transaction updated the entity between loading and saving it. This is an expected conflict, not a server error.
+    // Spring translates the JPA exception only for repository calls and commits, not for a direct EntityManager flush.
+    @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
+    public ResponseEntity<Object> handleOptimisticLockingFailure() {
+        var apiError = new ApiErrorDto(
+                HttpStatus.CONFLICT,
+                LockVersioned.CONFLICT_MESSAGE,
+                LockVersioned.CONFLICT_DETAILS,
+                true
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(apiError);
+    }
+
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex,
@@ -81,21 +101,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             WebRequest request
     ) {
         final List<String> errors = new ArrayList<>();
+        final var fieldErrors = ex.getBindingResult().getFieldErrors();
+        final var globalErrors = ex.getBindingResult().getGlobalErrors();
 
-        for (final FieldError error : ex.getBindingResult().getFieldErrors()) {
+        for (final FieldError error : fieldErrors) {
             errors.add(error.getField() + ": " + error.getDefaultMessage());
         }
 
-        for (final ObjectError error : ex.getBindingResult().getGlobalErrors()) {
+        for (final ObjectError error : globalErrors) {
             errors.add(error.getObjectName() + ": " + error.getDefaultMessage());
         }
 
-        final String message;
-        if (errors.isEmpty()) {
-            message = "Die Anfrage enthält ungültige Daten.";
-        } else {
-            message = errors.getFirst();
+        // Preserve technical field paths in details, but show only the validation message in the UI.
+        String validationMessage = null;
+        if (!fieldErrors.isEmpty()) {
+            validationMessage = fieldErrors.getFirst().getDefaultMessage();
+        } else if (!globalErrors.isEmpty()) {
+            validationMessage = globalErrors.getFirst().getDefaultMessage();
         }
+        final String message = validationMessage == null || validationMessage.isBlank()
+                ? "Die Anfrage enthält ungültige Daten."
+                : validationMessage;
 
         final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, message, errors, true);
 
