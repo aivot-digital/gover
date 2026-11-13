@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.payment;
 
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.prosuna.backend.asset.repositories.VStorageIndexItemWithAssetRepository;
+import de.aivot.prosuna.backend.core.properties.HttpServiceProperties;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
@@ -45,6 +46,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.KeyStore;
 import java.time.DateTimeException;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -69,14 +71,17 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     private final SecretService secretService;
     private final StorageService assetStorageService;
     private final VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository;
+    private final HttpServiceProperties httpServiceProperties;
 
     @Autowired
     public ePayBLPaymentProviderDefinitionV1(SecretService secretService,
                                              StorageService assetStorageService,
-                                             VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository) {
+                                             VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository,
+                                             HttpServiceProperties httpServiceProperties) {
         this.secretService = secretService;
         this.assetStorageService = assetStorageService;
         this.vStorageIndexItemWithAssetRepository = vStorageIndexItemWithAssetRepository;
+        this.httpServiceProperties = httpServiceProperties;
     }
 
     @Nonnull
@@ -263,6 +268,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         var request = HttpRequest
                 .newBuilder(URI.create(paymentPath))
+                .timeout(Duration.ofSeconds(httpServiceProperties.getReadTimeoutSeconds()))
                 .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
                 .headers("Accept", ContentType.APPLICATION_JSON.getType())
                 .POST(HttpRequest.BodyPublishers.ofString(body))
@@ -272,6 +278,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         // We need to pay attention to close the client after the request to avoid resource leaks.
         var client = HttpClient
                 .newBuilder()
+                .connectTimeout(Duration.ofSeconds(httpServiceProperties.getConnectionTimeoutSeconds()))
                 .sslContext(getSslContext(paymentProviderEntity, config))
                 .build();
 
@@ -329,6 +336,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         // We need to pay attention to close the client after the request to avoid resource leaks.
         var client = HttpClient
                 .newBuilder()
+                .connectTimeout(Duration.ofSeconds(httpServiceProperties.getConnectionTimeoutSeconds()))
                 .sslContext(getSslContext(paymentProviderEntity, config))
                 .build();
 
@@ -337,6 +345,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         var request = HttpRequest
                 .newBuilder(URI.create(paymentPath))
+                .timeout(Duration.ofSeconds(httpServiceProperties.getReadTimeoutSeconds()))
                 .GET()
                 .build();
 
