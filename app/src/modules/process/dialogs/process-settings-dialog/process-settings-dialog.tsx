@@ -1,6 +1,8 @@
 import {ProcessEntity} from '../../entities/process-entity';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
-import {Box, Button, Dialog, DialogActions, DialogContent, Tab, Tabs, Typography} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Tab, Tabs, Typography} from '@mui/material';
+import {Permission} from '../../../../data/permissions/permission';
+import {useHasDepartmentPermission, useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
 import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
 import {useEffect, useRef, useState} from 'react';
 import {VDepartmentShadowedApiService} from '../../../departments/services/v-department-shadowed-api-service';
@@ -65,6 +67,10 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     const processInstanceAccessPresetTabRef = useRef<ProcessSettingsDialogProcessInstanceAccessPresetTabHandle | null>(null);
     const renderProcess = useRetainedDialogValue(open, process);
     const renderVersion = useRetainedDialogValue(open, version);
+    const canUpdateProcess = useHasProcessPermission(renderProcess.id, Permission.PROCESS_DEFINITION_UPDATE);
+    const canDeleteProcess = useHasProcessPermission(renderProcess.id, Permission.PROCESS_DEFINITION_DELETE);
+    // Delegated process grants do not count: only the managing department decides who has access to the process.
+    const canManageProcessAccess = useHasDepartmentPermission(renderProcess.departmentId, Permission.PROCESS_DEFINITION_UPDATE);
     const renderOnProcessChange = useRetainedDialogValue(open, onProcessChange);
     const renderOnVersionChange = useRetainedDialogValue(open, onVersionChange);
     const isSavingSettings = isSavingGeneralSettings || isSavingVersionSettings || isSavingProcessAccess || isSavingProcessInstanceAccessPreset;
@@ -282,10 +288,12 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     <Tab
                         value={2}
                         label="Prozessberechtigungen"
+                        disabled={!canUpdateProcess}
                     />
                     <Tab
                         value={3}
                         label="Standardrechte für neue Vorgänge"
+                        disabled={!canUpdateProcess}
                     />
                     <Tab
                         value={4}
@@ -302,10 +310,22 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     }}
                 >
                     {
+                        !canUpdateProcess &&
+                        <Alert
+                            severity="info"
+                            sx={{mb: 2}}
+                        >
+                            Sie können die Einstellungen einsehen. Zum Bearbeiten benötigen Sie die Berechtigung „Prozess bearbeiten“. Prozessberechtigungen und Standardrechte für neue Vorgänge sind nur mit dieser Berechtigung verfügbar.
+                        </Alert>
+                    }
+                    {
                         currentTab === 0 &&
                         <ProcessSettingsDialogGeneralTab
                             ref={generalTabRef}
                             open={open}
+                            readOnly={!canUpdateProcess}
+                            canDeleteProcess={canDeleteProcess}
+                            canMoveProcess={canManageProcessAccess}
                             process={renderProcess}
                             departments={departments}
                             onProcessChange={renderOnProcessChange}
@@ -320,6 +340,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                         <ProcessSettingsDialogVersionTab
                             ref={versionTabRef}
                             open={open}
+                            readOnly={!canUpdateProcess}
                             version={renderVersion}
                             departments={departments}
                             themes={themes}
@@ -334,6 +355,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                         <ProcessSettingsDialogProcessAccessTab
                             ref={processAccessTabRef}
                             open={open}
+                            readOnly={!canManageProcessAccess}
                             process={renderProcess}
                             departments={departments}
                             teams={teams}

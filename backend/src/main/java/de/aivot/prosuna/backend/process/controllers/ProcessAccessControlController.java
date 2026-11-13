@@ -10,6 +10,8 @@ import de.aivot.prosuna.backend.process.entities.ProcessAccessControlEntity;
 import de.aivot.prosuna.backend.process.filters.ProcessAccessControlFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.process.services.ProcessAccessControlService;
+import de.aivot.prosuna.backend.process.services.ProcessInstanceAccessAuditDescriptionService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -32,16 +34,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProcessAccessControlController extends GenericCrudController<ProcessAccessControlEntity, Integer, ProcessAccessControlFilter> {
     private final ProcessAccessControlService processAccessControlService;
     private final PermissionService permissionService;
+    private final ProcessService processService;
+    private final ProcessInstanceAccessAuditDescriptionService auditDescriptions;
 
     public ProcessAccessControlController(AuditService auditService,
                                           UserService userService,
                                           ProcessAccessControlService processAccessControlService,
-                                          PermissionService permissionService) {
+                                          PermissionService permissionService,
+                                          ProcessService processService,
+                                          ProcessInstanceAccessAuditDescriptionService auditDescriptions) {
         super(auditService.createScopedAuditService(ProcessAccessControlController.class, "Prozesse"),
                 userService,
                 processAccessControlService);
         this.processAccessControlService = processAccessControlService;
         this.permissionService = permissionService;
+        this.processService = processService;
+        this.auditDescriptions = auditDescriptions;
     }
 
     @Override
@@ -86,11 +94,7 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
     @Override
     protected void checkCreatePermissions(@Nonnull UserEntity execUser,
                                           @Nonnull ProcessAccessControlEntity newItem) throws ResponseException {
-        permissionService.requireProcessPermission(
-                execUser.getId(),
-                newItem.getTargetProcessId(),
-                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
-        );
+        requireManagingDepartmentUpdate(execUser, newItem.getTargetProcessId());
     }
 
     @Override
@@ -110,13 +114,39 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
     @Override
     protected void checkUpdatePermission(@Nonnull UserEntity execUser,
                                          @Nonnull Integer itemid) throws ResponseException {
-        checkRetrievePermissions(execUser, itemid);
+        requireManagingDepartmentUpdateForRule(execUser, itemid);
     }
 
     @Override
     protected void checkDeletePermission(@Nonnull UserEntity execUser,
                                          @Nonnull Integer itemid) throws ResponseException {
-        checkRetrievePermissions(execUser, itemid);
+        requireManagingDepartmentUpdateForRule(execUser, itemid);
+    }
+
+    private void requireManagingDepartmentUpdateForRule(@Nonnull UserEntity execUser,
+                                                        @Nonnull Integer itemid) throws ResponseException {
+        var existing = processAccessControlService
+                .retrieve(itemid)
+                .orElseThrow(ResponseException::notFound);
+
+        requireManagingDepartmentUpdate(execUser, existing.getTargetProcessId());
+    }
+
+    /**
+     * Delegated OEs and teams may hold the update permission on a process, but only the managing
+     * department decides who has access to it, so the permission is checked on that department.
+     */
+    private void requireManagingDepartmentUpdate(@Nonnull UserEntity execUser,
+                                                 @Nonnull Integer processId) throws ResponseException {
+        var process = processService
+                .retrieve(processId)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireDepartmentPermission(
+                execUser.getId(),
+                process.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
     }
 
     @Override
@@ -124,10 +154,9 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
     protected String buildCreateAuditMessage(@Nonnull UserEntity execUser,
                                              @Nonnull ProcessAccessControlEntity createdItem) {
         return String.format(
-                "Die Prozess-Zugriffsregel mit der ID %s für den Zielprozess %s wurde von der Mitarbeiter:in %s erstellt.",
-                StringUtils.quote(String.valueOf(createdItem.getId())),
-                StringUtils.quote(String.valueOf(createdItem.getTargetProcessId())),
-                StringUtils.quote(execUser.getFullName())
+                "%s hat %s hinzugefügt.",
+                StringUtils.quote(execUser.getFullName()),
+                auditDescriptions.describeProcessAccess(createdItem)
         );
     }
 
@@ -137,10 +166,9 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
                                              @Nonnull Integer id,
                                              @Nonnull ProcessAccessControlEntity updatedItem) {
         return String.format(
-                "Die Prozess-Zugriffsregel mit der ID %s für den Zielprozess %s wurde von der Mitarbeiter:in %s aktualisiert.",
-                StringUtils.quote(String.valueOf(id)),
-                StringUtils.quote(String.valueOf(updatedItem.getTargetProcessId())),
-                StringUtils.quote(execUser.getFullName())
+                "%s hat %s geändert.",
+                StringUtils.quote(execUser.getFullName()),
+                auditDescriptions.describeProcessAccess(updatedItem)
         );
     }
 
@@ -150,10 +178,9 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
                                              @Nonnull Integer id,
                                              @Nonnull ProcessAccessControlEntity deletedItem) {
         return String.format(
-                "Die Prozess-Zugriffsregel mit der ID %s für den Zielprozess %s wurde von der Mitarbeiter:in %s gelöscht.",
-                StringUtils.quote(String.valueOf(id)),
-                StringUtils.quote(String.valueOf(deletedItem.getTargetProcessId())),
-                StringUtils.quote(execUser.getFullName())
+                "%s hat %s entfernt.",
+                StringUtils.quote(execUser.getFullName()),
+                auditDescriptions.describeProcessAccess(deletedItem)
         );
     }
 

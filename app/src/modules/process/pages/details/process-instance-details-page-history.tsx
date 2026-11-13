@@ -7,7 +7,7 @@ import {ProcessExecutionSummary} from '../../components/process-execution-summar
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {useGenericDetailsPageEvent} from '../../../../components/generic-details-page/use-generic-details-page-event';
 import {Permission} from '../../../../data/permissions/permission';
-import {useHasProcessInstancePermission} from '../../../permissions/hooks/use-permissions';
+import {useHasProcessInstancePermission, useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
 import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
 import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
 import {type ProcessNodeEntity} from '../../entities/process-node-entity';
@@ -114,7 +114,7 @@ function InstanceHistory(props: InstanceHistoryProps) {
     const dispatch = useAppDispatch();
 
     const canRead = useHasProcessInstancePermission(processInstanceId, Permission.PROCESS_INSTANCE_READ);
-    const canViewProcess = useHasProcessInstancePermission(processInstanceId, Permission.PROCESS_DEFINITION_READ);
+    const canViewProcess = useHasProcessPermission(processDefinitionId, Permission.PROCESS_DEFINITION_READ);
 
     const [result, setResult] = useState<HistoryData>();
     const [refreshCounter, setRefreshCounter] = useState(0);

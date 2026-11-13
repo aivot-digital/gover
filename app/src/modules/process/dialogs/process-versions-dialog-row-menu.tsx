@@ -9,6 +9,10 @@ import Route from '@aivot/mui-material-symbols-400-n25-outlined/Route';
 import {ProcessEntity} from '../entities/process-entity';
 import {ProcessVersionEntity} from '../entities/process-version-entity';
 import {ProcessStatus} from '../enums/process-status';
+import {DisabledTooltipMenuItem} from '../../../components/disabled-tooltip/disabled-tooltip-menu-item';
+import {Permission} from '../../../data/permissions/permission';
+import {useHasAnyDepartmentPermission, useHasProcessPermission} from '../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 
 interface ProcessVersionsDialogRowMenuProps {
     anchorEl: HTMLElement | null;
@@ -47,6 +51,16 @@ export function ProcessVersionsDialogRowMenu(props: ProcessVersionsDialogRowMenu
     const canRevokeVersion = processVersion.status === ProcessStatus.Published;
     const hasLifecycleAction = canPublishVersion || canRevokeVersion;
 
+    const hasUpdatePermission = useHasProcessPermission(process.id, Permission.PROCESS_DEFINITION_UPDATE);
+    const hasPublishPermission = useHasProcessPermission(process.id, Permission.PROCESS_DEFINITION_PUBLISH_LOCAL);
+    const hasCreatePermission = useHasAnyDepartmentPermission(Permission.PROCESS_DEFINITION_CREATE);
+
+    const lifecycleDisabled = lifecycleActionsDisabled === true || !hasPublishPermission;
+    const lifecycleDisabledTooltip = hasPublishPermission
+        ? lifecycleActionsDisabledReason
+        : formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_PUBLISH_LOCAL);
+    const missingUpdateTooltip = formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_UPDATE);
+
     return (
         <Menu
             anchorEl={anchorEl}
@@ -55,9 +69,9 @@ export function ProcessVersionsDialogRowMenu(props: ProcessVersionsDialogRowMenu
         >
             {
                 canPublishVersion &&
-                <MenuItem
-                    disabled={lifecycleActionsDisabled}
-                    title={lifecycleActionsDisabled ? lifecycleActionsDisabledReason : undefined}
+                <DisabledTooltipMenuItem
+                    disabled={lifecycleDisabled}
+                    disabledTooltip={lifecycleDisabledTooltip}
                     onClick={() => {
                         onPublishVersion(processVersion.processVersion);
                         onClose();
@@ -69,14 +83,14 @@ export function ProcessVersionsDialogRowMenu(props: ProcessVersionsDialogRowMenu
                     <ListItemText>
                         Veröffentlichen
                     </ListItemText>
-                </MenuItem>
+                </DisabledTooltipMenuItem>
             }
 
             {
                 canRevokeVersion &&
-                <MenuItem
-                    disabled={lifecycleActionsDisabled}
-                    title={lifecycleActionsDisabled ? lifecycleActionsDisabledReason : undefined}
+                <DisabledTooltipMenuItem
+                    disabled={lifecycleDisabled}
+                    disabledTooltip={lifecycleDisabledTooltip}
                     onClick={() => {
                         onRevokeVersion(processVersion.processVersion);
                         onClose();
@@ -88,7 +102,7 @@ export function ProcessVersionsDialogRowMenu(props: ProcessVersionsDialogRowMenu
                     <ListItemText>
                         Zurückziehen
                     </ListItemText>
-                </MenuItem>
+                </DisabledTooltipMenuItem>
             }
 
             {
@@ -98,7 +112,9 @@ export function ProcessVersionsDialogRowMenu(props: ProcessVersionsDialogRowMenu
 
             {
                 process.draftedVersion !== processVersion.processVersion &&
-                <MenuItem
+                <DisabledTooltipMenuItem
+                    disabled={!hasUpdatePermission}
+                    disabledTooltip={missingUpdateTooltip}
                     onClick={() => {
                         onReuseVersionAsDraft(processVersion.processVersion);
                         onClose();
@@ -110,10 +126,12 @@ export function ProcessVersionsDialogRowMenu(props: ProcessVersionsDialogRowMenu
                     <ListItemText>
                         Als Entwurf verwenden
                     </ListItemText>
-                </MenuItem>
+                </DisabledTooltipMenuItem>
             }
 
-            <MenuItem
+            <DisabledTooltipMenuItem
+                disabled={!hasCreatePermission}
+                disabledTooltip={formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_CREATE)}
                 onClick={() => {
                     onReuseVersionAsNewProcess(processVersion.processVersion);
                     onClose();
@@ -125,7 +143,7 @@ export function ProcessVersionsDialogRowMenu(props: ProcessVersionsDialogRowMenu
                 <ListItemText>
                     Als neuen Prozess kopieren
                 </ListItemText>
-            </MenuItem>
+            </DisabledTooltipMenuItem>
 
             <MenuItem
                 onClick={() => {
@@ -148,7 +166,9 @@ export function ProcessVersionsDialogRowMenu(props: ProcessVersionsDialogRowMenu
 
             {
                 process.draftedVersion === processVersion.processVersion &&
-                <MenuItem
+                <DisabledTooltipMenuItem
+                    disabled={!hasUpdatePermission}
+                    disabledTooltip={missingUpdateTooltip}
                     onClick={() => {
                         onDeleteVersion(processVersion.processVersion);
                         onClose();
@@ -164,7 +184,7 @@ export function ProcessVersionsDialogRowMenu(props: ProcessVersionsDialogRowMenu
                     >
                         Entwurf löschen
                     </ListItemText>
-                </MenuItem>
+                </DisabledTooltipMenuItem>
             }
         </Menu>
     );
