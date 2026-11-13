@@ -14,6 +14,7 @@ import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../slices/user-slice';
 import {Permission} from '../../../data/permissions/permission';
 import {formatMissingPermissionTooltip, hasDepartmentPermission} from '../../permissions/utils/permission-utils';
+import {useRefreshPermissionSet} from '../../permissions/hooks/use-permissions';
 
 interface MoveProcessToDepartmentDialogProps {
     processId: number;
@@ -30,6 +31,7 @@ export function MoveProcessToDepartmentDialog(props: MoveProcessToDepartmentDial
 
     const dispatch = useAppDispatch();
     const permissions = useAppSelector(selectPermissions);
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const [targetDepartment, setTargetDepartment] = useState<VDepartmentShadowedEntity | null>(null);
     const [targetDepartmentError, setTargetDepartmentError] = useState<string | undefined>();
@@ -67,8 +69,16 @@ export function MoveProcessToDepartmentDialog(props: MoveProcessToDepartmentDial
 
         new ProcessDefinitionApiService()
             .move(process.id, targetDepartment.id)
-            .then((updatedProcess) => {
+            .then(async (updatedProcess) => {
                 dispatch(showSuccessSnackbar('Der Prozess wurde erfolgreich übertragen.'));
+
+                try {
+                    // The managing department grants process permissions, so moving changes them.
+                    await refreshPermissionSet({broadcast: true});
+                } catch (err) {
+                    dispatch(showApiErrorSnackbar(err, 'Die Berechtigungen konnten nach dem Übertragen des Prozesses nicht aktualisiert werden.'));
+                }
+
                 onMoved(updatedProcess);
             })
             .catch((err) => {
