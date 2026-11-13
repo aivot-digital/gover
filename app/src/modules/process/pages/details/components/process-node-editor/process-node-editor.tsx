@@ -20,7 +20,11 @@ import {useChangeBlocker} from '../../../../../../hooks/use-change-blocker-2';
 import {ProcessNodeEditorMenu} from './components/process-node-editor-menu';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {getNodeName} from '../process-flow-editor/utils/node-utils';
-import {isApiError} from '../../../../../../models/api-error';
+import {isApiError, isLockVersionConflictError} from '../../../../../../models/api-error';
+import {useEditorDraft} from '../../../../../../hooks/use-editor-draft';
+import {useMergeConflictResolution} from '../../../../../../hooks/use-merge-conflict-resolution';
+import {createProcessNodeMergeSpec} from '../../../../utils/process-node-merge-spec';
+import {type RequestOptions} from '../../../../../../services/base-api-service';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
@@ -47,6 +51,9 @@ type IncomingMetadataState =
     | {status: 'failed'};
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
+const MERGED_SAVE_MESSAGE = 'Ihre Änderungen wurden mit dem zwischenzeitlich gespeicherten Stand zusammengeführt und gespeichert.';
+// Each attempt merges with the latest stored state; a conflict that persists beyond that is reported instead of retried.
+const MAX_SAVE_ATTEMPTS = 3;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
 const processNodeEditorLoadedSidebarFlashLight = keyframes`
     0% {
@@ -99,6 +106,16 @@ export function ProcessNodeEditor(): ReactNode {
     const [isNodeLoading, setIsNodeLoading] = useState(false);
     const [showNodeLoadedFeedback, setShowNodeLoadedFeedback] = useState(false);
     const [problems, setProblems] = useState<ProcessNodeProblems | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const isSavingRef = useRef(false);
+    // Raised with every load, so the draft is checked again for the freshly loaded node.
+    const [nodeLoadCount, setNodeLoadCount] = useState(0);
+    const draftCheckedForLoadRef = useRef(0);
+    const [isDraftChecked, setIsDraftChecked] = useState(false);
+    const {
+        resolve: resolveMerge,
+        dialog: mergeConflictDialog,
+    } = useMergeConflictResolution();
 
     const hasEditorContent = originalNode != null && layout != null && provider != null;
     const showNodeLoadingOverlay = useDelayedVisibility(isNodeLoading, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
@@ -127,6 +144,7 @@ export function ProcessNodeEditor(): ReactNode {
         edited: editedNode,
         onConfirmNavigation: () => {
             setEditedNode(originalNode);
+            void clearDraft();
         },
         // Tab changes keep the same editing session. Do not persist a bypass in history state: revisiting that
         // entry from a different node would otherwise discard its unsaved changes without confirmation.
@@ -183,6 +201,8 @@ export function ProcessNodeEditor(): ReactNode {
                 setOutputMappingErrors({});
                 setOriginalNode(node);
                 setEditedNode(node);
+                setIsDraftChecked(false);
+                setNodeLoadCount((count) => count + 1);
                 setLayout(configurationLayout);
                 setProvider(nodeProvider);
                 setProblems(problems);
@@ -248,6 +268,53 @@ export function ProcessNodeEditor(): ReactNode {
         };
     }, [showNodeLoadedFeedback]);
 
+    const mergeSpec = useMemo(() => createProcessNodeMergeSpec(layout), [layout]);
+
+    const {
+        loadDraft,
+        clearDraft,
+        isReady: isDraftStorageReady,
+    } = useEditorDraft<ProcessNodeEntity>({
+        draftKey: originalNode == null ? null : `process-node/${originalNode.id}/configuration`,
+        base: originalNode,
+        baseLockVersion: originalNode?.lockVersion,
+        edited: editedNode,
+        hasChanged,
+        enabled: isDraftChecked && editable,
+    });
+
+    // Offers the unsaved changes of an earlier visit after each load, e.g. after the session expired.
+    useEffect(() => {
+        if (originalNode == null || layout == null || !isDraftStorageReady || nodeLoadCount === 0 || draftCheckedForLoadRef.current === nodeLoadCount) {
+            return;
+        }
+        draftCheckedForLoadRef.current = nodeLoadCount;
+
+        (async () => {
+            const draft = editable ? await loadDraft() : null;
+            if (draft == null) {
+                return;
+            }
+
+            const outcome = await resolveMerge({
+                base: draft.base,
+                mine: draft.mine,
+                theirs: originalNode,
+                spec: mergeSpec,
+                mode: 'restore',
+                storedStateChanged: draft.baseLockVersion !== (originalNode.lockVersion ?? null),
+            });
+            if (outcome.status === 'apply') {
+                setEditedNode(outcome.value);
+            } else {
+                // Discarded, or nothing left to restore because the changes were saved elsewhere.
+                await clearDraft();
+            }
+        })()
+            .catch(console.error)
+            .finally(() => setIsDraftChecked(true));
+    }, [originalNode, layout, isDraftStorageReady, nodeLoadCount, editable]);
+
     const {
         Icon: TypeIcon,
         label: typeLabel,
@@ -295,8 +362,48 @@ export function ProcessNodeEditor(): ReactNode {
         });
     }, [location]);
 
-    const handleSaveSelected = (): void => {
-        if (!editable || !hasChanged || editedNode == null) {
+    /**
+     * Saves the node on top of the given stored state. A save rejected because a newer state was stored in the
+     * meantime is merged with that state and saved again, asking only where both changed the same value.
+     * Resolves to null if nothing was saved because the person cancelled or discarded the changes.
+     */
+    const saveNode = async (baseNode: ProcessNodeEntity, node: ProcessNodeEntity, options: RequestOptions, attempt = 1): Promise<ProcessNodeEntity | null> => {
+        try {
+            return await onSave(node, options);
+        } catch (error) {
+            if (!isLockVersionConflictError(error) || attempt >= MAX_SAVE_ATTEMPTS) {
+                throw error;
+            }
+        }
+
+        const storedNode = await new ProcessNodeApiService().retrieve(baseNode.id);
+        const outcome = await resolveMerge({
+            base: baseNode,
+            mine: node,
+            theirs: storedNode,
+            spec: mergeSpec,
+            mode: 'save',
+            storedStateChanged: true,
+        });
+
+        if (outcome.status === 'apply') {
+            // Based on the newer node, so the save passes the lock version check unless yet another save came first.
+            const savedNode = await saveNode(storedNode, outcome.value, options, attempt + 1);
+            if (savedNode != null) {
+                dispatch(showSuccessSnackbar(MERGED_SAVE_MESSAGE));
+            }
+            return savedNode;
+        }
+        if (outcome.status === 'discard') {
+            setOriginalNode(storedNode);
+            setEditedNode(storedNode);
+        }
+        return null;
+    };
+
+    const handleSaveSelected = async (): Promise<void> => {
+        // Guards against a second click while the first save is still running, which would end in a needless conflict.
+        if (!editable || !hasChanged || editedNode == null || originalNode == null || isSavingRef.current) {
             return;
         }
 
@@ -315,42 +422,46 @@ export function ProcessNodeEditor(): ReactNode {
             .filter((e) => isUiDefinitionInputFieldElement(e) && e.openExternalEditor)
             .map((e) => e.id);
 
-        onSave(editedNode, {
-            query: {
-                omitConfigSave: fieldsToOmit,
-            }
-        })
-            .then((savedNode) => {
-                setDataKeyUnlocked(false);
-                setDataKeyValidationRequested(false);
-                setOutputMappingErrors({});
-                setOriginalNode(savedNode);
-                setEditedNode(savedNode);
-
-                dispatch(showSuccessSnackbar('Das Element wurde erfolgreich gespeichert.'));
-
-                return new ProcessNodeApiService()
-                    .validate(editedNode.id);
-            })
-            .then((problems) => {
-                setProblems(problems);
-            })
-            .catch((err: any) => {
-                if (isApiError(err) && err.status === 400) {
-                    if (isDerivedRuntimeElementData(err.details)) {
-                        setProblems({
-                            node: editedNode,
-                            derivedRuntimeElementData: err.details,
-                            commonErrors: {},
-                            problems: [],
-                        });
-                    } else {
-                        dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
-                    }
-                } else {
-                    dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.'));
-                }
+        isSavingRef.current = true;
+        setIsSaving(true);
+        try {
+            const savedNode = await saveNode(originalNode, editedNode, {
+                query: {
+                    omitConfigSave: fieldsToOmit,
+                },
             });
+            if (savedNode == null) {
+                return;
+            }
+
+            setDataKeyUnlocked(false);
+            setDataKeyValidationRequested(false);
+            setOutputMappingErrors({});
+            setOriginalNode(savedNode);
+            setEditedNode(savedNode);
+
+            dispatch(showSuccessSnackbar('Das Element wurde erfolgreich gespeichert.'));
+
+            setProblems(await new ProcessNodeApiService().validate(savedNode.id));
+        } catch (err: any) {
+            if (isApiError(err) && err.status === 400) {
+                if (isDerivedRuntimeElementData(err.details)) {
+                    setProblems({
+                        node: editedNode,
+                        derivedRuntimeElementData: err.details,
+                        commonErrors: {},
+                        problems: [],
+                    });
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
+                }
+            } else {
+                dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.'));
+            }
+        } finally {
+            isSavingRef.current = false;
+            setIsSaving(false);
+        }
     };
 
     const handleDeleteSelected = (): void => {
@@ -631,10 +742,12 @@ export function ProcessNodeEditor(): ReactNode {
                     }}
                 >
                     <Button
-                        onClick={handleSaveSelected}
+                        onClick={() => {
+                            void handleSaveSelected();
+                        }}
                         variant="contained"
                         startIcon={<Save/>}
-                        disabled={!editable || !hasChanged || isNodeLoading}
+                        disabled={!editable || !hasChanged || isNodeLoading || isSaving}
                     >
                         Konfiguration speichern
                     </Button>
@@ -650,6 +763,7 @@ export function ProcessNodeEditor(): ReactNode {
             </Box>
 
             {changeBlockerDialog}
+            {mergeConflictDialog}
 
             <ProcessNodeEditorMenu
                 anchorEl={menuAnchorEl}

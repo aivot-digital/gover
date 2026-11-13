@@ -2,7 +2,7 @@ import {AuthService} from '../../../../../../services/auth-service';
 import {ProcessNodeEditorOutputsTab} from './tabs/process-node-editor-outputs-tab';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, type MockInstance, vi} from 'vitest';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {ProcessNodeEditor} from './process-node-editor';
@@ -21,11 +21,14 @@ import {generateElementWithDefaultValues} from '../../../../../../utils/generate
 import {ElementType} from '../../../../../../data/element-type/element-type';
 import {InputMode, InputVariableSource} from '../../../../../../models/input-mode';
 
-const testState = vi.hoisted(() => ({dispatch: vi.fn(), save: vi.fn(), confirm: vi.fn()}));
+const testState = vi.hoisted(() => ({dispatch: vi.fn(), save: vi.fn(), confirm: vi.fn(), loadDraft: vi.fn(), clearDraft: vi.fn()}));
 
 vi.mock('../../../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => testState.dispatch}));
 vi.mock('../../../../../../providers/confirm-provider', () => ({useConfirm: () => testState.confirm}));
 vi.mock('./components/process-node-editor-menu', () => ({ProcessNodeEditorMenu: () => null}));
+vi.mock('../../../../../../hooks/use-editor-draft', () => ({
+    useEditorDraft: () => ({loadDraft: testState.loadDraft, clearDraft: testState.clearDraft, isReady: true}),
+}));
 vi.mock('../../../../components/process-node-provider-details', () => ({
     getProcessNodeProviderIcon: () => () => null,
     ProcessNodeProviderDetailsDialog: () => null,
@@ -108,6 +111,8 @@ describe('ProcessNodeEditor metadata loading', () => {
         // jsdom does not implement element scrolling, which the editor uses on navigation.
         Object.defineProperty(HTMLElement.prototype, 'scrollTo', {value: vi.fn(), configurable: true, writable: true});
         testState.confirm.mockResolvedValue(true);
+        testState.loadDraft.mockResolvedValue(null);
+        testState.clearDraft.mockResolvedValue(undefined);
         testState.save.mockImplementation(async (node: ProcessNodeEntity) => node);
         vi.spyOn(ProcessNodeApiService.prototype, 'retrieve').mockImplementation(async (id) => createNode(id));
         vi.spyOn(ProcessNodeApiService.prototype, 'getConfigurationLayout')
@@ -312,5 +317,152 @@ describe('ProcessNodeEditor metadata loading', () => {
         })));
         expect(logError).toHaveBeenCalledWith(error);
         expect(screen.queryByRole('textbox', {name: 'Name bearbeiten'})).not.toBeInTheDocument();
+    });
+});
+
+describe('ProcessNodeEditor drafts and save conflicts', () => {
+    const lockConflict = {
+        status: 409,
+        message: 'Der Datensatz wurde zwischenzeitlich geändert.',
+        details: {reason: 'lock_version_conflict'},
+        displayableToUser: true,
+    };
+
+    beforeEach(() => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        Object.defineProperty(HTMLElement.prototype, 'scrollTo', {value: vi.fn(), configurable: true, writable: true});
+        testState.dispatch.mockReset();
+        testState.save.mockReset();
+        testState.loadDraft.mockReset().mockResolvedValue(null);
+        testState.clearDraft.mockReset().mockResolvedValue(undefined);
+        vi.spyOn(ProcessNodeApiService.prototype, 'retrieve').mockResolvedValue({...createNode(1), lockVersion: 1});
+        vi.spyOn(ProcessNodeApiService.prototype, 'getConfigurationLayout')
+            .mockResolvedValue(generateElementWithDefaultValues(ElementType.GroupLayout));
+        vi.spyOn(ProcessNodeApiService.prototype, 'validate').mockResolvedValue(null);
+        vi.spyOn(ProcessNodeApiService.prototype, 'getIncomingMetadata').mockResolvedValue(createMetadata());
+        vi.spyOn(ProcessNodeProviderApiService.prototype, 'getNodeProvider').mockResolvedValue(provider);
+    });
+
+    afterEach(() => {
+        Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo');
+    });
+
+    async function editName(name: string) {
+        const input = await screen.findByRole('textbox', {name: 'Name bearbeiten'});
+        fireEvent.change(input, {target: {value: name}});
+    }
+
+    it('merges a save rejected by a newer stored state and saves again without asking', async () => {
+        const storedNode = {...createNode(1), notes: 'Neue Notiz', lockVersion: 2};
+        testState.save
+            .mockRejectedValueOnce(lockConflict)
+            .mockImplementation(async (node: ProcessNodeEntity) => node);
+        renderEditor();
+        await editName('Mein Name');
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(storedNode);
+
+        fireEvent.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
+
+        await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(2));
+        expect(testState.save.mock.calls[1][0]).toEqual({...storedNode, name: 'Mein Name'});
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        await waitFor(() => expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({
+                message: 'Ihre Änderungen wurden mit dem zwischenzeitlich gespeicherten Stand zusammengeführt und gespeichert.',
+            }),
+        })));
+    });
+
+    it('asks which state applies where both changed the same value', async () => {
+        const storedNode = {...createNode(1), name: 'Anderer Name', lockVersion: 2};
+        testState.save
+            .mockRejectedValueOnce(lockConflict)
+            .mockImplementation(async (node: ProcessNodeEntity) => node);
+        renderEditor();
+        await editName('Mein Name');
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(storedNode);
+
+        fireEvent.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
+
+        const dialog = await screen.findByRole('dialog', {name: 'Neuerer Stand gespeichert'});
+        expect(within(dialog).getByRole('group', {name: 'Name des Elementes'})).toBeInTheDocument();
+        fireEvent.click(within(dialog).getByRole('radio', {name: /Gespeicherter Stand/}));
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Übernehmen und speichern'}));
+
+        await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(2));
+        expect(testState.save.mock.calls[1][0]).toEqual(storedNode);
+    });
+
+    it('keeps the changes unsaved when the conflict dialog is cancelled', async () => {
+        testState.save.mockRejectedValue(lockConflict);
+        renderEditor();
+        await editName('Mein Name');
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({...createNode(1), name: 'Anderer Name', lockVersion: 2});
+
+        fireEvent.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
+        const dialog = await screen.findByRole('dialog', {name: 'Neuerer Stand gespeichert'});
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Abbrechen'}));
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(testState.save).toHaveBeenCalledTimes(1);
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Mein Name');
+    });
+
+    it('reports a conflict that persists after several merged attempts instead of retrying forever', async () => {
+        testState.save.mockRejectedValue(lockConflict);
+        renderEditor();
+        await editName('Mein Name');
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({...createNode(1), notes: 'Neue Notiz', lockVersion: 2});
+
+        fireEvent.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
+
+        await waitFor(() => expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({message: lockConflict.message}),
+        })));
+        expect(testState.save).toHaveBeenCalledTimes(3);
+    });
+
+    it('offers to restore a draft from an earlier visit', async () => {
+        const node = {...createNode(1), lockVersion: 1};
+        testState.loadDraft.mockResolvedValue({
+            userId: 'user', key: 'process-node/1/configuration', savedAt: Date.now(),
+            base: node, baseLockVersion: 1, mine: {...node, name: 'Entwurf'},
+        });
+        renderEditor();
+
+        const dialog = await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen'});
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Änderungen wiederherstellen'}));
+
+        await waitFor(() => expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Entwurf'));
+        expect(screen.getByRole('button', {name: 'Konfiguration speichern'})).toBeEnabled();
+        expect(testState.clearDraft).not.toHaveBeenCalled();
+    });
+
+    it('removes a draft that the person discards', async () => {
+        const node = {...createNode(1), lockVersion: 1};
+        testState.loadDraft.mockResolvedValue({
+            userId: 'user', key: 'process-node/1/configuration', savedAt: Date.now(),
+            base: node, baseLockVersion: 1, mine: {...node, name: 'Entwurf'},
+        });
+        renderEditor();
+
+        const dialog = await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen'});
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Meine Änderungen verwerfen'}));
+
+        await waitFor(() => expect(testState.clearDraft).toHaveBeenCalled());
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Element 1');
+    });
+
+    it('removes a draft without asking when its changes were saved elsewhere', async () => {
+        const node = {...createNode(1), name: 'Entwurf', lockVersion: 2};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(node);
+        testState.loadDraft.mockResolvedValue({
+            userId: 'user', key: 'process-node/1/configuration', savedAt: Date.now(),
+            base: {...node, name: 'Element 1', lockVersion: 1}, baseLockVersion: 1, mine: {...node, lockVersion: 1},
+        });
+        renderEditor();
+
+        await waitFor(() => expect(testState.clearDraft).toHaveBeenCalled());
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 });

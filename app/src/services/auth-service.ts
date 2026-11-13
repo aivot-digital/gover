@@ -12,6 +12,8 @@ interface JWT {
     accessExpires: number;
     refreshExpires: number;
     csrfToken?: string;
+    /** When this browser last renewed the session, shared by all tabs through the local storage. */
+    refreshedAt?: number;
 }
 
 const STORAGE_KEY_POST_LOGIN_REDIRECT = 'oidc-post-login-redirect';
@@ -72,6 +74,7 @@ class _AuthService {
             localStorage.setItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY, JSON.stringify({
                 ...jwt,
                 csrfToken,
+                refreshedAt: Date.now(),
             }));
         })();
 
@@ -87,6 +90,16 @@ class _AuthService {
      */
     public logout(): void {
         localStorage.removeItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY);
+    }
+
+    /** When the session was last renewed in any tab, or null if that is unknown. */
+    public getRefreshedAt(): number | null {
+        const storedJwt = localStorage.getItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY);
+        if (storedJwt == null) {
+            return null;
+        }
+
+        return (JSON.parse(storedJwt) as JWT).refreshedAt ?? null;
     }
 
     public getCsrfToken(): string | null {

@@ -21,6 +21,8 @@ export interface ProcessNodeEntity {
     savedWithErrors: boolean;
     created: string;
     updated: string;
+    // Sent back unchanged with every save, so the backend rejects a save based on an outdated state.
+    lockVersion?: number | null;
 }
 
 export type ProcessNodeWrite = Omit<ProcessNodeEntity, 'ports' | 'portResolutionProblems' | 'deadlineDefinitions'>;
