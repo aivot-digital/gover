@@ -190,6 +190,22 @@ class ElementConfigurationRulesTest {
     }
 
     @Test
+    void shouldNotRequireOptionsThatAnOverrideCanProvide() {
+        var select = labelled(new SelectInputElement());
+        select.setOverride(new ElementOverrideFunctions().setType(OverrideFunctionType.Javascript));
+        var multiCheckbox = required(multiCheckbox(2));
+        multiCheckbox.setOverride(new ElementOverrideFunctions().setType(OverrideFunctionType.NoCode));
+        var invalidOptions = labelled(new SelectInputElement()).setOptions(List.of(SelectInputElementOption.of("a", " ")));
+        invalidOptions.setOverride(new ElementOverrideFunctions().setType(OverrideFunctionType.Javascript));
+
+        assertEquals(Map.of(), select.validateConfiguration());
+        assertEquals(Map.of(), multiCheckbox.validateConfiguration());
+        // Authored options are still checked, since an override may leave them in place.
+        assertEquals(Map.of("options", List.of("Geben Sie für jede Option eine Beschriftung und einen Wert an.")),
+                invalidOptions.validateConfiguration());
+    }
+
+    @Test
     void shouldRequireACodeListInsteadOfOptionsForCodeListSources() {
         var expected = Map.of("codeListKey", List.of("Wählen Sie eine Codeliste aus."));
 

@@ -170,13 +170,15 @@ public abstract class BaseElement implements Serializable {
      * Reports manually defined options that the runtime validation would reject for every value, or that the editor
      * rejects as ambiguous. All messages are reported at the single property holding the list.
      */
-    protected static <O> void addOptionErrors(@Nonnull Map<String, List<String>> errors,
+    protected <O> void addOptionErrors(@Nonnull Map<String, List<String>> errors,
                                               @Nonnull String property,
                                               @Nullable List<O> options,
                                               @Nonnull Function<O, String> getValue,
                                               @Nonnull Function<O, String> getLabel) {
         if (options == null || options.isEmpty()) {
-            addConfigurationError(errors, property, "Fügen Sie mindestens eine Option hinzu.");
+            if (!hasOverride()) {
+                addConfigurationError(errors, property, "Fügen Sie mindestens eine Option hinzu.");
+            }
             return;
         }
 

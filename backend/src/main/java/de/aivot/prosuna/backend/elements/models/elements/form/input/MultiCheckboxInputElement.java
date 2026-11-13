@@ -56,7 +56,8 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         } else if (StringUtils.isNullOrEmpty(codeListKey)) {
             addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
         }
-        if (usesManualOptions && minimumRequiredOptions != null && minimumRequiredOptions > optionCount) {
+        // An override can supply further options, so only the authored count is known.
+        if (usesManualOptions && !hasOverride() && minimumRequiredOptions != null && minimumRequiredOptions > optionCount) {
             addConfigurationError(errors, "minimumRequiredOptions", "Sie fordern mehr Optionen, als Sie definiert haben.");
         }
         addMinimumExceedsMaximumError(errors, "minimumRequiredOptions", minimumRequiredOptions, "maximumOptions", maximumOptions,
