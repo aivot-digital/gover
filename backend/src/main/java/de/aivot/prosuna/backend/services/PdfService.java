@@ -407,9 +407,6 @@ public class PdfService {
     }
 
     private static final String GOTENBERG_ARG_FILE = "files";
-    private static final String GOTENBERG_ARG_INDEX = "index";
-    private static final String GOTENBERG_ARG_HEADER = "header";
-    private static final String GOTENBERG_ARG_FOOTER = "footer";
     private static final String GOTENBERG_ARG_PAPER_HEIGHT = "paperHeight";
     private static final String GOTENBERG_ARG_PAPER_WIDTH = "paperWidth";
     private static final String GOTENBERG_ARG_MARGIN_TOP = "marginTop";
@@ -442,9 +439,6 @@ public class PdfService {
 
         var multipart = new MultipartUtils.MultipartBodyPublisher()
                 .addPart(GOTENBERG_ARG_FILE, GOTENBERG_VAL_INDEX, contentHtml)
-                .addPart(GOTENBERG_ARG_INDEX, GOTENBERG_VAL_INDEX)
-                .addPart(GOTENBERG_ARG_HEADER, GOTENBERG_VAL_HEADER)
-                .addPart(GOTENBERG_ARG_FOOTER, GOTENBERG_VAL_FOOTER)
                 .addPart(GOTENBERG_ARG_PAPER_HEIGHT, GOTENBERG_VAL_PAPER_HEIGHT)
                 .addPart(GOTENBERG_ARG_PAPER_WIDTH, GOTENBERG_VAL_PAPER_WIDTH)
                 .addPart(GOTENBERG_ARG_MARGIN_TOP, GOTENBERG_VAL_MARGIN_TOP)
