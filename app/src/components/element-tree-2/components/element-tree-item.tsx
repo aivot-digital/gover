@@ -731,7 +731,8 @@ function findConfigurationErrors(rootErrors: ElementConfigurationErrors | null |
     // The first path entry is the tree root, which the root errors themselves describe.
     let current = rootErrors ?? undefined;
     for (const id of path.slice(1)) {
-        current = current?.children[id];
+        // Editable IDs such as "constructor" must not resolve to inherited properties of the children map.
+        current = current != null && Object.hasOwn(current.children, id) ? current.children[id] : undefined;
     }
     return current;
 }

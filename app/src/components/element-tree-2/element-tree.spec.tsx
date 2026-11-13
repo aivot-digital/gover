@@ -261,6 +261,20 @@ describe('ElementTree configuration errors', () => {
         await act(() => new Promise((resolve) => setTimeout(resolve, 500)));
         expect(validate).not.toHaveBeenCalled();
     });
+
+    it.each(['constructor', 'toString', '__proto__'])('ignores inherited properties for the element ID %s', (id) => {
+        render(<ElementTree
+            value={createGroup('group', [createField(id, 'Feld')])}
+            onChange={vi.fn()}
+            editable={true}
+            displayContext={ElementDisplayContext.DataObjectSchema}
+            allowElementIdEditing={true}
+            configurationErrors={{properties: {}, children: {}}}
+        />, {wrapper: TreeTestWrapper});
+
+        expect(screen.getByText('Feld')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /^Fehlerhafte Konfiguration/})).not.toBeInTheDocument();
+    });
 });
 
 describe('ElementTree drag and drop', () => {
