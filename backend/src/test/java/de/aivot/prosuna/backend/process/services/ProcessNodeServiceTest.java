@@ -495,7 +495,7 @@ class ProcessNodeServiceTest {
         var target = createNode(2, "target");
         var metadata = ProcessNodeDefinitionMetadata.empty()
                 .addForwardedProcessDataKey(new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
-                        " languages ", "Sprachen", null, source, null, "languages",
+                        " languages ", "Sprachen", null, source, null, "languages", "language", "language",
                         ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.CodeListValueMode.LabelOnly))
                 .addForwardedProcessDataKey("status", "Status", null, source, List.of(
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")));
@@ -509,10 +509,10 @@ class ProcessNodeServiceTest {
 
         assertEquals(List.of(
                 new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
-                        "languages", "Sprachen", null, source, null, "languages",
+                        "languages", "Sprachen", null, source, null, "languages", "language", "language",
                         ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.CodeListValueMode.LabelOnly),
                 new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("status", "Status", null, source, List.of(
-                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")), null, null)
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")), null, null, null, null)
         ), result.forwardedProcessDataKeys());
     }
 

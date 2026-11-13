@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.codeLists.repositories;
 
+import de.aivot.prosuna.backend.codeLists.models.CodeListItemSnapshot;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +20,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest(properties = {"spring.flyway.enabled=false", "spring.jpa.hibernate.ddl-auto=none",
         "spring.data.jpa.repositories.enabled=false",
@@ -131,6 +134,50 @@ class CodeListRepositoryTest {
         assertEquals(0, codeLists.claimSyncRedispatch("pending", BEFORE, NOW));
         assertEquals(0, codeLists.claimSyncRedispatch("recent", BEFORE, NOW));
         assertEquals(List.of("requested-while-syncing"), codeLists.findPendingSyncKeys(BEFORE));
+    }
+
+    @Test
+    void findsAKeyValueOnlyInOtherRowsOfTheSameList() {
+        sql("drop table if exists code_list_items");
+        sql("create table code_list_items (id bigint primary key, code_list_id integer, columns varchar array)");
+        sql("insert into code_list_items values (1, 7, array['Berlin', 'BE']), (2, 7, array['Hamburg', 'HH']), (3, 8, array['Bremen', 'HB'])");
+        var items = new JpaRepositoryFactory(em).getRepository(CodeListItemRepository.class);
+
+        assertTrue(items.existsByKeyValue(7, 2, "BE", 0));
+        assertTrue(items.existsByKeyValue(7, 2, "BE", 2));
+        assertFalse(items.existsByKeyValue(7, 2, "BE", 1));
+        assertFalse(items.existsByKeyValue(7, 1, "BE", 0));
+        assertFalse(items.existsByKeyValue(7, 2, "HB", 0));
+    }
+
+    @Test
+    void readsRowsTogetherWithTheColumnsOfTheirList() {
+        sql("drop table if exists code_lists");
+        sql("create table code_lists (key varchar(255) primary key, id integer, columns varchar array)");
+        sql("insert into code_lists values ('groups', 7, array['id', 'name']), ('other', 8, array['x'])");
+        sql("drop table if exists code_list_items");
+        sql("""
+                create table code_list_items (
+                    id bigint primary key, code_list_id integer, columns varchar array,
+                    created timestamp with time zone, updated timestamp with time zone
+                )
+                """);
+        sql("""
+                insert into code_list_items values
+                    (2, 7, array['2', 'Group 2'], '2030-05-01 10:00:00+00', '2030-05-01 11:00:00+00'),
+                    (1, 7, array['1', 'Group 1'], '2030-05-01 10:00:00+00', '2030-05-01 11:00:00+00'),
+                    (3, 8, array['x'], '2030-05-01 10:00:00+00', '2030-05-01 11:00:00+00')
+                """);
+        var items = new JpaRepositoryFactory(em).getRepository(CodeListItemRepository.class);
+
+        var snapshots = items.findSnapshotsByCodeListId(7);
+
+        assertEquals(List.of(
+                new CodeListItemSnapshot(1L, 7, List.of("1", "Group 1"), Instant.parse("2030-05-01T10:00:00Z"), Instant.parse("2030-05-01T11:00:00Z"), List.of("id", "name")),
+                new CodeListItemSnapshot(2L, 7, List.of("2", "Group 2"), Instant.parse("2030-05-01T10:00:00Z"), Instant.parse("2030-05-01T11:00:00Z"), List.of("id", "name"))
+        ), snapshots);
+        // The list was read with the columns in the opposite order, e.g. before a synchronization reordered them.
+        assertEquals(List.of("Group 1", "1"), snapshots.getFirst().toItem(List.of("name", "id")).getColumns());
     }
 
     private List<Object> row(String key) {

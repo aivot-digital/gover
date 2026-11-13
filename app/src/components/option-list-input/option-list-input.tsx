@@ -116,6 +116,7 @@ export function OptionListInput(props: OptionListInputProps) {
             label: props.groupLabel ?? 'Gruppe',
             type: 'string' as const,
             disabled: props.disabled,
+            valueOptions: getGroupValueOptions(props.groupOptions, options),
         }] : []),
     ];
 
@@ -163,6 +164,25 @@ export function OptionListInput(props: OptionListInputProps) {
             controlSx={props.controlSx}
         />
     );
+}
+
+function getGroupValueOptions(
+    groupOptions: OptionListInputProps['groupOptions'],
+    options: OptionListInputValue[],
+): Array<{value: string; label: string}> | undefined {
+    if (groupOptions == null || groupOptions.length === 0) {
+        return undefined;
+    }
+
+    const valueOptions = [{value: '', label: 'Ohne Gruppenwert (immer sichtbar)'}, ...groupOptions];
+    // Group values that the referenced select no longer offers stay selectable, so they are not lost unnoticed.
+    for (const option of options) {
+        const group = option.group ?? '';
+        if (!valueOptions.some((valueOption) => valueOption.value === group)) {
+            valueOptions.push({value: group, label: group});
+        }
+    }
+    return valueOptions;
 }
 
 function getValidationError(state: {

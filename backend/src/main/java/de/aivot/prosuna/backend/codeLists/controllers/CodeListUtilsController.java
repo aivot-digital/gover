@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.codeLists.controllers;
 
+import de.aivot.prosuna.backend.codeLists.dtos.CodeListSourceColumnsDto;
 import de.aivot.prosuna.backend.codeLists.permissions.CodeListPermissionProvider;
 import de.aivot.prosuna.backend.codeLists.services.CodeListService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -14,7 +15,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -36,9 +36,9 @@ public class CodeListUtilsController {
     @GetMapping("asset/{assetKey}/columns/")
     @Operation(
             summary = "Read Code List Asset Columns",
-            description = "Read the column names from the header row of a CSV asset."
+            description = "Read the columns of a CSV asset and the column mappings a new code list would receive for them."
     )
-    public List<String> getAssetColumns(
+    public CodeListSourceColumnsDto getAssetColumns(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID assetKey
     ) throws ResponseException {
@@ -50,9 +50,9 @@ public class CodeListUtilsController {
     @GetMapping("x-repository/{urn}/columns/")
     @Operation(
             summary = "Read XRepository Code List Columns",
-            description = "Read the column names of an XRepository code list."
+            description = "Read the columns of an XRepository code list and the column mappings a new code list would receive for them."
     )
-    public List<String> getXRepositoryColumns(
+    public CodeListSourceColumnsDto getXRepositoryColumns(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String urn
     ) throws ResponseException {

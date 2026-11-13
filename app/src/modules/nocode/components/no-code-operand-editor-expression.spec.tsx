@@ -59,6 +59,8 @@ describe('NoCodeOperandEditorExpression', () => {
             label: 'Bundesland',
             optionsSource: OptionsSourceType.CodeList,
             codeListKey: 'states',
+            codeListValueColumnKey: 'code',
+            codeListLabelColumnKey: 'name',
             options: [{label: 'Veraltet', value: 'old'}],
         };
         const expression: NoCodeExpression = {
@@ -136,7 +138,10 @@ describe('NoCodeOperandEditorExpression', () => {
     });
 
     it('offers codelist labels as values for a referenced chip input row', async () => {
-        const get = vi.spyOn(BaseApiService.prototype, 'get').mockResolvedValue(['Deutsch', 'Englisch']);
+        const get = vi.spyOn(BaseApiService.prototype, 'get').mockResolvedValue([
+            {label: 'Deutsch', value: 'Deutsch'},
+            {label: 'Englisch', value: 'Englisch'},
+        ]);
         const expression = createProcessDataComparison('people[0].languages', 'Deutsch');
         const onChange = vi.fn();
 
@@ -152,6 +157,8 @@ describe('NoCodeOperandEditorExpression', () => {
             />,
             [forwardedKey('people[*].languages', {
                 codeListKey: 'languages',
+                codeListValueColumnKey: 'language',
+                codeListLabelColumnKey: 'language',
                 codeListValueMode: CodeListValueMode.LabelOnly,
             })],
         );
@@ -160,7 +167,9 @@ describe('NoCodeOperandEditorExpression', () => {
         fireEvent.mouseDown(input);
         fireEvent.click(await screen.findByRole('option', {name: /Englisch/}));
 
-        expect(get).toHaveBeenCalledWith('/api/public/code-lists/languages/chip-input/', {skipAuthCheck: true});
+        expect(get).toHaveBeenCalledWith('/api/code-lists/languages/options/', {
+            query: {valueColumnKey: 'language', labelColumnKey: 'language', groupColumnKey: undefined},
+        });
         expect(onChange).toHaveBeenLastCalledWith({
             ...expression,
             operands: [
