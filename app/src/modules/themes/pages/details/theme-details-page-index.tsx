@@ -24,6 +24,7 @@ import {useNavigate} from 'react-router-dom';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {isLockVersionConflictError} from '../../../../models/api-error';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -234,7 +235,7 @@ export function ThemeDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                     })
                     .finally(() => {
                         setIsBusy(false);

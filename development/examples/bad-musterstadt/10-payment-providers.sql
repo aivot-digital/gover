@@ -10,7 +10,7 @@ insert into payment_providers (key,
                                is_test_provider,
                                is_enabled)
 values ('5c6f2a8e-3d41-4b7a-9e0c-1f2d3a4b5c6d',
-        'epaybl',
+        'de.aivot.core.epaybl',
         1,
         'ePayBL (Vorproduktion)',
         'Zahlungsabwicklung über die Vorproduktionsumgebung von ePayBL',

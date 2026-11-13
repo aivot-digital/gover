@@ -294,6 +294,7 @@ public class ElementDerivationService {
             elementState.setVisible(isVisible);
 
             var childRowValuesAlreadyResolved = valuesAlreadyResolved;
+            Runnable deferredContainerValidation = null;
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
                 // Customers cannot fill disabled or technical inputs. When their input is derived, values sent for such
                 // inputs anyway are ignored. The input takes its value from trusted server data, such as the process data
@@ -359,24 +360,37 @@ public class ElementDerivationService {
                 }
                 effectiveElementValues.put(currentElement.getId(), effectiveValue);
 
-                var err = resolvedValue.skipValueValidation() ? null : deriveError(
-                        javascriptEngine,
-                        rootElement,
-                        inputElement,
-                        authoredElementValues,
-                        effectiveElementValues,
-                        computedElementStates,
-                        processExecutionData,
-                        options,
-                        effectiveValue,
-                        elementState,
-                        logger,
-                        inputModeContext
-                );
+                if (!resolvedValue.skipValueValidation()) {
+                    var validatedValue = effectiveValue;
+                    Runnable validation = () -> {
+                        var err = deriveError(
+                                javascriptEngine,
+                                rootElement,
+                                inputElement,
+                                authoredElementValues,
+                                effectiveElementValues,
+                                computedElementStates,
+                                processExecutionData,
+                                options,
+                                validatedValue,
+                                elementState,
+                                logger,
+                                inputModeContext
+                        );
 
-                if (err != null) {
-                    elementState.setError(err.error);
-                    elementState.setErrorDetails(err.errorDetails);
+                        if (err != null) {
+                            elementState.setError(err.error);
+                            elementState.setErrorDetails(err.errorDetails);
+                        }
+                    };
+
+                    // Until its rows are derived, a container's value still holds the authored input-mode envelopes of
+                    // their inputs. Its validation therefore runs after the rows, so it reads their effective values.
+                    if (inputElement instanceof ReplicatingContainerLayoutElement) {
+                        deferredContainerValidation = validation;
+                    } else {
+                        validation.run();
+                    }
                 }
             }
 
@@ -454,6 +468,10 @@ public class ElementDerivationService {
                     if (!elementState.isAuthoredValueAdopted()) {
                         clearAuthoredValueAdoption(elementState.getSubStates());
                     }
+                }
+
+                if (deferredContainerValidation != null) {
+                    deferredContainerValidation.run();
                 }
             } else if (actualElement instanceof LayoutElement<?> layoutElement) {
                 var children = layoutElement.getChildren();

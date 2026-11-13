@@ -29,7 +29,8 @@ public record IdentityProviderDetailsDTO(
         @Nonnull List<String> defaultScopes,
         @Nonnull List<IdentityAdditionalParameter> additionalParams,
         @Nonnull Boolean isEnabled,
-        @Nonnull Boolean isTestProvider
+        @Nonnull Boolean isTestProvider,
+        @Nullable Long lockVersion
 ) {
     public static IdentityProviderDetailsDTO from(IdentityProviderEntity entity) {
         return new IdentityProviderDetailsDTO(
@@ -51,7 +52,8 @@ public record IdentityProviderDetailsDTO(
                 entity.getDefaultScopes(),
                 entity.getAdditionalParams(),
                 entity.getIsEnabled(),
-                entity.getIsTestProvider()
+                entity.getIsTestProvider(),
+                entity.getLockVersion()
         );
     }
 }

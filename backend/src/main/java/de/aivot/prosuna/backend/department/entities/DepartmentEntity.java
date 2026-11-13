@@ -8,10 +8,11 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.Instant;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "departments")
-public class DepartmentEntity {
+public class DepartmentEntity implements LockVersioned {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "departments_id_seq")
     @SequenceGenerator(name = "departments_id_seq", allocationSize = 1)
@@ -86,6 +87,11 @@ public class DepartmentEntity {
 
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Signals
 
@@ -280,6 +286,17 @@ public class DepartmentEntity {
 
     public DepartmentEntity setDepth(@Nonnull Integer depth) {
         this.depth = depth;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public DepartmentEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 
