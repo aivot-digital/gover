@@ -19,7 +19,10 @@ public record UserRoleRequestDTO(
     String description,
 
     @NotNull
-    List<String> permissions
+    List<String> permissions,
+
+    @Nullable
+    Long lockVersion
 ) implements RequestDTO<UserRoleEntity> {
     @Override
     public UserRoleEntity toEntity() {
@@ -27,6 +30,7 @@ public record UserRoleRequestDTO(
         entity.setName(name);
         entity.setDescription(description);
         entity.setPermissions(permissions);
+        entity.setLockVersion(lockVersion);
         return entity;
     }
 }

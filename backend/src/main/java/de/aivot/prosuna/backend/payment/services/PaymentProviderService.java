@@ -61,6 +61,8 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
 
         // Create new key for the payment provider entity
         paymentProviderEntity.setKey(UUID.randomUUID());
+        // A lock version from the request would make Spring Data look for a row that does not exist yet.
+        paymentProviderEntity.setLockVersion(null);
 
         // Save and return the payment provider entity
         return paymentProviderRepository.save(paymentProviderEntity);
