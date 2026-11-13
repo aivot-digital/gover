@@ -49,6 +49,7 @@
         <fastcsv.version>4.4.0</fastcsv.version>
         <fitconnect.version>4.0.0</fitconnect.version>
         <bouncycastle.version>1.86</bouncycastle.version>
+        <spring-ai.version>2.0.1</spring-ai.version>
     </properties>
 
     <profiles>
@@ -67,6 +68,13 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <!-- MinIO pulls bcprov 1.84, the FIT-Connect SDK needs bcpkix and bcutil 1.86; mixed versions miss classes at runtime. -->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
@@ -161,6 +169,15 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-flyway</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-tika-document-reader</artifactId>
         </dependency>
 
         <dependency>

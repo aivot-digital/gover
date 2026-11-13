@@ -1,4 +1,4 @@
-import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, type PopoverOrigin} from '@mui/material';
+import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, Switch, type PopoverOrigin} from '@mui/material';
 import React, {type ReactNode, useMemo} from 'react';
 import {Link} from 'react-router-dom';
 
@@ -9,6 +9,15 @@ export type ProcessActionMenuItem = {
     disabled?: boolean;
     visible?: boolean;
     isDangerous?: boolean;
+    type?: 'action';
+} | {
+    label: string;
+    icon: ReactNode;
+    checked: boolean;
+    onToggle: () => void;
+    disabled?: boolean;
+    visible?: boolean;
+    type: 'toggle';
 } | {
     label: string;
     icon: ReactNode;
@@ -117,107 +126,101 @@ export function ProcessActionMenu(props: ProcessActionMenuProps): ReactNode {
             }}
         >
             {
-                normalizedItems.map((item, index) => item === 'separator'
-                    ? (
-                        <Divider key={`separator-${index}`}/>
-                    )
-                    : (
-                        'to' in item ? (
-                                <MenuItem
-                                    component={Link}
-                                    key={`${item.label}-${index}`}
-                                    to={item.to}
-                                    target={item.newTab ? '_blank' : '_self'}
-                                    disabled={item.disabled}
-                                    sx={{
-                                        minHeight: 42,
-                                        px: 1.5,
-                                        gap: 1,
-                                    }}
-                                >
-                                    <ListItemIcon
-                                        sx={{
-                                            minWidth: 32,
-                                            color: item.isDangerous ? 'error.main' : 'text.secondary',
-                                        }}
-                                    >
-                                        {item.icon}
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary={item.label}
-                                        slotProps={{
-                                    primary:{
-                                            color: item.isDangerous ? 'error.main' : 'text.primary',}
-                                        }}
-                                    />
-                                </MenuItem>
-                            )
-                            : ('href' in item
-                                ? (
-                                    <MenuItem
-                                        component="a"
-                                        key={`${item.label}-${index}`}
-                                        href={item.href}
-                                        target={item.newTab ? '_blank' : '_self'}
-                                        disabled={item.disabled}
-                                        sx={{
-                                            minHeight: 42,
-                                            px: 1.5,
-                                            gap: 1,
-                                        }}
-                                    >
-                                        <ListItemIcon
-                                            sx={{
-                                                minWidth: 32,
-                                                color: item.isDangerous ? 'error.main' : 'text.secondary',
-                                            }}
-                                        >
-                                            {item.icon}
-                                        </ListItemIcon>
-                                        <ListItemText
-                                            primary={item.label}
-                                            slotProps={{
-                                                primary: {
-                                                    color: item.isDangerous ? 'error.main' : 'text.primary',
-                                                }
-                                            }}
-                                        />
-                                    </MenuItem>
-                                )
-                                : (
-                                    <MenuItem
-                                        key={`${item.label}-${index}`}
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            event.preventDefault();
+                normalizedItems.map((item, index) => {
+                    if (item === 'separator') {
+                        return <Divider key={`separator-${index}`}/>;
+                    }
 
-                                            item.onClick();
-                                            onClose();
-                                        }}
-                                        disabled={item.disabled}
-                                        sx={{
-                                            minHeight: 42,
-                                            px: 1.5,
-                                            gap: 1,
-                                        }}
-                                    >
-                                        <ListItemIcon
-                                            sx={{
-                                                minWidth: 32,
-                                                color: item.isDangerous ? 'error.main' : 'text.secondary',
-                                            }}
-                                        >
-                                            {item.icon}
-                                        </ListItemIcon>
-                                        <ListItemText
-                                            primary={item.label}
-                                            slotProps={{
-                                    primary:{
-                                                color: item.isDangerous ? 'error.main' : 'text.primary',}
-                                            }}
-                                        />
-                                    </MenuItem>
-                                ))))
+                    if ('type' in item && item.type === 'toggle') {
+                        const handleToggle = () => {
+                            if (!item.disabled) {
+                                item.onToggle();
+                            }
+                        };
+
+                        return (
+                            <MenuItem
+                                key={`${item.label}-${index}`}
+                                aria-label={item.label}
+                                onClick={handleToggle}
+                                disabled={item.disabled}
+                                sx={{minHeight: 42, px: 1.5, gap: 1}}
+                            >
+                                <ListItemIcon sx={{minWidth: 32, color: 'text.secondary'}}>
+                                    {item.icon}
+                                </ListItemIcon>
+                                <ListItemText primary={item.label}/>
+                                <Switch
+                                    edge="end"
+                                    checked={item.checked}
+                                    disabled={item.disabled}
+                                    onChange={handleToggle}
+                                    onClick={(event) => event.stopPropagation()}
+                                    slotProps={{input: {'aria-label': item.label}}}
+                                    sx={{ml: 1, flexShrink: 0}}
+                                />
+                            </MenuItem>
+                        );
+                    }
+
+                    const content = (
+                        <>
+                            <ListItemIcon sx={{minWidth: 32, color: item.isDangerous ? 'error.main' : 'text.secondary'}}>
+                                {item.icon}
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={item.label}
+                                slotProps={{primary: {color: item.isDangerous ? 'error.main' : 'text.primary'}}}
+                            />
+                        </>
+                    );
+
+                    if ('to' in item) {
+                        return (
+                            <MenuItem
+                                component={Link}
+                                key={`${item.label}-${index}`}
+                                to={item.to}
+                                target={item.newTab ? '_blank' : '_self'}
+                                disabled={item.disabled}
+                                sx={{minHeight: 42, px: 1.5, gap: 1}}
+                            >
+                                {content}
+                            </MenuItem>
+                        );
+                    }
+
+                    if ('href' in item) {
+                        return (
+                            <MenuItem
+                                component="a"
+                                key={`${item.label}-${index}`}
+                                href={item.href}
+                                target={item.newTab ? '_blank' : '_self'}
+                                disabled={item.disabled}
+                                sx={{minHeight: 42, px: 1.5, gap: 1}}
+                            >
+                                {content}
+                            </MenuItem>
+                        );
+                    }
+
+                    return (
+                        <MenuItem
+                            key={`${item.label}-${index}`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                event.preventDefault();
+                                item.onClick();
+                                onClose();
+                            }}
+                            disabled={item.disabled}
+                            sx={{minHeight: 42, px: 1.5, gap: 1}}
+                        >
+                            {content}
+                        </MenuItem>
+                    );
+                })
             }
         </Menu>
     );

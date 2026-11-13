@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.system.controllers;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
+import de.aivot.prosuna.backend.ai.properties.AiChatAttachmentProperties;
 import de.aivot.prosuna.backend.config.entities.SystemConfigEntity;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
@@ -44,7 +45,8 @@ class AppConfigControllerTest {
                 systemConfigService,
                 mock(AssetService.class),
                 systemService,
-                mock(KnownExtensionsService.class)
+                mock(KnownExtensionsService.class),
+                new AiChatAttachmentProperties()
         );
         ReflectionTestUtils.setField(controller, "oidcIssuerURI", "https://identity.example");
         ReflectionTestUtils.setField(controller, "oidcClientId", "prosuna");
@@ -56,5 +58,8 @@ class AppConfigControllerTest {
         assertTrue(body.contains("\"faviconUrl\":null"));
         assertTrue(body.contains("\"logoUrl\":null"));
         assertTrue(body.contains("\"logoUrlDark\":null"));
+        assertTrue(body.contains("\"aiChatAttachments\""));
+        assertTrue(body.contains("\"maxFileSizeBytes\":10485760"));
+        assertTrue(body.contains("\"bpmn\""));
     }
 }

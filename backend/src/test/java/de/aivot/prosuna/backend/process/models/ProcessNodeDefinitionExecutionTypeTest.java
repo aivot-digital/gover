@@ -2,8 +2,8 @@ package de.aivot.prosuna.backend.process.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
-import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiCompletionActionNodeV1;
-import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiProcessDataTransformationActionNodeV1;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.AiCompletionActionNodeV1;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.AiProcessDataTransformationActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.*;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.DataTypeValidationControlNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.IfFlowControlNodeV1;

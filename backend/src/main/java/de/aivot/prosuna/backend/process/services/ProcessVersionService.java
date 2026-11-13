@@ -8,8 +8,9 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
-import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.process.models.ProcessNodeProblems;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessRetentionTime;
 import de.aivot.prosuna.backend.process.models.ProcessVersionProblems;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
@@ -151,9 +152,14 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         processDefinitionVersionRepository.delete(entity);
     }
 
+    public ProcessVersionProblems validate(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+        return validate(entity, null);
+    }
+
     // Deliberately not one transaction: node validation reports failed derivation queries as node problems, and a
     // failed query would abort a shared transaction for all following nodes. The process loads once and is passed on.
-    public ProcessVersionProblems validate(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+    public ProcessVersionProblems validate(@Nonnull ProcessVersionEntity entity,
+                                          @Nullable UserEntity user) throws ResponseException {
         var process = processDefinitionRepository
                 .findById(entity.getProcessId())
                 .orElseThrow(ResponseException::badRequest);
@@ -167,7 +173,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
                     .getProcessNodeDefinition(node)
                     .orElseThrow(() -> ResponseException.internalServerError("No provider found for node with id " + node.getId()));
 
-            val(node, provider, process, entity)
+            val(node, provider, user, process, entity)
                     .ifPresent(nodeProblems::add);
         }
 
@@ -233,9 +239,9 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         }
     }
 
-    private <NodeConfig> Optional<ProcessNodeProblems> val(ProcessNodeEntity node, ProcessNodeDefinition<NodeConfig> provider, ProcessEntity process, ProcessVersionEntity processVersion) throws ResponseException {
+    private <NodeConfig> Optional<ProcessNodeProblems> val(ProcessNodeEntity node, ProcessNodeDefinition<NodeConfig> provider, UserEntity user, ProcessEntity process, ProcessVersionEntity processVersion) throws ResponseException {
         return processNodeService
-                .validate(node, provider, true, process, processVersion);
+                .validate(node, provider, true, user, process, processVersion);
     }
 
     public Optional<ProcessVersionEntity> getLatestVersion(Integer processDefinitionId) {

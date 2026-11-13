@@ -181,8 +181,8 @@ class ProcessVersionServiceTest {
         service.validate(version);
 
         verify(processRepository).findById(12);
-        verify(processNodeService).validate(firstNode, provider, true, process, version);
-        verify(processNodeService).validate(secondNode, provider, true, process, version);
+        verify(processNodeService).validate(firstNode, provider, true, null, process, version);
+        verify(processNodeService).validate(secondNode, provider, true, null, process, version);
     }
 
     @Test
