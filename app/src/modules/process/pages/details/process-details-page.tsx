@@ -72,7 +72,8 @@ import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
-import {includeNodeProblems} from '../../utils/include-node-problems';
+import {useAutomaticNodeValidation} from '../../hooks/use-automatic-node-validation';
+import {useSessionStorageState} from '../../../../hooks/use-session-storage-state';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectUser} from '../../../../slices/user-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
@@ -508,7 +509,6 @@ export function ProcessDetailsPage(): ReactNode {
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [processNodeProblems, setProcessNodeProblems] = useState<ProcessNodeProblems[]>([]);
-    const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useState<Record<number, boolean>>({});
     const [isEditorPaneCollapsed, setIsEditorPaneCollapsed] = useState(false);
     const [hideEditorPaneExpandButton, setHideEditorPaneExpandButton] = useState(false);
     const [editorPaneWidth, setEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
@@ -595,6 +595,21 @@ export function ProcessDetailsPage(): ReactNode {
         };
     }, [params]);
 
+    // Kept per tab and process version, so revealed problems survive leaving the page, e.g. for the form editor.
+    const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useSessionStorageState<Record<number, boolean>>(
+        `process_${processId}_${processVersion}_shown_node_problems`,
+        {},
+    );
+
+    // Explicit validations (test, publish) reveal the problems of every affected node, including nodes never saved.
+    const revealNodeProblems = useCallback((nodeProblems: ProcessNodeProblems[]): void => {
+        setProcessNodeProblems(nodeProblems);
+        setShowProcessNodeProblemsForNodes((previous) => ({
+            ...previous,
+            ...Object.fromEntries(nodeProblems.map((problem) => [problem.node.id, true])),
+        }));
+    }, [setShowProcessNodeProblemsForNodes]);
+
     useEffect(() => {
         if (processId < 1 || processVersionParam !== 'latest') {
             return;
@@ -656,31 +671,13 @@ export function ProcessDetailsPage(): ReactNode {
 
     const showProcessExport = useProcessExport();
 
-    useEffect(() => {
-        if (processFlow == null || processVersion < 1) {
-            setProcessNodeProblems([]);
-            return;
-        }
-        new ProcessDefinitionVersionApiService()
-            .validate({
-                processDefinitionId: processId,
-                processDefinitionVersion: processVersion,
-            })
-            .then((problems) => {
-                const nodeProblems = problems.nodeProblems;
-                setProcessNodeProblems(nodeProblems);
-
-                if (nodeProblems.length === 0) {
-                    return;
-                }
-
-                setShowProcessNodeProblemsForNodes((previousShownProblems) => includeNodeProblems(
-                    previousShownProblems,
-                    nodeProblems,
-                    processFlow.nodes,
-                ));
-            });
-    }, [processId, processVersion, processFlow?.nodes, processFlow?.edges]);
+    useAutomaticNodeValidation(
+        processId,
+        processVersion,
+        processFlow,
+        setProcessNodeProblems,
+        setShowProcessNodeProblemsForNodes,
+    );
 
     const instanceId = useMemo(() => {
         const instanceIdParam = searchParams.get('instanceId');
@@ -1598,11 +1595,7 @@ export function ProcessDetailsPage(): ReactNode {
             const nodeProblems = problems.nodeProblems;
             const hasProblems = versionProblems.length > 0 || nodeProblems.length > 0;
 
-            setProcessNodeProblems(nodeProblems);
-            setShowProcessNodeProblemsForNodes(nodeProblems.reduce((acc, prob) => ({
-                ...acc,
-                [prob.node.id]: true,
-            }), {}));
+            revealNodeProblems(nodeProblems);
 
             const confirmed = await confirm({
                 title: 'Prozessmodellierung testen',
@@ -2854,6 +2847,7 @@ export function ProcessDetailsPage(): ReactNode {
                 process={processFlow.definition}
                 version={processFlow.version}
                 availableNodeProviders={availableNodeProviders}
+                onNodeProblems={revealNodeProblems}
                 onPublish={(publishedVersion) => {
                     setProcessFlow({
                         ...processFlow,
