@@ -31,7 +31,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
-import {isApiError} from '../../../../models/api-error';
+import {isApiError, isLockVersionConflictError} from '../../../../models/api-error';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -355,7 +355,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
             })
             .finally(() => {
                 setIsBusy(false);

@@ -45,7 +45,9 @@ public record ThemeRequestDTO(
         UUID logoKeyDark,
 
         @Nullable
-        UUID faviconKey
+        UUID faviconKey,
+        @Nullable
+        Long lockVersion
 ) implements RequestDTO<ThemeEntity> {
     @Override
     public ThemeEntity toEntity() {
@@ -59,6 +61,6 @@ public record ThemeRequestDTO(
                 logoKey,
                 logoKeyDark,
                 faviconKey
-        );
+        ).setLockVersion(lockVersion);
     }
 }

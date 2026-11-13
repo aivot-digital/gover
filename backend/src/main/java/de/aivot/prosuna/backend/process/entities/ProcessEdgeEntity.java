@@ -1,14 +1,16 @@
 package de.aivot.prosuna.backend.process.entities;
 
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "process_edges")
-public class ProcessEdgeEntity {
+public class ProcessEdgeEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "process_edges_id_seq";
 
     @Id
@@ -38,6 +40,11 @@ public class ProcessEdgeEntity {
     @NotBlank(message = "Der Ausgangsport darf nicht leer sein.")
     @Length(min = 1, max = 32, message = "Der Ausgangsport muss zwischen 1 und 32 Zeichen lang sein.")
     private String viaPort;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Constructors
 
@@ -124,6 +131,17 @@ public class ProcessEdgeEntity {
         return this;
     }
 
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public ProcessEdgeEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
+        return this;
+    }
 
     // endregion
 }
