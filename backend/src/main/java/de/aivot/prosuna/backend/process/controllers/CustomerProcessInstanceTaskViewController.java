@@ -503,9 +503,11 @@ public class CustomerProcessInstanceTaskViewController {
         );
 
         // The access keys only grant the attachments that the task view shows, never other documents of the instance.
+        // A reference that the customer saved in an upload field grants nothing by itself.
         if (!fileUploadMultipartInputService
                 .findReferencedAttachmentKeys(customerView.layout(), customerView.data())
-                .contains(key)) {
+                .contains(key)
+                || !findAuthorizedAttachmentKeys(taskViewData, customerView).contains(key)) {
             throw ResponseException.notFound();
         }
 
@@ -617,6 +619,13 @@ public class CustomerProcessInstanceTaskViewController {
                     .readValue(rawInputs, AuthoredElementValues.class);
         } catch (JacksonException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
+        }
+
+        // Customers may keep references to attachments, but not add references to other attachments of the instance,
+        // which the download of the task view would grant.
+        if (!findAuthorizedAttachmentKeys(taskViewData, customerView)
+                .containsAll(fileUploadMultipartInputService.findReferencedAttachmentKeys(layout, inputs))) {
+            throw ResponseException.badRequest("Die übermittelten Angaben verweisen auf Anlagen, die in dieser Aufgabe nicht verfügbar sind.");
         }
 
         // Derive before storing the uploaded files, so only upload fields whose value the derivation takes store theirs.
@@ -743,6 +752,17 @@ public class CustomerProcessInstanceTaskViewController {
                 updatedView.layout(),
                 updatedView.data(),
                 updatedView.events()
+        );
+    }
+
+    @Nonnull
+    private Set<UUID> findAuthorizedAttachmentKeys(@Nonnull TaskViewData<?> taskViewData,
+                                                   @Nonnull ProcessNodeCustomerView customerView) throws ResponseException {
+        return fileUploadMultipartInputService.findAuthorizedAttachmentKeys(
+                customerView.layout(),
+                customerView.trustedData(),
+                taskViewData.instance().getId(),
+                taskViewData.task().getId()
         );
     }
 

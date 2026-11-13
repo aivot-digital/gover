@@ -491,6 +491,26 @@ public class FileUploadMultipartInputService {
     }
 
     /**
+     * Returns the keys of the stored attachments that the upload fields of a task view may reference: those that the
+     * trusted data of the view references and the task's own uploads. Uploads flagged as removed count as well, because
+     * the upload fields may reference them again. References in values that a customer submitted or saved grant
+     * nothing by themselves, so they have to be checked against these keys.
+     *
+     * @param trustedData the data of the view from stable sources, without values the customer saved
+     */
+    @Nonnull
+    public Set<UUID> findAuthorizedAttachmentKeys(@Nonnull BaseElement layout,
+                                                  @Nonnull AuthoredElementValues trustedData,
+                                                  @Nonnull Long processInstanceId,
+                                                  @Nonnull Long processInstanceTaskId) throws ResponseException {
+        var attachmentKeys = findReferencedAttachmentKeys(layout, trustedData);
+        processInstanceAttachmentService
+                .findAllUploadsOfTaskIncludingRemoved(processInstanceTaskId, findUploadAttachmentSetIds(layout, processInstanceId, processInstanceTaskId))
+                .forEach(attachment -> attachmentKeys.add(attachment.getKey()));
+        return attachmentKeys;
+    }
+
+    /**
      * Returns the keys of the stored attachments that the values of the upload fields of the layout reference,
      * including upload fields in the rows of replicating containers.
      */

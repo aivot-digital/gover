@@ -32,6 +32,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -1091,6 +1092,28 @@ class FileUploadMultipartInputServiceTest {
     }
 
     @Test
+    void findAuthorizedAttachmentKeys_GrantsTrustedReferencesAndOwnUploadsIncludingRemovedOnes() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(attachmentService, attachmentSetService, new TestAVService());
+        var layout = createLayout(createUpload("documents", "document"));
+        normalizeSingleUpload(service, layout, List.of(), "own.pdf", 9L);
+        normalizeSingleUpload(service, layout, List.of(), "other-task.pdf", 3L);
+        var ownUpload = attachmentService.createdAttachments().get(0);
+        var otherTaskUpload = attachmentService.createdAttachments().get(1);
+        // The upload fields may reference a removed upload again.
+        ownUpload.setRemovedAt(Instant.now());
+        var prefilled = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        var trustedData = new AuthoredElementValues();
+        trustedData.putLiteral("documents", List.of(createFileItem("vorher.pdf", "process-instance-attachment:" + prefilled, 1)));
+
+        var authorizedKeys = service.findAuthorizedAttachmentKeys(layout, trustedData, 42L, 9L);
+
+        assertEquals(Set.of(prefilled, ownUpload.getKey()), authorizedKeys);
+        assertFalse(authorizedKeys.contains(otherTaskUpload.getKey()));
+    }
+
+    @Test
     void findReferencedAttachmentKeys_CollectsStoredAttachmentsOfUploadFieldsIncludingReplicatingRows() {
         var service = new FileUploadMultipartInputService(null, null, null);
         var topLevel = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -1256,8 +1279,8 @@ class FileUploadMultipartInputServiceTest {
         }
 
         @Override
-        public List<ProcessInstanceAttachmentEntity> findAllUploadsOfTask(Long processInstanceTaskId,
-                                                                          Collection<Integer> attachmentSetIds) {
+        public List<ProcessInstanceAttachmentEntity> findAllUploadsOfTaskIncludingRemoved(Long processInstanceTaskId,
+                                                                                          Collection<Integer> attachmentSetIds) {
             return createdAttachments
                     .stream()
                     .filter(attachment -> processInstanceTaskId.equals(attachment.getProcessInstanceTaskId())

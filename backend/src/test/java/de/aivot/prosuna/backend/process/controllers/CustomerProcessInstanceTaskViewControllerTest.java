@@ -95,6 +95,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static de.aivot.prosuna.backend.TestData.effective;
@@ -1262,9 +1263,95 @@ class CustomerProcessInstanceTaskViewControllerTest {
         verifyNoInteractions(fixture.processInstanceAttachmentService(), fixture.storageService());
     }
 
+    @Test
+    void downloadAttachment_RejectsAReferenceThatOnlyTheSavedValuesOfTheCustomerContain() throws Exception {
+        // E.g. a reference to another attachment of the instance that a manipulated autosave stored before this check.
+        var fixture = createAttachmentDownloadFixture(new AuthoredElementValues());
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().downloadAttachment(
+                fixture.procAccess(), fixture.taskAccess(), REFERENCED_ATTACHMENT_KEY, true, null, null
+        ));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verifyNoInteractions(fixture.storageService());
+    }
+
+    @Test
+    void downloadAttachment_StreamsAnOwnUploadOfTheTaskThatTheSavedValuesReference() throws Exception {
+        var fixture = createAttachmentDownloadFixture(new AuthoredElementValues());
+        fixture.fileUploadMultipartInputService().ownUploadKeys = Set.of(REFERENCED_ATTACHMENT_KEY);
+        when(fixture.storageService().getDocumentContent(3, "attachments/antrag.pdf"))
+                .thenReturn(new ByteArrayInputStream("content".getBytes(StandardCharsets.UTF_8)));
+
+        var response = fixture.controller().downloadAttachment(
+                fixture.procAccess(), fixture.taskAccess(), REFERENCED_ATTACHMENT_KEY, true, null, null
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void update_RejectsAReferenceToAnAttachmentThatTheTaskViewDoesNotGrant() {
+        var fixture = createAttachmentDownloadFixture(new AuthoredElementValues());
+        var otherAttachmentKey = UUID.fromString("00000000-0000-0000-0000-0000000000a2");
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                uploadInputs(otherAttachmentKey),
+                null,
+                null,
+                null,
+                Map.of(),
+                null,
+                new MockHttpServletResponse()
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        // Nothing is stored, so the reference cannot grant the download later.
+        assertNull(fixture.fileUploadMultipartInputService().receivedInputs);
+    }
+
+    @Test
+    void update_KeepsReferencesToTrustedAttachmentsAndOwnUploads() throws ResponseException {
+        var fixture = createAttachmentDownloadFixture();
+        var ownUploadKey = UUID.fromString("00000000-0000-0000-0000-0000000000a3");
+        // The own upload may be flagged as removed, the upload field may reference it again.
+        fixture.fileUploadMultipartInputService().ownUploadKeys = Set.of(ownUploadKey);
+
+        fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                uploadInputs(REFERENCED_ATTACHMENT_KEY, ownUploadKey),
+                null,
+                null,
+                null,
+                Map.of(),
+                null,
+                new MockHttpServletResponse()
+        );
+
+        assertNotNull(fixture.fileUploadMultipartInputService().receivedInputs);
+    }
+
+    private static String uploadInputs(UUID... attachmentKeys) {
+        var items = new LinkedList<String>();
+        for (var attachmentKey : attachmentKeys) {
+            items.add("{\"name\":\"antrag.pdf\",\"uri\":\"process-instance-attachment:" + attachmentKey + "\",\"size\":7}");
+        }
+        return "{\"upload\":{\"type\":\"Literal\",\"value\":[" + String.join(",", items) + "]}}";
+    }
+
     private static final UUID REFERENCED_ATTACHMENT_KEY = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
 
     private static CustomerTaskControllerFixture createAttachmentDownloadFixture() {
+        return createAttachmentDownloadFixture(null);
+    }
+
+    /**
+     * @param trustedData the data of the view without the values the customer saved, {@code null} for the same data
+     */
+    private static CustomerTaskControllerFixture createAttachmentDownloadFixture(AuthoredElementValues trustedData) {
         var upload = new FileUploadInputElement();
         upload.setId("upload");
         var layout = new GroupLayoutElement();
@@ -1278,7 +1365,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         )));
 
         var provider = new NoOpCustomerProcessNodeDefinition();
-        provider.customerView = new ProcessNodeCustomerView(layout, List.of(), data, null, null);
+        provider.customerView = new ProcessNodeCustomerView(layout, List.of(), data, null, null, trustedData == null ? data : trustedData);
         var fixture = createFixture(provider, new AuthoredElementValues());
         try {
             when(fixture.processInstanceAttachmentService().retrieve(REFERENCED_ATTACHMENT_KEY))
@@ -1729,6 +1816,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private AuthoredElementValues receivedInputs;
         private ComputedElementStates receivedElementStates;
         private List<UUID> removableAttachmentKeys = List.of();
+        private Set<UUID> ownUploadKeys = Set.of();
         private Long removableAttachmentsTaskId;
 
         private TestTaskViewMultipartInputService(AuthoredElementValues normalizedInputs) {
@@ -1756,6 +1844,16 @@ class CustomerProcessInstanceTaskViewControllerTest {
                                                       Long processInstanceTaskId) {
             removableAttachmentsTaskId = processInstanceTaskId;
             return removableAttachmentKeys;
+        }
+
+        @Override
+        public Set<UUID> findAuthorizedAttachmentKeys(BaseElement layout,
+                                                      AuthoredElementValues trustedData,
+                                                      Long processInstanceId,
+                                                      Long processInstanceTaskId) {
+            var attachmentKeys = findReferencedAttachmentKeys(layout, trustedData);
+            attachmentKeys.addAll(ownUploadKeys);
+            return attachmentKeys;
         }
     }
 
