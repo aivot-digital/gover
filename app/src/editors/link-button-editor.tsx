@@ -51,6 +51,7 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
         element,
         onPatch,
         editable,
+        configurationErrors,
     } = props;
     const target = resolveTarget(element);
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -105,6 +106,7 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                             value={element.href}
                             label="Link"
                             hint="Geben Sie Webadressen mit Protokoll ein, zum Beispiel https://www.beispiel.de."
+                            error={configurationErrors?.href?.join(' ')}
                             validate={(value) => value?.trim() && resolveLinkButtonHref(value) == null
                                 ? 'Geben Sie einen gültigen Link an, zum Beispiel https://www.beispiel.de. Möglich sind auch mailto:, tel:, /pfad oder #anker.'
                                 : undefined}

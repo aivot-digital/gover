@@ -14,6 +14,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class MultiCheckboxInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
@@ -40,6 +41,28 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
     public MultiCheckboxInputElement() {
         super(ElementType.MultiCheckbox);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // Only manually defined options are known while authoring; code lists are resolved at runtime.
+        var usesManualOptions = optionsSource != OptionsSourceType.CodeList;
+        var optionCount = options == null ? 0 : options.size();
+        // performValidation rejects every value while the options are missing or incomplete.
+        if (usesManualOptions) {
+            addOptionErrors(errors, "options", options, MultiCheckboxInputElementOption::getValue, MultiCheckboxInputElementOption::getLabel);
+        } else if (StringUtils.isNullOrEmpty(codeListKey)) {
+            addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
+        }
+        // An override can supply further options, so only the authored count is known.
+        if (usesManualOptions && !hasOverride() && minimumRequiredOptions != null && minimumRequiredOptions > optionCount) {
+            addConfigurationError(errors, "minimumRequiredOptions", "Sie fordern mehr Optionen, als Sie definiert haben.");
+        }
+        addMinimumExceedsMaximumError(errors, "minimumRequiredOptions", minimumRequiredOptions, "maximumOptions", maximumOptions,
+                "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        return errors;
     }
 
     @Nullable

@@ -190,6 +190,36 @@ public class TableInputElement extends BaseInputElement<List<Map<String, Object>
         }
     }
 
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minimumRequiredRows", minimumRequiredRows, "maximumRows", maximumRows,
+                "Sie fordern mehr Zeilen, als Sie maximal zulassen.");
+        // formatValue fails without columns, and a table without columns cannot take any input.
+        if (fields == null || fields.isEmpty()) {
+            addConfigurationError(errors, "fields", "Fügen Sie mindestens eine Spalte hinzu.");
+        } else {
+            // Row values are stored by column key, so a missing or repeated key loses data. Label rules are editor hints.
+            var keys = new HashSet<String>();
+            for (var index = 0; index < fields.size(); index++) {
+                var column = fields.get(index);
+                // Labels are the column headers. Short or repeated labels still work, so the editor only hints at them.
+                if (column == null || StringUtils.isNullOrEmpty(column.getLabel())) {
+                    addConfigurationError(errors, "fields." + index + ".label", "Geben Sie einen Titel für Spalte " + (index + 1) + " ein.");
+                }
+                var key = column == null ? null : StringUtils.toNullableTrimmedString(column.getKey());
+                var property = "fields." + index + ".key";
+                if (key == null) {
+                    addConfigurationError(errors, property, "Geben Sie einen Schlüssel für Spalte " + (index + 1) + " ein.");
+                } else if (!keys.add(key)) {
+                    addConfigurationError(errors, property, "Der Schlüssel von Spalte " + (index + 1) + " wird bereits von einer anderen Spalte verwendet.");
+                }
+            }
+        }
+        return errors;
+    }
+
     // region Hash & Equals
 
     @Override

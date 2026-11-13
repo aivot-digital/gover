@@ -8,11 +8,13 @@ import de.aivot.prosuna.backend.elements.models.elements.steps.IntroductionStepE
 import de.aivot.prosuna.backend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -33,6 +35,16 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     public FormLayoutElement() {
         super(ElementType.FormLayout);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        if (StringUtils.isNullOrEmpty(publicTitle)) {
+            addConfigurationError(errors, "publicTitle", "Geben Sie einen öffentlichen Titel für das Formular an.");
+        }
+        return errors;
     }
 
     @Override

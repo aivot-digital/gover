@@ -9,6 +9,7 @@ export function DataObjectSelectFieldEditor(props: BaseEditorProps<DataObjectSel
         element,
         editable,
         onPatch,
+        configurationErrors,
     } = props;
 
     return (
@@ -20,6 +21,7 @@ export function DataObjectSelectFieldEditor(props: BaseEditorProps<DataObjectSel
             <Grid size={{xs: 12}}>
                 <DataModelSelectFieldComponent
                     label="Datenmodell"
+                    error={configurationErrors?.dataModelKey?.join(' ')}
                     value={element.dataModelKey ?? undefined}
                     onChange={(value) => {
                         onPatch({

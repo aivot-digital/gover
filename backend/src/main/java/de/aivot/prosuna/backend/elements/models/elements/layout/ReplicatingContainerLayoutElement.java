@@ -39,6 +39,15 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
         super(ElementType.ReplicatingContainerLayout);
     }
 
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minimumRequiredSets", minimumRequiredSets, "maximumSets", maximumSets,
+                "Sie fordern mehr Datensätze, als Sie maximal zulassen.");
+        return errors;
+    }
+
     @Override
     public List<ReplicatingContainerLayoutElementValue> formatValue(@Nullable Object value) {
         return _formatValue(value);

@@ -8,6 +8,8 @@ export interface BaseEditorProps<T extends AnyElement> {
     hasSummaryLayoutParent: boolean;
     hasReplicatingContainerParent?: boolean;
     scope: ElementTreeScope;
+    /** Server-side configuration errors of {@link element}, keyed by property name. */
+    configurationErrors?: Record<string, string[]>;
 }
 
 export type BaseEditor<M extends AnyElement> = (props: BaseEditorProps<M>) => React.ReactNode;

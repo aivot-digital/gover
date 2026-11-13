@@ -1,6 +1,5 @@
 import {Box, Button, Checkbox, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
 import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form/input/table-field-element';
-import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
@@ -11,14 +10,8 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
         hasSummaryLayoutParent,
     } = props;
 
-    const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
-    const columnKeyErrors = makeColumnKeyErrors(props.element.fields);
-    const minRequiredError = (
-        props.element.minimumRequiredRows != null &&
-        props.element.maximumRows != null &&
-        props.element.maximumRows > 0 &&
-        props.element.minimumRequiredRows > props.element.maximumRows
-    );
+    const columnLabelWarnings = makeColumnLabelWarnings(props.element.fields);
+    const columnKeyWarnings = makeColumnKeyWarnings(props.element.fields);
 
     return (
         <>
@@ -35,7 +28,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                         value={props.element.minimumRequiredRows ?? undefined}
                         label="Mindestanzahl der hinzuzufügenden Zeilen"
                         hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
-                        error={minRequiredError ? 'Sie fordern mehr Zeilen, als Sie maximal zulassen.' : undefined}
+                        error={props.configurationErrors?.minimumRequiredRows?.join(' ')}
                         onChange={(val) => {
                             props.onPatch({
                                 minimumRequiredRows: val,
@@ -56,7 +49,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             value={props.element.maximumRows ?? undefined}
                             label="Maximalanzahl der hinzuzufügenden Zeilen"
                             hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                            error={minRequiredError ? 'Sie fordern mehr Zeilen, als Sie maximal zulassen.' : undefined}
+                            error={props.configurationErrors?.maximumRows?.join(' ')}
                             onChange={(val) => {
                                 props.onPatch({
                                     maximumRows: val,
@@ -74,6 +67,16 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 Spalten
             </Typography>
             {
+                props.configurationErrors?.fields != null &&
+                <Typography
+                    variant="body2"
+                    color="error"
+                    role="alert"
+                >
+                    {props.configurationErrors.fields.join(' ')}
+                </Typography>
+            }
+            {
                 (props.element.fields ?? []).map((column, index) => {
                     const onChange = (patch: Partial<TableFieldComponentColumnModel>) => {
                         const patchedList = [...(props.element.fields ?? [])];
@@ -85,6 +88,8 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             fields: patchedList,
                         });
                     };
+                    const labelError = props.configurationErrors?.[`fields.${index}.label`]?.join(' ') ?? columnLabelWarnings[index];
+                    const keyError = props.configurationErrors?.[`fields.${index}.key`]?.join(' ') ?? columnKeyWarnings[index];
                     return (
                         <Box
                             sx={{mt: 2}}
@@ -105,8 +110,8 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         onBlur={() => onChange({
                                             key: (column.key ?? '').trim(),
                                         })}
-                                        error={columnKeyErrors[index] != null}
-                                        helperText={columnKeyErrors[index] ?? undefined}
+                                        error={keyError != null}
+                                        helperText={keyError ?? undefined}
                                         disabled={!props.editable}
                                     />
                                 </Grid>
@@ -121,8 +126,8 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         onBlur={() => onChange({
                                             label: (column.label ?? '').trim(),
                                         })}
-                                        error={columnLabelErrors[index] != null}
-                                        helperText={columnLabelErrors[index] ?? undefined}
+                                        error={labelError != null}
+                                        helperText={labelError ?? undefined}
                                         disabled={!props.editable}
                                     />
                                 </Grid>
@@ -269,41 +274,29 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
     );
 }
 
-function makeColumnLabelErrors(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
-    if (fields == null) {
-        return [];
-    }
-    const errors: (string | null)[] = [];
+// Missing labels are reported by the server. Short and repeated labels still work, so they only get a hint.
+function makeColumnLabelWarnings(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
     const labelSet = new Set<string>();
-    for (const field of fields) {
-        if (isStringNullOrEmpty(field.label) || field.label == null || field.label.length < 3) {
-            errors.push('Bitte geben Sie einen Titel mit mindestens drei Zeichen ein.');
-        } else if (labelSet.has(field.label)) {
-            errors.push('Eine Spalte mit diesem Titel existiert bereits. Bitte geben Sie einen einzigartigen Titel ein.');
-        } else {
-            errors.push(null);
+    return (fields ?? []).map((field) => {
+        const label = (field.label ?? '').trim();
+        if (label.length === 0) {
+            return null;
         }
-        labelSet.add(field.label ?? '');
-    }
-    return errors;
+        if (label.length < 3) {
+            return 'Bitte geben Sie einen Titel mit mindestens drei Zeichen ein.';
+        }
+        if (labelSet.has(label)) {
+            return 'Eine Spalte mit diesem Titel existiert bereits. Bitte geben Sie einen einzigartigen Titel ein.';
+        }
+        labelSet.add(label);
+        return null;
+    });
 }
 
-function makeColumnKeyErrors(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
-    if (fields == null) {
-        return [];
-    }
-    const errors: (string | null)[] = [];
-    const keySet = new Set<string>();
-    for (const field of fields) {
+// Missing and repeated keys lose row data and are reported by the server. A short key still works, so it only gets a hint.
+function makeColumnKeyWarnings(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
+    return (fields ?? []).map((field) => {
         const key = (field.key ?? '').trim();
-        if (isStringNullOrEmpty(key) || key.length < 3) {
-            errors.push('Bitte geben Sie einen Schlüssel mit mindestens drei Zeichen ein.');
-        } else if (keySet.has(key)) {
-            errors.push('Eine Spalte mit diesem Schlüssel existiert bereits. Bitte geben Sie einen einzigartigen Schlüssel ein.');
-        } else {
-            errors.push(null);
-        }
-        keySet.add(key);
-    }
-    return errors;
+        return key.length > 0 && key.length < 3 ? 'Bitte geben Sie einen Schlüssel mit mindestens drei Zeichen ein.' : null;
+    });
 }

@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.elements.models.elements.*;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -43,6 +44,17 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
 
     public IntroductionStepElement() {
         super(ElementType.IntroductionStep);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // The initiative name is the alternative text of the logo. Without it, the logo is not shown at all.
+        if (StringUtils.isNotNullOrEmpty(initiativeLogoLink) && StringUtils.isNullOrEmpty(initiativeName)) {
+            addConfigurationError(errors, "initiativeName", "Geben Sie einen Alternativtext für das ausgewählte Logo an.");
+        }
+        return errors;
     }
 
     @Override

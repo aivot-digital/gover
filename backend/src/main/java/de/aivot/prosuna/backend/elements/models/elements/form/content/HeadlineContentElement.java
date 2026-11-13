@@ -6,6 +6,8 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class HeadlineContentElement extends BaseFormElement {
@@ -18,6 +20,16 @@ public class HeadlineContentElement extends BaseFormElement {
 
     public HeadlineContentElement() {
         super(ElementType.Headline);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        if (StringUtils.isNullOrEmpty(content) && !hasOverride()) {
+            addConfigurationError(errors, "content", "Geben Sie eine Überschrift ein.");
+        }
+        return errors;
     }
 
     // region Hash & Equals

@@ -13,6 +13,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class StoragePathSelectorInputElement extends BaseInputElement<StoragePathSelectorInputElementValue> implements PrintableElement<StoragePathSelectorInputElementValue> {
@@ -30,6 +31,17 @@ public class StoragePathSelectorInputElement extends BaseInputElement<StoragePat
 
     public StoragePathSelectorInputElement() {
         super(ElementType.StoragePathSelector);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // A missing list allows every type, an empty one none.
+        if (allowedStorageProviderTypes != null && allowedStorageProviderTypes.isEmpty()) {
+            addConfigurationError(errors, "allowedStorageProviderTypes", "Wählen Sie mindestens einen Speicheranbieter-Typ aus.");
+        }
+        return errors;
     }
 
     @Nullable

@@ -3,8 +3,12 @@ package de.aivot.prosuna.backend.elements.models.elements.form.content;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class AlertContentElement extends BaseFormElement {
@@ -19,6 +23,17 @@ public class AlertContentElement extends BaseFormElement {
 
     public AlertContentElement() {
         super(ElementType.Alert);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // An alert without title and text renders as an empty box.
+        if (StringUtils.isNullOrEmpty(title) && isRichTextEmpty(text) && !hasOverride()) {
+            addConfigurationError(errors, "text", "Geben Sie einen Titel oder einen Text für den Hinweis an.");
+        }
+        return errors;
     }
 
     // region Hash & Equals

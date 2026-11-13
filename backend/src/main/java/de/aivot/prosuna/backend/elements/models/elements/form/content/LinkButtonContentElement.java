@@ -2,9 +2,12 @@ package de.aivot.prosuna.backend.elements.models.elements.form.content;
 
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class LinkButtonContentElement extends BaseFormElement {
@@ -31,6 +34,20 @@ public class LinkButtonContentElement extends BaseFormElement {
 
     public LinkButtonContentElement() {
         super(ElementType.LinkButton);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // The editor derives the target from the filled property, so a button without any target is shown as a link.
+        if (StringUtils.isNullOrEmpty(href)
+                && StringUtils.isNullOrEmpty(staffTaskEvent)
+                && StringUtils.isNullOrEmpty(customerTaskEvent)
+                && !hasOverride()) {
+            addConfigurationError(errors, "href", "Geben Sie den Link an, den die Schaltfläche öffnen soll.");
+        }
+        return errors;
     }
 
     @Override
