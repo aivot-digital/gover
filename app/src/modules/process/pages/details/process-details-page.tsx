@@ -1,4 +1,4 @@
-import {type ApiError} from '../../../../models/api-error';
+import {type ApiError, isApiError} from '../../../../models/api-error';
 import {getDefaultProcessNodePort, mapReplacementPorts} from '../../utils/process-node-ports';
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Button, Divider, Paper, Typography} from '@mui/material';
@@ -29,7 +29,7 @@ import {
     SnackbarSeverity,
     SnackbarType,
 } from '../../../../slices/shell-slice';
-import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar, showWarningSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessFlowEditor} from './components/process-flow-editor/process-flow-editor';
 import {ReactFlowProvider} from '@xyflow/react';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
@@ -1918,6 +1918,24 @@ export function ProcessDetailsPage(): ReactNode {
         newNodeFor,
         processFlow,
     ]);
+    // Edges are only created and deleted, so a stale editor cannot be detected by a lock version; reload them instead.
+    const refreshEdges = useCallback(() => {
+        new ProcessDefinitionEdgeApiService()
+            .listAll({
+                processDefinitionId: processId,
+                processDefinitionVersion: processVersion,
+            })
+            .then((edges) => {
+                setProcessFlow((current) => current == null ? current : {
+                    ...current,
+                    edges: edges.content,
+                });
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Verbindungen konnten nicht neu geladen werden.'));
+            });
+    }, [dispatch, processId, processVersion]);
+
     const handleCreateEdge = useCallback((fromNodeId: number, toNodeId: number, viaPortKey: string): void => {
         if (processFlow == null) {
             return;
@@ -1949,8 +1967,12 @@ export function ProcessDetailsPage(): ReactNode {
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die Verbindung konnte nicht erstellt werden.'));
+                // A conflict means another editor connected the port meanwhile, so show the current connections.
+                if (isApiError(err) && err.status === 409) {
+                    refreshEdges();
+                }
             });
-    }, [dispatch, processFlow]);
+    }, [dispatch, processFlow, refreshEdges]);
     const handleReplaceNode = useCallback(async (node: ProcessNodeEntity, replacementProvider: ProcessNodeProvider): Promise<void> => {
         if (processFlow == null) {
             return;
@@ -2513,6 +2535,14 @@ export function ProcessDetailsPage(): ReactNode {
                                                                     edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
                                                                 };
                                                             });
+                                                        })
+                                                        .catch((err) => {
+                                                            if (isApiError(err) && err.status === 404) {
+                                                                dispatch(showWarningSnackbar('Die Verbindung wurde zwischenzeitlich bereits entfernt. Die Verbindungen wurden neu geladen.'));
+                                                                refreshEdges();
+                                                                return;
+                                                            }
+                                                            dispatch(showApiErrorSnackbar(err, 'Die Verbindung konnte nicht aufgehoben werden.'));
                                                         });
                                                 }}
                                                 onDeleteNode={handleDeleteNode}
