@@ -2094,10 +2094,27 @@ export function ProcessDetailsPage(): ReactNode {
             }
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht ersetzt werden.'));
+            // Edges may already be deleted and the node may already be replaced, so show what the server now holds.
+            refreshEdges();
+            nodeApi
+                .retrieve(node.id)
+                .then((currentNode) => {
+                    setProcessFlow((previousProcess) => previousProcess == null ? previousProcess : {
+                        ...previousProcess,
+                        nodes: previousProcess.nodes.map((processNode) => processNode.id === currentNode.id ? currentNode : processNode),
+                    });
+                    setNodeRefreshSignal((previousSignal) => ({
+                        nodeId: node.id,
+                        version: previousSignal.version + 1,
+                    }));
+                })
+                .catch((reloadError) => {
+                    console.error(reloadError);
+                });
         } finally {
             dispatch(clearLoadingMessage());
         }
-    }, [confirm, dispatch, flowNodeProviderCache, processFlow]);
+    }, [confirm, dispatch, flowNodeProviderCache, processFlow, refreshEdges]);
     const isInTestMode = currentTestClaim != null;
 
     const headerActions = useMemo<Action[]>(() => {
