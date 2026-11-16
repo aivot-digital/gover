@@ -54,6 +54,19 @@ class NoCodeSelectionIncludesOperatorTest {
     }
 
     @Test
+    void shouldUnwrapAssignmentContextValuesAsSearchedEntries() throws NoCodeException {
+        var mapContext = Map.of("domainAndUserSelection", List.of(Map.of("type", "user", "id", "abc")));
+        var typedContext = AssignmentContextInputElement._formatValue(mapContext);
+        var otherContext = Map.of("domainAndUserSelection", List.of(Map.of("type", "team", "id", "7")));
+
+        assertTrue(evaluate(SELECTION, mapContext));
+        assertTrue(evaluate(SELECTION, typedContext));
+        assertTrue(evaluate(Map.of("domainAndUserSelection", SELECTION), typedContext));
+        assertFalse(evaluate(SELECTION, otherContext));
+        assertFalse(evaluate(SELECTION, AssignmentContextInputElement._formatValue(otherContext)));
+    }
+
+    @Test
     void shouldMatchLegacyDomainAndUserSelectConditions() throws NoCodeException {
         var element = new DomainAndUserSelectInputElement();
         var context = new AssignmentContextInputElement();

@@ -87,7 +87,7 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         var selectedKeys = toComparableKeys(unwrapAssignmentContext(args[0]));
-        var searchedKeys = toComparableKeys(args[1]);
+        var searchedKeys = toComparableKeys(unwrapAssignmentContext(args[1]));
 
         // Legacy Includes is false when either side is empty.
         if (selectedKeys.isEmpty() || searchedKeys.isEmpty()) {
