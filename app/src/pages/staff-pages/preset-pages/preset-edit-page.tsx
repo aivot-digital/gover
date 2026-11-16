@@ -193,23 +193,6 @@ export function PresetEditPage() {
             });
     }, [preset, presetVersion]);
 
-    // The legacy editor syncs preset metadata from local state; read-only access must not trigger that write on load.
-    useEffect(() => {
-        if (preset == null || !canUpdatePreset) {
-            return;
-        }
-
-        presetsApiService
-            .update(preset.key, {
-                title: preset.title,
-                rootElement: {} as any,
-            })
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Vorlage konnte nicht gespeichert werden'));
-            });
-    }, [canUpdatePreset, preset]);
-
     const handleDelete = () => {
         if (preset == null || presetVersion == null || !canDeletePreset) {
             return;
