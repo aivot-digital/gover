@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {ElementType} from '../../../data/element-type/element-type';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {literalAuthoredValue} from '../../../models/element-data';
+import {InputMode} from '../../../models/input-mode';
 import {threeWayMerge} from '../../../utils/three-way-merge';
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
 import {createProcessNodeMergeSpec} from './process-node-merge-spec';
@@ -72,5 +73,21 @@ describe('createProcessNodeMergeSpec', () => {
 
         expect(result.conflicts.map((conflict) => spec.label!(conflict.path, {base, mine, theirs})))
             .toEqual(['Betreff', 'Notizen']);
+    });
+
+    it('decides an authored value as a whole when one side changed its input mode', () => {
+        const base = node({});
+        const lowCode = {type: InputMode.LowCode, code: 'return "Dynamisch";'} as const;
+        const mine = node({configuration: {subject: lowCode}});
+        const theirs = node({configuration: {subject: literalAuthoredValue('Gespeichert')}, lockVersion: 2});
+
+        const result = threeWayMerge(base, mine, theirs, spec);
+
+        expect(result.conflicts.map((conflict) => conflict.id)).toEqual(['configuration/subject']);
+        expect(spec.label!(result.conflicts[0].path, {base, mine, theirs})).toEqual('Betreff');
+        expect(threeWayMerge(base, mine, theirs, spec, {'configuration/subject': 'theirs'}).merged.configuration)
+            .toEqual({subject: literalAuthoredValue('Gespeichert')});
+        expect(threeWayMerge(base, mine, theirs, spec, {'configuration/subject': 'mine'}).merged.configuration)
+            .toEqual({subject: lowCode});
     });
 });

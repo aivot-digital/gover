@@ -112,7 +112,9 @@ function mergeValue(base: unknown, mine: unknown, theirs: unknown, path: string[
         return mine;
     }
 
-    if (isPlainObject(mine) && isPlainObject(theirs)) {
+    // A different `type`, such as the input mode of an authored value, gives the other fields their meaning, so the
+    // object is decided as a whole and keeps a type that matches its content.
+    if (isPlainObject(mine) && isPlainObject(theirs) && mine.type === theirs.type) {
         return mergeObject(isPlainObject(base) ? base : {}, mine, theirs, path, context);
     }
 
