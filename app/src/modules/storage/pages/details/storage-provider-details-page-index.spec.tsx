@@ -171,7 +171,7 @@ describe('StorageProviderDetailsPageIndex', () => {
             </MemoryRouter>,
         );
 
-        const readOnlySwitch = screen.getByRole('switch', {name: /read-only Speicher/});
+        const readOnlySwitch = screen.getByRole('switch', {name: /schreibgeschützten Speicher/});
         expect(readOnlySwitch).toBeDisabled();
         expect(readOnlySwitch).toHaveAccessibleDescription(/kann nicht schreibgeschützt werden/);
     });
@@ -186,6 +186,6 @@ describe('StorageProviderDetailsPageIndex', () => {
             </MemoryRouter>,
         );
 
-        expect(screen.getByRole('switch', {name: /read-only Speicher/})).toBeEnabled();
+        expect(screen.getByRole('switch', {name: /schreibgeschützten Speicher/})).toBeEnabled();
     });
 });
