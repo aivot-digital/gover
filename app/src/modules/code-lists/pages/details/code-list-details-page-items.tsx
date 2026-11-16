@@ -144,7 +144,7 @@ export function CodeListDetailsPageItems() {
 
         const request = dialogItem == null
             ? new CodeListsApiService().createItem(codeList.key, columns)
-            : new CodeListsApiService().updateItem(codeList.key, dialogItem.id, columns);
+            : new CodeListsApiService().updateItem(codeList.key, dialogItem.id, columns, dialogItem.lockVersion);
 
         request
             .then(() => {

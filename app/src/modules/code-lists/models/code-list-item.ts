@@ -6,4 +6,5 @@ export interface CodeListItem {
     label: string;
     created: string;
     updated: string;
+    lockVersion?: number | null;
 }

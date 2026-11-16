@@ -6,4 +6,5 @@ export interface ProcessAccessControlEntity {
     permissions: string[];
     created: string; // ISO date string
     updated: string; // ISO date string
+    lockVersion?: number | null;
 }

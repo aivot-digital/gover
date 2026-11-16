@@ -29,6 +29,7 @@ export function CommunicationBindingDialog({binding, identityProviderKey, provid
         description: binding?.description ?? '',
         isEnabled: binding?.isEnabled ?? false,
         configuration: binding?.configuration ?? {},
+        lockVersion: binding?.lockVersion,
     }));
     const [request, setRequest] = useState(original);
     const [attemptedSubmit, setAttemptedSubmit] = useState(false);
