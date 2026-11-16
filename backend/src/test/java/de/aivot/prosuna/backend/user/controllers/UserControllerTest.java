@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.Optional;
@@ -53,6 +54,15 @@ class UserControllerTest {
         when(userService.update(eq("staff"), any())).thenThrow(conflict);
 
         assertSame(conflict, assertThrows(ObjectOptimisticLockingFailureException.class,
+                () -> controller.update(null, "staff", new UserEntity())));
+    }
+
+    @Test
+    void updatePassesASerializationFailureToTheConflictHandler() throws ResponseException {
+        var conflict = new CannotAcquireLockException("could not serialize access due to concurrent update");
+        when(userService.update(eq("staff"), any())).thenThrow(conflict);
+
+        assertSame(conflict, assertThrows(CannotAcquireLockException.class,
                 () -> controller.update(null, "staff", new UserEntity())));
     }
 
