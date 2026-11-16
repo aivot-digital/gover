@@ -402,7 +402,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 verwendet; für die öffentliche Nutzung gelten sie nach der Veröffentlichung.
             </ElementEditorSectionHeader>
 
-            {!isEditable && (
+            {version.status !== ProcessStatus.Drafted && (
                 <Alert severity="info">
                     Versionsspezifische Einstellungen können nur in Entwurfsversionen geändert werden.
                 </Alert>

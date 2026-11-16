@@ -24,6 +24,39 @@ vi.mock('../../../../components/rich-text-input-component/rich-text-input-compon
 
 describe('ProcessSettingsDialogVersionTab', () => {
     it.each([
+        {status: ProcessStatus.Drafted, readOnly: false, hintCount: 0, disabled: false},
+        {status: ProcessStatus.Drafted, readOnly: true, hintCount: 0, disabled: true},
+        {status: ProcessStatus.Published, readOnly: false, hintCount: 1, disabled: true},
+        {status: ProcessStatus.Published, readOnly: true, hintCount: 1, disabled: true},
+        {status: ProcessStatus.Revoked, readOnly: false, hintCount: 1, disabled: true},
+        {status: ProcessStatus.Revoked, readOnly: true, hintCount: 1, disabled: true},
+    ])('shows the draft-only hint based on status $status with readOnly=$readOnly', ({status, readOnly, hintCount, disabled}) => {
+        const version = {
+            ...ProcessDefinitionVersionApiService.initialize(),
+            processId: 42,
+            processVersion: 7,
+            publicTitle: 'Bauantrag',
+            status,
+        };
+
+        render(
+            <Provider store={configureStore({reducer: () => ({})})}>
+                <ProcessSettingsDialogVersionTab
+                    open
+                    readOnly={readOnly}
+                    version={version}
+                    departments={[]}
+                    themes={[]}
+                    onVersionChange={vi.fn()}
+                />
+            </Provider>,
+        );
+
+        expect(screen.queryAllByText('Versionsspezifische Einstellungen können nur in Entwurfsversionen geändert werden.')).toHaveLength(hintCount);
+        expect(screen.getByRole('textbox', {name: 'Öffentliche Bezeichnung'})).toHaveProperty('disabled', disabled);
+    });
+
+    it.each([
         [CaseNumberType.UuidV4, 'Zufällige Kennung (UUID v4)'],
         [CaseNumberType.UuidV7, 'Zeitlich sortierbare Kennung (UUID v7)'],
     ])('defaults to compact identifiers and persists an explicit %s choice', async (type, label) => {
