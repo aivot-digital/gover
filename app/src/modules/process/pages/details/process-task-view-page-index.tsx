@@ -49,6 +49,7 @@ import {useHasProcessPermission} from '../../../permissions/hooks/use-permission
 import {Permission} from '../../../../data/permissions/permission';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {ProcessTaskDeadlineValue} from '../../components/process-task-deadline-value';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 function getExternalAssigneeLabel(identityId: string, identities?: IdentityDataMap): ReactNode {
     const identity = Object.values(identities ?? {}).find((value) => value.identityId === identityId);
@@ -69,7 +70,7 @@ function getExternalAssigneeLabel(identityId: string, identities?: IdentityDataM
 
 export function ProcessTaskViewPageIndex(): ReactNode {
     const sectionId = useId();
-    const {item, refresh} = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
+    const {item, refresh, isEditable} = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
     const canReadProcess = useHasProcessPermission(item?.task.processId, Permission.PROCESS_DEFINITION_READ);
 
     const instanceInfoItems = useMemo<StatusTablePropsItem[]>(() => {
@@ -227,7 +228,13 @@ export function ProcessTaskViewPageIndex(): ReactNode {
 
     if (item == null) return <GenericDetailsSkeleton />;
 
-    const canEditTask = isProcessTaskEditableByStaff(item.task.status);
+    const isEditableTaskStatus = isProcessTaskEditableByStaff(item.task.status);
+    const canEditTask = isEditableTaskStatus && isEditable;
+    const editDisabledTooltip = !isEditableTaskStatus
+        ? PROCESS_TASK_NOT_EDITABLE_MESSAGE
+        : !isEditable
+            ? formatMissingPermissionTooltip(Permission.PROCESS_INSTANCE_EDIT_TASK)
+            : undefined;
 
     return (
         <Box
@@ -307,7 +314,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
                 >
                     <DisabledTooltip
                         disabled={!canEditTask}
-                        title={PROCESS_TASK_NOT_EDITABLE_MESSAGE}
+                        title={editDisabledTooltip}
                     >
                         <Button
                             component={RouterLink}
