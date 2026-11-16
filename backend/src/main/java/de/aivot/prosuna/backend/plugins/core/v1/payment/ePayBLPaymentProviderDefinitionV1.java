@@ -27,6 +27,7 @@ import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.services.StorageService;
+import de.aivot.prosuna.backend.utils.HttpClientUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -284,8 +285,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+            response = HttpClientUtils.sendWithDeadline(client, request);
         } catch (IOException | InterruptedException e) {
             client.close();
             throw new PaymentException(
@@ -351,8 +351,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+            response = HttpClientUtils.sendWithDeadline(client, request);
         } catch (IOException | InterruptedException e) {
             client.close();
             throw new PaymentException(e, "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());

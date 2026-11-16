@@ -25,6 +25,7 @@ import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
+import de.aivot.prosuna.backend.utils.HttpClientUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -233,8 +234,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+            response = HttpClientUtils.sendWithDeadline(client, request);
         } catch (IOException | InterruptedException e) {
             throw new PaymentException(e, "Der Zahlungsstatus konnte beim Zahlungsanbieter %s nicht abgerufen werden.", getProviderName());
         }
@@ -316,8 +316,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+            response = HttpClientUtils.sendWithDeadline(client, request);
         } catch (IOException | InterruptedException e) {
             throw new PaymentException(e, "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
