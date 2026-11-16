@@ -16,6 +16,8 @@ import {ProcessStatus} from '../../process/enums/process-status';
 import {literalAuthoredValue} from '../../../models/element-data';
 
 const mocks = vi.hoisted(() => ({
+    // Stable like the real hook; a new object per render would rerun effects that depend on it on every render.
+    api: {},
     confirm: vi.fn(),
     devToolsTab: undefined as number | undefined,
     dispatch: vi.fn(),
@@ -64,7 +66,7 @@ vi.mock('../../../providers/confirm-provider', () => ({
 }));
 
 vi.mock('../../../hooks/use-api', () => ({
-    useApi: () => ({}),
+    useApi: () => mocks.api,
 }));
 
 vi.mock('../../../hooks/use-change-blocker-2', () => ({
@@ -319,6 +321,25 @@ describe('FormNodeEditorPage error handling', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
 
         await waitFor(() => expectSnackbar('Das Formular wurde zwischenzeitlich geändert.'));
+    });
+
+    it('sends only one save while a save is running', async () => {
+        mocks.hasChanged = true;
+        let finishSave: (node: ReturnType<typeof createNode>) => void = () => undefined;
+        vi.mocked(ProcessNodeApiService.prototype.update).mockReturnValue(new Promise((resolve) => {
+            finishSave = resolve;
+        }));
+        await renderLoadedEditor();
+
+        const saveButton = screen.getByRole('button', {name: 'Speichern'});
+        fireEvent.click(saveButton);
+        fireEvent.click(saveButton);
+
+        await waitFor(() => expect(saveButton).toBeDisabled());
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledOnce();
+        finishSave(createNode());
+        await waitFor(() => expect(saveButton).toBeEnabled());
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledOnce();
     });
 
     it('aborts submission when saving pending editor changes fails', async () => {
