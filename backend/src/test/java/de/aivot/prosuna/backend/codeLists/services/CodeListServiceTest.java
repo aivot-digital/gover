@@ -275,6 +275,18 @@ class CodeListServiceTest {
     }
 
     @Test
+    void updateRejectsAStaleLockVersion() {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList().setLockVersion(1L)));
+
+        var exception = assertThrows(ResponseException.class,
+                () -> service.update("test", createManualCodeList().setName("Veraltet").setLockVersion(0L)));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        verify(codeListRepository).findByKeyForUpdate("test");
+        verify(codeListRepository, never()).save(any());
+    }
+
+    @Test
     void updateOfAManualListKeepsTheFormerSourceColumnOfAMissingColumn() throws Exception {
         when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
         when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));

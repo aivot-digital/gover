@@ -112,6 +112,8 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         var existingEntity = codeListRepository
                 .findByKeyForUpdate(key)
                 .orElseThrow(ResponseException::notFound);
+        // This override replaces UpdateEntityService.update(), so it must repeat its lock version check.
+        LockVersioned.requireCurrent(entity, existingEntity);
         return performUpdate(key, entity, existingEntity);
     }
 
