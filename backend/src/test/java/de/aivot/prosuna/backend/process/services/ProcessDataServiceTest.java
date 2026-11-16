@@ -13,6 +13,10 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.models.ProcessSystemDataFields;
+
+import java.util.stream.Collectors;
+
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
@@ -60,6 +64,11 @@ class ProcessDataServiceTest {
                 "_deadlineExceeded.deadlineKey", "request"), data);
         assertEquals(new InputVariableResolver.Resolution(true, "customer"), result);
         assertEquals(Map.of("existing", true), data.get("$"));
+        assertEquals(ProcessSystemDataFields.PROTECTED.stream().map(ProcessSystemDataFields.Field::path).collect(Collectors.toSet()),
+                data.getProcessMetadata().keySet());
+        var taskMetadata = (Map<?, ?>) data.getProcessMetadata().get("taskMetadata");
+        assertEquals(ProcessSystemDataFields.ELEMENT_METADATA.stream().map(ProcessSystemDataFields.Field::path).collect(Collectors.toSet()),
+                ((Map<?, ?>) taskMetadata.get("request")).keySet());
     }
 
     @Test
