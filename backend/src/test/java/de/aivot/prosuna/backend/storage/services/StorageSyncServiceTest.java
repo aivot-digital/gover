@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.time.Instant;
@@ -71,10 +72,12 @@ class StorageSyncServiceTest {
 
     private final List<SimpleTransactionStatus> transactions = new ArrayList<>();
 
+    private PlatformTransactionManager transactionManager;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        var transactionManager = mock(PlatformTransactionManager.class);
+        transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any())).thenAnswer(call -> {
             var transaction = new SimpleTransactionStatus();
             transactions.add(transaction);
@@ -129,6 +132,18 @@ class StorageSyncServiceTest {
 
         assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "storage", "outcome", "failed").count());
         assertEquals(0, meterRegistry.counter("prosuna.sync.runs", "type", "storage", "outcome", "success").count());
+    }
+
+    @Test
+    void syncRunsAtReadCommitted() {
+        claims(provider("missing"));
+        when(storageProviderRepository.findById(7)).thenReturn(Optional.of(provider("missing")));
+
+        storageSyncService.syncRequestedStorageProvider(7, STALE_BEFORE);
+
+        var definition = ArgumentCaptor.forClass(TransactionDefinition.class);
+        verify(transactionManager).getTransaction(definition.capture());
+        assertEquals(TransactionDefinition.ISOLATION_READ_COMMITTED, definition.getValue().getIsolationLevel());
     }
 
     @Test

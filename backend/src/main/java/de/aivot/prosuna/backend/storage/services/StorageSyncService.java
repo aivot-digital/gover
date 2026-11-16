@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,6 +67,10 @@ public class StorageSyncService {
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.assetRepository = assetRepository;
         this.transaction = new TransactionTemplate(transactionManager);
+        // The run reads the provider long before it locks it to record the result. Under REPEATABLE READ, any provider
+        // or index item change committed meanwhile (an edit, a resync request, an upload) would fail the whole run with
+        // a serialization error; the run ownership check after the lock already detects a superseded run.
+        this.transaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
 
     /**
