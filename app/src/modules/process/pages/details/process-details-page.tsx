@@ -1,4 +1,4 @@
-import {type ApiError} from '../../../../models/api-error';
+import {type ApiError, isApiError} from '../../../../models/api-error';
 import {getDefaultProcessNodePort, mapReplacementPorts} from '../../utils/process-node-ports';
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Button, Divider, Paper, Typography} from '@mui/material';
@@ -487,6 +487,15 @@ export function getProcessNodeEditURL(processId: number, processVersion: number,
     return `/processes/${processId}/versions/${processVersion}/nodes/${nodeId}${tabPath}${query}`;
 }
 
+function toProcessFlowLoadError(error: unknown): ApiError {
+    return isApiError(error) ? error : {
+        status: 500,
+        message: 'Der Prozessfluss konnte nicht geladen werden.',
+        details: error,
+        displayableToUser: false,
+    };
+}
+
 export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -503,6 +512,7 @@ export function ProcessDetailsPage(): ReactNode {
     const revokeProcessVersion = useRevokeProcessVersion();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
+    const [processFlowLoadError, setProcessFlowLoadError] = useState<ApiError | null>(null);
     const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
     const [flowNodeProviderCache, setFlowNodeProviderCache] = useState<Record<string, ProcessNodeProvider>>({});
@@ -623,6 +633,7 @@ export function ProcessDetailsPage(): ReactNode {
 
         let cancelled = false;
         setProcessFlow(null);
+        setProcessFlowLoadError(null);
         setIsLoadingProcessFlow(true);
 
         new ProcessDefinitionApiService()
@@ -657,7 +668,7 @@ export function ProcessDetailsPage(): ReactNode {
                 }
 
                 setIsLoadingProcessFlow(false);
-                dispatch(showApiErrorSnackbar(error, 'Die neueste Prozessversion konnte nicht geladen werden.'));
+                setProcessFlowLoadError(toProcessFlowLoadError(error));
             });
 
         return () => {
@@ -900,6 +911,7 @@ export function ProcessDetailsPage(): ReactNode {
 
     // Load the process flow whenever the process id or version changes
     useEffect(() => {
+        setProcessFlowLoadError(null);
         if (processId < 1 || processVersion < 1 || processVersionParam === 'latest') {
             setProcessFlow(null);
             setIsLoadingProcessFlow(processVersionParam === 'latest');
@@ -949,7 +961,7 @@ export function ProcessDetailsPage(): ReactNode {
                     return;
                 }
 
-                dispatch(showApiErrorSnackbar(error, 'Der Prozessfluss konnte nicht geladen werden.'));
+                setProcessFlowLoadError(toProcessFlowLoadError(error));
             })
             .finally(() => {
                 if (cancelled) {
@@ -2280,6 +2292,11 @@ export function ProcessDetailsPage(): ReactNode {
                 dispatch(clearLoadingMessage());
             });
     }, [dispatch, navigate]);
+
+    // Propagate essential load failures to the router so the staff shell renders its error screen.
+    if (processFlowLoadError != null) {
+        throw processFlowLoadError;
+    }
 
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
