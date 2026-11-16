@@ -71,4 +71,11 @@ describe('useEditorDraft', () => {
         expect(EditorDraftStorage.remove).toHaveBeenCalledWith('user-1', 'process-node/1/form-layout');
         expect(EditorDraftStorage.save).not.toHaveBeenCalled();
     });
+
+    it('stores the changes of an object that was never saved, whose stored state is empty', () => {
+        renderHook(() => useEditorDraft<{label: string} | null>({...props, base: null, baseLockVersion: 0}));
+        vi.advanceTimersByTime(1000);
+
+        expect(EditorDraftStorage.save).toHaveBeenCalledWith(expect.objectContaining({base: null, mine: {label: 'Neu'}}));
+    });
 });

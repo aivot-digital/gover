@@ -7,9 +7,9 @@ import {type EditorDraft, EditorDraftStorage} from '../services/editor-draft-sto
 const DRAFT_SAVE_DELAY = 1000;
 
 interface EditorDraftProps<T> {
-    /** Identifies the edited object, e.g. `process-node/17/form-layout`. */
+    /** Identifies the edited object, e.g. `process-node/17/form-layout`. Must stay `null` until the object is loaded. */
     draftKey: string | null;
-    /** The stored state the editor started from. */
+    /** The stored state the editor started from. May be `null`, e.g. for a form that was never saved. */
     base: T | null;
     baseLockVersion: number | null | undefined;
     edited: T | null;
@@ -31,7 +31,7 @@ export function useEditorDraft<T>(props: EditorDraftProps<T>) {
     const timeoutRef = useRef<number | undefined>(undefined);
 
     useEffect(() => {
-        if (!enabled || draftKey == null || userId == null || base == null || edited == null) {
+        if (!enabled || draftKey == null || userId == null || edited == null) {
             return;
         }
 
@@ -42,7 +42,8 @@ export function useEditorDraft<T>(props: EditorDraftProps<T>) {
 
         timeoutRef.current = window.setTimeout(() => {
             EditorDraftStorage
-                .save<T>({userId, key: draftKey, base, baseLockVersion: baseLockVersion ?? null, mine: edited, savedAt: Date.now()})
+                // `base` is only null for objects whose stored state is empty, which is then the state to merge with.
+                .save<T>({userId, key: draftKey, base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited, savedAt: Date.now()})
                 .catch(console.error);
         }, DRAFT_SAVE_DELAY);
 
