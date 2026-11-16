@@ -380,6 +380,7 @@ export function UserDetailsPageDeputies() {
                                         deputyUserId: item.deputyUserId,
                                         fromDate: item.fromDate ?? getCurrentApplicationDate(),
                                         untilDate: item.untilDate,
+                                        lockVersion: item.lockVersion,
                                     });
                                     setDeputyDraftDetails(item);
                                 },

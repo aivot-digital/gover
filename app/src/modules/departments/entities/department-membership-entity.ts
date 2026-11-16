@@ -4,5 +4,6 @@ export interface DepartmentMembershipEntity {
     userId: string;
     created: string;
     updated: string;
+    lockVersion?: number | null;
 }
 

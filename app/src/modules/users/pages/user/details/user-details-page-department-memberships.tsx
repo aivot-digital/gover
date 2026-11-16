@@ -206,7 +206,7 @@ export function UserDetailsPageDepartmentMemberships() {
             });
     };
 
-    const handleUpdateMembership = (membership: VDepartmentMembershipWithDetailsEntity, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+    const handleUpdateMembership = (membership: VDepartmentMembershipWithDetailsEntity, roleIds: number[], lockVersion: number | null) => {
         if (
             !canManageMemberships ||
             !canReadDomainRoles ||
@@ -221,28 +221,9 @@ export function UserDetailsPageDepartmentMemberships() {
             estimatedTime: 5000,
         }));
 
-        const apiService = new VDepartmentUserRoleAssignmentWithDetailsService();
-
-        const addPromises = roleIdsToAdd
-            .map((roleId) => apiService.create({
-                id: 0,
-                departmentMembershipId: membership.membershipId,
-                teamMembershipId: null,
-                userRoleId: roleId,
-                created: new Date().toISOString(),
-            }));
-
-        const removePromises = userRoleAssignmentIdsToRemove
-            .map((assignmentId) => apiService.destroy(assignmentId));
-
-        Promise
-            .all([
-                ...addPromises,
-                ...removePromises,
-            ])
+        new VDepartmentUserRoleAssignmentWithDetailsService()
+            .updateRoles(membership.membershipId, lockVersion ?? membership.lockVersion, roleIds)
             .then(() => {
-                // Refresh list
-                listControlRef.current?.refresh();
                 refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
@@ -254,6 +235,8 @@ export function UserDetailsPageDepartmentMemberships() {
                 }
             })
             .finally(() => {
+                // After a conflict the list shows the roles saved in the meantime instead of this dialog's state.
+                listControlRef.current?.refresh();
                 dispatch(setLoadingMessage(undefined));
             });
     };
@@ -459,12 +442,12 @@ export function UserDetailsPageDepartmentMemberships() {
                 onClose={() => {
                     setShowSelectRolesDialogForMembership(null);
                 }}
-                onSave={(roleIdsToAdd, userRoleAssignmentIdsToRemove) => {
-                    if (showSelectRolesDialogForMembership == null || roleIdsToAdd == null || userRoleAssignmentIdsToRemove == null) {
+                onSave={(roleIds, lockVersion) => {
+                    if (showSelectRolesDialogForMembership == null) {
                         return;
                     }
 
-                    handleUpdateMembership(showSelectRolesDialogForMembership, roleIdsToAdd, userRoleAssignmentIdsToRemove);
+                    handleUpdateMembership(showSelectRolesDialogForMembership, roleIds, lockVersion);
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={user.id}

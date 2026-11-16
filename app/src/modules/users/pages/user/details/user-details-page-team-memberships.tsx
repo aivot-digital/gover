@@ -219,7 +219,7 @@ export function UserDetailsPageTeamMemberships() {
             });
     };
 
-    const handleUpdateMembership = (membership: VTeamMembershipWithDetailsEntity, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+    const handleUpdateMembership = (membership: VTeamMembershipWithDetailsEntity, roleIds: number[], lockVersion: number | null) => {
         if (
             !canManageMemberships ||
             !canReadDomainRoles ||
@@ -234,28 +234,9 @@ export function UserDetailsPageTeamMemberships() {
             estimatedTime: 5000,
         }));
 
-        const apiService = new VTeamUserRoleAssignmentWithDetailsApiService();
-
-        const addPromises = roleIdsToAdd
-            .map((roleId) => apiService.create({
-                id: 0,
-                departmentMembershipId: null,
-                teamMembershipId: membership.membershipId,
-                userRoleId: roleId,
-                created: new Date().toISOString(),
-            }));
-
-        const removePromises = userRoleAssignmentIdsToRemove
-            .map((assignmentId) => apiService.destroy(assignmentId));
-
-        Promise
-            .all([
-                ...addPromises,
-                ...removePromises,
-            ])
+        new VTeamUserRoleAssignmentWithDetailsApiService()
+            .updateRoles(membership.membershipId, lockVersion ?? membership.lockVersion, roleIds)
             .then(() => {
-                // Refresh list
-                listControlRef.current?.refresh();
                 refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
@@ -267,6 +248,8 @@ export function UserDetailsPageTeamMemberships() {
                 }
             })
             .finally(() => {
+                // After a conflict the list shows the roles saved in the meantime instead of this dialog's state.
+                listControlRef.current?.refresh();
                 dispatch(setLoadingMessage(undefined));
             });
     };
@@ -468,12 +451,12 @@ export function UserDetailsPageTeamMemberships() {
                 onClose={() => {
                     setShowSelectRolesDialogForMembership(null);
                 }}
-                onSave={(roleIdsToAdd, userRoleAssignmentIdsToRemove) => {
-                    if (showSelectRolesDialogForMembership == null || roleIdsToAdd == null || userRoleAssignmentIdsToRemove == null) {
+                onSave={(roleIds, lockVersion) => {
+                    if (showSelectRolesDialogForMembership == null) {
                         return;
                     }
 
-                    handleUpdateMembership(showSelectRolesDialogForMembership, roleIdsToAdd, userRoleAssignmentIdsToRemove);
+                    handleUpdateMembership(showSelectRolesDialogForMembership, roleIds, lockVersion);
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={user.id}

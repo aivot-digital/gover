@@ -41,4 +41,6 @@ export interface VDepartmentMembershipWithDetailsEntity {
     domainRoles: KeysToSnakeCase<UserRoleResponseDTO>[];
     domainRoleAssignments: Record<string, any>[];
     domainRolePermissions: Permission[];
+
+    lockVersion: number;
 }

@@ -21,4 +21,5 @@ export interface VTeamMembershipWithDetailsEntity {
     domainRoles: KeysToSnakeCase<UserRoleResponseDTO>[];
     domainRoleAssignments: Record<string, any>[];
     domainRolePermissions: Permission[];
+    lockVersion: number;
 }
