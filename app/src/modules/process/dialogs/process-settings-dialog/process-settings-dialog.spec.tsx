@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {Permission} from '../../../../data/permissions/permission';
@@ -47,6 +47,9 @@ vi.mock('./process-settings-dialog-process-access-tab', () => ({
         return null;
     },
 }));
+vi.mock('./process-settings-dialog-version-tab', () => ({
+    ProcessSettingsDialogVersionTab: () => null,
+}));
 vi.mock('./process-settings-dialog-process-instance-access-preset-tab', () => ({
     ProcessSettingsDialogProcessInstanceAccessPresetTab: (props: Record<string, unknown>) => {
         mocks.presetProps = props;
@@ -80,11 +83,62 @@ describe('ProcessSettingsDialog', () => {
     it('is read-only and blocks the access tabs without the update permission', () => {
         renderDialog();
 
-        expect(screen.getByRole('alert')).toHaveTextContent('Prozess bearbeiten');
-        expect(screen.getByRole('tab', {name: 'Prozessberechtigungen'})).toBeDisabled();
-        expect(screen.getByRole('tab', {name: 'Standardrechte für neue Vorgänge'})).toBeDisabled();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByRole('tab', {name: 'Prozessberechtigungen'})).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('tab', {name: 'Standardrechte für neue Vorgänge'})).toHaveAttribute('aria-disabled', 'true');
         expect(screen.getByRole('tab', {name: 'Allgemeine Einstellungen'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Speichern'})).toBeDisabled();
         expect(mocks.generalProps).toMatchObject({readOnly: true, canDeleteProcess: false});
+    });
+
+    it.each(['Prozessberechtigungen', 'Standardrechte für neue Vorgänge'])(
+        'explains the missing permission on the blocked %s tab and prevents activation', async (label) => {
+            const user = userEvent.setup();
+            renderDialog();
+
+            const tab = screen.getByRole('tab', {name: label});
+            expect(tab).toHaveAttribute('tabindex', '-1');
+            await user.hover(screen.getByText(label));
+            expect(await screen.findByRole('tooltip')).toHaveTextContent('process_definition.update');
+            await user.click(tab);
+
+            expect(screen.getByRole('tab', {name: 'Allgemeine Einstellungen'})).toHaveAttribute('aria-selected', 'true');
+            expect(mocks.accessProps).toBeUndefined();
+            expect(mocks.presetProps).toBeUndefined();
+        },
+    );
+
+    it.each(['Allgemeine Einstellungen', 'Versionsspezifische Einstellungen'])(
+        'explains the missing update permission on the save button in %s', async (label) => {
+            const user = userEvent.setup();
+            renderDialog();
+            await user.click(screen.getByRole('tab', {name: label}));
+
+            const save = screen.getByRole('button', {name: 'Speichern'});
+            expect(save).toBeDisabled();
+            await user.hover(save.parentElement!);
+            expect(await screen.findByRole('tooltip')).toHaveTextContent('process_definition.update');
+        },
+    );
+
+    it('keeps saving disabled without permission even if changes are reported', () => {
+        renderDialog();
+        act(() => (mocks.generalProps?.onUnsavedChangesChange as (changed: boolean) => void)(true));
+        expect(screen.getByRole('button', {name: 'Speichern'})).toBeDisabled();
+    });
+
+    it('does not report a missing permission when saving is disabled only because nothing changed', async () => {
+        const user = userEvent.setup();
+        mocks.permissions = new Set([Permission.PROCESS_DEFINITION_UPDATE]);
+        renderDialog();
+
+        const save = screen.getByRole('button', {name: 'Speichern'});
+        expect(save).toBeDisabled();
+        await user.hover(save.parentElement!);
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
+        act(() => (mocks.generalProps?.onUnsavedChangesChange as (changed: boolean) => void)(true));
+        expect(save).toBeEnabled();
     });
 
     it('is editable with the update permission and keeps delete separate', () => {
@@ -104,6 +158,11 @@ describe('ProcessSettingsDialog', () => {
 
         await userEvent.click(screen.getByRole('tab', {name: 'Prozessberechtigungen'}));
         expect(mocks.accessProps).toMatchObject({readOnly: true});
+        const save = screen.getByRole('button', {name: 'Speichern'});
+        expect(save).toBeDisabled();
+        await userEvent.hover(save.parentElement!);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('verwaltende Organisationseinheit');
+        await userEvent.unhover(save.parentElement!);
 
         await userEvent.click(screen.getByRole('tab', {name: 'Standardrechte für neue Vorgänge'}));
         expect(mocks.presetProps).toBeDefined();
