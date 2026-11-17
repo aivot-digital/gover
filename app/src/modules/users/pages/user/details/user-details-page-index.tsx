@@ -592,7 +592,7 @@ export function UserDetailsPageIndex() {
                                 readonly
                                 copyable
                                 showOptionalIndicator={false}
-                                hint="Geben Sie diese Kennung bei Supportanfragen an, damit Ihre Administration das Konto eindeutig zuordnen kann."
+                                hint="Geben Sie diese Kennung z. B. im Support an, damit das Konto eindeutig zugeordnet werden kann."
                             />
                         </Grid>
                     }
