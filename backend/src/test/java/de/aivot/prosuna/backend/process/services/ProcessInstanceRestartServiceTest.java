@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static de.aivot.prosuna.backend.process.utils.ProcessHistoryInterventions.details;
 
 class ProcessInstanceRestartServiceTest {
     private final ProcessInstanceRepository instances = mock(ProcessInstanceRepository.class);
@@ -76,7 +77,7 @@ class ProcessInstanceRestartServiceTest {
         verify(workRequests, never()).enqueueStart(any());
         verify(attachments).deleteRemovedUploadsOfTask(task, "actor");
         verify(loggers).create(7L, 34L, "actor", null);
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Fortsetzung des Vorgangs angefordert",
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Fortsetzung des Vorgangs angefordert", details(),
                 "Die Fortsetzung des fehlgeschlagenen Vorgangs wurde manuell angefordert. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.");
     }
 
@@ -114,7 +115,7 @@ class ProcessInstanceRestartServiceTest {
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
         verify(workRequests).redispatchAfterCommit(List.of(3L));
         verify(workRequests, never()).enqueueRestart(any(), any());
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Fortsetzung des Vorgangs angefordert",
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Fortsetzung des Vorgangs angefordert", details(),
                 "Die Fortsetzung des fehlgeschlagenen Vorgangs wurde manuell angefordert. Die ausstehenden Verarbeitungsschritte werden erneut ausgeführt.");
     }
 
@@ -173,7 +174,7 @@ class ProcessInstanceRestartServiceTest {
         verify(workRequests).redispatchAfterCommit(List.of(3L));
         verify(workRequests).enqueueRestart(7L, 34L);
         verify(loggers).create(7L, 34L, "actor", null);
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Erneute Ausführung der Aufgabe angefordert",
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Erneute Ausführung der Aufgabe angefordert", details(),
                 "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert. Der fehlgeschlagene Vorgang wird fortgesetzt.");
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
         verify(audit).addRequiredAuditEntry(payload.capture());
@@ -197,7 +198,7 @@ class ProcessInstanceRestartServiceTest {
         verify(workRequests, never()).redispatchAfterCommit(any());
         verify(workRequests).enqueueRestart(7L, 34L);
         verify(attachments).deleteRemovedUploadsOfTask(task, "actor");
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Erneute Ausführung der Aufgabe angefordert",
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Erneute Ausführung der Aufgabe angefordert", details(),
                 "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert.");
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
         verify(audit).addRequiredAuditEntry(payload.capture());

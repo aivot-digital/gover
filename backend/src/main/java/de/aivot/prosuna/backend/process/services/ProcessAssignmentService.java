@@ -18,6 +18,7 @@ import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryInterventions;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
@@ -185,7 +186,7 @@ public class ProcessAssignmentService {
                         null,
                         null,
                         "Zuweisung des Vorgangs geändert",
-                        Map.of(),
+                        ProcessHistoryInterventions.details(),
                         message
                 );
 
@@ -282,7 +283,7 @@ public class ProcessAssignmentService {
                         null,
                         null,
                         "Zuweisung der Aufgabe geändert",
-                        Map.of(),
+                        ProcessHistoryInterventions.details(),
                         message
                 );
 

@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceEventLogDTO;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryInterventions;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -17,6 +18,7 @@ import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -66,6 +68,27 @@ public class ProcessInstanceEventLogService {
                                                    @Nullable String concernedIdentityId,
                                                    @Nullable String concernedIdentityTitle,
                                                    @Nonnull Pageable pageable) throws ResponseException {
+        return loadEventLog(processInstanceId, processInstanceTaskId, includeRestartHistory, search, notableOnly,
+                historyRelevant, concernedUserId, concernedIdentityId, concernedIdentityTitle, pageable, false);
+    }
+
+    @Nonnull
+    public Page<ProcessInstanceEventLogDTO.Entry> getHistoryEvents(
+            long processInstanceId, @Nonnull Pageable pageable) throws ResponseException {
+        return loadEventLog(processInstanceId, null, false, null, false, null, null, null, null, pageable, true).events();
+    }
+
+    @Nonnull
+    private ProcessInstanceEventLogDTO loadEventLog(long processInstanceId,
+                                                   @Nullable Long processInstanceTaskId,
+                                                   boolean includeRestartHistory,
+                                                   @Nullable String search,
+                                                   boolean notableOnly,
+                                                   @Nullable Boolean historyRelevant,
+                                                   @Nullable String concernedUserId,
+                                                   @Nullable String concernedIdentityId,
+                                                   @Nullable String concernedIdentityTitle,
+                                                   @Nonnull Pageable pageable, boolean historyOverview) throws ResponseException {
         if (search != null && search.length() > 200) {
             throw ResponseException.badRequest("Der Suchbegriff darf höchstens 200 Zeichen lang sein.");
         }
@@ -81,16 +104,24 @@ public class ProcessInstanceEventLogService {
             throw ResponseException.badRequest("Die Aufgabe gehört nicht zum angegebenen Vorgang.");
         }
 
-        var eventPage = eventRepository.findAll(
-                createSpecification(processInstanceId, task == null ? null : resolveTaskIds(task, includeRestartHistory), search, notableOnly)
-                        .and(ProcessInstanceEventFilter.create()
-                                .setHistoryRelevant(historyRelevant)
-                                .setConcernedUserId(concernedUserId)
-                                .setConcernedIdentityId(concernedIdentityId)
-                                .setConcernedIdentityTitle(concernedIdentityTitle)
-                                .build()),
-                normalizePageable(pageable)
-        );
+        var specification = createSpecification(processInstanceId, task == null ? null : resolveTaskIds(task, includeRestartHistory), search, notableOnly)
+                .and(ProcessInstanceEventFilter.create()
+                        .setHistoryRelevant(historyRelevant)
+                        .setConcernedUserId(concernedUserId)
+                        .setConcernedIdentityId(concernedIdentityId)
+                        .setConcernedIdentityTitle(concernedIdentityTitle)
+                        .build());
+        if (historyOverview) {
+            specification = specification.and((root, query, builder) -> builder.or(
+                    builder.isTrue(root.get("isHistoryRelevant")),
+                    builder.and(builder.isNull(root.get("processInstanceTaskId")),
+                            builder.equal(root.get("level"), ProcessNodeExecutionLogLevel.Error)),
+                    builder.and(builder.isNotNull(root.get("triggeringUserId")), builder.isTrue(root.get("isAudit")),
+                            builder.equal(builder.function("jsonb_extract_path_text", String.class,
+                                    root.get("details"), builder.literal(ProcessHistoryInterventions.DETAILS_KEY)), "true"))
+            ));
+        }
+        var eventPage = eventRepository.findAll(specification, normalizePageable(pageable, historyOverview ? 999 : 100));
 
         // Resolve only references used by the current page. This avoids exposing or loading complete user and process lists.
         var tasksById = findTasksById(eventPage.getContent().stream()
@@ -299,12 +330,12 @@ public class ProcessInstanceEventLogService {
     }
 
     @Nonnull
-    private Pageable normalizePageable(@Nonnull Pageable pageable) {
+    private Pageable normalizePageable(@Nonnull Pageable pageable, int maximumPageSize) {
         var timestampOrder = pageable.getSort().getOrderFor("timestamp");
         var direction = timestampOrder == null ? Sort.Direction.DESC : timestampOrder.getDirection();
         return PageRequest.of(
                 Math.max(pageable.getPageNumber(), 0),
-                Math.min(Math.max(pageable.getPageSize(), 1), 100),
+                Math.min(Math.max(pageable.getPageSize(), 1), maximumPageSize),
                 Sort.by(direction, "timestamp", "id")
         );
     }

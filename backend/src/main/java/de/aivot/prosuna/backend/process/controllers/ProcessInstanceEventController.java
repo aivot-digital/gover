@@ -97,6 +97,20 @@ public class ProcessInstanceEventController {
                 .list(pageable, filter);
     }
 
+    @GetMapping("history/")
+    @Operation(summary = "Retrieve Process Instance History Events",
+            description = "Retrieve history-relevant events, manual interventions and instance-level execution errors, enriched with staff names. Requires process_instance.read for this instance.")
+    public Page<ProcessInstanceEventLogDTO.Entry> getHistoryEvents(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestParam Long processInstanceId,
+            @Nonnull @ParameterObject @PageableDefault(size = 999, sort = "timestamp", direction = Sort.Direction.ASC) Pageable pageable
+    ) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        permissionService.requireProcessInstancePermission(user.getId(), processInstanceId,
+                ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ);
+        return processInstanceEventLogService.getHistoryEvents(processInstanceId, pageable);
+    }
+
     @GetMapping("log/")
     @Operation(
             summary = "Retrieve Process Instance Event Log",
